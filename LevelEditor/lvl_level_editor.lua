@@ -1103,6 +1103,11 @@ local function levelsHeight()
 	return 40 * S + (m.HB + 10 * S) * (rows + 1) + m.PAD
 end
 
+-- Title row "Level Editor" above the Place / Generate buttons
+local function titleH()
+	return 44 * S
+end
+
 local function panelRect()
 	local m = Shared.m
 	local vsx, vsy = Spring.GetViewGeometry()
@@ -1124,7 +1129,7 @@ local function panelRect()
 	end
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
 	local top = vsy * 0.88
-	local hh = 4 + headerRowCount() * (m.HB + 3) + 2
+	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
 	local bottom = math.max((optionsOpen or scenarioOpen or gen.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
@@ -1141,7 +1146,7 @@ local function headerRects()
 		return rects, 4 + (m.HB + 3) + 2
 	end
 	do
-		local top = y1 - 4
+		local top = y1 - 4 - titleH()
 		-- Button column at the far right next to the menu: V, below it O, I and at the very bottom ?
 		local sx1 = x2 + m.PAD
 		local sx2 = sx1 + m.HB
@@ -1170,9 +1175,9 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
-	local hh = 4 + headerRowCount() * (m.HB + 3) + 2
+	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
 	if not optionsOpen and not scenarioOpen and not gen.open then
-		local rowTop = y1 - 4 - (m.HB + 3)
+		local rowTop = y1 - 4 - titleH() - (m.HB + 3)
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
 		end
@@ -1700,6 +1705,8 @@ local function drawMenuBody()
 	if collapsed then
 		return
 	end
+	gl.Color(1, 1, 1, 1)
+	gl.Text("Level Editor", x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
 		drawScenario(rect, mx, my)
