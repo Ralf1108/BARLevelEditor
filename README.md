@@ -25,7 +25,7 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 - **Generate:** random units, buildings, turrets, air or ships in a rectangle or circle (faction, tech level and count are up to you), or a **random maze** of dragon teeth or walls.
 - **Copy and paste:** Ctrl+C / Ctrl+X / Ctrl+V, undo and redo with Ctrl+Z / Ctrl+Y, move with Alt + drag or the arrow keys, rotate and mirror selections.
 - **Delete** along a line, in a rectangle or in a circle with the buttons `DL`, `DR` and `DC` (units, wrecks and features), or select enemy units too with Ctrl + click.
-- **Area attacks (experimental):** the buttons `XL`, `XR` and `XC` send selected bombers, artillery, rocket launchers and nukes against a line, a rectangle or a circle; the bombers form up and attack together, front targets first. Good for trying out and for videos.
+- **Area attacks (experimental):** the buttons `XL`, `XR` and `XC` send selected bombers, artillery, rocket launchers and nukes against a line, a rectangle or a circle; the bombers form up and attack together, front targets first. The bombs and shots of all selected units are spread evenly over the chosen area.
 - **Teams:** pick the team (and "neutral") with the buttons next to the menu, with a live unit count per team. Up to 32,000 units.
 - **Save and load** levels with Ctrl+S; the editor also autosaves when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install.
@@ -100,7 +100,7 @@ Install it with `BluePrinter\install_blueprinter.bat` (see the installation sect
 
 ## Experimental: area attacks (XL, XR, XC)
 
-Three buttons at the right edge of the button column, in the Level Editor (below the delete buttons) and in the BluePrinter, let a whole group of bombers, artillery, rocket launchers and nuclear silos attack an area instead of a single point. They are meant for trying things out and for making videos, and are not connected to the build plans.
+Three buttons at the right edge of the button column, in the Level Editor (below the delete buttons) and in the BluePrinter, give you another kind of attack: they spread the bombs and explosive shots of all selected units evenly over the area you choose. With many units an area attack is awkward, because you can either bombard one single spot or give every unit its own order by hand. Here you select the units and say: distribute all bombs of all these units over this area. It works with bombers, artillery, rocket launchers and nuclear silos.
 
 ![Area attack: a circle is dragged, every unit gets its own target](docs/area-attack.jpg)
 
