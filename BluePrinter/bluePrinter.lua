@@ -15,7 +15,7 @@ end
 -- Everything runs through normal build orders: cost and build time as usual, no cheat needed.
 --
 -- Usage: click a blueprint in the list, queue it with a left click on the map (several times possible),
--- right click ends. Rotate: button "Rotate" or Alt + mouse wheel. Chat: /bp_menu (auto-build and radius: buttons in the menu)
+-- right click ends. Rotate: [ and ] or Alt + mouse wheel. Chat: /bp_menu (auto-build and radius: buttons in the menu)
 -- /bp_rotate /bp_undo /bp_clear /bp_com /bp_side left|right
 
 local Echo = Spring.Echo
@@ -53,13 +53,13 @@ local HELP_SECTIONS = {
 		{ "Click", "Arm a blueprint or building. Left click on the map queues it, right click ends." },
 		{ "Search field", "In the building catalog and above the blueprint tiles: type words of the description or the code, the list filters at once. A scrollbar sits at the right edge of the lists. Enter = done, Esc = clear the search (sorting is off while searching)." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename." },
-		{ "V  /  O  /  ?", "Collapse the menu / set columns and rows / this help." },
-		{ "Side", "Move the menu to the other side of the screen." },
+		{ "V  /  O  /  ?", "Buttons next to the menu: collapse the menu / set columns and rows / this help." },
+		{ "A  /  C", "Auto-build on or off / commander helps build yes or no (light blue = on)." },
 	} },
 	{ "Building", {
-		{ "Auto-build", "Idle builders work through the queued plans on their own (even without a selection)." },
-		{ "Radius - / +", "How far builders look for plans (200 to 6000)." },
-		{ "Commander", "YES = the commander helps build, NO = only other builders." },
+		{ "Auto-build (A)", "Idle builders work through the queued plans on their own (even without a selection)." },
+		{ "Radius - number +", "How far builders look for plans (200 to 6000). Click the number to type one." },
+		{ "Commander (C)", "On = the commander helps build, off = only other builders." },
 		{ "Back / Clear all", "Undo the last step / remove all plans." },
 		{ "Numbers in the world", "Order of the plans. Blue open, yellow in progress, red blocked." },
 		{ "Line Remaining", "Metal, energy and estimated build time of all open plans." },
@@ -549,7 +549,7 @@ end
 ---------------------------------------------------------------- Interface
 -- Header: title, 5 button rows and the status lines; below it the content (grid or settings) from editor_common.lua
 local function headHeight()
-	return 8 * S + 38 * S + 7 * (34 * S + 4 * S) + 58 * S
+	return 8 * S + 52 * S + 5 * (Shared.m.HB + 4 * S) + 84 * S
 end
 
 local function filterHeight() -- Faction/tech buttons above the building grid
@@ -562,10 +562,10 @@ end
 
 local function panelRect()
 	local vsx, vsy = Spring.GetViewGeometry()
+	local colW = Shared.m.HB + 2 * Shared.m.PAD -- button column V, O, ? at the screen edge, next to the menu
 	if collapsed then
-		local w = 46 * S + 16 * S
-		local cx1 = (side == "right") and (vsx - w) or 0
-		return cx1, vsy * 0.90 - w, cx1 + w, vsy * 0.90
+		local cx1 = (side == "right") and (vsx - colW) or 0
+		return cx1, vsy * 0.90 - colW, cx1 + colW, vsy * 0.90
 	end
 	local cw, ch
 	local minBottom = vsy * 0.05
@@ -581,7 +581,7 @@ local function panelRect()
 		minBottom = 110 * S -- below the panel are name and cost of the blueprint
 	end
 	local pw = math.min(math.max(math.floor(270 * S), cw), vsx * 0.6)
-	local x1 = (side == "right") and (vsx - pw) or 0
+	local x1 = (side == "right") and (vsx - colW - pw) or colW
 	local top = vsy * 0.90
 	local bottom = math.max(minBottom, top - headHeight() - ch)
 	return x1, bottom, x1 + pw, top
@@ -592,63 +592,111 @@ local function inPanel(mx, my)
 		return false
 	end
 	local x1, y0, x2, y1 = panelRect()
-	return mx >= x1 and mx <= x2 and my >= y0 and my <= y1
+	if mx >= x1 and mx <= x2 and my >= y0 and my <= y1 then
+		return true
+	end
+	-- the button column next to the menu
+	local m = Shared.m
+	local vsx = Spring.GetViewGeometry()
+	local colW = m.HB + 2 * m.PAD
+	local cx1 = (side == "right") and (vsx - colW) or 0
+	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 5 * (m.HB + 3) - m.PAD
+end
+
+-- Radius input field: typing digits, Enter accepts, Esc cancels, a click elsewhere accepts
+local radiusEdit = nil -- { text = "" } while typing
+local RADIUS_MIN, RADIUS_MAX, RADIUS_STEP = 200, 6000, 200
+local function radiusEnd(accept)
+	if not radiusEdit then
+		return
+	end
+	local v = accept and tonumber(radiusEdit.text)
+	if v then
+		radius = math.max(RADIUS_MIN, math.min(RADIUS_MAX, math.floor(v)))
+	end
+	radiusEdit = nil
+	widgetHandler:DisownText()
 end
 
 local TIPS = {
-	collapse = "Collapse or expand the menu",
-	gear = "Settings: columns and rows",
-	help = "Help: show the keys and controls on the screen",
+	collapse = "V: collapse or expand the menu",
+	gear = "O: settings, columns and rows",
+	help = "?: show the keys and controls on the screen",
 	modebp = "Blueprints: saved groups of buildings",
 	modeunits = "Buildings: single buildings from the catalog",
-	auto = "Auto-build: the builders work through the\nqueued plans on their own",
-	rotate = "Rotation for new plans (also [ and ])",
+	auto = "Auto-build (A): idle builders work through the\nqueued plans on their own",
 	undo = "Undo the last step",
 	clear = "Delete all queued plans",
 	radmin = "Reduce the builders' search radius",
 	radplus = "Increase the builders' search radius",
-	com = "Should the commander help build?",
-	side = "Menu to the other side of the screen",
+	radfield = "Search radius of the builders in Elmo (200 to 6000):\nclick, type a number, Enter accepts, Esc cancels",
+	com = "Commander (C): the commander helps build too\n(otherwise only other builders do)",
 	create = "Saves the selected buildings\nas a new blueprint",
 	carpet = "Carpet attack: choose bombers, artillery, rocket launchers\nor nukes, then drag a line on the\nmap. Each unit gets a piece of it.",
 }
 
+local radLabel -- position of the text "Radius" (drawn next to the radius buttons)
 local function layout()
 	local x1, y0, x2, y1 = panelRect()
-	local pad = 8 * S
-	local rh = 46 * S -- button height
+	local m = Shared.m
+	local pad = m.PAD
+	local rh = m.HB -- button height as in the Level Editor
 	local btns = {}
 	local y = y1 - pad - 52 * S -- below the title
-	-- far top right: V (collapse/expand the menu), O (settings) to its left
-	btns[#btns + 1] = { id = "collapse", label = "V", x1 = x2 - pad - 46 * S, x2 = x2 - pad, y0 = y1 - pad - 46 * S, y1 = y1 - pad, on = collapsed }
+	-- button column at the screen edge next to the menu (as in the Level Editor): V (collapse/expand), O (settings), ? (help)
+	local vsx = Spring.GetViewGeometry()
+	local colW = m.HB + 2 * pad
+	local sx1 = ((side == "right") and (vsx - colW) or 0) + pad
+	local function colBtn(k, id, label, on, tip)
+		local t = y1 - (k - 1) * (m.HB + 3)
+		btns[#btns + 1] = { id = id, label = label, x1 = sx1, x2 = sx1 + m.HB, y0 = t - m.HB, y1 = t, on = on, active = on, tip = tip or TIPS[id] }
+	end
+	colBtn(1, "collapse", "V", collapsed)
 	if collapsed then
 		return { btns = btns, info = y, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	end
-	btns[#btns + 1] = { id = "gear", label = "O", x1 = x2 - pad - 98 * S, x2 = x2 - pad - 52 * S, y0 = y1 - pad - 46 * S, y1 = y1 - pad, on = optionsOpen }
-	btns[#btns + 1] = { id = "help", label = "?", x1 = x2 - pad - 150 * S, x2 = x2 - pad - 104 * S, y0 = y1 - pad - 46 * S, y1 = y1 - pad, on = helpOpen }
+	colBtn(2, "gear", "O", optionsOpen)
+	colBtn(3, "help", "?", helpOpen)
+	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
+	colBtn(5, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
 		local top = y
 		y = y - rh - 4 * S
 		if not b then
-			btns[#btns + 1] = { id = a[1], label = a[2], x1 = x1 + pad, x2 = x2 - pad, y0 = top - rh, y1 = top, on = a[3] }
+			btns[#btns + 1] = { id = a[1], label = a[2], x1 = x1 + pad, x2 = x2 - pad, y0 = top - rh, y1 = top, on = a[3], active = a[3] }
 			return
 		end
-		btns[#btns + 1] = { id = a[1], label = a[2], x1 = x1 + pad, x2 = x1 + pad + w, y0 = top - rh, y1 = top, on = a[3] }
-		btns[#btns + 1] = { id = b[1], label = b[2], x1 = x1 + pad + w + 4 * S, x2 = x2 - pad, y0 = top - rh, y1 = top, on = b[3] }
+		btns[#btns + 1] = { id = a[1], label = a[2], x1 = x1 + pad, x2 = x1 + pad + w, y0 = top - rh, y1 = top, on = a[3], active = a[3] }
+		btns[#btns + 1] = { id = b[1], label = b[2], x1 = x1 + pad + w + 4 * S, x2 = x2 - pad, y0 = top - rh, y1 = top, on = b[3], active = b[3] }
 	end
 	row2({ "modebp", "Blueprints", menuMode == "bp" }, { "modeunits", "Buildings", menuMode == "units" })
-	row2({ "auto", "Auto-build: " .. (autoBuild and "ON" or "OFF"), autoBuild }, { "rotate", "Rotate: " .. FACING_NAME[rot] })
 	row2({ "undo", "Back" }, { "clear", "Clear all" })
-	row2({ "radmin", "- Radius" }, { "radplus", "+ Radius" })
-	row2({ "com", "Commander: " .. (useCommander and "YES" or "NO"), useCommander }, { "side", "Side" })
+	-- radius row: label, -, input field (shows the current value), +
+	do
+		local top = y
+		y = y - rh - 4 * S
+		local w = x2 - x1 - 2 * pad
+		local gap = 4 * S
+		local lw, bw = w * 0.30, w * 0.17
+		local fw = w - lw - 2 * bw - 3 * gap
+		local bx = x1 + pad
+		radLabel = { x = bx + lw / 2, y0 = top - rh }
+		bx = bx + lw + gap
+		btns[#btns + 1] = { id = "radmin", label = "-", x1 = bx, x2 = bx + bw, y0 = top - rh, y1 = top }
+		bx = bx + bw + gap
+		btns[#btns + 1] = { id = "radfield", label = radiusEdit and (radiusEdit.text .. "|") or tostring(radius), x1 = bx, x2 = bx + fw, y0 = top - rh, y1 = top,
+			on = radiusEdit ~= nil, active = radiusEdit ~= nil }
+		bx = bx + fw + gap
+		btns[#btns + 1] = { id = "radplus", label = "+", x1 = bx, x2 = bx + bw, y0 = top - rh, y1 = top }
+	end
 	row2({ "carpet", "Carpet attack: " .. (carpetArmed and "ON" or "OFF"), carpetArmed })
 	row2({ "create", "New blueprint from selection" })
 	local info = y
 	y = y - 84 * S
-	local L = { btns = btns, info = info, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
+	local L = { btns = btns, info = info, radLabel = radLabel, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	for _, b in ipairs(btns) do
-		b.tip = TIPS[b.id]
+		b.tip = b.tip or TIPS[b.id]
 	end
 	if menuMode == "units" and not optionsOpen then
 		L.filters = uGrid:filterRects(x1, x2, y - 4 * S, Shared.m.HB)
@@ -664,24 +712,26 @@ end
 local function pressButton(id)
 	if id == "auto" then
 		autoBuild = not autoBuild
-	elseif id == "rotate" then
-		rot = (rot + 1) % 4
 	elseif id == "undo" then
 		undoLast()
 	elseif id == "clear" then
 		clearPlans()
 	elseif id == "radmin" then
-		radius = math.max(200, radius - 200)
+		radius = math.max(RADIUS_MIN, radius - RADIUS_STEP)
 	elseif id == "radplus" then
-		radius = math.min(6000, radius + 200)
+		radius = math.min(RADIUS_MAX, radius + RADIUS_STEP)
+	elseif id == "radfield" then
+		bpGrid:resetEdit()
+		bpGrid:setFocus(false)
+		uGrid:setFocus(false)
+		radiusEdit = { text = "" }
+		widgetHandler:OwnText()
 	elseif id == "com" then
 		useCommander = not useCommander
 	elseif id == "help" then
 		helpOpen = true
 	elseif id == "carpet" then
 		toggleCarpet()
-	elseif id == "side" then
-		side = (side == "left") and "right" or "left"
 	elseif id == "create" then
 		widget:CreateBlueprint()
 	elseif id == "collapse" then
@@ -917,6 +967,14 @@ local function drawCarpet()
 	gl.Color(1, 1, 1, 1)
 end
 
+local function halfSize(ud, f)
+	local hx, hz = (ud.xsize or 4) * 4, (ud.zsize or 4) * 4
+	if f % 2 == 1 then
+		hx, hz = hz, hx
+	end
+	return hx, hz
+end
+
 function widget:IsAbove(mx, my)
 	rescale()
 	return inPanel(mx, my)
@@ -939,6 +997,9 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
+	if radiusEdit and not inPanel(mx, my) then
+		radiusEnd(true)
+	end
 	if inPanel(mx, my) then
 		if button ~= 1 then
 			return true
@@ -946,6 +1007,9 @@ function widget:MousePress(mx, my, button)
 		local L = layout()
 		for _, b in ipairs(L.btns) do
 			if mx >= b.x1 and mx <= b.x2 and my >= b.y0 and my <= b.y1 then
+				if b.id ~= "radfield" then
+					radiusEnd(true)
+				end
 				if bpGrid.editing then
 					local e = bpGrid.editing
 					bpGrid:resetEdit()
@@ -955,6 +1019,7 @@ function widget:MousePress(mx, my, button)
 				return true
 			end
 		end
+		radiusEnd(true)
 		if collapsed then
 			return true
 		end
@@ -1113,10 +1178,26 @@ end
 
 -- Text input while renaming (only active while renaming)
 function widget:TextInput(utf8char)
+	if radiusEdit then
+		if utf8char:match("^%d$") and #radiusEdit.text < 5 then
+			radiusEdit.text = radiusEdit.text .. utf8char
+		end
+		return true
+	end
 	return bpGrid:textInput(utf8char) or uGrid:textInput(utf8char)
 end
 
 function widget:KeyPress(key)
+	if radiusEdit then
+		if key == 13 or key == 271 then
+			radiusEnd(true)
+		elseif key == 27 then
+			radiusEnd(false)
+		elseif key == 8 then
+			radiusEdit.text = radiusEdit.text:sub(1, -2)
+		end
+		return true
+	end
 	if uGrid.focus then
 		return uGrid:key(key)
 	end
@@ -1162,14 +1243,6 @@ local function outline(s, hx, hz, y, r, g, b, a)
 		gl.Vertex(s.x + hx, y, s.z + hz)
 		gl.Vertex(s.x - hx, y, s.z + hz)
 	end)
-end
-
-local function halfSize(ud, f)
-	local hx, hz = (ud.xsize or 4) * 4, (ud.zsize or 4) * 4
-	if f % 2 == 1 then
-		hx, hz = hz, hx
-	end
-	return hx, hz
 end
 
 local function drawWorldInner()
@@ -1373,16 +1446,10 @@ local function drawScreenBody()
 	if not collapsed then
 		gl.Text("BluePrinter", x1 + 8 * S, y1 - 36 * S, 28 * S, "o")
 	end
-	for _, b in ipairs(L.btns) do
-		local hot = mx >= b.x1 and mx <= b.x2 and my >= b.y0 and my <= b.y1
-		if b.on then
-			gl.Color(0.2, 0.55, 0.3, 0.9)
-		else
-			gl.Color(0.25, 0.25, 0.3, hot and 1 or 0.85)
-		end
-		gl.Rect(b.x1, b.y0, b.x2, b.y1)
+	Shared.drawButtons(L.btns, 26 * S, Shared.m.HB) -- same look as the Level Editor
+	if L.radLabel then
 		gl.Color(1, 1, 1, 1)
-		gl.Text(b.label, (b.x1 + b.x2) / 2, b.y0 + 11 * S, 24 * S, "co")
+		gl.Text("Radius", L.radLabel.x, L.radLabel.y0 + (Shared.m.HB - 26 * S) / 2 + 3 * S, 26 * S, "co")
 	end
 	if collapsed then
 		gl.Color(1, 1, 1, 1)
@@ -1404,7 +1471,7 @@ local function drawScreenBody()
 		local t = (q.speed > 0) and ("ca. " .. fmtTime(q.buildTime / q.speed)) or "no builders"
 		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - 74 * S, 18 * S, "o")
 	end
-	gl.Text(string.format("Radius %d  |  %s", radius, (bpGrid.armed or armedUnit) and "Left click = queue" or (menuMode == "units" and "Choose a building" or "Choose a blueprint")), x1 + 8 * S, L.info - 48 * S, 18 * S, "o")
+	gl.Text((bpGrid.armed or armedUnit) and "Left click = queue" or (menuMode == "units" and "Choose a building" or "Choose a blueprint"), x1 + 8 * S, L.info - 48 * S, 18 * S, "o")
 	if optionsOpen then
 		optionsUI:draw(L.rect, mx, my)
 	elseif menuMode == "units" then
@@ -1514,6 +1581,17 @@ local ACTIONS = {
 	end,
 	bp_create = function()
 		widget:CreateBlueprint()
+		return true
+	end,
+	bp_mode = function(_, _, words)
+		local w = words and words[1]
+		if w == "bp" then
+			pressButton("modebp")
+		elseif w == "units" then
+			pressButton("modeunits")
+		else
+			say("Mode: " .. ((menuMode == "units") and "units" or "bp") .. "  (/bp_mode bp | units)")
+		end
 		return true
 	end,
 	bp_carpet = function()
