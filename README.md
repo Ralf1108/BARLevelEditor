@@ -86,18 +86,6 @@ Besides the Level Editor there is a second, much smaller widget for the **offici
 
 Install it with `BluePrinter\install_blueprinter.bat` (see the installation section) and read the [BluePrinter manual](BluePrinter/README.md).
 
-## Documentation
-
-- [Level Editor](LevelEditor/README.md) and its [specification](LevelEditor/SPECIFICATION.md)
-- [Scenario builder](LevelEditor/scenario/README.md)
-- [BluePrinter](BluePrinter/README.md)
-- [Shared code](shared/README.md)
-
-## Notes
-
-- Windows only for now (the setup uses PowerShell and junctions).
-- Not an official Beyond All Reason project.
-
 ## Experimental: area attacks (XL, XR, XC)
 
 Three buttons at the right edge of the button column, in the Level Editor (below the delete buttons) and in the BluePrinter, give you another kind of attack: they spread the bombs and explosive shots of all selected units evenly over the area you choose. With many units an area attack is awkward, because you can either bombard one single spot or give every unit its own order by hand. Here you select the units and say: distribute all bombs of all these units over this area. It works with bombers, artillery, rocket launchers and nuclear silos.
@@ -111,3 +99,15 @@ Three buttons at the right edge of the button column, in the Level Editor (below
 | **XC** | Circle: press at the center and drag outwards, the units spread over the circle. |
 
 How to use it: select bombers, artillery, rocket launchers or nuclear silos, press one of the buttons (it lights up) and drag the shape on the map. A preview shows the shape, one frame per unit as its target and the approach lines; releasing the mouse gives the orders, a right click cancels. The **bombers form up side by side first** and, once all are in position, attack at the same moment as a front, with the front targets hit first; artillery, rockets and nukes fire at their own target in the shape. Nukes need loaded missiles. In the BluePrinter, Ctrl+Alt+K is the same as XL and `/bp_carpet [line|rect|circle]` works too.
+
+## Documentation
+
+- [Level Editor](LevelEditor/README.md) and its [specification](LevelEditor/SPECIFICATION.md)
+- [Scenario builder](LevelEditor/scenario/README.md)
+- [BluePrinter](BluePrinter/README.md) and its [specification](BluePrinter/SPECIFICATION.md)
+- [Shared code](shared/README.md) and its [specification](shared/SPECIFICATION.md)
+
+## Notes
+
+- Windows only for now (the setup uses PowerShell and junctions).
+- Not an official Beyond All Reason project.

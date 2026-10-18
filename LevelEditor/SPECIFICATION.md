@@ -156,7 +156,7 @@ See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sort
 
 - Ctrl+S writes `levels\<name>.lua`: all units (position, height, team, neutral, rotation) **and all features** (wrecks, trees, rocks). The file states which game options (e.g. extra pack) must be on in the main game.
 - Loading a level (level list in the settings) clears the map (except the builder rows) and sets the level up again (features are replaced if the file contains any). `/led_clear` only clears units.
-- Autosave: every 120 seconds and when leaving as `_last`, only when editing is allowed, the load queue is empty and from game frame 100. It saves to `_last`, not to the named level: the named level only changes with Ctrl+S or the Save button. `_last` is the state at that moment: units destroyed in a fight in the meantime are gone (wrecks and heaps remain as features). Save under a name of your own before experimenting.
+- Autosave: every 120 seconds and when leaving as `_last`, only when editing is allowed, the load queue is empty and from game frame 100. It saves to `_last`, not to the named level: the named level only changes with Ctrl+S or "Save" in the settings page. `_last` is the state at that moment: units destroyed in a fight in the meantime are gone (wrecks and heaps remain as features). Save under a name of your own before experimenting.
 - Air units in the air are loaded in the air (with the saved height, otherwise cruise height) and stay in flight mode, air units saved on the ground are loaded landed.
 - The gadget places factories anywhere (checked on a test map, steep slopes, water, overlaps).
 
