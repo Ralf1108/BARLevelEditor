@@ -551,7 +551,7 @@ end
 ---------------------------------------------------------------- Interface
 -- Header: title, 5 button rows and the status lines; below it the content (grid or settings) from editor_common.lua
 local function headHeight()
-	return 8 * S + 52 * S + 3 * (Shared.m.HB + 4 * S) + 84 * S
+	return 8 * S + 52 * S + 4 * (Shared.m.HB + 4 * S) + 60 * S
 end
 
 local function filterHeight() -- Faction/tech buttons above the building grid
@@ -582,7 +582,7 @@ local function panelRect()
 		ch = ch + bpFilterHeight()
 		minBottom = 110 * S -- below the panel are name and cost of the blueprint
 	end
-	local pw = math.min(math.max(math.floor(500 * S), cw), vsx * 0.6) -- wide enough for the status lines
+	local pw = math.min(math.max(math.floor(600 * S), cw), vsx * 0.6) -- wide enough for the status lines
 	local x1 = (side == "right") and (vsx - colW - pw) or colW
 	local top = vsy * 0.90
 	local bottom = math.max(minBottom, top - headHeight() - ch)
@@ -639,6 +639,20 @@ local TIPS = {
 	carpetc = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
 
+-- Open and in-progress plans
+local function planCounts()
+	local open, claimed = 0, 0
+	for _, s in ipairs(sites) do
+		if not s.done then
+			open = open + 1
+			if s.claim then
+				claimed = claimed + 1
+			end
+		end
+	end
+	return open, claimed
+end
+
 local radLabel -- position of the text "Radius" (drawn next to the radius buttons)
 local function layout()
 	local x1, y0, x2, y1 = panelRect()
@@ -657,7 +671,7 @@ local function layout()
 	end
 	colBtn(1, "collapse", "V", collapsed)
 	-- Create (blueprint from the selection) at the top right of the title row, left of the button column
-	btns[#btns + 1] = { id = "create", label = "Create", x1 = x2 - pad - 150 * S, x2 = x2 - pad, y0 = y1 - pad - 46 * S, y1 = y1 - pad, tip = TIPS.create }
+	btns[#btns + 1] = { id = "create", label = "Create Blueprint", x1 = x2 - pad - 260 * S, x2 = x2 - pad, y0 = y1 - pad - 46 * S, y1 = y1 - pad, tip = TIPS.create }
 	if collapsed then
 		return { btns = btns, info = y, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	end
@@ -678,6 +692,23 @@ local function layout()
 		end
 		btns[#btns + 1] = { id = a[1], label = a[2], x1 = x1 + pad, x2 = x1 + pad + w, y0 = top - rh, y1 = top, on = a[3], active = a[3] }
 		btns[#btns + 1] = { id = b[1], label = b[2], x1 = x1 + pad + w + 4 * S, x2 = x2 - pad, y0 = top - rh, y1 = top, on = b[3], active = b[3] }
+	end
+	-- status row above the mode buttons: label and number for Open, In progress and Done
+	local statusLabels, statusBoxes = {}, {}
+	do
+		local open, claimed = planCounts()
+		local items = { { "Open", open }, { "In progress", claimed }, { "Done", doneCount } }
+		local top = y
+		y = y - rh - 4 * S
+		local gap, pairGap, boxW = 4 * S, 12 * S, 74 * S
+		local w = x2 - x1 - 2 * pad
+		local pw = (w - 2 * pairGap) / 3
+		for i, it in ipairs(items) do
+			local px = x1 + pad + (i - 1) * (pw + pairGap)
+			local lw = pw - boxW - gap
+			statusLabels[#statusLabels + 1] = { text = it[1], x = px + lw / 2, y0 = top - rh, w = lw }
+			statusBoxes[#statusBoxes + 1] = { x1 = px + lw + gap, x2 = px + pw, y0 = top - rh, y1 = top, label = tostring(it[2]) }
+		end
 	end
 	row2({ "modebp", "Blueprints", menuMode == "bp" }, { "modeunits", "Buildings", menuMode == "units" })
 	row2({ "undo", "Back" }, { "clear", "Clear all" })
@@ -700,8 +731,8 @@ local function layout()
 		btns[#btns + 1] = { id = "radplus", label = "+", x1 = bx, x2 = bx + bw, y0 = top - rh, y1 = top }
 	end
 	local info = y
-	y = y - 84 * S
-	local L = { btns = btns, info = info, radLabel = radLabel, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
+	y = y - 60 * S
+	local L = { btns = btns, info = info, radLabel = radLabel, statusLabels = statusLabels, statusBoxes = statusBoxes, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	for _, b in ipairs(btns) do
 		b.tip = b.tip or TIPS[b.id]
 	end
@@ -1643,24 +1674,26 @@ local function drawScreenBody()
 		gl.Color(1, 1, 1, 1)
 		return
 	end
-	local open, claimed = 0, 0
-	for _, s in ipairs(sites) do
-		if not s.done then
-			open = open + 1
-			if s.claim then
-				claimed = claimed + 1
-			end
-		end
-	end
 	gl.Color(1, 1, 1, 1)
-	gl.Text(string.format("Open %d, in progress %d, done %d", open, claimed, doneCount), x1 + 8 * S, L.info - 22 * S, 20 * S, "o")
+	Shared.drawButtons(L.statusBoxes, 26 * S, Shared.m.HB)
+	for _, t in ipairs(L.statusLabels) do
+		local fs = 26 * S
+		local tw = (tonumber(gl.GetTextWidth(t.text)) or 0) * fs
+		if tw > t.w and tw > 0 then
+			fs = fs * t.w / tw -- shrink until it fits
+		end
+		gl.Color(1, 1, 1, 1)
+		gl.Text(t.text, t.x, t.y0 + (Shared.m.HB - fs) / 2 + 3 * S, fs, "co")
+	end
+	local open = planCounts()
+	local armed = bpGrid.armed or armedUnit
+	if armed then
+		gl.Text("Left click = queue", x1 + 8 * S, L.info - 22 * S, 18 * S, "o")
+	end
 	if open > 0 then
 		local q = queueStats
 		local t = (q.speed > 0) and ("ca. " .. fmtTime(q.buildTime / q.speed)) or "no builders"
-		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - ((bpGrid.armed or armedUnit) and 74 or 48) * S, 18 * S, "o")
-	end
-	if bpGrid.armed or armedUnit then
-		gl.Text("Left click = queue", x1 + 8 * S, L.info - 48 * S, 18 * S, "o")
+		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - (armed and 48 or 22) * S, 18 * S, "o")
 	end
 	if optionsOpen then
 		optionsUI:draw(L.rect, mx, my)
