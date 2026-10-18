@@ -206,6 +206,10 @@ Sort key `rank = (filler 1000) + (water 100) + kind`, then alphabetically by nam
 - The maze generator is checked with a mock test: every corridor is reachable from the entrance, the exit is reachable, exactly cells−1 passages (no cycle).
 - Before every hand-over: check both widgets with the test runs and run both installations again.
 
+## 12a. Area attack (`M.newAreaAttack`)
+
+Used by the Level Editor (buttons XL, XR, XC) and the BluePrinter. `o = { say, mouseGround, inPanel, onArm }`; methods `toggle(mode)` ("line" | "rect" | "circle" | nil = switch off), `armed()`, `mode()`, `press(button)` (map click while armed, true if used), `release()` (starts the attack), `draw()` (world preview), `step(frame)` (every frame; synchronized bomber waves) and `disarm()`. The attack logic (classification of bombers and area shooters, plans for line, rectangle and circle, staging line and simultaneous release of the bombers) is described in `..\BluePrinter\SPECIFICATION.md`, section 4.3 (area attacks).
+
 ## 13. Rule for changes
 
 Changes to the blueprint/unit interface are made **in `editor_common.lua`** so the Level Editor and the BluePrinter stay in sync. Only what one widget alone needs stays in the widget.

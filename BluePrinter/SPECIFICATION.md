@@ -3,7 +3,7 @@
 Status: 2026-10-18 (with the carpet attack, row and rectangle stamps, the search field and scrollbars in the lists; all texts are English).
 
 Widget for the **official** Beyond All Reason: blueprint templates and single buildings are **queued** on the map as build plans, idle own builders nearby start **on their own** to carry them out.
-Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). Sister project: `..\LevelEditor\SPECIFICATION.md`.
+Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; the area attacks XL, XR, XC live there as `Shared.newAreaAttack` and are also used by the Level Editor). Sister project: `..\LevelEditor\SPECIFICATION.md`.
 
 - **Language of the interface:** all visible texts in the game (menu, tooltips, help board, chat messages) are English; no umlauts in game texts. Comments, scripts and documents are English as well.
 
