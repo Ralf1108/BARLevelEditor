@@ -30,7 +30,7 @@ Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECI
 
 ## 3. Scaling and dimensions (`M.rescale`, `M.m`, `M.S`)
 
-- Base dimensions (at `ui_scale = 1` and 4K height 2160): `TILE = 190`, `LABEL = 80`, `PAD = 8`, `UCELL = 284`, `UICON = 270`, `UPAD = 7`, `HB = 58`, `XSIZE = 52`.
+- Base dimensions (at `ui_scale = 1` and 4K height 2160): `TILE = 190`, `LABEL = 108`, `PAD = 8`, `UCELL = 284`, `UICON = 270`, `UPAD = 7`, `HB = 58`, `XSIZE = 52`.
 - `M.rescale()` reads `ui_scale` from the BAR settings, multiplies it by screen height / 2160 (limited to 0.3 to 3), recomputes all dimensions in `M.m` and returns the factor `S`. The widgets call it in every draw and input event.
 - Every font size and every dimension in the menu is a multiple of `S` so the interface grows along on large monitors.
 
@@ -98,7 +98,7 @@ On every call the host passes the rectangle `rect = { x1, y0, x2, top }` of the 
 
 ### 8.1 Structure
 - Tile: preview `TILE × TILE`, below it a label `LABEL` high; cell width `TILE + 2·PAD`, cell height `TILE + LABEL + PAD`.
-- Label: name (font 32·S) and below it "N units" or "N buildings" (24·S); names from 13 characters on are shortened with "~".
+- Label: name (font 32·S), below it "N units" or "N buildings" (24·S) and below that the total cost of the whole blueprint (22·S): "M <metal>" in light blue on the left, "E <energy>" in yellow on the right (`M.shortNumber`: 950, 12.4k, 250k; sums from `M.blueprintCost`); names from 13 characters on are shortened with "~".
 - The chosen tile has a blue background, unchosen ones are dark gray.
 - At the top right of every tile the **x** for deleting: 52·S large, character 36·S.
 

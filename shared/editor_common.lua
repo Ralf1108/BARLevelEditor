@@ -6,8 +6,8 @@ local M = {}
 
 ---------------------------------------------------------------- Dimensions (ui_scale)
 M.S = 1
-M.m = { TILE = 190, LABEL = 80, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
-local BASE = { TILE = 190, LABEL = 80, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+M.m = { TILE = 190, LABEL = 108, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+local BASE = { TILE = 190, LABEL = 108, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
 
 -- Recompute all dimensions from the base value (cheap, can be called on every draw/click). The base values are designed for 4K
 -- (height 2160); the factor is ui_scale times screen height / 2160, so the menu grows and shrinks with the
@@ -634,6 +634,17 @@ end
 ---------------------------------------------------------------- Cost of a blueprint
 -- Sum over all units: metal, energy, build time (build effort) and count; computed once per units table
 local costCache = setmetatable({}, { __mode = "k" })
+-- Short number for small labels: 950, 12.4k, 250k
+function M.shortNumber(n)
+	n = math.floor((n or 0) + 0.5)
+	if n >= 100000 then
+		return string.format("%dk", math.floor(n / 1000 + 0.5))
+	elseif n >= 10000 then
+		return string.format("%.1fk", n / 1000)
+	end
+	return tostring(n)
+end
+
 function M.blueprintCost(units)
 	local c = costCache[units]
 	if not c then
@@ -990,6 +1001,13 @@ function M.newGrid(o)
 		else
 			gl.Text(label, cx, ty - 32 * S, 32 * S, "co")
 			gl.Text(bp.count .. " " .. self.unitWord, cx, ty - 68 * S, 24 * S, "co")
+			-- total cost of the whole blueprint: metal left, energy right
+			local cost = M.blueprintCost(bp.units)
+			gl.Color(0.75, 0.88, 1, 1)
+			gl.Text("M " .. M.shortNumber(cost.metal), tx + TILE * 0.27, ty - 98 * S, 22 * S, "co")
+			gl.Color(1, 0.95, 0.5, 1)
+			gl.Text("E " .. M.shortNumber(cost.energy), tx + TILE * 0.73, ty - 98 * S, 22 * S, "co")
+			gl.Color(1, 1, 1, 1)
 		end
 	end
 
