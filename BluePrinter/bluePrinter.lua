@@ -976,12 +976,20 @@ local function areaPlan(shape, ax, az, bx, bz, ids, n, approach)
 			return across(xa or cx, za or cz) < across(xb or cx, zb or cz)
 		end)
 	end
+	-- All bombers stage on ONE line `approach` before the front edge of the area (the edge nearest to the group); a
+	-- target further back gets a staging point further back by its depth. The flight to the target is then longer
+	-- for the targets at the back: the front targets are bombed first, nobody has to cross the area to hit the front.
+	local frontD = math.huge
+	for _, p in ipairs(pts) do
+		frontD = math.min(frontD, (p.x - cx) * ux + (p.z - cz) * uz)
+	end
 	local plan = {}
 	for i = 1, n do
 		local p = pts[i]
 		local fx, fz = p.x, p.z
 		if approach > 0 then
-			fx, fz = clampToMap(p.x - ux * approach, p.z - uz * approach)
+			local back = approach + ((p.x - cx) * ux + (p.z - cz) * uz) - frontD
+			fx, fz = clampToMap(p.x - ux * back, p.z - uz * back)
 		end
 		plan[i] = { id = order[i], x = p.x, z = p.z, fx = fx, fz = fz }
 	end
