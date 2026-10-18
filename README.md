@@ -97,3 +97,17 @@ Install it with `BluePrinter\install_blueprinter.bat` (see the installation sect
 
 - Windows only for now (the setup uses PowerShell and junctions).
 - Not an official Beyond All Reason project.
+
+## Experimental: area attacks (XL, XR, XC)
+
+Three buttons at the right edge of the button column, in the Level Editor (below the delete buttons) and in the BluePrinter, let a whole group of bombers, artillery, rocket launchers and nuclear silos attack an area instead of a single point. They are meant for trying things out and for making videos, and are not connected to the build plans.
+
+![Area attack: a circle is dragged, every unit gets its own target](docs/area-attack.jpg)
+
+| Button | What it does |
+|---|---|
+| **XL** | Line (carpet attack): drag a line, every unit gets a piece of it. |
+| **XR** | Rectangle: drag two corners, the units spread over the whole area. |
+| **XC** | Circle: press at the center and drag outwards, the units spread over the circle. |
+
+How to use it: select bombers, artillery, rocket launchers or nuclear silos, press one of the buttons (it lights up) and drag the shape on the map. A preview shows the shape, one frame per unit as its target and the approach lines; releasing the mouse gives the orders, a right click cancels. The **bombers form up side by side first** and, once all are in position, attack at the same moment as a front, with the front targets hit first; artillery, rockets and nukes fire at their own target in the shape. Nukes need loaded missiles. In the BluePrinter, Ctrl+Alt+K is the same as XL and `/bp_carpet [line|rect|circle]` works too.
