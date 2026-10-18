@@ -42,9 +42,6 @@ local optionsOpen = false
 local collapsed = false -- Menu collapsed: only the small button V stays visible
 local menuMode = "bp" -- "bp" = blueprints, "units" = single buildings from the catalog
 local armedUnit = nil -- Name of the building in stamp mode (left click queues it)
-local carpetArmed = false -- Carpet attack: drag a line, the selected bombers, artillery, rocket launchers etc. spread over it
-local carpetMode = "line" -- "line" | "rect" | "circle": shape that is dragged
-local carpetDrag = nil -- { x, z }: start point of the line, rectangle corner or circle center
 local helpOpen = false -- Help board on the screen
 
 -- Content of the help board: { section, { { key, explanation }, ... } }
@@ -82,7 +79,7 @@ local HELP_SECTIONS = {
 		{ "/bp_carpet [line|rect|circle]  /bp_spacing", "Area attack, spacing." },
 	} },
 }
-local toggleCarpet -- defined below
+local area -- area attacks (XL, XR, XC), created below from the shared code
 local spacing = 0 -- Spacing when dragging rows/rectangles (in 16 Elmo steps, like "buildspacing")
 local stampDrag = nil -- { x, z }: start point while a row/rectangle is dragged with Shift
 local buildable = nil -- { [unitDefID] = true }: what the own builders can build right now (nil = unknown)
@@ -119,10 +116,27 @@ local bpGrid = Shared.newGrid({
 	onArm = function(on)
 		if on then
 			armedUnit = nil
-			carpetArmed = false
+			if area then
+				area:disarm()
+			end
 		end
 	end,
 	onSelect = function(i, moved) gridHooks.select(i, moved) end,
+})
+area = Shared.newAreaAttack({
+	say = say,
+	mouseGround = function()
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if pos then
+			return pos[1], pos[3]
+		end
+	end,
+	inPanel = function(mx, my) return widget.IsAbove and widget:IsAbove(mx, my) end,
+	onArm = function()
+		armedUnit = nil
+		bpGrid:setArmed(false)
+	end,
 })
 local function canBuildNow(id)
 	return buildable == nil or buildable[id] == true
@@ -678,9 +692,9 @@ local function layout()
 	colBtn(2, "gear", "O", optionsOpen)
 	colBtn(3, "help", "?", helpOpen)
 	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
-	colBtn(7, "carpet", "XL", carpetArmed and carpetMode == "line") -- one button gap above: these are experimental
-	colBtn(8, "carpetr", "XR", carpetArmed and carpetMode == "rect")
-	colBtn(9, "carpetc", "XC", carpetArmed and carpetMode == "circle")
+	colBtn(7, "carpet", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
+	colBtn(8, "carpetr", "XR", area:armed() and area:mode() == "rect")
+	colBtn(9, "carpetc", "XC", area:armed() and area:mode() == "circle")
 	colBtn(5, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
@@ -769,11 +783,11 @@ local function pressButton(id)
 	elseif id == "help" then
 		helpOpen = true
 	elseif id == "carpet" then
-		toggleCarpet("line")
+		area:toggle("line")
 	elseif id == "carpetr" then
-		toggleCarpet("rect")
+		area:toggle("rect")
 	elseif id == "carpetc" then
-		toggleCarpet("circle")
+		area:toggle("circle")
 	elseif id == "create" then
 		widget:CreateBlueprint()
 	elseif id == "collapse" then
@@ -803,368 +817,6 @@ local function mouseGround()
 	if pos then
 		return pos[1], pos[3]
 	end
-end
-
----------------------------------------------------------------- Carpet attack
--- Selected units with area damage spread evenly over a line A -> B. Each gets a piece of the
--- line. Bombers (aircraft with a bomb weapon) approach it from behind, i.e. along the line: move to a point BEFORE
--- the piece, then attack its center; this way the bombs fall spread over the whole length. Artillery, rocket launchers,
--- nukes and everything else with a large blast radius at long range only gets the attack order on the center
--- of its piece (ground target); mobile units walk into range for it.
-local CARPET_APPROACH = 2000 -- Elmo from the target, where the bombers form up before the run (line: beside the line, on the side of the group)
-local AREA_MIN = 16 -- blast radius (Elmo) from which a weapon counts as an area weapon (mortar 18, rocket launcher 24, artillery 35 to 60)
-local RANGE_MIN = 450 -- minimum range of an area weapon (artillery, rockets, nukes)
-
-local function isBomber(ud)
-	if not ud or not ud.canFly then
-		return false
-	end
-	for _, w in ipairs(ud.weapons or {}) do
-		local wd = WeaponDefs[w.weaponDef]
-		if wd and wd.type == "AircraftBomb" then
-			return true
-		end
-	end
-	return false
-end
-
--- Artillery, rocket launchers, nukes: ground weapon with a large blast radius and long range (no aircraft)
-local function isAreaShooter(ud)
-	if not ud or ud.canFly then
-		return false
-	end
-	for _, w in ipairs(ud.weapons or {}) do
-		local wd = WeaponDefs[w.weaponDef]
-		if wd and wd.type ~= "AircraftBomb" and wd.canAttackGround ~= false
-			and (wd.damageAreaOfEffect or wd.areaOfEffect or 0) >= AREA_MIN and (wd.range or 0) >= RANGE_MIN then
-			return true
-		end
-	end
-	return false
-end
-
-local function selectedBy(test)
-	local out = {}
-	for _, id in ipairs(Spring.GetSelectedUnits()) do
-		if test(UnitDefs[Spring.GetUnitDefID(id)]) then
-			out[#out + 1] = id
-		end
-	end
-	return out
-end
-
-local function selectedBombers()
-	return selectedBy(isBomber)
-end
-
-local function selectedShooters()
-	return selectedBy(isAreaShooter)
-end
-
-local function clampToMap(x, z)
-	local m = 64
-	return math.max(m, math.min((Game.mapSizeX or 8192) - m, x)), math.max(m, math.min((Game.mapSizeZ or 8192) - m, z))
-end
-
--- Plan: per unit { id, x, z (center of the piece), fx, fz (approach point) }; ids is the list of units (or nil: n placeholders);
--- approach = 0: no approach (artillery), otherwise distance of the approach point before the piece
-local function carpetPlan(ax, az, bx, bz, ids, n, approach)
-	approach = approach or CARPET_APPROACH
-	local dx, dz = bx - ax, bz - az
-	local len = math.sqrt(dx * dx + dz * dz)
-	local ux, uz = 0, 0
-	if len >= 8 then
-		ux, uz = dx / len, dz / len
-	end
-	n = ids and #ids or n
-	local order = {}
-	for i = 1, n do
-		order[i] = ids and ids[i] or false
-	end
-	if ids and len >= 8 then
-		-- Units are sorted along the line: the one at the A end takes the first piece, so the paths do not cross
-		local function proj(id)
-			local x, _, z = Spring.GetUnitPosition(id)
-			return x and ((x - ax) * ux + (z - az) * uz) or 0
-		end
-		table.sort(order, function(a, b) return proj(a) < proj(b) end)
-	end
-	-- Bombers form up in a row beside the line (perpendicular to it, on the side where the group stands), so the run
-	-- goes straight at the line as a front and nobody flies over the target area before the attack
-	local side = 1
-	if ids and len >= 8 and approach > 0 then
-		local sx, sz, c = 0, 0, 0
-		for _, id in ipairs(ids) do
-			local x, _, z = Spring.GetUnitPosition(id)
-			if x then
-				sx, sz, c = sx + x, sz + z, c + 1
-			end
-		end
-		if c > 0 and (sx / c - (ax + dx / 2)) * -uz + (sz / c - (az + dz / 2)) * ux < 0 then
-			side = -1
-		end
-	end
-	local vx, vz = -uz * side, ux * side
-	local plan = {}
-	for i = 1, n do
-		local t = (n == 1) and 0.5 or (i - 0.5) / n
-		local cx, cz = ax + dx * t, az + dz * t
-		local fx, fz = cx + vx * approach, cz + vz * approach
-		if len < 8 or approach == 0 then
-			fx, fz = cx, cz
-		end
-		fx, fz = clampToMap(fx, fz)
-		plan[i] = { id = order[i], x = cx, z = cz, fx = fx, fz = fz }
-	end
-	return plan, len
-end
-
--- Rectangle or circle: one target point per unit spread evenly inside the area (grid or sunflower spiral).
--- Bombers approach from the side where the group stands; units and points are paired by their position across
--- that direction so the paths cross less. Returns the plan (same format as carpetPlan) and the size of the area.
-local function areaPlan(shape, ax, az, bx, bz, ids, n, approach)
-	n = ids and #ids or n
-	local pts, cx, cz, size = {}, 0, 0, 0
-	if shape == "circle" then
-		local r = math.max(math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2), 16)
-		cx, cz, size = ax, az, r
-		for i = 1, n do
-			local rad, th = r * math.sqrt((i - 0.5) / n), i * 2.399963
-			pts[i] = { x = cx + rad * math.cos(th), z = cz + rad * math.sin(th) }
-		end
-	else
-		local x1, x2, z1, z2 = math.min(ax, bx), math.max(ax, bx), math.min(az, bz), math.max(az, bz)
-		local w, h = math.max(x2 - x1, 16), math.max(z2 - z1, 16)
-		cx, cz, size = (x1 + x2) / 2, (z1 + z2) / 2, math.max(w, h)
-		local cols = math.max(1, math.min(n, math.ceil(math.sqrt(n * w / h))))
-		local rows = math.ceil(n / cols)
-		for i = 1, n do
-			local k = math.floor((i - 0.5) * cols * rows / n)
-			pts[i] = { x = x1 + (k % cols + 0.5) * w / cols, z = z1 + (math.floor(k / cols) + 0.5) * h / rows }
-		end
-	end
-	-- direction of the approach: from the group to the middle of the area
-	local ux, uz = 0, 1
-	if ids and #ids > 0 then
-		local sx, sz, c = 0, 0, 0
-		for _, id in ipairs(ids) do
-			local x, _, z = Spring.GetUnitPosition(id)
-			if x then
-				sx, sz, c = sx + x, sz + z, c + 1
-			end
-		end
-		if c > 0 then
-			local dx, dz = cx - sx / c, cz - sz / c
-			local len = math.sqrt(dx * dx + dz * dz)
-			if len >= 8 then
-				ux, uz = dx / len, dz / len
-			end
-		end
-	end
-	local function across(x, z)
-		return (x - cx) * -uz + (z - cz) * ux
-	end
-	table.sort(pts, function(a, b) return across(a.x, a.z) < across(b.x, b.z) end)
-	local order = {}
-	for i = 1, n do
-		order[i] = ids and ids[i] or false
-	end
-	if ids then
-		table.sort(order, function(a, b)
-			local xa, _, za = Spring.GetUnitPosition(a)
-			local xb, _, zb = Spring.GetUnitPosition(b)
-			return across(xa or cx, za or cz) < across(xb or cx, zb or cz)
-		end)
-	end
-	-- All bombers stage on ONE line `approach` before the front edge of the area (the edge nearest to the group); a
-	-- target further back gets a staging point further back by its depth. The flight to the target is then longer
-	-- for the targets at the back: the front targets are bombed first, nobody has to cross the area to hit the front.
-	local frontD = math.huge
-	for _, p in ipairs(pts) do
-		frontD = math.min(frontD, (p.x - cx) * ux + (p.z - cz) * uz)
-	end
-	local plan = {}
-	for i = 1, n do
-		local p = pts[i]
-		local fx, fz = p.x, p.z
-		if approach > 0 then
-			local back = approach + ((p.x - cx) * ux + (p.z - cz) * uz) - frontD
-			fx, fz = clampToMap(p.x - ux * back, p.z - uz * back)
-		end
-		plan[i] = { id = order[i], x = p.x, z = p.z, fx = fx, fz = fz }
-	end
-	return plan, size
-end
-
-local function planFor(ax, az, bx, bz, ids, n, approach)
-	if carpetMode == "line" then
-		return carpetPlan(ax, az, bx, bz, ids, n, approach)
-	end
-	return areaPlan(carpetMode, ax, az, bx, bz, ids, n, approach)
-end
-
--- Bombers form up first (MOVE to their staging point), then all get the ATTACK order at the same moment: they
--- fly the run together as a front. { members = { [unitID] = plan entry }, frame = start frame }
-local wave = nil
-local WAVE_RADIUS = 250 -- a bomber counts as in position within this distance of its staging point
-local WAVE_TIMEOUT = 1800 -- frames (60 s): go on even if someone is late
-
-local function waveStep(frame)
-	if not wave then
-		return
-	end
-	local total, ready = 0, 0
-	for id, p in pairs(wave.members) do
-		if not Spring.ValidUnitID(id) or Spring.GetUnitIsDead(id) then
-			wave.members[id] = nil
-		else
-			total = total + 1
-			local x, _, z = Spring.GetUnitPosition(id)
-			if (x and dist2(x, z, p.fx, p.fz) <= WAVE_RADIUS * WAVE_RADIUS) or commandCount(id) == 0 then
-				ready = ready + 1
-			end
-		end
-	end
-	if total == 0 then
-		wave = nil
-		return
-	end
-	if ready == total or frame - wave.frame > WAVE_TIMEOUT then
-		for id, p in pairs(wave.members) do
-			Spring.GiveOrderToUnit(id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
-		end
-		say(string.format("Bombers attack: %d of %d in position", ready, total))
-		wave = nil
-	end
-end
-
-local function carpetGo(ax, az, bx, bz)
-	local bombers, guns = selectedBombers(), selectedShooters()
-	if #bombers == 0 and #guns == 0 then
-		say("No bombers or artillery selected (bombers, artillery, rocket launchers, nukes)")
-		return
-	end
-	local len = 0
-	if #bombers > 0 then
-		local plan
-		plan, len = planFor(ax, az, bx, bz, bombers, nil, CARPET_APPROACH)
-		wave = nil
-		for _, p in ipairs(plan) do
-			if len >= 8 then
-				Spring.GiveOrderToUnit(p.id, CMD.MOVE, { p.fx, Spring.GetGroundHeight(p.fx, p.fz), p.fz }, {})
-				wave = wave or { members = {}, frame = Spring.GetGameFrame() }
-				wave.members[p.id] = p
-			else
-				Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
-			end
-		end
-	end
-	if #guns > 0 then
-		local plan
-		plan, len = planFor(ax, az, bx, bz, guns, nil, 0)
-		for _, p in ipairs(plan) do
-			Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
-		end
-	end
-	say(string.format("%s attack: %d bombers, %d artillery/rockets (%s %d Elmo)", carpetMode == "line" and "Carpet" or (carpetMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, carpetMode == "circle" and "radius" or "size", math.floor(len)))
-end
-
-local CARPET_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards" }
-toggleCarpet = function(mode)
-	if carpetArmed and (mode == nil or mode == carpetMode) then
-		carpetArmed = false
-		carpetDrag = nil
-		say("Area attack ended")
-		return true
-	end
-	carpetMode = mode or "line"
-	carpetArmed = true
-	carpetDrag = nil
-	armedUnit = nil
-	bpGrid:setArmed(false)
-	local n = #selectedBombers() + #selectedShooters()
-	say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, CARPET_HINT[carpetMode])
-		or "Experimental: select bombers, artillery, rocket launchers or nukes first, then on the map " .. CARPET_HINT[carpetMode] .. ".")
-	return true
-end
-
-local function drawCarpet()
-	if not carpetArmed then
-		return
-	end
-	local mx, my = Spring.GetMouseState()
-	if inPanel(mx, my) then
-		return
-	end
-	local gx, gz = mouseGround()
-	if not gx then
-		return
-	end
-	gl.DepthTest(false)
-	if not carpetDrag then
-		gl.Color(1, 0.7, 0.2, 0.9)
-		gl.LineWidth(2)
-		local y = Spring.GetGroundHeight(gx, gz) + 8
-		gl.BeginEnd(GL.LINE_LOOP, function()
-			gl.Vertex(gx - 24, y, gz - 24)
-			gl.Vertex(gx + 24, y, gz - 24)
-			gl.Vertex(gx + 24, y, gz + 24)
-			gl.Vertex(gx - 24, y, gz + 24)
-		end)
-		gl.LineWidth(1)
-		gl.Color(1, 1, 1, 1)
-		return
-	end
-	local bombers, guns = selectedBombers(), selectedShooters()
-	local plans = {}
-	if #bombers > 0 or #guns == 0 then
-		plans[#plans + 1] = (planFor(carpetDrag.x, carpetDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), CARPET_APPROACH))
-	end
-	if #guns > 0 then
-		plans[#plans + 1] = (planFor(carpetDrag.x, carpetDrag.z, gx, gz, guns, nil, 0))
-	end
-	gl.LineWidth(2)
-	gl.Color(1, 0.7, 0.2, 0.9)
-	local ax, az = carpetDrag.x, carpetDrag.z
-	if carpetMode == "line" then
-		gl.BeginEnd(GL.LINES, function()
-			gl.Vertex(ax, Spring.GetGroundHeight(ax, az) + 8, az)
-			gl.Vertex(gx, Spring.GetGroundHeight(gx, gz) + 8, gz)
-		end)
-	elseif carpetMode == "rect" then
-		gl.BeginEnd(GL.LINE_LOOP, function()
-			for _, c in ipairs({ { ax, az }, { gx, az }, { gx, gz }, { ax, gz } }) do
-				gl.Vertex(c[1], Spring.GetGroundHeight(c[1], c[2]) + 8, c[2])
-			end
-		end)
-	else
-		local r = math.sqrt((gx - ax) ^ 2 + (gz - az) ^ 2)
-		gl.BeginEnd(GL.LINE_LOOP, function()
-			for k = 0, 47 do
-				local x, z = ax + r * math.cos(k * math.pi / 24), az + r * math.sin(k * math.pi / 24)
-				gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
-			end
-		end)
-	end
-	for _, plan in ipairs(plans) do
-		for _, p in ipairs(plan) do
-			local y = Spring.GetGroundHeight(p.x, p.z) + 8
-			gl.Color(1, 0.3, 0.2, 0.95)
-			gl.BeginEnd(GL.LINE_LOOP, function()
-				gl.Vertex(p.x - 14, y, p.z - 14)
-				gl.Vertex(p.x + 14, y, p.z - 14)
-				gl.Vertex(p.x + 14, y, p.z + 14)
-				gl.Vertex(p.x - 14, y, p.z + 14)
-			end)
-			gl.Color(1, 1, 1, 0.35)
-			gl.BeginEnd(GL.LINES, function() -- approach
-				gl.Vertex(p.fx, Spring.GetGroundHeight(p.fx, p.fz) + 8, p.fz)
-				gl.Vertex(p.x, y, p.z)
-			end)
-		end
-	end
-	gl.LineWidth(1)
-	gl.Color(1, 1, 1, 1)
 end
 
 local function halfSize(ud, f)
@@ -1300,7 +952,7 @@ function widget:MousePress(mx, my, button)
 			if ui then
 				local e = uGrid:list()[ui]
 				armedUnit = e.name
-				carpetArmed = false
+				area:disarm()
 				bpGrid:setArmed(false)
 				say("Building '" .. e.name .. "': left click = queue, right click = end")
 			end
@@ -1323,20 +975,11 @@ function widget:MousePress(mx, my, button)
 		bpGrid:press(L.rect, mx, my)
 		return true
 	end
-	if button == 3 and not carpetArmed and not armedUnit and not bpGrid.armed and assignToPlan(mx, my) then
+	if button == 3 and not area:armed() and not armedUnit and not bpGrid.armed and assignToPlan(mx, my) then
 		return true
 	end
-	if carpetArmed then
-		if button == 3 then
-			toggleCarpet()
-			return true
-		elseif button == 1 then
-			local gx, gz = mouseGround()
-			if gx then
-				carpetDrag = { x = gx, z = gz }
-			end
-			return true
-		end
+	if area:press(button) then
+		return true
 	end
 	if armedUnit then
 		if button == 3 then
@@ -1395,15 +1038,7 @@ function widget:MouseRelease(mx, my, button)
 		return
 	end
 	bpGrid:release()
-	if carpetDrag then
-		local d = carpetDrag
-		carpetDrag = nil
-		local gx, gz = mouseGround()
-		if gx then
-			carpetGo(d.x, d.z, gx, gz)
-			carpetArmed = false
-		end
-	end
+	area:release()
 	if stampDrag then
 		local ud = armedUnit and UnitDefNames[armedUnit]
 		local gx, gz = mouseGround()
@@ -1676,10 +1311,10 @@ end
 function widget:DrawWorld()
 	drawWorldInner()
 	ghost:endFrame()
-	local ok, err = pcall(drawCarpet)
+	local ok, err = pcall(area.draw, area)
 	if not ok then
-		carpetArmed = false
-		say("Carpet preview disabled: " .. tostring(err))
+		area:disarm()
+		say("Area attack preview disabled: " .. tostring(err))
 	end
 end
 
@@ -1804,9 +1439,7 @@ function widget:DrawScreen()
 end
 
 function widget:GameFrame(n)
-	if wave and n % 15 == 0 then
-		pcall(waveStep, n)
-	end
+	pcall(area.step, area, n)
 	if n % 60 == 1 and not Spring.GetSpectatingState() then
 		pcall(refreshBuildable)
 	end
@@ -1883,7 +1516,7 @@ local ACTIONS = {
 	end,
 	bp_carpet = function(_, _, words)
 		local w = words and words[1]
-		return toggleCarpet((w == "rect" or w == "circle" or w == "line") and w or nil)
+		return area:toggle((w == "rect" or w == "circle" or w == "line") and w or nil)
 	end,
 	bp_helpbox = function()
 		helpOpen = not helpOpen
