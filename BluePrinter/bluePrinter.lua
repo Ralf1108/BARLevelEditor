@@ -576,11 +576,11 @@ local function panelRect()
 	elseif menuMode == "units" then
 		cw, ch = uGrid:size()
 		ch = ch + filterHeight()
-		minBottom = 190 * S -- below the panel are name, description and cost
+		minBottom = vsy * 0.20 -- below the panel are name, description and cost (clear of the BAR info boxes at the bottom right, as in the Level Editor)
 	else
 		cw, ch = bpGrid:size()
 		ch = ch + bpFilterHeight()
-		minBottom = 110 * S -- below the panel are name and cost of the blueprint
+		minBottom = vsy * 0.20 -- below the panel are name and cost of the blueprint
 	end
 	local pw = math.min(math.max(math.floor(600 * S), cw), vsx * 0.6) -- wide enough for the status lines
 	local x1 = (side == "right") and (vsx - colW - pw) or colW
