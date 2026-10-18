@@ -24,7 +24,7 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 - **Blueprints:** select units, press *Create* and the layout is saved as a tile with a preview. Click a tile to place it again, drag tiles to sort them.
 - **Generate:** random units, buildings, turrets, air or ships in a rectangle or circle (faction, tech level and count are up to you), or a **random maze** of dragon teeth or walls.
 - **Copy and paste:** Ctrl+C / Ctrl+X / Ctrl+V, undo and redo with Ctrl+Z / Ctrl+Y, move with Alt + drag or the arrow keys, rotate and mirror selections.
-- **Delete** in a rectangle with the `D` button (units, wrecks and features), or select enemy units too with Ctrl + click.
+- **Delete** along a line, in a rectangle or in a circle with the buttons `DL`, `DR` and `DC` (units, wrecks and features), or select enemy units too with Ctrl + click.
 - **Teams:** pick the team (and "neutral") with the buttons next to the menu, with a live unit count per team. Up to 32,000 units.
 - **Save and load** levels with Ctrl+S; the editor also autosaves when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install.
@@ -47,11 +47,12 @@ After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor
 | | |
 |---|---|
 | Place a unit | Pick it in **Place → Units**, then left click on the map. Right click ends. |
-| Place many | Hold **Shift** and drag (row) or **Shift + Alt** and drag (rectangle). |
+| Place many | Arm a unit, feature or blueprint, then hold **Shift** and drag (a row) or **Shift + Alt** and drag (a rectangle); all of them are placed on release. **Shift + mouse wheel** changes the spacing, **[** and **]** rotate. |
 | Random army | **Generate**, choose faction / type / tech / count and *Area*, press **Generate**, drag on the map. |
 | Maze | **Generate → Maze**, choose the material, press **Generate**, drag on the map. |
-| Delete | **Del** on the selection or under the mouse, or the **D** button and drag a rectangle. |
-| Copy / paste | **Ctrl+C**, then **Ctrl+V** pastes at the mouse. |
+| Delete | **Del** on the selection or under the mouse. For whole areas use the buttons at the right: **DL** (along a line), **DR** (in a rectangle, key **D**) or **DC** (in a circle), then drag the shape on the map. |
+| Copy / cut / paste | **Ctrl+C** copies, **Ctrl+X** cuts (copies and deletes), **Ctrl+V** pastes at the mouse. |
+| Undo / redo | **Ctrl+Z** undoes the last action (placing, deleting, moving, generating ...), **Ctrl+Y** redoes it. |
 | Save a layout | Select units, **Place → Blueprints → Create**. |
 | Save the level | **Ctrl+S** (settings button **O** lists and loads saved levels). |
 | Help | The **?** button shows all keys and controls on screen. |
