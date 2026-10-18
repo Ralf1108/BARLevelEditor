@@ -44,6 +44,28 @@ local record, destroyRecorded -- defined below
 local opt = Spring.GetModOptions().leveleditor
 local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
 
+-- Units that stockpile missiles (nuclear silos and the like) start loaded in the editor. The stockpile is not part
+-- of the level file, so a scenario built from the level starts with empty silos.
+-- A new unit only takes the stockpile in a later frame (the same call at once after CreateUnit has no effect), so the
+-- IDs wait in a list and GameFrame fills them.
+local STOCKPILE_START = 10
+local pendingStockpile = {}
+local function fillStockpile(id)
+	pendingStockpile[#pendingStockpile + 1] = id
+end
+local function fillPendingStockpiles()
+	for i = #pendingStockpile, 1, -1 do
+		local id = pendingStockpile[i]
+		pendingStockpile[i] = nil
+		if Spring.ValidUnitID(id) then
+			local stock, queued = Spring.GetUnitStockpile(id) -- nil for units that cannot stockpile
+			if stock then
+				Spring.SetUnitStockpile(id, math.max(STOCKPILE_START, queued or 0))
+			end
+		end
+	end
+end
+
 local function tell(playerID, text)
 	if playerID then
 		Spring.SendMessageToPlayer(playerID, "[Level Editor] " .. text)
@@ -93,6 +115,7 @@ local function place(name, team, x, z, facing, playerID, y)
 			Spring.GiveOrderToUnit(id, CMD.IDLEMODE, { landed and 1 or 0 }, 0)
 		end
 		Spring.GiveOrderToUnit(id, CMD.STOP, {}, 0)
+		fillStockpile(id)
 		record({ k = "add", id = id, name = name })
 	else
 		tell(playerID, "could not place " .. name .. " there")
@@ -257,6 +280,7 @@ local function generate(team, x, z, count, radius, techs, faction, kind, playerI
 					if neutral then
 						Spring.SetUnitNeutral(id, true)
 					end
+					fillStockpile(id)
 					record({ k = "add", id = id, name = ud.name })
 					local key = math.floor(px / BUCKET) * 100003 + math.floor(pz / BUCKET)
 					buckets[key] = buckets[key] or {}
@@ -1115,6 +1139,9 @@ if EDITOR_MODE then
 	GG.LevelEditorSpawnBuilders = spawnBuilders
 
 	function gadget:GameFrame(n)
+		if #pendingStockpile > 0 then
+			fillPendingStockpiles()
+		end
 		if n == 5 then
 			-- full vision for everyone: this way the widget sees all units when saving (no /globallos needed)
 			for _, at in ipairs(Spring.GetAllyTeamList()) do

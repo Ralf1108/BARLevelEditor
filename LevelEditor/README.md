@@ -25,6 +25,7 @@ In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are nee
 - [ and ] rotate the unit or blueprint stamp by 90 degrees. Del deletes and Ctrl+B blows up (wreck stays); both work on the selected units, without a selection on the unit, wreck or feature at the mouse pointer. Ctrl+Z undoes placing.
 - Ctrl+S writes `levels\<name>.lua` (units and features, so also wrecks and trees). The level list in the settings (button **O**) clears up (except the builder rows) and sets a level up again. `/led_clear` only clears up.
 - Resurrected units are set to hold position.
+- Nuclear silos and other units that stockpile missiles start **loaded** (10 missiles) when you place or generate them, so you can try them at once. The missiles are not saved in the level: a scenario built from it starts with empty silos.
 
 ## Files
 - `lvl_level_editor.lua` - widget (controls, saving, loading)

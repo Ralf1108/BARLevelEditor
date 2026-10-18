@@ -32,6 +32,7 @@ Unpack the zip, double-click `Start Scenario.bat`. BAR must be installed and sta
 ## How it works
 The official game knows scenarios: the game option `scenariooptions` contains the unit list (`unitloadout`) and the feature list (`featureloadout`). The game sets them up at the start and then places no start commanders. The option is in the start script as `base64url(zlib(json))`. The level files of the editor have exactly this format.
 - Wrecks (features `<unit>_dead`) get `resurrectas` in the scenario so that resurrection bots can resurrect them (reclaiming always worked). Heaps (`_heap`) cannot be resurrected. In the level file it appears as `resurrectas = 'unit'` at the wreck (the editor writes it too). In the editor itself the gadget sets the resurrection when it creates a wreck, too.
+- Nuclear silos start **empty** in a scenario (the editor loads them for testing, but the missiles are not stored in the level).
 - Resurrected units are set to hold position (by the briefing widget, for the player's own units).
 - Gaia units (button G in the editor) are in the level with `gaia = true`. In the scenario they get the Gaia number of the game (= number of real teams). Gaia is always an enemy to everyone and is not controlled by an AI.
 - The teams of the level are renumbered to 0 to n-1 (player = 0), because the engine needs gapless numbers.
