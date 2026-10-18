@@ -73,8 +73,8 @@ local HELP_SECTIONS = {
 		{ "Ctrl+Alt+P", "Save the selected buildings as a new blueprint." },
 	} },
 	{ "Area attack (experimental)", {
-		{ "X  /  XR  /  XC", "Buttons next to the menu. Select bombers, artillery, rocket launchers or nukes first, press X (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
-		{ "Procedure", "Each unit gets its own target in the shape. Bombers approach from the side where they stand, artillery and rockets fire at their target. Right click cancels. Ctrl+Alt+K = X." },
+		{ "XL  /  XR  /  XC", "Buttons next to the menu. Select bombers, artillery, rocket launchers or nukes first, press XL (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
+		{ "Procedure", "Each unit gets its own target in the shape. Bombers approach from the side where they stand, artillery and rockets fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
 	} },
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
@@ -602,7 +602,7 @@ local function inPanel(mx, my)
 	local vsx = Spring.GetViewGeometry()
 	local colW = m.HB + 2 * m.PAD
 	local cx1 = (side == "right") and (vsx - colW) or 0
-	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 8 * (m.HB + 3) - m.PAD
+	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 9 * (m.HB + 3) - m.PAD
 end
 
 -- Radius input field: typing digits, Enter accepts, Esc cancels, a click elsewhere accepts
@@ -634,7 +634,7 @@ local TIPS = {
 	radfield = "Search radius of the builders in Elmo (200 to 6000):\nclick, type a number, Enter accepts, Esc cancels",
 	com = "Commander (C): the commander helps build too\n(otherwise only other builders do)",
 	create = "Saves the selected buildings\nas a new blueprint",
-	carpet = "X (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press X, then drag a line on the map.\nEach unit gets a piece of it.",
+	carpet = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
 	carpetr = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
 	carpetc = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
@@ -662,9 +662,9 @@ local function layout()
 	colBtn(2, "gear", "O", optionsOpen)
 	colBtn(3, "help", "?", helpOpen)
 	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
-	colBtn(6, "carpet", "X", carpetArmed and carpetMode == "line")
-	colBtn(7, "carpetr", "XR", carpetArmed and carpetMode == "rect")
-	colBtn(8, "carpetc", "XC", carpetArmed and carpetMode == "circle")
+	colBtn(7, "carpet", "XL", carpetArmed and carpetMode == "line") -- one button gap above: these are experimental
+	colBtn(8, "carpetr", "XR", carpetArmed and carpetMode == "rect")
+	colBtn(9, "carpetc", "XC", carpetArmed and carpetMode == "circle")
 	colBtn(5, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
