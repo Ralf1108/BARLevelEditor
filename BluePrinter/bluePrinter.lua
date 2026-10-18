@@ -61,7 +61,7 @@ local HELP_SECTIONS = {
 		{ "Auto-build (A)", "Idle builders work through the queued plans on their own (even without a selection)." },
 		{ "Radius - number +", "How far builders look for plans (200 to 6000). Click the number to type one." },
 		{ "Commander (C)", "On = the commander helps build, off = only other builders." },
-		{ "Back / Clear all", "Undo the last step / remove all plans." },
+		{ "Undo / Clear all", "Undo the last step / remove all plans." },
 		{ "Plans in the world", "Frame, 3D ghost and number per plan. Blue open, yellow in progress, red blocked." },
 		{ "Right click on a plan", "With builders selected: they build exactly this plan now. Shift = add it to their queue." },
 		{ "Line Remaining", "Metal, energy and estimated build time of all open plans." },
@@ -711,7 +711,7 @@ local function layout()
 		end
 	end
 	row2({ "modebp", "Blueprints", menuMode == "bp" }, { "modeunits", "Buildings", menuMode == "units" })
-	row2({ "undo", "Back" }, { "clear", "Clear all" })
+	row2({ "undo", "Undo" }, { "clear", "Clear all" })
 	-- radius row: label, -, input field (shows the current value), +
 	do
 		local top = y
