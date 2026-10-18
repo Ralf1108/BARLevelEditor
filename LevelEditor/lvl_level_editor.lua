@@ -1178,7 +1178,7 @@ local function headerRects()
 			{ "circle", "DC", "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
 		}
 		for k, d in ipairs(dels) do
-			local top = sideTop(4 + k)
+			local top = sideTop(5 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = d[1], label = d[2], active = (delMode == d[1]), tip = d[3] }
 		end
 		local areas = {
@@ -1187,7 +1187,7 @@ local function headerRects()
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(8 + k)
+			local top = sideTop(9 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
