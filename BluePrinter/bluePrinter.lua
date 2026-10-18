@@ -1137,6 +1137,7 @@ local function outline(s, hx, hz, y, r, g, b, a)
 end
 
 -- 3D ghosts of the open plans (the ghost.max closest to the mouse pointer when there are more)
+local ghostSeq = 0 -- every plan gets its own key (tostring of a table is the same for all tables in the engine)
 local function drawPlanGhosts()
 	local open = {}
 	for _, s in ipairs(sites) do
@@ -1155,7 +1156,11 @@ local function drawPlanGhosts()
 	local team = Spring.GetMyTeamID()
 	for i = 1, math.min(#open, ghost.max) do
 		local s = open[i]
-		ghost:draw("p" .. tostring(s), s.def, team, s.x, s.y, s.z, s.f * (math.pi / 2))
+		if not s.gid then
+			ghostSeq = ghostSeq + 1
+			s.gid = ghostSeq
+		end
+		ghost:draw("p" .. s.gid, s.def, team, s.x, s.y, s.z, s.f * (math.pi / 2))
 	end
 end
 
