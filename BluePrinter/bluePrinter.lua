@@ -108,7 +108,7 @@ local LIST = lib.list -- { name, units, count, thumb, dir }
 local ghost = Shared.newGhost({ owner = "BluePrinter", say = say, wg = function() return WG end })
 local gridHooks = {}
 local bpGrid = Shared.newGrid({
-	lib = lib, cfg = cfg, unitWord = "Buildings",
+	lib = lib, cfg = cfg, unitWord = "Buildings", searchLabel = "Search Blueprints",
 	ownText = function(on)
 		if on then
 			widgetHandler:OwnText()
@@ -127,7 +127,7 @@ local bpGrid = Shared.newGrid({
 local function canBuildNow(id)
 	return buildable == nil or buildable[id] == true
 end
-local uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, canUse = canBuildNow,
+local uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, canUse = canBuildNow, searchLabel = "Search Units",
 	ownText = function(on)
 		if on then
 			widgetHandler:OwnText()
@@ -551,7 +551,7 @@ end
 ---------------------------------------------------------------- Interface
 -- Header: title, 5 button rows and the status lines; below it the content (grid or settings) from editor_common.lua
 local function headHeight()
-	return 8 * S + 52 * S + 4 * (Shared.m.HB + 4 * S) + 84 * S
+	return 8 * S + 52 * S + 3 * (Shared.m.HB + 4 * S) + 84 * S
 end
 
 local function filterHeight() -- Faction/tech buttons above the building grid
@@ -656,6 +656,8 @@ local function layout()
 		btns[#btns + 1] = { id = id, label = label, x1 = sx1, x2 = sx1 + m.HB, y0 = t - m.HB, y1 = t, on = on, active = on, tip = tip or TIPS[id] }
 	end
 	colBtn(1, "collapse", "V", collapsed)
+	-- Create (blueprint from the selection) at the top right of the title row, left of the button column
+	btns[#btns + 1] = { id = "create", label = "Create", x1 = x2 - pad - 150 * S, x2 = x2 - pad, y0 = y1 - pad - 46 * S, y1 = y1 - pad, tip = TIPS.create }
 	if collapsed then
 		return { btns = btns, info = y, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	end
@@ -697,7 +699,6 @@ local function layout()
 		bx = bx + fw + gap
 		btns[#btns + 1] = { id = "radplus", label = "+", x1 = bx, x2 = bx + bw, y0 = top - rh, y1 = top }
 	end
-	row2({ "create", "New blueprint from selection" })
 	local info = y
 	y = y - 84 * S
 	local L = { btns = btns, info = info, radLabel = radLabel, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
@@ -1656,9 +1657,11 @@ local function drawScreenBody()
 	if open > 0 then
 		local q = queueStats
 		local t = (q.speed > 0) and ("ca. " .. fmtTime(q.buildTime / q.speed)) or "no builders"
-		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - 74 * S, 18 * S, "o")
+		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - ((bpGrid.armed or armedUnit) and 74 or 48) * S, 18 * S, "o")
 	end
-	gl.Text((bpGrid.armed or armedUnit) and "Left click = queue" or (menuMode == "units" and "Choose a building" or "Choose a blueprint"), x1 + 8 * S, L.info - 48 * S, 18 * S, "o")
+	if bpGrid.armed or armedUnit then
+		gl.Text("Left click = queue", x1 + 8 * S, L.info - 48 * S, 18 * S, "o")
+	end
 	if optionsOpen then
 		optionsUI:draw(L.rect, mx, my)
 	elseif menuMode == "units" then

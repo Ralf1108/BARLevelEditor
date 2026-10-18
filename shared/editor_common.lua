@@ -788,7 +788,7 @@ function M.newGrid(o)
 		lib = o.lib, cfg = o.cfg, unitWord = o.unitWord or "Units",
 		scroll = 0, selected = 0, armed = false,
 		drag = nil, editing = nil, confirmDel = nil, lastClick = { idx = 0 },
-		query = "", focus = false,
+		query = "", focus = false, searchLabel = o.searchLabel or "Search ...",
 	}
 
 	-- The tiles shown: the whole library, or only the blueprints whose name contains the search text.
@@ -1200,7 +1200,7 @@ function M.newGrid(o)
 		if self.focus then
 			label = label .. "|"
 		elseif label == "" then
-			label = "Search ..."
+			label = self.searchLabel
 		end
 		return {
 			{ x1 = x1 + pad, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label, active = self.focus,
@@ -1465,7 +1465,7 @@ end
 function M.newUnits(o)
 	local u = {
 		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse,
-		query = "", focus = false, ownText = o.ownText, searchOn = (o.search ~= false),
+		query = "", focus = false, ownText = o.ownText, searchOn = (o.search ~= false), searchLabel = o.searchLabel or "Search ...",
 	}
 	u.groups = {}
 	for _, g in ipairs(M.GROUPS) do
@@ -1579,7 +1579,7 @@ function M.newUnits(o)
 			if self.focus then
 				label = label .. "|"
 			elseif label == "" then
-				label = "Search ..."
+				label = self.searchLabel
 			end
 			rects[#rects + 1] = { x1 = x1 + pad, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label,
 				active = self.focus, tip = "Search: type words of the description or the code, the list filters at once.\nEnter = done, Esc = clear the search." }
