@@ -34,16 +34,14 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). S
 ## 4. Interface
 
 ### 4.1 Panel
-- Position: right (default) or left (`/bp_side left|right`, button "Side"), top edge at 90 % of the screen height. Width at least 270·S, at most 60 % of the screen. Bottom edge at most at 5 % of the screen height, in the buildings view at least 190·S (the info lines are below).
+- Position: right (default) or left (chat command `/bp_side left|right`; there is no button for it), top edge at 90 % of the screen height. Width at least 270·S, at most 60 % of the screen. Bottom edge at most at 5 % of the screen height, in the buildings view at least 190·S (the info lines are below).
 - The menu is visible at the start and scales with the screen height and the UI size slider (`ui_scale`), see shared/SPECIFICATION.md.
-- Structure from the top: title "BluePrinter" with the small buttons **O** (settings) and at the far right **V** (collapse/expand the menu: one click hides everything except the V, a second brings it back; visible by default), mode row **Blueprints | Buildings**, then the button rows:
-  1. **Auto-build: ON/OFF** | **Rotate: <direction>**
-  2. **Back** | **Clear all**
-  3. **- Radius** | **+ Radius**
-  4. **Commander: YES/NO** | **Side**
-  5. **Carpet attack: ON/OFF**
-  6. **New blueprint from selection**
-  After that the status lines ("Open N, in progress N, done N", "Radius N | …" and the "Remaining: …" line) and the content (grid or catalog). Active switches are light blue.
+- Structure from the top: title "BluePrinter"; the buttons **V** (collapse/expand the menu: one click hides everything except the V, a second brings it back), **O** (settings), **?** (help), **A** (Auto-build on/off, default on) and **C** (commanders help build yes/no, default yes) stand in a **column at the screen edge next to the menu**, one below the other, as in the Level Editor (all buttons use `Shared.drawButtons` with the height `HB` and font 26·S of the editor). Mode row **Blueprints | Buildings**, then the button rows:
+  1. **Back** | **Clear all**
+  2. **Radius** | **-** | input field | **+**: the field shows the current radius; click it, type a number (digits only, up to 5), Enter accepts, Esc cancels, a click elsewhere accepts; the value is limited to 200–6000. **-** and **+** change it in steps of 200 and the number follows at once.
+  3. **Carpet attack: ON/OFF**
+  4. **New blueprint from selection**
+  Every button of the column has a tooltip (A and C also show the current state). There are no buttons for rotating and for the side of the menu (keys `[` `]`, Alt + mouse wheel and the chat commands `/bp_rotate`, `/bp_side` remain). After that the status lines ("Open N, in progress N, done N", "<hint>" (the rotation is visible in the 3D preview at the mouse pointer) and the "Remaining: …" line) and the content (grid or catalog). Active switches are light blue.
 
 ### 4.2 Mode "Blueprints"
 - Grid as in the shared code (section 8 there): thumbnails with unit pictures, grows from top to bottom up to 3 columns × 4 rows (adjustable), after that the mouse wheel scrolls (234·S per notch, that is three times the speed plus 30 %).
@@ -62,6 +60,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). S
 - **Search in the building menu:** top line above the filters (from `shared`), typing filters at once (code, name and description words); Enter ends, Esc clears. The faction, group and tech buttons have no tooltips; the list has a scrollbar.
 - **Tooltips:** all buttons show an explanation when hovered.
 - **Help button `?`** (title line, left of `O`; action `bp_helpbox`): shows the help board (menu, building, queueing, carpet attack, chat commands). It is drawn after the menu and lies above it; every click closes it. Content: `HELP_SECTIONS`.
+- **Ghosts and manual assignment:** every open plan is also drawn as a 3D ghost (`drawPlanGhosts`, at most `ghost.max` = 150, the ones closest to the mouse pointer). **Right click on a plan** (no stamp or carpet armed) with own builders selected (`assignToPlan`): the plan under the pointer (footprint plus 8 Elmo) is given to all selected builders that can build it as a build order (`giveBuild`, with Shift behind their queue), regardless of radius, auto-build and the commander switch; `claim` is set to the first of them so auto-build does not hand it out again. Selected builders that cannot build it: message, click used; no builder selected: the click is not used. Checked in the real game: right click on a queued solar collector with the commander selected (auto-build off): claimed and built.
 - **Visible queue:** a status line "Remaining: metal M, energy E, build time about T" (sum of all open plans; build time = build effort divided by the build power of the own builders, without economy; computed every 30 frames) and in the world a **number on every open plan** (order of the queue, up to 250; blue = open, yellow = in progress, red = blocked). When hovering over a blueprint tile, name, count and cost are shown below the panel.
 - **Still open (suggestions):** priorities and builder assignment for plans, automatic rebuilding and repair.
 - **Carpet attack** (button "Carpet attack", `/bp_carpet`, Ctrl+Alt+K; earlier "bomber carpet"): select units, switch the mode on and drag a line A→B on the map. Two groups are distinguished, each spreads evenly over the line on its own (sorted by their position along the line, every unit gets an equally long piece): (1) **bombers** (aircraft with a weapon of type `AircraftBomb`): `MOVE` to a point 900 Elmo in front of the center of the piece (against the line direction, inside the map), then `ATTACK` (appended) on the center; this way everyone approaches along the line and the bombs fall spread over the length. (2) **Artillery, rocket launchers, nukes and everything else with blast damage at long range** (`isAreaShooter`: no aircraft, weapon with `canAttackGround ~= false`, blast radius `damageAreaOfEffect` ≥ 16 Elmo and range ≥ 450 Elmo; hits e.g. mortars, Shellshocker, rocket launchers, Merl, Vulcan, Buzzsaw, all nuke silos; not: anti-air, short-range cannons, lasers): only `ATTACK` on the center of the piece (ground target), mobile units walk into range for it. A click without dragging = normal attack on a point. Preview: line, a frame per unit of both groups and the approach paths of the bombers. After the order the mode switches off; right click cancels. Checked: mock test (bomber MOVE+ATTACK, artillery/rockets/nuke only ATTACK, fighters, short-range tanks and anti-air without an order, three shooters split the line into three pieces) and the classification of all unit types in the real game (144 types, e.g. cormart, armmerl, armsilo, corint, armvulc, corbuzz yes; armpw, armflash, armsam, armham no).
@@ -78,7 +77,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). S
 - Positions are snapped to the build grid with `Spring.Pos2BuildPos`; the blueprint center is set to a 16 grid.
 
 ### 4.6 Rotating
-- Button "Rotate", **Alt + mouse wheel** (only with an armed stamp), BAR keys **`[` and `]`** (build rotation `buildfacing inc/dec`; BAR gets the key as well), chat `/bp_rotate`. Steps of 90° (south, east, north, west). Offset and facing of all buildings of a blueprint rotate along.
+- **Alt + mouse wheel** (only with an armed stamp), BAR keys **`[` and `]`** (build rotation `buildfacing inc/dec`; BAR gets the key as well), chat `/bp_rotate`. Steps of 90° (south, east, north, west). Offset and facing of all buildings of a blueprint rotate along.
 
 ## 5. Plans and auto-build
 
@@ -99,7 +98,7 @@ Steps: one blueprint or one single building = one step (`batch`).
 
 ### 5.4 Which builders
 - Mobile, can build, no factory, has build options. **Commanders** only if "Commander: YES".
-- A builder only gets plans that it can build (build options) and that lie at most **radius** away. Default 1000 Elmo, adjustable in steps of 200 (200–6000) with the buttons **- Radius** and **+ Radius**.
+- A builder only gets plans that it can build (build options) and that lie at most **radius** away. Default 1000 Elmo, adjustable in steps of 200 (200–6000) with the buttons **-** and **+** next to the label "Radius" or by typing the number into the field between them.
 
 ### 5.5 Assignment
 - For the idle builder the nearest free (not claimed, not blocked) plan is chosen, behind it a **chain** of up to 3 more free plans within 300 Elmo of the previous one (neighbor order), at most 4 orders in total, the first without, the others with Shift (queue).
@@ -113,7 +112,7 @@ Steps: one blueprint or one single building = one step (`batch`).
 
 ## 6. Commands (chat)
 
-`/bp_menu` (menu on/off; auto-build and radius are menu buttons, the chat commands `/bp_auto` and `/bp_radius` were removed), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_create`, `/bp_scan` (re-read the list), `/bp_ghost [gl|wg|auto]`, `/bp_spacing <n|+|->`.
+`/bp_menu` (menu on/off; auto-build and radius are menu buttons, the chat commands `/bp_auto` and `/bp_radius` were removed), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_mode bp|units` (switch between Blueprints and Buildings), `/bp_create`, `/bp_scan` (re-read the list), `/bp_ghost [gl|wg|auto]`, `/bp_spacing <n|+|->`.
 Keys: **Ctrl+Alt+P** (blueprint from selection), `[`/`]` (rotate), **Alt+Z / Alt+X** (spacing when dragging).
 
 ## 7. Files

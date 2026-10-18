@@ -6,6 +6,10 @@ Idle own builders nearby then get the build orders for them on their own.
 Nothing in the game is changed and nothing is cheated: these are normal build orders (`GiveOrderToUnit`),
 cost and build time apply as usual.
 
+| Blueprints | Buildings |
+|---|---|
+| ![BluePrinter, Blueprints view](../docs/blueprinter-blueprints.jpg) | ![BluePrinter, Buildings view](../docs/blueprinter-buildings.jpg) |
+
 ## Installing
 1. BAR must be installed (launcher started once).
 2. Run `install_blueprinter.bat`. It copies `bluePrinter.lua` to `data\LuaUI\Widgets`, the shared code
@@ -33,9 +37,10 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
   and made ready for placing right away.
 - When placing, the widget shows the 3D models of the buildings in addition to the frames (semi-transparent, for large blueprints the 150 closest to the center). With `/bp_ghost` you check the mode (`gl` or `wg`, if the models are missing).
 - A **search field** sits above the blueprint tiles (and in the building catalog): type words of the description or the code, the list filters at once (Enter = done, Esc or X = clear; sorting is off while searching). The lists have a **scrollbar** at the right edge.
-- Rotate: the BAR keys `[` and `]` (build rotation), the button "Rotate" or Alt + mouse wheel.
-- Blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later).
-- Auto-build on/off, radius (builders react to plans within a radius), include commanders yes/no, Back, Clear all.
+- Rotate: the BAR keys `[` and `]` (build rotation), or Alt + mouse wheel (there is no button; the direction is shown in the status line).
+- Blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later). Every open plan also shows a semi-transparent 3D ghost of the building (the 150 closest to the mouse pointer if there are more).
+- **Right click on a plan** with builders selected: exactly these builders build exactly this plan now (Shift = add it behind their current orders). Builders that cannot build it give a message; without a selected builder the click keeps its normal meaning.
+- Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **C** commanders help build yes/no (hover for a tooltip). In the menu: Back, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
 - Only builders that are idle and can build the building take part (e.g. no T2 buildings with a T1 builder).
   If a builder has several plans nearby, it gets up to four in a row. When all plans are taken,
   it helps with one in progress.
@@ -45,7 +50,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 Select bombers, artillery, rocket launchers or nukes, switch the mode on (button "Carpet attack", Ctrl+Alt+K or `/bp_carpet`) and drag a line on the map. Each unit gets a piece of the line: bombers approach it from behind, artillery and rockets fire at it. Right click cancels.
 
 ## Chat commands
-`/bp_menu` menu on/off (auto-build and radius are buttons in the menu), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_scan` (re-read the list), `/bp_create` (blueprint from the selection), `/bp_carpet`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]` (state of the 3D preview).
+`/bp_menu` menu on/off (auto-build and radius are buttons in the menu), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_scan` (re-read the list), `/bp_create` (blueprint from the selection), `/bp_mode bp|units` (switch the view), `/bp_carpet`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]` (state of the 3D preview).
 
 ## Note
 Automatic building may count as automation in some ranked or tournament games. If in doubt, switch `Auto-build` off.
