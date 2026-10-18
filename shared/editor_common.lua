@@ -1,0 +1,2741 @@
+-- Shared code of the Level Editor and the BluePrinter (one file, loaded by both widgets with VFS.Include).
+-- Contains: blueprint library (read, sort, rename, delete files), tile grid with dragging/renaming,
+-- unit catalog with selection grid, settings (gear), 3D preview and small helper functions.
+-- Nothing here knows the respective widget; special cases come as options/callbacks from there.
+local M = {}
+
+---------------------------------------------------------------- Dimensions (ui_scale)
+M.S = 1
+M.m = { TILE = 190, LABEL = 80, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+local BASE = { TILE = 190, LABEL = 80, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+
+-- Recompute all dimensions from the base value (cheap, can be called on every draw/click). The base values are designed for 4K
+-- (height 2160); the factor is ui_scale times screen height / 2160, so the menu grows and shrinks with the
+-- resolution (HD 1080 = half as big). ui_scale stays as a fine control.
+local DESIGN_HEIGHT = 2160
+
+function M.rescale()
+	local s = tonumber(Spring.GetConfigFloat and Spring.GetConfigFloat("ui_scale", 1) or 1) or 1
+	local _, vsy = Spring.GetViewGeometry()
+	if vsy and vsy > 0 then
+		s = s * vsy / DESIGN_HEIGHT
+	end
+	s = math.max(0.3, math.min(3, s))
+	if s == M.S then
+		return s
+	end
+	M.S = s
+	for k, v in pairs(BASE) do
+		M.m[k] = math.floor(v * s + 0.5)
+	end
+	return s
+end
+
+M.FACING_NAME = { [0] = "South", [1] = "East", [2] = "North", [3] = "West" }
+
+---------------------------------------------------------------- Helper functions
+-- Rotate an offset (dx, dz) by k quarter turns: south -> east -> north -> west
+function M.rotateOffset(dx, dz, k)
+	for _ = 1, (k or 0) % 4 do
+		dx, dz = dz, -dx
+	end
+	return dx, dz
+end
+
+function M.headingToFacing(h)
+	return math.floor(((tonumber(h) or 0) + 8192) / 16384) % 4
+end
+
+function M.fileText(path)
+	local f = io.open(path, "r")
+	if not f then
+		return nil
+	end
+	local t = f:read("*a")
+	f:close()
+	return t
+end
+
+-- Reads the text of a blueprint file (returns the unit list or nil, error text)
+function M.parseBlueprint(text)
+	local chunk, err = (loadstring or load)(text)
+	if not chunk then
+		return nil, err
+	end
+	local ok, data = pcall(chunk)
+	if not ok or type(data) ~= "table" or type(data.blueprint) ~= "table" then
+		return nil, "not a valid blueprint file"
+	end
+	return data.blueprint
+end
+
+local function isBuildingDef(ud)
+	return ud and (ud.isBuilding or not ud.canMove)
+end
+M.isBuildingDef = isBuildingDef
+
+---------------------------------------------------------------- Settings in a config file
+-- file: path in the write folder, defaults: { name = value }, limits: { name = { min, max } }
+function M.newConfig(file, header, defaults, limits)
+	local c = { file = file, header = header, v = {}, limits = limits, keys = {} }
+	for k, val in pairs(defaults) do
+		c.v[k] = val
+		c.keys[#c.keys + 1] = k
+	end
+	table.sort(c.keys)
+
+	function c:sync()
+		for k, lim in pairs(self.limits) do
+			self.v[k] = math.max(lim[1], math.min(lim[2], math.floor(tonumber(self.v[k]) or lim[1])))
+		end
+	end
+
+	function c:save()
+		local f = io.open(self.file, "w")
+		if f then
+			local parts = {}
+			for _, k in ipairs(self.keys) do
+				parts[#parts + 1] = string.format("%s = %d", k, self.v[k])
+			end
+			f:write("-- " .. self.header .. "\nreturn { " .. table.concat(parts, ", ") .. " }\n")
+			f:close()
+		end
+	end
+
+	function c:load()
+		local text = M.fileText(self.file)
+		if text then
+			local chunk = (loadstring or load)(text)
+			local ok, data = false, nil
+			if chunk then
+				ok, data = pcall(chunk)
+			end
+			if ok and type(data) == "table" then
+				for _, k in ipairs(self.keys) do
+					if tonumber(data[k]) then
+						self.v[k] = tonumber(data[k])
+					end
+				end
+			end
+		end
+		self:sync()
+	end
+
+	-- steps[key] = { v1, v2, ... }: the value moves along this list instead of by the delta (e.g. grid sizes)
+	c.steps = {}
+
+	function c:change(key, delta)
+		local list = self.steps[key]
+		if list then
+			local at = 1
+			for i, x in ipairs(list) do
+				if x <= self.v[key] then
+					at = i
+				end
+			end
+			self.v[key] = list[math.max(1, math.min(#list, at + (delta > 0 and 1 or -1)))]
+		else
+			self.v[key] = self.v[key] + delta
+		end
+		self:sync()
+		self:save()
+	end
+
+	c:sync()
+	return c
+end
+
+---------------------------------------------------------------- 3D preview (models at the mouse pointer)
+-- o: { owner = "name", say = fn, wg = fn -> WG table, max = 150 }
+function M.newGhost(o)
+	local g = { set = {}, used = {}, broken = false, mode = "auto", told = false, max = o.max or 150 }
+
+	local function wg()
+		return o.wg and o.wg() or nil
+	end
+
+	function g:stop()
+		local W = wg()
+		for key, e in pairs(self.set) do
+			if e.id and W and W.StopDrawUnitShapeGL4 then
+				pcall(W.StopDrawUnitShapeGL4, e.id)
+			end
+			self.set[key] = nil
+		end
+	end
+
+	-- at the end of every frame: remove models that were not drawn any more
+	function g:endFrame()
+		local W = wg()
+		for key, e in pairs(self.set) do
+			if not self.used[key] then
+				if e.id and W and W.StopDrawUnitShapeGL4 then
+					pcall(W.StopDrawUnitShapeGL4, e.id)
+				end
+				self.set[key] = nil
+			end
+		end
+		self.used = {}
+	end
+
+	local function note(text)
+		if not g.told then
+			g.told = true
+			o.say(text)
+		end
+	end
+
+	local function drawGL(defID, teamID, x, y, z, rotRad)
+		gl.PushMatrix()
+		gl.Translate(x, y, z)
+		gl.Rotate(rotRad * 180 / math.pi, 0, 1, 0)
+		gl.Color(1, 1, 1, 0.6)
+		gl.DepthTest(true)
+		gl.UnitShape(defID, teamID, false, false, false)
+		gl.DepthTest(false)
+		gl.PopMatrix()
+		gl.Color(1, 1, 1, 1)
+	end
+
+	-- key = name of the entry; rotRad as in BAR: facing * 90 degrees or heading * pi / 32768
+	function g:draw(key, defID, teamID, x, y, z, rotRad)
+		if self.broken then
+			return
+		end
+		self.used[key] = true
+		local W = wg()
+		local useWG = (self.mode == "wg" or self.mode == "auto") and W and W.DrawUnitShapeGL4
+		if useWG then
+			local cur = self.set[key]
+			local ok, res = pcall(function()
+				local upd = cur and cur.id
+				if cur and cur.def ~= defID and upd and W.StopDrawUnitShapeGL4 then
+					W.StopDrawUnitShapeGL4(upd)
+					upd = nil
+				end
+				return W.DrawUnitShapeGL4(defID, x, y, z, rotRad, 0.6, teamID, nil, nil, upd, o.owner)
+			end)
+			if ok and res then
+				self.set[key] = { id = res, def = defID }
+				return
+			end
+			note("3D preview: widget 'DrawUnitShape GL4' returns nothing, using gl.UnitShape (" .. tostring(res) .. ")")
+			self.mode = "gl"
+			self:stop()
+		elseif self.mode == "auto" then
+			note("3D preview: widget 'DrawUnitShape GL4' not active, using gl.UnitShape")
+		end
+		local ok, err = pcall(drawGL, defID, teamID, x, y, z, rotRad)
+		if not ok then
+			self.broken = true
+			o.say("3D preview disabled: " .. tostring(err))
+		end
+	end
+
+	-- /led_ghost or /bp_ghost: set the mode (gl|wg|auto) and return the state as text
+	function g:command(mode, cmdName)
+		if mode == "gl" or mode == "wg" or mode == "auto" then
+			self.mode, self.broken, self.told = mode, false, false
+			self:stop()
+		end
+		local W = wg()
+		return string.format("3D preview: mode %s, DrawUnitShape widget %s, disabled: %s. /%s gl|wg|auto",
+			self.mode, (W and W.DrawUnitShapeGL4) and "da" or "missing", tostring(self.broken), cmdName)
+	end
+
+	return g
+end
+
+---------------------------------------------------------------- Blueprint library
+-- o: { dirs = { "folder/", ... }, say = fn, buildingsOnly = bool, writeIndex = bool }
+-- lib.list always stays the same table: { name, units, count, thumb, dir }
+function M.newLibrary(o)
+	local lib = { list = {}, dirs = o.dirs, say = o.say, buildingsOnly = o.buildingsOnly, writeIndex = o.writeIndex }
+
+	-- Thumbnail: points in the range 0..1 (x, z), size relative
+	local function makeThumb(units)
+		local minX, maxX, minZ, maxZ
+		for _, u in ipairs(units) do
+			local dx, dz = tonumber(u.dx) or 0, tonumber(u.dz) or 0
+			minX, maxX = math.min(minX or dx, dx), math.max(maxX or dx, dx)
+			minZ, maxZ = math.min(minZ or dz, dz), math.max(maxZ or dz, dz)
+		end
+		if not minX then
+			return {}
+		end
+		local wd, ht = math.max(maxX - minX, 1), math.max(maxZ - minZ, 1)
+		local span = math.max(wd, ht) + 80
+		local pts = {}
+		local stride = math.max(1, math.floor(#units / 150))
+		for i = 1, #units, stride do
+			local u = units[i]
+			local ud = UnitDefNames[u.name]
+			if ud and (not o.buildingsOnly or isBuildingDef(ud)) or (not o.buildingsOnly and not ud) then
+				-- Symbol size: half the footprint (buildings), otherwise radius
+				local r = math.max((ud and ud.xsize and math.max(ud.xsize, ud.zsize or 0) * 4) or (ud and ud.radius) or 16, 10)
+				pts[#pts + 1] = {
+					id = ud and ud.id,
+					x = ((tonumber(u.dx) or 0) - minX + (span - wd) / 2) / span,
+					z = ((tonumber(u.dz) or 0) - minZ + (span - ht) / 2) / span,
+					r = r / span,
+					team = tonumber(u.team) or 0,
+					air = ud and ud.canFly or false,
+				}
+			end
+		end
+		table.sort(pts, function(a, b) return a.r > b.r end) -- large ones first, small ones on top
+		return pts
+	end
+
+	local function readOrderPositions()
+		local pos = {}
+		local text = M.fileText(lib.dirs[1] .. "_order.txt")
+		if text then
+			local i = 0
+			for line in text:gmatch("[^\r\n]+") do
+				local n = line:gsub("%s+", "")
+				if n ~= "" and not pos[n] then
+					i = i + 1
+					pos[n] = i
+				end
+			end
+		end
+		return pos
+	end
+
+	-- Re-read the list: directories + index files, then own order (_order.txt in the first folder), rest alphabetical
+	function lib:scan()
+		local entries, seen = {}, {}
+		for _, dir in ipairs(self.dirs) do
+			local function add(n, viaIndex)
+				if n and n ~= "" and n:sub(1, 1) ~= "_" and not seen[n] then
+					if viaIndex and not M.fileText(dir .. n .. ".lua") then
+						return
+					end
+					seen[n] = true
+					entries[#entries + 1] = { name = n, dir = dir }
+				end
+			end
+			local ok, files = pcall(VFS.DirList, dir, "*.lua", VFS.RAW)
+			if ok and type(files) == "table" then
+				for _, path in ipairs(files) do
+					add(path:match("([^/\\]+)%.lua$"))
+				end
+			end
+			local idx = M.fileText(dir .. "_index.txt")
+			if idx then
+				for line in idx:gmatch("[^\r\n]+") do
+					add((line:gsub("%s+", "")), true)
+				end
+			end
+		end
+		local list = self.list
+		for i = #list, 1, -1 do
+			list[i] = nil
+		end
+		for _, e in ipairs(entries) do
+			local text = M.fileText(e.dir .. e.name .. ".lua")
+			local units = text and M.parseBlueprint(text)
+			if units and #units > 0 then
+				local count = #units
+				if self.buildingsOnly then
+					count = 0
+					for _, u in ipairs(units) do
+						if isBuildingDef(UnitDefNames[u.name]) then
+							count = count + 1
+						end
+					end
+				end
+				if count > 0 then
+					list[#list + 1] = { name = e.name, units = units, count = count, thumb = makeThumb(units), dir = e.dir }
+				end
+			end
+		end
+		local pos = readOrderPositions()
+		table.sort(list, function(a, b)
+			local pa, pb = pos[a.name], pos[b.name]
+			if pa and pb then
+				return pa < pb
+			elseif pa then
+				return true
+			elseif pb then
+				return false
+			end
+			return a.name:lower() < b.name:lower()
+		end)
+		return list
+	end
+
+	function lib:index(name)
+		for i, bp in ipairs(self.list) do
+			if bp.name == name then
+				return i
+			end
+		end
+	end
+
+	function lib:find(name)
+		local i = self:index(name)
+		return i and self.list[i]
+	end
+
+	-- Save the order (and the index file)
+	function lib:saveOrder()
+		local d1 = self.dirs[1]
+		if Spring.CreateDir then
+			pcall(Spring.CreateDir, d1)
+		end
+		local names = {}
+		for _, bp in ipairs(self.list) do
+			names[#names + 1] = bp.name
+		end
+		local f = io.open(d1 .. "_order.txt", "w")
+		if f then
+			f:write(table.concat(names, "\n") .. (#names > 0 and "\n" or ""))
+			f:close()
+		end
+		if self.writeIndex then
+			local fi = io.open(d1 .. "_index.txt", "w")
+			if fi then
+				fi:write(table.concat(names, "\n") .. (#names > 0 and "\n" or ""))
+				fi:close()
+			end
+		end
+	end
+
+	-- Moves <dir><name>.lua to the trash (dir/_trash); true if the file is gone afterwards
+	function lib:trashFile(bp)
+		local src = bp.dir .. bp.name .. ".lua"
+		local text = M.fileText(src)
+		if not text then
+			return true
+		end
+		if Spring.CreateDir then
+			pcall(Spring.CreateDir, bp.dir .. "_trash")
+		end
+		local dst = bp.dir .. "_trash/" .. bp.name .. ".lua"
+		if M.fileText(dst) then
+			dst = bp.dir .. "_trash/" .. bp.name .. "_" .. os.date("%Y%m%d_%H%M%S") .. ".lua"
+		end
+		local fo = io.open(dst, "w")
+		if not fo then
+			self.say("Trash not writable (folder " .. bp.dir .. "_trash missing?). Nothing deleted.")
+			return false
+		end
+		fo:write(text)
+		fo:close()
+		if os.remove then
+			pcall(os.remove, src)
+		end
+		if M.fileText(src) then
+			self.say("File could not be removed: " .. src)
+			return false
+		end
+		return true
+	end
+
+	-- Blueprint to the trash, re-read the list; returns true if it worked
+	function lib:remove(name)
+		local bp = self:find(name)
+		if not bp then
+			return false
+		end
+		if not self:trashFile(bp) then
+			return false
+		end
+		self:scan()
+		self:saveOrder()
+		self.say(string.format("Blueprint '%s' moved to the trash (%s_trash)", name, bp.dir))
+		return true
+	end
+
+	-- Rename; returns true, new name
+	function lib:rename(old, new)
+		new = (tostring(new or ""):gsub("[^%w_%-]", "_"))
+		if new == "" or new == old then
+			return false
+		end
+		local bp = self:find(old)
+		if self:find(new) or (bp and M.fileText(bp.dir .. new .. ".lua")) then
+			self.say("Name already taken: " .. new)
+			return false
+		end
+		if not bp then
+			self.say("Blueprint not found: " .. old)
+			return false
+		end
+		local text = M.fileText(bp.dir .. old .. ".lua")
+		if not text then
+			self.say("Blueprint not found: " .. old)
+			return false
+		end
+		local f = io.open(bp.dir .. new .. ".lua", "w")
+		if not f then
+			self.say("Rename failed (file not writable)")
+			return false
+		end
+		f:write(text)
+		f:close()
+		if not self:trashFile(bp) then
+			return false
+		end
+		bp.name = new -- Keep the order: the new name takes the old place
+		self:saveOrder()
+		self:scan()
+		self.say(string.format("Blueprint '%s' is now called '%s'", old, new))
+		return true, new
+	end
+
+	function lib:move(from, to)
+		if from == to or not self.list[from] or not self.list[to] then
+			return false
+		end
+		local item = table.remove(self.list, from)
+		table.insert(self.list, to, item)
+		self:saveOrder()
+		return true
+	end
+
+	-- Next free name bp_001, bp_002 ... in the first folder
+	function lib:nextName()
+		local n = 1
+		while true do
+			local name = string.format("bp_%03d", n)
+			if not M.fileText(self.dirs[1] .. name .. ".lua") and not self:find(name) then
+				return name
+			end
+			n = n + 1
+		end
+	end
+
+	-- Writes a blueprint file into the first folder. lines: finished lines of the unit table.
+	function lib:write(name, lines, header)
+		local d1 = self.dirs[1]
+		if Spring.CreateDir then
+			pcall(Spring.CreateDir, d1)
+		end
+		local f, err = io.open(d1 .. name .. ".lua", "w")
+		if not f then
+			return false, err
+		end
+		f:write("-- " .. header .. "\n")
+		f:write("return {\n\tblueprint = {\n" .. table.concat(lines, "\n") .. "\n\t},\n}\n")
+		f:close()
+		return true
+	end
+
+	-- Blueprint lines from selected units (positions relative to the center). opts: onlyBuildings, withTeam
+	function lib.linesFromUnits(ids, opts)
+		opts = opts or {}
+		local list, minX, maxX, minZ, maxZ = {}, nil, nil, nil, nil
+		for _, id in ipairs(ids) do
+			local x, y, z = Spring.GetUnitPosition(id)
+			local udef = UnitDefs[Spring.GetUnitDefID(id)]
+			if x and udef and (not opts.onlyBuildings or isBuildingDef(udef)) then
+				list[#list + 1] = { id = id, x = x, y = y, z = z, name = udef.name }
+				minX, maxX = math.min(minX or x, x), math.max(maxX or x, x)
+				minZ, maxZ = math.min(minZ or z, z), math.max(maxZ or z, z)
+			end
+		end
+		if #list == 0 then
+			return nil
+		end
+		local cx, cz = (minX + maxX) / 2, (minZ + maxZ) / 2
+		local lines = {}
+		for _, u in ipairs(list) do
+			lines[#lines + 1] = string.format(
+				"\t\t{ name = '%s', dx = %d, dz = %d, h = %d, rot = %d, team = %d, neutral = %s },",
+				u.name, math.floor(u.x - cx + 0.5), math.floor(u.z - cz + 0.5),
+				math.floor(u.y - Spring.GetGroundHeight(u.x, u.z) + 0.5),
+				Spring.GetUnitHeading(u.id) or 0,
+				opts.withTeam and (Spring.GetUnitTeam(u.id) or 0) or 0,
+				opts.withTeam and tostring(Spring.GetUnitNeutral(u.id)) or "false"
+			)
+		end
+		table.sort(lines)
+		return lines
+	end
+
+	return lib
+end
+
+---------------------------------------------------------------- Drag a row / rectangle (Shift or Shift+Alt)
+-- Positions for a stamp from (x0, z0) to (x1, z1). rect = false: row (straight line), true: filled rectangle.
+-- The spacing between two units is the footprint (depending on the facing) plus spacing * 16 Elmo.
+function M.stampPositions(ud, facing, x0, z0, x1, z1, rect, spacing, maxN)
+	local fx, fz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
+	if (facing or 0) % 2 == 1 then
+		fx, fz = fz, fx
+	end
+	return M.stampPositionsSized(fx, fz, x0, z0, x1, z1, rect, spacing, maxN)
+end
+
+-- Width and depth (Elmo) of a blueprint after k quarter turns: hull of all units including footprint
+function M.blueprintExtent(units, k)
+	local minX, maxX, minZ, maxZ
+	for _, u in ipairs(units) do
+		local dx, dz = M.rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k or 0)
+		local ud = UnitDefNames[u.name]
+		local r = ud and math.max(ud.xsize or 2, ud.zsize or 2) * 4 or 16
+		minX, maxX = math.min(minX or dx - r, dx - r), math.max(maxX or dx + r, dx + r)
+		minZ, maxZ = math.min(minZ or dz - r, dz - r), math.max(maxZ or dz + r, dz + r)
+	end
+	if not minX then
+		return 32, 32
+	end
+	return maxX - minX, maxZ - minZ
+end
+
+-- like stampPositions, but with a given width/depth (fx, fz) instead of one unit (also for whole blueprints)
+function M.stampPositionsSized(fx, fz, x0, z0, x1, z1, rect, spacing, maxN)
+	local gap = (spacing or 0) * 16
+	local sx, sz = fx + gap, fz + gap
+	local dx, dz = x1 - x0, z1 - z0
+	maxN = maxN or 2000
+	local pts = {}
+	if rect then
+		local nx, nz = math.floor(math.abs(dx) / sx) + 1, math.floor(math.abs(dz) / sz) + 1
+		while nx * nz > maxN do
+			if nx >= nz then
+				nx = nx - 1
+			else
+				nz = nz - 1
+			end
+		end
+		local ix, iz = (dx >= 0) and 1 or -1, (dz >= 0) and 1 or -1
+		for j = 0, nz - 1 do
+			for i = 0, nx - 1 do
+				pts[#pts + 1] = { x = x0 + ix * i * sx, z = z0 + iz * j * sz }
+			end
+		end
+	else
+		local len = math.sqrt(dx * dx + dz * dz)
+		local step = (math.abs(dx) >= math.abs(dz)) and sx or sz
+		local n = math.min(maxN, math.floor(len / step) + 1)
+		for i = 0, n - 1 do
+			local t = (len > 0) and (i * step / len) or 0
+			pts[#pts + 1] = { x = x0 + dx * t, z = z0 + dz * t }
+		end
+	end
+	return pts
+end
+
+-- Limit the spacing (in 16 Elmo steps) to 0 to 20
+function M.clampSpacing(v)
+	return math.max(0, math.min(20, v))
+end
+
+---------------------------------------------------------------- Team color
+function M.teamColor(t)
+	local r, g, b = Spring.GetTeamColor(t)
+	return r or 1, g or 1, b or 1
+end
+
+---------------------------------------------------------------- Cost of a blueprint
+-- Sum over all units: metal, energy, build time (build effort) and count; computed once per units table
+local costCache = setmetatable({}, { __mode = "k" })
+function M.blueprintCost(units)
+	local c = costCache[units]
+	if not c then
+		c = { metal = 0, energy = 0, buildTime = 0, count = 0 }
+		for _, u in ipairs(units) do
+			local ud = UnitDefNames[u.name]
+			if ud then
+				c.metal = c.metal + (ud.metalCost or 0)
+				c.energy = c.energy + (ud.energyCost or 0)
+				c.buildTime = c.buildTime + (ud.buildTime or 0)
+				c.count = c.count + 1
+			end
+		end
+		costCache[units] = c
+	end
+	return c
+end
+
+---------------------------------------------------------------- Search text and scrollbar (shared by the three grids)
+-- All words of the query must appear in the text (name/code, description).
+function M.matches(query, text)
+	for word in query:lower():gmatch("%S+") do
+		if not text:find(word, 1, true) then
+			return false
+		end
+	end
+	return true
+end
+
+local unitTextCache, featTextCache = {}, {}
+
+-- code, human name and description of a unit, lower case
+function M.unitSearchText(name)
+	local s = unitTextCache[name]
+	if not s then
+		local ud = UnitDefNames[name]
+		s = name:lower()
+		if ud then
+			s = s .. " " .. tostring(ud.translatedHumanName or ud.humanName or ""):lower() .. " " .. tostring(ud.translatedTooltip or ud.tooltip or ""):lower()
+		end
+		unitTextCache[name] = s
+	end
+	return s
+end
+
+-- code and description of a feature, lower case
+function M.featureSearchText(name, id)
+	local s = featTextCache[name]
+	if not s then
+		local fd = id and FeatureDefs[id]
+		s = name:lower()
+		if fd then
+			s = s .. " " .. tostring(fd.translatedDescription or ""):lower() .. " " .. tostring(fd.description or ""):lower()
+		end
+		featTextCache[name] = s
+	end
+	return s
+end
+
+-- blueprint name plus code, name and description of every unit in it
+function M.blueprintSearchText(bp)
+	if bp._stName ~= bp.name or not bp._st then
+		local seen, parts = {}, { bp.name:lower() }
+		for _, u in ipairs(bp.units or {}) do
+			if not seen[u.name] then
+				seen[u.name] = true
+				parts[#parts + 1] = M.unitSearchText(u.name)
+			end
+		end
+		bp._st, bp._stName = table.concat(parts, " "), bp.name
+	end
+	return bp._st
+end
+
+-- Scrollbar at the right edge of a list area. The grid needs .scroll and :maxScroll(rect).
+local sbDrag = nil
+
+local function sbGeom(grid, rect)
+	local ms = grid:maxScroll(rect)
+	if ms <= 0 then
+		return nil
+	end
+	local W = 24 * M.S
+	local viewH = rect.top - rect.y0
+	local thumbH = math.max(30 * M.S, viewH * viewH / (ms + viewH))
+	local thumbTop = rect.top - (grid.scroll / ms) * (viewH - thumbH)
+	return { x1 = rect.x2 - 2 - W, x2 = rect.x2 - 2, ms = ms, viewH = viewH, thumbH = thumbH, thumbTop = thumbTop }
+end
+
+function M.scrollbarDraw(grid, rect)
+	local g = sbGeom(grid, rect)
+	if not g then
+		return
+	end
+	gl.Color(0, 0, 0, 0.4)
+	gl.Rect(g.x1, rect.y0, g.x2, rect.top)
+	if sbDrag and sbDrag.grid == grid then
+		gl.Color(0.55, 0.75, 1, 0.95)
+	else
+		gl.Color(0.65, 0.7, 0.8, 0.75)
+	end
+	gl.Rect(g.x1 + 1, g.thumbTop - g.thumbH, g.x2 - 1, g.thumbTop)
+	gl.Color(1, 1, 1, 1)
+end
+
+local function sbApply(my)
+	local g = sbGeom(sbDrag.grid, sbDrag.rect)
+	if not g then
+		return
+	end
+	local top = my + sbDrag.grab
+	local span = math.max(1, g.viewH - g.thumbH)
+	sbDrag.grid.scroll = math.max(0, math.min(g.ms, (sbDrag.rect.top - top) / span * g.ms))
+end
+
+-- Mouse press: true if the click hit the scrollbar (the drag then follows with scrollbarMove)
+function M.scrollbarPress(grid, rect, mx, my)
+	local g = sbGeom(grid, rect)
+	if not g or mx < g.x1 - 4 or mx > rect.x2 or my < rect.y0 or my > rect.top then
+		return false
+	end
+	local grab = g.thumbH / 2 -- click on the track: the thumb jumps under the pointer
+	if my <= g.thumbTop and my >= g.thumbTop - g.thumbH then
+		grab = g.thumbTop - my -- click on the thumb: keep the grip
+	end
+	sbDrag = { grid = grid, rect = { x1 = rect.x1, y0 = rect.y0, x2 = rect.x2, top = rect.top }, grab = grab }
+	sbApply(my)
+	return true
+end
+
+function M.scrollbarMove(mx, my)
+	if sbDrag then
+		sbApply(my)
+		return true
+	end
+	return false
+end
+
+function M.scrollbarRelease()
+	local was = sbDrag ~= nil
+	sbDrag = nil
+	return was
+end
+
+---------------------------------------------------------------- Tile grid for blueprints
+-- o: { lib, cfg, say, unitWord = "Units", ownText = fn(on), onSelect = fn(index), onArm = fn(bool) }
+-- rect = { x1, y0, x2, top }: content area that the host passes every time.
+-- The grid grows from top to bottom (first a column with up to bpRows tiles, then the next column
+-- up to bpCols), after that it scrolls. State: selected (chosen blueprint), armed (stamp mode).
+function M.newGrid(o)
+	local g = {
+		lib = o.lib, cfg = o.cfg, unitWord = o.unitWord or "Units",
+		scroll = 0, selected = 0, armed = false,
+		drag = nil, editing = nil, confirmDel = nil, lastClick = { idx = 0 },
+		query = "", focus = false,
+	}
+
+	-- The tiles shown: the whole library, or only the blueprints whose name contains the search text.
+	-- Indices into this list are "view" indices; realIndex() maps one to the index in the library.
+	local view, viewKey = nil, nil
+
+	local function list()
+		if g.query == "" then
+			return g.lib.list
+		end
+		local key = g.query .. "|" .. #g.lib.list .. "|" .. (g.viewStamp or 0)
+		if viewKey ~= key then
+			local out = {}
+			for _, bp in ipairs(g.lib.list) do
+				if M.matches(g.query, M.blueprintSearchText(bp)) then
+					out[#out + 1] = bp
+				end
+			end
+			view, viewKey = out, key
+		end
+		return view
+	end
+
+	local function touch() -- the library changed (rename, delete, move): rebuild the filtered view
+		g.viewStamp = (g.viewStamp or 0) + 1
+	end
+
+	local function realIndex(i)
+		local bp = list()[i]
+		return bp and g.lib:index(bp.name) or i
+	end
+
+	function g:list() -- the tiles shown (filtered by the search)
+		return list()
+	end
+
+	function g:rowsPer() -- tiles per column
+		local n = #list()
+		local maxc, maxr = self.cfg.v.bpCols, self.cfg.v.bpRows
+		if n > maxc * maxr then
+			return math.ceil(n / maxc) -- more than columns*rows: fixed column count, columns get longer, scrolling
+		end
+		return math.max(1, math.min(maxr, n))
+	end
+
+	function g:cols()
+		return math.max(1, math.min(self.cfg.v.bpCols, math.ceil(#list() / self:rowsPer())))
+	end
+
+	function g:cellW()
+		return M.m.TILE + 2 * M.m.PAD
+	end
+
+	function g:tileH()
+		return M.m.TILE + M.m.LABEL + M.m.PAD
+	end
+
+	-- wanted size of the content area (width, height)
+	function g:size()
+		local rows = math.max(1, math.min(self.cfg.v.bpRows, self:rowsPer()))
+		return self:cols() * self:cellW() + 4, rows * self:tileH() + M.m.PAD
+	end
+
+	function g:maxScroll(rect)
+		return math.max(0, self:rowsPer() * self:tileH() + M.m.PAD - (rect.top - rect.y0))
+	end
+
+	function g:clampScroll(rect)
+		self.scroll = math.max(0, math.min(self:maxScroll(rect), self.scroll))
+	end
+
+	-- lower left corner of the preview of tile i
+	function g:geom(rect, i)
+		local rpc = self:rowsPer()
+		local col, row = math.floor((i - 1) / rpc), (i - 1) % rpc
+		-- with a wider area (host with a minimum width) center the grid
+		local gx0 = rect.x1 + 2 + math.max(0, ((rect.x2 - rect.x1 - 4) - self:cols() * self:cellW()) / 2)
+		local tx = gx0 + col * self:cellW() + M.m.PAD
+		local top = rect.top - row * self:tileH() + self.scroll
+		return tx, top - M.m.PAD - M.m.TILE
+	end
+
+	function g:tileAt(rect, mx, my)
+		local gx0 = rect.x1 + 2 + math.max(0, ((rect.x2 - rect.x1 - 4) - self:cols() * self:cellW()) / 2)
+		local col = math.floor((mx - gx0) / self:cellW())
+		local row = math.floor((rect.top - my + self.scroll) / self:tileH())
+		if col < 0 or col >= self:cols() or row < 0 then
+			return nil
+		end
+		local idx = col * self:rowsPer() + row + 1
+		if idx >= 1 and idx <= #list() then
+			return idx
+		end
+	end
+
+	function g:inXButton(rect, mx, my, i)
+		local tx, ty = self:geom(rect, i)
+		local T, X = M.m.TILE, M.m.XSIZE
+		return mx >= tx + T - X and mx <= tx + T and my >= ty + T - X and my <= ty + T
+	end
+
+	function g:inLabel(rect, mx, my, i)
+		local tx, ty = self:geom(rect, i)
+		return mx >= tx and mx <= tx + M.m.TILE and my >= ty - M.m.LABEL and my < ty
+	end
+
+	function g:resetEdit()
+		if self.editing and o.ownText then
+			pcall(o.ownText, false)
+		end
+		self.drag, self.confirmDel, self.editing = nil, nil, nil
+	end
+
+	function g:setArmed(on)
+		if self.armed ~= on then
+			self.armed = on
+			if o.onArm then
+				o.onArm(on)
+			end
+		end
+	end
+
+	function g:select(i)
+		self.selected = i
+	end
+
+	-- Scroll tile i into view
+	function g:scrollTo(rect, i)
+		if self.query ~= "" then
+			local bp = self.lib.list[i]
+			i = nil
+			for vi, b in ipairs(list()) do
+				if b == bp then
+					i = vi
+				end
+			end
+			if not i then
+				return
+			end
+		end
+		local top = ((i - 1) % self:rowsPer()) * self:tileH()
+		if top < self.scroll or top + self:tileH() > self.scroll + (rect.top - rect.y0) then
+			self.scroll = math.max(0, math.min(self:maxScroll(rect), top))
+		end
+	end
+
+	local function drawTile(tx, ty, bp, i, ghost, self)
+		local m, S = M.m, M.S
+		local TILE, LABEL = m.TILE, m.LABEL
+		local a = ghost and 0.6 or 1
+		if bp == self.lib.list[self.selected] then
+			gl.Color(0.25, 0.5, 1, 0.55 * a)
+		else
+			gl.Color(0.15, 0.15, 0.15, 0.9 * a)
+		end
+		gl.Rect(tx - 3, ty - LABEL, tx + TILE + 3, ty + TILE + 3)
+		gl.Color(0.05, 0.08, 0.05, a)
+		gl.Rect(tx, ty, tx + TILE, ty + TILE)
+		for _, p in ipairs(bp.thumb) do
+			local r, gg, b = M.teamColor(p.team)
+			local s = math.max(p.r * TILE, 2)
+			local px, py = tx + p.x * TILE, ty + (1 - p.z) * TILE
+			if p.id then
+				-- Unit picture instead of a dot (miniature view from above)
+				local is = math.max(p.r * TILE, 6 * S)
+				gl.Color(1, 1, 1, a)
+				gl.Texture("#" .. p.id)
+				gl.TexRect(px - is, py - is, px + is, py + is)
+				gl.Texture(false)
+			else
+				if p.air then
+					gl.Color(1, 1, 1, 0.9 * a)
+					gl.Rect(px - s - 1, py - s - 1, px + s + 1, py + s + 1)
+				end
+				gl.Color(r, gg, b, a)
+				gl.Rect(px - s, py - s, px + s, py + s)
+			end
+		end
+		gl.Color(1, 1, 1, 1)
+		local label = bp.name
+		if #label > 13 then
+			label = label:sub(1, 12) .. "~"
+		end
+		local cx = tx + TILE / 2
+		if self.editing and self.editing.idx == i and not ghost then
+			gl.Color(1, 1, 0.3, 1)
+			local t = self.editing.text .. "_"
+			if #t > 12 then
+				t = "~" .. t:sub(-11)
+			end
+			gl.Text(t, cx, ty - 32 * S, 32 * S, "co")
+			gl.Color(1, 1, 1, 1)
+			gl.Text("Enter / Esc", cx, ty - 68 * S, 24 * S, "co")
+		elseif self.confirmDel == bp.name and not ghost then
+			gl.Color(1, 0.4, 0.4, 1)
+			gl.Text("x again", cx, ty - 32 * S, 32 * S, "co")
+			gl.Color(1, 1, 1, 1)
+			gl.Text("(trash)", cx, ty - 68 * S, 24 * S, "co")
+		else
+			gl.Text(label, cx, ty - 32 * S, 32 * S, "co")
+			gl.Text(bp.count .. " " .. self.unitWord, cx, ty - 68 * S, 24 * S, "co")
+		end
+	end
+
+	-- hot: mouse is over the panel (for the x buttons)
+	function g:draw(rect, mx, my, hot)
+		local m, S = M.m, M.S
+		local TILE, XSIZE = m.TILE, m.XSIZE
+		gl.Scissor(rect.x1, rect.y0, rect.x2 - rect.x1, rect.top - rect.y0)
+		local th = self:tileH()
+		local rpc = self:rowsPer()
+		for i, bp in ipairs(list()) do
+			local top = rect.top - ((i - 1) % rpc) * th + self.scroll
+			local bottom = top - th
+			if top > rect.y0 and bottom < rect.top then
+				local tx, ty = self:geom(rect, i)
+				if not (self.drag and self.drag.active and self.drag.idx == i) then
+					drawTile(tx, ty, bp, i, false, self)
+					-- X to delete at the top right of the preview
+					local xhot = hot and self:inXButton(rect, mx, my, i)
+					if self.confirmDel == bp.name then
+						gl.Color(0.9, 0.1, 0.1, 1)
+					elseif xhot then
+						gl.Color(0.8, 0.25, 0.25, 0.95)
+					else
+						gl.Color(0, 0, 0, 0.55)
+					end
+					gl.Rect(tx + TILE - XSIZE, ty + TILE - XSIZE, tx + TILE, ty + TILE)
+					gl.Color(1, 1, 1, xhot and 1 or 0.8)
+					gl.Text("x", tx + TILE - XSIZE / 2, ty + TILE - XSIZE + 10 * S, 36 * S, "co")
+				end
+			end
+		end
+		-- Dragging: insertion mark
+		if self.drag and self.drag.active and self.drag.target then
+			local txx, tyy = self:geom(rect, self.drag.target)
+			local lineY = (self.drag.target > self.drag.idx) and (tyy - m.LABEL - 3) or (tyy + TILE + 4)
+			gl.Color(1, 0.85, 0.2, 1)
+			gl.Rect(txx - 3, lineY - 2, txx + TILE + 3, lineY + 2)
+		end
+		gl.Scissor(false)
+		M.scrollbarDraw(self, rect)
+		-- Ghost tile at the mouse pointer
+		if self.drag and self.drag.active and list()[self.drag.idx] then
+			drawTile(mx - TILE / 2, my - TILE / 2, list()[self.drag.idx], self.drag.idx, true, self)
+		end
+		gl.Color(1, 1, 1, 1)
+		-- Cost of the blueprint below the panel while the mouse is on a tile
+		if hot and not (self.drag and self.drag.active) and not self.editing then
+			local hi = self:tileAt(rect, mx, my)
+			local bp = hi and list()[hi]
+			if bp and bp.units then
+				local size = M.PREVIEW_SIZE * S
+				local _, by = self:geom(rect, hi)
+				local px, py = M.previewPos(rect, by, TILE, size)
+				pcall(M.drawBlueprintPreview, bp, px, py, size)
+				gl.Color(1, 1, 1, 1)
+				local c = M.blueprintCost(bp.units)
+				local cx = (rect.x1 + rect.x2) / 2
+				gl.Text(string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), cx, rect.y0 - 40 * S, 29 * S, "co")
+				gl.Text(string.format("Metal %d   Energy %d", c.metal, c.energy), cx, rect.y0 - 78 * S, 26 * S, "co")
+			end
+		end
+	end
+
+	-- Left click in the panel (content area). Returns true if the click was consumed here.
+	function g:press(rect, mx, my)
+		self:setFocus(false)
+		local idx = self:tileAt(rect, mx, my)
+		if self.editing and (not idx or idx ~= self.editing.idx) then
+			-- Click elsewhere: accept the rename
+			local e = self.editing
+			self:resetEdit()
+			self:commitRename(e.name, e.text)
+			idx = self:tileAt(rect, mx, my)
+		end
+		if idx and not self.editing then
+			local name = list()[idx].name
+			if self:inXButton(rect, mx, my, idx) then
+				if self.confirmDel == name then
+					self.confirmDel = nil
+					self:deleteByName(name)
+				else
+					self.confirmDel = name
+				end
+				return true
+			end
+			self.confirmDel = nil
+			local now = Spring.GetTimer and Spring.DiffTimers(Spring.GetTimer(), self.lastClick.timer or Spring.GetTimer()) or 99
+			if self:inLabel(rect, mx, my, idx) and self.lastClick.idx == idx and self.lastClick.timer and now < 0.5 then
+				-- Double click on the name: rename
+				self.editing = { idx = idx, name = name, text = name }
+				self:setArmed(false) -- the first click of the double click had armed the stamp
+				if o.ownText then
+					pcall(o.ownText, true)
+				end
+				self.drag = nil
+				self.lastClick = { idx = 0 }
+				return true
+			end
+			self.lastClick = { idx = idx, timer = Spring.GetTimer and Spring.GetTimer() or nil }
+			self.selected = realIndex(idx)
+			self.drag = { idx = idx, x = mx, y = my, active = false }
+		end
+		return true
+	end
+
+	function g:commitRename(old, new)
+		local ok, newName = self.lib:rename(old, new)
+		touch()
+		if ok then
+			local i = self.lib:index(newName)
+			if i then
+				self.selected = i
+			end
+			self:setArmed(false) -- after renaming do not leave it hanging on the cursor
+		end
+		return ok
+	end
+
+	function g:deleteByName(name)
+		local removed = self.lib:remove(name)
+		touch()
+		if removed then
+			if self.selected > #self.lib.list then
+				self.selected = #self.lib.list
+			end
+			self:setArmed(false)
+		end
+	end
+
+	function g:move(rect, mx, my)
+		local d = self.drag
+		if not d then
+			return
+		end
+		if not d.active and self.query == "" and (math.abs(mx - d.x) + math.abs(my - d.y)) > 8 then
+			d.active = true
+			self:setArmed(false)
+		end
+		if d.active then
+			local S = M.S
+			-- scroll along at the top/bottom edge
+			if my > rect.top - 30 * S then
+				self.scroll = math.max(0, self.scroll - 12 * S)
+			elseif my < rect.y0 + 30 * S then
+				self.scroll = math.min(self:maxScroll(rect), self.scroll + 12 * S)
+			end
+			local cx = math.max(rect.x1 + 3, math.min(rect.x2 - 3, mx))
+			local cy = math.max(rect.y0 + 1, math.min(rect.top - 1, my))
+			local t = self:tileAt(rect, cx, cy)
+			if not t and my < rect.top and my > rect.y0 then
+				-- empty cell in the last row: to the end
+				local gx0 = rect.x1 + 2 + math.max(0, ((rect.x2 - rect.x1 - 4) - self:cols() * self:cellW()) / 2)
+				local col = math.floor((cx - gx0) / self:cellW())
+				local row = math.floor((rect.top - cy + self.scroll) / self:tileH())
+				if col * self:rowsPer() + row + 1 > #list() then
+					t = #list()
+				end
+			end
+			d.target = t or (my < rect.y0 + 30 * S and #list() or 1)
+		end
+	end
+
+	function g:release()
+		local d = self.drag
+		if not d then
+			return
+		end
+		self.drag = nil
+		if d.active then
+			if d.target and d.target ~= d.idx and self.lib:move(d.idx, d.target) then
+				self.selected = d.target
+				touch()
+				if o.onSelect then
+					o.onSelect(d.target, true)
+				end
+			end
+		else
+			self:setArmed(true)
+			if o.onSelect then
+				o.onSelect(realIndex(d.idx), false)
+			end
+		end
+	end
+
+	-- Text input while renaming (only active while editing is set)
+	function g:textInput(ch)
+		local e = self.editing
+		if e and ch and #ch == 1 and ch:match("[%w_%-]") and #e.text < 40 then
+			e.text = e.text .. ch
+			return true
+		end
+		if not e and self.focus and ch and #ch == 1 and ch:match("[%w_%- ]") and #self.query < 30 then
+			self.query = self.query .. ch
+			self.scroll = 0
+			return true
+		end
+	end
+
+	-- Search field above the tiles (same look as the feature and unit search)
+	function g:filterRowCount()
+		return 1
+	end
+
+	function g:filterRects(x1, x2, top, hb)
+		local pad = M.m.PAD
+		local label = self.query
+		if self.focus then
+			label = label .. "|"
+		elseif label == "" then
+			label = "Search ..."
+		end
+		return {
+			{ x1 = x1 + pad, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label, active = self.focus,
+				tip = "Search: type words of the name, the code or the description of the units in it; the tiles filter at once.\nEnter = done, Esc = clear the search. (Sorting is off while a search is active.)" },
+			{ x1 = x2 - pad - hb, x2 = x2 - pad, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X", tip = "Clear search" },
+		}
+	end
+
+	function g:setFocus(on)
+		on = on and true or false
+		if self.focus ~= on then
+			self.focus = on
+			if o.ownText then
+				pcall(o.ownText, on)
+			end
+		end
+	end
+
+	function g:applyFilter(r)
+		if r.kind == "search" then
+			self:resetEdit()
+			self:setFocus(true)
+			self.scroll = 0
+			return true
+		end
+		if r.kind == "searchclear" then
+			self.query = ""
+			self.scroll = 0
+			return true
+		end
+		return false
+	end
+
+	function g:key(key)
+		if not self.editing then
+			if not self.focus then
+				return false
+			end
+			if key == 13 or key == 271 then
+				self:setFocus(false)
+			elseif key == 27 then
+				self.query = ""
+				self.scroll = 0
+				self:setFocus(false)
+			elseif key == 8 then
+				self.query = self.query:sub(1, -2)
+				self.scroll = 0
+			end
+			return true
+		end
+		if key == 13 or key == 271 then -- Enter
+			local e = self.editing
+			self:resetEdit()
+			self:commitRename(e.name, e.text)
+		elseif key == 27 then -- Esc
+			self:resetEdit()
+		elseif key == 8 then -- Backspace
+			self.editing.text = self.editing.text:sub(1, -2)
+		end
+		return true
+	end
+
+	function g:wheel(rect, up)
+		self.scroll = math.max(0, math.min(self:maxScroll(rect), self.scroll - (up and 1 or -1) * 234 * M.S))
+	end
+
+	return g
+end
+
+---------------------------------------------------------------- Unit catalog and selection grid
+M.FACTIONS = { { "arm", "Armada" }, { "cor", "Cortex" }, { "leg", "Legion" } }
+-- Faction symbols (in the game under sidepics/), left in the faction button
+M.FACTION_ICONS = { arm = "sidepics/armada.png", cor = "sidepics/cortex.png", leg = "sidepics/Legion.png" }
+M.GROUPS = {
+	{ "buildings", "Buildings" }, { "bot", "Bots" }, { "vehicle", "Vehicles" }, { "hover", "Hover" },
+	{ "air", "Air" }, { "ships", "Ships" },
+}
+M.TECHS = { { 1, "T1" }, { 2, "T2" }, { 3, "T3" } }
+
+local function unitGroup(ud)
+	local mc = ud.modCategories or {}
+	if ud.isBuilding or not ud.canMove then
+		return "buildings"
+	elseif mc.ship or mc.underwater then
+		return "ships"
+	elseif ud.canFly then
+		return "air"
+	elseif mc.hover then
+		return "hover"
+	elseif mc.bot then
+		return "bot"
+	end
+	-- The category BOT no longer exists in BAR: sort by movement type (BOT2, ABOT3, TANK3, HOVER3, BOAT4 ...)
+	local mv = ud.moveDef
+	local mcName = string.upper(tostring((type(mv) == "table" and mv.name) or ud.movementClass or ud.movementclass or ""))
+	if mcName:find("BOAT", 1, true) then
+		return "ships"
+	elseif mcName:find("HOVER", 1, true) then
+		return "hover"
+	elseif mcName:find("BOT", 1, true) then
+		return "bot"
+	end
+	return "vehicle"
+end
+M.unitGroup = unitGroup
+
+-- Sort rank within a group (smaller = further front). Water/land and fillers are handled separately.
+-- Buildings: economy, factories, turrets, other. Bots: builders, combat, support, commanders.
+-- Vehicles/hover/ships: builders, rest. Air: builders, scouts, interceptors, attack, transport; seaplanes after that.
+local function unitRank(ud, group, cp)
+	local ug = cp.unitgroup
+	local weapons = (ud.weapons and #ud.weapons) or 0
+	local mc = ud.modCategories or {}
+	if group == "buildings" then
+		if ud.isFactory then
+			return 1
+		elseif ug == "energy" or ug == "metal" or (tonumber(ud.extractsMetal) or 0) > 0 then
+			return 0
+		elseif weapons > 0 and ug ~= "explo" then
+			return 2
+		end
+		return 3
+	end
+	if cp.iscommander ~= nil then
+		return 3
+	end
+	if ud.isBuilder then
+		return 0
+	end
+	if group == "bot" then
+		return (weapons > 0) and 1 or 2
+	elseif group == "air" then
+		if (tonumber(ud.transportCapacity) or 0) > 0 and weapons == 0 then
+			return 4 -- transport aircraft at the very back
+		elseif mc.lightairscout or ug == "util" then
+			return 1
+		elseif ug == "aa" then
+			return 2
+		end
+		return 3
+	end
+	return 1
+end
+
+-- Weapon with the highest damage per projectile (ground weapons before anti-air): returns damage per projectile, projectiles per second and
+-- "anti-air" (true/false) (0, 0, false without a weapon).
+-- Anti-air weapons in BAR carry almost no default damage (e.g. 1), but the actual damage in the
+-- armor class "vtol"; if that is higher than the default damage, it counts and the weapon is anti-air.
+-- Projectiles per second = projectiles per shot * salvo size / reload time (as with the DPS figure).
+local shotCache = {}
+function M.shotInfo(unitDefID)
+	local c = shotCache[unitDefID]
+	if c then
+		return c[1], c[2], c[3]
+	end
+	local bestDmg, bestSps, bestAA = 0, 0, false
+	local ud = UnitDefs[unitDefID]
+	if ud and WeaponDefs then
+		local types = (Game and Game.armorTypes) or {}
+		local defIdx, vtolIdx = types.default or 0, types.vtol or 14
+		for _, w in ipairs(ud.weapons or {}) do
+			local wd = WeaponDefs[w.weaponDef]
+			if wd and wd.damages then
+				local d = tonumber(wd.damages[defIdx]) or 0
+				local v = tonumber(wd.damages[vtolIdx]) or 0
+				local aa = v > d
+				if aa then
+					d = v
+				end
+				local perShot = (tonumber(wd.projectiles) or 1) * (tonumber(wd.salvoSize) or 1)
+				local reload = tonumber(wd.reload) or 0
+				local sps = (reload > 0) and (perShot / reload) or 0
+				-- Weapons against ground targets take priority; pure anti-air only if there are none
+				if (bestDmg == 0) or (bestAA and not aa and d > 0) or (bestAA == aa and d > bestDmg) then
+					bestDmg, bestSps, bestAA = d, sps, aa
+				end
+			end
+		end
+	end
+	bestDmg = math.floor(bestDmg + 0.5)
+	shotCache[unitDefID] = { bestDmg, bestSps, bestAA }
+	return bestDmg, bestSps, bestAA
+end
+
+-- Explosion of a building: damage and radius when destroyed and on self-destruct.
+-- Returns (damage, radius, selfDamage, selfRadius), 0 if there is no explosion.
+local boomCache = {}
+function M.explosionInfo(unitDefID)
+	local c = boomCache[unitDefID]
+	if c then
+		return c[1], c[2], c[3], c[4]
+	end
+	local function one(name)
+		local wd = name and WeaponDefNames and WeaponDefNames[string.lower(name)]
+		if wd and wd.damages then
+			return math.floor((tonumber(wd.damages[0]) or 0) + 0.5), math.floor((tonumber(wd.damageAreaOfEffect) or tonumber(wd.areaOfEffect) or 0) + 0.5)
+		end
+		return 0, 0
+	end
+	local ud = UnitDefs[unitDefID]
+	local d, r, sd, sr = 0, 0, 0, 0
+	if ud then
+		d, r = one(ud.deathExplosion)
+		sd, sr = one(ud.selfDExplosion)
+	end
+	boomCache[unitDefID] = { d, r, sd, sr }
+	return d, r, sd, sr
+end
+
+local function fmtRate(v)
+	if v >= 10 then
+		return string.format("%d", math.floor(v + 0.5))
+	end
+	local t = string.format(v < 1 and "%.2f" or "%.1f", v)
+	t = t:gsub("0+$", ""):gsub("%.$", "") -- drop superfluous zeros
+	return t
+end
+
+-- [faction][group][tech] = { { name, id, filler, rank } ... }, built once from UnitDefs
+function M.buildUnitCache()
+	local cache = {}
+	for _, f in ipairs(M.FACTIONS) do
+		cache[f[1]] = {}
+		for _, g in ipairs(M.GROUPS) do
+			cache[f[1]][g[1]] = { {}, {}, {} }
+		end
+	end
+	for id, ud in pairs(UnitDefs) do
+		local name = ud.name
+		local fac = cache[name:sub(1, 3)]
+		local cp = ud.customParams or {}
+		-- without decoration (arm_leftshoulder_..., cor_hat_..., armpw_wings): names with "_" at the 4th position or "_wings"
+		if fac and not name:find("scav") and not name:find("decom") and not name:find("dummy") and not name:find("drone")
+			and not cp.isdrone and name:sub(4, 4) ~= "_" and not name:find("_wings", 1, true) then
+			local tech = math.max(1, math.min(3, math.floor(tonumber(cp.techlevel) or 1)))
+			local group = unitGroup(ud)
+			local list = fac[group][tech]
+			local filler = group == "buildings" and cp.objectify ~= nil -- dragon teeth, walls ... you hardly need
+			local minW = tonumber(ud.minWaterDepth) or 0
+			local water = (group == "buildings" and (minW > 0 or (ud.floatOnWater and minW >= 0)))
+				or (group == "air" and (tonumber(ud.maxWaterDepth) or 0) > 0) -- water buildings or seaplanes
+			water = water and true or false
+			list[#list + 1] = { name = name, id = id, filler = filler, rank = (filler and 1000 or 0) + (water and 100 or 0) + unitRank(ud, group, cp) }
+		end
+	end
+	for _, fac in pairs(cache) do
+		for _, g in pairs(fac) do
+			for _, list in ipairs(g) do
+				table.sort(list, function(a, b)
+					if a.rank ~= b.rank then
+						return a.rank < b.rank -- land before water, then by kind; fillers (teeth, walls) at the very back
+					end
+					return a.name < b.name
+				end)
+			end
+		end
+	end
+	return cache
+end
+
+-- o: { cfg, groups = { "buildings", ... } (offer only these groups; default all), faction = "arm", canUse = fn(unitDefID) -> bool }
+function M.newUnits(o)
+	local u = {
+		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse,
+		query = "", focus = false, ownText = o.ownText, searchOn = (o.search ~= false),
+	}
+	u.groups = {}
+	for _, g in ipairs(M.GROUPS) do
+		local keep = not o.groups
+		if o.groups then
+			for _, name in ipairs(o.groups) do
+				if name == g[1] then
+					keep = true
+				end
+			end
+		end
+		if keep then
+			u.groups[#u.groups + 1] = g
+		end
+	end
+	u.group = u.groups[1][1]
+
+	-- Search across all factions, groups and tech levels: code, name or words of the description
+	function u:searchList()
+		if self.searchFor == self.query and self.searchResult then
+			return self.searchResult
+		end
+		local q = self.query:lower()
+		local out = {}
+		for _, f in ipairs(M.FACTIONS) do
+			for _, g in ipairs(self.groups) do
+				for t = 1, 3 do
+					for _, e in ipairs(self.cache[f[1]][g[1]][t]) do
+						if M.matches(q, M.unitSearchText(e.name)) then
+							out[#out + 1] = e
+						end
+					end
+				end
+			end
+		end
+		self.searchFor, self.searchResult = self.query, out
+		return out
+	end
+
+	function u:list()
+		if self.override then
+			return self.override -- e.g. favorites view: fixed list
+		end
+		if not self.cache then
+			self.cache = M.buildUnitCache()
+		end
+		if self.query ~= "" then
+			return self:searchList()
+		end
+		return self.cache[self.faction][self.group][self.tech]
+	end
+
+	function u:setFocus(on)
+		on = on and true or false
+		if self.focus ~= on then
+			self.focus = on
+			if self.ownText then
+				self.ownText(on)
+			end
+		end
+	end
+
+	-- Text input for the search field (only active while it has the focus)
+	function u:textInput(ch)
+		if self.focus and ch and #ch == 1 and ch:match("[%w_%- ]") and #self.query < 30 then
+			self.query = self.query .. ch
+			self.scroll = 0
+			return true
+		end
+	end
+
+	function u:key(key)
+		if not self.focus then
+			return false
+		end
+		if key == 13 or key == 271 then -- Enter: leave the field, the search stays
+			self:setFocus(false)
+		elseif key == 27 then -- Esc: clear the search
+			self.query = ""
+			self.scroll = 0
+			self:setFocus(false)
+		elseif key == 8 then -- Backspace
+			self.query = self.query:sub(1, -2)
+			self.scroll = 0
+		end
+		return true
+	end
+
+	-- Number of filter rows in the header (search, faction, group only if several, tech)
+	function u:filterRowCount()
+		return ((#self.groups > 1) and 3 or 2) + (self.searchOn and 1 or 0)
+	end
+
+	-- Buttons for faction/group/tech; top = top edge of the first row, hb = height of the buttons
+	function u:filterRects(x1, x2, top, hb)
+		local rects = {}
+		local pad = M.m.PAD
+		local function row(r, items, kind, active)
+			local n = #items
+			local bw = (x2 - x1 - 2 * pad - (n - 1) * 3) / n
+			local t = top - r * (hb + 3)
+			for i, it in ipairs(items) do
+				local bx = x1 + pad + (i - 1) * (bw + 3)
+				rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = t - hb, y1 = t, kind = kind, value = it[1], label = it[2], active = (it[1] == active),
+					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil }
+			end
+		end
+		local r = 0
+		if self.searchOn then
+			local label = self.query
+			if self.focus then
+				label = label .. "|"
+			elseif label == "" then
+				label = "Search ..."
+			end
+			rects[#rects + 1] = { x1 = x1 + pad, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label,
+				active = self.focus, tip = "Search: type words of the description or the code, the list filters at once.\nEnter = done, Esc = clear the search." }
+			rects[#rects + 1] = { x1 = x2 - pad - hb, x2 = x2 - pad, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X",
+				tip = "Clear search" }
+			r = r + 1
+		end
+		row(r, M.FACTIONS, "faction", self.faction)
+		r = r + 1
+		if #self.groups > 1 then
+			row(r, self.groups, "group", self.group)
+			r = r + 1
+		end
+		row(r, M.TECHS, "tech", self.tech)
+		return rects
+	end
+
+	function u:applyFilter(r)
+		if r.kind == "search" then
+			self:setFocus(true)
+			self.scroll = 0
+			return true
+		end
+		if r.kind == "searchclear" then
+			self.query = ""
+			self.scroll = 0
+			return true
+		end
+		if self.focus then
+			self:setFocus(false)
+		end
+		if r.kind == "faction" then
+			self.faction = r.value
+		elseif r.kind == "group" then
+			self.group = r.value
+		elseif r.kind == "tech" then
+			self.tech = r.value
+		else
+			return false
+		end
+		self.scroll = 0
+		return true
+	end
+
+	function u:colsFor(rect)
+		return math.max(1, math.floor((rect.x2 - rect.x1 - 2 * M.m.UPAD) / M.m.UCELL))
+	end
+
+	-- wanted size of the content area
+	function u:size()
+		return self.cfg.v.uCols * M.m.UCELL + 2 * M.m.UPAD + 4, self.cfg.v.uRows * M.m.UCELL + 2 * M.m.UPAD
+	end
+
+	function u:maxScroll(rect)
+		local rows = math.ceil(#self:list() / self:colsFor(rect))
+		return math.max(0, rows * M.m.UCELL + M.m.UPAD * 2 - (rect.top - rect.y0))
+	end
+
+	-- lower left corner of the symbol of entry i
+	function u:geom(rect, i)
+		local cols = self:colsFor(rect)
+		local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+		local m = M.m
+		return rect.x1 + m.UPAD + col * m.UCELL, rect.top - m.UPAD - (row + 1) * m.UCELL + self.scroll + (m.UCELL - m.UICON)
+	end
+
+	function u:at(rect, mx, my)
+		local m = M.m
+		local cols = self:colsFor(rect)
+		local col = math.floor((mx - rect.x1 - m.UPAD) / m.UCELL)
+		local row = math.floor((rect.top - m.UPAD - my + self.scroll) / m.UCELL)
+		if col < 0 or col >= cols or row < 0 then
+			return nil
+		end
+		local i = row * cols + col + 1
+		if self:list()[i] then
+			return i
+		end
+	end
+
+	function u:wheel(rect, up)
+		self.scroll = math.max(0, math.min(self:maxScroll(rect), self.scroll - (up and 1 or -1) * 234 * M.S))
+	end
+
+	-- selectedName: highlighted unit (stamp mode), hint: text below the info, hot: mouse over the panel
+	function u:draw(rect, mx, my, selectedName, hint, hot)
+		local m, S = M.m, M.S
+		local list = self:list()
+		gl.Scissor(rect.x1, rect.y0, rect.x2 - rect.x1, rect.top - rect.y0)
+		local hoverIdx = hot and self:at(rect, mx, my) or nil
+		for i, e in ipairs(list) do
+			local ix, iy = self:geom(rect, i)
+			if iy + m.UICON > rect.y0 and iy < rect.top then
+				local usable = not self.canUse or self.canUse(e.id)
+				if selectedName and selectedName == e.name then
+					gl.Color(0.25, 0.5, 1, 0.8)
+					gl.Rect(ix - 3, iy - 3, ix + m.UICON + 3, iy + m.UICON + 3)
+				elseif i == hoverIdx then
+					gl.Color(1, 1, 1, 0.35)
+					gl.Rect(ix - 2, iy - 2, ix + m.UICON + 2, iy + m.UICON + 2)
+				end
+				gl.Color(1, 1, 1, usable and 1 or 0.3)
+				gl.Texture("#" .. e.id)
+				gl.TexRect(ix, iy, ix + m.UICON, iy + m.UICON)
+				gl.Texture(false)
+			end
+		end
+		gl.Scissor(false)
+		M.scrollbarDraw(self, rect)
+		gl.Color(1, 1, 1, 1)
+		local cx = (rect.x1 + rect.x2) / 2
+		if #list == 0 then
+			gl.Text("No units in this selection", cx, rect.top - 30 * S, 12 * S, "co")
+		end
+		-- Line 1: name (code), line 2: description, line 3: metal and energy cost
+		local e = hoverIdx and list[hoverIdx]
+		if e then
+			local size = M.PREVIEW_SIZE * S
+			local _, uy = self:geom(rect, hoverIdx)
+			local px, py = M.previewPos(rect, uy, m.UICON, size)
+			pcall(M.drawUnitPreview, e.id, px, py, size)
+			gl.Color(1, 1, 1, 1)
+			local ud = UnitDefs[e.id]
+			local human = ud.translatedHumanName or ud.humanName or e.name
+			local shot, sps, isAA = M.shotInfo(e.id)
+			local title = string.format("%s (%s)", human, e.name)
+			if shot > 0 then
+				-- Seconds per shot and damage per projectile: meaningful even for slowly reloading, strong weapons
+				local secs = (sps > 0) and (1 / sps) or 0
+				title = title .. string.format(" (%s s/shot - %d damage%s)", fmtRate(secs), shot, isAA and " air" or "")
+			end
+			gl.Text(title, cx, rect.y0 - 40 * S, 29 * S, "co")
+			local desc = tostring(ud.translatedTooltip or ud.tooltip or "")
+			local size = 24 * S
+			local perLine = math.max(10, math.floor((rect.x2 - rect.x1) / (size * 0.5)))
+			if #desc > perLine then
+				desc = desc:sub(1, perLine - 1) .. "~"
+			end
+			gl.Text(desc, cx, rect.y0 - 78 * S, size, "co")
+			gl.Text(string.format("Metal %d   Energy %d", ud.metalCost or 0, ud.energyCost or 0), cx, rect.y0 - 116 * S, 26 * S, "co")
+			if isBuildingDef(ud) then
+				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
+				local bd, br, sd, sr = M.explosionInfo(e.id)
+				if bd > 0 or sd > 0 then
+					local t = string.format("Explosion %d damage, radius %d", bd, br)
+					if sd > 0 and (sd ~= bd or sr ~= br) then
+						t = t .. string.format("  |  Self-destruct %d, radius %d", sd, sr)
+					end
+					gl.Text(t, cx, rect.y0 - 152 * S, 22 * S, "co")
+				end
+			end
+		end
+		if hint then
+			gl.Text(hint, cx, rect.y0 - 190 * S, 25 * S, "co")
+		end
+	end
+
+	return u
+end
+
+---------------------------------------------------------------- Features (trees, rocks, wrecks)
+M.FEATURE_KINDS = { { "tree", "Trees" }, { "rock", "Rocks" }, { "wreck", "Wrecks" }, { "other", "Rest" } }
+
+local function featureKind(name, fd)
+	local n = name:lower()
+	if n:find("_dead$") or n:find("_heap$") or n:find("wreck") or n:find("rockteeth") then
+		return "wreck"
+	end
+	if n:find("tree") or n:find("pine") or n:find("palm") or n:find("bush") or n:find("cane") or n:find("aspen")
+		or n:find("birch") or n:find("cactus") or n:find("plant") then
+		return "tree"
+	end
+	if n:find("rock") or n:find("stone") or n:find("boulder") or n:find("crystal") or n:find("cliff") then
+		return "rock"
+	end
+	if fd and fd.burnable then
+		return "tree"
+	end
+	return "other"
+end
+
+-- [kind] = { { name, id } ... }, built once from FeatureDefs
+function M.buildFeatureCache()
+	local cache = { tree = {}, rock = {}, wreck = {}, other = {} }
+	for id, fd in pairs(FeatureDefs) do
+		local name = fd.name
+		if name and name ~= "" then
+			local list = cache[featureKind(name, fd)]
+			list[#list + 1] = { name = name, id = id }
+		end
+	end
+	for _, list in pairs(cache) do
+		table.sort(list, function(a, b) return a.name < b.name end)
+	end
+	return cache
+end
+
+-- ---------------------------------------------------------------- 3D preview (units, features, blueprints)
+-- Draws a model into a square with the engine calls gl.UnitShape / gl.FeatureShape (lower left x1, y1, edge
+-- size). drawFn() draws around the origin at map scale; radius and height determine the scale. Own projection
+-- with a large depth, because the screen projection only covers -1 to 1. thumb = true: output into a texture
+-- (coordinates from 0, 0, no background, fixed rotation).
+local function modelBox(x1, y1, size, radius, height, drawFn, thumb)
+	if not gl.UnitShape or not GL then
+		return
+	end
+	local vsx, vsy = Spring.GetViewGeometry()
+	local W, H = thumb and size or vsx, thumb and size or vsy
+	if not thumb then
+		gl.Color(0, 0, 0, 0.8)
+		gl.Rect(x1, y1, x1 + size, y1 + size)
+		gl.Scissor(x1, y1, size, size)
+	end
+	radius = math.max(radius or 0, (height or 0) * 0.6, 8)
+	local s = size * 0.45 / radius
+	gl.Clear(GL.DEPTH_BUFFER_BIT, 1)
+	gl.DepthTest(true)
+	gl.DepthMask(true)
+	gl.MatrixMode(GL.PROJECTION)
+	gl.PushMatrix()
+	gl.LoadIdentity()
+	-- Texture output is upside down in this engine (texture coordinates of TexRect do not help): render the height reversed
+	gl.Ortho(0, W, thumb and H or 0, thumb and 0 or H, -4000, 4000)
+	gl.MatrixMode(GL.MODELVIEW)
+	gl.PushMatrix()
+	gl.LoadIdentity()
+	gl.Translate(x1 + size / 2, y1 + size / 2, 0)
+	gl.Scale(s, s, s)
+	gl.Rotate(25, 1, 0, 0)
+	gl.Rotate(thumb and 35 or (os.clock() * 40) % 360, 0, 1, 0)
+	gl.Translate(0, -(height or 0) * 0.5, 0)
+	gl.Color(1, 1, 1, 1)
+	-- Alpha of the model texture is a mask: without blending and without writing alpha the model becomes opaque
+	gl.Blending(false)
+	gl.AlphaTest(false)
+	gl.ColorMask(true, true, true, false)
+	pcall(drawFn)
+	gl.Texture(0, false)
+	gl.ColorMask(true, true, true, true)
+	gl.Blending(true)
+	gl.MatrixMode(GL.PROJECTION)
+	gl.PopMatrix()
+	gl.MatrixMode(GL.MODELVIEW)
+	gl.PopMatrix()
+	gl.DepthTest(false)
+	gl.DepthMask(false)
+	if not thumb then
+		gl.Scissor(false)
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
+-- Units need their own lighting and team color (alpha of the texture is the team color mask); without a shader they are dark.
+-- Same idea as in BAR's terraform capture: rawState = true, textures by hand, simple shader with fixed light.
+local MODEL_VERT = [[
+	#version 150 compatibility
+	varying vec3 vNormal;
+	void main() {
+		gl_TexCoord[0] = gl_MultiTexCoord0;
+		vNormal = gl_NormalMatrix * gl_Normal;
+		gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	}
+]]
+local MODEL_FRAG = [[
+	#version 150 compatibility
+	uniform sampler2D tex0;
+	uniform vec3 teamCol;
+	varying vec3 vNormal;
+	void main() {
+		vec4 t = texture2D(tex0, gl_TexCoord[0].st);
+		vec3 albedo = mix(t.rgb, teamCol, t.a);
+		float ndl = clamp(dot(normalize(vNormal), normalize(vec3(0.35, 0.8, 0.6))), 0.0, 1.0);
+		gl_FragColor = vec4(albedo * (0.5 + 0.55 * ndl), 1.0);
+	}
+]]
+local modelShader, uTeamCol
+local function getModelShader()
+	if modelShader == nil then
+		modelShader = false
+		if gl.CreateShader then
+			local sh = gl.CreateShader({ vertex = MODEL_VERT, fragment = MODEL_FRAG, uniformInt = { tex0 = 0 }, uniformFloat = { teamCol = { 1, 1, 1 } } })
+			if sh and sh ~= 0 then
+				modelShader = sh
+				uTeamCol = gl.GetUniformLocation(sh, "teamCol")
+			end
+		end
+	end
+	return modelShader
+end
+
+local function drawUnitModel(defID, team)
+	local sh = getModelShader()
+	if sh then
+		local r, g, b = M.teamColor(team or 0)
+		gl.Culling(GL.BACK)
+		gl.UnitShapeTextures(defID, true)
+		gl.UseShader(sh)
+		gl.Uniform(uTeamCol, r, g, b)
+		gl.UnitShape(defID, team or 0, true, false, true)
+		gl.UseShader(0)
+		gl.UnitShapeTextures(defID, false)
+		gl.Culling(false)
+	else
+		gl.Texture(0, "%" .. defID .. ":0")
+		gl.Texture(1, "%" .. defID .. ":1")
+		gl.UnitShape(defID, team or 0)
+		gl.Texture(1, false)
+		gl.Texture(0, false)
+	end
+end
+
+local function drawFeatureModel(defID)
+	gl.Texture(0, "%-" .. defID .. ":0")
+	gl.FeatureShape(defID, Spring.GetGaiaTeamID())
+	gl.Texture(0, false)
+end
+
+function M.drawFeaturePreview(defID, x1, y1, size, thumb)
+	local fd = FeatureDefs[defID]
+	if fd then
+		modelBox(x1, y1, size, fd.radius, fd.height, function() drawFeatureModel(defID) end, thumb)
+	end
+end
+
+function M.drawUnitPreview(defID, x1, y1, size, team)
+	local ud = UnitDefs[defID]
+	if ud then
+		modelBox(x1, y1, size, ud.radius, ud.height, function() drawUnitModel(defID, team) end)
+	end
+end
+
+-- Blueprint: all units in place, rotated as when placing (h = facing as engine heading, 65536 = full turn)
+function M.drawBlueprintPreview(bp, x1, y1, size)
+	local items, radius, height = {}, 8, 0
+	for _, u in ipairs(bp.units or {}) do
+		local ud = UnitDefNames[u.name]
+		if ud then
+			local def = UnitDefs[ud.id]
+			items[#items + 1] = { id = ud.id, dx = u.dx or 0, dz = u.dz or 0, h = tonumber(u.h) or 0, team = u.team }
+			radius = math.max(radius, math.sqrt((u.dx or 0) ^ 2 + (u.dz or 0) ^ 2) + (def.radius or 0))
+			height = math.max(height, def.height or 0)
+		end
+	end
+	if #items == 0 then
+		return
+	end
+	modelBox(x1, y1, size, radius, height, function()
+		for _, it in ipairs(items) do
+			gl.PushMatrix()
+			gl.Translate(it.dx, 0, it.dz)
+			gl.Rotate(it.h * 360 / 65536, 0, 1, 0)
+			drawUnitModel(it.id, it.team)
+			gl.PopMatrix()
+		end
+	end)
+end
+
+-- Place of the preview next to the panel: left (next to the team strip), otherwise right; at the height of tileY
+function M.previewPos(rect, tileY, tileH, size)
+	local S = M.S
+	local vsx, vsy = Spring.GetViewGeometry()
+	local px = rect.x1 - M.m.HB - 14 * S - size
+	if px < 10 * S then
+		px = math.min(vsx - size - 10 * S, rect.x2 + 14 * S)
+	end
+	local py = math.max(10 * S, math.min(vsy - size - 10 * S, tileY + tileH / 2 - size / 2))
+	return px, py
+end
+M.PREVIEW_SIZE = 400
+
+-- Small pictures of the features for the list: rendered once per feature into a texture, a few per frame
+local THUMB = 96
+local thumbs = {}
+local thumbBudget = 0
+function M.featureThumbFrame()
+	thumbBudget = 3
+end
+
+function M.featureThumb(defID)
+	local t = thumbs[defID]
+	if t ~= nil then
+		return t or nil
+	end
+	if thumbBudget <= 0 or not gl.CreateTexture or not gl.RenderToTexture or not GL then
+		return nil
+	end
+	thumbBudget = thumbBudget - 1
+	local ok, tex = pcall(gl.CreateTexture, THUMB, THUMB, {
+		border = false, min_filter = GL.LINEAR, mag_filter = GL.LINEAR,
+		wrap_s = GL.CLAMP_TO_EDGE, wrap_t = GL.CLAMP_TO_EDGE, fbo = true,
+	})
+	if not ok or not tex then
+		thumbs[defID] = false
+		return nil
+	end
+	local rendered = pcall(gl.RenderToTexture, tex, function()
+		gl.Clear(GL.COLOR_BUFFER_BIT, 0.12, 0.12, 0.12, 1)
+		M.drawFeaturePreview(defID, 0, 0, THUMB, true)
+	end)
+	if not rendered then
+		pcall(gl.DeleteTexture, tex)
+		thumbs[defID] = false
+		return nil
+	end
+	thumbs[defID] = tex
+	return tex
+end
+
+function M.freeThumbs()
+	if modelShader and gl.DeleteShader then
+		gl.DeleteShader(modelShader)
+	end
+	modelShader = nil
+	for _, tex in pairs(thumbs) do
+		if tex and gl.DeleteTexture then
+			pcall(gl.DeleteTexture, tex)
+		end
+	end
+	thumbs = {}
+end
+
+-- Selection grid for features (text only). o: { cfg, ownText = fn(on) }
+function M.newFeatures(o)
+	local f = { cfg = o.cfg, kind = "tree", scroll = 0, query = "", focus = false, ownText = o.ownText, cache = nil }
+
+	function f:list()
+		if not self.cache then
+			self.cache = M.buildFeatureCache()
+		end
+		if self.query ~= "" then
+			if self.searchFor ~= self.query then
+				local q, out = self.query, {}
+				for _, k in ipairs(M.FEATURE_KINDS) do
+					for _, e in ipairs(self.cache[k[1]]) do
+						if M.matches(q, M.featureSearchText(e.name, e.id)) then
+							out[#out + 1] = e
+						end
+					end
+				end
+				self.searchFor, self.searchResult = self.query, out
+			end
+			return self.searchResult
+		end
+		return self.cache[self.kind]
+	end
+
+	function f:filterRowCount()
+		return 2
+	end
+
+	function f:filterRects(x1, x2, top, hb)
+		local pad = M.m.PAD
+		local rects = {}
+		local label = self.query
+		if self.focus then
+			label = label .. "|"
+		elseif label == "" then
+			label = "Search ..."
+		end
+		rects[1] = { x1 = x1 + pad, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label, active = self.focus,
+			tip = "Search: type words of the description or the code, the list filters at once.\nEnter = done, Esc = clear the search." }
+		rects[#rects + 1] = { x1 = x2 - pad - hb, x2 = x2 - pad, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X",
+			tip = "Clear search" }
+		local n = #M.FEATURE_KINDS
+		local bw = (x2 - x1 - 2 * pad - (n - 1) * 3) / n
+		local t = top - (hb + 3)
+		local tips = {
+			tree = "Trees and plants", rock = "Rocks and crystals", wreck = "Wrecks and scrap heaps of destroyed units",
+			other = "Everything else (geysers, eggs ...)",
+		}
+		for i, k in ipairs(M.FEATURE_KINDS) do
+			local bx = x1 + pad + (i - 1) * (bw + 3)
+			rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = t - hb, y1 = t, kind = "fkind", value = k[1], label = k[2], active = (k[1] == self.kind and self.query == ""),
+				tip = tips[k[1]] }
+		end
+		return rects
+	end
+
+	function f:setFocus(on)
+		on = on and true or false
+		if self.focus ~= on then
+			self.focus = on
+			if self.ownText then
+				self.ownText(on)
+			end
+		end
+	end
+
+	function f:applyFilter(r)
+		if r.kind == "search" then
+			self:setFocus(true)
+			self.scroll = 0
+			return true
+		end
+		if r.kind == "searchclear" then
+			self.query = ""
+			self.scroll = 0
+			return true
+		end
+		if r.kind == "fkind" then
+			self:setFocus(false)
+			self.query = ""
+			self.kind = r.value
+			self.scroll = 0
+			return true
+		end
+		return false
+	end
+
+	function f:textInput(ch)
+		if self.focus and ch and #ch == 1 and ch:match("[%w_%- ]") and #self.query < 30 then
+			self.query = self.query .. ch
+			self.scroll = 0
+			return true
+		end
+	end
+
+	function f:key(key)
+		if not self.focus then
+			return false
+		end
+		if key == 13 or key == 271 then
+			self:setFocus(false)
+		elseif key == 27 then
+			self.query = ""
+			self.scroll = 0
+			self:setFocus(false)
+		elseif key == 8 then
+			self.query = self.query:sub(1, -2)
+			self.scroll = 0
+		end
+		return true
+	end
+
+	-- The list shows only pictures: square tiles, one picture per feature
+	local function cellH()
+		return math.floor(M.m.UCELL * 0.4)
+	end
+
+	local function cellStep()
+		return cellH() + 3
+	end
+
+	function f:colsFor(rect)
+		return math.max(1, math.floor((rect.x2 - rect.x1 - 2 * M.m.UPAD) / cellStep()))
+	end
+
+	function f:size()
+		return self.cfg.v.uCols * M.m.UCELL + 2 * M.m.UPAD + 4, self.cfg.v.uRows * M.m.UCELL + 2 * M.m.UPAD
+	end
+
+	function f:maxScroll(rect)
+		local rows = math.ceil(#self:list() / self:colsFor(rect))
+		return math.max(0, rows * (cellH() + 3) + M.m.UPAD * 2 - (rect.top - rect.y0))
+	end
+
+	function f:geom(rect, i)
+		local cols = self:colsFor(rect)
+		local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+		local m = M.m
+		return rect.x1 + m.UPAD + col * cellStep(), rect.top - m.UPAD - (row + 1) * (cellH() + 3) + self.scroll
+	end
+
+	function f:at(rect, mx, my)
+		local m = M.m
+		local cols = self:colsFor(rect)
+		local col = math.floor((mx - rect.x1 - m.UPAD) / cellStep())
+		local row = math.floor((rect.top - m.UPAD - my + self.scroll) / (cellH() + 3))
+		if col < 0 or col >= cols or row < 0 then
+			return nil
+		end
+		local i = row * cols + col + 1
+		if self:list()[i] then
+			return i
+		end
+	end
+
+	function f:wheel(rect, up)
+		self.scroll = math.max(0, math.min(self:maxScroll(rect), self.scroll - (up and 1 or -1) * 234 * M.S))
+	end
+
+	function f:draw(rect, mx, my, selectedName, hot)
+		local m, S = M.m, M.S
+		local list = self:list()
+		-- Pictures first (outside the clip): only a few new ones per frame, the list fills while scrolling
+		M.featureThumbFrame()
+		for i, e in ipairs(list) do
+			local _, iy = self:geom(rect, i)
+			if iy + cellH() > rect.y0 and iy < rect.top then
+				M.featureThumb(e.id)
+			end
+		end
+		gl.Scissor(rect.x1, rect.y0, rect.x2 - rect.x1, rect.top - rect.y0)
+		local hoverIdx = hot and self:at(rect, mx, my) or nil
+		for i, e in ipairs(list) do
+			local ix, iy = self:geom(rect, i)
+			if iy + cellH() > rect.y0 and iy < rect.top then
+				if selectedName and selectedName == e.name then
+					gl.Color(0.25, 0.5, 1, 0.85)
+				elseif i == hoverIdx then
+					gl.Color(0.35, 0.35, 0.35, 0.95)
+				else
+					gl.Color(0.2, 0.2, 0.2, 0.9)
+				end
+				gl.Rect(ix, iy, ix + cellH(), iy + cellH())
+				gl.Color(1, 1, 1, 1)
+				local tex = M.featureThumb(e.id)
+				if tex then
+					local pad = 3 * S
+					gl.Texture(tex)
+					gl.TexRect(ix + pad, iy + pad, ix + cellH() - pad, iy + cellH() - pad)
+					gl.Texture(false)
+				end
+			end
+		end
+		gl.Scissor(false)
+		M.scrollbarDraw(self, rect)
+		gl.Color(1, 1, 1, 1)
+		if #list == 0 then
+			gl.Text("No features in this selection", (rect.x1 + rect.x2) / 2, rect.top - 30 * S, 12 * S, "co")
+		end
+		local e = hoverIdx and list[hoverIdx]
+		if e then
+			local fd = FeatureDefs[e.id]
+			-- Picture left of the team strip, at the height of the tile
+			local size = M.PREVIEW_SIZE * S
+			local _, ty = self:geom(rect, hoverIdx)
+			local px, py = M.previewPos(rect, ty, cellH(), size)
+			pcall(M.drawFeaturePreview, e.id, px, py, size)
+			gl.Color(1, 1, 1, 1)
+			local cx = (rect.x1 + rect.x2) / 2
+			local desc = fd and ((fd.translatedDescription and fd.translatedDescription ~= "" and fd.translatedDescription) or (fd.description and fd.description ~= "" and fd.description) or nil)
+			gl.Text(string.format("%s", e.name), cx, rect.y0 - 40 * S, 29 * S, "co")
+			if fd then
+				gl.Text(string.format("Metal %d   Energy %d", fd.metal or 0, fd.energy or 0), cx, rect.y0 - 78 * S, 26 * S, "co")
+			end
+			if desc then
+				gl.Color(0.8, 0.8, 0.8, 1)
+				gl.Text(desc, cx, rect.y0 - 112 * S, 22 * S, "co")
+				gl.Color(1, 1, 1, 1)
+			end
+		end
+	end
+
+	return f
+end
+
+---------------------------------------------------------------- Recently used (favorites)
+-- Remembers per kind (bp, unit, feature) the names used last and saves them in a file in the write folder
+function M.newRecent(file, maxN)
+	local r = { file = file, maxN = maxN or 24, data = { bp = {}, unit = {}, feature = {} } }
+
+	function r:list(kind)
+		return self.data[kind] or {}
+	end
+
+	function r:save()
+		local f = io.open(self.file, "w")
+		if not f then
+			return
+		end
+		local parts = {}
+		for _, kind in ipairs({ "bp", "unit", "feature" }) do
+			local names = {}
+			for _, n in ipairs(self.data[kind]) do
+				names[#names + 1] = string.format("%q", n)
+			end
+			parts[#parts + 1] = kind .. " = { " .. table.concat(names, ", ") .. " }"
+		end
+		f:write("-- recently used blueprints, units and features (newest first)\nreturn { " .. table.concat(parts, ", ") .. " }\n")
+		f:close()
+	end
+
+	function r:load()
+		local text = M.fileText(self.file)
+		local chunk = text and (loadstring or load)(text)
+		local ok, data = false, nil
+		if chunk then
+			ok, data = pcall(chunk)
+		end
+		if ok and type(data) == "table" then
+			for _, kind in ipairs({ "bp", "unit", "feature" }) do
+				self.data[kind] = {}
+				for _, n in ipairs(type(data[kind]) == "table" and data[kind] or {}) do
+					if type(n) == "string" and #self.data[kind] < self.maxN then
+						self.data[kind][#self.data[kind] + 1] = n
+					end
+				end
+			end
+		end
+	end
+
+	-- Bring a name to the front; saves only if the order changes
+	function r:add(kind, name)
+		local list = self.data[kind]
+		if not list or not name or list[1] == name then
+			return
+		end
+		for i = #list, 1, -1 do
+			if list[i] == name then
+				table.remove(list, i)
+			end
+		end
+		table.insert(list, 1, name)
+		while #list > self.maxN do
+			table.remove(list)
+		end
+		self:save()
+	end
+
+	return r
+end
+
+-- Favorites view: on top the recently chosen blueprints (text lines), below the recently placed units (symbols).
+-- o: { cfg, recent, lib, canUse }
+function M.newFav(o)
+	local v = { recent = o.recent, lib = o.lib, scroll = 0, query = "" }
+	v.units = M.newUnits({ cfg = o.cfg, canUse = o.canUse, search = false })
+
+	local BP_ROWS = 6
+
+	function v:rowH()
+		return M.m.HB * 0.7
+	end
+
+	function v:bpNames()
+		local out = {}
+		for _, n in ipairs(self.recent:list("bp")) do
+			local bp = self.lib:find(n)
+			if bp and (self.query == "" or M.matches(self.query, M.blueprintSearchText(bp))) then
+				out[#out + 1] = n
+			end
+			if #out >= BP_ROWS then
+				break
+			end
+		end
+		return out
+	end
+
+	function v:unitList()
+		local out = {}
+		for _, n in ipairs(self.recent:list("unit")) do
+			local ud = UnitDefNames[n]
+			if ud and (self.query == "" or M.matches(self.query, M.unitSearchText(n))) then
+				out[#out + 1] = { name = n, id = ud.id }
+			end
+		end
+		return out
+	end
+
+	-- Split: blueprints header, rows, units header, rest = units area
+	function v:layout(rect)
+		local S = M.S
+		local head = 34 * S
+		local names = self:bpNames()
+		local rows = {}
+		local y = rect.top - head
+		for i, n in ipairs(names) do
+			rows[i] = { x1 = rect.x1 + M.m.PAD, x2 = rect.x2 - M.m.PAD, y0 = y - self:rowH(), y1 = y, name = n }
+			y = y - self:rowH() - 3
+		end
+		if #names == 0 then
+			y = y - self:rowH()
+		end
+		local uhead = y - 6 * S
+		local urect = { x1 = rect.x1, x2 = rect.x2, y0 = rect.y0, top = uhead - head }
+		return rows, uhead, urect
+	end
+
+	function v:draw(rect, mx, my, hot)
+		local S = M.S
+		local rows, uhead, urect = self:layout(rect)
+		gl.Color(0.5, 0.8, 1, 1)
+		gl.Text("Recently chosen blueprints", rect.x1 + M.m.PAD, rect.top - 26 * S, 24 * S, "o")
+		gl.Color(1, 1, 1, 1)
+		if #rows == 0 then
+			gl.Color(0.7, 0.7, 0.7, 1)
+			gl.Text("none yet", rect.x1 + M.m.PAD, rect.top - 34 * S - self:rowH() + 8 * S, 22 * S, "o")
+		end
+		for _, r in ipairs(rows) do
+			local hover = hot and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1
+			gl.Color(0.2, 0.2, 0.2, hover and 1 or 0.9)
+			gl.Rect(r.x1, r.y0, r.x2, r.y1)
+			gl.Color(1, 1, 1, 1)
+			local bp = self.lib:find(r.name)
+			if hover and bp then
+				local size = M.PREVIEW_SIZE * S
+				local px, py = M.previewPos(rect, r.y0, self:rowH(), size)
+				pcall(M.drawBlueprintPreview, bp, px, py, size)
+				gl.Color(1, 1, 1, 1)
+			end
+			gl.Text(r.name .. (bp and bp.count and ("  (" .. bp.count .. ")") or ""), r.x1 + 8 * S, r.y0 + (self:rowH() - 24 * S) / 2 + 3 * S, 24 * S, "o")
+		end
+		gl.Color(0.5, 0.8, 1, 1)
+		gl.Text("Recently placed units", rect.x1 + M.m.PAD, uhead - 26 * S, 24 * S, "o")
+		gl.Color(1, 1, 1, 1)
+		self.units.override = self:unitList()
+		self.units:draw(urect, mx, my, nil, nil, hot)
+	end
+
+	-- returns "bp", name or "unit", name
+	function v:press(rect, mx, my)
+		local rows, _, urect = self:layout(rect)
+		for _, r in ipairs(rows) do
+			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				return "bp", r.name
+			end
+		end
+		self.units.override = self:unitList()
+		if my <= urect.top and my >= urect.y0 then
+			local i = self.units:at(urect, mx, my)
+			if i then
+				return "unit", self.units.override[i].name
+			end
+		end
+	end
+
+	function v:wheel(rect, up)
+		local _, _, urect = self:layout(rect)
+		self.units.override = self:unitList()
+		self.units:wheel(urect, up)
+	end
+
+	function v:matchCount() -- entries shown (the search applies to both parts)
+		return #self:bpNames() + #self:unitList()
+	end
+
+	function v:size()
+		return self.units:size()
+	end
+
+	return v
+end
+
+---------------------------------------------------------------- Buttons (same look in both widgets)
+-- rects: { x1, x2, y0, y1, label, active }; fontSize in pixels (already scaled), hb = button height
+function M.drawButtons(rects, fontSize, hb)
+	local S = M.S
+	for _, r in ipairs(rects) do
+		if r.tint then
+			gl.Color(r.tint[1], r.tint[2], r.tint[3], 0.9) -- e.g. reddish: a search text is active
+		elseif r.active then
+			gl.Color(0.5, 0.75, 1, 0.9) -- light enough that the blue Armada symbol stays visible
+		else
+			gl.Color(0.2, 0.2, 0.2, 0.9)
+		end
+		gl.Rect(r.x1, r.y0, r.x2, r.y1)
+		local tx1 = r.x1
+		if r.icon then
+			-- Symbol left in the button, the text stays centered in the remaining area
+			local is = hb * 0.72
+			local ix = r.x1 + 6 * S
+			gl.Color(1, 1, 1, r.active and 1 or 0.85)
+			gl.Texture(r.icon)
+			gl.TexRect(ix, r.y0 + (hb - is) / 2, ix + is, r.y0 + (hb - is) / 2 + is)
+			gl.Texture(false)
+			tx1 = ix + is
+		end
+		gl.Color(1, 1, 1, r.active and 1 or 0.8)
+		local fs = r.fs or fontSize
+		-- text too long: shrink the font until it fits into the button
+		local tw = (tonumber(gl.GetTextWidth(r.label)) or 0) * fs
+		local avail = (r.x2 - tx1) - 8 * S
+		if tw > avail and tw > 0 then
+			fs = fs * avail / tw
+		end
+		gl.Text(r.label, (tx1 + r.x2) / 2, r.y0 + (hb - fs) / 2 + 3 * S, fs, "co")
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
+-- Tooltip box: lines = text with \n, (x, y) = mouse pointer; lies below left, stays on the screen
+function M.tooltipBox(text, x, y)
+	local S = M.S
+	local vsx, vsy = Spring.GetViewGeometry()
+	local lines = {}
+	for l in tostring(text):gmatch("[^\n]+") do
+		lines[#lines + 1] = l
+	end
+	local fs = 20 * S
+	local w = 0
+	for _, l in ipairs(lines) do
+		w = math.max(w, gl.GetTextWidth(l) * fs)
+	end
+	w = w + 16 * S
+	local h = #lines * (fs + 4 * S) + 10 * S
+	local x2 = math.min(vsx, math.max(w, x - 12 * S))
+	local x1 = x2 - w
+	local y1 = math.min(vsy, math.max(h, y - 12 * S))
+	gl.Color(0, 0, 0, 0.88)
+	gl.Rect(x1, y1 - h, x2, y1)
+	gl.Color(1, 1, 1, 1)
+	for i, l in ipairs(lines) do
+		gl.Text(l, x1 + 8 * S, y1 - 5 * S - i * (fs + 4 * S) + 4 * S, fs, "o")
+	end
+end
+
+-- Help board over the screen: sections = { { "title", { { "key", "explanation" }, ... } }, ... }.
+-- Two columns, the sections are distributed by line count; long explanations are wrapped.
+function M.drawHelp(title, sections, footer)
+	local S = M.S
+	local vsx, vsy = Spring.GetViewGeometry()
+	local width = vsx * 0.94
+	-- Compute the layout for one font size: column widths, wrapped lines, distribution of the sections over two columns, height
+	local function layout(fs)
+		local lh = fs + 5 * S
+		local pad = 18 * S
+		local colW = (width - 3 * pad) / 2
+		local function wrap(text, maxW)
+			local lines, cur = {}, ""
+			for word in tostring(text):gmatch("%S+") do
+				local try = (cur == "") and word or (cur .. " " .. word)
+				if cur ~= "" and gl.GetTextWidth(try) * fs > maxW then
+					lines[#lines + 1] = cur
+					cur = word
+				else
+					cur = try
+				end
+			end
+			if cur ~= "" then
+				lines[#lines + 1] = cur
+			end
+			return lines
+		end
+		-- Width of the key column: the widest text, but at most 45 percent
+		local keyW = 0
+		for _, sec in ipairs(sections) do
+			for _, row in ipairs(sec[2]) do
+				keyW = math.max(keyW, gl.GetTextWidth(row[1]) * fs)
+			end
+		end
+		keyW = math.min(keyW + 16 * S, colW * 0.45)
+		local textW = colW - keyW - 8 * S
+		local heights, total = {}, 0
+		for i, sec in ipairs(sections) do
+			local h = lh * 1.4
+			for _, row in ipairs(sec[2]) do
+				h = h + math.max(1, #wrap(row[2], textW)) * lh
+			end
+			heights[i] = h + lh * 0.5
+			total = total + heights[i]
+		end
+		local cols, acc, ci = { {}, {} }, 0, 1
+		for i = 1, #sections do
+			if ci == 1 and acc + heights[i] / 2 > total / 2 and #cols[1] > 0 then
+				ci = 2
+			end
+			cols[ci][#cols[ci] + 1] = i
+			acc = acc + heights[i]
+		end
+		local colH = { 0, 0 }
+		for c = 1, 2 do
+			for _, i in ipairs(cols[c]) do
+				colH[c] = colH[c] + heights[i]
+			end
+		end
+		return { fs = fs, lh = lh, pad = pad, colW = colW, keyW = keyW, textW = textW, cols = cols, wrap = wrap,
+			boxH = math.max(colH[1], colH[2]) + 2 * pad + lh * 3.2 }
+	end
+	-- Font as large as possible (larger on big screens), but the board must fit on the screen
+	-- The minimap frame (top left) is drawn by BAR above the widgets: the board stays below it if it would overlap
+	local ceiling = vsy
+	if Spring.GetMiniMapGeometry then
+		local px, py, sx, sy = Spring.GetMiniMapGeometry()
+		if px and py and sx and sy and py + sy > vsy * 0.5 and px < (vsx + width) / 2 then
+			ceiling = math.min(vsy, py - 8 * S)
+		end
+	end
+	local maxH = math.min(vsy * 0.96, ceiling - vsy * 0.02)
+	local fs = math.max(19 * S, vsy * 0.0155)
+	local L = layout(fs)
+	while L.boxH > maxH and fs > 9 * S do
+		fs = fs * 0.93
+		L = layout(fs)
+	end
+	local lh, pad, colW, keyW, textW, cols, wrap, boxH = L.lh, L.pad, L.colW, L.keyW, L.textW, L.cols, L.wrap, L.boxH
+	local x0 = (vsx - width) / 2
+	local top = math.min((vsy + boxH) / 2, ceiling - vsy * 0.01)
+	gl.Color(0, 0, 0, 0.88)
+	gl.Rect(x0, top - boxH, x0 + width, top)
+	gl.Color(0.5, 0.8, 1, 1)
+	gl.Text(title, vsx / 2, top - pad - lh * 1.2, fs * 1.5, "co")
+	for c = 1, 2 do
+		local x = x0 + pad + (c - 1) * (colW + pad)
+		local y = top - pad - lh * 2.6
+		for _, i in ipairs(cols[c]) do
+			local sec = sections[i]
+			gl.Color(1, 0.8, 0.4, 1)
+			gl.Text(sec[1], x, y, fs * 1.15, "o")
+			y = y - lh * 1.4
+			for _, row in ipairs(sec[2]) do
+				gl.Color(0.55, 0.85, 1, 1)
+				gl.Text(row[1], x, y, fs, "o")
+				gl.Color(1, 1, 1, 1)
+				local lines = wrap(row[2], textW)
+				if #lines == 0 then
+					lines[1] = ""
+				end
+				for _, l in ipairs(lines) do
+					gl.Text(l, x + keyW + 8 * S, y, fs, "o")
+					y = y - lh
+				end
+			end
+			y = y - lh * 0.5
+		end
+	end
+	gl.Color(0.7, 0.7, 0.7, 1)
+	gl.Text(footer or "A click anywhere closes the help", vsx / 2, top - boxH + pad * 0.6, fs, "co")
+	gl.Color(1, 1, 1, 1)
+end
+
+-- Draws the tooltip (field tip) of the button under the mouse
+function M.drawTip(rects, mx, my)
+	for _, r in ipairs(rects) do
+		if r.tip and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+			M.tooltipBox(r.tip, mx, my)
+			return true
+		end
+	end
+	return false
+end
+
+---------------------------------------------------------------- Settings (gear): columns and rows
+-- blocks = { { title = "Blueprints", keys = { { "bpCols", "Columns" }, { "bpRows", "Rows" } } }, ... }
+function M.newOptions(cfg, blocks)
+	local op = { cfg = cfg, blocks = blocks }
+
+	function op:height()
+		local m, S = M.m, M.S
+		return #self.blocks * (40 * S) + #self.blocks * 2 * (m.HB + 10 * S) + 2 * m.PAD
+	end
+
+	function op:width()
+		return math.floor(460 * M.S)
+	end
+
+	function op:layout(rect)
+		local m, S = M.m, M.S
+		local rects, labels = {}, {}
+		local y = rect.top - m.PAD
+		local rowH = m.HB + 10 * S
+		for _, block in ipairs(self.blocks) do
+			labels[#labels + 1] = { text = block.title, x = rect.x1 + m.PAD, y = y - 32 * S, size = 27 * S, head = true }
+			y = y - 40 * S
+			for _, k in ipairs(block.keys) do
+				local top = y
+				local px2 = rect.x2 - m.PAD
+				local plus = { x1 = px2 - m.HB, x2 = px2, y0 = top - m.HB, y1 = top, key = k[1], delta = 1, label = "+" }
+				local valW = 90 * S
+				local minus = { x1 = plus.x1 - valW - m.HB, x2 = plus.x1 - valW, y0 = top - m.HB, y1 = top, key = k[1], delta = -1, label = "-" }
+				rects[#rects + 1] = plus
+				rects[#rects + 1] = minus
+				local ty = top - m.HB + (m.HB - 27 * S) / 2 + 3 * S
+				labels[#labels + 1] = { text = k[2], x = rect.x1 + m.PAD * 3, y = ty, size = 27 * S }
+				labels[#labels + 1] = { text = tostring(self.cfg.v[k[1]]), x = (minus.x2 + plus.x1) / 2, y = ty, size = 27 * S, center = true }
+				y = y - rowH
+			end
+		end
+		return rects, labels
+	end
+
+	function op:draw(rect, mx, my)
+		local m, S = M.m, M.S
+		local rects, labels = self:layout(rect)
+		for _, r in ipairs(rects) do
+			local hot = mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1
+			gl.Color(0.2, 0.2, 0.2, hot and 1 or 0.9)
+			gl.Rect(r.x1, r.y0, r.x2, r.y1)
+			gl.Color(1, 1, 1, 1)
+			gl.Text(r.label, (r.x1 + r.x2) / 2, r.y0 + (m.HB - 27 * S) / 2 + 3 * S, 27 * S, "co")
+		end
+		for _, l in ipairs(labels) do
+			if l.head then
+				gl.Color(0.5, 0.8, 1, 1)
+			else
+				gl.Color(1, 1, 1, 1)
+			end
+			gl.Text(l.text, l.x, l.y, l.size, l.center and "co" or "o")
+		end
+		gl.Color(1, 1, 1, 1)
+	end
+
+	-- Click: returns true if a value was changed
+	function op:press(rect, mx, my)
+		for _, r in ipairs((self:layout(rect))) do
+			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				self.cfg:change(r.key, r.delta)
+				return true
+			end
+		end
+		return false
+	end
+
+	return op
+end
+
+-- Maze (key M in the Level Editor). Grid of tiles; cells are path x path tiles big, with one tile of wall
+-- between them. cols x rows cells, corridors by depth-first search (random). Entrance top left (west wall), exit bottom right (east wall).
+-- Returns: list { i, j } of the wall tiles (0-based), width and height in tiles.
+function M.mazeWalls(cols, rows, path, rnd)
+	rnd = rnd or math.random
+	path = math.max(1, path or 4)
+	local pitch = path + 1
+	local w, h = cols * pitch + 1, rows * pitch + 1
+	local open = {} -- open[j * w + i] = true: no wall
+	local function carve(i0, j0, i1, j1)
+		for j = j0, j1 do
+			for i = i0, i1 do
+				open[j * w + i] = true
+			end
+		end
+	end
+	for cy = 0, rows - 1 do
+		for cx = 0, cols - 1 do
+			carve(cx * pitch + 1, cy * pitch + 1, cx * pitch + path, cy * pitch + path)
+		end
+	end
+	local seen = {}
+	local stack = { { 0, 0 } }
+	seen[0] = true
+	while #stack > 0 do
+		local c = stack[#stack]
+		local nbs = {}
+		for _, d in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+			local nx, ny = c[1] + d[1], c[2] + d[2]
+			if nx >= 0 and nx < cols and ny >= 0 and ny < rows and not seen[ny * cols + nx] then
+				nbs[#nbs + 1] = { nx, ny, d[1], d[2] }
+			end
+		end
+		if #nbs == 0 then
+			stack[#stack] = nil
+		else
+			local n = nbs[math.floor(rnd() * #nbs) % #nbs + 1]
+			seen[n[2] * cols + n[1]] = true
+			-- open the wall piece between c and n
+			if n[3] ~= 0 then
+				local wi = (n[3] > 0 and (c[1] + 1) or c[1]) * pitch
+				carve(wi, c[2] * pitch + 1, wi, c[2] * pitch + path)
+			else
+				local wj = (n[4] > 0 and (c[2] + 1) or c[2]) * pitch
+				carve(c[1] * pitch + 1, wj, c[1] * pitch + path, wj)
+			end
+			stack[#stack + 1] = { n[1], n[2] }
+		end
+	end
+	carve(0, 1, 0, path) -- entrance
+	carve(w - 1, (rows - 1) * pitch + 1, w - 1, (rows - 1) * pitch + path) -- exit
+	local out = {}
+	for j = 0, h - 1 do
+		for i = 0, w - 1 do
+			if not open[j * w + i] then
+				out[#out + 1] = { i, j }
+			end
+		end
+	end
+	return out, w, h
+end
+
+return M

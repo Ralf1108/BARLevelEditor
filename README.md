@@ -1,2 +1,69 @@
-# BARLevelEditor
-LevelEditor for BAR
+# BAR Level Editor
+
+> **Note:** This project was created with the help of [Claude Code](https://claude.com/claude-code) (Anthropic's AI coding assistant). The code was written and tested together with it; please report anything that does not work as described.
+
+A level editor for [Beyond All Reason](https://www.beyondallreason.info/). Place units, buildings, trees, rocks and wrecks on any map with the mouse, generate whole armies or mazes in one drag, save the result as a level and turn it into a ready-to-play scenario package.
+
+| Place: units | Place: blueprints |
+|---|---|
+| ![Place menu, Units tab](docs/place-units.jpg) | ![Place menu, Blueprints tab](docs/place-blueprints.jpg) |
+
+| Generate: units | Generate: maze |
+|---|---|
+| ![Generate menu, Units](docs/generate-units.jpg) | ![Generate menu, Maze](docs/generate-maze.jpg) |
+
+The editor runs inside BAR as an extra game ("Level Editor") that builds on the official one. Everything is free and finished instantly, no `/cheat` needed. The official game is not changed.
+
+This repository also contains **BluePrinter**, a small widget for normal games that queues saved building layouts as build plans, and the code both share.
+
+## Features
+
+- **Place** units of all factions (Armada, Cortex, Legion), features (trees, rocks, wrecks) and blueprints. A 3D preview follows the mouse; `[` and `]` rotate.
+- **One search** over recent items, units, features and blueprints (words of the description or the unit code).
+- **Rows and rectangles:** Shift + drag places a row, Shift + Alt + drag a rectangle; Shift + mouse wheel changes the spacing.
+- **Blueprints:** select units, press *Create* and the layout is saved as a tile with a preview. Click a tile to place it again, drag tiles to sort them.
+- **Generate:** random units, buildings, turrets, air or ships in a rectangle or circle (faction, tech level and count are up to you), or a **random maze** of dragon teeth or walls.
+- **Copy and paste:** Ctrl+C / Ctrl+X / Ctrl+V, undo and redo with Ctrl+Z / Ctrl+Y, move with Alt + drag or the arrow keys, rotate and mirror selections.
+- **Delete** in a rectangle with the `D` button (units, wrecks and features), or select enemy units too with Ctrl + click.
+- **Teams:** pick the team (and "neutral") with the buttons next to the menu, with a live unit count per team. Up to 32,000 units.
+- **Save and load** levels with Ctrl+S; the editor also autosaves when you leave.
+- **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install.
+
+## Installation (Windows)
+
+1. Install Beyond All Reason and start the launcher once.
+2. Download or clone this repository. Keep the folders `LevelEditor` and `shared` next to each other.
+3. Run `LevelEditor\install_editor.bat`. It finds your BAR installation, builds the extra game and creates a desktop shortcut **BAR Level Editor**.
+4. Start the shortcut. In the start menu press `1` for a new level (choose a map), `2` to load a level, `0` to continue where you left off or `3` to build a scenario package.
+
+After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay).
+
+**What the setup does (Windows):** `install_editor.bat` starts the PowerShell script `install_editor.ps1` with `-ExecutionPolicy Bypass` (only for this script, your system setting stays untouched). It builds the extra game `LevelEditorMod.sdz` in your BAR `data\games` folder, creates folder junctions in the BAR data folder (`LevelEditor` and `LevelEditorBlueprints`, pointing to the `levels` and `blueprints` folders of this repository), writes `start_level_editor.bat` and puts a shortcut on your desktop. The official game files are not modified. Read the scripts first if you want to be sure; `uninstall_editor.bat` undoes everything. The editor needs the repository folder to stay where it is, because the junctions point to it.
+
+**BluePrinter (optional, for normal games):** run `BluePrinter\install_blueprinter.bat`, then enable *Allow user widgets* in the game settings and switch **BluePrinter** on in the widget list (F11).
+
+## Quick start
+
+| | |
+|---|---|
+| Place a unit | Pick it in **Place → Units**, then left click on the map. Right click ends. |
+| Place many | Hold **Shift** and drag (row) or **Shift + Alt** and drag (rectangle). |
+| Random army | **Generate**, choose faction / type / tech / count and *Area*, press **Generate**, drag on the map. |
+| Maze | **Generate → Maze**, choose the material, press **Generate**, drag on the map. |
+| Delete | **Del** on the selection or under the mouse, or the **D** button and drag a rectangle. |
+| Copy / paste | **Ctrl+C**, then **Ctrl+V** pastes at the mouse. |
+| Save a layout | Select units, **Place → Blueprints → Create**. |
+| Save the level | **Ctrl+S** (settings button **O** lists and loads saved levels). |
+| Help | The **?** button shows all keys and controls on screen. |
+
+## Documentation
+
+- [Level Editor](LevelEditor/README.md) and its [specification](LevelEditor/SPECIFICATION.md)
+- [Scenario builder](LevelEditor/scenario/README.md)
+- [BluePrinter](BluePrinter/README.md)
+- [Shared code](shared/README.md)
+
+## Notes
+
+- Windows only for now (the setup uses PowerShell and junctions).
+- Not an official Beyond All Reason project.
