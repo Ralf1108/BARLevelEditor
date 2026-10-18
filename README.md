@@ -58,6 +58,19 @@ After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor
 | Save the level | **Ctrl+S** (settings button **O** lists and loads saved levels). |
 | Help | The **?** button shows all keys and controls on screen. |
 
+## Scenario creator
+
+A level you built can become a **scenario** that others play with their own, unmodified Beyond All Reason:
+
+1. Build the level (units, buildings, trees, wrecks, a maze ...) and save it with **Ctrl+S**.
+2. Press the **I** button (button column at the right). Fill in the scenario info: title, author, summary, briefing (Shift+Enter = new line), the role of every team (player, allied AI, enemy AI), the allowed tech levels per team, the AI behavior, the win condition, start metal and energy, an optional grace period (no attacks for the first minutes) and an ID. The info is stored in the level with the next Ctrl+S.
+3. Start **BAR Level Editor** again and press **3** in the start menu (*create a scenario package*), then choose the level. The script builds the package without further questions: `LevelEditor\scenario\scenarios\<id>.zip` (and the same as a folder).
+4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR installation (it asks before it downloads a missing map).
+
+![Level Editor, scenario info (button I)](docs/level-editor-scenario.jpg)
+
+Details are in the [scenario builder readme](LevelEditor/scenario/README.md).
+
 ## BluePrinter (for the official game)
 
 Besides the Level Editor there is a second, much smaller widget for the **official** Beyond All Reason: **BluePrinter**. It brings the blueprints to normal games. It cannot place units directly (that is only possible in the Level Editor); it works with **buildings only**:
