@@ -61,7 +61,8 @@ local HELP_SECTIONS = {
 		{ "Radius - number +", "How far builders look for plans (200 to 6000). Click the number to type one." },
 		{ "Commander (C)", "On = the commander helps build, off = only other builders." },
 		{ "Back / Clear all", "Undo the last step / remove all plans." },
-		{ "Numbers in the world", "Order of the plans. Blue open, yellow in progress, red blocked." },
+		{ "Plans in the world", "Frame, 3D ghost and number per plan. Blue open, yellow in progress, red blocked." },
+		{ "Right click on a plan", "With builders selected: they build exactly this plan now. Shift = add it to their queue." },
 		{ "Line Remaining", "Metal, energy and estimated build time of all open plans." },
 	} },
 	{ "Queueing (mouse on the map)", {
@@ -975,6 +976,59 @@ local function halfSize(ud, f)
 	return hx, hz
 end
 
+-- Right click on a plan with builders selected: they build exactly this plan (Shift = behind their queue).
+-- Returns true if the click was used.
+local function assignToPlan(mx, my)
+	local gx, gz = mouseGround()
+	if not gx then
+		return false
+	end
+	local plan, planD
+	for _, s in ipairs(sites) do
+		local ud = not s.done and UnitDefs[s.def]
+		if ud then
+			local hx, hz = halfSize(ud, s.f)
+			if math.abs(gx - s.x) <= hx + 8 and math.abs(gz - s.z) <= hz + 8 then
+				local d = dist2(gx, gz, s.x, s.z)
+				if not planD or d < planD then
+					plan, planD = s, d
+				end
+			end
+		end
+	end
+	if not plan then
+		return false
+	end
+	local builders, anyBuilder = {}, false
+	for _, id in ipairs(Spring.GetSelectedUnits() or {}) do
+		local info = builderInfo(Spring.GetUnitDefID(id))
+		if info then
+			anyBuilder = true
+			if info.can[plan.def] then
+				builders[#builders + 1] = id
+			end
+		end
+	end
+	if #builders == 0 then
+		if anyBuilder then
+			say("The selected builders cannot build " .. plan.name)
+			return true
+		end
+		return false -- no builder selected: the click keeps its normal meaning
+	end
+	if testBuild(UnitDefs[plan.def], plan.x, plan.y, plan.z, plan.f) == 0 then
+		say("The spot of this plan is blocked right now")
+		return true
+	end
+	local _, _, _, shift = Spring.GetModKeyState()
+	for _, id in ipairs(builders) do
+		giveBuild(id, plan, shift)
+	end
+	plan.claim, plan.claimFrame, plan.blocked = builders[1], Spring.GetGameFrame(), nil
+	say(string.format("%d builder%s build %s%s", #builders, #builders == 1 and "" or "s", plan.name, shift and " (queued)" or ""))
+	return true
+end
+
 function widget:IsAbove(mx, my)
 	rescale()
 	return inPanel(mx, my)
@@ -1068,6 +1122,9 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 		bpGrid:press(L.rect, mx, my)
+		return true
+	end
+	if button == 3 and not carpetArmed and not armedUnit and not bpGrid.armed and assignToPlan(mx, my) then
 		return true
 	end
 	if carpetArmed then
@@ -1245,6 +1302,29 @@ local function outline(s, hx, hz, y, r, g, b, a)
 	end)
 end
 
+-- 3D ghosts of the open plans (the ghost.max closest to the mouse pointer when there are more)
+local function drawPlanGhosts()
+	local open = {}
+	for _, s in ipairs(sites) do
+		if not s.done then
+			open[#open + 1] = s
+		end
+	end
+	if #open > ghost.max then
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		local cx, cz = pos and pos[1] or open[1].x, pos and pos[3] or open[1].z
+		table.sort(open, function(a, b)
+			return dist2(cx, cz, a.x, a.z) < dist2(cx, cz, b.x, b.z)
+		end)
+	end
+	local team = Spring.GetMyTeamID()
+	for i = 1, math.min(#open, ghost.max) do
+		local s = open[i]
+		ghost:draw("p" .. tostring(s), s.def, team, s.x, s.y, s.z, s.f * (math.pi / 2))
+	end
+end
+
 local function drawWorldInner()
 	if #sites == 0 and not bpGrid.armed and not armedUnit then
 		return
@@ -1270,6 +1350,7 @@ local function drawWorldInner()
 				end
 			end
 		end
+		drawPlanGhosts()
 		-- single building at the mouse pointer: green/red frame and the 3D model
 		local ud1 = armedUnit and UnitDefNames[armedUnit]
 		if ud1 and stampDrag then
