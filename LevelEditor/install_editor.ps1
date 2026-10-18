@@ -114,6 +114,15 @@ Step 'Folder for saved levels'
 $levels = Join-Path $here 'levels'
 New-Item -ItemType Directory -Force $levels | Out-Null
 $link = Join-Path $data 'LevelEditor'
+function Repoint($path, $target) {
+    # a junction left over from a moved or renamed project folder is removed so it can be created again
+    $item = Get-Item $path -Force -ErrorAction SilentlyContinue
+    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and (@($item.Target)[0] -ne $target)) {
+        cmd /c rmdir "$path" | Out-Null
+        Write-Host "Stale junction removed: $path -> $(@($item.Target)[0])"
+    }
+}
+Repoint $link $levels
 if (-not (Test-Path $link)) {
     cmd /c mklink /J "$link" "$levels" | Out-Null
     Write-Host "Junction: $link -> $levels"
@@ -126,6 +135,7 @@ $bpDir = Join-Path $here 'blueprints'
 New-Item -ItemType Directory -Force $bpDir | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $bpDir '_trash') | Out-Null
 $bpLink = Join-Path $data 'LevelEditorBlueprints'
+Repoint $bpLink $bpDir
 if (-not (Test-Path $bpLink)) {
     cmd /c mklink /J "$bpLink" "$bpDir" | Out-Null
     Write-Host "Junction: $bpLink -> $bpDir"
@@ -148,6 +158,7 @@ if not defined ENGINE (
 	echo No engine found.
 	pause & exit /b 1
 )
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%check_links.ps1" -Data "%DATA%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%choose_map.ps1" -Data "%DATA%"
 if errorlevel 1 exit /b 1
 "%ENGINE%\spring.exe" --write-dir "%DATA%" "%L%editor_script_installed.txt"

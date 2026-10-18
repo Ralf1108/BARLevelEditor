@@ -41,7 +41,16 @@ Write-Host "Shared code copied to $idir"
 
 # Folders for blueprints, via junction in the write folder of the game. User widgets in BAR may only write under LuaUI\Config
 # (and only read under LuaUI), so the junctions live there.
+function Repoint($path, $target) {
+    # a junction left over from a moved or renamed project folder is removed so it can be created again
+    $item = Get-Item $path -Force -ErrorAction SilentlyContinue
+    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and (@($item.Target)[0] -ne $target)) {
+        cmd /c rmdir "$path" | Out-Null
+        Write-Host "Stale junction removed: $path -> $(@($item.Target)[0])"
+    }
+}
 function Link($path, $target) {
+    Repoint $path $target
     if (Test-Path $path) {
         Write-Host "Junction already exists: $path"
     } else {
