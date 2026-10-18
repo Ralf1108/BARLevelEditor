@@ -36,7 +36,7 @@ local menuOpen = true
 local side = "right" -- "left" | "right"
 local autoBuild = true
 local radius = 1000 -- builders react to plans within this radius (Elmo)
-local useCommander = false -- commanders should build too
+local useCommander = true -- commanders should build too
 local rot = 0 -- 0 south, 1 east, 2 north, 3 west
 local optionsOpen = false
 local collapsed = false -- Menu collapsed: only the small button V stays visible
@@ -553,17 +553,17 @@ local function headHeight()
 end
 
 local function filterHeight() -- Faction/tech buttons above the building grid
-	return uGrid:filterRowCount() * (34 * S + 3) + 4 * S
+	return uGrid:filterRowCount() * (Shared.m.HB + 3) + 4 * S
 end
 
 local function bpFilterHeight() -- search row above the blueprint tiles
-	return bpGrid:filterRowCount() * (34 * S + 3) + 4 * S
+	return bpGrid:filterRowCount() * (Shared.m.HB + 3) + 4 * S
 end
 
 local function panelRect()
 	local vsx, vsy = Spring.GetViewGeometry()
 	if collapsed then
-		local w = 34 * S + 16 * S
+		local w = 46 * S + 16 * S
 		local cx1 = (side == "right") and (vsx - w) or 0
 		return cx1, vsy * 0.90 - w, cx1 + w, vsy * 0.90
 	end
@@ -616,16 +616,16 @@ local TIPS = {
 local function layout()
 	local x1, y0, x2, y1 = panelRect()
 	local pad = 8 * S
-	local rh = 34 * S
+	local rh = 46 * S -- button height
 	local btns = {}
-	local y = y1 - pad - 38 * S -- below the title
+	local y = y1 - pad - 52 * S -- below the title
 	-- far top right: V (collapse/expand the menu), O (settings) to its left
-	btns[#btns + 1] = { id = "collapse", label = "V", x1 = x2 - pad - 34 * S, x2 = x2 - pad, y0 = y1 - pad - 34 * S, y1 = y1 - pad, on = collapsed }
+	btns[#btns + 1] = { id = "collapse", label = "V", x1 = x2 - pad - 46 * S, x2 = x2 - pad, y0 = y1 - pad - 46 * S, y1 = y1 - pad, on = collapsed }
 	if collapsed then
 		return { btns = btns, info = y, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	end
-	btns[#btns + 1] = { id = "gear", label = "O", x1 = x2 - pad - 72 * S, x2 = x2 - pad - 38 * S, y0 = y1 - pad - 34 * S, y1 = y1 - pad, on = optionsOpen }
-	btns[#btns + 1] = { id = "help", label = "?", x1 = x2 - pad - 110 * S, x2 = x2 - pad - 76 * S, y0 = y1 - pad - 34 * S, y1 = y1 - pad, on = helpOpen }
+	btns[#btns + 1] = { id = "gear", label = "O", x1 = x2 - pad - 98 * S, x2 = x2 - pad - 52 * S, y0 = y1 - pad - 46 * S, y1 = y1 - pad, on = optionsOpen }
+	btns[#btns + 1] = { id = "help", label = "?", x1 = x2 - pad - 150 * S, x2 = x2 - pad - 104 * S, y0 = y1 - pad - 46 * S, y1 = y1 - pad, on = helpOpen }
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
 		local top = y
@@ -645,17 +645,17 @@ local function layout()
 	row2({ "carpet", "Carpet attack: " .. (carpetArmed and "ON" or "OFF"), carpetArmed })
 	row2({ "create", "New blueprint from selection" })
 	local info = y
-	y = y - 58 * S
+	y = y - 84 * S
 	local L = { btns = btns, info = info, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	for _, b in ipairs(btns) do
 		b.tip = TIPS[b.id]
 	end
 	if menuMode == "units" and not optionsOpen then
-		L.filters = uGrid:filterRects(x1, x2, y - 4 * S, 34 * S)
+		L.filters = uGrid:filterRects(x1, x2, y - 4 * S, Shared.m.HB)
 		L.urect = { x1 = x1, y0 = y0, x2 = x2, top = y - filterHeight() }
 	end
 	if menuMode == "bp" and not optionsOpen then
-		L.filters = bpGrid:filterRects(x1, x2, y - 4 * S, 34 * S)
+		L.filters = bpGrid:filterRects(x1, x2, y - 4 * S, Shared.m.HB)
 		L.rect = { x1 = x1, y0 = y0, x2 = x2, top = y - bpFilterHeight() }
 	end
 	return L
@@ -1371,7 +1371,7 @@ local function drawScreenBody()
 	gl.Rect(x1, y0, x2, y1)
 	gl.Color(1, 1, 1, 1)
 	if not collapsed then
-		gl.Text("BluePrinter", x1 + 8 * S, y1 - 24 * S, 20 * S, "o")
+		gl.Text("BluePrinter", x1 + 8 * S, y1 - 36 * S, 28 * S, "o")
 	end
 	for _, b in ipairs(L.btns) do
 		local hot = mx >= b.x1 and mx <= b.x2 and my >= b.y0 and my <= b.y1
@@ -1382,7 +1382,7 @@ local function drawScreenBody()
 		end
 		gl.Rect(b.x1, b.y0, b.x2, b.y1)
 		gl.Color(1, 1, 1, 1)
-		gl.Text(b.label, (b.x1 + b.x2) / 2, b.y0 + 9 * S, 15 * S, "co")
+		gl.Text(b.label, (b.x1 + b.x2) / 2, b.y0 + 11 * S, 24 * S, "co")
 	end
 	if collapsed then
 		gl.Color(1, 1, 1, 1)
@@ -1398,17 +1398,17 @@ local function drawScreenBody()
 		end
 	end
 	gl.Color(1, 1, 1, 1)
-	gl.Text(string.format("Open %d, in progress %d, done %d", open, claimed, doneCount), x1 + 8 * S, L.info - 14 * S, 14 * S, "o")
+	gl.Text(string.format("Open %d, in progress %d, done %d", open, claimed, doneCount), x1 + 8 * S, L.info - 22 * S, 20 * S, "o")
 	if open > 0 then
 		local q = queueStats
 		local t = (q.speed > 0) and ("ca. " .. fmtTime(q.buildTime / q.speed)) or "no builders"
-		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - 50 * S, 12 * S, "o")
+		gl.Text(string.format("Remaining: metal %d, energy %d, build time %s", q.metal, q.energy, t), x1 + 8 * S, L.info - 74 * S, 18 * S, "o")
 	end
-	gl.Text(string.format("Radius %d  |  %s", radius, (bpGrid.armed or armedUnit) and "Left click = queue" or (menuMode == "units" and "Choose a building" or "Choose a blueprint")), x1 + 8 * S, L.info - 32 * S, 12 * S, "o")
+	gl.Text(string.format("Radius %d  |  %s", radius, (bpGrid.armed or armedUnit) and "Left click = queue" or (menuMode == "units" and "Choose a building" or "Choose a blueprint")), x1 + 8 * S, L.info - 48 * S, 18 * S, "o")
 	if optionsOpen then
 		optionsUI:draw(L.rect, mx, my)
 	elseif menuMode == "units" then
-		Shared.drawButtons(L.filters, 18 * S, 34 * S)
+		Shared.drawButtons(L.filters, 22 * S, Shared.m.HB)
 		uGrid:draw(L.urect, mx, my, armedUnit, nil, inPanel(mx, my))
 		-- Hint above the menu
 		gl.Color(1, 1, 1, 1)
@@ -1418,7 +1418,7 @@ local function drawScreenBody()
 			gl.Text("Shift = row, Shift+Alt = rectangle, Shift+Mouse wheel = spacing (" .. spacing .. ")", (x1 + x2) / 2, y1 + 8 * S + 30 * S, 20 * S, "co")
 		end
 	else
-		Shared.drawButtons(L.filters, 18 * S, 34 * S)
+		Shared.drawButtons(L.filters, 22 * S, Shared.m.HB)
 		bpGrid:draw(L.rect, mx, my, inPanel(mx, my))
 		if bpGrid.armed then
 			gl.Color(1, 1, 1, 1)
