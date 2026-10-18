@@ -127,7 +127,7 @@ local bpGrid = Shared.newGrid({
 local function canBuildNow(id)
 	return buildable == nil or buildable[id] == true
 end
-local uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, canUse = canBuildNow, searchLabel = "Search Units",
+local uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, canUse = canBuildNow, searchLabel = "Search Buildings",
 	ownText = function(on)
 		if on then
 			widgetHandler:OwnText()
