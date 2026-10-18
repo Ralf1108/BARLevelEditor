@@ -25,6 +25,7 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 - **Generate:** random units, buildings, turrets, air or ships in a rectangle or circle (faction, tech level and count are up to you), or a **random maze** of dragon teeth or walls.
 - **Copy and paste:** Ctrl+C / Ctrl+X / Ctrl+V, undo and redo with Ctrl+Z / Ctrl+Y, move with Alt + drag or the arrow keys, rotate and mirror selections.
 - **Delete** along a line, in a rectangle or in a circle with the buttons `DL`, `DR` and `DC` (units, wrecks and features), or select enemy units too with Ctrl + click.
+- **Area attacks (experimental):** the buttons `XL`, `XR` and `XC` send selected bombers, artillery, rocket launchers and nukes against a line, a rectangle or a circle; the bombers form up and attack together, front targets first. Good for trying out and for videos.
 - **Teams:** pick the team (and "neutral") with the buttons next to the menu, with a live unit count per team. Up to 32,000 units.
 - **Save and load** levels with Ctrl+S; the editor also autosaves when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install.

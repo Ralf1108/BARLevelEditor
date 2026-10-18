@@ -1,7 +1,8 @@
 # BluePrinter
 
 Widget for the official Beyond All Reason. Building blueprints are queued on the map as build plans.
-Idle own builders nearby then get the build orders for them on their own.
+Idle own builders nearby then get the build orders for them on their own. The widget cannot place units directly
+(that is only possible in the Level Editor); it works with buildings only.
 
 Nothing in the game is changed and nothing is cheated: these are normal build orders (`GiveOrderToUnit`),
 cost and build time apply as usual.
@@ -18,6 +19,9 @@ cost and build time apply as usual.
 3. In the game switch on "Allow user widgets" in the settings, then switch BluePrinter on in the widget list (F11).
 After a change to `bluePrinter.lua` run the installation again.
 
+## Trying it out
+`start_blueprinter.bat` installs the widget again and starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change. Start it from a command line with a map name to choose the map: `start_blueprinter.bat "Map Name"`.
+
 ## Blueprints
 Files `<name>.lua` are read from `data\LuaUI\Config\BluePrinter` (that is from `BluePrinter\blueprints`) and from
 `data\LuaUI\Config\LevelEditorBlueprints` (the blueprints of the Level Editor, if the folder `LevelEditor` lies next to `BluePrinter`). Only buildings are used,
@@ -26,10 +30,10 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 ## Usage
 - Menu on the right (with `/bp_side left` to the left): click a blueprint in the list, then left click on the map = queue it
   (several times possible), right click ends. Green = free, red = blocked.
-- The list shows thumbnails (buildings as unit pictures from above). With the large x at the top right of the tile
+- The list shows thumbnails (buildings as unit pictures from above) with the name, the number of buildings and the total cost of the whole blueprint (`M` metal, `E` energy). With the large x at the top right of the tile
   (click twice) a blueprint goes to the trash (`_trash`).
 - The tiles stand in a grid that grows from top to bottom: first a column with up to 4 tiles, then the next column (up to 3 columns), after that the mouse wheel scrolls (three times as fast).
-- The small button **O** at the top right opens the settings: columns and rows of the grid (default 3 and 4) with - and +. They are stored in `LuaUI\Config\BluePrinterUI.lua` in the game folder.
+- The button **O** (in the column next to the menu) opens the settings: columns and rows of the grid (default 3 and 4) with - and +. They are stored in `LuaUI\Config\BluePrinterUI.lua` in the game folder.
 - Drag a tile with the mouse button held down = sort (a yellow mark shows the place, the order is remembered).
   Double click on the name = rename (type, Enter accepts, Esc cancels).
 - Ctrl+Alt+P (or `/bp_create`) = same as the button **Create Blueprint** at the top right of the title row.
@@ -37,7 +41,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
   and made ready for placing right away.
 - When placing, the widget shows the 3D models of the buildings in addition to the frames (semi-transparent, for large blueprints the 150 closest to the center). With `/bp_ghost` you check the mode (`gl` or `wg`, if the models are missing).
 - A **search field** sits above the blueprint tiles (and in the building catalog): type words of the description or the code, the list filters at once (Enter = done, Esc or X = clear; sorting is off while searching). The lists have a **scrollbar** at the right edge.
-- Rotate: the BAR keys `[` and `]` (build rotation), or Alt + mouse wheel (there is no button; the direction is shown in the status line).
+- Rotate: the BAR keys `[` and `]` (build rotation), or Alt + mouse wheel (there is no button; the direction is visible in the 3D preview at the mouse pointer).
 - Blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later). Every open plan also shows a semi-transparent 3D ghost of the building (the 150 closest to the mouse pointer if there are more).
 - **Right click on a plan** with builders selected: exactly these builders build exactly this plan now (Shift = add it behind their current orders). Builders that cannot build it give a message; without a selected builder the click keeps its normal meaning.
 - Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **C** commanders help build yes/no (hover for a tooltip). In the menu: Undo, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
@@ -50,16 +54,16 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 Has nothing to do with the build plans; it only sits in the same menu. Select bombers, artillery, rocket launchers or nukes and press one of the buttons next to the menu: **XL** (a line), **XR** (a rectangle) or **XC** (a circle; drag from the center outwards). Then drag the shape on the map. Each unit gets its own target inside the shape: the bombers first form up side by side (for the line: beside it, facing it) and, once all are in position, attack at the same moment as a front; artillery and rockets fire at their target. Right click cancels. Also Ctrl+Alt+K (= XL) or `/bp_carpet [line|rect|circle]`.
 
 ## Chat commands
-`/bp_menu` menu on/off (auto-build and radius are buttons in the menu), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_scan` (re-read the list), `/bp_create` (blueprint from the selection), `/bp_mode bp|units` (switch the view), `/bp_carpet`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]` (state of the 3D preview).
+`/bp_menu` menu on/off (auto-build and radius are buttons in the menu), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_scan` (re-read the list), `/bp_create` (blueprint from the selection), `/bp_mode bp|units` (switch the view), `/bp_carpet [line|rect|circle]`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]` (state of the 3D preview).
 
 ## Note
-Automatic building may count as automation in some ranked or tournament games. If in doubt, switch `Auto-build` off.
+Automatic building may count as automation in some ranked or tournament games. If in doubt, switch auto-build off (button **A**).
 
 ## Queueing single buildings
 At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders) and the tech tier,
 click a building, then every left click on the map queues one (right click ends, `[` and `]` rotate). Buildings that
 your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
-You set the display (columns/rows) with the **O** button.
+You set the display (columns/rows) with the **O** button. Below the menu the info lines of the building under the mouse pointer are shown (name and code, seconds per shot and damage, description, metal and energy, explosion), the same as in the Level Editor.
 
 ## Shared code
 The blueprint view (grid, dragging, renaming, trash, settings, 3D preview) comes from `shared/editor_common.lua`

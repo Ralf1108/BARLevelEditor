@@ -1,6 +1,6 @@
 # Specification: Shared code (`editor_common.lua`)
 
-Status: 2026-10-18 (with the search helpers, the scrollbar, the filtered blueprint grid, the maze generator and the English interface).
+Status: 2026-10-19 (with the area attack module, the cost line on the blueprint tiles, the search helpers, the scrollbar, the filtered blueprint grid, the maze generator and the English interface).
 
 Status of the specification: everything that has been defined so far for the Level Editor and the BluePrinter and is implemented in `editor_common.lua`.
 Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECIFICATION.md`.
@@ -118,7 +118,7 @@ On every call the host passes the rectangle `rect = { x1, y0, x2, top }` of the 
 
 ## 9. Unit catalog and selection grid (`M.newUnits`)
 
-Options: `cfg`, `groups` (offer only these groups; default all), `faction`, `canUse(unitDefID)` (unusable units are dimmed but remain selectable).
+Options: `cfg`, `groups` (offer only these groups; default all), `faction`, `canUse(unitDefID)` (unusable units are dimmed but remain selectable), `searchLabel` (text of the empty search field, default "Search ..."; the BluePrinter uses "Search Buildings", the blueprint grid "Search Blueprints").
 
 ### 9.1 Selection
 - Factions: Armada (`arm`), Cortex (`cor`), Legion (`leg`) – by the name prefix.
@@ -180,6 +180,7 @@ Sort key `rank = (filler 1000) + (water 100) + kind`, then alphabetically by nam
 - `M.tooltipBox(text, x, y)` and `M.drawTip(rects, mx, my)`: tooltip for buttons with the field `tip`. `M.drawButtons` respects a field `fs` (own font size per button), `icon` (symbol left in the button) and `tint = { r, g, b }` (fixed color instead of the active/inactive colors, e.g. reddish for a search field with text).
 - `M.drawHelp(title, sections, footer)`: help board over the screen; `sections = { { "Title", { { "Key", "Explanation" }, ... } }, ... }`. Two columns (sections distributed by line count), key column at most 45 % of the column width, long explanations are wrapped, font `max(19·S, screen height · 0.0155)`. If the board would be too tall for the screen the font is shrunk step by step until it fits; if the minimap frame (top left, drawn by BAR above the widgets) would overlap, the board stays below it. The host calls it last in `DrawScreen` (above the menu) and closes it with every click.
 - `M.drawButtons` shrinks the font of a button if the text does not fit.
+- `M.shortNumber(n)`: 950, 12.4k, 250k (labels with little space, e.g. the cost on the blueprint tiles).
 - `M.blueprintCost(units)`: sum of metal, energy, build effort and count of all units of a blueprint (computed once per table). When hovering over a tile the tile grid shows name, count and cost below the panel (29·S / 26·S, distances 40/78·S below the panel).
 
 ### 9.7 Search helpers and scrollbar

@@ -3156,7 +3156,7 @@ local HELP_TOPICS = {
 		lines = {
 			"SCENARIO: the I button (button column at the far right) opens the scenario info: title, author, summary, briefing (Shift+Enter = new line), role of each team (player, ally, enemy), tech per team, AI behavior, win condition, start metal and energy, grace period (m:ss) and ID.",
 			"TECH: per team, switch T1, T2 and T3 on or off individually (default all on). An enemy with only T1 can only build tier 1 units and buildings.",
-			"The info is saved with the level (Ctrl+S or the Save button on this page). You build the playable package in the start menu with key 3: choose a level, a folder and a ZIP are created in LevelEditor/scenario/scenarios.",
+			"The info is saved with the level (Ctrl+S). You build the playable package in the start menu with key 3: choose a level, a folder and a ZIP are created in LevelEditor/scenario/scenarios.",
 		},
 	},
 	{

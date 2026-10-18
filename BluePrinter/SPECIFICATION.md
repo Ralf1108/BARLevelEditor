@@ -1,6 +1,6 @@
 # Specification: BluePrinter
 
-Status: 2026-10-18 (with the carpet attack, row and rectangle stamps, the search field and scrollbars in the lists; all texts are English).
+Status: 2026-10-19 (with the button column V, O, ?, A, C and the experimental area attacks XL, XR, XC, the status row and the radius field, the 3D ghosts of the queued plans, the right click on a plan, row and rectangle stamps, the search field and scrollbars in the lists, the cost on the blueprint tiles; all texts are English).
 
 Widget for the **official** Beyond All Reason: blueprint templates and single buildings are **queued** on the map as build plans, idle own builders nearby start **on their own** to carry them out.
 Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; the area attacks XL, XR, XC live there as `Shared.newAreaAttack` and are also used by the Level Editor). Sister project: `..\LevelEditor\SPECIFICATION.md`.
@@ -29,7 +29,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; th
 - Files `<name>.lua` are read from **`LuaUI/Config/BluePrinter/`** (junction to `BluePrinter\blueprints`, new blueprints are created there too) and from **`LuaUI/Config/LevelEditorBlueprints/`** (the blueprints of the Level Editor, if set up there). With the same name `BluePrinter/` wins.
 - **File access of user widgets in BAR (checked in the game):** reading is only allowed under `LuaUI/`, writing only under `LuaUI/Config/` (also through junctions to it). Every other access is rejected with "is outside the read/write paths for user widgets", also for a real folder directly in the data folder. That is why the installer creates the junctions under `data\LuaUI\Config\`; `io.open`, `os.remove`, `os.date` and `VFS.DirList` work there. The Level Editor is a game widget and does not have this restriction.
 - Order and trash as in the shared code: `_order.txt` in the first folder (`LuaUI/Config/BluePrinter/`), trash `<folder>_trash/` of the respective folder.
-- Blueprints without buildings do not appear. The label shows "N buildings".
+- Blueprints without buildings do not appear. The label shows "N buildings" and below it the total cost of the blueprint (`M` metal, `E` energy).
 
 ## 4. Interface
 
@@ -48,6 +48,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; th
 - Sorting by dragging, deleting with x (click twice, trash), renaming by double click – all as in the Level Editor.
 - **Search field** above the tiles (from `shared`): all words of the query must appear in the blueprint name or in code, name and description of the buildings inside; the tiles filter at once. Enter = done, Esc or X = clear; sorting by dragging is off while a search is active. A **scrollbar** (24·S wide) at the right edge appears when the list is longer than the area.
 - **Create** (blueprint from the selection; button at the top right of the title row, left of the button column, **Ctrl+Alt+P**, chat `/bp_create`): saves the selected **buildings** (other units are ignored) as `bp_001`, `bp_002` … in `BluePrinter\blueprints` (position relative to the center, team 0), chooses it and switches the stamp on. Without selected buildings a message appears.
+- Every tile shows below the name and the number of buildings the **total cost** of the blueprint (`M <metal>` in light blue, `E <energy>` in yellow, from the shared grid, `M.shortNumber`).
 - If the list is empty: "No blueprints found".
 
 ### 4.3 Mode "Buildings" (single buildings)
@@ -58,7 +59,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; th
 - **Row / rectangle:** Shift + left click drag = row, Shift+Alt = rectangle (all as **one** step for "Undo"); spacing (0 to 20, default 0) with **Alt+Z / Alt+X** (handler in front of the BAR build menu `gridmenu_key`), `buildspacing` action, mouse side buttons 4/5 with Shift, Shift + mouse wheel or chat `/bp_spacing` (details in `shared`).
 - **Search in the building menu:** top line above the filters (from `shared`), typing filters at once (code, name and description words); Enter ends, Esc clears. The faction, group and tech buttons have no tooltips; the list has a scrollbar.
 - **Tooltips:** all buttons show an explanation when hovered.
-- **Help button `?`** (title line, left of `O`; action `bp_helpbox`): shows the help board (menu, building, queueing, carpet attack, chat commands). It is drawn after the menu and lies above it; every click closes it. Content: `HELP_SECTIONS`.
+- **Help button `?`** (in the button column next to the menu; action `bp_helpbox`): shows the help board (menu, building, queueing, carpet attack, chat commands). It is drawn after the menu and lies above it; every click closes it. Content: `HELP_SECTIONS`.
 - **Ghosts and manual assignment:** every open plan is also drawn as a 3D ghost (`drawPlanGhosts`, at most `ghost.max` = 150, the ones closest to the mouse pointer). **Right click on a plan** (no stamp or carpet armed) with own builders selected (`assignToPlan`): the plan under the pointer (footprint plus 8 Elmo) is given to all selected builders that can build it as a build order (`giveBuild`, with Shift behind their queue), regardless of radius, auto-build and the commander switch; `claim` is set to the first of them so auto-build does not hand it out again. Selected builders that cannot build it: message, click used; no builder selected: the click is not used. Checked in the real game: right click on a queued solar collector with the commander selected (auto-build off): claimed and built.
 - **Visible queue:** a status line "Remaining: metal M, energy E, build time about T" (sum of all open plans; build time = build effort divided by the build power of the own builders, without economy; computed every 30 frames) and in the world a **number on every open plan** (order of the queue, up to 250; blue = open, yellow = in progress, red = blocked). When hovering over a blueprint tile, name, count and cost are shown below the panel.
 - **Still open (suggestions):** priorities and builder assignment for plans, automatic rebuilding and repair.
@@ -97,7 +98,7 @@ Steps: one blueprint or one single building = one step (`batch`).
   3. If auto-build is on and there are open plans: give orders to **every idle builder** (no commands, not building), at most 12 builders per pass.
 
 ### 5.4 Which builders
-- Mobile, can build, no factory, has build options. **Commanders** only if "Commander: YES".
+- Mobile, can build, no factory, has build options. **Commanders** only if the button **C** is on (default on).
 - A builder only gets plans that it can build (build options) and that lie at most **radius** away. Default 1000 Elmo, adjustable in steps of 200 (200–6000) with the buttons **-** and **+** next to the label "Radius" or by typing the number into the field between them.
 
 ### 5.5 Assignment
@@ -121,6 +122,7 @@ Keys: **Ctrl+Alt+P** (blueprint from selection), `[`/`]` (rotate), **Alt+Z / Alt
 |---|---|
 | `bluePrinter.lua` | the widget |
 | `install_blueprinter.bat`, `install_blueprinter.ps1` | installation |
+| `start_blueprinter.bat`, `start_blueprinter.ps1` | installs the widget again and starts a small test game (one player against a passive AI, first installed map or `start_blueprinter.bat "Map Name"`) to look at the menu |
 | `blueprints\` | own blueprints, `_order.txt`, `_trash\` |
 | `README.md` | short manual |
 | `SPECIFICATION.md` | this specification |
@@ -137,8 +139,10 @@ Keys: **Ctrl+Alt+P** (blueprint from selection), `[`/`]` (rotate), **Alt+Z / Alt
 - Only buildings; plans for mobile units (e.g. "build in the next factory") are a possible later step.
 - Whether auto-build is allowed in ranked or tournament games depends on their rules.
 
-## Tests (status 2026-10-18)
-- **Mock test** (not in the repository; Python with Lupa): plan and builder logic, stamp, row/rectangle, Alt+Z/X, collapsing/expanding the menu, carpet attack (bombers: MOVE/ATTACK per bomber; artillery, rockets and nukes: ATTACK; fighters, short-range weapons and anti-air excluded).
+## Tests (status 2026-10-19)
+- **Checked in the real game this round** (temporary test copies of the widget, removed afterwards): the button column with tooltips, the status row, the radius row (display), the Create Blueprint button, the search labels, the cost line on the tiles, the info lines below the panel (the panel ends at least 20 % above the screen bottom, so the BAR boxes do not cover them), the 3D preview at the mouse pointer and left of the menu, the **3D ghosts of the queued plans** (found and fixed: all plans used the same ghost key, only the last ghost was visible), the right click on a plan (the commander builds the plan, `claim` set), the area attacks through the shared module (rectangle with 5 bombers and 5 artillery units: all got their orders; circle; the line and the bomber front were also tried by hand). A stand-alone test shows that all bombers stage on one line and fly 2000 / 2666 / 3333 Elmo to the front, middle and back row.
+- **Not checked automatically:** typing a number into the radius field, the right click with several builders, `start_blueprinter.bat` with a map name.
+- **Mock test** (earlier status 2026-10-18; not in the repository; Python with Lupa): plan and builder logic, stamp, row/rectangle, Alt+Z/X, collapsing/expanding the menu, carpet attack (bombers: MOVE/ATTACK per bomber; artillery, rockets and nukes: ATTACK; fighters, short-range weapons and anti-air excluded).
 - **Test in the running game:** the blueprint list loads from `LuaUI/Config` without errors (7 blueprints of the Level Editor visible); a new blueprint from the selection is written and removed again (`io.open`, `os.remove`); buildings view with the search field; queueing plans; status line and queue numbers; blueprint cost when hovering; bomber carpet: both bombers get MOVE and ATTACK, the scout gets no order.
 - **Found and fixed:** before the change of the folders the widget could not read or write blueprint files in BAR (see file access above).
 - **Help board checked in the game:** the board was first covered by the menu; now it is drawn last.

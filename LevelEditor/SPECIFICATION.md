@@ -1,6 +1,6 @@
 # Specification: Level Editor
 
-Status: 2026-10-18 (menu with the two main menus Place and Generate, one search over all lists, scrollbars, edit buttons, moving, redo, features, recent items, level management, tooltips, undo for all operations, scenario info, grace period, tech restriction, maze, delete rectangle and the English interface).
+Status: 2026-10-19 (title row, button column with the delete buttons DL, DR, DC and the experimental area attacks XL, XR, XC, cost on the blueprint tiles, menu with the two main menus Place and Generate, one search over all lists, scrollbars, edit buttons, moving, redo, features, recent items, level management, tooltips, undo for all operations, scenario info, grace period, tech restriction, maze, delete rectangle and the English interface).
 
 Level editor for Beyond All Reason (BAR): place units and buildings on the map with the mouse, create and place blueprints (layouts), save and load levels. The result is a `unitloadout` list for scenarios.
 Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). Sister project: `..\BluePrinter\SPECIFICATION.md`.
@@ -46,7 +46,7 @@ At the start always a menu in the console. Controls: arrow up/down (Home/End) ch
 | Ctrl+C / Ctrl+V | copy / paste (selection, otherwise the unit at the mouse pointer; pasting centered at the mouse pointer with team, rotation, height; any number of times; the clipboard lasts until quitting) |
 | Ctrl+X | cut (copy + delete) |
 | Ctrl+Z / Ctrl+Y | undo / redo the last action (place, blueprint, paste, groups, delete, blow up, move, rotate, mirror, team change, features) |
-| Ctrl+S | save the level (`saveCurrentLevel`: under the current name, otherwise as a new `level_NNN`; same way as the Save button of the scenario page) |
+| Ctrl+S | save the level (`saveCurrentLevel`: under the current name, otherwise as a new `level_NNN`; the same function as "Save" in the settings page) |
 | Ctrl+D | create the builders of all factions again at the mouse pointer for the current team (the team chosen on the left) |
 | D | delete rectangle on/off (see below; the same as the DR button) |
 | M | cycle the maze mode: off → dragon teeth (`<faction>drag`) → walls (`armfort`/`corfort`/`legforti`) → off (faction as chosen on the Generate page; also the Maze sub-tab of the Generate tab). Then drag a rectangle with the left mouse button held down: on release a random, fully connected maze appears (depth-first search, `Shared.mazeWalls`; no cycle). Tile 16 Elmo (footprint of the units), corridors 4 tiles = 64 Elmo wide, walls 1 tile; entrance top left, exit bottom right. The rectangle is cut to whole cells (preview frame green, red = too small, at least 11 × 11 tiles) and capped at about 12000 wall units (area up to about 190 × 190 tiles). Team and neutral switch as when placing; one step for Ctrl+Z; right click ends, and so does arming anything else (unit, blueprint or feature; `widget:Update` checks that). Checked in the real game: 927 dragon teeth placed, Ctrl+Z removes all; mock test: all corridors reachable from the entrance, exit reachable, exactly cells−1 passages |
@@ -86,7 +86,7 @@ Notes:
 - **Search and scrollbar (Units, Features and Blueprints, also in BluePrinter):** the search matches every word of the query against code, name and description (`M.matches`, `M.unitSearchText`, `M.featureSearchText`, `M.blueprintSearchText` = blueprint name plus code, name and description of its units). A scrollbar (`M.scrollbarDraw/Press/Move/Release`, 24·S wide at the right edge of the list area, needs `grid.scroll` and `grid:maxScroll(rect)`) is drawn when the list is longer than the area; drag the thumb or click the track.
 - **Filtered view:** the blueprint grid shows a filtered view of `lib.list`; indices handed to the host (`onSelect`, `selected`) are always library indices. Dragging to sort is disabled while a search is active. In the Level Editor the query comes from the global search; the grid's own search row (`g:filterRects`) is only used by the BluePrinter.
 See `..\shared\SPECIFICATION.md` section 8 (tiles with unit pictures as thumbnails, the grid grows from top to bottom up to the set size, dragging to sort, x to delete with trash, double click to rename, mouse wheel 234·S per notch, that is three times the speed plus 30 %). Specific to the editor:
-- The label shows "N units".
+- The label shows "N units" and below it the total cost of the blueprint (`M` metal in light blue, `E` energy in yellow; from the shared grid).
 - Left click on the map places the chosen blueprint (with a frame preview in team colors and 3D models), right click ends stamp mode.
 - Blueprints are placed with **the team chosen on the left**. Air units keep their height, landed air units stay landed. The layout is not checked for passability.
 - The order is in `blueprints\_order.txt` (and `_index.txt`), the trash in `blueprints\_trash`.
@@ -162,7 +162,7 @@ See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sort
 
 ## 11. Gadget (`unit_level_editor.lua`)
 
-- Messages through `Spring.SendLuaRulesMsg` with the prefix `led|`: `step`, `place`, `delete`, `deleteids`, `boomids`, `boom`, `undo`, `redo`, `clear`, `clearrect`, `load`, `generate`, `generaterect`, `builders`, `assign`, `feature`, `loadfeature`, `clearfeatures`, `move`, `xform`.
+- Messages through `Spring.SendLuaRulesMsg` with the prefix `led|`: `step`, `place`, `delete`, `deleteids`, `boomids`, `boom`, `undo`, `redo`, `clear`, `clearrect`, `clearcircle`, `clearline`, `load`, `generate`, `generaterect`, `builders`, `assign`, `feature`, `loadfeature`, `clearfeatures`, `move`, `xform`.
 - Only works with cheat or in editor mode; otherwise the message "Cheat mode is off: please type /cheat".
 - `GG.LevelEditor` offers the same functions for tests; `GG.LevelEditorSpawnBuilders(x, z, team)` creates the builders (manually without markers, in the team of the call).
 - Handovers (`assign`) by takeover, message with the actual count.
@@ -218,7 +218,8 @@ See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sort
 - The unit limit of the scenario is the `unitlimit` stored in the level (set in the editor settings, default 32000) and written as the game option `maxunits`.
 - Builders created with Ctrl+D (tools) are not saved in the level by the editor.
 
-## Tests (status 2026-10-18)
+## Tests (status 2026-10-19)
+- **Checked in the real game this round** (temporary test copies, removed afterwards): the title row and the button column (V, O, I, ?, free, DL, DR, DC, free, XL, XR, XC), the delete circle (31 units removed, one step for Ctrl+Z), Generate in a circle (100 Armada T1 units) and a maze in a circle (dragon teeth), the cost line on the blueprint tiles, the 3D preview left of the team strip. The delete line (`clearline`) and the area attacks inside the Level Editor were not completed in the real game: the test point lay outside the map; the same shared module was checked in the BluePrinter.
 - **Mock test** (not in the repository; Python with Lupa, without the game): loads the widget and shared code with a rebuilt Spring interface and checks menus, search, features, favorites, edit buttons, level list, redo and the messages sent.
 - **Engine test (headless, synchronous part):** places units with the real gadget, rotates, mirrors and moves them, undoes and redoes, places and removes features; also checks the classification of the real feature definitions (23 trees, 206 rocks, 1284 wrecks, 34 other in the base game), the detection of the bombers (15 types) and the search in the real unit catalog. Result: all fine.
 - **Test in the running game** (window, test widgets, removed afterwards): all menus draw without errors; search, placing units and features, recent-items file, edit buttons (L, R, S), rotating/mirroring with kept selection, assigning to a team, buttons N and G, level list and "Save as new", tooltips and the display of the blueprint cost work. Also checked in the game: the Generate tab with both sub-tabs, the delete rectangle, the maze, the unit count next to the teams, the English help board. Not checkable in the game: Ctrl+click and Alt-drag (the key states cannot be given there); that is only checked with mocks.
