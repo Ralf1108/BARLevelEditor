@@ -720,6 +720,24 @@ local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec)
 	return id
 end
 
+-- Deletes the given units and features (wrecks, trees, rocks) and notes everything in the history (one step)
+local function clearThese(units, features, playerID)
+	local nu, nf = 0, 0
+	for _, id in ipairs(units) do
+		destroyRecorded(id, false)
+		nu = nu + 1
+	end
+	for _, fid in ipairs(features) do
+		local snap = featureSnapshot(fid)
+		Spring.DestroyFeature(fid)
+		if snap then
+			record({ k = "fdel", fid = fid, name = snap.name, snap = snap })
+		end
+		nf = nf + 1
+	end
+	tell(playerID, nu .. " units and " .. nf .. " features deleted")
+end
+
 function gadget:RecvLuaMsg(msg, playerID)
 	if msg:sub(1, 4) ~= "led|" then
 		return
@@ -766,20 +784,44 @@ function gadget:RecvLuaMsg(msg, playerID)
 		-- led|clearrect|x1|z1|x2|z2: delete all units and features (wrecks, trees, rocks) in the rectangle, note in the history
 		local x1, z1, x2, z2 = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6])
 		if x1 and z1 and x2 and z2 then
-			local nu, nf = 0, 0
-			for _, id in ipairs(Spring.GetUnitsInRectangle(x1, z1, x2, z2)) do
-				destroyRecorded(id, false)
-				nu = nu + 1
-			end
-			for _, fid in ipairs(Spring.GetFeaturesInRectangle(x1, z1, x2, z2)) do
-				local snap = featureSnapshot(fid)
-				Spring.DestroyFeature(fid)
-				if snap then
-					record({ k = "fdel", fid = fid, name = snap.name, snap = snap })
+			clearThese(Spring.GetUnitsInRectangle(x1, z1, x2, z2), Spring.GetFeaturesInRectangle(x1, z1, x2, z2), playerID)
+		end
+	elseif cmd == "clearcircle" then
+		-- led|clearcircle|x|z|radius: the same for a circle
+		local x, z, r = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])
+		if x and z and r then
+			clearThese(Spring.GetUnitsInCylinder(x, z, r), Spring.GetFeaturesInCylinder(x, z, r), playerID)
+		end
+	elseif cmd == "clearline" then
+		-- led|clearline|x1|z1|x2|z2|halfwidth: the same for a corridor along the line from (x1, z1) to (x2, z2)
+		local x1, z1, x2, z2, hw = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7])
+		if x1 and z1 and x2 and z2 and hw then
+			local dx, dz = x2 - x1, z2 - z1
+			local len2 = dx * dx + dz * dz
+			local function near(x, z)
+				local t = 0
+				if len2 > 0 then
+					t = math.max(0, math.min(1, ((x - x1) * dx + (z - z1) * dz) / len2))
 				end
-				nf = nf + 1
+				local px, pz = x1 + dx * t, z1 + dz * t
+				return (x - px) ^ 2 + (z - pz) ^ 2 <= hw * hw
 			end
-			tell(playerID, nu .. " units and " .. nf .. " features deleted")
+			local ax, bx = math.min(x1, x2) - hw, math.max(x1, x2) + hw
+			local az, bz = math.min(z1, z2) - hw, math.max(z1, z2) + hw
+			local units, features = {}, {}
+			for _, id in ipairs(Spring.GetUnitsInRectangle(ax, az, bx, bz)) do
+				local x, _, z = Spring.GetUnitPosition(id)
+				if x and near(x, z) then
+					units[#units + 1] = id
+				end
+			end
+			for _, fid in ipairs(Spring.GetFeaturesInRectangle(ax, az, bx, bz)) do
+				local x, _, z = Spring.GetFeaturePosition(fid)
+				if x and near(x, z) then
+					features[#features + 1] = fid
+				end
+			end
+			clearThese(units, features, playerID)
 		end
 	elseif cmd == "clear" then
 		clearAll()

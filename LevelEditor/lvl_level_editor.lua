@@ -79,7 +79,8 @@ local HELP_SECTIONS = {
 		{ "Shift + drag", "Place a row. With Shift+Alt a rectangle." },
 		{ "Shift+Mouse wheel, Alt+Z / X", "Spacing between the units of a row or rectangle." },
 		{ "Generate", "Generate tab: choose faction, type (several possible: units, buildings, turrets, air, ships), tech T1-T3 and count (input field), press the Generate button and drag the area (Area: rectangle, or a circle from its center outwards); random units appear in it for the chosen team. Ctrl+Z undoes them. The Maze sub-tab builds a random maze in a dragged rectangle." },
-		{ "D", "Delete in a rectangle: key D (or the D button at the far right), then drag a rectangle; everything in it (units, wrecks, features) is deleted. Ctrl+Z undoes it." },
+		{ "DL  /  DR  /  DC", "Delete along a line, in a rectangle or in a circle: press the button (D = rectangle), then drag the shape on the map; everything in it (units, wrecks, features) is deleted. Ctrl+Z undoes it." },
+		{ "XL  /  XR  /  XC", "Experimental area attacks (line, rectangle, circle): select bombers, artillery, rocket launchers or nukes, press the button and drag the shape on the map (circle from the center). Bombers form up and attack together, front targets first." },
 		{ "M", "Maze: the key cycles through dragon teeth, walls, off (also the Maze sub-tab of the Generate tab). Then drag a rectangle or circle; a random maze appears in it (entrance top left, exit bottom right). Right click or arming something else ends the mode, Ctrl+Z undoes it." },
 	} },
 	{ "Editing the selection", {
@@ -555,7 +556,6 @@ local menuMode = "units" -- "bp" = blueprints, "units" = all units (faction / gr
 local optionsOpen = false
 local scenarioOpen = false -- Scenario info (button I)
 local scEdit = nil -- { row, buf }: text field being edited right now
-local scConfirm = false -- Save button is waiting for the second click
 local collapsed = false -- Menu collapsed: only the small button V stays visible
 local mazeKind = nil -- Maze mode: nil = off, otherwise index into MAZE_KINDS
 -- Generate page (button G): faction, type, tech, count; then drag an area, the units appear in it.
@@ -574,8 +574,10 @@ local gen = {
 	count = 100,
 }
 local GEN_KINDS = { { "units", "Units" }, { "buildings", "Buildings" }, { "turrets", "Turrets" }, { "air", "Air" }, { "ships", "Ships" } }
-local delMode = false -- Delete rectangle (button/key D)
-local delDrag = nil -- { x, z }: start point of the delete rectangle
+local delMode = false -- Delete: false or the shape "rect" | "circle" | "line" (buttons DR, DC, DL, key D = rectangle)
+local delDrag = nil -- { x, z }: start point of the delete shape
+local area -- area attacks (XL, XR, XC) from the shared code, created below
+local DEL_HALF_WIDTH = 40 -- half the width of the corridor that the delete line removes (Elmo)
 local delToggle -- defined below
 local mazeCycle -- Advance the maze mode (defined below)
 local armedUnit = false -- Stamp mode for a single unit (left click places unitName)
@@ -929,7 +931,6 @@ local function scenarioSet(row, value)
 		scenario[row.id] = value
 	end
 	scenarioDirty = true
-	scConfirm = false
 end
 
 local function scenarioRowH()
@@ -1170,8 +1171,26 @@ local function headerRects()
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
-		rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = dy1 - m.HB, y1 = dy1, side = true, kind = "del", value = "del", label = "D", active = delMode,
-			tip = "Delete (key D): drag a rectangle on the map, everything in it is deleted (units, wrecks, features)" }
+		-- Delete (rectangle, circle, line), then one free slot, then the experimental area attacks
+		local dels = {
+			{ "line", "DL", "Delete line: drag a line, everything within " .. DEL_HALF_WIDTH .. " Elmo of it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
+			{ "rect", "DR", "Delete rectangle (key D): drag a rectangle on the map, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
+			{ "circle", "DC", "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
+		}
+		for k, d in ipairs(dels) do
+			local top = sideTop(4 + k)
+			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = d[1], label = d[2], active = (delMode == d[1]), tip = d[3] }
+		end
+		local areas = {
+			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
+			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
+			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
+		}
+		for k, a in ipairs(areas) do
+			local top = sideTop(8 + k)
+			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
+				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
+		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
@@ -1477,8 +1496,6 @@ local function scenarioRects(rect)
 		rects[#rects + 1] = { x1 = vx1, x2 = rect.x2 - m.PAD, y0 = y - rh, y1 = y, row = row, labelX = rect.x1 + m.PAD }
 		y = y - rh - gap
 	end
-	y = y - gap
-	rects[#rects + 1] = { x1 = rect.x1 + m.PAD, x2 = rect.x2 - m.PAD, y0 = y - rh, y1 = y, kind = "save" }
 	return rects
 end
 
@@ -1561,12 +1578,6 @@ local function drawScenario(rect, mx, my)
 			end
 			gl.Color(1, 1, 1, 1)
 			gl.Text(text, r.x1 + 6 * S, r.y0 + (r.y1 - r.y0 - fs) / 2 + 3 * S, fs, "o")
-		else
-			local name = currentLevel and currentLevel:sub(1, 1) ~= "_" and currentLevel or nil
-			local label = scConfirm and "Sure?" or (name and ("Save level: " .. name) or "Save as a new level")
-			Shared.drawButtons({ { x1 = r.x1, x2 = r.x2, y0 = r.y0, y1 = r.y1, label = label, fs = fs, active = scConfirm or nil,
-				tip = "Writes the map and scenario info into the level (second click confirms)" } }, fs, r.y1 - r.y0)
-			r.tipRect = true
 		end
 	end
 	gl.Color(0.7, 0.7, 0.7, 1)
@@ -1594,7 +1605,7 @@ local function scenarioFinish(accept)
 	end
 end
 
--- Save level: under the current name, otherwise as a new level_NNN (Ctrl+S and button on the scenario page)
+-- Save level: under the current name, otherwise as a new level_NNN (Ctrl+S)
 local function saveCurrentLevel()
 	local name = currentLevel and currentLevel:sub(1, 1) ~= "_" and currentLevel or nil
 	if not name then
@@ -1619,7 +1630,6 @@ local function scenarioPress(rect, mx, my)
 		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 			scenarioFinish(true)
 			if r.row then
-				scConfirm = false
 				local row = r.row
 				if row.kind == "tiers" then
 					local i = math.max(1, math.min(3, math.floor((mx - r.x1) / ((r.x2 - r.x1) / 3)) + 1))
@@ -1638,17 +1648,11 @@ local function scenarioPress(rect, mx, my)
 					scEdit = { row = row, buf = scenarioValue(row) }
 					widgetHandler:OwnText()
 				end
-			elseif scConfirm then
-				scConfirm = false
-				saveCurrentLevel()
-			else
-				scConfirm = true
 			end
 			return true
 		end
 	end
 	scenarioFinish(true)
-	scConfirm = false
 	return true
 end
 
@@ -1846,6 +1850,25 @@ function widget:IsAbove(mx, my)
 	return inPanel(mx, my) or teamAt(mx, my) ~= nil or sideAt(mx, my) ~= nil
 end
 
+area = Shared.newAreaAttack({
+	say = say,
+	mouseGround = function()
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if pos then
+			return pos[1], pos[3]
+		end
+	end,
+	inPanel = function(mx, my) return widget:IsAbove(mx, my) end,
+	onArm = function()
+		-- ends the other modes that use the left mouse button on the map
+		armedUnit, armedFeature, stampDrag = false, false, nil
+		bpGrid:setArmed(false)
+		gen.armed, gen.drag = false, nil
+		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+	end,
+})
+
 local genToggle -- Open/close the Generate page (defined below)
 local bpQuickSave -- defined below
 
@@ -1861,7 +1884,11 @@ local function applyHeader0(r)
 		return
 	end
 	if r.kind == "del" then
-		delToggle()
+		delToggle(r.value)
+		return
+	end
+	if r.kind == "area" then
+		area:toggle(r.value)
 		return
 	end
 	genFinish(true)
@@ -1886,7 +1913,6 @@ local function applyHeader0(r)
 	fGrid:setFocus(false)
 	bpGrid:setFocus(false)
 	scenarioFinish(true)
-	scConfirm = false
 	if r.kind == "info" then
 		bpGrid:resetEdit()
 		bpGrid:setArmed(false)
@@ -1997,8 +2023,12 @@ local function mazeSetKind(k)
 	end
 end
 
-delToggle = function()
-	delMode = not delMode
+delToggle = function(shape)
+	if delMode and (shape == nil or shape == delMode) then
+		delMode = false
+	else
+		delMode = shape or "rect"
+	end
 	delDrag = nil
 	if delMode then
 		gen.armed, gen.drag = false, nil
@@ -2006,7 +2036,8 @@ delToggle = function()
 		armedUnit, armedFeature = false, false
 		stampDrag = nil
 		bpGrid:setArmed(false)
-		say("Delete: drag a rectangle with the left mouse button held down, everything in it is deleted. D or right click ends, Ctrl+Z undoes it.")
+		local what = { rect = "a rectangle", circle = "a circle from its center", line = "a line (a corridor of " .. (2 * DEL_HALF_WIDTH) .. " Elmo)" }
+		say("Delete: drag " .. what[delMode] .. " with the left mouse button held down, everything in it is deleted. The button, D or right click ends, Ctrl+Z undoes it.")
 	else
 		say("Delete mode ended")
 	end
@@ -2072,6 +2103,11 @@ function widget:MousePress(mx, my, button)
 		elseif button == 3 then
 			gen.armed, gen.drag = false, nil
 			say("Generate rectangle ended")
+			return true
+		end
+	end
+	if area:armed() and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		if area:press(button) then
 			return true
 		end
 	end
@@ -2410,6 +2446,7 @@ function widget:MouseRelease(mx, my, button)
 	if Shared.scrollbarRelease() then
 		return
 	end
+	area:release()
 	if selBox then
 		finishSelBox(mx, my)
 	end
@@ -2476,7 +2513,13 @@ function widget:MouseRelease(mx, my, button)
 		local _, pos = Spring.TraceScreenRay(mx, my, true)
 		if pos and delMode and canEdit() and button == 1 then
 			ledStep()
-			led(string.format("led|clearrect|%d|%d|%d|%d", math.min(d.x, pos[1]), math.min(d.z, pos[3]), math.max(d.x, pos[1]), math.max(d.z, pos[3])))
+			if delMode == "circle" then
+				led(string.format("led|clearcircle|%d|%d|%d", d.x, d.z, math.sqrt((pos[1] - d.x) ^ 2 + (pos[3] - d.z) ^ 2)))
+			elseif delMode == "line" then
+				led(string.format("led|clearline|%d|%d|%d|%d|%d", d.x, d.z, pos[1], pos[3], DEL_HALF_WIDTH))
+			else
+				led(string.format("led|clearrect|%d|%d|%d|%d", math.min(d.x, pos[1]), math.min(d.z, pos[3]), math.max(d.x, pos[1]), math.max(d.z, pos[3])))
+			end
 		end
 	end
 	if mazeDrag then
@@ -2771,6 +2814,11 @@ end
 function widget:DrawWorld()
 	drawWorldInner()
 	ghost:endFrame()
+	local okArea, errArea = pcall(area.draw, area)
+	if not okArea then
+		area:disarm()
+		say("Area attack preview disabled: " .. tostring(errArea))
+	end
 	-- Generate: yellow frame while dragging
 	if gen.drag then
 		local mx, my = Spring.GetMouseState()
@@ -2802,22 +2850,52 @@ function widget:DrawWorld()
 			gl.Color(1, 1, 1, 1)
 		end
 	end
-	-- Delete: red frame while dragging
+	-- Delete: red shape while dragging (rectangle, circle or line with its corridor)
 	if delDrag then
 		local mx, my = Spring.GetMouseState()
 		local _, pos = Spring.TraceScreenRay(mx, my, true)
 		if pos then
-			local x1, x2 = math.min(delDrag.x, pos[1]), math.max(delDrag.x, pos[1])
-			local z1, z2 = math.min(delDrag.z, pos[3]), math.max(delDrag.z, pos[3])
+			local ax, az = delDrag.x, delDrag.z
+			local function v(x, z)
+				gl.Vertex(x, Spring.GetGroundHeight(x, z) + 6, z)
+			end
 			gl.LineWidth(3)
 			gl.DepthTest(false)
 			gl.Color(1, 0.2, 0.2, 1)
-			gl.BeginEnd(GL.LINE_LOOP, function()
-				gl.Vertex(x1, Spring.GetGroundHeight(x1, z1) + 6, z1)
-				gl.Vertex(x2, Spring.GetGroundHeight(x2, z1) + 6, z1)
-				gl.Vertex(x2, Spring.GetGroundHeight(x2, z2) + 6, z2)
-				gl.Vertex(x1, Spring.GetGroundHeight(x1, z2) + 6, z2)
-			end)
+			if delMode == "circle" then
+				local r = math.sqrt((pos[1] - ax) ^ 2 + (pos[3] - az) ^ 2)
+				gl.BeginEnd(GL.LINE_LOOP, function()
+					for k = 0, 47 do
+						v(ax + r * math.cos(k * math.pi / 24), az + r * math.sin(k * math.pi / 24))
+					end
+				end)
+			elseif delMode == "line" then
+				local dx, dz = pos[1] - ax, pos[3] - az
+				local len = math.sqrt(dx * dx + dz * dz)
+				local nx, nz = 0, 0
+				if len > 0 then
+					nx, nz = -dz / len * DEL_HALF_WIDTH, dx / len * DEL_HALF_WIDTH
+				end
+				gl.BeginEnd(GL.LINES, function()
+					v(ax, az)
+					v(pos[1], pos[3])
+				end)
+				gl.BeginEnd(GL.LINE_LOOP, function()
+					v(ax + nx, az + nz)
+					v(pos[1] + nx, pos[3] + nz)
+					v(pos[1] - nx, pos[3] - nz)
+					v(ax - nx, az - nz)
+				end)
+			else
+				local x1, x2 = math.min(ax, pos[1]), math.max(ax, pos[1])
+				local z1, z2 = math.min(az, pos[3]), math.max(az, pos[3])
+				gl.BeginEnd(GL.LINE_LOOP, function()
+					v(x1, z1)
+					v(x2, z1)
+					v(x2, z2)
+					v(x1, z2)
+				end)
+			end
 			gl.LineWidth(1)
 			gl.Color(1, 1, 1, 1)
 		end
@@ -2928,6 +3006,9 @@ function widget:Update()
 	end
 	if delMode and (armedUnit or armedFeature or bpGrid.armed) then
 		delToggle()
+	end
+	if area:armed() and (armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed) then
+		area:disarm()
 	end
 	if gen.armed and (armedUnit or armedFeature or bpGrid.armed) then
 		gen.armed, gen.drag = false, nil
@@ -3170,7 +3251,7 @@ function widget:KeyPress(key, mods, isRepeat)
 	if key == 100 and not mods.ctrl and not mods.alt and not mods.shift and not helpOpen then
 		-- D: delete rectangle on/off
 		if not isRepeat then
-			delToggle()
+			delToggle("rect")
 		end
 		return true
 	end
@@ -3248,6 +3329,7 @@ local function readAutoload()
 end
 
 function widget:GameFrame(n)
+	pcall(area.step, area, n)
 	if pendingAutoload and n >= 20 then
 		local name = pendingAutoload
 		pendingAutoload = nil
