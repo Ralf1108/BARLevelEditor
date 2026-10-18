@@ -43,7 +43,8 @@ local collapsed = false -- Menu collapsed: only the small button V stays visible
 local menuMode = "bp" -- "bp" = blueprints, "units" = single buildings from the catalog
 local armedUnit = nil -- Name of the building in stamp mode (left click queues it)
 local carpetArmed = false -- Carpet attack: drag a line, the selected bombers, artillery, rocket launchers etc. spread over it
-local carpetDrag = nil -- { x, z }: start point of the line
+local carpetMode = "line" -- "line" | "rect" | "circle": shape that is dragged
+local carpetDrag = nil -- { x, z }: start point of the line, rectangle corner or circle center
 local helpOpen = false -- Help board on the screen
 
 -- Content of the help board: { section, { { key, explanation }, ... } }
@@ -71,14 +72,14 @@ local HELP_SECTIONS = {
 		{ "Shift+Mouse wheel, Alt+Z / X", "Spacing between the buildings." },
 		{ "Ctrl+Alt+P", "Save the selected buildings as a new blueprint." },
 	} },
-	{ "Carpet attack", {
-		{ "Button / Ctrl+Alt+K", "Select bombers, artillery, rocket launchers or nukes, switch it on, drag a line on the map." },
-		{ "Procedure", "Each unit gets a piece of the line. Bombers approach it from behind, artillery and rockets fire at it. Right click cancels." },
+	{ "Area attack (experimental)", {
+		{ "X  /  XR  /  XC", "Buttons next to the menu. Select bombers, artillery, rocket launchers or nukes first, press X (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
+		{ "Procedure", "Each unit gets its own target in the shape. Bombers approach from the side where they stand, artillery and rockets fire at their target. Right click cancels. Ctrl+Alt+K = X." },
 	} },
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
 		{ "/bp_rotate  /bp_undo  /bp_clear", "Rotate, undo, clear all." },
-		{ "/bp_carpet  /bp_spacing", "Carpet attack, spacing." },
+		{ "/bp_carpet [line|rect|circle]  /bp_spacing", "Area attack, spacing." },
 	} },
 }
 local toggleCarpet -- defined below
@@ -550,7 +551,7 @@ end
 ---------------------------------------------------------------- Interface
 -- Header: title, 5 button rows and the status lines; below it the content (grid or settings) from editor_common.lua
 local function headHeight()
-	return 8 * S + 52 * S + 5 * (Shared.m.HB + 4 * S) + 84 * S
+	return 8 * S + 52 * S + 4 * (Shared.m.HB + 4 * S) + 84 * S
 end
 
 local function filterHeight() -- Faction/tech buttons above the building grid
@@ -581,7 +582,7 @@ local function panelRect()
 		ch = ch + bpFilterHeight()
 		minBottom = 110 * S -- below the panel are name and cost of the blueprint
 	end
-	local pw = math.min(math.max(math.floor(270 * S), cw), vsx * 0.6)
+	local pw = math.min(math.max(math.floor(500 * S), cw), vsx * 0.6) -- wide enough for the status lines
 	local x1 = (side == "right") and (vsx - colW - pw) or colW
 	local top = vsy * 0.90
 	local bottom = math.max(minBottom, top - headHeight() - ch)
@@ -601,7 +602,7 @@ local function inPanel(mx, my)
 	local vsx = Spring.GetViewGeometry()
 	local colW = m.HB + 2 * m.PAD
 	local cx1 = (side == "right") and (vsx - colW) or 0
-	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 5 * (m.HB + 3) - m.PAD
+	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 8 * (m.HB + 3) - m.PAD
 end
 
 -- Radius input field: typing digits, Enter accepts, Esc cancels, a click elsewhere accepts
@@ -633,7 +634,9 @@ local TIPS = {
 	radfield = "Search radius of the builders in Elmo (200 to 6000):\nclick, type a number, Enter accepts, Esc cancels",
 	com = "Commander (C): the commander helps build too\n(otherwise only other builders do)",
 	create = "Saves the selected buildings\nas a new blueprint",
-	carpet = "Carpet attack: choose bombers, artillery, rocket launchers\nor nukes, then drag a line on the\nmap. Each unit gets a piece of it.",
+	carpet = "X (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press X, then drag a line on the map.\nEach unit gets a piece of it.",
+	carpetr = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
+	carpetc = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
 
 local radLabel -- position of the text "Radius" (drawn next to the radius buttons)
@@ -659,6 +662,9 @@ local function layout()
 	colBtn(2, "gear", "O", optionsOpen)
 	colBtn(3, "help", "?", helpOpen)
 	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
+	colBtn(6, "carpet", "X", carpetArmed and carpetMode == "line")
+	colBtn(7, "carpetr", "XR", carpetArmed and carpetMode == "rect")
+	colBtn(8, "carpetc", "XC", carpetArmed and carpetMode == "circle")
 	colBtn(5, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
@@ -691,7 +697,6 @@ local function layout()
 		bx = bx + fw + gap
 		btns[#btns + 1] = { id = "radplus", label = "+", x1 = bx, x2 = bx + bw, y0 = top - rh, y1 = top }
 	end
-	row2({ "carpet", "Carpet attack: " .. (carpetArmed and "ON" or "OFF"), carpetArmed })
 	row2({ "create", "New blueprint from selection" })
 	local info = y
 	y = y - 84 * S
@@ -732,7 +737,11 @@ local function pressButton(id)
 	elseif id == "help" then
 		helpOpen = true
 	elseif id == "carpet" then
-		toggleCarpet()
+		toggleCarpet("line")
+	elseif id == "carpetr" then
+		toggleCarpet("rect")
+	elseif id == "carpetc" then
+		toggleCarpet("circle")
 	elseif id == "create" then
 		widget:CreateBlueprint()
 	elseif id == "collapse" then
@@ -862,6 +871,82 @@ local function carpetPlan(ax, az, bx, bz, ids, n, approach)
 	return plan, len
 end
 
+-- Rectangle or circle: one target point per unit spread evenly inside the area (grid or sunflower spiral).
+-- Bombers approach from the side where the group stands; units and points are paired by their position across
+-- that direction so the paths cross less. Returns the plan (same format as carpetPlan) and the size of the area.
+local function areaPlan(shape, ax, az, bx, bz, ids, n, approach)
+	n = ids and #ids or n
+	local pts, cx, cz, size = {}, 0, 0, 0
+	if shape == "circle" then
+		local r = math.max(math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2), 16)
+		cx, cz, size = ax, az, r
+		for i = 1, n do
+			local rad, th = r * math.sqrt((i - 0.5) / n), i * 2.399963
+			pts[i] = { x = cx + rad * math.cos(th), z = cz + rad * math.sin(th) }
+		end
+	else
+		local x1, x2, z1, z2 = math.min(ax, bx), math.max(ax, bx), math.min(az, bz), math.max(az, bz)
+		local w, h = math.max(x2 - x1, 16), math.max(z2 - z1, 16)
+		cx, cz, size = (x1 + x2) / 2, (z1 + z2) / 2, math.max(w, h)
+		local cols = math.max(1, math.min(n, math.ceil(math.sqrt(n * w / h))))
+		local rows = math.ceil(n / cols)
+		for i = 1, n do
+			local k = math.floor((i - 0.5) * cols * rows / n)
+			pts[i] = { x = x1 + (k % cols + 0.5) * w / cols, z = z1 + (math.floor(k / cols) + 0.5) * h / rows }
+		end
+	end
+	-- direction of the approach: from the group to the middle of the area
+	local ux, uz = 0, 1
+	if ids and #ids > 0 then
+		local sx, sz, c = 0, 0, 0
+		for _, id in ipairs(ids) do
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x then
+				sx, sz, c = sx + x, sz + z, c + 1
+			end
+		end
+		if c > 0 then
+			local dx, dz = cx - sx / c, cz - sz / c
+			local len = math.sqrt(dx * dx + dz * dz)
+			if len >= 8 then
+				ux, uz = dx / len, dz / len
+			end
+		end
+	end
+	local function across(x, z)
+		return (x - cx) * -uz + (z - cz) * ux
+	end
+	table.sort(pts, function(a, b) return across(a.x, a.z) < across(b.x, b.z) end)
+	local order = {}
+	for i = 1, n do
+		order[i] = ids and ids[i] or false
+	end
+	if ids then
+		table.sort(order, function(a, b)
+			local xa, _, za = Spring.GetUnitPosition(a)
+			local xb, _, zb = Spring.GetUnitPosition(b)
+			return across(xa or cx, za or cz) < across(xb or cx, zb or cz)
+		end)
+	end
+	local plan = {}
+	for i = 1, n do
+		local p = pts[i]
+		local fx, fz = p.x, p.z
+		if approach > 0 then
+			fx, fz = clampToMap(p.x - ux * approach, p.z - uz * approach)
+		end
+		plan[i] = { id = order[i], x = p.x, z = p.z, fx = fx, fz = fz }
+	end
+	return plan, size
+end
+
+local function planFor(ax, az, bx, bz, ids, n, approach)
+	if carpetMode == "line" then
+		return carpetPlan(ax, az, bx, bz, ids, n, approach)
+	end
+	return areaPlan(carpetMode, ax, az, bx, bz, ids, n, approach)
+end
+
 local function carpetGo(ax, az, bx, bz)
 	local bombers, guns = selectedBombers(), selectedShooters()
 	if #bombers == 0 and #guns == 0 then
@@ -871,7 +956,7 @@ local function carpetGo(ax, az, bx, bz)
 	local len = 0
 	if #bombers > 0 then
 		local plan
-		plan, len = carpetPlan(ax, az, bx, bz, bombers, nil, CARPET_APPROACH)
+		plan, len = planFor(ax, az, bx, bz, bombers, nil, CARPET_APPROACH)
 		for _, p in ipairs(plan) do
 			if len >= 8 then
 				Spring.GiveOrderToUnit(p.id, CMD.MOVE, { p.fx, Spring.GetGroundHeight(p.fx, p.fz), p.fz }, {})
@@ -883,26 +968,30 @@ local function carpetGo(ax, az, bx, bz)
 	end
 	if #guns > 0 then
 		local plan
-		plan, len = carpetPlan(ax, az, bx, bz, guns, nil, 0)
+		plan, len = planFor(ax, az, bx, bz, guns, nil, 0)
 		for _, p in ipairs(plan) do
 			Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
 		end
 	end
-	say(string.format("Carpet attack: %d bombers, %d artillery/rockets over %d Elmo length", #bombers, #guns, math.floor(len)))
+	say(string.format("%s attack: %d bombers, %d artillery/rockets (%s %d Elmo)", carpetMode == "line" and "Carpet" or (carpetMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, carpetMode == "circle" and "radius" or "size", math.floor(len)))
 end
 
-toggleCarpet = function()
-	carpetArmed = not carpetArmed
-	carpetDrag = nil
-	if carpetArmed then
-		armedUnit = nil
-		bpGrid:setArmed(false)
-		local n = #selectedBombers() + #selectedShooters()
-		say(n > 0 and string.format("Carpet attack: %d units selected. Drag a line on the map, right click cancels.", n)
-			or "Carpet attack: select bombers, artillery, rocket launchers or nukes first, then drag a line on the map.")
-	else
-		say("Carpet attack ended")
+local CARPET_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards" }
+toggleCarpet = function(mode)
+	if carpetArmed and (mode == nil or mode == carpetMode) then
+		carpetArmed = false
+		carpetDrag = nil
+		say("Area attack ended")
+		return true
 	end
+	carpetMode = mode or "line"
+	carpetArmed = true
+	carpetDrag = nil
+	armedUnit = nil
+	bpGrid:setArmed(false)
+	local n = #selectedBombers() + #selectedShooters()
+	say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, CARPET_HINT[carpetMode])
+		or "Experimental: select bombers, artillery, rocket launchers or nukes first, then on the map " .. CARPET_HINT[carpetMode] .. ".")
 	return true
 end
 
@@ -936,17 +1025,34 @@ local function drawCarpet()
 	local bombers, guns = selectedBombers(), selectedShooters()
 	local plans = {}
 	if #bombers > 0 or #guns == 0 then
-		plans[#plans + 1] = (carpetPlan(carpetDrag.x, carpetDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), CARPET_APPROACH))
+		plans[#plans + 1] = (planFor(carpetDrag.x, carpetDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), CARPET_APPROACH))
 	end
 	if #guns > 0 then
-		plans[#plans + 1] = (carpetPlan(carpetDrag.x, carpetDrag.z, gx, gz, guns, nil, 0))
+		plans[#plans + 1] = (planFor(carpetDrag.x, carpetDrag.z, gx, gz, guns, nil, 0))
 	end
 	gl.LineWidth(2)
 	gl.Color(1, 0.7, 0.2, 0.9)
-	gl.BeginEnd(GL.LINES, function()
-		gl.Vertex(carpetDrag.x, Spring.GetGroundHeight(carpetDrag.x, carpetDrag.z) + 8, carpetDrag.z)
-		gl.Vertex(gx, Spring.GetGroundHeight(gx, gz) + 8, gz)
-	end)
+	local ax, az = carpetDrag.x, carpetDrag.z
+	if carpetMode == "line" then
+		gl.BeginEnd(GL.LINES, function()
+			gl.Vertex(ax, Spring.GetGroundHeight(ax, az) + 8, az)
+			gl.Vertex(gx, Spring.GetGroundHeight(gx, gz) + 8, gz)
+		end)
+	elseif carpetMode == "rect" then
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			for _, c in ipairs({ { ax, az }, { gx, az }, { gx, gz }, { ax, gz } }) do
+				gl.Vertex(c[1], Spring.GetGroundHeight(c[1], c[2]) + 8, c[2])
+			end
+		end)
+	else
+		local r = math.sqrt((gx - ax) ^ 2 + (gz - az) ^ 2)
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			for k = 0, 47 do
+				local x, z = ax + r * math.cos(k * math.pi / 24), az + r * math.sin(k * math.pi / 24)
+				gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
+			end
+		end)
+	end
 	for _, plan in ipairs(plans) do
 		for _, p in ipairs(plan) do
 			local y = Spring.GetGroundHeight(p.x, p.z) + 8
@@ -1675,8 +1781,9 @@ local ACTIONS = {
 		end
 		return true
 	end,
-	bp_carpet = function()
-		return toggleCarpet()
+	bp_carpet = function(_, _, words)
+		local w = words and words[1]
+		return toggleCarpet((w == "rect" or w == "circle" or w == "line") and w or nil)
 	end,
 	bp_helpbox = function()
 		helpOpen = not helpOpen
