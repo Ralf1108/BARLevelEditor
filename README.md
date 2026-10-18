@@ -6,11 +6,11 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/). Place
 
 | Place: units | Place: blueprints |
 |---|---|
-| ![Place menu, Units tab](docs/place-units.jpg) | ![Place menu, Blueprints tab](docs/place-blueprints.jpg) |
+| ![Place menu, Units tab](docs/level-editor-place-units.jpg) | ![Place menu, Blueprints tab](docs/level-editor-place-blueprints.jpg) |
 
 | Generate: units | Generate: maze |
 |---|---|
-| ![Generate menu, Units](docs/generate-units.jpg) | ![Generate menu, Maze](docs/generate-maze.jpg) |
+| ![Generate menu, Units](docs/level-editor-generate-units.jpg) | ![Generate menu, Maze](docs/level-editor-generate-maze.jpg) |
 
 The editor runs inside BAR as an extra game ("Level Editor") that builds on the official one. Everything is free and finished instantly, no `/cheat` needed. The official game is not changed.
 
@@ -55,6 +55,21 @@ After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor
 | Save a layout | Select units, **Place → Blueprints → Create**. |
 | Save the level | **Ctrl+S** (settings button **O** lists and loads saved levels). |
 | Help | The **?** button shows all keys and controls on screen. |
+
+## BluePrinter (for the official game)
+
+Besides the Level Editor there is a second, much smaller widget for the **official** Beyond All Reason: **BluePrinter**. It brings the blueprints to normal games. It cannot place units directly (that is only possible in the Level Editor); it works with **buildings only**:
+
+- **Blueprints** (the layouts saved in the Level Editor, or new ones made from your selection with *Create Blueprint*) and single buildings from a catalog are **queued as build plans** on the map. A 3D ghost and a number show every plan.
+- **Your builders help on their own:** idle builders and the commander nearby take the plans and build them with normal build orders (cost and build time apply as usual, no cheat). Choose the radius, switch auto-build and the commander on or off with the buttons next to the menu, or send selected builders to one plan with a right click.
+- Rows and rectangles (Shift), rotating, undo and a search field work as in the Level Editor. Because automatic building may count as automation in ranked games, auto-build can be switched off (button **A**).
+- Experimental: the buttons **XL**, **XR**, **XC** send selected bombers, artillery and nukes against a line, a rectangle or a circle; the bombers form up first and attack together as a front.
+
+| Blueprints | Buildings |
+|---|---|
+| ![BluePrinter, Blueprints view](docs/blueprinter-blueprints.jpg) | ![BluePrinter, Buildings view](docs/blueprinter-buildings.jpg) |
+
+Install it with `BluePrinter\install_blueprinter.bat` (see the installation section) and read the [BluePrinter manual](BluePrinter/README.md).
 
 ## Documentation
 
