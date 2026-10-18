@@ -32,7 +32,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - The small button **O** at the top right opens the settings: columns and rows of the grid (default 3 and 4) with - and +. They are stored in `LuaUI\Config\BluePrinterUI.lua` in the game folder.
 - Drag a tile with the mouse button held down = sort (a yellow mark shows the place, the order is remembered).
   Double click on the name = rename (type, Enter accepts, Esc cancels).
-- Ctrl+Alt+P (or `/bp_create`) = same as the button **Create** at the top right of the title row.
+- Ctrl+Alt+P (or `/bp_create`) = same as the button **Create Blueprint** at the top right of the title row.
 - Button **Create**: the selected buildings are saved as `bp_001`, `bp_002` ... in `BluePrinter\blueprints`
   and made ready for placing right away.
 - When placing, the widget shows the 3D models of the buildings in addition to the frames (semi-transparent, for large blueprints the 150 closest to the center). With `/bp_ghost` you check the mode (`gl` or `wg`, if the models are missing).
