@@ -74,7 +74,7 @@ local HELP_SECTIONS = {
 	} },
 	{ "Area attack (experimental)", {
 		{ "XL  /  XR  /  XC", "Buttons next to the menu. Select bombers, artillery, rocket launchers or nukes first, press XL (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
-		{ "Procedure", "Each unit gets its own target in the shape. Bombers approach from the side where they stand, artillery and rockets fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
+		{ "Procedure", "Each unit gets its own target in the shape. Bombers first form up side by side, then all attack at the same moment as a front; artillery and rockets fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
 	} },
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
@@ -811,7 +811,7 @@ end
 -- the piece, then attack its center; this way the bombs fall spread over the whole length. Artillery, rocket launchers,
 -- nukes and everything else with a large blast radius at long range only gets the attack order on the center
 -- of its piece (ground target); mobile units walk into range for it.
-local CARPET_APPROACH = 900 -- Elmo before the center of the piece, where the bombers' approach starts
+local CARPET_APPROACH = 2000 -- Elmo from the target, where the bombers form up before the run (line: beside the line, on the side of the group)
 local AREA_MIN = 16 -- blast radius (Elmo) from which a weapon counts as an area weapon (mortar 18, rocket launcher 24, artillery 35 to 60)
 local RANGE_MIN = 450 -- minimum range of an area weapon (artillery, rockets, nukes)
 
@@ -882,18 +882,34 @@ local function carpetPlan(ax, az, bx, bz, ids, n, approach)
 		order[i] = ids and ids[i] or false
 	end
 	if ids and len >= 8 then
-		-- Units standing further back (against the direction) take the first pieces: this way the paths cross less
+		-- Units are sorted along the line: the one at the A end takes the first piece, so the paths do not cross
 		local function proj(id)
 			local x, _, z = Spring.GetUnitPosition(id)
 			return x and ((x - ax) * ux + (z - az) * uz) or 0
 		end
 		table.sort(order, function(a, b) return proj(a) < proj(b) end)
 	end
+	-- Bombers form up in a row beside the line (perpendicular to it, on the side where the group stands), so the run
+	-- goes straight at the line as a front and nobody flies over the target area before the attack
+	local side = 1
+	if ids and len >= 8 and approach > 0 then
+		local sx, sz, c = 0, 0, 0
+		for _, id in ipairs(ids) do
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x then
+				sx, sz, c = sx + x, sz + z, c + 1
+			end
+		end
+		if c > 0 and (sx / c - (ax + dx / 2)) * -uz + (sz / c - (az + dz / 2)) * ux < 0 then
+			side = -1
+		end
+	end
+	local vx, vz = -uz * side, ux * side
 	local plan = {}
 	for i = 1, n do
 		local t = (n == 1) and 0.5 or (i - 0.5) / n
 		local cx, cz = ax + dx * t, az + dz * t
-		local fx, fz = cx - ux * approach, cz - uz * approach
+		local fx, fz = cx + vx * approach, cz + vz * approach
 		if len < 8 or approach == 0 then
 			fx, fz = cx, cz
 		end
@@ -979,6 +995,41 @@ local function planFor(ax, az, bx, bz, ids, n, approach)
 	return areaPlan(carpetMode, ax, az, bx, bz, ids, n, approach)
 end
 
+-- Bombers form up first (MOVE to their staging point), then all get the ATTACK order at the same moment: they
+-- fly the run together as a front. { members = { [unitID] = plan entry }, frame = start frame }
+local wave = nil
+local WAVE_RADIUS = 250 -- a bomber counts as in position within this distance of its staging point
+local WAVE_TIMEOUT = 1800 -- frames (60 s): go on even if someone is late
+
+local function waveStep(frame)
+	if not wave then
+		return
+	end
+	local total, ready = 0, 0
+	for id, p in pairs(wave.members) do
+		if not Spring.ValidUnitID(id) or Spring.GetUnitIsDead(id) then
+			wave.members[id] = nil
+		else
+			total = total + 1
+			local x, _, z = Spring.GetUnitPosition(id)
+			if (x and dist2(x, z, p.fx, p.fz) <= WAVE_RADIUS * WAVE_RADIUS) or commandCount(id) == 0 then
+				ready = ready + 1
+			end
+		end
+	end
+	if total == 0 then
+		wave = nil
+		return
+	end
+	if ready == total or frame - wave.frame > WAVE_TIMEOUT then
+		for id, p in pairs(wave.members) do
+			Spring.GiveOrderToUnit(id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
+		end
+		say(string.format("Bombers attack: %d of %d in position", ready, total))
+		wave = nil
+	end
+end
+
 local function carpetGo(ax, az, bx, bz)
 	local bombers, guns = selectedBombers(), selectedShooters()
 	if #bombers == 0 and #guns == 0 then
@@ -989,10 +1040,12 @@ local function carpetGo(ax, az, bx, bz)
 	if #bombers > 0 then
 		local plan
 		plan, len = planFor(ax, az, bx, bz, bombers, nil, CARPET_APPROACH)
+		wave = nil
 		for _, p in ipairs(plan) do
 			if len >= 8 then
 				Spring.GiveOrderToUnit(p.id, CMD.MOVE, { p.fx, Spring.GetGroundHeight(p.fx, p.fz), p.fz }, {})
-				Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, { "shift" })
+				wave = wave or { members = {}, frame = Spring.GetGameFrame() }
+				wave.members[p.id] = p
 			else
 				Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
 			end
@@ -1743,6 +1796,9 @@ function widget:DrawScreen()
 end
 
 function widget:GameFrame(n)
+	if wave and n % 15 == 0 then
+		pcall(waveStep, n)
+	end
 	if n % 60 == 1 and not Spring.GetSpectatingState() then
 		pcall(refreshBuildable)
 	end
