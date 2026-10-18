@@ -39,7 +39,6 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). S
 - Structure from the top: title "BluePrinter"; the buttons **V** (collapse/expand the menu: one click hides everything except the V, a second brings it back), **O** (settings), **?** (help), **A** (Auto-build on/off, default on) and **C** (commanders help build yes/no, default yes) and the experimental area attacks **XL** (line), **XR** (rectangle) and **XC** (circle) stand in a **column at the screen edge next to the menu** (one button of free space between C and the area attacks), one below the other, as in the Level Editor (all buttons use `Shared.drawButtons` with the height `HB` and font 26·S of the editor). Mode row **Blueprints | Buildings**, then the button rows:
   1. **Back** | **Clear all**
   2. **Radius** | **-** | input field | **+**: the field shows the current radius; click it, type a number (digits only, up to 5), Enter accepts, Esc cancels, a click elsewhere accepts; the value is limited to 200–6000. **-** and **+** change it in steps of 200 and the number follows at once.
-  3. **New blueprint from selection**
   Every button of the column has a tooltip (A and C also show the current state). There are no buttons for rotating and for the side of the menu (keys `[` `]`, Alt + mouse wheel and the chat commands `/bp_rotate`, `/bp_side` remain). After that the status lines ("Open N, in progress N, done N", "<hint>" (the rotation is visible in the 3D preview at the mouse pointer) and the "Remaining: …" line) and the content (grid or catalog). Active switches are light blue.
 
 ### 4.2 Mode "Blueprints"
@@ -47,7 +46,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). S
 - Clicking a tile chooses the blueprint and switches on stamp mode; **left click on the map queues it** (any number of times), **right click ends**.
 - Sorting by dragging, deleting with x (click twice, trash), renaming by double click – all as in the Level Editor.
 - **Search field** above the tiles (from `shared`): all words of the query must appear in the blueprint name or in code, name and description of the buildings inside; the tiles filter at once. Enter = done, Esc or X = clear; sorting by dragging is off while a search is active. A **scrollbar** (24·S wide) at the right edge appears when the list is longer than the area.
-- **New blueprint from selection** (button, **Ctrl+Alt+P**, chat `/bp_create`): saves the selected **buildings** (other units are ignored) as `bp_001`, `bp_002` … in `BluePrinter\blueprints` (position relative to the center, team 0), chooses it and switches the stamp on. Without selected buildings a message appears.
+- **Create** (blueprint from the selection; button at the top right of the title row, left of the button column, **Ctrl+Alt+P**, chat `/bp_create`): saves the selected **buildings** (other units are ignored) as `bp_001`, `bp_002` … in `BluePrinter\blueprints` (position relative to the center, team 0), chooses it and switches the stamp on. Without selected buildings a message appears.
 - If the list is empty: "No blueprints found".
 
 ### 4.3 Mode "Buildings" (single buildings)
