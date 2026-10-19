@@ -59,9 +59,10 @@ local helpOpen = false -- Help board on the screen
 local HELP_SECTIONS = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, D delete in a rectangle." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, DL / DR / DC delete, XL / XR / XC area attacks (experimental)." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
-		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, favorite). Features: the list shows only pictures, below it the code name, metal, energy and description." },
+		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
+		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },
 		{ "Search field", "At the top of Place: one search over Recent, Units, Features and Blueprints at once (words of the description or the code). The tabs show the number of matches. Enter = done, Esc or X = clear." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename, Create = save the selection." },
 		{ "Recent", "Recently chosen blueprints and recently placed units." },
@@ -78,7 +79,7 @@ local HELP_SECTIONS = {
 		{ "[  ]", "Rotate (south, east, north, west), also for blueprints." },
 		{ "Shift + drag", "Place a row. With Shift+Alt a rectangle." },
 		{ "Shift+Mouse wheel, Alt+Z / X", "Spacing between the units of a row or rectangle." },
-		{ "Generate", "Generate tab: choose faction, type (several possible: units, buildings, turrets, air, ships), tech T1-T3 and count (input field), press the Generate button and drag the area (Area: rectangle, or a circle from its center outwards); random units appear in it for the chosen team. Ctrl+Z undoes them. The Maze sub-tab builds a random maze in a dragged rectangle." },
+		{ "Generate", "Generate tab: choose faction, type (several possible: units, buildings, turrets, air, ships), tech T1-T3 and count (input field), press the Generate button and drag the area (Area: rectangle, or a circle from its center outwards); random units appear in it for the chosen team. Ctrl+Z undoes them. The Maze sub-tab builds a random maze in the dragged area." },
 		{ "DL  /  DR  /  DC", "Delete along a line, in a rectangle or in a circle: press the button (D = rectangle), then drag the shape on the map; everything in it (units, wrecks, features) is deleted. Ctrl+Z undoes it." },
 		{ "XL  /  XR  /  XC", "Experimental area attacks (line, rectangle, circle): select bombers, artillery, rocket launchers or nukes, press the button and drag the shape on the map (circle from the center). Bombers form up and attack together, front targets first." },
 		{ "M", "Maze: the key cycles through dragon teeth, walls, off (also the Maze sub-tab of the Generate tab). Then drag a rectangle or circle; a random maze appears in it (entrance top left, exit bottom right). Right click or arming something else ends the mode, Ctrl+Z undoes it." },
@@ -3110,18 +3111,18 @@ local HELP_TOPICS = {
 		},
 	},
 	{
-		names = { "place", "unit", "unit" },
+		names = { "place", "unit" },
 		lines = {
 			"PLACING: click a unit in the Units menu, left click on the map places it, right click ends. Choose the team with the buttons left of the menu.",
-			"Team 0 = you (Armada), team 1 = enemy (Cortex). The grid is set in the settings (button O). The spacing of rows changes with Shift+Mouse wheel or Alt+Z / X.",
+			"Team 0 = you; which team is player, ally or enemy in a scenario is set on the scenario page (button I). The grid is set in the settings (button O). The spacing of rows changes with Shift+Mouse wheel or Alt+Z / X.",
 			"Air units appear in the air and stay in flight mode. Ships need water.",
 		},
 	},
 	{
 		names = { "units", "group", "generate", "buildings", "turrets", "air", "ships" },
 		lines = {
-			"GENERATE: the G tab (Generate) fills a rectangle or a circle with random units, buildings, turrets, air or ships. Choose team, faction, type(s), tech levels and the count, then Generate and drag the area.",
-			"Without a faction the team's faction is used (arm, cor or leg can be chosen). At most 2000 pieces; buildings and turrets stand on free building spots, units on passable ground.",
+			"GENERATE: the Generate menu (next to Place) fills a rectangle or a circle with random units, buildings, turrets, air or ships. Choose team, faction, type(s), tech levels and the count, then Generate and drag the area.",
+			"The sub-tab Maze builds a random maze of dragon teeth or walls in the dragged area (also key M). At most 2000 pieces; buildings and turrets stand on free building spots, units on passable ground.",
 			"Enemies fight on their own within range. Air units appear in the air in flight mode.",
 		},
 	},
@@ -3130,15 +3131,15 @@ local HELP_TOPICS = {
 		lines = {
 			"BLUEPRINT: select units or buildings, then Create in the blueprint menu saves the layout (folder LevelEditor/blueprints).",
 			"A click on a tile chooses it; left click on the map places it with the saved teams, or for the team chosen on the left.",
-			"MENU: the Blueprints button at the top of the menu shows the tiles with preview pictures. Click a tile, then left click on the map places, right click ends, the mouse wheel scrolls.",
-			"UNITS MENU: click 'Units' at the top of the menu. Then choose faction, group (buildings, air, vehicles, bots, hover, ships) and tech (T1-T3), click a unit, left click on the map places it (blue outline), right click ends, [ and ] rotate. You choose the team with the buttons left of the menu.",
+			"MENU: the Blueprints tab of the Place menu shows the tiles with preview pictures. Click a tile, then left click on the map places, right click ends, the mouse wheel scrolls.",
+			"UNITS MENU: the Units tab of the Place menu. Choose faction, group (buildings, air, vehicles, bots, hover, ships) and tech (T1-T3), click a unit, left click on the map places it (blue outline), right click ends, [ and ] rotate. You choose the team with the buttons left of the menu.",
 			"SORTING: drag a tile with the mouse and drop it elsewhere. DELETING: small x at the top right, click twice (trash: blueprints/_trash). RENAMING: double click on the name, Enter.",
 			"Air units keep their height, landed air units stay landed. The layout is not checked for passability.",
 			"PREVIEW: when you move the mouse over a tile, a large rotating 3D view of the blueprint appears (all units in place).",
 		},
 	},
 	{
-		names = { "save", "load", "save", "load", "last" },
+		names = { "save", "load", "last" },
 		lines = {
 			"SAVING: Ctrl+S writes the level to LevelEditor/levels/<name>.lua: all units (position, height, team) and all features (wrecks, trees, rocks).",
 			"LOADING: the level list in the settings (button O) clears the map (except the builder rows) and sets the level up again. Features are replaced if the file contains any. /led_clear clears units only.",
@@ -3155,7 +3156,7 @@ local HELP_TOPICS = {
 		},
 	},
 	{
-		names = { "edit", "edit", "move", "rotate", "mirror" },
+		names = { "edit", "move", "rotate", "mirror" },
 		lines = {
 			"EDITING THE SELECTION: when units are selected, three buttons appear on the left above the team buttons: L = rotate 90 degrees left, R = right, S = mirror left-right (around the center of the selection). The selection is kept.",
 			"MOVING: with the arrow keys the selection moves by one grid step. Or hold Alt, click a selected unit, drag, release. It moves in grid steps (green preview).",
@@ -3172,19 +3173,28 @@ local HELP_TOPICS = {
 		},
 	},
 	{
-		names = { "search", "favorites", "levels" },
+		names = { "search", "recent", "levels" },
 		lines = {
 			"SEARCH: the Place menu has one search field at the top for Units, Features and Blueprints together. Click and type words of the description or the code; the tabs Recent, Units, Features and Blueprints show how many match and list the matches (across all factions, groups and tech levels). Enter ends the input, Esc or the X button next to it clears the search.",
-			"FAVORITES: recently chosen blueprints and recently placed units, click to use them again (stored in LuaUI/Config/LevelEditorRecent.lua).",
+			"RECENT: recently chosen blueprints and recently placed units, click to use them again (stored in LuaUI/Config/LevelEditorRecent.lua).",
 			"LEVELS: 'O' opens the settings, below them the list of saved levels. Loading and saving need a second click as confirmation, 'Save as new' creates level_001, level_002 ...",
 		},
 	},
 	{
-		names = { "scenario", "scenario", "info", "i" },
+		names = { "scenario", "info", "i" },
 		lines = {
 			"SCENARIO: the I button (button column at the far right) opens the scenario info: title, author, summary, briefing (Shift+Enter = new line), role of each team (player, ally, enemy), tech per team, AI behavior, win condition, start metal and energy, grace period (m:ss) and ID.",
 			"TECH: per team, switch T1, T2 and T3 on or off individually (default all on). An enemy with only T1 can only build tier 1 units and buildings.",
 			"The info is saved with the level (Ctrl+S). You build the playable package in the start menu with key 3: choose a level, a folder and a ZIP are created in LevelEditor/scenario/scenarios.",
+		},
+	},
+	{
+		names = { "delete", "maze", "attack", "right" },
+		lines = {
+			"DELETE: the buttons DL, DR and DC in the button column delete everything along a dragged line, in a dragged rectangle (also key D) or in a dragged circle: units, wrecks and features. Ctrl+Z brings it back.",
+			"MAZE: Generate menu, sub-tab Maze (or key M): choose dragon teeth or walls, press Generate and drag the area; entrance top left, exit bottom right.",
+			"AREA ATTACK (experimental): select bombers, artillery, rocket launchers or nukes, press XL, XR or XC and drag a line, rectangle or circle; the bombs and shots of all of them are spread evenly over it.",
+			"RIGHT CLICK: anywhere it ends every mode (placing, delete, maze, generate, area attack); without a mode it clears the selection.",
 		},
 	},
 	{

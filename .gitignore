@@ -11,5 +11,3 @@ LevelEditor/blueprints/*
 !LevelEditor/blueprints/.gitkeep
 BluePrinter/blueprints/*
 !BluePrinter/blueprints/.gitkeep
-__pycache__/
-*.pyc

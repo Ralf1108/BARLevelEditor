@@ -37,8 +37,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - Drag a tile with the mouse button held down = sort (a yellow mark shows the place, the order is remembered).
   Double click on the name = rename (type, Enter accepts, Esc cancels).
 - **Rows and rectangles:** with an armed blueprint or building hold **Shift** and drag (a row) or **Shift + Alt** and drag (a rectangle); all copies are queued on release as one step for Undo. **Shift + mouse wheel** changes the spacing.
-- Ctrl+Alt+P (or `/bp_create`) = same as the button **Create Blueprint** at the top right of the title row.
-- Button **Create**: the selected buildings are saved as `bp_001`, `bp_002` ... in `BluePrinter\blueprints`
+- **Create Blueprint** (button at the top right of the title row, Ctrl+Alt+P or `/bp_create`): the selected buildings are saved as `bp_001`, `bp_002` ... in `BluePrinter\blueprints`
   and made ready for placing right away.
 - When placing, the widget shows the 3D models of the buildings in addition to the frames (semi-transparent, for large blueprints the 150 closest to the center). With `/bp_ghost` you check the mode (`gl` or `wg`, if the models are missing).
 - A **search field** sits above the blueprint tiles (and in the building catalog): type words of the description or the code, the list filters at once (Enter = done, Esc or X = clear; sorting is off while searching). The lists have a **scrollbar** at the right edge.

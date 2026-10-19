@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
 function Fail($t) { Write-Host "ERROR: $t" -ForegroundColor Red; exit 1 }
 
-# BAR finden
+# Find BAR
 $candidates = @()
 $candidates += (Join-Path $env:LOCALAPPDATA 'Programs\Beyond-All-Reason')
 $parents = @('Games', 'Spiele', 'Program Files', 'Program Files (x86)', 'Programme', '')
@@ -23,7 +23,7 @@ while (-not $bar) {
 $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
 
-# Widget kopieren
+# Copy the widget
 $wdir = Join-Path $data 'LuaUI\Widgets'
 New-Item -ItemType Directory -Force $wdir | Out-Null
 Copy-Item (Join-Path $here 'bluePrinter.lua') (Join-Path $wdir 'bluePrinter.lua') -Force

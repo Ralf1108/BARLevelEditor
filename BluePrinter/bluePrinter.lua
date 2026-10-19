@@ -1644,6 +1644,8 @@ function widget:Shutdown()
 	for name in pairs(ACTIONS) do
 		widgetHandler:RemoveAction(name)
 	end
+	Spring.SendCommands("unbind Ctrl+Alt+p bp_create")
+	Spring.SendCommands("unbind Ctrl+Alt+k bp_carpet")
 end
 
 function widget:GetConfigData()
@@ -1670,8 +1672,10 @@ function widget:SetConfigData(data)
 	if data.autoBuild ~= nil then
 		autoBuild = data.autoBuild and true or false
 	end
-	radius = tonumber(data.radius) or radius
-	useCommander = data.useCommander and true or false
+	radius = math.max(RADIUS_MIN, math.min(RADIUS_MAX, tonumber(data.radius) or radius))
+	if data.useCommander ~= nil then
+		useCommander = data.useCommander and true or false
+	end
 	if data.menuOpen ~= nil then
 		menuOpen = data.menuOpen and true or false
 	end

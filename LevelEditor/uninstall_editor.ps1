@@ -42,7 +42,9 @@ $items = @(
     @{ Path = (Join-Path $data 'LevelEditorBlueprints'); Text = 'Junction data\LevelEditorBlueprints (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
     @{ Path = (Join-Path $desktop 'BAR Level Editor.lnk'); Text = 'Desktop shortcut "BAR Level Editor"'; Kind = 'file' },
     @{ Path = (Join-Path $here 'start_level_editor.bat'); Text = 'start_level_editor.bat'; Kind = 'file' },
-    @{ Path = (Join-Path $here 'editor_script_installed.txt'); Text = 'editor_script_installed.txt (start script)'; Kind = 'file' }
+    @{ Path = (Join-Path $here 'editor_script_installed.txt'); Text = 'editor_script_installed.txt (start script)'; Kind = 'file' },
+    @{ Path = (Join-Path $here 'last_map.txt'); Text = 'last_map.txt (last chosen map)'; Kind = 'file' },
+    @{ Path = (Join-Path $here 'maps_online_cache.json'); Text = 'maps_online_cache.json (cached map list)'; Kind = 'file' }
 )
 if ($WithSettings) {
     foreach ($n in 'LevelEditorRecent.lua', 'LevelEditorUI.lua') {

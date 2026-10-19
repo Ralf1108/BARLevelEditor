@@ -4,9 +4,9 @@ Place units on the map with the mouse, blow them up, save them and load them aga
 
 ## Setup (once per computer, BAR must be installed)
 1. Download or clone the repository and keep the folders `LevelEditor` and `shared` next to each other.
-2. Run `install_editor.bat`. It searches BAR on all fixed drives (e.g. C:\Games, D:\Games, Program Files) and finds BAR and the engine, determines the installed game version, builds the extra game `data\games\LevelEditorMod.sdz` ("Level Editor", builds on the official BAR), creates the junction `data\LevelEditor` -> `levels`, writes `start_level_editor.bat` and creates the desktop shortcut "BAR Level Editor".
+2. Run `install_editor.bat`. It searches BAR on all fixed drives (e.g. C:\Games, D:\Games, Program Files) and finds BAR and the engine, determines the installed game version, builds the extra game `data\games\LevelEditorMod.sdz` ("Level Editor", builds on the official BAR), creates the junctions `data\LevelEditor` -> `levels` and `data\LevelEditorBlueprints` -> `blueprints`, writes `start_level_editor.bat` and creates the desktop shortcut "BAR Level Editor".
 3. After a BAR update run `install_editor.bat` again (the game version is stored in the extra game). Also after changes to the widget or gadget.
-4. Removing it again: run `uninstall_editor.bat` (it asks first). It removes the extra game, the two junctions in the game folder, the desktop icon, `start_level_editor.bat` and the start script. Saved levels and blueprints stay in the folders `levels` and `blueprints`, the official game is not touched. With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
+4. Removing it again: run `uninstall_editor.bat` (it asks first). It removes the extra game, the two junctions in the game folder, the desktop icon, `start_level_editor.bat`, the start script and the cached map files (`last_map.txt`, `maps_online_cache.json`). Saved levels and blueprints stay in the folders `levels` and `blueprints`, the official game is not touched. With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
 The official game is not changed.
 
 ## Starting
@@ -23,6 +23,7 @@ In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are nee
 - Blueprint menu: the **Blueprints** tab of the Place menu shows tiles with preview pictures (unit positions in team colors, air units with a white border), the name, the number of units and the total cost of the blueprint (`M` metal, `E` energy). Click a tile, then left click on the map places it (with an outline preview at the mouse pointer), right click ends, the mouse wheel scrolls. The list comes from the folder `blueprints` (and from `_index.txt` as a fallback).
 - Air units appear in the air when placed and loaded (when loading with the saved height, otherwise cruise height) and stay in flight mode. Air units that stood on the ground when saving are loaded landed.
 - **Shift + drag** places a row of the armed unit, feature or blueprint, **Shift + Alt + drag** a rectangle (all are placed on release); **Shift + mouse wheel** changes the spacing.
+- **Right click** anywhere (also over the menu and the buttons) ends every mode: placing, delete, maze, generate, area attack. Without a mode it clears the selection, e.g. after rotating or mirroring.
 - [ and ] rotate the unit or blueprint stamp by 90 degrees. Del deletes and Ctrl+B blows up (wreck stays); both work on the selected units, without a selection on the unit, wreck or feature at the mouse pointer. Ctrl+Z undoes the last action (placing, deleting, moving, generating ...), Ctrl+Y redoes it.
 - Ctrl+S writes `levels\<name>.lua` (units and features, so also wrecks and trees). The level list in the settings (button **O**) clears up (except the builder rows) and sets a level up again. `/led_clear` only clears up.
 - Resurrected units are set to hold position.
@@ -35,6 +36,7 @@ In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are nee
 - `install_editor.bat` / `install_editor.ps1` - setup
 - `uninstall_editor.bat` / `uninstall_editor.ps1` - removal (levels and blueprints stay)
 - `start_level_editor.bat` - start (created by the setup)
+- `check_links.ps1` - called by `start_level_editor.bat` before every start: points the two junctions to the `levels` and `blueprints` folders again if the project folder was moved
 - `scenario\` - scenario builder (start menu key 3, see `scenario\README.md`)
 - `levels\` - saved levels; `blueprints\` - saved layouts
 
