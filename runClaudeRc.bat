@@ -1,1 +1,0 @@
-claude --permission-mode auto --remote-control "BAR Editor"
