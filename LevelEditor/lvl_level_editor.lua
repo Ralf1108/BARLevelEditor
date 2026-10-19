@@ -2088,6 +2088,31 @@ local function mazeBuild(lay, circ)
 	say(string.format("Maze: %d x %d cells, %d x %s (entrance top left, exit bottom right)", lay.cols, lay.rows, #walls, name))
 end
 
+-- Ends every stamp, delete, maze, generate and area-attack mode and every drag in progress (selection frame,
+-- Alt + drag move); without an active mode a right click clears the selection; returns true if it did something (a field of gen: the file is close to the limit of 200 locals)
+function gen.cancelModes()
+	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
+		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed()
+	if not was then
+		if #selectedUnits() > 0 then
+			foreignSel = {}
+			Spring.SelectUnitArray({})
+			say("Selection cleared")
+			return true
+		end
+		return false
+	end
+	armedUnit, armedFeature = false, false
+	bpGrid:setArmed(false)
+	gen.armed, gen.drag = false, nil
+	delMode, delDrag = false, nil
+	mazeKind, mazeDrag = nil, nil
+	stampDrag, moveDrag, selBox = nil, nil, nil
+	area:disarm()
+	say("Mode ended")
+	return true
+end
+
 function widget:MousePress(mx, my, button)
 	rescale()
 	if gen.edit and not inPanel(mx, my) then
@@ -2134,6 +2159,9 @@ function widget:MousePress(mx, my, button)
 			mazeSetKind(nil)
 			return true
 		end
+	end
+	if button == 3 and not helpOpen and gen.cancelModes() then
+		return true -- right click anywhere (also over the menu and the buttons) returns to the default mode
 	end
 	if helpOpen then
 		helpOpen = false -- every click closes the help board
