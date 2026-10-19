@@ -21,7 +21,8 @@ Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECI
 | BluePrinter | `VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)` | `data\LuaUI\Include\editor_common.lua` in the BAR write folder |
 
 - `LevelEditor\install_editor.ps1` packs `shared\editor_common.lua` into the `.sdz`. `BluePrinter\install_blueprinter.ps1` copies the file to `data\LuaUI\Include`.
-- Both scripts look for the file first in `..\shared\editor_common.lua` (next to the widget folder), otherwise as a copy in the widget folder, otherwise they abort with an error message.
+- Both scripts take the file from `..\shared\editor_common.lua` (next to the widget folder) and abort with an error message if it is missing.
+- **`bar_common.ps1`** holds what all setup scripts share (dot-sourced by `install_editor.ps1`, `uninstall_editor.ps1`, `check_links.ps1`, `install_blueprinter.ps1`, `uninstall_blueprinter.ps1` and through the installer `start_blueprinter.ps1`): `Fail`, `Find-Bar` (searches all fixed drives, asks if BAR is not found), `Get-Engine`, `Get-GameVersion` (byar:test, otherwise byar:stable, the first one whose package is installed), `Set-Junction` (creates a junction, points a stale one to the new target, leaves a real folder alone, prints only changes) and `Remove-Junction` (removes only the link). The scenario starter in the package (`start_scenario.ps1`) does not use it, because the package must work on its own.
 - The two load paths are deliberately separate (ZIP_FIRST and RAW_FIRST) so the copy in the extra game is never covered by the copy for the BluePrinter.
 - On a second computer the folders `shared`, `LevelEditor` and `BluePrinter` must lie next to each other.
 - After every change to `editor_common.lua` run both installations again.

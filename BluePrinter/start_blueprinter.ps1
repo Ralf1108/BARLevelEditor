@@ -2,34 +2,15 @@
 # Use it to look at the menu after changing bluePrinter.lua or shared\editor_common.lua.
 param([string]$Map = $null)
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.IO.Compression
 
-# 1. Install (sets $bar and $data; exits with an error message if BAR is not found)
+# 1. Install (sets $bar and $data and loads shared\bar_common.ps1; exits with an error message if BAR is not found)
 . (Join-Path $PSScriptRoot 'install_blueprinter.ps1')
 
 # 2. Engine
-$engineDir = Get-ChildItem (Join-Path $data 'engine') -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'spring.exe') } | Sort-Object Name | Select-Object -Last 1
-if (-not $engineDir) { Fail 'No engine found in data\engine. Please start BAR once so the launcher installs it.' }
+$engineDir = Get-Engine $data
 
-# 3. Installed game version (as in install_editor.ps1)
-$versionsFile = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
-if (-not (Test-Path $versionsFile)) { Fail 'No game data found. Please start BAR once and let a game load.' }
-$fs = [IO.File]::OpenRead($versionsFile)
-$gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
-$sr = New-Object IO.StreamReader($gz)
-$text = $sr.ReadToEnd(); $sr.Close(); $fs.Close()
-$game = $null; $fallback = $null
-foreach ($tag in @('byar:test', 'byar:stable')) {
-    foreach ($line in ($text -split "`n")) {
-        if ($line.StartsWith($tag + ',')) {
-            $f = $line.Trim().Split(',')
-            if (-not $fallback) { $fallback = $f[3] }
-            if (-not $game -and (Test-Path (Join-Path $data ("packages\" + $f[1] + '.sdp')))) { $game = $f[3] }
-        }
-    }
-}
-if (-not $game) { $game = $fallback }
-if (-not $game) { Fail 'Game version not found.' }
+# 3. Installed game version
+$game = Get-GameVersion $data
 
 # 4. Map: given one, otherwise the first installed map
 if (-not $Map) {

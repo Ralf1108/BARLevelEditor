@@ -181,6 +181,7 @@ See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sort
 | `install_editor.bat`, `install_editor.ps1` | setup |
 | `uninstall_editor.bat`, `uninstall_editor.ps1` | removal (levels and blueprints stay) |
 | `start_level_editor.bat` | start (created by the setup) |
+| `check_links.ps1` | called by `start_level_editor.bat` before every start: points the two junctions to `levels` and `blueprints` again if the project folder was moved |
 | `editor_script_installed.txt` | start script for the engine |
 | `scenario\` | scenario builder (start menu key 3): builds a scenario for the official game from a level (see 15) |
 | `levels\` | saved levels |

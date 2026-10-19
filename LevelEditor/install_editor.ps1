@@ -8,62 +8,24 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $here = $PSScriptRoot
 
 function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
-function Fail($t) { Write-Host "ERROR: $t" -ForegroundColor Red; exit 1 }
+$common = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_common.ps1'
+if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to this folder)." -ForegroundColor Red; exit 1 }
+. $common
 
 # ---------------------------------------------------------------- 1. Find BAR
 Step 'Find Beyond All Reason'
-$candidates = @()
-$candidates += (Join-Path $env:LOCALAPPDATA 'Programs\Beyond-All-Reason')
-$parents = @('Games', 'Spiele', 'Program Files', 'Program Files (x86)', 'Programme', '')
-$names = @('Beyond-All-Reason', 'Beyond All Reason', 'BeyondAllReason')
-foreach ($drive in [IO.DriveInfo]::GetDrives()) {
-    if ($drive.DriveType -ne 'Fixed' -or -not $drive.IsReady) { continue }
-    foreach ($par in $parents) {
-        foreach ($n in $names) {
-            $candidates += (Join-Path (Join-Path $drive.RootDirectory.FullName $par) $n)
-        }
-    }
-}
-$bar = $null
-foreach ($c in $candidates) {
-    if (Test-Path (Join-Path $c 'data\engine')) { $bar = $c; break }
-}
-while (-not $bar) {
-    $in = Read-Host 'BAR not found. Please enter the installation folder (Beyond-All-Reason.exe is in it)'
-    if ($in -and (Test-Path (Join-Path $in 'data\engine'))) { $bar = $in } elseif (-not $in) { Fail 'Aborted.' } else { Write-Host 'There is no data\engine folder there.' }
-}
+$bar = Find-Bar
 $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
 
 # ---------------------------------------------------------------- 2. Engine
 Step 'Find the engine'
-$engineDir = Get-ChildItem (Join-Path $data 'engine') -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'spring.exe') } | Sort-Object Name | Select-Object -Last 1
-if (-not $engineDir) { Fail 'No engine found in data\engine. Please start BAR once so the launcher installs it.' }
+$engineDir = Get-Engine $data
 Write-Host "Engine: $($engineDir.Name)"
 
 # ---------------------------------------------------------------- 3. Version of the official game
 Step 'Determine the version of the official game'
-$versionsFile = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
-if (-not (Test-Path $versionsFile)) { Fail 'No game data found (rapid\...\byar\versions.gz). Please start BAR once and let a game load.' }
-$fs = [IO.File]::OpenRead($versionsFile)
-$gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
-$sr = New-Object IO.StreamReader($gz)
-$text = $sr.ReadToEnd(); $sr.Close(); $fs.Close()
-$game = $null; $fallback = $null
-foreach ($tag in @('byar:test', 'byar:stable')) {
-    foreach ($line in ($text -split "`n")) {
-        if ($line.StartsWith($tag + ',')) {
-            $f = $line.Trim().Split(',')
-            if (-not $fallback) { $fallback = $f[3] }
-            if (-not $game -and (Test-Path (Join-Path $data ("packages\" + $f[1] + '.sdp')))) { $game = $f[3] }
-        }
-    }
-}
-if (-not $game) {
-    $game = $fallback
-    if ($game) { Write-Host "Note: installed game not identified clearly, taking $game" -ForegroundColor Yellow }
-}
-if (-not $game) { Fail 'Game version not found.' }
+$game = Get-GameVersion $data
 Write-Host "Game: $game"
 
 # ---------------------------------------------------------------- 4. Build the extra game (zip)
@@ -71,9 +33,8 @@ Step 'Build the extra game "Level Editor"'
 foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua')) {
     if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (LevelEditor folder copied completely?)" }
 }
-# shared code of the Level Editor and the BluePrinter: folder shared next to LevelEditor (source) or a copy in the LevelEditor folder
+# shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
 $sharedFile = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'editor_common.lua'
-if (-not (Test-Path $sharedFile)) { $sharedFile = Join-Path $here 'editor_common.lua' }
 if (-not (Test-Path $sharedFile)) { Fail "File missing: editor_common.lua (copy the shared folder next to LevelEditor as well)" }
 $gamesDir = Join-Path $data 'games'
 New-Item -ItemType Directory -Force $gamesDir | Out-Null
@@ -113,35 +74,13 @@ Write-Host "Created: $zipPath"
 Step 'Folder for saved levels'
 $levels = Join-Path $here 'levels'
 New-Item -ItemType Directory -Force $levels | Out-Null
-$link = Join-Path $data 'LevelEditor'
-function Repoint($path, $target) {
-    # a junction left over from a moved or renamed project folder is removed so it can be created again
-    $item = Get-Item $path -Force -ErrorAction SilentlyContinue
-    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and (@($item.Target)[0] -ne $target)) {
-        cmd /c rmdir "$path" | Out-Null
-        Write-Host "Stale junction removed: $path -> $(@($item.Target)[0])"
-    }
-}
-Repoint $link $levels
-if (-not (Test-Path $link)) {
-    cmd /c mklink /J "$link" "$levels" | Out-Null
-    Write-Host "Junction: $link -> $levels"
-} else {
-    Write-Host 'Junction already exists.'
-}
+Set-Junction (Join-Path $data 'LevelEditor') $levels
 
 # Blueprints (Create / blueprint menu): own folder with its own junction
 $bpDir = Join-Path $here 'blueprints'
-New-Item -ItemType Directory -Force $bpDir | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $bpDir '_trash') | Out-Null
-$bpLink = Join-Path $data 'LevelEditorBlueprints'
-Repoint $bpLink $bpDir
-if (-not (Test-Path $bpLink)) {
-    cmd /c mklink /J "$bpLink" "$bpDir" | Out-Null
-    Write-Host "Junction: $bpLink -> $bpDir"
-} else {
-    Write-Host 'Junction for blueprints already exists.'
-}
+Set-Junction (Join-Path $data 'LevelEditorBlueprints') $bpDir
+Write-Host "Levels: $levels, blueprints: $bpDir"
 
 # ---------------------------------------------------------------- 6. Start file (with map selection)
 Step 'Write the start file'

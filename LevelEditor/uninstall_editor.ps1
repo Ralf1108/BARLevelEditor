@@ -7,30 +7,13 @@ $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
 
 function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
-function Fail($t) { Write-Host "ERROR: $t" -ForegroundColor Red; exit 1 }
+$common = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_common.ps1'
+if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to this folder)." -ForegroundColor Red; exit 1 }
+. $common
 
 # ---------------------------------------------------------------- Find BAR (as during setup)
 Step 'Find Beyond All Reason'
-$candidates = @()
-$candidates += (Join-Path $env:LOCALAPPDATA 'Programs\Beyond-All-Reason')
-$parents = @('Games', 'Spiele', 'Program Files', 'Program Files (x86)', 'Programme', '')
-$names = @('Beyond-All-Reason', 'Beyond All Reason', 'BeyondAllReason')
-foreach ($drive in [IO.DriveInfo]::GetDrives()) {
-    if ($drive.DriveType -ne 'Fixed' -or -not $drive.IsReady) { continue }
-    foreach ($par in $parents) {
-        foreach ($n in $names) {
-            $candidates += (Join-Path (Join-Path $drive.RootDirectory.FullName $par) $n)
-        }
-    }
-}
-$bar = $null
-foreach ($c in $candidates) {
-    if (Test-Path (Join-Path $c 'data\engine')) { $bar = $c; break }
-}
-while (-not $bar) {
-    $in = Read-Host 'BAR not found. Please enter the installation folder (Beyond-All-Reason.exe is in it)'
-    if ($in -and (Test-Path (Join-Path $in 'data\engine'))) { $bar = $in } elseif (-not $in) { Fail 'Aborted.' } else { Write-Host 'There is no data\engine folder there.' }
-}
+$bar = Find-Bar
 $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
 
@@ -68,13 +51,7 @@ Step 'Remove'
 foreach ($i in $found) {
     if ($i.Kind -eq 'junction') {
         # only unhook the junction: rmdir does not delete the contents of the target
-        $item = Get-Item -LiteralPath $i.Path -Force
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-            cmd /c rmdir "$($i.Path)" | Out-Null
-        } else {
-            Write-Host "  skipped (not a junction but a real folder): $($i.Path)" -ForegroundColor Yellow
-            continue
-        }
+        if (-not (Remove-Junction $i.Path)) { continue }
     } else {
         Remove-Item -LiteralPath $i.Path -Force
     }

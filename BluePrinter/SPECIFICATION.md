@@ -20,7 +20,8 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; th
 ## 2. Installation
 
 - `install_blueprinter.bat` → `install_blueprinter.ps1`: searches BAR on all fixed drives, copies `bluePrinter.lua` to `data\LuaUI\Widgets`, the shared code `shared\editor_common.lua` to `data\LuaUI\Include` (an old `bp_shared.lua` there is deleted) and creates the junctions `data\LuaUI\Config\BluePrinter` → `BluePrinter\blueprints` and, if the folder `LevelEditor` lies next to `BluePrinter`, `data\LuaUI\Config\LevelEditorBlueprints` → `LevelEditor\blueprints`. An old junction `data\BluePrinter` from earlier versions is removed.
-- The folder `shared` must lie next to `BluePrinter` (also on a second computer). After every change to the widget or the shared code run the installation again and type `/luaui reload` in the game.
+- **Removing:** `uninstall_blueprinter.bat` → `uninstall_blueprinter.ps1` lists what is there (`LuaUI\Widgets\bluePrinter.lua`, `LuaUI\Include\editor_common.lua`, the junctions `LuaUI\Config\BluePrinter` and `LuaUI\Config\LevelEditorBlueprints`, with `-WithSettings` also `BluePrinterUI.lua`), asks (`-Yes` skips that) and removes it; junctions are only unhooked, the blueprints stay. The Level Editor does not use these files (it carries the shared code in its extra game).
+- The folder `shared` must lie next to `BluePrinter` (also on a second computer); the setup scripts use `shared\bar_common.ps1`. After every change to the widget or the shared code run the installation again and type `/luaui reload` in the game.
 - In the game switch on "Allow user widgets" and activate the widget in the widget list (F11); `enabled = true` is set.
 - The widget loads the shared code with `VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)`.
 
@@ -127,6 +128,7 @@ Keys: **Ctrl+Alt+P** (blueprint from selection), `[`/`]` (rotate), **Alt+Z / Alt
 |---|---|
 | `bluePrinter.lua` | the widget |
 | `install_blueprinter.bat`, `install_blueprinter.ps1` | installation |
+| `uninstall_blueprinter.bat`, `uninstall_blueprinter.ps1` | removal (asks first; widget, shared code, junctions; `-WithSettings` also `BluePrinterUI.lua`, `-Yes` without asking; the blueprints stay) |
 | `start_blueprinter.bat`, `start_blueprinter.ps1` | installs the widget again and starts a small test game (one player against a passive AI, first installed map or `start_blueprinter.bat "Map Name"`) to look at the menu |
 | `blueprints\` | own blueprints, `_order.txt`, `_trash\` |
 | `README.md` | short manual |
