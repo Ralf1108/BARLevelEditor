@@ -2766,10 +2766,10 @@ function M.newAreaAttack(o)
 	local say = o.say
 	local mouseGround = o.mouseGround
 	local inPanel = o.inPanel or function() return false end
-	local carpetArmed = false -- an area attack is armed: drag the shape on the map
-	local carpetMode = "line" -- "line" | "rect" | "circle": shape that is dragged
-	local carpetDrag = nil -- { x, z }: start point of the line, rectangle corner or circle center
-	local toggleCarpet
+	local areaArmed = false -- an area attack is armed: drag the shape on the map
+	local areaMode = "line" -- "line" | "rect" | "circle": shape that is dragged
+	local areaDrag = nil -- { x, z }: start point of the line, rectangle corner or circle center
+	local toggleArea
 
 	local function commandCount(id)
 		if Spring.GetUnitCommandCount then
@@ -2792,7 +2792,7 @@ function M.newAreaAttack(o)
 	-- the piece, then attack its center; this way the bombs fall spread over the whole length. Artillery, rocket launchers,
 	-- nukes and everything else with a large blast radius at long range only gets the attack order on the center
 	-- of its piece (ground target); mobile units walk into range for it.
-	local CARPET_APPROACH = 2000 -- Elmo from the target, where the bombers form up before the run (line: beside the line, on the side of the group)
+	local STAGING_DISTANCE = 2000 -- Elmo from the target, where the bombers form up before the run (line: beside the line, on the side of the group)
 	local AREA_MIN = 16 -- blast radius (Elmo) from which a weapon counts as an area weapon (mortar 18, rocket launcher 24, artillery 35 to 60)
 	local RANGE_MIN = 450 -- minimum range of an area weapon (artillery, rockets, nukes)
 
@@ -2849,8 +2849,8 @@ function M.newAreaAttack(o)
 
 	-- Plan: per unit { id, x, z (center of the piece), fx, fz (approach point) }; ids is the list of units (or nil: n placeholders);
 	-- approach = 0: no approach (artillery), otherwise distance of the approach point before the piece
-	local function carpetPlan(ax, az, bx, bz, ids, n, approach)
-		approach = approach or CARPET_APPROACH
+	local function linePlan(ax, az, bx, bz, ids, n, approach)
+		approach = approach or STAGING_DISTANCE
 		local dx, dz = bx - ax, bz - az
 		local len = math.sqrt(dx * dx + dz * dz)
 		local ux, uz = 0, 0
@@ -2902,7 +2902,7 @@ function M.newAreaAttack(o)
 
 	-- Rectangle or circle: one target point per unit spread evenly inside the area (grid or sunflower spiral).
 	-- Bombers approach from the side where the group stands; units and points are paired by their position across
-	-- that direction so the paths cross less. Returns the plan (same format as carpetPlan) and the size of the area.
+	-- that direction so the paths cross less. Returns the plan (same format as linePlan) and the size of the area.
 	local function areaPlan(shape, ax, az, bx, bz, ids, n, approach)
 		n = ids and #ids or n
 		local pts, cx, cz, size = {}, 0, 0, 0
@@ -2978,10 +2978,10 @@ function M.newAreaAttack(o)
 	end
 
 	local function planFor(ax, az, bx, bz, ids, n, approach)
-		if carpetMode == "line" then
-			return carpetPlan(ax, az, bx, bz, ids, n, approach)
+		if areaMode == "line" then
+			return linePlan(ax, az, bx, bz, ids, n, approach)
 		end
-		return areaPlan(carpetMode, ax, az, bx, bz, ids, n, approach)
+		return areaPlan(areaMode, ax, az, bx, bz, ids, n, approach)
 	end
 
 	-- Bombers form up first (MOVE to their staging point), then all get the ATTACK order at the same moment: they
@@ -3019,7 +3019,7 @@ function M.newAreaAttack(o)
 		end
 	end
 
-	local function carpetGo(ax, az, bx, bz)
+	local function areaGo(ax, az, bx, bz)
 		local bombers, guns = selectedBombers(), selectedShooters()
 		if #bombers == 0 and #guns == 0 then
 			say("No bombers or artillery selected (bombers, artillery, rocket launchers, nukes)")
@@ -3028,7 +3028,7 @@ function M.newAreaAttack(o)
 		local len = 0
 		if #bombers > 0 then
 			local plan
-			plan, len = planFor(ax, az, bx, bz, bombers, nil, CARPET_APPROACH)
+			plan, len = planFor(ax, az, bx, bz, bombers, nil, STAGING_DISTANCE)
 			wave = nil
 			for _, p in ipairs(plan) do
 				if len >= 8 then
@@ -3047,31 +3047,31 @@ function M.newAreaAttack(o)
 				Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
 			end
 		end
-		say(string.format("%s attack: %d bombers, %d artillery/rockets (%s %d Elmo)", carpetMode == "line" and "Carpet" or (carpetMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, carpetMode == "circle" and "radius" or "size", math.floor(len)))
+		say(string.format("%s attack: %d bombers, %d artillery/rockets (%s %d Elmo)", areaMode == "line" and "Carpet" or (areaMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, areaMode == "circle" and "radius" or "size", math.floor(len)))
 	end
 
-	local CARPET_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards" }
-	toggleCarpet = function(mode)
-		if carpetArmed and (mode == nil or mode == carpetMode) then
-			carpetArmed = false
-			carpetDrag = nil
+	local AREA_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards" }
+	toggleArea = function(mode)
+		if areaArmed and (mode == nil or mode == areaMode) then
+			areaArmed = false
+			areaDrag = nil
 			say("Area attack ended")
 			return true
 		end
-		carpetMode = mode or "line"
-		carpetArmed = true
-		carpetDrag = nil
+		areaMode = mode or "line"
+		areaArmed = true
+		areaDrag = nil
 		if o.onArm then
 			o.onArm()
 		end
 		local n = #selectedBombers() + #selectedShooters()
-		say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, CARPET_HINT[carpetMode])
-			or "Experimental: select bombers, artillery, rocket launchers or nukes first, then on the map " .. CARPET_HINT[carpetMode] .. ".")
+		say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, AREA_HINT[areaMode])
+			or "Experimental: select bombers, artillery, rocket launchers or nukes first, then on the map " .. AREA_HINT[areaMode] .. ".")
 		return true
 	end
 
-	local function drawCarpet()
-		if not carpetArmed then
+	local function drawArea()
+		if not areaArmed then
 			return
 		end
 		local mx, my = Spring.GetMouseState()
@@ -3083,7 +3083,7 @@ function M.newAreaAttack(o)
 			return
 		end
 		gl.DepthTest(false)
-		if not carpetDrag then
+		if not areaDrag then
 			gl.Color(1, 0.7, 0.2, 0.9)
 			gl.LineWidth(2)
 			local y = Spring.GetGroundHeight(gx, gz) + 8
@@ -3100,20 +3100,20 @@ function M.newAreaAttack(o)
 		local bombers, guns = selectedBombers(), selectedShooters()
 		local plans = {}
 		if #bombers > 0 or #guns == 0 then
-			plans[#plans + 1] = (planFor(carpetDrag.x, carpetDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), CARPET_APPROACH))
+			plans[#plans + 1] = (planFor(areaDrag.x, areaDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), STAGING_DISTANCE))
 		end
 		if #guns > 0 then
-			plans[#plans + 1] = (planFor(carpetDrag.x, carpetDrag.z, gx, gz, guns, nil, 0))
+			plans[#plans + 1] = (planFor(areaDrag.x, areaDrag.z, gx, gz, guns, nil, 0))
 		end
 		gl.LineWidth(2)
 		gl.Color(1, 0.7, 0.2, 0.9)
-		local ax, az = carpetDrag.x, carpetDrag.z
-		if carpetMode == "line" then
+		local ax, az = areaDrag.x, areaDrag.z
+		if areaMode == "line" then
 			gl.BeginEnd(GL.LINES, function()
 				gl.Vertex(ax, Spring.GetGroundHeight(ax, az) + 8, az)
 				gl.Vertex(gx, Spring.GetGroundHeight(gx, gz) + 8, gz)
 			end)
-		elseif carpetMode == "rect" then
+		elseif areaMode == "rect" then
 			gl.BeginEnd(GL.LINE_LOOP, function()
 				for _, c in ipairs({ { ax, az }, { gx, az }, { gx, gz }, { ax, gz } }) do
 					gl.Vertex(c[1], Spring.GetGroundHeight(c[1], c[2]) + 8, c[2])
@@ -3151,48 +3151,48 @@ function M.newAreaAttack(o)
 
 	local A = {}
 	function A:toggle(mode)
-		return toggleCarpet(mode)
+		return toggleArea(mode)
 	end
 	function A:armed()
-		return carpetArmed
+		return areaArmed
 	end
 	function A:mode()
-		return carpetMode
+		return areaMode
 	end
 	function A:disarm()
-		carpetArmed = false
-		carpetDrag = nil
+		areaArmed = false
+		areaDrag = nil
 	end
 	-- Map click while armed: right click cancels, left click starts the drag
 	function A:press(button)
-		if not carpetArmed then
+		if not areaArmed then
 			return false
 		end
 		if button == 3 then
-			toggleCarpet()
+			toggleArea()
 			return true
 		elseif button == 1 then
 			local gx, gz = mouseGround()
 			if gx then
-				carpetDrag = { x = gx, z = gz }
+				areaDrag = { x = gx, z = gz }
 			end
 			return true
 		end
 		return false
 	end
 	function A:release()
-		if carpetDrag then
-			local d = carpetDrag
-			carpetDrag = nil
+		if areaDrag then
+			local d = areaDrag
+			areaDrag = nil
 			local gx, gz = mouseGround()
 			if gx then
-				carpetGo(d.x, d.z, gx, gz)
-				carpetArmed = false
+				areaGo(d.x, d.z, gx, gz)
+				areaArmed = false
 			end
 		end
 	end
 	function A:draw()
-		drawCarpet()
+		drawArea()
 	end
 	function A:step(frame)
 		if wave and frame % 15 == 0 then

@@ -648,9 +648,9 @@ local TIPS = {
 	radfield = "Search radius of the builders in Elmo (200 to 6000):\nclick, type a number, Enter accepts, Esc cancels",
 	com = "Commander (C): the commander helps build too\n(otherwise only other builders do)",
 	create = "Saves the selected buildings\nas a new blueprint",
-	carpet = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
-	carpetr = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
-	carpetc = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
+	areal = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
+	arear = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
+	areac = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
 
 -- Open and in-progress plans
@@ -692,9 +692,9 @@ local function layout()
 	colBtn(2, "gear", "O", optionsOpen)
 	colBtn(3, "help", "?", helpOpen)
 	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
-	colBtn(7, "carpet", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
-	colBtn(8, "carpetr", "XR", area:armed() and area:mode() == "rect")
-	colBtn(9, "carpetc", "XC", area:armed() and area:mode() == "circle")
+	colBtn(7, "areal", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
+	colBtn(8, "arear", "XR", area:armed() and area:mode() == "rect")
+	colBtn(9, "areac", "XC", area:armed() and area:mode() == "circle")
 	colBtn(5, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
@@ -782,11 +782,11 @@ local function pressButton(id)
 		useCommander = not useCommander
 	elseif id == "help" then
 		helpOpen = true
-	elseif id == "carpet" then
+	elseif id == "areal" then
 		area:toggle("line")
-	elseif id == "carpetr" then
+	elseif id == "arear" then
 		area:toggle("rect")
-	elseif id == "carpetc" then
+	elseif id == "areac" then
 		area:toggle("circle")
 	elseif id == "create" then
 		widget:CreateBlueprint()
