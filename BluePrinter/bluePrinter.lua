@@ -1609,8 +1609,10 @@ local function gridKeyHook(_, _, _, _, isRepeat, release, _, key)
 end
 
 function widget:Initialize()
-	if WG.LevelEditorWidget then
-		-- the Level Editor brings the same interface; two of them at the same time get in each other's way
+	local modOptions = Spring.GetModOptions and Spring.GetModOptions() or {}
+	if WG.LevelEditorWidget or modOptions.leveleditor == "1" then
+		-- the Level Editor brings the same interface; two of them at the same time get in each other's way. The
+		-- BluePrinter removes itself (user widgets load before the Level Editor, so the mod option is the reliable sign)
 		widgetHandler:RemoveWidget(widget)
 		return
 	end

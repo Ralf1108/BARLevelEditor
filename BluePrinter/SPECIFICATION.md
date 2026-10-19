@@ -13,7 +13,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; th
 - Runs in the normal, official game. Everything happens through **normal build orders** (`Spring.GiveOrderToUnit` with a negative UnitDefID and a position): cost and build time as usual, **no cheat** needed. The game itself is not changed.
 - Only **buildings** are planned. Units in blueprints are skipped; mobile units have no build plan (they come from factories).
 - The team in the blueprint does not matter, it is built for the own team.
-- As a spectator the widget is pointless and removes itself.
+- As a spectator the widget is pointless and removes itself. In the Level Editor (mod option `leveleditor=1`, or when `WG.LevelEditorWidget` is set) it removes itself as well, because the editor brings the same interface. The Level Editor does not remove it from its side: that removed the Level Editor too (found in the game test on 2026-10-19).
 - Note: automatic building may count as automation in ranked or tournament games. That is why there is the **Auto-build** switch.
 - Source code and texts contain no reference to persons or private matters.
 
@@ -147,6 +147,7 @@ Keys: **Ctrl+Alt+P** (blueprint from selection), `[`/`]` (rotate), **Alt+Z / Alt
 - Whether auto-build is allowed in ranked or tournament games depends on their rules.
 
 ## Tests (status 2026-10-19)
+- **Second round in the real game** (after the review; temporary test widget, test blueprint removed afterwards; started with `start_blueprinter.ps1`): the widget loads, button A toggles, Create Blueprint from a selected solar collector, two left clicks queue two plans, right click ends the stamp, Undo removes one plan, XR with 4 bombers gives 4 orders (renamed area attack code), XL is ended by a right click on the map. In the Level Editor the BluePrinter now removes itself and the Level Editor stays.
 - **Checked in the real game this round** (temporary test copies of the widget, removed afterwards): the button column with tooltips, the status row, the radius row (display), the Create Blueprint button, the search labels, the cost line on the tiles, the info lines below the panel (the panel ends at least 20 % above the screen bottom, so the BAR boxes do not cover them), the 3D preview at the mouse pointer and left of the menu, the **3D ghosts of the queued plans** (found and fixed: all plans used the same ghost key, only the last ghost was visible), the right click on a plan (the commander builds the plan, `claim` set), the area attacks through the shared module (rectangle with 5 bombers and 5 artillery units: all got their orders; circle; the line and the bomber front were also tried by hand). A stand-alone test shows that all bombers stage on one line and fly 2000 / 2666 / 3333 Elmo to the front, middle and back row.
 - **Not checked automatically:** typing a number into the radius field, the right click with several builders, `start_blueprinter.bat` with a map name.
 - **Mock test** (earlier status 2026-10-18; not in the repository; Python with Lupa): plan and builder logic, stamp, row/rectangle, Alt+Z/X, collapsing/expanding the menu, carpet attack (bombers: MOVE/ATTACK per bomber; artillery, rockets and nukes: ATTACK; fighters, short-range weapons and anti-air excluded).

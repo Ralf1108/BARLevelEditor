@@ -3449,11 +3449,8 @@ end
 
 function widget:Initialize()
 	WG.LevelEditorWidget = widget -- for tests in the game
-	if WG.BluePrinterWidget then
-		-- the BluePrinter has the same interface; do not show it twice
-		widgetHandler:RemoveWidget(WG.BluePrinterWidget)
-		WG.BluePrinterWidget = nil
-	end
+	-- The BluePrinter removes itself in the Level Editor (mod option leveleditor). Removing it from here also removed
+	-- the Level Editor itself (checked in the game), so this widget leaves it alone.
 	cfg:load()
 	grid = cfg.v.grid
 	recent:load()
