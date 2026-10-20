@@ -2,14 +2,16 @@
 -- to the goal, pays metal and energy for every kill and ends the level (won: all waves beaten, lost: too many got through).
 -- Configuration: from the Level Editor with the message "tdw|start|<payload>" (stop: "tdw|stop"), or from the game option
 -- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
---   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned;bannedTech;restrict
+--   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned;bannedTech;restrict;fog
 --   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
 --   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
 --           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
 --           the start), hp = health in percent. The units are chosen at random among all that match.
 --   banned = "name,name,..." or "-": units (towers) the player must not build while the game runs
---   bannedTech = "1,3" or "-": tech levels of which the player may build no structure; restrict = "towers" | "economy" | "-":
---           the player may build only towers ("towers") or towers and economy structures ("economy"), "-" = no restriction
+--   bannedTech = "1,3" or "-": tech levels of which the player may build no structure; restrict = "towers" | "economy":
+--           the player may build only towers ("towers") or towers and economy structures ("economy"); fog = 1 | 0: fog of war
+--           (radars may be built; in a finished scenario the whole map is visible without fog)
+--   path = the waypoints between spawn and goal, already in the order the units walk them
 -- State for the display: game rules parameters tdState, tdWave, tdWaves, tdLeaks, tdMaxLeaks, tdKilled, tdAlive.
 function gadget:GetInfo()
 	return {
@@ -98,7 +100,8 @@ local function parse(payload)
 			cfg.bannedTech[tonumber(v)] = true
 		end
 	end
-	cfg.restrict = (f[12] == "towers" or f[12] == "economy") and f[12] or nil
+	cfg.restrict = f[12] == "economy" and "economy" or "towers"
+	cfg.fog = f[13] == "1"
 	return cfg
 end
 
@@ -195,6 +198,11 @@ local function start(cfg)
 		if cp.iscommander then
 			Spring.DestroyUnit(id, false, true)
 		end
+	end
+	if not EDITOR_MODE then
+		-- finished scenario: without fog of war the player sees the whole map (the editor always does, it needs it to save the units)
+		local _, _, _, _, _, ally = Spring.GetTeamInfo(cfg.player, false)
+		Spring.SetGlobalLos(ally, not cfg.fog)
 	end
 	local now = Spring.GetGameFrame()
 	td = { cfg = cfg, state = "running", wave = 0, leaked = 0, killed = 0, queue = {}, nextWave = now + cfg.waves[1].gap * FPS, nextSpawn = 0 }
@@ -320,7 +328,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 end
 
 -- Kind of a structure for the build restriction (same sorting as the catalog of the editor): "economy" = metal and energy
--- structures (extractors, solar, wind, geothermal, fusion, storage, converters), "tower" = armed structure, nil = the rest
+-- structures (extractors, solar, wind, geothermal, fusion, storage, converters), "tower" = armed structure, "radar", nil = the rest
 local function buildClass(ud)
 	local cp = ud.customParams or {}
 	if ud.isFactory then
@@ -331,6 +339,8 @@ local function buildClass(ud)
 		return "economy"
 	elseif #ud.weapons > 0 and ug ~= "explo" then
 		return "tower"
+	elseif (tonumber(ud.radarDistance) or 0) > 0 then
+		return "radar"
 	end
 	return nil
 end
@@ -348,10 +358,10 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
 	elseif not ud.canMove then
 		if cfg.bannedTech[techLevel(ud)] then
 			why = "tech level " .. techLevel(ud) .. " is forbidden"
-		elseif cfg.restrict then
+		else
 			local cls = buildClass(ud)
-			if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy")) then
-				why = cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built"
+			if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy") or (cls == "radar" and cfg.fog)) then
+				why = cls == "radar" and "no radars without fog of war" or (cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built")
 			end
 		end
 	end

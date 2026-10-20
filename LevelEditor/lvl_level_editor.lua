@@ -1186,7 +1186,7 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(1) - m.HB, y1 = sideTop(1), kind = "collapse", value = "collapse", label = "V", active = false, side = true, tip = "Collapse or expand the menu" }
 		local gx1, gx2, gy1 = sx1, sx2, sideTop(2)
 		local ix1, ix2, iy1 = sx1, sx2, sideTop(3)
-		local hx1, hx2, hy1 = sx1, sx2, sideTop(5)
+		local hx1, hx2, hy1 = sx1, sx2, sideTop(6)
 		local dx1, dx2, dy1 = sx1, sx2, sideTop(5)
 		local tops = {
 			{ "place", "Place", "Place: choose units, features and blueprints from the lists and place them on the map" },
@@ -1202,7 +1202,7 @@ local function headerRects()
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
-		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(4) - m.HB, y1 = sideTop(4), side = true, kind = "td", value = "td", label = "TD", active = td.open,
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5) - m.HB, y1 = sideTop(5), side = true, kind = "td", value = "td", label = "TD", active = td.open,
 			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
 		-- Delete (rectangle, circle, line), then the experimental area attacks
 		local dels = {
@@ -1211,7 +1211,7 @@ local function headerRects()
 			{ "circle", "DC", "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
 		}
 		for k, d in ipairs(dels) do
-			local top = sideTop(6 + k)
+			local top = sideTop(7 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = d[1], label = d[2], active = (delMode == d[1]), tip = d[3] }
 		end
 		local areas = {
@@ -1220,7 +1220,7 @@ local function headerRects()
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(10 + k)
+			local top = sideTop(11 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1230,7 +1230,7 @@ local function headerRects()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(14 + k)
+			local top = sideTop(15 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
@@ -2165,10 +2165,11 @@ td.FAC = { "arm", "cor", "leg" }
 td.FAC_TXT = { arm = "Armada", cor = "Cortex", leg = "Legion" }
 td.MAX_WAVES = 30
 td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
-td.tfac, td.ttech = "arm", 1 -- turret list of the page: faction and tech level shown
+td.tfac, td.ttech = "arm", 1 -- tower list of the page: faction and tech level shown
+td.tscroll, td.TROWS = 0, 4 -- first row shown, rows shown at most (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 8, leaks = 10, path = {}, banned = {}, bannedTech = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
+	return { enabled = false, width = 8, leaks = 10, restrict = "towers", fog = false, waypoints = {}, banned = {}, bannedTech = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2285,7 +2286,25 @@ function td.toggleChoice(w, field, v)
 	w[field] = table.concat(out)
 end
 
--- Turrets of the page: armed buildings on land (the catalog of the Place tab), [faction][tech] = list of { name, id }
+-- Kind of a structure for the build restriction (the gadget td_waves.lua sorts the same way): "tower" = armed, "economy" = metal and
+-- energy structures, "radar"; nil = the rest
+function td.class(ud)
+	local cp = ud.customParams or {}
+	if ud.isFactory then
+		return nil
+	end
+	local ug = cp.unitgroup
+	if ug == "energy" or ug == "metal" or (tonumber(ud.extractsMetal) or 0) > 0 then
+		return "economy"
+	elseif #ud.weapons > 0 and ug ~= "explo" then
+		return "tower"
+	elseif (tonumber(ud.radarDistance) or 0) > 0 then
+		return "radar"
+	end
+end
+
+-- Structures of the page for a faction and tech level (land only): the towers, with "Towers + economy" the economy structures,
+-- with fog of war the radars
 function td.turrets(fac, tech)
 	if not td.tcache then
 		local cache = Shared.buildUnitCache()
@@ -2293,8 +2312,15 @@ function td.turrets(fac, tech)
 		for _, f in ipairs(td.FAC) do
 			td.tcache[f] = { {}, {}, {} }
 			for t = 1, 3 do
+				local buckets = { tower = {}, economy = {}, radar = {} }
 				for _, e in ipairs(cache[f].buildings[t]) do
-					if e.rank == 2 then
+					local cls = e.rank < 100 and td.class(UnitDefs[e.id])
+					if cls then
+						buckets[cls][#buckets[cls] + 1] = { name = e.name, id = e.id, class = cls }
+					end
+				end
+				for _, cls in ipairs({ "tower", "economy", "radar" }) do
+					for _, e in ipairs(buckets[cls]) do
 						local list = td.tcache[f][t]
 						list[#list + 1] = e
 					end
@@ -2302,7 +2328,81 @@ function td.turrets(fac, tech)
 			end
 		end
 	end
-	return td.tcache[fac][tech]
+	local c = td.cfg()
+	local out = {}
+	for _, e in ipairs(td.tcache[fac][tech]) do
+		if e.class == "tower" or (e.class == "economy" and c.restrict == "economy") or (e.class == "radar" and c.fog) then
+			out[#out + 1] = e
+		end
+	end
+	return out
+end
+
+-- Ordered route of the enemies between spawn point and goal: from the spawn point always to the nearest waypoint left
+function td.route()
+	local c = td.cfg()
+	if not c.waypoints and c.path then
+		return c.path -- older levels
+	end
+	local rest, out = {}, {}
+	for _, p in ipairs(c.waypoints or {}) do
+		rest[#rest + 1] = p
+	end
+	local cur = c.spawn or rest[1]
+	while #rest > 0 do
+		local bi, bd = 1, 1e18
+		for i, p in ipairs(rest) do
+			local d = (p[1] - cur[1]) ^ 2 + (p[2] - cur[2]) ^ 2
+			if d < bd then
+				bi, bd = i, d
+			end
+		end
+		cur = table.remove(rest, bi)
+		out[#out + 1] = cur
+	end
+	return out
+end
+
+-- Index of the waypoint under the mouse pointer (or nil)
+function td.waypointAt()
+	local mx, my = Spring.GetMouseState()
+	local _, pos = Spring.TraceScreenRay(mx, my, true)
+	if not pos then
+		return nil
+	end
+	local best, bd = nil, 64 ^ 2
+	for i, p in ipairs(td.cfg().waypoints or {}) do
+		local d = (p[1] - pos[1]) ^ 2 + (p[2] - pos[3]) ^ 2
+		if d < bd then
+			best, bd = i, d
+		end
+	end
+	return best
+end
+
+-- Del over a waypoint removes it; true when there was one
+function td.deleteWaypoint()
+	local i = td.open and td.waypointAt()
+	if not i then
+		return false
+	end
+	table.remove(td.cfg(true).waypoints, i)
+	say("Waypoint removed")
+	return true
+end
+
+-- Arms placing a tower (or other structure) of the page: like a click in the unit list of the Place tab
+function td.armUnit(name)
+	td.endPick()
+	mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+	gen.armed, gen.drag = false, nil
+	area:disarm()
+	stampDrag = nil
+	bpGrid:setArmed(false)
+	unitName = name
+	armedUnit = true
+	armedFeature = false
+	say("Unit: " .. name .. ". Left click on the map places, right click ends.")
 end
 
 function td.techBanned(t)
@@ -2405,18 +2505,15 @@ function td.layout(rect)
 			tip = "Width of the corridor in Elmo (the free space between the walls)" }
 	end
 	line(widths)
-	head("Path (the way the enemies walk)")
+	head("Route (spawn point, waypoints, goal)")
 	line({
-		{ kind = "tddraw", field = "route", value = "line", label = "Line", active = td.pick == "route" and td.mode == "line",
-			tip = "Set the way of the enemies: click the points on the map (e.g. through a maze), right click finishes. Spawn point and goal move to its ends." },
-		{ kind = "tddraw", field = "route", value = "free", label = "Free", active = td.pick == "route" and td.mode == "free",
-			tip = "Set the way of the enemies: hold the left mouse button and draw it. Spawn point and goal move to its ends." },
-	})
-	line({
-		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn", w = 5,
+		{ kind = "tdspawn", label = "Spawn", active = td.pick == "spawn", w = 4,
 			tip = "Spawn point of the enemies: click, then click the place on the map" },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
-		{ kind = "tdgoal", label = c.goal and string.format("Goal: %d, %d", c.goal[1], c.goal[2]) or "Set goal", active = td.pick == "goal", w = 5,
+		{ kind = "tdwaypoint", label = "Waypoint", active = td.pick == "waypoint", w = 4,
+			tip = "Place waypoints: every click on the map adds one, right click ends. The enemies walk from the spawn point to the nearest waypoint, then to the next nearest and so on, and finally to the goal. Del over a waypoint removes it." },
+		{ kind = "tdwaypointx", label = "X", tip = "Delete all waypoints", w = 1 },
+		{ kind = "tdgoal", label = "Goal", active = td.pick == "goal", w = 4,
 			tip = "Goal: click, then click the place on the map. Enemies that get within 120 Elmo of it are through." },
 		{ kind = "tdgoalx", label = "X", tip = "Delete the goal", w = 1 },
 	})
@@ -2427,6 +2524,9 @@ function td.layout(rect)
 			tip = "How many enemies may reach the goal before you lose. Click, type a number, Enter accepts" },
 		{ kind = "tdplus", value = "leaks", label = "+", tip = "One more enemy allowed through" },
 	})
+	y = y - 4 * S
+	labels[#labels + 1] = { line = true, x1 = x1, x2 = x2, y = y }
+	y = y - 10 * S
 	head("Waves")
 	line({
 		{ kind = "tdminus", value = "nwaves", label = "-", tip = "One wave less (the last one is removed)" },
@@ -2490,11 +2590,13 @@ function td.layout(rect)
 	y = y - 14 * S
 	head("Towers the player may build (red X = forbidden)")
 	line({
-		{ kind = "tdrestrict", value = "towers", label = "Only towers", active = c.restrict == "towers",
-			tip = "In the game the player can build only towers (no economy, factories, walls or other structures). Click again to lift the restriction." },
+		{ kind = "tdrestrict", value = "towers", label = "Only towers", active = c.restrict ~= "economy",
+			tip = "In the game the player can build only towers (no economy, factories, walls or other structures)." },
 		{ kind = "tdrestrict", value = "economy", label = "Towers + economy", active = c.restrict == "economy",
-			tip = "In the game the player can build only towers and economy structures (metal extractors, solar, wind and other power plants, storage). Click again to lift the restriction." },
+			tip = "In the game the player can build towers and economy structures (metal extractors, solar, wind and other power plants, storage, converters). The list below shows them too, so you can forbid single ones." },
 	})
+	line({ { kind = "tdfog", label = (c.fog and "[x] " or "[ ] ") .. "Fog of war (radars can be built)", active = c.fog,
+		tip = "Fog of war in the game: on = the player can build radars (they are in the list below), off = no radars, the whole map is visible. The editor always shows the whole map." } })
 	local facs = {}
 	for _, f in ipairs(td.FAC) do
 		facs[#facs + 1] = { kind = "tdfac", value = f, label = td.FAC_TXT[f], icon = Shared.FACTION_ICONS[f], active = td.tfac == f,
@@ -2527,20 +2629,29 @@ function td.layout(rect)
 	local list = td.turrets(td.tfac, td.ttech)
 	local cols, gapT = 8, 4 * S
 	local tw = (x2 - x1 - gapT * (cols - 1)) / cols
-	for i, e in ipairs(list) do
-		local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+	local rows = math.ceil(#list / cols)
+	local shown = math.min(rows, td.TROWS)
+	td.tscroll = math.max(0, math.min(td.tscroll, rows - shown))
+	for i = td.tscroll * cols + 1, math.min(#list, (td.tscroll + shown) * cols) do
+		local e = list[i]
+		local col, row = (i - 1) % cols, math.floor((i - 1) / cols) - td.tscroll
 		local tx, ty = x1 + col * (tw + gapT), y - row * (tw + gapT)
 		local banned = td.isBanned(e.name)
-		rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "", banned = banned or td.techBanned(td.ttech) }
+		rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "",
+			banned = banned or td.techBanned(td.ttech), armed = armedUnit and unitName == e.name }
 		local xs = tw * 0.36
 		rects[#rects + 1] = { x1 = tx + tw - xs, x2 = tx + tw, y0 = ty - xs, y1 = ty, kind = "tdban", value = e.name, id = e.id, label = "", banned = banned,
-			tip = banned and "Forbidden: the player cannot build this tower in the game. Click to allow it again." or
-				"Click: the player cannot build this tower in the game (in the editor you can always place it)." }
+			tip = banned and "Forbidden: the player cannot build this in the game. Click to allow it again." or
+				"Click: the player cannot build this in the game (in the editor you can always place it)." }
 	end
-	y = y - math.ceil(#list / cols) * (tw + gapT) - 8 * S
+	y = y - shown * (tw + gapT) - 8 * S
+	if rows > shown then
+		labels[#labels + 1] = { text = string.format("Rows %d-%d of %d (mouse wheel scrolls)", td.tscroll + 1, td.tscroll + shown, rows), x = x1, y = y - 14 * S, size = 17 * S }
+		y = y - 22 * S
+	end
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "Line: click points, right click finishes. Free: drag with the mouse.", x = x1, y = y - 58 * S, size = 17 * S }
+	labels[#labels + 1] = { text = "Corridor: Single = one piece per click, Line = click points, Free = drag.", x = x1, y = y - 58 * S, size = 17 * S }
 	y = y - 68 * S - m.PAD
 	return rects, labels, rect.top - y
 end
@@ -2553,6 +2664,10 @@ function td.drawTiles(rect, tiles)
 	for _, r in ipairs(tiles) do
 		if r.kind == "tdtile" then
 			local over = mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1
+			if r.armed then
+				gl.Color(0.25, 0.5, 1, 0.8)
+				gl.Rect(r.x1 - 3, r.y0 - 3, r.x2 + 3, r.y1 + 3)
+			end
 			if over then
 				hover = r
 				gl.Color(1, 1, 1, 0.35)
@@ -2638,14 +2753,19 @@ function td.draw(rect)
 		end
 	end
 	for _, l in ipairs(labels) do
-		if l.color then
+		if l.line then
+			gl.Color(0.3, 0.85, 0.4, 1)
+			gl.Rect(l.x1, l.y - 2 * S, l.x2, l.y)
+		elseif l.color then
 			gl.Color(l.color[1], l.color[2], l.color[3], 1)
 		elseif l.head then
 			gl.Color(0.5, 0.8, 1, 1)
 		else
 			gl.Color(0.8, 0.8, 0.8, 1)
 		end
-		gl.Text(l.text, l.x, l.y, l.size, "o")
+		if l.text then
+			gl.Text(l.text, l.x, l.y, l.size, "o")
+		end
 	end
 	gl.Color(1, 1, 1, 1)
 	local mx, my = Spring.GetMouseState()
@@ -2697,6 +2817,18 @@ function td.text(ch)
 end
 
 function td.wheel(up)
+	local mx, my = Spring.GetMouseState()
+	local top, bottom, count = -1e9, 1e9, 0
+	for _, r in ipairs((td.layout(contentRect()))) do
+		if r.kind == "tdtile" then
+			top, bottom, count = math.max(top, r.y1), math.min(bottom, r.y0), count + 1
+		end
+	end
+	if count > 0 and my >= bottom and my <= top then
+		local rows = math.ceil(#td.turrets(td.tfac, td.ttech) / 8)
+		td.tscroll = math.max(0, math.min(math.max(0, rows - td.TROWS), td.tscroll + (up and -1 or 1)))
+		return
+	end
 	local n = #td.cfg().waves
 	td.scroll = math.max(0, math.min(math.max(0, n - td.VISIBLE), td.scroll + (up and -1 or 1)))
 end
@@ -2719,14 +2851,14 @@ function td.payload()
 	player = player or 0
 	enemy = enemy or (player == 0 and 1 or 0)
 	local path, waves = {}, {}
-	for _, p in ipairs(c.path or {}) do
+	for _, p in ipairs(td.route()) do
 		path[#path + 1] = string.format("%d,%d", p[1], p[2])
 	end
 	for _, w in ipairs(c.waves) do
 		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
 	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-",
-		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.restrict or "-" }, ";")
+		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.restrict == "economy" and "economy" or "towers", c.fog and "1" or "0" }, ";")
 end
 
 -- Ends the pick mode (spawn point, goal, corridor, route)
@@ -2759,6 +2891,8 @@ function td.startPick(kind, mode)
 		say("Click the points of " .. what .. " on the map (start first), right click finishes (Ctrl+Z undoes).")
 	elseif mode == "free" then
 		say("Draw " .. what .. " with the left mouse button held down.")
+	elseif kind == "waypoint" then
+		say("Click the waypoints on the map, right click ends. Del over a waypoint removes it.")
 	else
 		say((kind == "spawn" and "Spawn point" or "Goal") .. ": click the place on the map, right click cancels.")
 	end
@@ -2776,6 +2910,13 @@ end
 
 -- Left click on the map in the pick mode
 function td.click(x, z)
+	if td.pick == "waypoint" then
+		local c = td.cfg(true)
+		c.waypoints = c.waypoints or {}
+		c.waypoints[#c.waypoints + 1] = { math.floor(x), math.floor(z) }
+		say(string.format("Waypoint %d placed. Click for more, right click ends, Del over a waypoint removes it.", #c.waypoints))
+		return
+	end
 	if td.pick == "corridor" and td.mode == "single" then
 		local name = mazeUnitName(MAZE_KINDS[td.wall])
 		if not name then
@@ -2941,10 +3082,6 @@ function td.finishDraw()
 		td.pts, td.stroke = {}, nil -- the mode stays on: the next corridor can be drawn right away (right click ends it)
 		return
 	end
-	local c = td.cfg(true)
-	c.path = p
-	c.spawn, c.goal = { p[1][1], p[1][2] }, { p[#p][1], p[#p][2] }
-	say(string.format("Route set (%d points), spawn point and goal at the ends.", #p))
 	td.endPick()
 end
 
@@ -2994,16 +3131,24 @@ function td.press(rect, mx, my)
 	elseif k == "tdplay" then
 		td.toggle()
 	elseif k == "tdfac" then
-		td.tfac = hit.value
+		td.tfac, td.tscroll = hit.value, 0
 	elseif k == "tdtech" then
-		td.ttech = hit.value
+		td.ttech, td.tscroll = hit.value, 0
+	elseif k == "tdtile" then
+		td.armUnit(hit.value)
+	elseif k == "tdwaypoint" then
+		td.startPick("waypoint")
+	elseif k == "tdwaypointx" then
+		td.cfg(true).waypoints = {}
+	elseif k == "tdfog" then
+		local c = td.cfg(true)
+		c.fog, td.tscroll = not c.fog, 0
 	elseif k == "tdban" then
 		td.toggleBan(hit.value)
 	elseif k == "tdtechx" then
 		td.toggleTech(hit.value)
 	elseif k == "tdrestrict" then
-		local c = td.cfg(true)
-		c.restrict = c.restrict ~= hit.value and hit.value or nil
+		td.cfg(true).restrict, td.tscroll = hit.value, 0
 	end
 	return true
 end
@@ -3066,8 +3211,18 @@ function td.drawWorld()
 	if c.goal then
 		circle(c.goal, td.GOAL_RADIUS, 1, 0.35, 0.3)
 	end
-	if c.path and #c.path > 1 then
-		polyline(c.path, 1, 0.9, 0.3)
+	local route = td.route()
+	if c.spawn and c.goal then
+		local list = { c.spawn }
+		for _, p in ipairs(route) do
+			list[#list + 1] = p
+		end
+		list[#list + 1] = c.goal
+		polyline(list, 1, 0.9, 0.3) -- only to look at: the way of the enemies
+	end
+	local hot = td.waypointAt()
+	for i, p in ipairs(c.waypoints or {}) do
+		circle(p, i == hot and 44 or 28, i == hot and 1 or 1, i == hot and 0.3 or 0.9, i == hot and 0.3 or 0.3)
 	end
 	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and #td.pts > 0 then
 		local mx, my = Spring.GetMouseState()
@@ -4319,6 +4474,9 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if td.edit then
 		return td.key(key)
+	end
+	if key == 127 and td.deleteWaypoint() then
+		return true
 	end
 	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and (key == 13 or key == 271) then
 		td.finishDraw()
