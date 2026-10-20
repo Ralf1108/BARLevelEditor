@@ -3441,6 +3441,139 @@ function gen.cancelModes()
 	return true
 end
 
+-- Placing units and features by hand: no overlap, and painting (hold the left mouse button and move) ---------------------------
+-- Half width / depth (Elmo) of what is placed: footprint of a unit at a facing, radius of a feature; nil for aircraft (they fly over everything)
+local function halfSize(name, face, isFeature)
+	if isFeature then
+		local fd = FeatureDefNames[name]
+		local rad = math.max(8, (fd and fd.radius) or 16)
+		return rad, rad
+	end
+	local ud = UnitDefNames[name]
+	if not ud or ud.canFly then
+		return nil
+	end
+	local fx, fz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
+	if (face or 0) % 2 == 1 then
+		fx, fz = fz, fx
+	end
+	return fx / 2, fz / 2
+end
+
+local recentPlaced = {} -- { x, z, hx, hz, feature, t }: placed a moment ago, not a unit yet
+local paint = nil -- { kind, x, z, sx, sz }: the last point of the stroke while the left mouse button is held down
+
+-- True when something is already there: the footprint would overlap another unit (also one placed a moment ago); a feature also
+-- overlaps other features. Units may stand on features (they crush them).
+local function blocked(name, x, z, face, isFeature)
+	local hx, hz = halfSize(name, face, isFeature)
+	if not hx then
+		return false
+	end
+	local now = os.clock()
+	for i = #recentPlaced, 1, -1 do
+		local q = recentPlaced[i]
+		if now - q.t > 2 then
+			table.remove(recentPlaced, i)
+		elseif (isFeature or not q.feature) and math.abs(q.x - x) < hx + q.hx - 1 and math.abs(q.z - z) < hz + q.hz - 1 then
+			return true
+		end
+	end
+	local reach = 160
+	for _, id in ipairs(Spring.GetUnitsInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
+		local ud = UnitDefs[Spring.GetUnitDefID(id)]
+		if ud and not ud.canFly then
+			local ux, _, uz = Spring.GetUnitPosition(id)
+			local ufx, ufz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
+			if Shared.headingToFacing(Spring.GetUnitHeading(id) or 0) % 2 == 1 then
+				ufx, ufz = ufz, ufx
+			end
+			if ux and math.abs(ux - x) < hx + ufx / 2 - 1 and math.abs(uz - z) < hz + ufz / 2 - 1 then
+				return true
+			end
+		end
+	end
+	if isFeature then
+		for _, fid in ipairs(Spring.GetFeaturesInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
+			local fdef = FeatureDefs[Spring.GetFeatureDefID(fid)]
+			local fx, _, fz = Spring.GetFeaturePosition(fid)
+			local rad = math.max(8, (fdef and fdef.radius) or 16)
+			if fx and math.abs(fx - x) < hx + rad - 1 and math.abs(fz - z) < hz + rad - 1 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function notePlaced(name, x, z, face, isFeature)
+	local hx, hz = halfSize(name, face, isFeature)
+	if hx then
+		recentPlaced[#recentPlaced + 1] = { x = x, z = z, hx = hx, hz = hz, feature = isFeature or false, t = os.clock() }
+	end
+end
+
+-- Places the armed unit or feature at (x, z) when the spot is free; true when it was placed
+local function paintPlace(kind, x, z)
+	if kind == "feature" then
+		x, z = math.floor(x), math.floor(z)
+		if blocked(armedFeature, x, z, 0, true) then
+			return false
+		end
+		led(string.format("led|feature|%s|%d|%d|%d", armedFeature, x, z, (facing * 16384 + 32768) % 65536 - 32768))
+		notePlaced(armedFeature, x, z, 0, true)
+		return true
+	end
+	x, z = snap(x), snap(z)
+	if blocked(unitName, x, z, facing) then
+		return false
+	end
+	led(string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, x, z, facing, neutralOn and 1 or 0))
+	notePlaced(unitName, x, z, facing)
+	return true
+end
+
+-- Left mouse button pressed with an armed unit or feature: one is placed, more while the mouse moves (one undo step for the stroke)
+local function paintStart(kind, pos)
+	ledStep()
+	local hx, hz = halfSize(kind == "feature" and armedFeature or unitName, facing, kind == "feature")
+	local gap = spacing * 16
+	paint = { kind = kind, x = pos[1], z = pos[3], sx = math.max(16, (hx or 8) * 2 + gap), sz = math.max(16, (hz or 8) * 2 + gap) }
+	if paintPlace(kind, pos[1], pos[3]) then
+		if kind == "unit" then
+			placed()
+		end
+	else
+		say("Occupied: there is already something here")
+	end
+end
+
+-- While the button is held: the next one is placed as soon as the pointer is a whole footprint (plus spacing) away from the last
+local function paintSample()
+	if not paint then
+		return
+	end
+	local mx, my, left = Spring.GetMouseState()
+	local _, pos = Spring.TraceScreenRay(mx, my, true)
+	if not left then
+		paint = nil
+		return
+	end
+	if not pos then
+		return
+	end
+	local d = paint
+	for _ = 1, 200 do
+		local dx, dz = pos[1] - d.x, pos[3] - d.z
+		local k = math.max(math.abs(dx) / d.sx, math.abs(dz) / d.sz)
+		if k < 1 then
+			break
+		end
+		d.x, d.z = d.x + dx / k, d.z + dz / k
+		paintPlace(d.kind, d.x, d.z)
+	end
+end
+
 function widget:MousePress(mx, my, button)
 	rescale()
 	if gen.edit and not inPanel(mx, my) then
@@ -3724,9 +3857,7 @@ function widget:MousePress(mx, my, button)
 				if shift then
 					stampDrag = { x = pos[1], z = pos[3], feat = true } -- row/rectangle: all are placed on release
 				else
-					local rot = (facing * 16384 + 32768) % 65536 - 32768
-					ledStep()
-					led(string.format("led|feature|%s|%d|%d|%d", armedFeature, math.floor(pos[1]), math.floor(pos[3]), rot))
+					paintStart("feature", pos)
 				end
 			end
 			return true
@@ -3745,9 +3876,7 @@ function widget:MousePress(mx, my, button)
 				if shift then
 					stampDrag = { x = pos[1], z = pos[3] } -- row/rectangle: all are placed on release
 				else
-					ledStep()
-					led(string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, snap(pos[1]), snap(pos[3]), facing, neutralOn and 1 or 0))
-					placed()
+					paintStart("unit", pos)
 				end
 			end
 			return true
@@ -3836,6 +3965,7 @@ function widget:MouseRelease(mx, my, button)
 	area:release()
 	td.endWpDrag()
 	td.sdrag = nil
+	paint = nil
 	if td.stroke then
 		td.pts, td.stroke = td.stroke, nil
 		td.finishDraw()
@@ -3945,10 +4075,15 @@ function widget:MouseRelease(mx, my, button)
 			stampDrag = nil
 			local rot = (facing * 16384 + 32768) % 65536 - 32768
 			ledStep()
+			local n = 0
 			for _, p in ipairs(list) do
-				led(string.format("led|feature|%s|%d|%d|%d", armedFeature, p.x, p.z, rot))
+				if not blocked(armedFeature, p.x, p.z, 0, true) then
+					led(string.format("led|feature|%s|%d|%d|%d", armedFeature, p.x, p.z, rot))
+					notePlaced(armedFeature, p.x, p.z, 0, true)
+					n = n + 1
+				end
 			end
-			say(string.format("%d x %s placed", #list, armedFeature))
+			say(string.format("%d x %s placed%s", n, armedFeature, n < #list and (" (" .. (#list - n) .. " occupied)") or ""))
 		elseif bp and pos and canEdit() then
 			stampDrag = drag0
 			local list = bpStampList(bp, pos)
@@ -3963,11 +4098,16 @@ function widget:MouseRelease(mx, my, button)
 			local list = stampList(ud, pos)
 			stampDrag = nil
 			ledStep()
+			local n = 0
 			for _, p in ipairs(list) do
-				placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, p.x, p.z, facing, neutralOn and 1 or 0)
+				if not blocked(unitName, p.x, p.z, facing) then
+					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, p.x, p.z, facing, neutralOn and 1 or 0)
+					notePlaced(unitName, p.x, p.z, facing)
+					n = n + 1
+				end
 			end
 			placed()
-			say(string.format("%d x %s placed", #list, unitName))
+			say(string.format("%d x %s placed%s", n, unitName, n < #list and (" (" .. (#list - n) .. " occupied)") or ""))
 		end
 	end
 end
@@ -4422,6 +4562,7 @@ function widget:Update()
 		td.endPick()
 	end
 	td.sample()
+	paintSample()
 	td.pollRoute()
 	-- Result of rotate/mirror/move: the newly placed units stay selected
 	local nn = Spring.GetGameRulesParam("led_newids_n")
@@ -4488,7 +4629,7 @@ local HELP_TOPICS = {
 			"[ and ] rotate the chosen unit or blueprint (south, east, north, west). You save a selection as a blueprint with Create in the blueprint menu, rename it with a double click.",
 			"Del deletes and Ctrl+B blows up (wreck stays): works on the selection, without one on the unit, wreck or feature under the cursor. Ctrl+C copies, Ctrl+X cuts, Ctrl+V pastes, Ctrl+D creates the builders of all factions at the cursor.",
 			"Ctrl+Z undoes the last action (also delete, blow up, move, rotate, team and features), Ctrl+Y redoes it. Ctrl+S saves the level.",
-			"Arrow keys move the selection by one grid step (up = north), Alt + drag moves it with the mouse. Shift + drag places a row, Shift+Alt + drag a rectangle, Shift+Mouse wheel changes the spacing.",
+			"Hold the left mouse button and move to paint: with an armed unit or feature one is placed after every footprint (plus the spacing) of mouse movement, one undo step per stroke; places that are already occupied are skipped. Arrow keys move the selection by one grid step (up = north), Alt + drag moves it with the mouse. Shift + drag places a row, Shift+Alt + drag a rectangle, Shift+Mouse wheel changes the spacing.",
 			"CHOOSING ENEMIES: BAR only lets you select your own units. Ctrl + left click (or dragging a rectangle) selects units of EVERY team (red frames); then delete, blow up, assign to a team, copy or save as a blueprint. A normal selection replaces it.",
 		},
 	},
