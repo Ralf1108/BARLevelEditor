@@ -3697,15 +3697,9 @@ local function paintSample()
 		return
 	end
 	local d = paint
-	for _ = 1, 200 do
-		local dx, dz = pos[1] - d.x, pos[3] - d.z
-		local k = math.max(math.abs(dx) / d.sx, math.abs(dz) / d.sz)
-		if k < 1 then
-			break
-		end
-		d.x, d.z = d.x + dx / k, d.z + dz / k
-		paintPlace(d.kind, d.x, d.z)
-	end
+	Shared.paintChain(d, pos[1], pos[3], function(px, pz)
+		paintPlace(d.kind, px, pz)
+	end)
 end
 
 function widget:MousePress(mx, my, button)

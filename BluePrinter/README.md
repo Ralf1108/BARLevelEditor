@@ -38,6 +38,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - The button **O** (in the column next to the menu) opens the settings: columns and rows of the grid (default 3 and 4) with - and +. They are stored in `LuaUI\Config\BluePrinterUI.lua` in the game folder.
 - Drag a tile with the mouse button held down = sort (a yellow mark shows the place, the order is remembered).
   Double click on the name = rename (type, Enter accepts, Esc cancels).
+- **Painting:** with an armed building hold the left mouse button and move: a plan is queued after every footprint of mouse movement (plus the spacing); spots where the building cannot be placed are left out. The whole stroke is one step for Undo.
 - **Rows and rectangles:** with an armed blueprint or building hold **Shift** and drag (a row) or **Shift + Alt** and drag (a rectangle); all copies are queued on release as one step for Undo. **Shift + mouse wheel** changes the spacing.
 - **Create Blueprint** (button at the top right of the title row, Ctrl+Alt+P or `/bp_create`): the selected buildings are saved as `bp_001`, `bp_002` ... in `BluePrinter\blueprints`
   and made ready for placing right away.
@@ -63,7 +64,7 @@ Automatic building may count as automation in some ranked or tournament games. I
 
 ## Queueing single buildings
 At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders) and the tech tier,
-click a building, then every left click on the map queues one (right click ends, `[` and `]` rotate). Buildings that
+click a building, then every left click on the map queues one (hold the button and move to paint more, right click ends, `[` and `]` rotate). Buildings that
 your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
 You set the display (columns/rows) with the **O** button. Below the menu the info lines of the building under the mouse pointer are shown (name and code, seconds per shot and damage, description, metal and energy, explosion), the same as in the Level Editor.
 

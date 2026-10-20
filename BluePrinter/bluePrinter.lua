@@ -82,6 +82,7 @@ local HELP_SECTIONS = {
 local area -- area attacks (XL, XR, XC), created below from the shared code
 local spacing = 0 -- Spacing when dragging rows/rectangles (in 16 Elmo steps, like "buildspacing")
 local stampDrag = nil -- { x, z }: start point while a row/rectangle is dragged with Shift
+local paint = nil -- { ud, f, batch, x, z, sx, sz }: the last point of a stroke while the left mouse button is held down (painting)
 local buildable = nil -- { [unitDefID] = true }: what the own builders can build right now (nil = unknown)
 local factionAuto = true -- Choose the faction by the own builders until you click one yourself
 local sites = {} -- { def, name, x, y, z, f, batch, done, blocked, claim, claimFrame, tries }
@@ -495,13 +496,15 @@ local function workPass(frame)
 end
 
 -- Queue a single building (stamp mode of the building view); false if one is already planned there
-local function addSingle(ud, x, z, f)
+local function addSingle(ud, x, z, f, batch)
 	local bx, by, bz = buildPos(ud, x, z, f)
 	if siteExists(ud.id, bx, bz) then
 		return false
 	end
-	batchCounter = batchCounter + 1
-	sites[#sites + 1] = { def = ud.id, name = ud.name, x = bx, y = by, z = bz, f = f, batch = batchCounter, tries = 0 }
+	if not batch then
+		batchCounter = batchCounter + 1
+	end
+	sites[#sites + 1] = { def = ud.id, name = ud.name, x = bx, y = by, z = bz, f = f, batch = batch or batchCounter, tries = 0 }
 	return true
 end
 
@@ -994,8 +997,16 @@ function widget:MousePress(mx, my, button)
 				local _, _, _, shift = Spring.GetModKeyState()
 				if shift then
 					stampDrag = { x = gx, z = gz } -- row/rectangle: all are queued on release
-				elseif not addSingle(ud, gx, gz, rot % 4) then
-					say("There is already a plan there")
+				else
+					-- one plan; while the button is held more follow after every footprint of mouse movement (one step for undo)
+					local f = rot % 4
+					batchCounter = batchCounter + 1
+					local hx, hz = halfSize(ud, f)
+					local gap = spacing * 16
+					paint = { ud = ud, f = f, batch = batchCounter, x = gx, z = gz, sx = math.max(16, hx * 2 + gap), sz = math.max(16, hz * 2 + gap) }
+					if not addSingle(ud, gx, gz, f, paint.batch) then
+						say("There is already a plan there")
+					end
 				end
 			end
 			return true
@@ -1039,6 +1050,7 @@ function widget:MouseRelease(mx, my, button)
 	end
 	bpGrid:release()
 	area:release()
+	paint = nil
 	if stampDrag then
 		local ud = armedUnit and UnitDefNames[armedUnit]
 		local gx, gz = mouseGround()
@@ -1440,6 +1452,28 @@ function widget:DrawScreen()
 			helpOpen = false
 			say("Help board disabled: " .. tostring(err))
 		end
+	end
+end
+
+-- Painting: while the left mouse button is held a plan is added after every footprint of mouse movement; blocked spots are left out
+function widget:Update()
+	if not paint then
+		return
+	end
+	local mx, my, left = Spring.GetMouseState()
+	if not left then
+		paint = nil
+		return
+	end
+	local gx, gz = mouseGround()
+	if gx then
+		local d = paint
+		Shared.paintChain(d, gx, gz, function(px, pz)
+			local bx, by, bz = buildPos(d.ud, px, pz, d.f)
+			if testBuild(d.ud, bx, by, bz, d.f) ~= 0 then
+				addSingle(d.ud, px, pz, d.f, d.batch)
+			end
+		end)
 	end
 end
 

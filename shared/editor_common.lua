@@ -574,6 +574,21 @@ function M.newLibrary(o)
 	return lib
 end
 
+---------------------------------------------------------------- Painting (hold the left mouse button and move)
+-- d = { x, z, sx, sz }: the last point of the stroke and the distance to the next one (one footprint plus spacing, per axis). Moves d towards
+-- (x, z) in steps of exactly that distance along the straight line and calls place(px, pz) for every step, so a fast mouse leaves no gaps.
+function M.paintChain(d, x, z, place)
+	for _ = 1, 200 do
+		local dx, dz = x - d.x, z - d.z
+		local k = math.max(math.abs(dx) / d.sx, math.abs(dz) / d.sz)
+		if k < 1 then
+			break
+		end
+		d.x, d.z = d.x + dx / k, d.z + dz / k
+		place(d.x, d.z)
+	end
+end
+
 ---------------------------------------------------------------- Drag a row / rectangle (Shift or Shift+Alt)
 -- Positions for a stamp from (x0, z0) to (x1, z1). rect = false: row (straight line), true: filled rectangle.
 -- The spacing between two units is the footprint (depending on the facing) plus spacing * 16 Elmo.

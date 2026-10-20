@@ -83,7 +83,7 @@ Besides the Level Editor there is a second, much smaller widget for the **offici
 
 - **Blueprints** (the layouts saved in the Level Editor, or new ones made from your selection with *Create Blueprint*) and single buildings from a catalog are **queued as build plans** on the map. A 3D ghost and a number show every plan.
 - **Your builders help on their own:** idle builders and the commander nearby take the plans and build them with normal build orders (cost and build time apply as usual, no cheat). Choose the radius, switch auto-build and the commander on or off with the buttons next to the menu, or send selected builders to one plan with a right click.
-- Rows and rectangles (Shift), rotating, undo and a search field work as in the Level Editor. Because automatic building may count as automation in ranked games, auto-build can be switched off (button **A**).
+- Painting (hold the left mouse button and move), rows and rectangles (Shift), rotating, undo and a search field work as in the Level Editor. Because automatic building may count as automation in ranked games, auto-build can be switched off (button **A**).
 - Experimental: the buttons **XL**, **XR**, **XC** send selected bombers, artillery and nukes against a line, a rectangle or a circle; the bombers form up first and attack together as a front.
 
 | Blueprints | Buildings |
@@ -94,7 +94,7 @@ Install it with `BluePrinter\install_blueprinter.bat` (see the installation sect
 
 ## Experimental: area attacks (XL, XR, XC)
 
-Three buttons at the right edge of the button column, in the Level Editor (below the delete buttons) and in the BluePrinter, give you another kind of attack: they spread the bombs and explosive shots of all selected units evenly over the area you choose. With many units an area attack is awkward, because you can either bombard one single spot or give every unit its own order by hand. Here you select the units and say: distribute all bombs of all these units over this area. It works with bombers, artillery, rocket launchers and nuclear silos.
+Three buttons in the button column at the right edge, in the Level Editor (below the page buttons P, G and TD) and in the BluePrinter, give you another kind of attack: they spread the bombs and explosive shots of all selected units evenly over the area you choose. With many units an area attack is awkward, because you can either bombard one single spot or give every unit its own order by hand. Here you select the units and say: distribute all bombs of all these units over this area. It works with bombers, artillery, rocket launchers and nuclear silos.
 
 ![Area attack: a circle is dragged, every unit gets its own target](docs/area-attack.jpg)
 
