@@ -149,7 +149,7 @@ See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sort
 
 ## 9. Blueprints
 
-- Saving: Create writes the selected units (all kinds, with team and neutral flag) as a layout, positions relative to the center of the selection, `rot` = heading, `h` = height above ground. After saving: re-read the list, choose the blueprint, add it to the index.
+- Saving: Create writes the selected units (all kinds, with team, neutral flag and the indestructible flag of the Tower Defense walls) as a layout, positions relative to the center of the selection, `rot` = heading, `h` = height above ground. After saving: re-read the list, choose the blueprint, add it to the index.
 - Loading/placing: through the menu. Placing runs through a load queue (50 units per update) and the gadget.
 - Managing: sorting (`_order.txt`), deleting into the trash (never for good), renaming (copy under the new name, original into the trash).
 - Format and rules: see `shared`.

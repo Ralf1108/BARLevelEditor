@@ -519,9 +519,10 @@ local function blueprintSave(name)
 	local lines = {}
 	for _, u in ipairs(list) do
 		lines[#lines + 1] = string.format(
-			"\t\t{ name = '%s', dx = %d, dz = %d, h = %d, rot = %d, team = %d, neutral = %s },",
+			"\t\t{ name = '%s', dx = %d, dz = %d, h = %d, rot = %d, team = %d, neutral = %s%s },",
 			u.name, math.floor(u.x - cx + 0.5), math.floor(u.z - cz + 0.5), math.floor(u.y - Spring.GetGroundHeight(u.x, u.z) + 0.5),
-			Spring.GetUnitHeading(u.id), Spring.GetUnitTeam(u.id), tostring(Spring.GetUnitNeutral(u.id))
+			Spring.GetUnitHeading(u.id), Spring.GetUnitTeam(u.id), tostring(Spring.GetUnitNeutral(u.id)),
+			Spring.GetUnitRulesParam(u.id, "indestructible") == 1 and ", indestructible = true" or ""
 		)
 	end
 	table.sort(lines)
@@ -660,8 +661,9 @@ local function placeBlueprintUnits(units, cx, cz, teamOverride, label, k, noStep
 		local x, z = cx + odx, cz + odz
 		local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
 		local y = Spring.GetGroundHeight(x, z) + (tonumber(u.h) or 0)
-		placeQueue[#placeQueue + 1] = string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1", tostring(u.name), teamOverride or team,
-			math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), neutralOn and "1" or "0", math.floor(y + 0.5))
+		placeQueue[#placeQueue + 1] = string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1%s", tostring(u.name), teamOverride or team,
+			math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), neutralOn and "1" or "0", math.floor(y + 0.5),
+			u.indestructible == true and "|1" or "")
 		n = n + 1
 	end
 	say(string.format("Placing blueprint '%s': %d units%s", label, n, teamOverride and (" for team " .. teamOverride) or ""))
@@ -774,6 +776,7 @@ local function copyUnits()
 			rot = Spring.GetUnitHeading(u.id),
 			team = Spring.GetUnitTeam(u.id),
 			neutral = Spring.GetUnitNeutral(u.id),
+			indestructible = Spring.GetUnitRulesParam(u.id, "indestructible") == 1,
 		}
 	end
 	say(string.format("%d units copied. Paste at the cursor with Ctrl+V.", #clipboard))
