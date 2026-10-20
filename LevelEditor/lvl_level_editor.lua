@@ -1143,7 +1143,7 @@ local function panelRect()
 	local vsx, vsy = Spring.GetViewGeometry()
 	if collapsed then
 		-- collapsed: only room for the button V in the upper right corner of the menu
-		return vsx - (m.HB + 2 * m.PAD), vsy * 0.88 - (m.HB + 8), vsx, vsy * 0.88
+		return vsx - (m.HB + 2 * m.PAD), vsy * 0.975 - m.HB - (m.HB + 8), vsx, vsy * 0.975 - m.HB
 	end
 	local cw, ch
 	if scenarioOpen then
@@ -1160,7 +1160,7 @@ local function panelRect()
 		cw, ch = bpGrid:size()
 	end
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
-	local top = vsy * 0.88
+	local top = vsy * 0.975 - m.HB -- one button height below the menu bar at the top of the screen
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
 	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
