@@ -373,6 +373,12 @@ local function clearFeatures()
 end
 
 -- Data of a unit with which it can be set up again
+local indestructible = {} -- unitID -> true: walls of the tower defense corridors, nothing damages them (also not by crushing)
+local function setIndestructible(id)
+	indestructible[id] = true
+	Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true }) -- the widget writes it into the level file
+end
+
 local function snapshot(id)
 	local defID = Spring.GetUnitDefID(id)
 	if not defID then
@@ -381,7 +387,7 @@ local function snapshot(id)
 	local x, y, z = Spring.GetUnitPosition(id)
 	return {
 		name = UnitDefs[defID].name, team = Spring.GetUnitTeam(id), x = x, y = y, z = z,
-		heading = Spring.GetUnitHeading(id), neutral = Spring.GetUnitNeutral(id),
+		heading = Spring.GetUnitHeading(id), neutral = Spring.GetUnitNeutral(id), indestructible = indestructible[id],
 	}
 end
 
@@ -490,6 +496,9 @@ local function respawn(snap)
 	suppress = suppress - 1
 	if id and snap.neutral then
 		Spring.SetUnitNeutral(id, true)
+	end
+	if id and snap.indestructible then
+		setIndestructible(id)
 	end
 	return id
 end
@@ -730,7 +739,7 @@ local function transformUnits(ids, mode, dx, dz)
 end
 
 -- rec = true: note in the history (blueprint, paste); otherwise (loading a level) not
-local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec)
+local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fixed)
 	if not rec then
 		suppress = suppress + 1
 	end
@@ -740,6 +749,9 @@ local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec)
 	end
 	if id and neutral then
 		Spring.SetUnitNeutral(id, true)
+	end
+	if id and fixed then
+		setIndestructible(id)
 	end
 	return id
 end
@@ -779,6 +791,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 		local id = place(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]) or 0, playerID)
 		if id and parts[8] == "1" then
 			Spring.SetUnitNeutral(id, true)
+		end
+		if id and parts[9] == "1" then
+			setIndestructible(id)
 		end
 	elseif cmd == "delete" then
 		-- first the nearest unit; if there is none, the nearest wreck or feature in range
@@ -850,7 +865,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 	elseif cmd == "clear" then
 		clearAll()
 	elseif cmd == "load" then
-		loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1")
+		loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1")
 	elseif cmd == "deleteids" then
 		removeIds(parts[3] or "", false)
 	elseif cmd == "boomids" then
@@ -938,6 +953,16 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 	end
 	return true
+end
+
+function gadget:UnitPreDamaged(unitID)
+	if indestructible[unitID] then
+		return 0, 0
+	end
+end
+
+function gadget:UnitDestroyed(unitID)
+	indestructible[unitID] = nil
 end
 
 function gadget:Initialize()

@@ -68,7 +68,7 @@ local HELP_SECTIONS = {
 		{ "Recent", "Recently chosen blueprints and recently placed units." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
 		{ "I", "Scenario info: title, author, briefing, roles and tech (T1/T2/T3) per team, AI, win condition, resources, grace period, ID. Click a field and type; written with the level when you save it." },
-		{ "TD", "Tower Defense (button between I and ?): tick the box, draw a path (Teeth or Walls: click points on the map, right click builds walls on both sides, Ctrl+Z undoes), set spawn point and goal, enemies allowed through, number of waves, and per wave factions, tech, type (V vehicles, B bots, H hovercraft), count, gap in seconds and HP %. Play / Stop at the bottom runs the waves in the editor. Settings are saved with the level." },
+		{ "TD", "Tower Defense (button between I and ?): tick the box. Corridor: choose Teeth or Walls, then Line (click points, right click builds) or Free (draw with the mouse held down); the walls on both sides are indestructible, Ctrl+Z undoes. Path: the way the enemies walk (Line or Free), through a maze too. Spawn point and goal, enemies allowed through, waves with factions, tech, type (V vehicles, B bots, H hovercraft), count, gap in seconds and HP %. Play / Stop at the bottom runs the waves in the editor. Settings are saved with the level." },
 	} },
 	{ "Buttons left of the menu", {
 		{ "0, 1, 2 ...", "Team for new units and blueprints. With a selection: assigns the selection to this team." },
@@ -296,7 +296,7 @@ local SCENARIO_VERSION = 2 -- 2 = adds: grace (grace period in minutes)
 local scenario = nil -- Info of the loaded scenario or one created in the game
 local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
 local currentLevel = nil -- Name of the level loaded or saved last
-local td = { open = false, edit = nil, pick = nil, pts = {}, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
+local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke = nil, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
 
 local function decodeBlock(block)
 	local body = block and block:match("%[==%[(.*)%]==%]")
@@ -330,9 +330,10 @@ local function saveLevel(name, quiet)
 			local ud = UnitDefs[Spring.GetUnitDefID(id)]
 			-- Gaia units additionally carry gaia = true (the Gaia number depends on the team count)
 			lines[#lines + 1] = string.format(
-				"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s },",
+				"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s%s },",
 				ud.name, x, y, z, Spring.GetUnitHeading(id), t, tostring(Spring.GetUnitNeutral(id)),
-				t == gaia and ", gaia = true" or ""
+				t == gaia and ", gaia = true" or "",
+				Spring.GetUnitRulesParam(id, "indestructible") == 1 and ", indestructible = true" or ""
 			)
 			count = count + 1
 		end
@@ -2287,18 +2288,31 @@ function td.layout(rect)
 		return editing(field, row) and (td.edit.buf .. "_") or tostring(value)
 	end
 	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled } })
-	-- Path: material and width form one unit
-	head("Path")
+	-- Corridor: material, how to draw it, width; Path: the way the enemies walk, spawn point and goal
+	head("Corridor (walls on both sides)")
 	line({
-		{ kind = "tdpath", value = 1, label = "Teeth", active = td.pick == "path" and td.wall == 1, tip = "Draw a path: click its points on the map, right click builds dragon teeth on both sides" },
-		{ kind = "tdpath", value = 2, label = "Walls", active = td.pick == "path" and td.wall == 2, tip = "Draw a path: click its points on the map, right click builds walls on both sides" },
+		{ kind = "tdmat", value = 1, label = "Teeth", active = td.wall == 1, tip = "Corridor of dragon teeth" },
+		{ kind = "tdmat", value = 2, label = "Walls", active = td.wall == 2, tip = "Corridor of walls" },
 	})
-	head("Path width (Elmo)")
+	line({
+		{ kind = "tddraw", field = "corridor", value = "line", label = "Line", active = td.pick == "corridor" and td.mode == "line",
+			tip = "Build a corridor: click the points on the map, right click builds the walls (indestructible). Ctrl+Z undoes it." },
+		{ kind = "tddraw", field = "corridor", value = "free", label = "Free", active = td.pick == "corridor" and td.mode == "free",
+			tip = "Build a corridor: hold the left mouse button and draw any line, the walls appear when you let go (indestructible)." },
+	})
+	head("Corridor width (Elmo)")
 	local widths = {}
 	for _, t in ipairs({ 2, 3, 4, 6, 8 }) do
 		widths[#widths + 1] = { kind = "tdwidth", value = t, label = tostring(t * 16), active = c.width == t }
 	end
 	line(widths)
+	head("Path (the way the enemies walk)")
+	line({
+		{ kind = "tddraw", field = "route", value = "line", label = "Line", active = td.pick == "route" and td.mode == "line",
+			tip = "Set the way of the enemies: click the points on the map (e.g. through a maze), right click finishes. Spawn point and goal move to its ends." },
+		{ kind = "tddraw", field = "route", value = "free", label = "Free", active = td.pick == "route" and td.mode == "free",
+			tip = "Set the way of the enemies: hold the left mouse button and draw it. Spawn point and goal move to its ends." },
+	})
 	line({
 		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn", w = 5 },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
@@ -2369,7 +2383,7 @@ function td.layout(rect)
 		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "Path: click points on the map, right click builds, Ctrl+Z undoes.", x = x1, y = y - 58 * S, size = 17 * S }
+	labels[#labels + 1] = { text = "Line: click points, right click finishes. Free: drag with the mouse.", x = x1, y = y - 58 * S, size = 17 * S }
 	y = y - 68 * S - m.PAD
 	return rects, labels, rect.top - y
 end
@@ -2485,15 +2499,17 @@ function td.payload()
 	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/") }, ";")
 end
 
--- Ends the pick mode (spawn point, goal, path)
+-- Ends the pick mode (spawn point, goal, corridor, route)
 function td.endPick()
-	td.pick, td.pts = nil, {}
+	td.pick, td.pts, td.stroke = nil, {}, nil
 end
 
--- Arms picking on the map: "spawn", "goal" or "path" (wall = 1 dragon teeth, 2 walls); the same button again ends it
-function td.startPick(kind, wall)
+-- Arms picking on the map: "spawn" or "goal" (one click), or drawing: kind "corridor" (builds the walls on both sides of
+-- the drawn line) or "route" (only the way the enemies walk), mode "line" (click points) or "free" (hold the mouse button
+-- and drag); the same button again ends it
+function td.startPick(kind, mode)
 	td.finish(true)
-	local same = td.pick == kind and (kind ~= "path" or td.wall == wall)
+	local same = td.pick == kind and td.mode == mode
 	mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
 	gen.armed, gen.drag = false, nil
 	armedUnit, armedFeature = false, false
@@ -2505,20 +2521,21 @@ function td.startPick(kind, wall)
 		say("Tower Defense: mode ended")
 		return
 	end
-	td.pick = kind
-	td.wall = wall or td.wall
-	if kind == "path" then
-		say("Path: click the points of the path on the map (start first), right click builds the walls on both sides (Ctrl+Z undoes).")
+	td.pick, td.mode = kind, mode
+	local what = kind == "corridor" and "the corridor (walls on both sides)" or "the route of the enemies"
+	if mode == "line" then
+		say("Click the points of " .. what .. " on the map (start first), right click finishes (Ctrl+Z undoes).")
+	elseif mode == "free" then
+		say("Draw " .. what .. " with the left mouse button held down.")
 	else
 		say((kind == "spawn" and "Spawn point" or "Goal") .. ": click the place on the map, right click cancels.")
 	end
 end
 
--- Right click in the pick mode: the path is built (undo with Ctrl+Z), otherwise the mode just ends
+-- Right click in the pick mode: a drawn line is finished (the corridor is built, undo with Ctrl+Z), otherwise the mode ends
 function td.cancel()
-	if td.pick == "path" and #td.pts >= 2 then
-		td.build()
-		td.endPick()
+	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and #td.pts >= 2 then
+		td.finishDraw()
 		return
 	end
 	td.endPick()
@@ -2527,15 +2544,61 @@ end
 
 -- Left click on the map in the pick mode
 function td.click(x, z)
-	if td.pick == "path" then
+	if td.pick == "corridor" or td.pick == "route" then
 		td.pts[#td.pts + 1] = { math.floor(x), math.floor(z) }
-		say(string.format("Path: %d points. Right click builds the walls.", #td.pts))
+		say(string.format("%d points. Right click finishes.", #td.pts))
 		return
 	end
 	local c = td.cfg(true)
 	c[td.pick] = { math.floor(x), math.floor(z) }
 	say(string.format("%s set at %d, %d", td.pick == "spawn" and "Spawn point" or "Goal", x, z))
 	td.endPick()
+end
+
+-- Points of a hand-drawn line: take a point when the mouse moved far enough (called every frame while drawing)
+function td.sample()
+	local s = td.stroke
+	if not s then
+		return
+	end
+	local mx, my = Spring.GetMouseState()
+	local _, pos = Spring.TraceScreenRay(mx, my, true)
+	local last = s[#s]
+	if pos and (pos[1] - last[1]) ^ 2 + (pos[3] - last[2]) ^ 2 >= 48 ^ 2 then
+		s[#s + 1] = { math.floor(pos[1]), math.floor(pos[3]) }
+	end
+end
+
+-- Fewer points for the same line (Douglas-Peucker): a hand-drawn line has far too many
+function td.simplify(p, tol)
+	if #p <= 2 then
+		return p
+	end
+	local best, at = 0, 0
+	local a, b = p[1], p[#p]
+	local dx, dz = b[1] - a[1], b[2] - a[2]
+	local len = math.sqrt(dx * dx + dz * dz)
+	for i = 2, #p - 1 do
+		local d = len > 0 and math.abs((p[i][1] - a[1]) * dz - (p[i][2] - a[2]) * dx) / len or math.sqrt((p[i][1] - a[1]) ^ 2 + (p[i][2] - a[2]) ^ 2)
+		if d > best then
+			best, at = d, i
+		end
+	end
+	if best <= tol then
+		return { a, b }
+	end
+	local left, right = {}, {}
+	for i = 1, at do
+		left[#left + 1] = p[i]
+	end
+	for i = at, #p do
+		right[#right + 1] = p[i]
+	end
+	left, right = td.simplify(left, tol), td.simplify(right, tol)
+	for i = 2, #right do
+		left[#left + 1] = right[i]
+	end
+	return left
 end
 
 -- Distance of a point to the polyline of points p
@@ -2579,34 +2642,49 @@ function td.wallSpots(p, width)
 	return spots
 end
 
--- Enter in the path mode: builds the walls and takes the ends of the path as spawn point and goal
-function td.build()
-	local p = td.pts
-	if #p < 2 then
-		say("Path: click at least two points first.")
-		return
-	end
+-- Builds the walls on both sides of the line p (one undo step). The wall pieces are indestructible: enemies of higher tech
+-- levels would shoot a way through otherwise. Returns true when it built something.
+function td.buildWalls(p)
 	if not canEdit() then
-		return
+		return false
 	end
 	local name = mazeUnitName(MAZE_KINDS[td.wall])
 	if not name then
 		say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
-		return
+		return false
 	end
 	local c = td.cfg(true)
 	local spots = td.wallSpots(p, c.width)
 	if #spots > MAZE_MAX_WALLS then
-		say("The path is too long (more than " .. MAZE_MAX_WALLS .. " wall pieces)")
-		return
+		say("The corridor is too long (more than " .. MAZE_MAX_WALLS .. " wall pieces)")
+		return false
 	end
 	ledStep()
 	for _, s in ipairs(spots) do
-		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, s[1], s[2], 0, neutralOn and 1 or 0)
+		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, s[1], s[2], 0, neutralOn and 1 or 0)
 	end
+	say(string.format("Corridor: %d indestructible wall pieces (%s). Ctrl+Z undoes it.", #spots, name))
+	return true
+end
+
+-- The drawn line (td.pts) is finished: the corridor mode builds the walls, both modes take the line as the route of the
+-- enemies and its ends as spawn point and goal
+function td.finishDraw()
+	local p = td.simplify(td.pts, 24)
+	if #p < 2 then
+		say("Click at least two points first.")
+		return
+	end
+	if td.pick == "corridor" and not td.buildWalls(p) then
+		td.endPick()
+		return
+	end
+	local c = td.cfg(true)
 	c.path = p
 	c.spawn, c.goal = { p[1][1], p[1][2] }, { p[#p][1], p[#p][2] }
-	say(string.format("Path: %d wall pieces (%s), spawn point and goal at the ends. Ctrl+Z undoes it.", #spots, name))
+	if td.pick == "route" then
+		say(string.format("Route set (%d points), spawn point and goal at the ends.", #p))
+	end
 	td.endPick()
 end
 
@@ -2625,8 +2703,10 @@ function td.press(rect, mx, my)
 	if k == "tdon" then
 		local c = td.cfg(true)
 		c.enabled = not c.enabled
-	elseif k == "tdpath" then
-		td.startPick("path", hit.value)
+	elseif k == "tdmat" then
+		td.wall = hit.value
+	elseif k == "tddraw" then
+		td.startPick(hit.field, hit.value)
 	elseif k == "tdspawn" then
 		td.startPick("spawn")
 	elseif k == "tdgoal" then
@@ -2718,10 +2798,13 @@ function td.drawWorld()
 	if c.path and #c.path > 1 then
 		polyline(c.path, 1, 0.9, 0.3)
 	end
-	if td.pick == "path" and #td.pts > 0 then
+	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and #td.pts > 0 then
 		local mx, my = Spring.GetMouseState()
 		local _, pos = Spring.TraceScreenRay(mx, my, true)
 		polyline(td.pts, 0.4, 0.9, 1, pos)
+	end
+	if td.stroke and #td.stroke > 1 then
+		polyline(td.stroke, 0.4, 0.9, 1)
 	end
 	gl.LineWidth(1)
 	gl.Color(1, 1, 1, 1)
@@ -2801,7 +2884,11 @@ function widget:MousePress(mx, my, button)
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
-				td.click(pos[1], pos[3])
+				if td.mode == "free" then
+					td.stroke = { { math.floor(pos[1]), math.floor(pos[3]) } } -- drawing: the points follow the mouse (td.sample)
+				else
+					td.click(pos[1], pos[3])
+				end
 			end
 			return true
 		elseif button == 3 then
@@ -3153,6 +3240,11 @@ function widget:MouseRelease(mx, my, button)
 		return
 	end
 	area:release()
+	if td.stroke then
+		td.pts, td.stroke = td.stroke, nil
+		td.finishDraw()
+		return
+	end
 	if selBox then
 		finishSelBox(mx, my)
 	end
@@ -3730,6 +3822,7 @@ function widget:Update()
 	if td.pick and (armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
 		td.endPick()
 	end
+	td.sample()
 	-- Result of rotate/mirror/move: the newly placed units stay selected
 	local nn = Spring.GetGameRulesParam("led_newids_n")
 	if nn ~= lastNewN then
@@ -3767,9 +3860,10 @@ function widget:Update()
 		if u.feature then
 			Spring.SendLuaRulesMsg(string.format("led|loadfeature|%s|%d|%d|%d", tostring(u.name), tonumber(u.x) or 0, tonumber(u.z) or 0, tonumber(u.rot) or 0))
 		else
-		Spring.SendLuaRulesMsg(string.format("led|load|%s|%d|%d|%d|%d|%s|%d",
+		Spring.SendLuaRulesMsg(string.format("led|load|%s|%d|%d|%d|%d|%s|%d%s",
 			tostring(u.name), u.gaia and Spring.GetGaiaTeamID() or tonumber(u.team) or 0, tonumber(u.x) or 0, tonumber(u.z) or 0, tonumber(u.rot) or 0,
-			(u.neutral == true or u.neutral == "true") and "1" or "0", tonumber(u.y) or -1))
+			(u.neutral == true or u.neutral == "true") and "1" or "0", tonumber(u.y) or -1,
+			u.indestructible == true and "|0|1" or ""))
 		end
 		if #loadQueue == 0 then
 			say("Loading done.")
@@ -3952,8 +4046,8 @@ function widget:KeyPress(key, mods, isRepeat)
 	if td.edit then
 		return td.key(key)
 	end
-	if td.pick == "path" and (key == 13 or key == 271) then
-		td.build()
+	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and (key == 13 or key == 271) then
+		td.finishDraw()
 		return true
 	end
 	if scEdit then
