@@ -86,6 +86,19 @@ local function parse(payload)
 end
 
 -- True when at least one weapon can hit the ground (pure anti-air units are of no use against walking enemies)
+-- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3
+local function techLevel(ud)
+	local t = tonumber(ud.customParams and ud.customParams.techlevel) or 1
+	if t < 3 then
+		local human = ud.translatedHumanName or ud.humanName or ""
+		local mv = ud.moveDef and ud.moveDef.name or ""
+		if human:find("^Epic") or tostring(mv):find("epic", 1, true) then
+			return 3
+		end
+	end
+	return t
+end
+
 local function hitsGround(ud)
 	for _, w in ipairs(ud.weapons) do
 		local wd = WeaponDefs[w.weaponDef]
@@ -107,7 +120,7 @@ local function pool(facs, kinds, techs)
 		if facs:find(fac, 1, true) and not name:find("scav") and not name:find("decom") and not name:find("dummy")
 			and not name:find("drone") and not cp.iscommander and not cp.isdrone then
 			local mc = ud.modCategories or {}
-			local tech = tostring(tonumber(cp.techlevel) or 1)
+			local tech = tostring(techLevel(ud))
 			if ud.canMove and not ud.canFly and not ud.isBuilder and not ud.isFactory and ud.speed and ud.speed > 0
 				and #ud.weapons > 0 and not (mc.ship or mc.underwater) and techs:find(tech, 1, true) and hitsGround(ud) then
 				-- the movement class tells bots (bot2, bot3 ...), vehicles (tank2, atank3 ...) and hovercraft (hover2 ...) apart

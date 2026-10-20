@@ -66,6 +66,19 @@ local function fillPendingStockpiles()
 	end
 end
 
+-- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3
+local function techLevel(ud)
+	local t = tonumber(ud.customParams and ud.customParams.techlevel) or 1
+	if t < 3 then
+		local human = ud.translatedHumanName or ud.humanName or ""
+		local mv = ud.moveDef and ud.moveDef.name or ""
+		if human:find("^Epic") or tostring(mv):find("epic", 1, true) then
+			return 3
+		end
+	end
+	return t
+end
+
 local function tell(playerID, text)
 	if playerID then
 		Spring.SendMessageToPlayer(playerID, "[Level Editor] " .. text)
@@ -185,7 +198,7 @@ local function generatePool(faction, techs, kind)
 				ok = ud.canMove and not ud.canFly and not ud.isBuilder and armed and (mc.ship or mc.underwater) and true or false
 			end
 			if ok then
-				local tech = tonumber(cp.techlevel) or 1
+				local tech = techLevel(ud)
 				if not techs or techs[tech] then
 					pool[#pool + 1] = ud
 				end
@@ -1136,7 +1149,7 @@ if EDITOR_MODE then
 					local kind = builderKind(ud)
 					if kind then
 						local list = rows[kind]
-						list[#list + 1] = { name = name, tech = tonumber(cp.techlevel) or 1, ud = ud }
+						list[#list + 1] = { name = name, tech = techLevel(ud), ud = ud }
 					end
 				end
 			end

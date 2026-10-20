@@ -69,6 +69,21 @@ function M.parseBlueprint(text)
 	return data.blueprint
 end
 
+-- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3
+local function techLevel(ud)
+	local t = tonumber(ud.customParams and ud.customParams.techlevel) or 1
+	if t < 3 then
+		local human = ud.translatedHumanName or ud.humanName or ""
+		local mv = ud.moveDef and ud.moveDef.name or ""
+		if human:find("^Epic") or tostring(mv):find("epic", 1, true) then
+			return 3
+		end
+	end
+	return t
+end
+
+M.techLevel = techLevel
+
 local function isBuildingDef(ud)
 	return ud and (ud.isBuilding or not ud.canMove)
 end
@@ -1453,7 +1468,7 @@ function M.buildUnitCache()
 		-- without decoration (arm_leftshoulder_..., cor_hat_..., armpw_wings): names with "_" at the 4th position or "_wings"
 		if fac and not name:find("scav") and not name:find("decom") and not name:find("dummy") and not name:find("drone")
 			and not cp.isdrone and name:sub(4, 4) ~= "_" and not name:find("_wings", 1, true) then
-			local tech = math.max(1, math.min(3, math.floor(tonumber(cp.techlevel) or 1)))
+			local tech = math.max(1, math.min(3, math.floor(techLevel(ud))))
 			local group = unitGroup(ud)
 			local list = fac[group][tech]
 			local filler = group == "buildings" and cp.objectify ~= nil -- dragon teeth, walls ... you hardly need
