@@ -1189,17 +1189,17 @@ end
 
 local function headerRowCount() -- Rows of the header
 	if optionsOpen or scenarioOpen or gen.open or td.open then
-		return 1
+		return 0
 	end
-	-- Place menu: Place/Generate row, search, sub-tabs, then the rows of the chosen sub-tab
+	-- Place menu: search, sub-tabs, then the rows of the chosen sub-tab
 	if menuMode == "units" then
-		return 3 + (uGrid:filterRowCount() - 1)
+		return 2 + (uGrid:filterRowCount() - 1)
 	elseif menuMode == "features" then
-		return 3 + (fGrid:filterRowCount() - 1)
+		return 2 + (fGrid:filterRowCount() - 1)
 	elseif menuMode == "fav" then
-		return 3
+		return 2
 	end
-	return 3 + 1 -- blueprints: Create
+	return 2 + 1 -- blueprints: Create
 end
 
 -- List of the saved levels (LevelEditor/*.lua, without internal files with _ except the autosave _last)
@@ -1278,20 +1278,18 @@ local function headerRects()
 		local hx1, hx2, hy1 = sx1, sx2, sideTop(4)
 		local dx1, dx2, dy1 = sx1, sx2, sideTop(5)
 		local tops = {
-			{ "place", "Place", "Place: choose units, features and blueprints from the lists and place them on the map" },
-			{ "gen", "Generate", "Generate: random units in a rectangle or circle, or a maze" },
+			{ "place", "P", "Place (P): choose units, features and blueprints from the lists and place them on the map" },
+			{ "gen", "G", "Generate (G): random units in a rectangle or circle, or a maze" },
 		}
-		local bw = (x2 - m.PAD - (x1 + m.PAD) - 3) / 2
 		for i, it in ipairs(tops) do
-			local bx = x1 + m.PAD + (i - 1) * (bw + 3)
-			rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = top - m.HB, y1 = top, kind = "top", value = it[1], label = it[2], fs = 26 * S,
+			rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5 + i) - m.HB, y1 = sideTop(5 + i), side = true, kind = "top", value = it[1], label = it[2],
 				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open), tip = it[3] }
 		end
 		rects[#rects + 1] = { x1 = ix1, x2 = ix2, y0 = iy1 - m.HB, y1 = iy1, side = true, kind = "info", value = "info", label = "I", active = scenarioOpen,
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
-		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(6) - m.HB, y1 = sideTop(6), side = true, kind = "td", value = "td", label = "TD", active = td.open,
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(8) - m.HB, y1 = sideTop(8), side = true, kind = "td", value = "td", label = "TD", active = td.open,
 			tint = td.cfg().enabled and (td.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Tower Defense is on for this level
 			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
 		-- Delete (rectangle, circle, line), then the experimental area attacks
@@ -1301,7 +1299,7 @@ local function headerRects()
 			{ "circle", "DC", "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
 		}
 		for k, d in ipairs(dels) do
-			local top = sideTop(7 + k)
+			local top = sideTop(9 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = d[1], label = d[2], active = (delMode == d[1]), tip = d[3] }
 		end
 		local areas = {
@@ -1310,7 +1308,7 @@ local function headerRects()
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(11 + k)
+			local top = sideTop(13 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1320,7 +1318,7 @@ local function headerRects()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(15 + k)
+			local top = sideTop(17 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
@@ -1328,7 +1326,7 @@ local function headerRects()
 	end
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
 	if not optionsOpen and not scenarioOpen and not gen.open and not td.open then
-		local rowTop = y1 - 4 - titleH() - (m.HB + 3)
+		local rowTop = y1 - 4 - titleH()
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
 		end
