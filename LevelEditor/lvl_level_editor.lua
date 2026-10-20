@@ -2165,9 +2165,10 @@ td.FAC = { "arm", "cor", "leg" }
 td.FAC_TXT = { arm = "Armada", cor = "Cortex", leg = "Legion" }
 td.MAX_WAVES = 30
 td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
+td.tfac, td.ttech = "arm", 1 -- turret list of the page: faction and tech level shown
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 8, leaks = 10, path = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
+	return { enabled = false, width = 8, leaks = 10, path = {}, banned = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2225,7 +2226,7 @@ function td.lua(v, indent)
 end
 
 function td.height()
-	local _, _, h = td.layout({ x1 = 0, x2 = math.floor(560 * S), top = 0 })
+	local _, _, h = td.layout({ x1 = 0, x2 = math.floor(780 * S), top = 0 })
 	return h
 end
 
@@ -2282,6 +2283,49 @@ function td.toggleChoice(w, field, v)
 		end
 	end
 	w[field] = table.concat(out)
+end
+
+-- Turrets of the page: armed buildings on land (the catalog of the Place tab), [faction][tech] = list of { name, id }
+function td.turrets(fac, tech)
+	if not td.tcache then
+		local cache = Shared.buildUnitCache()
+		td.tcache = {}
+		for _, f in ipairs(td.FAC) do
+			td.tcache[f] = { {}, {}, {} }
+			for t = 1, 3 do
+				for _, e in ipairs(cache[f].buildings[t]) do
+					if e.rank == 2 then
+						local list = td.tcache[f][t]
+						list[#list + 1] = e
+					end
+				end
+			end
+		end
+	end
+	return td.tcache[fac][tech]
+end
+
+function td.isBanned(name)
+	for _, n in ipairs(td.cfg().banned or {}) do
+		if n == name then
+			return true
+		end
+	end
+	return false
+end
+
+-- Forbid a tower for the player in the game (the editor can always place it) or allow it again
+function td.toggleBan(name)
+	local c = td.cfg(true)
+	c.banned = c.banned or {}
+	for i, n in ipairs(c.banned) do
+		if n == name then
+			table.remove(c.banned, i)
+			return
+		end
+	end
+	c.banned[#c.banned + 1] = name
+	table.sort(c.banned)
 end
 
 function td.layout(rect)
@@ -2419,6 +2463,39 @@ function td.layout(rect)
 	line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Play"), active = running, fs = 26 * S,
 		tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 }, -- red while running, green otherwise
 		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
+	-- The player: which towers may be built in the game (red X = forbidden)
+	y = y - 14 * S
+	head("Towers the player may build (red X = forbidden)")
+	local facs = {}
+	for _, f in ipairs(td.FAC) do
+		facs[#facs + 1] = { kind = "tdfac", value = f, label = td.FAC_TXT[f], icon = Shared.FACTION_ICONS[f], active = td.tfac == f,
+			tip = "Show the towers of " .. td.FAC_TXT[f] }
+	end
+	line(facs)
+	local techs = {}
+	for t = 1, 3 do
+		if #td.turrets(td.tfac, t) > 0 then
+			techs[#techs + 1] = { kind = "tdtech", value = t, label = "T" .. t, active = td.ttech == t, tip = "Show the tech level " .. t .. " towers" }
+		end
+	end
+	if #techs > 0 and #td.turrets(td.tfac, td.ttech) == 0 then
+		td.ttech = techs[1].value
+	end
+	line(techs)
+	local list = td.turrets(td.tfac, td.ttech)
+	local cols, gapT = 8, 4 * S
+	local tw = (x2 - x1 - gapT * (cols - 1)) / cols
+	for i, e in ipairs(list) do
+		local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+		local tx, ty = x1 + col * (tw + gapT), y - row * (tw + gapT)
+		local banned = td.isBanned(e.name)
+		rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "", banned = banned }
+		local xs = tw * 0.36
+		rects[#rects + 1] = { x1 = tx + tw - xs, x2 = tx + tw, y0 = ty - xs, y1 = ty, kind = "tdban", value = e.name, id = e.id, label = "", banned = banned,
+			tip = banned and "Forbidden: the player cannot build this tower in the game. Click to allow it again." or
+				"Click: the player cannot build this tower in the game (in the editor you can always place it)." }
+	end
+	y = y - math.ceil(#list / cols) * (tw + gapT) - 8 * S
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "Line: click points, right click finishes. Free: drag with the mouse.", x = x1, y = y - 58 * S, size = 17 * S }
@@ -2426,9 +2503,77 @@ function td.layout(rect)
 	return rects, labels, rect.top - y
 end
 
+-- Tower tiles: the picture, a red X in the upper right corner (button), a big red X over a forbidden tower; the 3D model and
+-- the data of the tower under the mouse pointer as in the unit list
+function td.drawTiles(rect, tiles)
+	local mx, my = Spring.GetMouseState()
+	local hover
+	for _, r in ipairs(tiles) do
+		if r.kind == "tdtile" then
+			local over = mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1
+			if over then
+				hover = r
+				gl.Color(1, 1, 1, 0.35)
+				gl.Rect(r.x1 - 2, r.y0 - 2, r.x2 + 2, r.y1 + 2)
+			end
+			gl.Color(1, 1, 1, r.banned and 0.35 or 1)
+			gl.Texture("#" .. r.id)
+			gl.TexRect(r.x1, r.y0, r.x2, r.y1)
+			gl.Texture(false)
+			if r.banned then
+				gl.Color(1, 0.1, 0.1, 1)
+				gl.LineWidth(5 * S)
+				gl.BeginEnd(GL.LINES, function()
+					gl.Vertex(r.x1 + 4 * S, r.y0 + 4 * S)
+					gl.Vertex(r.x2 - 4 * S, r.y1 - 4 * S)
+					gl.Vertex(r.x1 + 4 * S, r.y1 - 4 * S)
+					gl.Vertex(r.x2 - 4 * S, r.y0 + 4 * S)
+				end)
+				gl.LineWidth(1)
+			end
+		end
+	end
+	for _, r in ipairs(tiles) do
+		if r.kind == "tdban" then
+			gl.Color(0, 0, 0, 0.75)
+			gl.Rect(r.x1, r.y0, r.x2, r.y1)
+			gl.Color(1, 0.15, 0.15, 1)
+			gl.LineWidth(3 * S)
+			local g = (r.x2 - r.x1) * 0.22
+			gl.BeginEnd(GL.LINES, function()
+				gl.Vertex(r.x1 + g, r.y0 + g)
+				gl.Vertex(r.x2 - g, r.y1 - g)
+				gl.Vertex(r.x1 + g, r.y1 - g)
+				gl.Vertex(r.x2 - g, r.y0 + g)
+			end)
+			gl.LineWidth(1)
+		end
+	end
+	gl.Color(1, 1, 1, 1)
+	if hover then
+		local size = Shared.PREVIEW_SIZE * S
+		local px, py = Shared.previewPos(rect, hover.y0, hover.y1 - hover.y0, size)
+		pcall(Shared.drawUnitPreview, hover.id, px, py, size)
+		gl.Color(1, 1, 1, 1)
+		local ud = UnitDefs[hover.id]
+		local cx = (rect.x1 + rect.x2) / 2
+		gl.Text(string.format("%s (%s)%s", ud.translatedHumanName or ud.humanName or hover.value, hover.value, hover.banned and "  - forbidden" or ""), cx, rect.y0 - 40 * S, 29 * S, "co")
+		gl.Text(string.format("Metal %d   Energy %d", ud.metalCost or 0, ud.energyCost or 0), cx, rect.y0 - 78 * S, 26 * S, "co")
+	end
+end
+
 function td.draw(rect)
 	local rects, labels = td.layout(rect)
-	Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+	local buttons, tiles = {}, {}
+	for _, r in ipairs(rects) do
+		if r.kind == "tdtile" or r.kind == "tdban" then
+			tiles[#tiles + 1] = r
+		else
+			buttons[#buttons + 1] = r
+		end
+	end
+	Shared.drawButtons(buttons, 22 * S, Shared.m.HB)
+	td.drawTiles(rect, tiles)
 	for _, r in ipairs(rects) do
 		if r.kind == "tdspawn" or r.kind == "tdgoal" then
 			local cr, cg, cb = 0.3, 1, 0.4
@@ -2534,7 +2679,7 @@ function td.payload()
 	for _, w in ipairs(c.waves) do
 		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
-	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/") }, ";")
+	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-" }, ";")
 end
 
 -- Ends the pick mode (spawn point, goal, corridor, route)
@@ -2801,6 +2946,12 @@ function td.press(rect, mx, my)
 		widgetHandler:OwnText()
 	elseif k == "tdplay" then
 		td.toggle()
+	elseif k == "tdfac" then
+		td.tfac = hit.value
+	elseif k == "tdtech" then
+		td.ttech = hit.value
+	elseif k == "tdban" then
+		td.toggleBan(hit.value)
 	end
 	return true
 end

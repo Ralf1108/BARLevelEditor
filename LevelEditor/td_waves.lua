@@ -2,11 +2,12 @@
 -- to the goal, pays metal and energy for every kill and ends the level (won: all waves beaten, lost: too many got through).
 -- Configuration: from the Level Editor with the message "tdw|start|<payload>" (stop: "tdw|stop"), or from the game option
 -- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
---   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves
+--   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned
 --   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
 --   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
 --           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
 --           the start), hp = health in percent. The units are chosen at random among all that match.
+--   banned = "name,name,..." or "-": units (towers) the player must not build while the game runs (optional last field)
 -- State for the display: game rules parameters tdState, tdWave, tdWaves, tdLeaks, tdMaxLeaks, tdKilled, tdAlive.
 function gadget:GetInfo()
 	return {
@@ -81,6 +82,13 @@ local function parse(payload)
 	end
 	if #cfg.waves == 0 then
 		return nil
+	end
+	cfg.banned = {}
+	for _, name in ipairs(split(f[10] or "", ",")) do
+		local ud = UnitDefNames[name]
+		if ud then
+			cfg.banned[ud.id] = true
+		end
 	end
 	return cfg
 end
@@ -293,6 +301,15 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 			publish()
 		end
 	end
+end
+
+-- Forbidden towers: the player's build orders for them are refused while the game runs
+function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
+	if td and cmdID < 0 and teamID == td.cfg.player and td.cfg.banned[-cmdID] then
+		say("Forbidden in this level: " .. (UnitDefs[-cmdID].translatedHumanName or UnitDefs[-cmdID].name))
+		return false
+	end
+	return true
 end
 
 function gadget:RecvLuaMsg(msg, playerID)
