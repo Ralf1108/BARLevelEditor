@@ -980,10 +980,12 @@ if EDITOR_MODE then
 		if ud.canFly then
 			return "air"
 		end
-		if mc.hover then
+		-- the movement class tells them apart (bot2, tank3, hover2 ...); the categories "bot" and "hover" do not exist in BAR
+		local move = ud.moveDef and ud.moveDef.name or ""
+		if mc.hover or move:find("hover") then
 			return "hover"
 		end
-		if mc.bot then
+		if mc.bot or move:find("bot") then
 			return "bot"
 		end
 		return "vehicle"

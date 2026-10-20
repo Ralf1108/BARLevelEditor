@@ -2358,14 +2358,15 @@ function td.layout(rect)
 		labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = y - 18 * S, size = 17 * S }
 		y = y - 24 * S
 	end
-	local running = Spring.GetGameRulesParam("tdState") == "running"
+	local state = Spring.GetGameRulesParam("tdState") or ""
+	local running = state == "running"
 	-- room for a message above Play (red, a few seconds): what is missing
 	if td.notice and os.clock() < td.notice.untilT then
 		labels[#labels + 1] = { text = td.notice.text, x = x1, y = y - 20 * S, size = 19 * S, color = { 1, 0.4, 0.35 } }
 	end
 	y = y - 26 * S
-	line({ { kind = "tdplay", label = running and "Stop" or "Play", active = running, fs = 26 * S,
-		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop ends it." } })
+	line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Play"), active = running, fs = 26 * S,
+		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "Path: click points on the map, right click builds, Ctrl+Z undoes.", x = x1, y = y - 58 * S, size = 17 * S }
@@ -2656,10 +2657,16 @@ function td.press(rect, mx, my)
 	return true
 end
 
--- Play / Stop (button at the bottom of the TD page): runs the waves in the editor; the state before is saved as _beforeplay
+-- Play / Stop (button at the bottom of the TD page): runs the waves in the editor; the state before is saved as _beforeplay and comes back on Stop
 function td.toggle()
-	if Spring.GetGameRulesParam("tdState") == "running" then
+	local state = Spring.GetGameRulesParam("tdState")
+	if state and state ~= "" then
+		-- running, won or lost: stop and bring the state before Play back (destroyed towers, wave units)
 		Spring.SendLuaRulesMsg("tdw|stop")
+		local current = currentLevel
+		load_level(nil, nil, { "_beforeplay" })
+		currentLevel = current
+		say("Stopped: the state before Play is back.")
 		return
 	end
 	local payload, err = td.payload()
@@ -2670,7 +2677,7 @@ function td.toggle()
 	end
 	saveLevel("_beforeplay", true)
 	Spring.SendLuaRulesMsg("tdw|start|" .. payload)
-	say("Play: the state before is saved as _beforeplay (towers that get destroyed stay destroyed; load it from the level list of the O menu).")
+	say("Play: the state before is saved as _beforeplay; Stop brings it back.")
 end
 
 -- Markers in the world while the TD page is open: spawn point (green), goal (red), path and the points being clicked
