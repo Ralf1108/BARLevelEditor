@@ -57,7 +57,7 @@ After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor
 | Random army | **Generate**, choose faction / type / tech / count and *Area*, press **Generate**, drag on the map. |
 | Tower Defense | Button **TD** between **I** and **?**: draw a path (right click builds the walls), set spawn point, goal and waves (factions, tech, type, count, gap, HP %), then **Start test** at the bottom of the page. |
 | Maze | **Generate → Maze**, choose the material and the corridor width, press **Generate**, drag on the map. |
-| Delete | **Del** on the selection or under the mouse. For whole areas use the buttons at the right: **DL** (along a line), **DR** (in a rectangle, key **D**) or **DC** (in a circle), then drag the shape on the map. |
+| Delete | **Del** on the selection or under the mouse. For whole areas use the buttons in the strip left of the menu: **DL** (along a line), **DR** (in a rectangle, key **D**) or **DC** (in a circle), then drag the shape on the map. |
 | Copy / cut / paste | **Ctrl+C** copies, **Ctrl+X** cuts (copies and deletes), **Ctrl+V** pastes at the mouse. |
 | Undo / redo | **Ctrl+Z** undoes the last action (placing, deleting, moving, generating ...), **Ctrl+Y** redoes it. |
 | Save a layout | Select units, **Place → Blueprints → Create**. |

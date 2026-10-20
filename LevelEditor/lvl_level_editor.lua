@@ -60,7 +60,7 @@ local helpOpen = false -- Help board on the screen
 local HELP_SECTIONS = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, TD tower defense, ? this help, DL / DR / DC delete, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, P / G / TD pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
 		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },
@@ -1368,23 +1368,13 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(8) - m.HB, y1 = sideTop(8), side = true, kind = "td", value = "td", label = "TD", active = td.open,
 			tint = td.cfg().enabled and (td.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Tower Defense is on for this level
 			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
-		-- Delete (rectangle, circle, line), then the experimental area attacks
-		local dels = {
-			{ "line", "DL", "Delete line: drag a line, everything within " .. DEL_HALF_WIDTH .. " Elmo of it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
-			{ "rect", "DR", "Delete rectangle (key D): drag a rectangle on the map, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
-			{ "circle", "DC", "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
-		}
-		for k, d in ipairs(dels) do
-			local top = sideTop(9 + k)
-			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = d[1], label = d[2], active = (delMode == d[1]), tip = d[3] }
-		end
 		local areas = {
 			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(13 + k)
+			local top = sideTop(9 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1394,7 +1384,7 @@ local function headerRects()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(17 + k)
+			local top = sideTop(13 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
@@ -1488,17 +1478,31 @@ local function teamRects()
 			{ edit = "m", label = "S", tip = "Mirror the selection left-right\n(at the center of the selection)" },
 		}
 	end
-	local total = #ids + #edits + 2
+	local dels = {
+		{ del = "line", label = "DL", tip = "Delete line: drag a line, everything within " .. DEL_HALF_WIDTH .. " Elmo of it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
+		{ del = "rect", label = "DR", tip = "Delete rectangle (key D): drag a rectangle on the map, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
+		{ del = "circle", label = "DC", tip = "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
+	}
+	local total = #ids + #edits + 2 + #dels + 1 + (#edits > 0 and 1 or 0)
 	local bh = math.max(12, math.min(m.HB, math.floor((y1 - vsy * 0.05) / total) - 3))
 	local bx2 = x1 - 4
 	local bx1 = bx2 - m.HB
 	-- very top: W (write over what is in the way), then a free slot
 	out[#out + 1] = { x1 = bx1, x2 = bx2, y0 = y1 - bh, y1 = y1, write = true, label = "W" }
 	local i = 2
+	for _, d in ipairs(dels) do
+		local top = y1 - i * (bh + 3)
+		out[#out + 1] = { x1 = bx1, x2 = bx2, y0 = top - bh, y1 = top, del = d.del, label = d.label, tip = d.tip }
+		i = i + 1
+	end
+	i = i + 1 -- free slot
 	for _, e in ipairs(edits) do
 		local top = y1 - i * (bh + 3)
 		out[#out + 1] = { x1 = bx1, x2 = bx2, y0 = top - bh, y1 = top, edit = e.edit, label = e.label, tip = e.tip }
 		i = i + 1
+	end
+	if #edits > 0 then
+		i = i + 1 -- free slot
 	end
 	for _, t in ipairs(ids) do
 		local top = y1 - i * (bh + 3)
@@ -1526,6 +1530,9 @@ local function drawTeamStrip()
 			if not writeOn then
 				cr, cg, cb = 0.75, 0.75, 0.75
 			end
+		elseif r.del then
+			sel = delMode == r.del
+			cr, cg, cb = 1, 0.35, 0.3
 		elseif r.edit then
 			sel = false
 			cr, cg, cb = 0.35, 0.55, 1
@@ -1551,7 +1558,7 @@ local function drawTeamStrip()
 			gl.LineWidth(1)
 		end
 		gl.Color(1, 1, 1, sel and 1 or 0.8)
-		gl.Text((r.edit or r.write) and r.label or (r.gaia and "G" or tostring(r.team)), (r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2 - 10 * S, 27 * S, "co")
+		gl.Text((r.edit or r.write or r.del) and r.label or (r.gaia and "G" or tostring(r.team)), (r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2 - 10 * S, 27 * S, "co")
 		if r.team and r.team ~= "N" then
 			-- Number of units of this team left of the button
 			gl.Color(1, 1, 1, sel and 1 or 0.75)
@@ -1573,7 +1580,7 @@ local function drawTeamStrip()
 					"(a blueprint only partly). Generate always",
 					"looks for another free spot.",
 				}
-			elseif r.edit then
+			elseif r.edit or r.del then
 				lines = {}
 				for l in r.tip:gmatch("[^\n]+") do
 					lines[#lines + 1] = l
@@ -3795,6 +3802,8 @@ function widget:MousePress(mx, my, button)
 			if tr.write then
 				writeOn = not writeOn
 				say(writeOn and "Write: on (placing overwrites what is in the way)" or "Write: off (nothing is placed on occupied spots)")
+			elseif tr.del then
+				delToggle(tr.del)
 			elseif tr.edit then
 				editSelected(tr.edit)
 			elseif tm == "N" then
@@ -4844,7 +4853,7 @@ local HELP_TOPICS = {
 	{
 		names = { "delete", "maze", "attack", "right" },
 		lines = {
-			"DELETE: the buttons DL, DR and DC in the button column delete everything along a dragged line, in a dragged rectangle (also key D) or in a dragged circle: units, wrecks and features. Ctrl+Z brings it back.",
+			"DELETE: the buttons DL, DR and DC in the strip left of the menu delete everything along a dragged line, in a dragged rectangle (also key D) or in a dragged circle: units, wrecks and features. Ctrl+Z brings it back.",
 			"MAZE: Generate menu, sub-tab Maze (or key M): choose dragon teeth or walls, press Generate and drag the area; entrance top left, exit bottom right.",
 			"AREA ATTACK (experimental): select bombers, artillery, rocket launchers or nukes, press XL, XR or XC and drag a line, rectangle or circle; the bombs and shots of all of them are spread evenly over it.",
 			"RIGHT CLICK: anywhere it ends every mode (placing, delete, maze, generate, area attack); without a mode it clears the selection.",
