@@ -21,6 +21,7 @@ local rotateOffset = Shared.rotateOffset
 local S = 1 -- UI scale from the BAR settings (slider "Interface > UI size")
 local unitName = "armcom"
 local team = 0
+local writeOn = true -- Button W: placing overwrites what is in the way (off: nothing is placed on occupied spots)
 local neutralOn = false -- Button N: newly placed units are neutral
 local grid = 16
 local cfg -- settings (columns, rows, grid, unit limit), created below
@@ -676,8 +677,8 @@ end
 
 -- What stands in the way of a unit of this type at (x, z) (ground units and features overlapping its footprint) is added to found;
 -- things placed a moment ago (the same blueprint or stroke) are left alone
-local function collectBlockers(name, x, z, face, found)
-	local hx, hz = halfSize(name, face, false)
+local function collectBlockers(name, x, z, face, found, isFeature)
+	local hx, hz = halfSize(name, face, isFeature)
 	if not hx then
 		return
 	end
@@ -714,6 +715,70 @@ local function collectBlockers(name, x, z, face, found)
 	end
 end
 
+-- True when something is already there: the footprint would overlap another unit (also one placed a moment ago); a feature also
+-- overlaps other features. Units may stand on features (they crush them).
+local function blocked(name, x, z, face, isFeature)
+	local hx, hz = halfSize(name, face, isFeature)
+	if not hx then
+		return false
+	end
+	local now = os.clock()
+	for i = #recentPlaced, 1, -1 do
+		local q = recentPlaced[i]
+		if now - q.t > 2 then
+			table.remove(recentPlaced, i)
+		elseif (isFeature or not q.feature) and math.abs(q.x - x) < hx + q.hx - 1 and math.abs(q.z - z) < hz + q.hz - 1 then
+			return true
+		end
+	end
+	local reach = 160
+	for _, id in ipairs(Spring.GetUnitsInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
+		local ud = UnitDefs[Spring.GetUnitDefID(id)]
+		if ud and not ud.canFly then
+			local ux, _, uz = Spring.GetUnitPosition(id)
+			local ufx, ufz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
+			if Shared.headingToFacing(Spring.GetUnitHeading(id) or 0) % 2 == 1 then
+				ufx, ufz = ufz, ufx
+			end
+			if ux and math.abs(ux - x) < hx + ufx / 2 - 1 and math.abs(uz - z) < hz + ufz / 2 - 1 then
+				return true
+			end
+		end
+	end
+	if isFeature then
+		for _, fid in ipairs(Spring.GetFeaturesInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
+			local fdef = FeatureDefs[Spring.GetFeatureDefID(fid)]
+			local fx, _, fz = Spring.GetFeaturePosition(fid)
+			local rad = math.max(8, (fdef and fdef.radius) or 16)
+			if fx and math.abs(fx - x) < hx + rad - 1 and math.abs(fz - z) < hz + rad - 1 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Makes room for something at (x, z): with W on what is in the way is deleted (true), with W off the spot must be free
+-- (false when it is occupied)
+local function makeRoom(name, x, z, face, isFeature)
+	if not writeOn then
+		return not blocked(name, x, z, face, isFeature)
+	end
+	local found = { units = {}, features = {} }
+	collectBlockers(name, x, z, face, found, isFeature)
+	local ids = {}
+	for id in pairs(found.units) do
+		ids[#ids + 1] = "u" .. id
+	end
+	for fid in pairs(found.features) do
+		ids[#ids + 1] = "f" .. fid
+	end
+	if #ids > 0 then
+		led("led|clearids|" .. table.concat(ids, ",", 1, math.min(#ids, 100)))
+	end
+	return true
+end
+
 -- Deletes what collectBlockers found (the same undo step as the placing that follows)
 local function clearBlockers(found)
 	local ids = {}
@@ -737,25 +802,36 @@ local function placeBlueprintUnits(units, cx, cz, teamOverride, label, k, noStep
 	if not noStep then
 		ledStep()
 	end
-	local found = { units = {}, features = {} } -- what stands in the way is deleted first
-	for _, u in ipairs(units) do
+	local found = { units = {}, features = {} } -- W on: what stands in the way is deleted first
+	local skip = {} -- W off: occupied spots are left out
+	for i, u in ipairs(units) do
 		local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
 		local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
-		collectBlockers(tostring(u.name), cx + odx, cz + odz, Shared.headingToFacing(rot), found)
+		if writeOn then
+			collectBlockers(tostring(u.name), cx + odx, cz + odz, Shared.headingToFacing(rot), found)
+		else
+			skip[i] = blocked(tostring(u.name), cx + odx, cz + odz, Shared.headingToFacing(rot))
+		end
 	end
 	clearBlockers(found)
-	for _, u in ipairs(units) do
-		local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
-		local x, z = cx + odx, cz + odz
-		local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
-		notePlaced(tostring(u.name), x, z, Shared.headingToFacing(rot))
-		local y = Spring.GetGroundHeight(x, z) + (tonumber(u.h) or 0)
-		placeQueue[#placeQueue + 1] = string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1%s", tostring(u.name), teamOverride or team,
-			math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), neutralOn and "1" or "0", math.floor(y + 0.5),
-			u.indestructible == true and "|1" or "")
-		n = n + 1
+	local skipped = 0
+	for i, u in ipairs(units) do
+		if skip[i] then
+			skipped = skipped + 1
+		else
+			local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
+			local x, z = cx + odx, cz + odz
+			local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
+			notePlaced(tostring(u.name), x, z, Shared.headingToFacing(rot))
+			local y = Spring.GetGroundHeight(x, z) + (tonumber(u.h) or 0)
+			placeQueue[#placeQueue + 1] = string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1%s", tostring(u.name), teamOverride or team,
+				math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), neutralOn and "1" or "0", math.floor(y + 0.5),
+				u.indestructible == true and "|1" or "")
+			n = n + 1
+		end
 	end
-	say(string.format("Placing blueprint '%s': %d units%s", label, n, teamOverride and (" for team " .. teamOverride) or ""))
+	say(string.format("Placing blueprint '%s': %d units%s%s", label, n, teamOverride and (" for team " .. teamOverride) or "",
+		skipped > 0 and (" (" .. skipped .. " occupied spots left out, switch W on to write over them)") or ""))
 end
 
 local function blueprintLoad(name, teamOverride)
@@ -1412,11 +1488,13 @@ local function teamRects()
 			{ edit = "m", label = "S", tip = "Mirror the selection left-right\n(at the center of the selection)" },
 		}
 	end
-	local total = #ids + #edits
+	local total = #ids + #edits + 2
 	local bh = math.max(12, math.min(m.HB, math.floor((y1 - vsy * 0.05) / total) - 3))
 	local bx2 = x1 - 4
 	local bx1 = bx2 - m.HB
-	local i = 0
+	-- very top: W (write over what is in the way), then a free slot
+	out[#out + 1] = { x1 = bx1, x2 = bx2, y0 = y1 - bh, y1 = y1, write = true, label = "W" }
+	local i = 2
 	for _, e in ipairs(edits) do
 		local top = y1 - i * (bh + 3)
 		out[#out + 1] = { x1 = bx1, x2 = bx2, y0 = top - bh, y1 = top, edit = e.edit, label = e.label, tip = e.tip }
@@ -1442,7 +1520,13 @@ local function drawTeamStrip()
 	for _, r in ipairs(teamRects()) do
 		local sel
 		local cr, cg, cb = 0.75, 0.75, 0.75
-		if r.edit then
+		if r.write then
+			sel = writeOn
+			cr, cg, cb = 0.2, 0.85, 0.3
+			if not writeOn then
+				cr, cg, cb = 0.75, 0.75, 0.75
+			end
+		elseif r.edit then
 			sel = false
 			cr, cg, cb = 0.35, 0.55, 1
 		elseif r.team == "N" then
@@ -1467,7 +1551,7 @@ local function drawTeamStrip()
 			gl.LineWidth(1)
 		end
 		gl.Color(1, 1, 1, sel and 1 or 0.8)
-		gl.Text(r.edit and r.label or (r.gaia and "G" or tostring(r.team)), (r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2 - 10 * S, 27 * S, "co")
+		gl.Text((r.edit or r.write) and r.label or (r.gaia and "G" or tostring(r.team)), (r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2 - 10 * S, 27 * S, "co")
 		if r.team and r.team ~= "N" then
 			-- Number of units of this team left of the button
 			gl.Color(1, 1, 1, sel and 1 or 0.75)
@@ -1480,7 +1564,16 @@ local function drawTeamStrip()
 	for _, r in ipairs(teamRects()) do
 		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 			local lines
-			if r.edit then
+			if r.write then
+				lines = {
+					"W = Write (on by default)",
+					"On: whatever you place overwrites what is",
+					"in the way (units, walls, blueprints ...).",
+					"Off: nothing is placed on an occupied spot",
+					"(a blueprint only partly). Generate always",
+					"looks for another free spot.",
+				}
+			elseif r.edit then
 				lines = {}
 				for l in r.tip:gmatch("[^\n]+") do
 					lines[#lines + 1] = l
@@ -3127,9 +3220,9 @@ end
 -- cell the pointer passes gets a piece (td.sample)
 -- One wall piece at (x, z); what stands in the way is deleted
 function td.wallCell(name, x, z)
-	local found = { units = {}, features = {} }
-	collectBlockers(name, x, z, 0, found)
-	clearBlockers(found)
+	if not makeRoom(name, x, z, 0) then
+		return
+	end
 	notePlaced(name, x, z, 0)
 	placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, x, z, 0, neutralOn and 1 or 0)
 end
@@ -3309,16 +3402,15 @@ function td.buildWalls(p)
 		return false
 	end
 	ledStep()
-	local found = { units = {}, features = {} } -- what stands in the way is deleted first
+	local made = 0
 	for _, s in ipairs(spots) do
-		collectBlockers(name, s[1], s[2], 0, found)
+		if makeRoom(name, s[1], s[2], 0) then -- W on: what stands in the way is deleted, W off: occupied spots are left out
+			notePlaced(name, s[1], s[2], 0)
+			placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, s[1], s[2], 0, neutralOn and 1 or 0)
+			made = made + 1
+		end
 	end
-	clearBlockers(found)
-	for _, s in ipairs(spots) do
-		notePlaced(name, s[1], s[2], 0)
-		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, s[1], s[2], 0, neutralOn and 1 or 0)
-	end
-	say(string.format("Corridor: %d indestructible wall pieces (%s). Ctrl+Z undoes it.", #spots, name))
+	say(string.format("Corridor: %d indestructible wall pieces (%s)%s. Ctrl+Z undoes it.", made, name, made < #spots and (", " .. (#spots - made) .. " occupied spots left out") or ""))
 	return true
 end
 
@@ -3546,66 +3638,25 @@ end
 -- Placing units and features by hand: no overlap, and painting (hold the left mouse button and move) ---------------------------
 local paint = nil -- { kind, x, z, sx, sz }: the last point of the stroke while the left mouse button is held down
 
--- True when something is already there: the footprint would overlap another unit (also one placed a moment ago); a feature also
--- overlaps other features. Units may stand on features (they crush them).
-local function blocked(name, x, z, face, isFeature)
-	local hx, hz = halfSize(name, face, isFeature)
-	if not hx then
-		return false
-	end
-	local now = os.clock()
-	for i = #recentPlaced, 1, -1 do
-		local q = recentPlaced[i]
-		if now - q.t > 2 then
-			table.remove(recentPlaced, i)
-		elseif (isFeature or not q.feature) and math.abs(q.x - x) < hx + q.hx - 1 and math.abs(q.z - z) < hz + q.hz - 1 then
-			return true
-		end
-	end
-	local reach = 160
-	for _, id in ipairs(Spring.GetUnitsInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
-		local ud = UnitDefs[Spring.GetUnitDefID(id)]
-		if ud and not ud.canFly then
-			local ux, _, uz = Spring.GetUnitPosition(id)
-			local ufx, ufz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
-			if Shared.headingToFacing(Spring.GetUnitHeading(id) or 0) % 2 == 1 then
-				ufx, ufz = ufz, ufx
-			end
-			if ux and math.abs(ux - x) < hx + ufx / 2 - 1 and math.abs(uz - z) < hz + ufz / 2 - 1 then
-				return true
-			end
-		end
-	end
-	if isFeature then
-		for _, fid in ipairs(Spring.GetFeaturesInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
-			local fdef = FeatureDefs[Spring.GetFeatureDefID(fid)]
-			local fx, _, fz = Spring.GetFeaturePosition(fid)
-			local rad = math.max(8, (fdef and fdef.radius) or 16)
-			if fx and math.abs(fx - x) < hx + rad - 1 and math.abs(fz - z) < hz + rad - 1 then
-				return true
-			end
-		end
-	end
-	return false
-end
-
--- Places the armed unit or feature at (x, z) when the spot is free; true when it was placed
+-- Places the armed unit or feature at (x, z): with W on over what is in the way, with W off only on a free spot; true when it was placed
 local function paintPlace(kind, x, z)
-	if kind == "feature" then
+	local isF = kind == "feature"
+	local name = isF and armedFeature or unitName
+	local face = isF and 0 or facing
+	if isF then
 		x, z = math.floor(x), math.floor(z)
-		if blocked(armedFeature, x, z, 0, true) then
-			return false
-		end
-		led(string.format("led|feature|%s|%d|%d|%d", armedFeature, x, z, (facing * 16384 + 32768) % 65536 - 32768))
-		notePlaced(armedFeature, x, z, 0, true)
-		return true
+	else
+		x, z = snap(x), snap(z)
 	end
-	x, z = snap(x), snap(z)
-	if blocked(unitName, x, z, facing) then
+	if not makeRoom(name, x, z, face, isF) then
 		return false
 	end
-	led(string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, x, z, facing, neutralOn and 1 or 0))
-	notePlaced(unitName, x, z, facing)
+	if isF then
+		led(string.format("led|feature|%s|%d|%d|%d", name, x, z, (facing * 16384 + 32768) % 65536 - 32768))
+	else
+		led(string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, x, z, facing, neutralOn and 1 or 0))
+	end
+	notePlaced(name, x, z, face, isF)
 	return true
 end
 
@@ -3620,7 +3671,7 @@ local function paintStart(kind, pos)
 			placed()
 		end
 	else
-		say("Occupied: there is already something here")
+		say("Occupied: there is already something here (switch W on to write over it)")
 	end
 end
 
@@ -3741,7 +3792,10 @@ function widget:MousePress(mx, my, button)
 	if tr then
 		if button == 1 then
 			local tm = tr.team
-			if tr.edit then
+			if tr.write then
+				writeOn = not writeOn
+				say(writeOn and "Write: on (placing overwrites what is in the way)" or "Write: off (nothing is placed on occupied spots)")
+			elseif tr.edit then
 				editSelected(tr.edit)
 			elseif tm == "N" then
 				neutralOn = not neutralOn
@@ -4153,7 +4207,7 @@ function widget:MouseRelease(mx, my, button)
 			ledStep()
 			local n = 0
 			for _, p in ipairs(list) do
-				if not blocked(armedFeature, p.x, p.z, 0, true) then
+				if makeRoom(armedFeature, p.x, p.z, 0, true) then
 					led(string.format("led|feature|%s|%d|%d|%d", armedFeature, p.x, p.z, rot))
 					notePlaced(armedFeature, p.x, p.z, 0, true)
 					n = n + 1
@@ -4176,7 +4230,7 @@ function widget:MouseRelease(mx, my, button)
 			ledStep()
 			local n = 0
 			for _, p in ipairs(list) do
-				if not blocked(unitName, p.x, p.z, facing) then
+				if makeRoom(unitName, p.x, p.z, facing) then
 					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, p.x, p.z, facing, neutralOn and 1 or 0)
 					notePlaced(unitName, p.x, p.z, facing)
 					n = n + 1
