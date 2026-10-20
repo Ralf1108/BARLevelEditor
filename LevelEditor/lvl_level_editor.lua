@@ -2170,7 +2170,7 @@ td.tcat = "tower" -- category of the list: tower | economy | radar
 td.tscroll, td.TROWS = 0, 4 -- first row shown, rows shown at most (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 8, leaks = 10, restrict = "towers", fog = false, waypoints = {}, banned = {}, bannedTech = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
+	return { enabled = false, width = 8, leaks = 10, economy = true, fog = true, waypoints = {}, banned = {}, bannedTech = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2308,10 +2308,10 @@ end
 function td.cats()
 	local c = td.cfg()
 	local out = { { "tower", "Towers" } }
-	if c.restrict == "economy" then
+	if c.economy ~= false then
 		out[#out + 1] = { "economy", "Economy" }
 	end
-	if c.fog then
+	if c.fog ~= false then
 		out[#out + 1] = { "radar", "Radars" }
 	end
 	local ok = false
@@ -2538,7 +2538,7 @@ function td.layout(rect)
 	})
 	line({
 		{ kind = "tddraw", field = "corridor", value = "single", label = "Single", active = td.pick == "corridor" and td.mode == "single",
-			tip = "Place single wall pieces (indestructible): every click on the map places one piece of the chosen material. The mode stays on, right click ends it. Ctrl+Z undoes the last piece." },
+			tip = "Place single wall pieces (indestructible): every click on the map places one piece of the chosen material; hold the mouse button and move it to place a piece in every grid cell. The mode stays on, right click ends it. Ctrl+Z undoes the last click or stroke." },
 		{ kind = "tddraw", field = "corridor", value = "line", label = "Line", active = td.pick == "corridor" and td.mode == "line",
 			tip = "Build a corridor: click the points on the map, right click builds the walls (indestructible). The mode stays on for the next corridor, right click again ends it. Ctrl+Z undoes it." },
 		{ kind = "tddraw", field = "corridor", value = "free", label = "Free", active = td.pick == "corridor" and td.mode == "free",
@@ -2557,7 +2557,7 @@ function td.layout(rect)
 			tip = "Spawn point of the enemies: click, then click the place on the map" },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
 		{ kind = "tdwaypoint", label = "Waypoint", active = td.pick == "waypoint", w = 4,
-			tip = "Place waypoints: every click on the map adds one (right click ends). A waypoint on the drawn line is inserted between its two points, otherwise behind the nearest point. The enemies walk spawn point, waypoints, goal in that order.\nMove a waypoint: Ctrl + hold the left mouse button over it and drag.\nRemove one: mouse over it, press Del." },
+			tip = "Place waypoints: every click on the map adds one (right click ends).\nMove a waypoint: Ctrl + hold the left mouse button over it and drag.\nRemove one: mouse over it, press Del." },
 		{ kind = "tdwaypointx", label = "X", tip = "Delete ALL waypoints.\nA single waypoint: move the mouse over it on the map and press Del.", w = 1 },
 		{ kind = "tdgoal", label = "Goal", active = td.pick == "goal", w = 4,
 			tip = "Goal: click, then click the place on the map. Enemies that get within 120 Elmo of it are through." },
@@ -2622,27 +2622,15 @@ function td.layout(rect)
 		labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = y - 18 * S, size = 17 * S }
 		y = y - 24 * S
 	end
-	local state = Spring.GetGameRulesParam("tdState") or ""
-	local running = state == "running"
-	-- room for a message above Play (red, a few seconds): what is missing
-	if td.notice and os.clock() < td.notice.untilT then
-		labels[#labels + 1] = { text = td.notice.text, x = x1, y = y - 20 * S, size = 19 * S, color = { 1, 0.4, 0.35 } }
-	end
-	y = y - 26 * S
-	line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Play"), active = running, fs = 26 * S,
-		tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 }, -- red while running, green otherwise
-		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
-	-- The player: which towers may be built in the game (red X = forbidden)
 	y = y - 14 * S
-	head("Towers the player may build (red X = forbidden)")
+	head("Restrictions")
+	local economy, fog = c.economy ~= false, c.fog ~= false
 	line({
-		{ kind = "tdrestrict", value = "towers", label = "Only towers", active = c.restrict ~= "economy",
-			tip = "In the game the player can build only towers (no economy, factories, walls or other structures)." },
-		{ kind = "tdrestrict", value = "economy", label = "Towers + economy", active = c.restrict == "economy",
-			tip = "In the game the player can build towers and economy structures (metal extractors, solar, wind and other power plants, storage, converters). The list below shows them too, so you can forbid single ones." },
+		{ kind = "tdeconomy", label = (economy and "[x] " or "[ ] ") .. "Economy", active = economy,
+			tip = "On: the player can also build economy structures (metal extractors, solar, wind and other power plants, storage, converters); the list below shows them too, so you can forbid single ones. Off: towers only. Towers can always be built." },
+		{ kind = "tdfog", label = (fog and "[x] " or "[ ] ") .. "Fog of war", active = fog,
+			tip = "On: fog of war in the game, the player can build radars (they are in the list below). Off: no radars, the whole map is visible. The editor always shows the whole map." },
 	})
-	line({ { kind = "tdfog", label = (c.fog and "[x] " or "[ ] ") .. "Fog of war (radars can be built)", active = c.fog,
-		tip = "Fog of war in the game: on = the player can build radars (they are in the list below), off = no radars, the whole map is visible. The editor always shows the whole map." } })
 	local facs = {}
 	for _, f in ipairs(td.FAC) do
 		facs[#facs + 1] = { kind = "tdfac", value = f, label = td.FAC_TXT[f], icon = Shared.FACTION_ICONS[f], active = td.tfac == f,
@@ -2702,8 +2690,19 @@ function td.layout(rect)
 	end
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "Corridor: Single = one piece per click, Line = click points, Free = drag.", x = x1, y = y - 58 * S, size = 17 * S }
-	y = y - 68 * S - m.PAD
+	labels[#labels + 1] = { text = "Corridor: Single = one piece per click or drag, Line = click points, Free = drag.", x = x1, y = y - 58 * S, size = 17 * S }
+	y = y - 68 * S
+	-- very bottom: the button that starts the test (red message above it: what is missing)
+	local state = Spring.GetGameRulesParam("tdState") or ""
+	local running = state == "running"
+	if td.notice and os.clock() < td.notice.untilT then
+		labels[#labels + 1] = { text = td.notice.text, x = x1, y = y - 20 * S, size = 19 * S, color = { 1, 0.4, 0.35 } }
+	end
+	y = y - 26 * S
+	line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start test"), active = running, fs = 26 * S,
+		tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 }, -- red while running, green otherwise
+		tip = "Start test: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
+	y = y - m.PAD
 	return rects, labels, rect.top - y
 end
 
@@ -2888,7 +2887,7 @@ end
 function td.payload()
 	local c = td.cfg()
 	if not (c.spawn and c.goal) then
-		return nil, "Cannot play: " .. (not c.spawn and not c.goal and "spawn point and goal are missing." or (not c.spawn and "the spawn point is missing." or "the goal is missing."))
+		return nil, "Cannot start the test: " .. (not c.spawn and not c.goal and "spawn point and goal are missing." or (not c.spawn and "the spawn point is missing." or "the goal is missing."))
 	end
 	local player, enemy
 	for _, t in ipairs(scenarioTeams()) do
@@ -2909,7 +2908,7 @@ function td.payload()
 		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
 	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-",
-		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.restrict == "economy" and "economy" or "towers", c.fog and "1" or "0" }, ";")
+		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.economy ~= false and "economy" or "towers", c.fog ~= false and "1" or "0" }, ";")
 end
 
 -- Ends the pick mode (spawn point, goal, corridor, route)
@@ -2967,13 +2966,8 @@ function td.click(x, z)
 		return
 	end
 	if td.pick == "corridor" and td.mode == "single" then
-		local name = mazeUnitName(MAZE_KINDS[td.wall])
-		if not name then
-			say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
-			return
-		end
-		ledStep()
-		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, math.floor(x / 16 + 0.5) * 16, math.floor(z / 16 + 0.5) * 16, 0, neutralOn and 1 or 0)
+		td.startSingle(x, z)
+		td.sdrag = nil -- a click only
 		return
 	end
 	if td.pick == "corridor" or td.pick == "route" then
@@ -2988,7 +2982,42 @@ function td.click(x, z)
 end
 
 -- Points of a hand-drawn line: take a point when the mouse moved far enough (called every frame while drawing)
+-- Single wall pieces: a press places one piece (one undo step for the whole press); while the mouse button is held every grid
+-- cell the pointer passes gets a piece (td.sample)
+function td.startSingle(x, z)
+	local name = mazeUnitName(MAZE_KINDS[td.wall])
+	if not name then
+		say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
+		return
+	end
+	ledStep()
+	local gx, gz = math.floor(x / 16 + 0.5), math.floor(z / 16 + 0.5)
+	td.sdrag = { name = name, gx = gx, gz = gz, seen = { [gx * 100003 + gz] = true } }
+	placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, gx * 16, gz * 16, 0, neutralOn and 1 or 0)
+end
+
 function td.sample()
+	if td.sdrag then
+		local d = td.sdrag
+		local mx, my, left = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if not left then
+			td.sdrag = nil
+		elseif pos then
+			local nx, nz = math.floor(pos[1] / 16 + 0.5), math.floor(pos[3] / 16 + 0.5)
+			local steps = math.max(math.abs(nx - d.gx), math.abs(nz - d.gz))
+			for k = 1, steps do -- also the cells in between when the mouse moved fast
+				local cx, cz = math.floor(d.gx + (nx - d.gx) * k / steps + 0.5), math.floor(d.gz + (nz - d.gz) * k / steps + 0.5)
+				local key = cx * 100003 + cz
+				if not d.seen[key] then
+					d.seen[key] = true
+					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", d.name, team, cx * 16, cz * 16, 0, neutralOn and 1 or 0)
+				end
+			end
+			d.gx, d.gz = nx, nz
+		end
+		return
+	end
 	if td.wpDrag then
 		local mx, my, left = Spring.GetMouseState()
 		local wps = td.cfg().waypoints
@@ -3204,13 +3233,14 @@ function td.press(rect, mx, my)
 		td.cfg(true).waypoints = {}
 	elseif k == "tdfog" then
 		local c = td.cfg(true)
-		c.fog, td.tscroll = not c.fog, 0
+		c.fog, td.tscroll = not (c.fog ~= false), 0
 	elseif k == "tdban" then
 		td.toggleBan(hit.value)
 	elseif k == "tdtechx" then
 		td.toggleTech(hit.value)
-	elseif k == "tdrestrict" then
-		td.cfg(true).restrict, td.tscroll = hit.value, 0
+	elseif k == "tdeconomy" then
+		local c = td.cfg(true)
+		c.economy, td.tscroll = not (c.economy ~= false), 0
 	end
 	return true
 end
@@ -3235,7 +3265,7 @@ function td.toggle()
 	end
 	saveLevel("_beforeplay", true)
 	Spring.SendLuaRulesMsg("tdw|start|" .. payload)
-	say("Play: the state before is saved as _beforeplay; Stop brings it back.")
+	say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
 end
 
 -- Markers in the world while the TD page is open: spawn point (green), goal (red), path and the points being clicked
@@ -3382,6 +3412,8 @@ function widget:MousePress(mx, my, button)
 			if pos and canEdit() then
 				if td.mode == "free" then
 					td.stroke = { { math.floor(pos[1]), math.floor(pos[3]) } } -- drawing: the points follow the mouse (td.sample)
+				elseif td.mode == "single" then
+					td.startSingle(pos[1], pos[3]) -- one piece, more while the mouse button stays down
 				else
 					td.click(pos[1], pos[3])
 				end
@@ -3736,7 +3768,7 @@ function widget:MouseRelease(mx, my, button)
 		return
 	end
 	area:release()
-	td.wpDrag = nil
+	td.wpDrag, td.sdrag = nil, nil
 	if td.stroke then
 		td.pts, td.stroke = td.stroke, nil
 		td.finishDraw()
