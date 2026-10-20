@@ -569,6 +569,7 @@ local gen = {
 	shape = "rect", -- area to drag: "rect" (rectangle) or "circle" (from the center outwards)
 	sub = "units", -- sub-tab: "units" or "maze"
 	mazeSel = 1, -- chosen maze material (1 = dragon teeth, 2 = walls)
+	mazePath = 4, -- corridor width of the maze in tiles of 16 Elmo
 	kinds = { units = true }, -- chosen types (multiple choice)
 	edit = nil, -- count input field: text while typing
 	tech = { [1] = true, [2] = false, [3] = false },
@@ -997,9 +998,13 @@ local function genLayout(rect)
 			{ value = 1, label = "Dragon teeth", active = gen.mazeSel == 1 },
 			{ value = 2, label = "Walls", active = gen.mazeSel == 2 },
 		}, "genmaze")
-		labels[#labels + 1] = { text = "Random maze, corridors 64 Elmo wide.", x = rect.x1 + m.PAD, y = y - 22 * S, size = 21 * S }
-		labels[#labels + 1] = { text = "Entrance top left, exit bottom right (rectangle).", x = rect.x1 + m.PAD, y = y - 48 * S, size = 21 * S }
-		y = y - 60 * S
+		local widths = {}
+		for _, t in ipairs({ 2, 3, 4, 6, 8 }) do
+			widths[#widths + 1] = { value = t, label = tostring(t * 16), active = gen.mazePath == t }
+		end
+		row("Corridor width (Elmo)", widths, "genmazew")
+		labels[#labels + 1] = { text = "Random maze. Entrance top left, exit bottom right (rectangle).", x = rect.x1 + m.PAD, y = y - 22 * S, size = 21 * S }
+		y = y - 34 * S
 		return bottom()
 	end
 	factionRow()
@@ -1975,8 +1980,7 @@ local function applyHeader(r)
 end
 
 -- Maze (key M): drag a rectangle, a random maze of dragon teeth or walls appears in it.
--- The tiles are 16 Elmo (footprint of the unit), a corridor is MAZE_PATH tiles wide.
-local MAZE_PATH = 4
+-- The tiles are 16 Elmo (footprint of the unit), a corridor is gen.mazePath tiles wide.
 local MAZE_MAX_WALLS = 12000
 local MAZE_KINDS = {
 	{ suffix = "drag", label = "Dragon teeth" },
@@ -1995,7 +1999,7 @@ local function mazeLayout(x0, z0, x1, z1)
 	local ax, az = snap(math.min(x0, x1)), snap(math.min(z0, z1))
 	local bx, bz = snap(math.max(x0, x1)), snap(math.max(z0, z1))
 	local tilesX, tilesZ = math.floor((bx - ax) / 16) + 1, math.floor((bz - az) / 16) + 1
-	local pitch = MAZE_PATH + 1
+	local pitch = gen.mazePath + 1
 	local cols, rows = math.floor((tilesX - 1) / pitch), math.floor((tilesZ - 1) / pitch)
 	-- capped so tens of thousands of units do not appear (walls are about a third of the tiles)
 	while (cols * pitch + 1) * (rows * pitch + 1) > MAZE_MAX_WALLS * 3 and (cols > 1 or rows > 1) do
@@ -2068,10 +2072,10 @@ local function mazeBuild(lay, circ)
 		return
 	end
 	if lay.cols < 2 or lay.rows < 2 then
-		say("Rectangle too small, at least " .. (2 * (MAZE_PATH + 1) + 1) * 16 .. " Elmo in both directions")
+		say("Rectangle too small, at least " .. (2 * (gen.mazePath + 1) + 1) * 16 .. " Elmo in both directions")
 		return
 	end
-	local walls = Shared.mazeWalls(lay.cols, lay.rows, MAZE_PATH)
+	local walls = Shared.mazeWalls(lay.cols, lay.rows, gen.mazePath)
 	if circ then
 		local inside = {}
 		for _, w in ipairs(walls) do
@@ -2277,6 +2281,8 @@ function widget:MousePress(mx, my, button)
 							if mazeKind then
 								mazeSetKind(gr.value)
 							end
+						elseif gr.kind == "genmazew" then
+							gen.mazePath = gr.value
 						elseif gr.kind == "gengo" and gen.sub == "maze" then
 							mazeSetKind(not mazeKind and gen.mazeSel or nil)
 						elseif gr.kind == "gengo" then
