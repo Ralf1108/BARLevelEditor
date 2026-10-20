@@ -4,6 +4,17 @@
 
 A level editor for [Beyond All Reason](https://www.beyondallreason.info/). Place units, buildings, trees, rocks and wrecks on any map with the mouse, generate whole armies or mazes in one drag, save the result as a level and turn it into a ready-to-play scenario package.
 
+**Contents**
+
+- [Features](#features)
+- [Installation (Windows)](#installation-windows)
+- [Quick start](#quick-start)
+- [Scenario creator](#scenario-creator)
+- [BluePrinter (for the official game)](#blueprinter-for-the-official-game)
+- [Experimental: area attacks (XL, XR, XC)](#experimental-area-attacks-xl-xr-xc)
+- [Documentation](#documentation)
+- [Notes](#notes)
+
 | Place: units | Place: blueprints |
 |---|---|
 | ![Place menu, Units tab](docs/level-editor-place-units.jpg) | ![Place menu, Blueprints tab](docs/level-editor-place-blueprints.jpg) |
