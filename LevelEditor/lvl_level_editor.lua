@@ -2557,7 +2557,9 @@ function td.layout(rect)
 			tip = "Spawn point of the enemies: click, then click the place on the map" },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
 		{ kind = "tdwaypoint", label = "Waypoint", active = td.pick == "waypoint", w = 4,
-			tip = "Place waypoints: every click on the map adds one, right click ends. A waypoint on the drawn line goes in between, otherwise behind the nearest point. The enemies walk spawn point, waypoints, goal in that order. Ctrl + hold the left mouse button over a waypoint moves it." },
+			tip = "Place waypoints: every click on the map adds one (right click ends). A waypoint on the drawn line is inserted between its two points, otherwise behind the nearest point. The enemies walk spawn point, waypoints, goal in that order.
+Move a waypoint: Ctrl + hold the left mouse button over it and drag.
+Remove one: mouse over it, press Del." },
 		{ kind = "tdwaypointx", label = "X", tip = "Delete ALL waypoints.\nA single waypoint: move the mouse over it on the map and press Del.", w = 1 },
 		{ kind = "tdgoal", label = "Goal", active = td.pick == "goal", w = 4,
 			tip = "Goal: click, then click the place on the map. Enemies that get within 120 Elmo of it are through." },
