@@ -959,6 +959,16 @@ local function genLayout(rect)
 	local m = Shared.m
 	local rects, labels = {}, {}
 	local y = rect.top - m.PAD
+	local TIPS = {
+		genfac = "Faction of the generated units",
+		genkind = "Type of the generated units: several can be on at once",
+		gentech = "Tech level: several can be on at once, none chosen means all",
+		gencount = "Total number of units (1-2000). Click, type a number, Enter accepts",
+		genshape = "Shape of the area: a rectangle, or a circle dragged from its center outwards",
+		genmaze = "Material of the maze walls: dragon teeth or walls",
+		genmazew = "Width of the corridors of the maze in Elmo",
+		gengo = "Press, then drag the area on the map: the units (or the maze) appear in it for the chosen team. Right click ends, Ctrl+Z undoes it.",
+	}
 	local function row(title, items, kind)
 		labels[#labels + 1] = { text = title, x = rect.x1 + m.PAD, y = y - 30 * S, size = 25 * S, head = true }
 		y = y - 36 * S
@@ -967,7 +977,8 @@ local function genLayout(rect)
 		local w = (rect.x2 - rect.x1 - 2 * m.PAD - gap * (n - 1)) / n
 		for i, it in ipairs(items) do
 			local bx = rect.x1 + m.PAD + (i - 1) * (w + gap)
-			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind or kind, value = it.value, label = it.label, active = it.active, icon = it.icon, fs = 24 * S }
+			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind or kind, value = it.value, label = it.label, active = it.active, icon = it.icon, fs = 24 * S,
+				tip = it.tip or TIPS[it.kind or kind] }
 		end
 		y = y - m.HB - 10 * S
 	end
@@ -977,7 +988,8 @@ local function genLayout(rect)
 		local w = (rect.x2 - rect.x1 - 2 * m.PAD - gap) / 2
 		for i, it in ipairs({ { "units", "Units" }, { "maze", "Maze" } }) do
 			local bx = rect.x1 + m.PAD + (i - 1) * (w + gap)
-			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = "gensub", value = it[1], label = it[2], active = gen.sub == it[1], fs = 24 * S }
+			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = "gensub", value = it[1], label = it[2], active = gen.sub == it[1], fs = 24 * S,
+				tip = it[1] == "units" and "Generate random units in an area" or "Build a random maze in an area (entrance top left, exit bottom right)" }
 		end
 		y = y - m.HB - 12 * S
 	end
@@ -999,7 +1011,7 @@ local function genLayout(rect)
 		local armed = gen.sub == "maze" and mazeKind ~= nil or gen.sub ~= "maze" and gen.armed
 		local what = gen.shape == "circle" and "a circle" or "a rectangle"
 		rects[#rects + 1] = { x1 = rect.x1 + m.PAD, x2 = rect.x2 - m.PAD, y0 = y - m.HB * 1.3, y1 = y, kind = "gengo", value = "go",
-			label = armed and ("Generate: drag " .. what .. " (right click ends)") or "Generate", active = armed, fs = 28 * S }
+			label = armed and ("Generate: drag " .. what .. " (right click ends)") or "Generate", active = armed, fs = 28 * S, tip = TIPS.gengo }
 		y = y - m.HB * 1.3 - m.PAD
 		return rects, labels, rect.top - y
 	end
@@ -2303,7 +2315,8 @@ function td.layout(rect)
 	local function num(field, row, value)
 		return editing(field, row) and (td.edit.buf .. "_") or tostring(value)
 	end
-	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled } })
+	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled,
+		tip = "Switch Tower Defense on or off for this level (saved in the level file, section towerdefense)" } })
 	-- Corridor: material, how to draw it, width; Path: the way the enemies walk, spawn point and goal
 	head("Corridor (walls on both sides)")
 	line({
@@ -2319,7 +2332,8 @@ function td.layout(rect)
 	head("Corridor width (Elmo)")
 	local widths = {}
 	for _, t in ipairs({ 2, 3, 4, 6, 8 }) do
-		widths[#widths + 1] = { kind = "tdwidth", value = t, label = tostring(t * 16), active = c.width == t }
+		widths[#widths + 1] = { kind = "tdwidth", value = t, label = tostring(t * 16), active = c.width == t,
+			tip = "Width of the corridor in Elmo (the free space between the walls)" }
 	end
 	line(widths)
 	head("Path (the way the enemies walk)")
@@ -2330,22 +2344,26 @@ function td.layout(rect)
 			tip = "Set the way of the enemies: hold the left mouse button and draw it. Spawn point and goal move to its ends." },
 	})
 	line({
-		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn", w = 5 },
+		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn", w = 5,
+			tip = "Spawn point of the enemies: click, then click the place on the map" },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
-		{ kind = "tdgoal", label = c.goal and string.format("Goal: %d, %d", c.goal[1], c.goal[2]) or "Set goal", active = td.pick == "goal", w = 5 },
+		{ kind = "tdgoal", label = c.goal and string.format("Goal: %d, %d", c.goal[1], c.goal[2]) or "Set goal", active = td.pick == "goal", w = 5,
+			tip = "Goal: click, then click the place on the map. Enemies that get within 120 Elmo of it are through." },
 		{ kind = "tdgoalx", label = "X", tip = "Delete the goal", w = 1 },
 	})
 	head("Enemies allowed through (more = you lose)")
 	line({
-		{ kind = "tdminus", value = "leaks", label = "-" },
-		{ kind = "tdedit", field = "leaks", label = num("leaks", nil, c.leaks), active = editing("leaks"), w = 2 },
-		{ kind = "tdplus", value = "leaks", label = "+" },
+		{ kind = "tdminus", value = "leaks", label = "-", tip = "One less enemy allowed through" },
+		{ kind = "tdedit", field = "leaks", label = num("leaks", nil, c.leaks), active = editing("leaks"), w = 2,
+			tip = "How many enemies may reach the goal before you lose. Click, type a number, Enter accepts" },
+		{ kind = "tdplus", value = "leaks", label = "+", tip = "One more enemy allowed through" },
 	})
 	head("Waves")
 	line({
-		{ kind = "tdminus", value = "nwaves", label = "-" },
-		{ kind = "tdedit", field = "nwaves", label = num("nwaves", nil, #c.waves), active = editing("nwaves"), w = 2 },
-		{ kind = "tdplus", value = "nwaves", label = "+" },
+		{ kind = "tdminus", value = "nwaves", label = "-", tip = "One wave less (the last one is removed)" },
+		{ kind = "tdedit", field = "nwaves", label = num("nwaves", nil, #c.waves), active = editing("nwaves"), w = 2,
+			tip = "Number of waves. Click, type a number, Enter accepts" },
+		{ kind = "tdplus", value = "nwaves", label = "+", tip = "One wave more (a copy of the last one)" },
 	})
 	-- Table: one row per wave: number, factions, tech levels, types, count, gap, health
 	local W = { 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.9, 0.9, 0.9 }
@@ -2367,21 +2385,22 @@ function td.layout(rect)
 	local last = math.min(#c.waves, td.scroll + td.VISIBLE)
 	for i = td.scroll + 1, last do
 		local w = c.waves[i]
-		local items = { { kind = "tdnone", label = tostring(i), w = W[1], tint = { 0.15, 0.3, 0.5 } } }
+		local items = { { kind = "tdnone", label = tostring(i), w = W[1], tint = { 0.15, 0.3, 0.5 }, tip = "Wave " .. i } }
 		local facs, techs, kinds = td.chosen(w, "fac"), td.chosen(w, "tech"), td.chosen(w, "kind")
 		for k, f in ipairs(td.CHOICES.fac) do
 			items[#items + 1] = { kind = "tdtog", row = i, field = "fac", value = f, label = "", icon = Shared.FACTION_ICONS[f], active = facs:find(f, 1, true) ~= nil,
 				w = W[1 + k], tip = td.FAC_TXT[f] }
 		end
 		for k, t in ipairs(td.CHOICES.tech) do
-			items[#items + 1] = { kind = "tdtog", row = i, field = "tech", value = t, label = "T" .. t, active = techs:find(t, 1, true) ~= nil, w = W[4 + k], fs = 18 * S }
+			items[#items + 1] = { kind = "tdtog", row = i, field = "tech", value = t, label = "T" .. t, active = techs:find(t, 1, true) ~= nil, w = W[4 + k], fs = 18 * S,
+			tip = "T" .. t .. ": tech level " .. t .. " units (several can be on at once)" }
 		end
 		for k, v in ipairs(td.CHOICES.kind) do
 			items[#items + 1] = { kind = "tdtog", row = i, field = "kind", value = v, label = v:upper(), active = kinds:find(v, 1, true) ~= nil, w = W[7 + k], tip = TYPE_TIP[v] }
 		end
-		items[#items + 1] = { kind = "tdcell", row = i, field = "count", label = num("count", i, w.count), active = editing("count", i), w = W[11] }
-		items[#items + 1] = { kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[12] }
-		items[#items + 1] = { kind = "tdcell", row = i, field = "hp", label = num("hp", i, w.hp), active = editing("hp", i), w = W[13] }
+		items[#items + 1] = { kind = "tdcell", row = i, field = "count", label = num("count", i, w.count), active = editing("count", i), w = W[11], tip = "Number of enemies in this wave. Click, type a number, Enter accepts" }
+		items[#items + 1] = { kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[12], tip = "Seconds after the previous wave (wave 1: after the start)" }
+		items[#items + 1] = { kind = "tdcell", row = i, field = "hp", label = num("hp", i, w.hp), active = editing("hp", i), w = W[13], tip = "Strength of the enemies in percent: 100 = normal, 200 = double health" }
 		line(items)
 	end
 	if #c.waves > td.VISIBLE then
