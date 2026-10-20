@@ -4,6 +4,7 @@
 param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 $here = $PSScriptRoot
 
 function Fail($t) { Write-Host ""; Write-Host "ERROR: $t" -ForegroundColor Red; Read-Host 'Press Enter to exit'; exit 1 }
@@ -63,7 +64,40 @@ if (-not $Name) { $Name = $env:USERNAME }
 if (-not $Name) { $Name = 'Player' }
 $Name = $Name -replace '[^A-Za-z0-9_\-\[\]]', ''
 if (-not $Name) { $Name = 'Player' }
-$script = $script.Replace('__GAMETYPE__', $game).Replace('__PLAYERNAME__', $Name)
+# Tower Defense scenario: the waves run in a gadget (td_waves.lua in this folder). The official game cannot load it, so a small extra game
+# "Tower Defense Scenario" is built on the installed official game (only the gadget is added; nothing of the official game is changed).
+$gametype = $game
+$tdGadget = Join-Path $here 'td_waves.lua'
+if (Test-Path $tdGadget) {
+    $gamesDir = Join-Path $data 'games'
+    New-Item -ItemType Directory -Force $gamesDir | Out-Null
+    $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
+    if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+    $modinfo = @"
+return {
+	name = "Tower Defense Scenario",
+	shortName = "TDScn",
+	version = "1",
+	game = "TowerDefenseScenario",
+	shortGame = "TDScn",
+	description = "Beyond All Reason plus the waves of a Tower Defense scenario",
+	mutator = "Official",
+	modtype = 1,
+	depend = { "$game" },
+}
+"@
+    $utf8n = New-Object Text.UTF8Encoding($false)
+    $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
+    foreach ($e in @(@('modinfo.lua', $modinfo), @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)))) {
+        $entry = $zip.CreateEntry($e[0])
+        $w = New-Object IO.StreamWriter($entry.Open(), $utf8n)
+        $w.Write($e[1]); $w.Close()
+    }
+    $zip.Dispose()
+    $gametype = 'Tower Defense Scenario 1'
+    Write-Host "Tower Defense: extra game built ($zipPath)"
+}
+$script = $script.Replace('__GAMETYPE__', $gametype).Replace('__PLAYERNAME__', $Name)
 $out = Join-Path $env:TEMP 'bar_scenario_start.txt'
 [IO.File]::WriteAllText($out, $script, (New-Object Text.UTF8Encoding($false)))
 Write-Host "Game: $game"

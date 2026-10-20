@@ -39,6 +39,11 @@ local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
 
 local td = nil -- running game: nil = none
 local alive = {} -- unitID -> { reward factor }
+local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
+local pendingCfg = nil -- configuration waiting for the start
+local fixedList = nil -- { { name, x, z } ... } units that stay indestructible
+local fixedIds = {} -- unitID -> true: nothing damages these units
+local applyFixed -- (defined below)
 
 local function say(text)
 	if Spring.SendMessage then
@@ -272,6 +277,14 @@ local function spawnOne(entry)
 end
 
 function gadget:GameFrame(n)
+	if pendingCfg and n >= START_FRAME then
+		local cfg = pendingCfg
+		pendingCfg = nil
+		start(cfg)
+	end
+	if fixedList and (n == 5 or n == 30 or n == 90) then
+		applyFixed()
+	end
 	if not td or td.state ~= "running" then
 		return
 	end
@@ -315,6 +328,7 @@ end
 
 -- Payment: the cost of the unit in metal and energy goes to the player
 function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
+	fixedIds[unitID] = nil
 	if td and alive[unitID] then
 		alive[unitID] = nil
 		if td.state == "running" then
@@ -395,15 +409,72 @@ end
 
 -- Finished scenario: the configuration is in the game option tdconfig and the waves start with the game
 function gadget:Initialize()
+	if gadgetHandler.RegisterAllowCommand then
+		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- build orders: otherwise the engine registers it and warns
+	end
 	Spring.SetGameRulesParam("tdState", "")
 end
 
-function gadget:GamePreload()
-	local payload = Spring.GetModOptions().tdconfig
-	if payload and payload ~= "" then
-		local cfg = parse(payload)
-		if cfg then
-			start(cfg)
+-- Finished scenario: the settings come in the game options tdconfig (the payload as base64url) and tdfixed (indestructible units
+-- as base64url text "name:x,z,x,z|name:..."); the waves start a moment after the game start, when the units of the scenario exist
+local ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local B64 = {}
+for i = 1, #ALPHA do
+	B64[ALPHA:byte(i)] = i - 1
+end
+
+local function decode64(s)
+	s = (s:gsub("-", "+")):gsub("_", "/")
+	local out, acc, bits = {}, 0, 0
+	for i = 1, #s do
+		local v = B64[s:byte(i)]
+		if v then
+			acc, bits = acc * 64 + v, bits + 6
+			if bits >= 8 then
+				bits = bits - 8
+				local b = math.floor(acc / 2 ^ bits)
+				out[#out + 1] = string.char(b)
+				acc = acc - b * 2 ^ bits
+			end
 		end
+	end
+	return table.concat(out)
+end
+
+function gadget:GamePreload()
+	local mo = Spring.GetModOptions()
+	if mo.tdconfig and mo.tdconfig ~= "" then
+		pendingCfg = parse(decode64(mo.tdconfig))
+	end
+	if mo.tdfixed and mo.tdfixed ~= "" then
+		fixedList = {}
+		for _, group in ipairs(split(decode64(mo.tdfixed), "|")) do
+			local name, coords = group:match("^([^:]+):(.*)$")
+			if name then
+				local nums = split(coords, ",")
+				for i = 1, #nums - 1, 2 do
+					fixedList[#fixedList + 1] = { name, tonumber(nums[i]), tonumber(nums[i + 1]) }
+				end
+			end
+		end
+	end
+end
+
+-- The units of the list that stand at their place get the protection (repeated for a while, the scenario creates its units at the start)
+applyFixed = function()
+	for _, f in ipairs(fixedList) do
+		for _, id in ipairs(Spring.GetUnitsInCylinder(f[2], f[3], 10)) do
+			local defID = Spring.GetUnitDefID(id)
+			if defID and UnitDefs[defID].name == f[1] then
+				fixedIds[id] = true
+				Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true })
+			end
+		end
+	end
+end
+
+function gadget:UnitPreDamaged(unitID)
+	if fixedIds[unitID] then
+		return 0, 0
 	end
 end

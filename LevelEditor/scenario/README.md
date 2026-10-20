@@ -20,6 +20,9 @@ Non-interactive (tests): `powershell -File scenario_builder.ps1 -Level name -Aut
 ## Playing (for the recipient)
 Unpack the zip, double-click `Start Scenario.bat`. BAR must be installed and started once. The script finds BAR (otherwise it asks for the folder), determines the installed game version, asks before downloading a missing map (y/n; with "n" it aborts) and then starts the game. The folder may lie anywhere.
 
+## Tower Defense scenarios
+If Tower Defense is switched on in the level (page **TD** of the editor, with spawn point, goal and at least one wave), the package contains **everything of that page**: the waves, the route (spawn point, waypoints, goal), the allowed number of enemies through, the forbidden towers and tech levels, the restriction to towers (and economy), fog of war and the indestructible walls. The enemy waves come from a gadget, which the official game cannot load; therefore `Start Scenario.bat` builds a small extra game **"Tower Defense Scenario"** next to the official game (`data\games\TowerDefenseScenario.sdz`; it only adds the gadget and builds on the installed BAR, no official file is changed; delete the file if you do not want it any more) and starts with it. Notes: the enemy team gets no AI of its own (NullAI) and the win condition is "no end" (the waves decide: all beaten = won, too many through = lost); the start commander of the player is removed when the waves start, so the level needs builders; a level with only one team gets an extra enemy team for the waves.
+
 ## What is in the package
 | File | Content |
 |---|---|
@@ -28,6 +31,7 @@ Unpack the zip, double-click `Start Scenario.bat`. BAR must be installed and sta
 | `scenario.txt` | start script: teams, allies and enemies, AIs, game options and `scenariooptions` |
 | `scenario_briefing.lua` | user widget with the briefing window (the starter puts it into `data\LuaUI\Widgets`; the mission display of the game otherwise only shows "No additional briefing data found") |
 | `README.txt` | briefing and instructions |
+| `td_waves.lua` | only in a Tower Defense scenario: the gadget that runs the waves and the build restrictions (see below) |
 
 ## How it works
 The official game knows scenarios: the game option `scenariooptions` contains the unit list (`unitloadout`) and the feature list (`featureloadout`). The game sets them up at the start and then places no start commanders. The option is in the start script as `base64url(zlib(json))`. The level files of the editor have exactly this format.

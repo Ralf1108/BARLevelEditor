@@ -28,7 +28,7 @@ $OUT = Join-Path $HERE 'scenarios'
 $utf8 = New-Object Text.UTF8Encoding($false)
 # Block in the level file: scenario = [==[ json ]==],  (the Level Editor copies it back unchanged when saving)
 $BLOCK_RX = [regex]::new("\n\tscenario = \[==\[(.*?)\]==\],[ \t\r]*(?=\n)", 'Singleline')
-$UNIT_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*team\s*=\s*(\d+))?\s*(?:,\s*neutral\s*=\s*(true|false))?\s*(?:,\s*gaia\s*=\s*(true))?\s*\}")
+$UNIT_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*team\s*=\s*(\d+))?\s*(?:,\s*neutral\s*=\s*(true|false))?\s*(?:,\s*gaia\s*=\s*(true))?\s*(?:,\s*indestructible\s*=\s*(true))?\s*\}")
 $FEATURE_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*resurrectas\s*=\s*'([^']+)')?\s*\}")
 $COLORS = @('0 0.51 0.78', '0.9 0.1 0.29', '0.96 0.51 0.19', '1 0.88 0.1', '0.27 0.6 0.31', '0.57 0.12 0.71', '0.27 0.94 0.94', '0.94 0.2 0.9')
 $SIDES = @{ arm = 'Armada'; cor = 'Cortex'; leg = 'Legion' }
@@ -202,6 +202,66 @@ function ConvertTo-Table($o) {
     return $o
 }
 
+# ---------------------------------------------------------------- Tower Defense
+# Position of the closing brace that belongs to the opening brace at $open
+function Find-CloseBrace([string]$txt, [int]$open) {
+    $depth = 0
+    for ($i = $open; $i -lt $txt.Length; $i++) {
+        $ch = $txt[$i]
+        if ($ch -eq '{') { $depth++ } elseif ($ch -eq '}') { $depth--; if ($depth -eq 0) { return $i } }
+    }
+    return -1
+}
+
+# Section "towerdefense" of the level (written by the Level Editor): the settings of the tower defense page.
+# $null when the section is missing, Tower Defense is off or spawn point, goal or waves are missing.
+function Read-TowerDefense([string]$txt) {
+    $m = [regex]::Match($txt, 'towerdefense\s*=\s*\{')
+    if (-not $m.Success) { return $null }
+    $open = $m.Index + $m.Length - 1
+    $close = Find-CloseBrace $txt $open
+    if ($close -lt 0) { return $null }
+    $body = $txt.Substring($open + 1, $close - $open - 1)
+    $en = [regex]::Match($body, '\benabled\s*=\s*(true|false)')
+    if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
+    function Flag($key) { $f = [regex]::Match($body, "\b$key\s*=\s*(true|false)"); return (-not $f.Success) -or ($f.Groups[1].Value -eq 'true') }
+    function Pair($key) {
+        $p = [regex]::Match($body, "\b$key\s*=\s*\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}")
+        if ($p.Success) { return @([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
+        return $null
+    }
+    function Block($key) {
+        $b = [regex]::Match($body, "\b$key\s*=\s*\{")
+        if (-not $b.Success) { return '' }
+        $o = $b.Index + $b.Length - 1
+        $c = Find-CloseBrace $body $o
+        if ($c -lt 0) { return '' }
+        return $body.Substring($o + 1, $c - $o - 1)
+    }
+    $td = @{ spawn = (Pair 'spawn'); goal = (Pair 'goal'); economy = (Flag 'economy'); fog = (Flag 'fog'); leaks = 10; waypoints = @(); banned = @(); bannedTech = @(); waves = @() }
+    $lk = [regex]::Match($body, '\bleaks\s*=\s*(\d+)')
+    if ($lk.Success) { $td.leaks = [int]$lk.Groups[1].Value }
+    foreach ($p in [regex]::Matches((Block 'waypoints'), '\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}')) { $td.waypoints += ,@([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
+    foreach ($b in [regex]::Matches((Block 'banned'), '"([^"]+)"')) { $td.banned += $b.Groups[1].Value }
+    foreach ($b in [regex]::Matches((Block 'bannedTech'), '\d')) { $td.bannedTech += $b.Value }
+    foreach ($wm in [regex]::Matches((Block 'waves'), '\{([^{}]*)\}')) {
+        $w = @{ fac = 'arm'; kind = 'vb'; tech = '1'; count = 10; gap = 30; hp = 100 }
+        foreach ($kv in [regex]::Matches($wm.Groups[1].Value, '(\w+)\s*=\s*("[^"]*"|-?\d+)')) {
+            $v = $kv.Groups[2].Value.Trim('"')
+            if ($kv.Groups[1].Value -in 'count', 'gap', 'hp') { $w[$kv.Groups[1].Value] = [int]$v } else { $w[$kv.Groups[1].Value] = $v }
+        }
+        # older values of the page: kind any / bot / vehicle
+        $oldKinds = @{ any = 'vb'; bot = 'b'; vehicle = 'v' }
+        if ($oldKinds.ContainsKey([string]$w.kind)) { $w.kind = $oldKinds[[string]$w.kind] }
+        $td.waves += ,$w
+    }
+    if (-not $td.spawn -or -not $td.goal -or $td.waves.Count -eq 0) {
+        Write-Host 'Note: Tower Defense is on in the level, but spawn point, goal or waves are missing: the scenario is built without waves.' -ForegroundColor Yellow
+        return $null
+    }
+    return $td
+}
+
 # ---------------------------------------------------------------- Read the level
 function Read-LevelFile([string]$path) {
     $txt = $BLOCK_RX.Replace([IO.File]::ReadAllText($path, $utf8), '')
@@ -226,7 +286,7 @@ function Read-LevelFile([string]$path) {
     foreach ($m in $UNIT_RX.Matches($ubody)) {
         $g = $m.Groups
         [void]$units.Add(@{ name = $g[1].Value; x = [int]$g[2].Value; y = [int]$g[3].Value; z = [int]$g[4].Value; rot = [int]$g[5].Value
-                            team = $(if ($g[6].Success) { [int]$g[6].Value } else { 0 }); neutral = ($g[7].Value -eq 'true'); gaia = ($g[8].Value -eq 'true') })
+                            team = $(if ($g[6].Success) { [int]$g[6].Value } else { 0 }); neutral = ($g[7].Value -eq 'true'); gaia = ($g[8].Value -eq 'true'); fixed = ($g[9].Value -eq 'true') })
     }
     $features = New-Object Collections.ArrayList
     foreach ($m in $FEATURE_RX.Matches($fbody)) {
@@ -240,6 +300,7 @@ function Read-LevelFile([string]$path) {
     if ($units.Count -eq 0) { throw 'The level contains no units.' }
     $level.units = @($units)
     $level.features = @($features)
+    $level.td = Read-TowerDefense $txt
     return $level
 }
 
@@ -340,6 +401,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $teamsFound = @($level.units | Where-Object { -not $_.gaia } | ForEach-Object { $_.team } | Sort-Object -Unique)
     $nGaia = @($level.units | Where-Object { $_.gaia }).Count
     if ($teamsFound.Count -eq 0) { throw 'The level contains only Gaia units, it needs at least one player team.' }
+    $td = $level.td
+    if ($td) {
+        Write-Host "Tower Defense is on in the level: $($td.waves.Count) waves, $($td.waypoints.Count) waypoints. The waves are part of the scenario." -ForegroundColor Cyan
+        # the waves belong to an enemy team: when the level has none, a team without units is added
+        if ($teamsFound.Count -eq 1) { $teamsFound = @($teamsFound) + @([int]$teamsFound[0] + 1) }
+    }
     $info = "`nLevel ${base}: map $($level.map), $($level.units.Count) units, $($level.features.Count) features, teams [$($teamsFound -join ', ')]"
     if ($nGaia) { $info += ", $nGaia Gaia units" }
     Write-Host ($info + "`n")
@@ -407,6 +474,9 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         }
     }
     # unknown fields from newer versions are kept, the version is never lowered
+    # Tower Defense: the enemy team only gets the waves (no AI of its own that takes them over) and the gadget decides about winning and losing
+    $aiRun = if ($td) { 'NullAI' } else { $ai }
+    $winRun = if ($td) { 'neverend' } else { $win }
     $answers = [ordered]@{}
     foreach ($k in $saved.Keys) { if ($KNOWN_FIELDS -notcontains $k) { $answers[$k] = $saved[$k] } } # also mapfields
     $answers['version'] = [math]::Max($SCENARIO_VERSION, [int](Get-Val $saved 'version' 0))
@@ -500,12 +570,31 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     foreach ($t in $order) {
         $i = $newid[[int]$t]
         if ($roles[[string]$t] -eq 's') { continue }
-        $ver = if ($ai -eq 'BARb') { 'stable' } else { '0.1' }
-        [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$ai;`n`t`tName=${ai}_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$ver;`n`t}")
+        $ver = if ($aiRun -eq 'BARb') { 'stable' } else { '0.1' }
+        [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$aiRun;`n`t`tName=${aiRun}_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$ver;`n`t}")
         $k++
     }
     [void]$lines.Add("`t[player0]`n`t{`n`t`tName=__PLAYERNAME__;`n`t`tTeam=0;`n`t`tspectator=0;`n`t`trank=0;`n`t}")
-    $mods = [ordered]@{ deathmode = $win; maxunits = $level.unitLimit; startmetal = $metal; startenergy = $energy; scenariooptions = $payload }
+    $mods = [ordered]@{ deathmode = $winRun; maxunits = $level.unitLimit; startmetal = $metal; startenergy = $energy; scenariooptions = $payload }
+    if ($td) {
+        # settings for the gadget td_waves.lua (text made harmless for the start script: base64url, no ';' inside)
+        $enemyOld = @($order | Where-Object { $roles[[string]$_] -eq 'e' })[0]
+        if ($null -eq $enemyOld) { $enemyOld = @($order | Where-Object { $roles[[string]$_] -ne 's' })[0] }
+        $enemyNew = $newid[[int]$enemyOld]
+        $path = if ($td.waypoints.Count -gt 0) { ($td.waypoints | ForEach-Object { '{0},{1}' -f $_[0], $_[1] }) -join '/' } else { '-' }
+        $waves = ($td.waves | ForEach-Object { '{0},{1},{2},{3},{4},{5}' -f $_.fac, $_.kind, $_.tech, $_.count, $_.gap, $_.hp }) -join '/'
+        $banned = if ($td.banned.Count -gt 0) { $td.banned -join ',' } else { '-' }
+        $bannedTech = if ($td.bannedTech.Count -gt 0) { $td.bannedTech -join ',' } else { '-' }
+        $plain = (@($enemyNew, 0, $td.spawn[0], $td.spawn[1], $td.goal[0], $td.goal[1], $td.leaks, $path, $waves, $banned, $bannedTech, $(if ($td.economy) { 'economy' } else { 'towers' }), $(if ($td.fog) { '1' } else { '0' })) -join ';')
+        $mods['tdconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        # indestructible units (corridor walls, buildings marked with FX): name:x,z,x,z|name:...
+        $fixed = @($level.units | Where-Object { $_.fixed })
+        if ($fixed.Count -gt 0) {
+            $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
+            $mods['tdfixed'] = [Convert]::ToBase64String($utf8.GetBytes(($groups -join '|'))).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        }
+        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Tower Defense (the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
+    }
     if ($grace -gt 0) { $mods['norushtimer'] = $grace.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }
     foreach ($mk in $level.mods.Keys) { $mods[$mk] = $level.mods[$mk] }
     $mtxt = ($mods.Keys | ForEach-Object { "`t`t$_=$($mods[$_]);`n" }) -join ''
@@ -522,10 +611,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
+    if ($td) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"
     [IO.File]::WriteAllText((Join-Path $folder 'Start Scenario.bat'), $bat, [Text.Encoding]::ASCII)
-    $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$win]
+    $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$winRun]
+    if ($td) { $winTxt = "Tower Defense: beat all $($td.waves.Count) waves (at most $($td.leaks) enemies may get through)" }
     $readme = New-Object Collections.ArrayList
     [void]$readme.Add($title); [void]$readme.Add('=' * $title.Length); [void]$readme.Add('')
     if ($author) { [void]$readme.Add("Author: $author"); [void]$readme.Add('') }
@@ -538,6 +629,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      '2. Double-click "Start Scenario.bat". The script finds BAR itself (otherwise it asks for the folder),',
                      '   downloads the map if needed and starts the game. Nothing in the game itself is changed.',
                      '3. The units are there right away, there is no start commander except those in the scenario.',
+                     $(if ($td) { '   Tower Defense: the starter also builds a small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) that builds on your Beyond All Reason and runs the enemy waves; no official file is changed.' } else { '' }),
                      $(if ($grace -gt 0) { 'Grace period: before the start the start position selection appears. Click into your start area (marked frame) and press Ready.' } else { '' }),
                      '', 'Note: the folder may be copied to any place, also to another computer.')) { [void]$readme.Add($l) }
     [IO.File]::WriteAllText((Join-Path $folder 'README.txt'), (($readme -join "`r`n") + "`r`n"), (New-Object Text.UTF8Encoding($true)))
