@@ -10,6 +10,7 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/). Place
 - [Installation (Windows)](#installation-windows)
 - [Quick start](#quick-start)
 - [Scenario creator](#scenario-creator)
+- [Tower Defense](#tower-defense)
 - [BluePrinter (for the official game)](#blueprinter-for-the-official-game)
 - [Experimental: area attacks (XL, XR, XC)](#experimental-area-attacks-xl-xr-xc)
 - [Documentation](#documentation)
@@ -87,6 +88,21 @@ A level you built can become a **scenario** that others play with their own, unm
 ![Level Editor, scenario info (button I)](docs/level-editor-scenario.jpg)
 
 Details are in the [scenario builder readme](LevelEditor/scenario/README.md).
+
+## Tower Defense
+
+Waves of enemy land units walk from a spawn point through waypoints to a goal; the player builds towers next to the route. Switch it on with the **TD** button (the page is called Tower Defense) and build the level on that page:
+
+![Tower Defense page](docs/level-editor-tower-defense.jpg)
+
+- **Corridor:** walls on both sides of a way, as single pieces (click or drag), along clicked points (*Line*) or freehand (*Free*), made of dragon teeth or walls, 32 to 192 Elmo wide. Corners are closed. The pieces are **indestructible**. What stands in the way is overwritten while **W** (left of the menu) is on.
+- **Route:** *Spawn*, *Goal* and any number of *Waypoints*. A waypoint on the drawn line is inserted there, Ctrl + drag moves one, Del removes it. Everything can be undone with Ctrl+Z.
+- **Waves:** per wave the factions, tech levels and types (vehicles, bots, hovercraft), count, gap in seconds and strength in percent. Every kill pays the unit's metal and energy. How many enemies may get through is set too: more and the level is lost, all waves beaten and it is won.
+- **Restrictions:** what the player may build. Towers always; **Economy** (extractors, power plants, storage) and **Fog of war** (radars) can be switched on or off. Single towers get a red X and are forbidden, a red X on T1, T2 or T3 forbids every structure of that tech level. The player has no commander, the builders come from the level.
+- **Start test** runs the waves in the editor; **Stop** brings the level back to the state before.
+- **As a scenario:** a level with Tower Defense switched on becomes a Tower Defense scenario with everything above (see [Scenario creator](#scenario-creator)); the recipient's starter builds a small extra game that only adds the wave script.
+
+Details are in the [Level Editor manual](LevelEditor/README.md#tower-defense) and the [specification](LevelEditor/SPECIFICATION.md).
 
 ## BluePrinter (for the official game)
 
