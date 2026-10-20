@@ -2,12 +2,14 @@
 -- to the goal, pays metal and energy for every kill and ends the level (won: all waves beaten, lost: too many got through).
 -- Configuration: from the Level Editor with the message "tdw|start|<payload>" (stop: "tdw|stop"), or from the game option
 -- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
---   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned
+--   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned;bannedTech;restrict
 --   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
 --   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
 --           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
 --           the start), hp = health in percent. The units are chosen at random among all that match.
---   banned = "name,name,..." or "-": units (towers) the player must not build while the game runs (optional last field)
+--   banned = "name,name,..." or "-": units (towers) the player must not build while the game runs
+--   bannedTech = "1,3" or "-": tech levels of which the player may build no structure; restrict = "towers" | "economy" | "-":
+--           the player may build only towers ("towers") or towers and economy structures ("economy"), "-" = no restriction
 -- State for the display: game rules parameters tdState, tdWave, tdWaves, tdLeaks, tdMaxLeaks, tdKilled, tdAlive.
 function gadget:GetInfo()
 	return {
@@ -90,6 +92,13 @@ local function parse(payload)
 			cfg.banned[ud.id] = true
 		end
 	end
+	cfg.bannedTech = {}
+	for _, v in ipairs(split(f[11] or "", ",")) do
+		if tonumber(v) then
+			cfg.bannedTech[tonumber(v)] = true
+		end
+	end
+	cfg.restrict = (f[12] == "towers" or f[12] == "economy") and f[12] or nil
 	return cfg
 end
 
@@ -180,6 +189,13 @@ local function start(cfg)
 		end
 	end
 	alive = {}
+	-- no commander for the player: the builders are placed by the level (the editor brings the state before Play back on Stop)
+	for _, id in ipairs(Spring.GetTeamUnits(cfg.player)) do
+		local cp = UnitDefs[Spring.GetUnitDefID(id)].customParams or {}
+		if cp.iscommander then
+			Spring.DestroyUnit(id, false, true)
+		end
+	end
 	local now = Spring.GetGameFrame()
 	td = { cfg = cfg, state = "running", wave = 0, leaked = 0, killed = 0, queue = {}, nextWave = now + cfg.waves[1].gap * FPS, nextSpawn = 0 }
 	publish()
@@ -303,10 +319,44 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 	end
 end
 
--- Forbidden towers: the player's build orders for them are refused while the game runs
+-- Kind of a structure for the build restriction (same sorting as the catalog of the editor): "economy" = metal and energy
+-- structures (extractors, solar, wind, geothermal, fusion, storage, converters), "tower" = armed structure, nil = the rest
+local function buildClass(ud)
+	local cp = ud.customParams or {}
+	if ud.isFactory then
+		return nil
+	end
+	local ug = cp.unitgroup
+	if ug == "energy" or ug == "metal" or (tonumber(ud.extractsMetal) or 0) > 0 then
+		return "economy"
+	elseif #ud.weapons > 0 and ug ~= "explo" then
+		return "tower"
+	end
+	return nil
+end
+
+-- Build orders of the player that are not allowed are refused while the game runs: forbidden towers (red X), tech levels
+-- without structures, and the restriction to towers (and economy). Units from factories are not restricted.
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
-	if td and cmdID < 0 and teamID == td.cfg.player and td.cfg.banned[-cmdID] then
-		say("Forbidden in this level: " .. (UnitDefs[-cmdID].translatedHumanName or UnitDefs[-cmdID].name))
+	if not (td and cmdID < 0 and teamID == td.cfg.player) then
+		return true
+	end
+	local cfg, ud = td.cfg, UnitDefs[-cmdID]
+	local why
+	if cfg.banned[-cmdID] then
+		why = "forbidden"
+	elseif not ud.canMove then
+		if cfg.bannedTech[techLevel(ud)] then
+			why = "tech level " .. techLevel(ud) .. " is forbidden"
+		elseif cfg.restrict then
+			local cls = buildClass(ud)
+			if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy")) then
+				why = cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built"
+			end
+		end
+	end
+	if why then
+		say("Not allowed in this level: " .. (ud.translatedHumanName or ud.name) .. " (" .. why .. ")")
 		return false
 	end
 	return true

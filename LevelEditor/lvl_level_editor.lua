@@ -2168,7 +2168,7 @@ td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
 td.tfac, td.ttech = "arm", 1 -- turret list of the page: faction and tech level shown
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 8, leaks = 10, path = {}, banned = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
+	return { enabled = false, width = 8, leaks = 10, path = {}, banned = {}, bannedTech = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2303,6 +2303,29 @@ function td.turrets(fac, tech)
 		end
 	end
 	return td.tcache[fac][tech]
+end
+
+function td.techBanned(t)
+	for _, v in ipairs(td.cfg().bannedTech or {}) do
+		if v == t then
+			return true
+		end
+	end
+	return false
+end
+
+-- Forbid all structures of a tech level for the player in the game, or allow them again
+function td.toggleTech(t)
+	local c = td.cfg(true)
+	c.bannedTech = c.bannedTech or {}
+	for i, v in ipairs(c.bannedTech) do
+		if v == t then
+			table.remove(c.bannedTech, i)
+			return
+		end
+	end
+	c.bannedTech[#c.bannedTech + 1] = t
+	table.sort(c.bannedTech)
 end
 
 function td.isBanned(name)
@@ -2466,6 +2489,12 @@ function td.layout(rect)
 	-- The player: which towers may be built in the game (red X = forbidden)
 	y = y - 14 * S
 	head("Towers the player may build (red X = forbidden)")
+	line({
+		{ kind = "tdrestrict", value = "towers", label = "Only towers", active = c.restrict == "towers",
+			tip = "In the game the player can build only towers (no economy, factories, walls or other structures). Click again to lift the restriction." },
+		{ kind = "tdrestrict", value = "economy", label = "Towers + economy", active = c.restrict == "economy",
+			tip = "In the game the player can build only towers and economy structures (metal extractors, solar, wind and other power plants, storage). Click again to lift the restriction." },
+	})
 	local facs = {}
 	for _, f in ipairs(td.FAC) do
 		facs[#facs + 1] = { kind = "tdfac", value = f, label = td.FAC_TXT[f], icon = Shared.FACTION_ICONS[f], active = td.tfac == f,
@@ -2482,6 +2511,19 @@ function td.layout(rect)
 		td.ttech = techs[1].value
 	end
 	line(techs)
+	local base = #rects - #techs
+	for i = 1, #techs do
+		local rt = rects[base + i]
+		local xs = (rt.y1 - rt.y0) * 0.7
+		local tb = td.techBanned(rt.value)
+		if tb then
+			rt.tint = { 0.4, 0.12, 0.12 }
+		end
+		rects[#rects + 1] = { x1 = rt.x2 - xs - 4 * S, x2 = rt.x2 - 4 * S, y0 = (rt.y0 + rt.y1) / 2 - xs / 2, y1 = (rt.y0 + rt.y1) / 2 + xs / 2, kind = "tdtechx",
+			value = rt.value, label = "", banned = tb,
+			tip = tb and ("Tech level " .. rt.value .. " is forbidden: no structure of it can be built in the game. Click to allow it again.") or
+				("Click: the player can build no structure of tech level " .. rt.value .. " (towers and economy) in the game.") }
+	end
 	local list = td.turrets(td.tfac, td.ttech)
 	local cols, gapT = 8, 4 * S
 	local tw = (x2 - x1 - gapT * (cols - 1)) / cols
@@ -2489,7 +2531,7 @@ function td.layout(rect)
 		local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
 		local tx, ty = x1 + col * (tw + gapT), y - row * (tw + gapT)
 		local banned = td.isBanned(e.name)
-		rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "", banned = banned }
+		rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "", banned = banned or td.techBanned(td.ttech) }
 		local xs = tw * 0.36
 		rects[#rects + 1] = { x1 = tx + tw - xs, x2 = tx + tw, y0 = ty - xs, y1 = ty, kind = "tdban", value = e.name, id = e.id, label = "", banned = banned,
 			tip = banned and "Forbidden: the player cannot build this tower in the game. Click to allow it again." or
@@ -2534,8 +2576,12 @@ function td.drawTiles(rect, tiles)
 		end
 	end
 	for _, r in ipairs(tiles) do
-		if r.kind == "tdban" then
-			gl.Color(0, 0, 0, 0.75)
+		if r.kind == "tdban" or r.kind == "tdtechx" then
+			if r.kind == "tdtechx" and r.banned then
+				gl.Color(0.8, 0.1, 0.1, 0.95)
+			else
+				gl.Color(0, 0, 0, 0.75)
+			end
 			gl.Rect(r.x1, r.y0, r.x2, r.y1)
 			gl.Color(1, 0.15, 0.15, 1)
 			gl.LineWidth(3 * S)
@@ -2566,7 +2612,7 @@ function td.draw(rect)
 	local rects, labels = td.layout(rect)
 	local buttons, tiles = {}, {}
 	for _, r in ipairs(rects) do
-		if r.kind == "tdtile" or r.kind == "tdban" then
+		if r.kind == "tdtile" or r.kind == "tdban" or r.kind == "tdtechx" then
 			tiles[#tiles + 1] = r
 		else
 			buttons[#buttons + 1] = r
@@ -2679,7 +2725,8 @@ function td.payload()
 	for _, w in ipairs(c.waves) do
 		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
-	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-" }, ";")
+	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-",
+		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.restrict or "-" }, ";")
 end
 
 -- Ends the pick mode (spawn point, goal, corridor, route)
@@ -2952,6 +2999,11 @@ function td.press(rect, mx, my)
 		td.ttech = hit.value
 	elseif k == "tdban" then
 		td.toggleBan(hit.value)
+	elseif k == "tdtechx" then
+		td.toggleTech(hit.value)
+	elseif k == "tdrestrict" then
+		local c = td.cfg(true)
+		c.restrict = c.restrict ~= hit.value and hit.value or nil
 	end
 	return true
 end
