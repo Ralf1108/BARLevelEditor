@@ -379,6 +379,11 @@ local function setIndestructible(id)
 	Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true }) -- the widget writes it into the level file
 end
 
+local function clearIndestructible(id)
+	indestructible[id] = nil
+	Spring.SetUnitRulesParam(id, "indestructible", nil)
+end
+
 local function snapshot(id)
 	local defID = Spring.GetUnitDefID(id)
 	if not defID then
@@ -565,6 +570,10 @@ local function revert(op)
 		if unitIs(op.id, op.name) then
 			Spring.TransferUnit(op.id, op.old, false)
 		end
+	elseif k == "fix" then
+		if unitIs(op.id, op.name) then
+			if op.old then setIndestructible(op.id) else clearIndestructible(op.id) end
+		end
 	elseif k == "fadd" then
 		if Spring.ValidFeatureID(op.fid) then
 			op.snap = featureSnapshot(op.fid)
@@ -610,6 +619,10 @@ local function apply(op)
 	elseif k == "team" then
 		if unitIs(op.id, op.name) then
 			Spring.TransferUnit(op.id, op.new, false)
+		end
+	elseif k == "fix" then
+		if unitIs(op.id, op.name) then
+			if op.new then setIndestructible(op.id) else clearIndestructible(op.id) end
 		end
 	elseif k == "fadd" then
 		local nf = op.snap and respawnFeature(op.snap)
@@ -729,6 +742,9 @@ local function transformUnits(ids, mode, dx, dz)
 			if r.neutral then
 				Spring.SetUnitNeutral(id, true)
 			end
+			if r.indestructible then
+				setIndestructible(id)
+			end
 			replaceId(r.old, id) -- earlier steps should hit the new unit
 			record({ k = "swap", id = id, name = r.name, before = r, after = snapshot(id) })
 			made[#made + 1] = id
@@ -824,6 +840,21 @@ function gadget:RecvLuaMsg(msg, playerID)
 		local x1, z1, x2, z2 = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6])
 		if x1 and z1 and x2 and z2 then
 			clearThese(Spring.GetUnitsInRectangle(x1, z1, x2, z2), Spring.GetFeaturesInRectangle(x1, z1, x2, z2), playerID)
+		end
+	elseif cmd == "fix" then
+		-- led|fix|x1|z1|x2|z2|on: buildings in the rectangle become indestructible (on = 1) or destructible again (0), one history step
+		local x1, z1, x2, z2, on = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), parts[7] == "1"
+		if x1 and z1 and x2 and z2 then
+			local n = 0
+			for _, id in ipairs(Spring.GetUnitsInRectangle(x1, z1, x2, z2)) do
+				local ud = UnitDefs[Spring.GetUnitDefID(id)]
+				if ud and (ud.isBuilding or ud.speed == 0) and (indestructible[id] == true) ~= on then
+					record({ k = "fix", id = id, name = ud.name, old = not on, new = on })
+					if on then setIndestructible(id) else clearIndestructible(id) end
+					n = n + 1
+				end
+			end
+			tell(playerID, n .. " buildings " .. (on and "indestructible" or "destructible again"))
 		end
 	elseif cmd == "clearcircle" then
 		-- led|clearcircle|x|z|radius: the same for a circle

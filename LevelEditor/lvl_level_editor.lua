@@ -59,7 +59,7 @@ local helpOpen = false -- Help board on the screen
 local HELP_SECTIONS = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, TD tower defense, ? this help, DL / DR / DC delete, XL / XR / XC area attacks (experimental)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, TD tower defense, ? this help, DL / DR / DC delete, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
 		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },
@@ -1212,6 +1212,15 @@ local function headerRects()
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
+		-- Indestructible / destructible: rectangle, the buildings in it
+		local fixes = {
+			{ "fix", "FX", "FX: make buildings indestructible.\nPress FX, then drag a rectangle on the map:\nthe buildings in it can no longer be damaged.\nCtrl+Z undoes it." },
+			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
+		}
+		for k, f in ipairs(fixes) do
+			local top = sideTop(14 + k)
+			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
+		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
@@ -2080,8 +2089,12 @@ delToggle = function(shape)
 		armedUnit, armedFeature = false, false
 		stampDrag = nil
 		bpGrid:setArmed(false)
-		local what = { rect = "a rectangle", circle = "a circle from its center", line = "a line (a corridor of " .. (2 * DEL_HALF_WIDTH) .. " Elmo)" }
-		say("Delete: drag " .. what[delMode] .. " with the left mouse button held down, everything in it is deleted. The button, D or right click ends, Ctrl+Z undoes it.")
+		local what = { rect = "a rectangle", circle = "a circle from its center", line = "a line (a corridor of " .. (2 * DEL_HALF_WIDTH) .. " Elmo)", fix = "a rectangle", unfix = "a rectangle" }
+		if delMode == "fix" or delMode == "unfix" then
+			say("Drag " .. what[delMode] .. " with the left mouse button held down, the buildings in it become " .. (delMode == "fix" and "indestructible" or "destructible again") .. ". The button or right click ends, Ctrl+Z undoes it.")
+		else
+			say("Delete: drag " .. what[delMode] .. " with the left mouse button held down, everything in it is deleted. The button, D or right click ends, Ctrl+Z undoes it.")
+		end
 	else
 		say("Delete mode ended")
 	end
@@ -3318,6 +3331,9 @@ function widget:MouseRelease(mx, my, button)
 				led(string.format("led|clearcircle|%d|%d|%d", d.x, d.z, math.sqrt((pos[1] - d.x) ^ 2 + (pos[3] - d.z) ^ 2)))
 			elseif delMode == "line" then
 				led(string.format("led|clearline|%d|%d|%d|%d|%d", d.x, d.z, pos[1], pos[3], DEL_HALF_WIDTH))
+			elseif delMode == "fix" or delMode == "unfix" then
+				led(string.format("led|fix|%d|%d|%d|%d|%d", math.min(d.x, pos[1]), math.min(d.z, pos[3]), math.max(d.x, pos[1]), math.max(d.z, pos[3]),
+					delMode == "fix" and 1 or 0))
 			else
 				led(string.format("led|clearrect|%d|%d|%d|%d", math.min(d.x, pos[1]), math.min(d.z, pos[3]), math.max(d.x, pos[1]), math.max(d.z, pos[3])))
 			end
