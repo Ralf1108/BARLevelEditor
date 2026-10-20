@@ -30,7 +30,7 @@ Write-Host "Game: $game"
 
 # ---------------------------------------------------------------- 4. Build the extra game (zip)
 Step 'Build the extra game "Level Editor"'
-foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua')) {
+foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua')) {
     if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (LevelEditor folder copied completely?)" }
 }
 # shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
@@ -55,12 +55,14 @@ return {
 "@
 $widget = (Get-Content (Join-Path $here 'lvl_level_editor.lua') -Raw) -replace 'enabled = false,', 'enabled = true,'
 $gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
+$gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
 $shared = Get-Content $sharedFile -Raw
 $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
 $utf8 = New-Object Text.UTF8Encoding($false)
 foreach ($e in @(
     @('modinfo.lua', $modinfo),
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
+    @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
     @('luaui/Include/editor_common.lua', $shared))) {
     $entry = $zip.CreateEntry($e[0])

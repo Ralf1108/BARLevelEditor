@@ -71,6 +71,14 @@ Blueprint view, units menu, settings and 3D preview come from `..\shared\editor_
 ## Help
 The menu has a **?** button. It shows the keys and short explanations as a board on the screen; a click closes it.
 
+## Tower Defense
+The button **TD** (between **I** and **?**) opens the tower defense page. Waves of enemy land units walk from a spawn point along a path to a goal; you build towers next to the path.
+- Tick **Tower Defense** to mark the level (saved with the scenario info of the level, so it stays with the level file).
+- **Path: teeth** / **Path: walls**: click the points of the path on the map (start first), press **Enter**: the walls are built on both sides (dragon teeth or walls of the faction chosen on the Generate page). The ends become spawn point and goal; **Set spawn point** and **Set goal** change them (click on the map). Ctrl+Z undoes the walls, right click cancels. **Path width**: 32 to 128 Elmo.
+- **Waves**: number (buttons or click the number and type), **Enemies allowed through**, then one row per wave: the wave number (fixed), faction, type (any, bots, vehicles), tech T1-T3 (click), count, **gap** in seconds after the previous wave (wave 1: after the start, so it is the grace period) and **HP %** (strength, 100 = normal; mouse wheel scrolls long tables).
+- **Play** (button in the title row of the menu, **Stop** while it runs) runs the waves in the editor. The state before is saved as `_beforeplay` (in the level list of the O menu), because towers that get destroyed stay destroyed. The units appear one after the other, walk the path, a kill pays the unit's metal and energy, an enemy that reaches the goal counts as through; too many through = lost, all waves beaten = won; the status shows at the top of the screen). Wave units are not saved with the level.
+- The waves run in the gadget `td_waves.lua` of the editor game. They are not part of the scenario package yet (the official game cannot run that gadget).
+
 ## Making a scenario from it
 In the game itself: the button **I** in the button column at the far right next to the menu opens the scenario info: title, author, summary, briefing (Shift+Enter = new line), role of each team, AI behavior, win condition, start metal/energy and ID. Click text fields and type (Enter done, Esc cancel), the other fields change with every click. The info is written when the level is saved; there is no save button on this page (Ctrl+S saves). The scenario builder does the rest (see below).
 In the start menu **key 3** (create a scenario package from a level): choose a level, the script builds without questions a scenario that others can play with the official BAR (folder and zip in `scenario\scenarios`). The info (title, briefing, roles, tech, AI, win condition, resources, grace period, ID) is stored in the level and changed in the editor with the I button. Details in `scenario\README.md`.

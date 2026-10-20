@@ -59,7 +59,7 @@ local helpOpen = false -- Help board on the screen
 local HELP_SECTIONS = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, DL / DR / DC delete, XL / XR / XC area attacks (experimental)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, TD tower defense, ? this help, DL / DR / DC delete, XL / XR / XC area attacks (experimental)." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
 		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },
@@ -68,6 +68,7 @@ local HELP_SECTIONS = {
 		{ "Recent", "Recently chosen blueprints and recently placed units." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
 		{ "I", "Scenario info: title, author, briefing, roles and tech (T1/T2/T3) per team, AI, win condition, resources, grace period, ID. Click a field and type; written with the level when you save it." },
+		{ "TD", "Tower Defense (button between I and ?): tick the box, draw a path (Path: teeth or walls: click points on the map, Enter builds walls on both sides), set spawn point and goal, number of waves, enemies allowed through, and per wave faction, type, tech, count, gap in seconds and HP %. Test: start waves runs it in the editor. Settings are saved with the level." },
 	} },
 	{ "Buttons left of the menu", {
 		{ "0, 1, 2 ...", "Team for new units and blueprints. With a selection: assigns the selection to this team." },
@@ -323,7 +324,7 @@ local function saveLevel(name, quiet)
 	for _, id in ipairs(Spring.GetAllUnits()) do
 		local t = Spring.GetUnitTeam(id)
 		-- the builder rows from the start (the gadget marks them) are not part of the level
-		if Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 then
+		if Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 and Spring.GetUnitRulesParam(id, "tdwave") ~= 1 then
 			local x, y, z = Spring.GetUnitPosition(id)
 			local ud = UnitDefs[Spring.GetUnitDefID(id)]
 			-- Gaia units additionally carry gaia = true (the Gaia number depends on the team count)
@@ -575,6 +576,8 @@ local gen = {
 	tech = { [1] = true, [2] = false, [3] = false },
 	count = 100,
 }
+-- Tower Defense page (button TD): state; the functions follow after the maze code
+local td = { open = false, edit = nil, pick = nil, pts = {}, wall = 1, scroll = 0 }
 local GEN_KINDS = { { "units", "Units" }, { "buildings", "Buildings" }, { "turrets", "Turrets" }, { "air", "Air" }, { "ships", "Ships" } }
 local delMode = false -- Delete: false or the shape "rect" | "circle" | "line" (buttons DR, DC, DL, key D = rectangle)
 local delDrag = nil -- { x, z }: start point of the delete shape
@@ -1076,7 +1079,7 @@ local function searchRects(x1, x2, top, hb)
 end
 
 local function headerRowCount() -- Rows of the header
-	if optionsOpen or scenarioOpen or gen.open then
+	if optionsOpen or scenarioOpen or gen.open or td.open then
 		return 1
 	end
 	-- Place menu: Place/Generate row, search, sub-tabs, then the rows of the chosen sub-tab
@@ -1096,7 +1099,7 @@ local function scanLevels()
 	local files = (VFS and VFS.DirList and VFS.DirList(OUTDIR, "*.lua", VFS.RAW)) or {}
 	for _, path in ipairs(files) do
 		local name = path:match("([^/\\]+)%.lua$")
-		if name and (name:sub(1, 1) ~= "_" or name == "_last") then
+		if name and (name:sub(1, 1) ~= "_" or name == "_last" or name == "_beforeplay") then
 			levelList[#levelList + 1] = name
 		end
 	end
@@ -1125,6 +1128,8 @@ local function panelRect()
 	local cw, ch
 	if scenarioOpen then
 		cw, ch = 0, scenarioHeight()
+	elseif td.open then
+		cw, ch = 0, td.height()
 	elseif gen.open then
 		cw, ch = 0, genHeight()
 	elseif optionsOpen then
@@ -1137,7 +1142,7 @@ local function panelRect()
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
 	local top = vsy * 0.88
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	local bottom = math.max((optionsOpen or scenarioOpen or gen.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
+	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
 end
@@ -1161,8 +1166,12 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(1) - m.HB, y1 = sideTop(1), kind = "collapse", value = "collapse", label = "V", active = false, side = true, tip = "Collapse or expand the menu" }
 		local gx1, gx2, gy1 = sx1, sx2, sideTop(2)
 		local ix1, ix2, iy1 = sx1, sx2, sideTop(3)
-		local hx1, hx2, hy1 = sx1, sx2, sideTop(4)
+		local hx1, hx2, hy1 = sx1, sx2, sideTop(5)
 		local dx1, dx2, dy1 = sx1, sx2, sideTop(5)
+		local playH = math.min(m.HB, titleH() - 2)
+		rects[#rects + 1] = { x1 = x2 - m.PAD - 170 * S, x2 = x2 - m.PAD, y0 = y1 - 4 - playH, y1 = y1 - 4, kind = "tdplay", value = "tdplay",
+			label = Spring.GetGameRulesParam("tdState") == "running" and "Stop" or "Play", active = Spring.GetGameRulesParam("tdState") == "running", fs = 24 * S,
+			tip = "Play: runs the tower defense waves in the editor (set them up with the button TD); Stop ends it" }
 		local tops = {
 			{ "place", "Place", "Place: choose units, features and blueprints from the lists and place them on the map" },
 			{ "gen", "Generate", "Generate: random units in a rectangle or circle, or a maze" },
@@ -1171,20 +1180,22 @@ local function headerRects()
 		for i, it in ipairs(tops) do
 			local bx = x1 + m.PAD + (i - 1) * (bw + 3)
 			rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = top - m.HB, y1 = top, kind = "top", value = it[1], label = it[2], fs = 26 * S,
-				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open), tip = it[3] }
+				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open), tip = it[3] }
 		end
 		rects[#rects + 1] = { x1 = ix1, x2 = ix2, y0 = iy1 - m.HB, y1 = iy1, side = true, kind = "info", value = "info", label = "I", active = scenarioOpen,
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
-		-- Delete (rectangle, circle, line), then one free slot, then the experimental area attacks
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(4) - m.HB, y1 = sideTop(4), side = true, kind = "td", value = "td", label = "TD", active = td.open,
+			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
+		-- Delete (rectangle, circle, line), then the experimental area attacks
 		local dels = {
 			{ "line", "DL", "Delete line: drag a line, everything within " .. DEL_HALF_WIDTH .. " Elmo of it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
 			{ "rect", "DR", "Delete rectangle (key D): drag a rectangle on the map, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
 			{ "circle", "DC", "Delete circle: drag a circle from its center, everything in it is deleted (units, wrecks, features). Ctrl+Z undoes it." },
 		}
 		for k, d in ipairs(dels) do
-			local top = sideTop(5 + k)
+			local top = sideTop(6 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = d[1], label = d[2], active = (delMode == d[1]), tip = d[3] }
 		end
 		local areas = {
@@ -1193,7 +1204,7 @@ local function headerRects()
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(9 + k)
+			local top = sideTop(10 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1201,7 +1212,7 @@ local function headerRects()
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	if not optionsOpen and not scenarioOpen and not gen.open then
+	if not optionsOpen and not scenarioOpen and not gen.open and not td.open then
 		local rowTop = y1 - 4 - titleH() - (m.HB + 3)
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
@@ -1722,6 +1733,10 @@ local function drawMenuBody()
 		drawScenario(rect, mx, my)
 		return
 	end
+	if td.open then
+		td.draw(rect)
+		return
+	end
 	if gen.open then
 		local rects, labels = genLayout(rect)
 		Shared.drawButtons(rects, 24 * S, Shared.m.HB)
@@ -1836,7 +1851,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect()))
+	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect()))
 end
 
 -- Button of the column left of the team strip (V, O, I, ?) under the mouse pointer
@@ -1889,6 +1904,10 @@ local function applyHeader0(r)
 		helpOpen = true
 		return
 	end
+	if r.kind == "tdplay" then
+		td.toggle()
+		return
+	end
 	if r.kind == "del" then
 		delToggle(r.value)
 		return
@@ -1898,6 +1917,7 @@ local function applyHeader0(r)
 		return
 	end
 	genFinish(true)
+	td.finish(true)
 	if r.kind == "search" then
 		searchFocus(true)
 		return
@@ -1907,18 +1927,36 @@ local function applyHeader0(r)
 	end
 	searchFocus(false)
 	if r.kind == "top" then
+		local tdWas = td.open
+		td.open = false
+		if tdWas and r.value == "place" then
+			return
+		end
 		if (r.value == "gen") ~= gen.open then
 			genToggle()
 		end
 		return
 	end
+	local tdWas = td.open
 	if r.kind ~= "create" then
 		gen.open, gen.armed, gen.drag = false, false, nil
+		td.open = false
 	end
 	uGrid:setFocus(false)
 	fGrid:setFocus(false)
 	bpGrid:setFocus(false)
 	scenarioFinish(true)
+	if r.kind == "td" then
+		bpGrid:resetEdit()
+		bpGrid:setArmed(false)
+		armedUnit = false
+		armedFeature = false
+		scenarioOpen, optionsOpen = false, false
+		td.open = not tdWas
+		td.scroll = 0
+		bpGrid.scroll, uGrid.scroll = 0, 0
+		return
+	end
 	if r.kind == "info" then
 		bpGrid:resetEdit()
 		bpGrid:setArmed(false)
@@ -2093,11 +2131,501 @@ local function mazeBuild(lay, circ)
 	say(string.format("Maze: %d x %d cells, %d x %s (entrance top left, exit bottom right)", lay.cols, lay.rows, #walls, name))
 end
 
+-- ---------------------------------------------------------------- Tower Defense (button TD)
+-- Waves of enemies walk from the spawn point along a path to the goal; the walls of the path are built here, the waves
+-- themselves by the gadget td_waves.lua. The settings live in the scenario info (scenario.td), so they are saved with the level.
+-- Everything is a field of td: the file is close to the limit of 200 locals.
+td.FAC = { "arm", "cor", "leg" }
+td.FAC_TXT = { arm = "Armada", cor = "Cortex", leg = "Legion" }
+td.KINDS = { "any", "bot", "vehicle" }
+td.KIND_TXT = { any = "Any", bot = "Bots", vehicle = "Vehicles" }
+td.MAX_WAVES = 30
+td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
+td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
+td.DEFAULT = { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "any", tech = 1, count = 10, gap = 30, hp = 100 } } }
+
+-- Settings: without write the stored ones or the defaults (never changed by the caller); with write they are created
+function td.cfg(write)
+	local c = scenario and scenario.td
+	if type(c) == "table" then
+		if write then
+			scenarioDirty = true
+		end
+		return c
+	end
+	if not write then
+		return td.DEFAULT
+	end
+	scenario = scenario or {}
+	scenario.version = math.max(SCENARIO_VERSION, tonumber(scenario.version) or 0)
+	scenario.td = { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "any", tech = 1, count = 10, gap = 30, hp = 100 } } }
+	scenarioDirty = true
+	return scenario.td
+end
+
+function td.height()
+	local _, _, h = td.layout({ x1 = 0, x2 = math.floor(560 * S), top = 0 })
+	return h
+end
+
+function td.resize(n)
+	local c = td.cfg(true)
+	n = math.max(1, math.min(td.MAX_WAVES, n))
+	while #c.waves < n do
+		local last = c.waves[#c.waves]
+		c.waves[#c.waves + 1] = { fac = last.fac, kind = last.kind, tech = last.tech, count = last.count, gap = math.max(last.gap, 10), hp = last.hp }
+	end
+	while #c.waves > n do
+		c.waves[#c.waves] = nil
+	end
+	td.scroll = math.max(0, math.min(td.scroll, #c.waves - td.VISIBLE))
+end
+
+function td.layout(rect)
+	local m = Shared.m
+	local c = td.cfg()
+	local rects, labels = {}, {}
+	local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
+	local y = rect.top - m.PAD
+	local gap = 4 * S
+	local function line(items)
+		local total = 0
+		for _, it in ipairs(items) do
+			total = total + (it.w or 1)
+		end
+		local avail, bx = x2 - x1 - gap * (#items - 1), x1
+		for _, it in ipairs(items) do
+			local w = avail * (it.w or 1) / total
+			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
+				fs = it.fs or 22 * S, row = it.row, field = it.field, tint = it.tint }
+			bx = bx + w + gap
+		end
+		y = y - m.HB - 6 * S
+	end
+	local function head(text)
+		labels[#labels + 1] = { text = text, x = x1, y = y - 26 * S, size = 22 * S, head = true }
+		y = y - 32 * S
+	end
+	local function editing(field, row)
+		return td.edit ~= nil and td.edit.field == field and td.edit.row == row
+	end
+	local function num(field, row, value)
+		return editing(field, row) and (td.edit.buf .. "_") or tostring(value)
+	end
+	line({
+		{ kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled, w = 2 },
+		{ kind = "tdpath", value = 1, label = "Path: teeth", active = td.pick == "path" and td.wall == 1 },
+		{ kind = "tdpath", value = 2, label = "Path: walls", active = td.pick == "path" and td.wall == 2 },
+	})
+	head("Path width (Elmo)")
+	local widths = {}
+	for _, t in ipairs({ 2, 3, 4, 6, 8 }) do
+		widths[#widths + 1] = { kind = "tdwidth", value = t, label = tostring(t * 16), active = c.width == t }
+	end
+	line(widths)
+	line({
+		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn" },
+		{ kind = "tdgoal", label = c.goal and string.format("Goal: %d, %d", c.goal[1], c.goal[2]) or "Set goal", active = td.pick == "goal" },
+	})
+	head("Waves")
+	line({
+		{ kind = "tdminus", value = "nwaves", label = "-" },
+		{ kind = "tdedit", field = "nwaves", label = num("nwaves", nil, #c.waves), active = editing("nwaves"), w = 2 },
+		{ kind = "tdplus", value = "nwaves", label = "+" },
+	})
+	head("Enemies allowed through (more = you lose)")
+	line({
+		{ kind = "tdminus", value = "leaks", label = "-" },
+		{ kind = "tdedit", field = "leaks", label = num("leaks", nil, c.leaks), active = editing("leaks"), w = 2 },
+		{ kind = "tdplus", value = "leaks", label = "+" },
+	})
+	-- Table: one row per wave
+	local W = { 0.6, 1.1, 1.3, 0.8, 1, 1, 1 }
+	local total = 0
+	for _, w in ipairs(W) do
+		total = total + w
+	end
+	local avail, cx = x2 - x1 - gap * (#W - 1), {}
+	local acc = 0
+	for i, w in ipairs(W) do
+		cx[i] = x1 + acc / total * avail + gap * (i - 1)
+		acc = acc + w
+	end
+	for i, t in ipairs({ "#", "Faction", "Type", "Tech", "Count", "Gap s", "HP %" }) do
+		labels[#labels + 1] = { text = t, x = cx[i] + 3 * S, y = y - 20 * S, size = 18 * S, head = true }
+	end
+	y = y - 26 * S
+	local last = math.min(#c.waves, td.scroll + td.VISIBLE)
+	for i = td.scroll + 1, last do
+		local w = c.waves[i]
+		line({
+			{ kind = "tdnone", label = tostring(i), w = W[1], tint = { 0.15, 0.3, 0.5 } },
+			{ kind = "tdcell", row = i, field = "fac", label = td.FAC_TXT[w.fac] or w.fac, w = W[2], fs = 20 * S },
+			{ kind = "tdcell", row = i, field = "kind", label = td.KIND_TXT[w.kind] or w.kind, w = W[3], fs = 20 * S },
+			{ kind = "tdcell", row = i, field = "tech", label = "T" .. w.tech, w = W[4] },
+			{ kind = "tdcell", row = i, field = "count", label = num("count", i, w.count), active = editing("count", i), w = W[5] },
+			{ kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[6] },
+			{ kind = "tdcell", row = i, field = "hp", label = num("hp", i, w.hp), active = editing("hp", i), w = W[7] },
+		})
+	end
+	if #c.waves > td.VISIBLE then
+		labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = y - 18 * S, size = 17 * S }
+		y = y - 24 * S
+	end
+	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
+	labels[#labels + 1] = { text = "HP 100 = normal strength.", x = x1, y = y - 38 * S, size = 17 * S }
+	labels[#labels + 1] = { text = "Path: click points on the map, Enter builds, right click cancels.", x = x1, y = y - 58 * S, size = 17 * S }
+	y = y - 68 * S - m.PAD
+	return rects, labels, rect.top - y
+end
+
+function td.draw(rect)
+	local rects, labels = td.layout(rect)
+	Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+	for _, l in ipairs(labels) do
+		if l.head then
+			gl.Color(0.5, 0.8, 1, 1)
+		else
+			gl.Color(0.8, 0.8, 0.8, 1)
+		end
+		gl.Text(l.text, l.x, l.y, l.size, "o")
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
+-- Ends the entry in a number field (accept: take the value)
+function td.finish(accept)
+	local e = td.edit
+	if not e then
+		return
+	end
+	td.edit = nil
+	widgetHandler:DisownText()
+	local v = tonumber(e.buf)
+	if not accept or not v then
+		return
+	end
+	v = math.floor(v)
+	if e.field == "nwaves" then
+		td.resize(v)
+	elseif e.field == "leaks" then
+		td.cfg(true).leaks = math.max(0, math.min(999, v))
+	else
+		local w = td.cfg(true).waves[e.row]
+		if w then
+			local limits = { count = { 1, 200 }, gap = { 0, 3600 }, hp = { 10, 5000 } }
+			w[e.field] = math.max(limits[e.field][1], math.min(limits[e.field][2], v))
+		end
+	end
+end
+
+function td.key(key)
+	if key == 13 or key == 271 then
+		td.finish(true)
+	elseif key == 27 then
+		td.finish(false)
+	elseif key == 8 then
+		td.edit.buf = td.edit.buf:sub(1, -2)
+	end
+	return true
+end
+
+function td.text(ch)
+	if ch and ch:match("^%d$") and #td.edit.buf < 5 then
+		td.edit.buf = td.edit.buf .. ch
+	end
+	return true
+end
+
+function td.wheel(up)
+	local n = #td.cfg().waves
+	td.scroll = math.max(0, math.min(math.max(0, n - td.VISIBLE), td.scroll + (up and -1 or 1)))
+end
+
+-- Payload for the gadget (see td_waves.lua)
+function td.payload()
+	local c = td.cfg()
+	if not (c.spawn and c.goal) then
+		return nil, "Set the spawn point and the goal first."
+	end
+	local player, enemy
+	for _, t in ipairs(scenarioTeams()) do
+		local role = scenarioValue({ id = "role", team = t })
+		if role == "s" and not player then
+			player = t
+		elseif role == "e" and not enemy then
+			enemy = t
+		end
+	end
+	player = player or 0
+	enemy = enemy or (player == 0 and 1 or 0)
+	local path, waves = {}, {}
+	for _, p in ipairs(c.path or {}) do
+		path[#path + 1] = string.format("%d,%d", p[1], p[2])
+	end
+	for _, w in ipairs(c.waves) do
+		waves[#waves + 1] = string.format("%s,%s,%d,%d,%d,%d", w.fac, w.kind, w.tech, w.count, w.gap, w.hp)
+	end
+	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/") }, ";")
+end
+
+-- Ends the pick mode (spawn point, goal, path)
+function td.endPick()
+	td.pick, td.pts = nil, {}
+end
+
+-- Arms picking on the map: "spawn", "goal" or "path" (wall = 1 dragon teeth, 2 walls); the same button again ends it
+function td.startPick(kind, wall)
+	td.finish(true)
+	local same = td.pick == kind and (kind ~= "path" or td.wall == wall)
+	mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+	gen.armed, gen.drag = false, nil
+	armedUnit, armedFeature = false, false
+	stampDrag = nil
+	bpGrid:setArmed(false)
+	area:disarm()
+	td.endPick()
+	if same then
+		say("Tower Defense: mode ended")
+		return
+	end
+	td.pick = kind
+	td.wall = wall or td.wall
+	if kind == "path" then
+		say("Path: click the points of the path on the map (start first), Enter builds the walls on both sides, right click cancels.")
+	else
+		say((kind == "spawn" and "Spawn point" or "Goal") .. ": click the place on the map, right click cancels.")
+	end
+end
+
+-- Left click on the map in the pick mode
+function td.click(x, z)
+	if td.pick == "path" then
+		td.pts[#td.pts + 1] = { math.floor(x), math.floor(z) }
+		say(string.format("Path: %d points. Enter builds the walls.", #td.pts))
+		return
+	end
+	local c = td.cfg(true)
+	c[td.pick] = { math.floor(x), math.floor(z) }
+	say(string.format("%s set at %d, %d", td.pick == "spawn" and "Spawn point" or "Goal", x, z))
+	td.endPick()
+end
+
+-- Distance of a point to the polyline of points p
+function td.distToPath(px, pz, p)
+	local best = math.huge
+	for i = 1, #p - 1 do
+		local ax, az, bx, bz = p[i][1], p[i][2], p[i + 1][1], p[i + 1][2]
+		local dx, dz = bx - ax, bz - az
+		local len2 = dx * dx + dz * dz
+		local t = len2 > 0 and math.max(0, math.min(1, ((px - ax) * dx + (pz - az) * dz) / len2)) or 0
+		best = math.min(best, math.sqrt((px - ax - t * dx) ^ 2 + (pz - az - t * dz) ^ 2))
+	end
+	return best
+end
+
+-- Wall pieces left and right of the path: every 16 Elmo along the offset lines, not inside the corridor of another section
+function td.wallSpots(p, width)
+	local clear = width * 16 / 2 -- half of the free corridor
+	local off = clear + 8 -- middle of the wall piece
+	local spots, seen = {}, {}
+	for i = 1, #p - 1 do
+		local ax, az, bx, bz = p[i][1], p[i][2], p[i + 1][1], p[i + 1][2]
+		local len = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
+		if len > 0 then
+			local dx, dz = (bx - ax) / len, (bz - az) / len
+			for s = 0, len + 8, 8 do
+				s = math.min(s, len)
+				for _, side in ipairs({ 1, -1 }) do
+					local wx, wz = math.floor((ax + dx * s - dz * off * side) / 16 + 0.5) * 16, math.floor((az + dz * s + dx * off * side) / 16 + 0.5) * 16
+					local key = wx * 100003 + wz
+					if not seen[key] then
+						seen[key] = true
+						if td.distToPath(wx, wz, p) >= clear - 4 then
+							spots[#spots + 1] = { wx, wz }
+						end
+					end
+				end
+			end
+		end
+	end
+	return spots
+end
+
+-- Enter in the path mode: builds the walls and takes the ends of the path as spawn point and goal
+function td.build()
+	local p = td.pts
+	if #p < 2 then
+		say("Path: click at least two points first.")
+		return
+	end
+	if not canEdit() then
+		return
+	end
+	local name = mazeUnitName(MAZE_KINDS[td.wall])
+	if not name then
+		say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
+		return
+	end
+	local c = td.cfg(true)
+	local spots = td.wallSpots(p, c.width)
+	if #spots > MAZE_MAX_WALLS then
+		say("The path is too long (more than " .. MAZE_MAX_WALLS .. " wall pieces)")
+		return
+	end
+	ledStep()
+	for _, s in ipairs(spots) do
+		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, s[1], s[2], 0, neutralOn and 1 or 0)
+	end
+	c.path = p
+	c.spawn, c.goal = { p[1][1], p[1][2] }, { p[#p][1], p[#p][2] }
+	say(string.format("Path: %d wall pieces (%s), spawn point and goal at the ends. Ctrl+Z undoes it.", #spots, name))
+	td.endPick()
+end
+
+function td.press(rect, mx, my)
+	local hit
+	for _, r in ipairs((td.layout(rect))) do
+		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+			hit = r
+		end
+	end
+	td.finish(true)
+	if not hit then
+		return true
+	end
+	local k = hit.kind
+	if k == "tdon" then
+		local c = td.cfg(true)
+		c.enabled = not c.enabled
+	elseif k == "tdpath" then
+		td.startPick("path", hit.value)
+	elseif k == "tdspawn" then
+		td.startPick("spawn")
+	elseif k == "tdgoal" then
+		td.startPick("goal")
+	elseif k == "tdwidth" then
+		td.cfg(true).width = hit.value
+	elseif k == "tdminus" or k == "tdplus" then
+		local d = k == "tdplus" and 1 or -1
+		if hit.value == "nwaves" then
+			td.resize(#td.cfg().waves + d)
+		else
+			local c = td.cfg(true)
+			c.leaks = math.max(0, math.min(999, c.leaks + d))
+		end
+	elseif k == "tdedit" then
+		td.edit = { field = hit.field, buf = "" }
+		widgetHandler:OwnText()
+	elseif k == "tdcell" then
+		local w = td.cfg(true).waves[hit.row]
+		if hit.field == "fac" or hit.field == "kind" then
+			local list = hit.field == "fac" and td.FAC or td.KINDS
+			for i, v in ipairs(list) do
+				if v == w[hit.field] then
+					w[hit.field] = list[i % #list + 1]
+					break
+				end
+			end
+		elseif hit.field == "tech" then
+			w.tech = w.tech % 3 + 1
+		else
+			td.edit = { field = hit.field, row = hit.row, buf = "" }
+			widgetHandler:OwnText()
+		end
+	end
+	return true
+end
+
+-- Play / Stop (button in the title row): runs the waves in the editor; the state before is saved as _beforeplay
+function td.toggle()
+	if Spring.GetGameRulesParam("tdState") == "running" then
+		Spring.SendLuaRulesMsg("tdw|stop")
+		return
+	end
+	local payload, err = td.payload()
+	if not payload then
+		say(err .. " (button TD)")
+		return
+	end
+	saveLevel("_beforeplay", true)
+	Spring.SendLuaRulesMsg("tdw|start|" .. payload)
+	say("Play: the state before is saved as _beforeplay (towers that get destroyed stay destroyed; load it from the level list of the O menu).")
+end
+
+-- Markers in the world while the TD page is open: spawn point (green), goal (red), path and the points being clicked
+function td.drawWorld()
+	if not td.open then
+		return
+	end
+	local c = td.cfg()
+	gl.DepthTest(false)
+	gl.LineWidth(3)
+	local function circle(p, r, cr, cg, cb)
+		gl.Color(cr, cg, cb, 1)
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			for i = 0, 31 do
+				local a = i / 32 * 2 * math.pi
+				local x, z = p[1] + math.cos(a) * r, p[2] + math.sin(a) * r
+				gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
+			end
+		end)
+	end
+	local function polyline(list, cr, cg, cb, extra)
+		gl.Color(cr, cg, cb, 1)
+		gl.BeginEnd(GL.LINE_STRIP, function()
+			for _, q in ipairs(list) do
+				gl.Vertex(q[1], Spring.GetGroundHeight(q[1], q[2]) + 8, q[2])
+			end
+			if extra then
+				gl.Vertex(extra[1], extra[2] + 8, extra[3])
+			end
+		end)
+	end
+	if c.spawn then
+		circle(c.spawn, 48, 0.3, 1, 0.4)
+	end
+	if c.goal then
+		circle(c.goal, td.GOAL_RADIUS, 1, 0.35, 0.3)
+	end
+	if c.path and #c.path > 1 then
+		polyline(c.path, 1, 0.9, 0.3)
+	end
+	if td.pick == "path" and #td.pts > 0 then
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		polyline(td.pts, 0.4, 0.9, 1, pos)
+	end
+	gl.LineWidth(1)
+	gl.Color(1, 1, 1, 1)
+end
+
+-- Status of the running test (from the gadget) at the top of the screen
+function td.hud(vsx, vsy)
+	local state = Spring.GetGameRulesParam("tdState")
+	if not state or state == "" then
+		return
+	end
+	local text
+	if state == "won" then
+		text = "TOWER DEFENSE: LEVEL WON"
+	elseif state == "lost" then
+		text = "TOWER DEFENSE: LEVEL LOST"
+	else
+		text = string.format("Tower Defense  wave %d/%d  enemies %d  killed %d  through %d/%d",
+			Spring.GetGameRulesParam("tdWave") or 0, Spring.GetGameRulesParam("tdWaves") or 0, Spring.GetGameRulesParam("tdAlive") or 0,
+			Spring.GetGameRulesParam("tdKilled") or 0, Spring.GetGameRulesParam("tdLeaks") or 0, Spring.GetGameRulesParam("tdMaxLeaks") or 0)
+	end
+	gl.Color(1, 0.9, 0.4, 1)
+	gl.Text(text, vsx * 0.5, vsy - 70 * S, 22 * S, "co")
+	gl.Color(1, 1, 1, 1)
+end
+
 -- Ends every stamp, delete, maze, generate and area-attack mode and every drag in progress (selection frame,
 -- Alt + drag move); without an active mode a right click clears the selection; returns true if it did something (a field of gen: the file is close to the limit of 200 locals)
 function gen.cancelModes()
 	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
-		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed()
+		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed() or td.pick
 	if not was then
 		if #selectedUnits() > 0 then
 			foreignSel = {}
@@ -2112,6 +2640,7 @@ function gen.cancelModes()
 	gen.armed, gen.drag = false, nil
 	delMode, delDrag = false, nil
 	mazeKind, mazeDrag = nil, nil
+	td.endPick()
 	stampDrag, moveDrag, selBox = nil, nil, nil
 	area:disarm()
 	say("Mode ended")
@@ -2138,6 +2667,19 @@ function widget:MousePress(mx, my, button)
 	end
 	if area:armed() and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
 		if area:press(button) then
+			return true
+		end
+	end
+	if td.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		if button == 1 then
+			local _, pos = Spring.TraceScreenRay(mx, my, true)
+			if pos and canEdit() then
+				td.click(pos[1], pos[3])
+			end
+			return true
+		elseif button == 3 then
+			td.endPick()
+			say("Tower Defense: mode ended")
 			return true
 		end
 	end
@@ -2243,6 +2785,9 @@ function widget:MousePress(mx, my, button)
 			local rect = contentRect()
 			if scenarioOpen then
 				return scenarioPress(rect, mx, my)
+			end
+			if td.open then
+				return td.press(rect, mx, my)
 			end
 			if gen.open then
 				local hit
@@ -2624,6 +3169,9 @@ function widget:TextInput(utf8char)
 		end
 		return true
 	end
+	if td.edit then
+		return td.text(utf8char)
+	end
 	if scEdit then
 		return scenarioText(utf8char)
 	end
@@ -2648,6 +3196,10 @@ function widget:MouseWheel(up, value)
 		return false
 	end
 	if scenarioOpen then
+		return true
+	end
+	if td.open then
+		td.wheel(up)
 		return true
 	end
 	if optionsOpen then
@@ -3004,6 +3556,7 @@ function widget:DrawWorld()
 			gl.Color(1, 1, 1, 1)
 		end
 	end
+	td.drawWorld()
 	-- Editor selection (also foreign units): red frame around every unit
 	if #foreignSel > 0 and #Spring.GetSelectedUnits() == 0 then
 		gl.LineWidth(2.5)
@@ -3047,6 +3600,9 @@ function widget:Update()
 	end
 	if gen.armed and (armedUnit or armedFeature or bpGrid.armed) then
 		gen.armed, gen.drag = false, nil
+	end
+	if td.pick and (armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
+		td.endPick()
 	end
 	-- Result of rotate/mirror/move: the newly placed units stay selected
 	local nn = Spring.GetGameRulesParam("led_newids_n")
@@ -3247,6 +3803,7 @@ function bpQuickSave()
 	menuMode = "bp"
 	optionsOpen = false
 	scenarioOpen = false
+	td.open = false
 	bpGrid:scrollTo(contentRect(), bpGrid.selected)
 	return true
 end
@@ -3264,6 +3821,13 @@ function widget:KeyPress(key, mods, isRepeat)
 		elseif key == 8 then
 			gen.edit = gen.edit:sub(1, -2)
 		end
+		return true
+	end
+	if td.edit then
+		return td.key(key)
+	end
+	if td.pick == "path" and (key == 13 or key == 271) then
+		td.build()
 		return true
 	end
 	if scEdit then
@@ -3509,6 +4073,7 @@ function widget:DrawScreen()
 		gl.Color(1, 1, 1, 1)
 	end
 	local vsx, vsy = Spring.GetViewGeometry()
+	td.hud(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 	gl.Text(
 		string.format("Level Editor  |  %s  |  Team %d  |  Raster %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
