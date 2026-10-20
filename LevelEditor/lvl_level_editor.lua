@@ -2167,7 +2167,7 @@ td.MAX_WAVES = 30
 td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 30, hp = 100 } } }
+	return { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2325,9 +2325,9 @@ function td.layout(rect)
 	})
 	line({
 		{ kind = "tddraw", field = "corridor", value = "line", label = "Line", active = td.pick == "corridor" and td.mode == "line",
-			tip = "Build a corridor: click the points on the map, right click builds the walls (indestructible). Ctrl+Z undoes it." },
+			tip = "Build a corridor: click the points on the map, right click builds the walls (indestructible). The mode stays on for the next corridor, right click again ends it. Ctrl+Z undoes it." },
 		{ kind = "tddraw", field = "corridor", value = "free", label = "Free", active = td.pick == "corridor" and td.mode == "free",
-			tip = "Build a corridor: hold the left mouse button and draw any line, the walls appear when you let go (indestructible)." },
+			tip = "Build a corridor: hold the left mouse button and draw any line, the walls appear when you let go (indestructible). The mode stays on, right click ends it." },
 	})
 	head("Corridor width (Elmo)")
 	local widths = {}
@@ -2702,7 +2702,7 @@ function td.buildWalls(p)
 	return true
 end
 
--- The drawn line (td.pts) is finished: the corridor mode builds the walls, both modes take the line as the route of the
+-- The drawn line (td.pts) is finished: the corridor mode builds the walls and stays on, the route mode takes the line as the route of the
 -- enemies and its ends as spawn point and goal
 function td.finishDraw()
 	local p = td.simplify(td.pts, 24)
@@ -2710,16 +2710,15 @@ function td.finishDraw()
 		say("Click at least two points first.")
 		return
 	end
-	if td.pick == "corridor" and not td.buildWalls(p) then
-		td.endPick()
+	if td.pick == "corridor" then
+		td.buildWalls(p)
+		td.pts, td.stroke = {}, nil -- the mode stays on: the next corridor can be drawn right away (right click ends it)
 		return
 	end
 	local c = td.cfg(true)
 	c.path = p
 	c.spawn, c.goal = { p[1][1], p[1][2] }, { p[#p][1], p[#p][2] }
-	if td.pick == "route" then
-		say(string.format("Route set (%d points), spawn point and goal at the ends.", #p))
-	end
+	say(string.format("Route set (%d points), spawn point and goal at the ends.", #p))
 	td.endPick()
 end
 
