@@ -2324,6 +2324,8 @@ function td.layout(rect)
 		{ kind = "tdmat", value = 2, label = "Walls", active = td.wall == 2, tip = "Corridor of walls" },
 	})
 	line({
+		{ kind = "tddraw", field = "corridor", value = "single", label = "Single", active = td.pick == "corridor" and td.mode == "single",
+			tip = "Place single wall pieces (indestructible): every click on the map places one piece of the chosen material. The mode stays on, right click ends it. Ctrl+Z undoes the last piece." },
 		{ kind = "tddraw", field = "corridor", value = "line", label = "Line", active = td.pick == "corridor" and td.mode == "line",
 			tip = "Build a corridor: click the points on the map, right click builds the walls (indestructible). The mode stays on for the next corridor, right click again ends it. Ctrl+Z undoes it." },
 		{ kind = "tddraw", field = "corridor", value = "free", label = "Free", active = td.pick == "corridor" and td.mode == "free",
@@ -2331,7 +2333,7 @@ function td.layout(rect)
 	})
 	head("Corridor width (Elmo)")
 	local widths = {}
-	for _, t in ipairs({ 2, 3, 4, 6, 8 }) do
+	for _, t in ipairs({ 2, 4, 8, 10, 12 }) do
 		widths[#widths + 1] = { kind = "tdwidth", value = t, label = tostring(t * 16), active = c.width == t,
 			tip = "Width of the corridor in Elmo (the free space between the walls)" }
 	end
@@ -2558,7 +2560,9 @@ function td.startPick(kind, mode)
 	end
 	td.pick, td.mode = kind, mode
 	local what = kind == "corridor" and "the corridor (walls on both sides)" or "the route of the enemies"
-	if mode == "line" then
+	if mode == "single" then
+		say("Click on the map: every click places one wall piece (indestructible). Right click ends, Ctrl+Z undoes.")
+	elseif mode == "line" then
 		say("Click the points of " .. what .. " on the map (start first), right click finishes (Ctrl+Z undoes).")
 	elseif mode == "free" then
 		say("Draw " .. what .. " with the left mouse button held down.")
@@ -2579,6 +2583,16 @@ end
 
 -- Left click on the map in the pick mode
 function td.click(x, z)
+	if td.pick == "corridor" and td.mode == "single" then
+		local name = mazeUnitName(MAZE_KINDS[td.wall])
+		if not name then
+			say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
+			return
+		end
+		ledStep()
+		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, math.floor(x / 16 + 0.5) * 16, math.floor(z / 16 + 0.5) * 16, 0, neutralOn and 1 or 0)
+		return
+	end
 	if td.pick == "corridor" or td.pick == "route" then
 		td.pts[#td.pts + 1] = { math.floor(x), math.floor(z) }
 		say(string.format("%d points. Right click finishes.", #td.pts))
