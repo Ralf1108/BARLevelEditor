@@ -2166,6 +2166,7 @@ td.FAC_TXT = { arm = "Armada", cor = "Cortex", leg = "Legion" }
 td.MAX_WAVES = 30
 td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
 td.tfac, td.ttech = "arm", 1 -- tower list of the page: faction and tech level shown
+td.tcat = "tower" -- category of the list: tower | economy | radar
 td.tscroll, td.TROWS = 0, 4 -- first row shown, rows shown at most (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
@@ -2303,9 +2304,28 @@ function td.class(ud)
 	end
 end
 
--- Structures of the page for a faction and tech level (land only): the towers, with "Towers + economy" the economy structures,
--- with fog of war the radars
-function td.turrets(fac, tech)
+-- Categories of the list: Towers, with "Towers + economy" also Economy, with fog of war also Radars
+function td.cats()
+	local c = td.cfg()
+	local out = { { "tower", "Towers" } }
+	if c.restrict == "economy" then
+		out[#out + 1] = { "economy", "Economy" }
+	end
+	if c.fog then
+		out[#out + 1] = { "radar", "Radars" }
+	end
+	local ok = false
+	for _, e in ipairs(out) do
+		ok = ok or e[1] == td.tcat
+	end
+	if not ok then
+		td.tcat = "tower"
+	end
+	return out
+end
+
+-- Structures of the page for a faction, tech level and category (land only)
+function td.turrets(fac, tech, cat)
 	if not td.tcache then
 		local cache = Shared.buildUnitCache()
 		td.tcache = {}
@@ -2328,39 +2348,65 @@ function td.turrets(fac, tech)
 			end
 		end
 	end
-	local c = td.cfg()
 	local out = {}
 	for _, e in ipairs(td.tcache[fac][tech]) do
-		if e.class == "tower" or (e.class == "economy" and c.restrict == "economy") or (e.class == "radar" and c.fog) then
+		if e.class == cat then
 			out[#out + 1] = e
 		end
 	end
 	return out
 end
 
--- Ordered route of the enemies between spawn point and goal: from the spawn point always to the nearest waypoint left
-function td.route()
-	local c = td.cfg()
-	if not c.waypoints and c.path then
-		return c.path -- older levels
+-- A new waypoint (x, z) goes into the route: onto a drawn line between two points of it (spawn point, waypoints, goal) it is
+-- inserted there, otherwise behind the nearest point of the route (spawn point or waypoint)
+function td.addWaypoint(x, z)
+	local c = td.cfg(true)
+	c.waypoints = c.waypoints or {}
+	local wps = c.waypoints
+	local pts = {} -- { x, z, index in wps (spawn point 0, goal behind the last one) }
+	if c.spawn then
+		pts[#pts + 1] = { c.spawn[1], c.spawn[2], 0 }
 	end
-	local rest, out = {}, {}
-	for _, p in ipairs(c.waypoints or {}) do
-		rest[#rest + 1] = p
+	for i, p in ipairs(wps) do
+		pts[#pts + 1] = { p[1], p[2], i }
 	end
-	local cur = c.spawn or rest[1]
-	while #rest > 0 do
-		local bi, bd = 1, 1e18
-		for i, p in ipairs(rest) do
-			local d = (p[1] - cur[1]) ^ 2 + (p[2] - cur[2]) ^ 2
-			if d < bd then
-				bi, bd = i, d
+	if c.goal then
+		pts[#pts + 1] = { c.goal[1], c.goal[2], #wps + 1 }
+	end
+	local at, bestD = nil, 48 ^ 2 -- on the line: within 48 Elmo
+	for i = 1, #pts - 1 do
+		local a, b = pts[i], pts[i + 1]
+		local dx, dz = b[1] - a[1], b[2] - a[2]
+		local len2 = dx * dx + dz * dz
+		if len2 > 0 then
+			local u = ((x - a[1]) * dx + (z - a[2]) * dz) / len2
+			if u > 0 and u < 1 then
+				local d = (x - a[1] - dx * u) ^ 2 + (z - a[2] - dz * u) ^ 2
+				if d < bestD then
+					at, bestD = a[3] + 1, d
+				end
 			end
 		end
-		cur = table.remove(rest, bi)
-		out[#out + 1] = cur
 	end
-	return out
+	if not at then
+		local nd = 1e18
+		at = #wps + 1
+		for _, q in ipairs(pts) do
+			if q[3] <= #wps then
+				local d = (x - q[1]) ^ 2 + (z - q[2]) ^ 2
+				if d < nd then
+					nd, at = d, q[3] + 1
+				end
+			end
+		end
+	end
+	table.insert(wps, at, { math.floor(x), math.floor(z) })
+	return #wps
+end
+
+-- Route of the enemies between spawn point and goal: the waypoints in their order
+function td.route()
+	return td.cfg().waypoints or {}
 end
 
 -- Index of the waypoint under the mouse pointer (or nil)
@@ -2511,8 +2557,8 @@ function td.layout(rect)
 			tip = "Spawn point of the enemies: click, then click the place on the map" },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
 		{ kind = "tdwaypoint", label = "Waypoint", active = td.pick == "waypoint", w = 4,
-			tip = "Place waypoints: every click on the map adds one, right click ends. The enemies walk from the spawn point to the nearest waypoint, then to the next nearest and so on, and finally to the goal. Del over a waypoint removes it." },
-		{ kind = "tdwaypointx", label = "X", tip = "Delete all waypoints", w = 1 },
+			tip = "Place waypoints: every click on the map adds one, right click ends. A waypoint on the drawn line goes in between, otherwise behind the nearest point. The enemies walk spawn point, waypoints, goal in that order. Ctrl + hold the left mouse button over a waypoint moves it." },
+		{ kind = "tdwaypointx", label = "X", tip = "Delete ALL waypoints.\nA single waypoint: move the mouse over it on the map and press Del.", w = 1 },
 		{ kind = "tdgoal", label = "Goal", active = td.pick == "goal", w = 4,
 			tip = "Goal: click, then click the place on the map. Enemies that get within 120 Elmo of it are through." },
 		{ kind = "tdgoalx", label = "X", tip = "Delete the goal", w = 1 },
@@ -2603,13 +2649,18 @@ function td.layout(rect)
 			tip = "Show the towers of " .. td.FAC_TXT[f] }
 	end
 	line(facs)
+	local cats = {}
+	for _, ct in ipairs(td.cats()) do
+		cats[#cats + 1] = { kind = "tdcat", value = ct[1], label = ct[2], active = td.tcat == ct[1], tip = "Show the " .. ct[2]:lower() .. " of the list" }
+	end
+	line(cats)
 	local techs = {}
 	for t = 1, 3 do
-		if #td.turrets(td.tfac, t) > 0 then
+		if #td.turrets(td.tfac, t, td.tcat) > 0 then
 			techs[#techs + 1] = { kind = "tdtech", value = t, label = "T" .. t, active = td.ttech == t, tip = "Show the tech level " .. t .. " towers" }
 		end
 	end
-	if #techs > 0 and #td.turrets(td.tfac, td.ttech) == 0 then
+	if #techs > 0 and #td.turrets(td.tfac, td.ttech, td.tcat) == 0 then
 		td.ttech = techs[1].value
 	end
 	line(techs)
@@ -2626,7 +2677,7 @@ function td.layout(rect)
 			tip = tb and ("Tech level " .. rt.value .. " is forbidden: no structure of it can be built in the game. Click to allow it again.") or
 				("Click: the player can build no structure of tech level " .. rt.value .. " (towers and economy) in the game.") }
 	end
-	local list = td.turrets(td.tfac, td.ttech)
+	local list = td.turrets(td.tfac, td.ttech, td.tcat)
 	local cols, gapT = 8, 4 * S
 	local tw = (x2 - x1 - gapT * (cols - 1)) / cols
 	local rows = math.ceil(#list / cols)
@@ -2825,7 +2876,7 @@ function td.wheel(up)
 		end
 	end
 	if count > 0 and my >= bottom and my <= top then
-		local rows = math.ceil(#td.turrets(td.tfac, td.ttech) / 8)
+		local rows = math.ceil(#td.turrets(td.tfac, td.ttech, td.tcat) / 8)
 		td.tscroll = math.max(0, math.min(math.max(0, rows - td.TROWS), td.tscroll + (up and -1 or 1)))
 		return
 	end
@@ -2911,10 +2962,8 @@ end
 -- Left click on the map in the pick mode
 function td.click(x, z)
 	if td.pick == "waypoint" then
-		local c = td.cfg(true)
-		c.waypoints = c.waypoints or {}
-		c.waypoints[#c.waypoints + 1] = { math.floor(x), math.floor(z) }
-		say(string.format("Waypoint %d placed. Click for more, right click ends, Del over a waypoint removes it.", #c.waypoints))
+		local n = td.addWaypoint(x, z)
+		say(string.format("Waypoint placed (%d). Click for more, right click ends, Del over a waypoint removes it, Ctrl + drag moves it.", n))
 		return
 	end
 	if td.pick == "corridor" and td.mode == "single" then
@@ -2940,6 +2989,17 @@ end
 
 -- Points of a hand-drawn line: take a point when the mouse moved far enough (called every frame while drawing)
 function td.sample()
+	if td.wpDrag then
+		local mx, my, left = Spring.GetMouseState()
+		local wps = td.cfg().waypoints
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if not left or not (wps and wps[td.wpDrag]) then
+			td.wpDrag = nil
+		elseif pos then
+			wps[td.wpDrag] = { math.floor(pos[1]), math.floor(pos[3]) }
+		end
+		return
+	end
 	local s = td.stroke
 	if not s then
 		return
@@ -3134,6 +3194,8 @@ function td.press(rect, mx, my)
 		td.tfac, td.tscroll = hit.value, 0
 	elseif k == "tdtech" then
 		td.ttech, td.tscroll = hit.value, 0
+	elseif k == "tdcat" then
+		td.tcat, td.tscroll = hit.value, 0
 	elseif k == "tdtile" then
 		td.armUnit(hit.value)
 	elseif k == "tdwaypoint" then
@@ -3303,6 +3365,14 @@ function widget:MousePress(mx, my, button)
 	end
 	if area:armed() and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
 		if area:press(button) then
+			return true
+		end
+	end
+	if td.open and button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		local _, ctrl = Spring.GetModKeyState()
+		local i = ctrl and td.waypointAt()
+		if i and canEdit() then
+			td.wpDrag = i -- the waypoint follows the mouse while the button is held (td.sample)
 			return true
 		end
 	end
@@ -3666,6 +3736,7 @@ function widget:MouseRelease(mx, my, button)
 		return
 	end
 	area:release()
+	td.wpDrag = nil
 	if td.stroke then
 		td.pts, td.stroke = td.stroke, nil
 		td.finishDraw()
