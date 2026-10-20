@@ -2167,7 +2167,7 @@ td.MAX_WAVES = 30
 td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
+	return { enabled = false, width = 8, leaks = 10, path = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2417,6 +2417,7 @@ function td.layout(rect)
 	end
 	y = y - 26 * S
 	line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Play"), active = running, fs = 26 * S,
+		tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 }, -- red while running, green otherwise
 		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
 	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
@@ -2663,11 +2664,22 @@ function td.distToPath(px, pz, p)
 	return best
 end
 
--- Wall pieces left and right of the path: every 16 Elmo along the offset lines, not inside the corridor of another section
+-- Wall pieces left and right of the path: every 8 Elmo along the offset lines, not inside the corridor of another section;
+-- on the outer side of every bend an arc around the corner point closes the gap between the two offset lines
 function td.wallSpots(p, width)
 	local clear = width * 16 / 2 -- half of the free corridor
 	local off = clear + 8 -- middle of the wall piece
 	local spots, seen = {}, {}
+	local function add(x, z)
+		local wx, wz = math.floor(x / 16 + 0.5) * 16, math.floor(z / 16 + 0.5) * 16
+		local key = wx * 100003 + wz
+		if not seen[key] then
+			seen[key] = true
+			if td.distToPath(wx, wz, p) >= clear - 6 then
+				spots[#spots + 1] = { wx, wz }
+			end
+		end
+	end
 	for i = 1, #p - 1 do
 		local ax, az, bx, bz = p[i][1], p[i][2], p[i + 1][1], p[i + 1][2]
 		local len = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
@@ -2676,15 +2688,23 @@ function td.wallSpots(p, width)
 			for s = 0, len + 8, 8 do
 				s = math.min(s, len)
 				for _, side in ipairs({ 1, -1 }) do
-					local wx, wz = math.floor((ax + dx * s - dz * off * side) / 16 + 0.5) * 16, math.floor((az + dz * s + dx * off * side) / 16 + 0.5) * 16
-					local key = wx * 100003 + wz
-					if not seen[key] then
-						seen[key] = true
-						if td.distToPath(wx, wz, p) >= clear - 4 then
-							spots[#spots + 1] = { wx, wz }
-						end
-					end
+					add(ax + dx * s - dz * off * side, az + dz * s + dx * off * side)
 				end
+			end
+		end
+	end
+	for i = 2, #p - 1 do
+		local ax, az, bx, bz, cx, cz = p[i - 1][1], p[i - 1][2], p[i][1], p[i][2], p[i + 1][1], p[i + 1][2]
+		local l1, l2 = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2), math.sqrt((cx - bx) ^ 2 + (cz - bz) ^ 2)
+		if l1 > 0 and l2 > 0 then
+			local d1x, d1z, d2x, d2z = (bx - ax) / l1, (bz - az) / l1, (cx - bx) / l2, (cz - bz) / l2
+			local side = (d1x * d2z - d1z * d2x) > 0 and -1 or 1 -- the outer side of the bend
+			local a1, a2 = math.atan2(d1x * side, -d1z * side), math.atan2(d2x * side, -d2z * side)
+			local diff = (a2 - a1 + math.pi) % (2 * math.pi) - math.pi
+			local n = math.max(1, math.ceil(math.abs(diff) * off / 8))
+			for k = 0, n do
+				local a = a1 + diff * k / n
+				add(bx + math.cos(a) * off, bz + math.sin(a) * off)
 			end
 		end
 	end
