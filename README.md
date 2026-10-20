@@ -24,10 +24,6 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/). Place
 |---|---|
 | ![Generate menu, Units](docs/level-editor-generate-units.jpg) | ![Generate menu, Maze](docs/level-editor-generate-maze.jpg) |
 
-| Tower Defense |
-|---|
-| ![Tower Defense page](docs/level-editor-tower-defense.jpg) |
-
 The editor runs inside BAR as an extra game ("Level Editor") that builds on the official one. Everything is free and finished instantly, no `/cheat` needed. The official game is not changed.
 
 This repository also contains **BluePrinter**, a small widget for normal games that queues saved building layouts as build plans, and the code both share.
