@@ -253,6 +253,20 @@ local function generate(team, x, z, count, radius, techs, faction, kind, playerI
 				ok = Spring.TestBuildOrder(ud.id, px, py, pz, facing) >= 2 -- 0 = blocked, 1 = unit in the way, 2 = free
 				gap = 0 -- the build spot check already knows existing buildings
 			end
+			if ok and kind ~= "air" then
+				local rad = math.max(ud.radius or 16, 16)
+				for _, oid in ipairs(Spring.GetUnitsInCylinder(px, pz, rad + 120)) do
+					local od = UnitDefs[Spring.GetUnitDefID(oid)]
+					if od and not od.canFly then
+						local ox, _, oz = Spring.GetUnitPosition(oid)
+						local need = rad + math.max(od.radius or 16, 16)
+						if ox and (ox - px) ^ 2 + (oz - pz) ^ 2 < need * need then
+							ok = false
+							break
+						end
+					end
+				end
+			end
 			if ok and gap > 0 then
 				-- check only the neighboring cells (otherwise too slow with 1000 units)
 				local bx, bz = math.floor(px / BUCKET), math.floor(pz / BUCKET)
@@ -799,7 +813,7 @@ local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fi
 end
 
 -- Deletes the given units and features (wrecks, trees, rocks) and notes everything in the history (one step)
-local function clearThese(units, features, playerID)
+local function clearThese(units, features, playerID, quiet)
 	local nu, nf = 0, 0
 	for _, id in ipairs(units) do
 		destroyRecorded(id, false)
@@ -813,7 +827,9 @@ local function clearThese(units, features, playerID)
 		end
 		nf = nf + 1
 	end
-	tell(playerID, nu .. " units and " .. nf .. " features deleted")
+	if not quiet then
+		tell(playerID, nu .. " units and " .. nf .. " features deleted")
+	end
 end
 
 function gadget:RecvLuaMsg(msg, playerID)
@@ -881,6 +897,20 @@ function gadget:RecvLuaMsg(msg, playerID)
 				end
 			end
 			tell(playerID, n .. " buildings " .. (on and "indestructible" or "destructible again"))
+		end
+	elseif cmd == "clearids" then
+		-- led|clearids|u12,u13,f7: delete these units (u) and features (f): what is in the way of a blueprint or wall pieces, one history step
+		local units, features = {}, {}
+		for kind, n in tostring(parts[3] or ""):gmatch("([uf])(%d+)") do
+			local id = tonumber(n)
+			if kind == "u" and Spring.ValidUnitID(id) then
+				units[#units + 1] = id
+			elseif kind == "f" and Spring.ValidFeatureID(id) then
+				features[#features + 1] = id
+			end
+		end
+		if #units + #features > 0 then
+			clearThese(units, features, playerID, true)
 		end
 	elseif cmd == "clearcircle" then
 		-- led|clearcircle|x|z|radius: the same for a circle

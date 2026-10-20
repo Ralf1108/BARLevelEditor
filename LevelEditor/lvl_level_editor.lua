@@ -647,6 +647,87 @@ function widget:BlueprintSaved(name)
 	end
 end
 
+-- Half width / depth (Elmo) of what is placed: footprint of a unit at a facing, radius of a feature; nil for aircraft (they fly over everything)
+local function halfSize(name, face, isFeature)
+	if isFeature then
+		local fd = FeatureDefNames[name]
+		local rad = math.max(8, (fd and fd.radius) or 16)
+		return rad, rad
+	end
+	local ud = UnitDefNames[name]
+	if not ud or ud.canFly then
+		return nil
+	end
+	local fx, fz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
+	if (face or 0) % 2 == 1 then
+		fx, fz = fz, fx
+	end
+	return fx / 2, fz / 2
+end
+
+local recentPlaced = {} -- { x, z, hx, hz, feature, t }: placed a moment ago, not a unit yet
+
+local function notePlaced(name, x, z, face, isFeature)
+	local hx, hz = halfSize(name, face, isFeature)
+	if hx then
+		recentPlaced[#recentPlaced + 1] = { x = x, z = z, hx = hx, hz = hz, feature = isFeature or false, t = os.clock() }
+	end
+end
+
+-- What stands in the way of a unit of this type at (x, z) (ground units and features overlapping its footprint) is added to found;
+-- things placed a moment ago (the same blueprint or stroke) are left alone
+local function collectBlockers(name, x, z, face, found)
+	local hx, hz = halfSize(name, face, false)
+	if not hx then
+		return
+	end
+	local now = os.clock()
+	local reach = 160
+	for _, id in ipairs(Spring.GetUnitsInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
+		local ud = UnitDefs[Spring.GetUnitDefID(id)]
+		local ux, _, uz = Spring.GetUnitPosition(id)
+		if ud and not ud.canFly and ux then
+			local ufx, ufz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
+			if Shared.headingToFacing(Spring.GetUnitHeading(id) or 0) % 2 == 1 then
+				ufx, ufz = ufz, ufx
+			end
+			if math.abs(ux - x) < hx + ufx / 2 - 1 and math.abs(uz - z) < hz + ufz / 2 - 1 then
+				local mine = false
+				for _, q in ipairs(recentPlaced) do
+					if now - q.t < 2 and math.abs(q.x - ux) < 4 and math.abs(q.z - uz) < 4 then
+						mine = true
+					end
+				end
+				if not mine then
+					found.units[id] = true
+				end
+			end
+		end
+	end
+	for _, fid in ipairs(Spring.GetFeaturesInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
+		local fdef = FeatureDefs[Spring.GetFeatureDefID(fid)]
+		local fx, _, fz = Spring.GetFeaturePosition(fid)
+		local rad = math.max(8, (fdef and fdef.radius) or 16)
+		if fx and math.abs(fx - x) < hx + rad - 1 and math.abs(fz - z) < hz + rad - 1 then
+			found.features[fid] = true
+		end
+	end
+end
+
+-- Deletes what collectBlockers found (the same undo step as the placing that follows)
+local function clearBlockers(found)
+	local ids = {}
+	for id in pairs(found.units) do
+		ids[#ids + 1] = "u" .. id
+	end
+	for fid in pairs(found.features) do
+		ids[#ids + 1] = "f" .. fid
+	end
+	for i = 1, #ids, 100 do
+		led("led|clearids|" .. table.concat(ids, ",", i, math.min(#ids, i + 99)))
+	end
+end
+
 -- Puts a blueprint unit list with center (cx, cz) into the load queue
 -- A blueprint (or the clipboard) is placed as one undo step; noStep = true for rows of several blueprints
 -- (there the step is already in front). The units go through the queue with the extra "1" (remember).
@@ -656,10 +737,18 @@ local function placeBlueprintUnits(units, cx, cz, teamOverride, label, k, noStep
 	if not noStep then
 		ledStep()
 	end
+	local found = { units = {}, features = {} } -- what stands in the way is deleted first
+	for _, u in ipairs(units) do
+		local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
+		local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
+		collectBlockers(tostring(u.name), cx + odx, cz + odz, Shared.headingToFacing(rot), found)
+	end
+	clearBlockers(found)
 	for _, u in ipairs(units) do
 		local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
 		local x, z = cx + odx, cz + odz
 		local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
+		notePlaced(tostring(u.name), x, z, Shared.headingToFacing(rot))
 		local y = Spring.GetGroundHeight(x, z) + (tonumber(u.h) or 0)
 		placeQueue[#placeQueue + 1] = string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1%s", tostring(u.name), teamOverride or team,
 			math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), neutralOn and "1" or "0", math.floor(y + 0.5),
@@ -3038,6 +3127,15 @@ end
 -- Points of a hand-drawn line: take a point when the mouse moved far enough (called every frame while drawing)
 -- Single wall pieces: a press places one piece (one undo step for the whole press); while the mouse button is held every grid
 -- cell the pointer passes gets a piece (td.sample)
+-- One wall piece at (x, z); what stands in the way is deleted
+function td.wallCell(name, x, z)
+	local found = { units = {}, features = {} }
+	collectBlockers(name, x, z, 0, found)
+	clearBlockers(found)
+	notePlaced(name, x, z, 0)
+	placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, x, z, 0, neutralOn and 1 or 0)
+end
+
 function td.startSingle(x, z)
 	local name = mazeUnitName(MAZE_KINDS[td.wall])
 	if not name then
@@ -3047,7 +3145,7 @@ function td.startSingle(x, z)
 	ledStep()
 	local gx, gz = math.floor(x / 16 + 0.5), math.floor(z / 16 + 0.5)
 	td.sdrag = { name = name, gx = gx, gz = gz, seen = { [gx * 100003 + gz] = true } }
-	placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, gx * 16, gz * 16, 0, neutralOn and 1 or 0)
+	td.wallCell(name, gx * 16, gz * 16)
 end
 
 -- Ends the moving of a waypoint: one undo step
@@ -3073,7 +3171,7 @@ function td.sample()
 				local key = cx * 100003 + cz
 				if not d.seen[key] then
 					d.seen[key] = true
-					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", d.name, team, cx * 16, cz * 16, 0, neutralOn and 1 or 0)
+					td.wallCell(d.name, cx * 16, cz * 16)
 				end
 			end
 			d.gx, d.gz = nx, nz
@@ -3213,7 +3311,13 @@ function td.buildWalls(p)
 		return false
 	end
 	ledStep()
+	local found = { units = {}, features = {} } -- what stands in the way is deleted first
 	for _, s in ipairs(spots) do
+		collectBlockers(name, s[1], s[2], 0, found)
+	end
+	clearBlockers(found)
+	for _, s in ipairs(spots) do
+		notePlaced(name, s[1], s[2], 0)
 		placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, s[1], s[2], 0, neutralOn and 1 or 0)
 	end
 	say(string.format("Corridor: %d indestructible wall pieces (%s). Ctrl+Z undoes it.", #spots, name))
@@ -3442,25 +3546,6 @@ function gen.cancelModes()
 end
 
 -- Placing units and features by hand: no overlap, and painting (hold the left mouse button and move) ---------------------------
--- Half width / depth (Elmo) of what is placed: footprint of a unit at a facing, radius of a feature; nil for aircraft (they fly over everything)
-local function halfSize(name, face, isFeature)
-	if isFeature then
-		local fd = FeatureDefNames[name]
-		local rad = math.max(8, (fd and fd.radius) or 16)
-		return rad, rad
-	end
-	local ud = UnitDefNames[name]
-	if not ud or ud.canFly then
-		return nil
-	end
-	local fx, fz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
-	if (face or 0) % 2 == 1 then
-		fx, fz = fz, fx
-	end
-	return fx / 2, fz / 2
-end
-
-local recentPlaced = {} -- { x, z, hx, hz, feature, t }: placed a moment ago, not a unit yet
 local paint = nil -- { kind, x, z, sx, sz }: the last point of the stroke while the left mouse button is held down
 
 -- True when something is already there: the footprint would overlap another unit (also one placed a moment ago); a feature also
@@ -3504,13 +3589,6 @@ local function blocked(name, x, z, face, isFeature)
 		end
 	end
 	return false
-end
-
-local function notePlaced(name, x, z, face, isFeature)
-	local hx, hz = halfSize(name, face, isFeature)
-	if hx then
-		recentPlaced[#recentPlaced + 1] = { x = x, z = z, hx = hx, hz = hz, feature = isFeature or false, t = os.clock() }
-	end
 end
 
 -- Places the armed unit or feature at (x, z) when the spot is free; true when it was placed
