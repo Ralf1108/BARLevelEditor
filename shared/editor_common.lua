@@ -2489,10 +2489,21 @@ function M.tooltipBox(text, x, y)
 	local S = M.S
 	local vsx, vsy = Spring.GetViewGeometry()
 	local lines = {}
-	for l in tostring(text):gmatch("[^\n]+") do
-		lines[#lines + 1] = l
-	end
 	local fs = 20 * S
+	local maxW = math.min(vsx * 0.3, 700 * S) -- long lines wrap at this width
+	for l in tostring(text):gmatch("[^\n]+") do
+		local cur = ""
+		for word in l:gmatch("%S+") do
+			local try = cur == "" and word or (cur .. " " .. word)
+			if cur ~= "" and gl.GetTextWidth(try) * fs > maxW then
+				lines[#lines + 1] = cur
+				cur = word
+			else
+				cur = try
+			end
+		end
+		lines[#lines + 1] = cur
+	end
 	local w = 0
 	for _, l in ipairs(lines) do
 		w = math.max(w, gl.GetTextWidth(l) * fs)

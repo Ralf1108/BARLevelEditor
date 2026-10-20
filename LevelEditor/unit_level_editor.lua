@@ -392,6 +392,15 @@ local function setIndestructible(id)
 	Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true }) -- the widget writes it into the level file
 end
 
+-- Tower Defense route (spawn point, goal, waypoints) of the widget: its changes are steps of the history too (op "tdroute"); undo and
+-- redo hand the state text to the widget through the game rules parameters led_tdroute / led_tdroute_n
+local tdRouteN = 0
+local function publishRoute(state)
+	tdRouteN = tdRouteN + 1
+	Spring.SetGameRulesParam("led_tdroute", state)
+	Spring.SetGameRulesParam("led_tdroute_n", tdRouteN)
+end
+
 local function clearIndestructible(id)
 	indestructible[id] = nil
 	Spring.SetUnitRulesParam(id, "indestructible", nil)
@@ -583,6 +592,8 @@ local function revert(op)
 		if unitIs(op.id, op.name) then
 			Spring.TransferUnit(op.id, op.old, false)
 		end
+	elseif k == "tdroute" then
+		publishRoute(op.before)
 	elseif k == "fix" then
 		if unitIs(op.id, op.name) then
 			if op.old then setIndestructible(op.id) else clearIndestructible(op.id) end
@@ -633,6 +644,8 @@ local function apply(op)
 		if unitIs(op.id, op.name) then
 			Spring.TransferUnit(op.id, op.new, false)
 		end
+	elseif k == "tdroute" then
+		publishRoute(op.after)
 	elseif k == "fix" then
 		if unitIs(op.id, op.name) then
 			if op.new then setIndestructible(op.id) else clearIndestructible(op.id) end
@@ -952,6 +965,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 		suppress = suppress + 1
 		placeFeature(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), playerID)
 		suppress = suppress - 1
+	elseif cmd == "tdroute" then
+		-- led|tdroute|before|after: the widget changed spawn point, goal or waypoints (state texts, see the widget), note it in the history
+		record({ k = "tdroute", before = parts[3] or "-;-;-", after = parts[4] or "-;-;-" })
 	elseif cmd == "step" then
 		-- new action of the user: everything up to the next "step" belongs to one step (undo takes it back as a whole)
 		current = nil

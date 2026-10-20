@@ -1186,7 +1186,7 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(1) - m.HB, y1 = sideTop(1), kind = "collapse", value = "collapse", label = "V", active = false, side = true, tip = "Collapse or expand the menu" }
 		local gx1, gx2, gy1 = sx1, sx2, sideTop(2)
 		local ix1, ix2, iy1 = sx1, sx2, sideTop(3)
-		local hx1, hx2, hy1 = sx1, sx2, sideTop(6)
+		local hx1, hx2, hy1 = sx1, sx2, sideTop(4)
 		local dx1, dx2, dy1 = sx1, sx2, sideTop(5)
 		local tops = {
 			{ "place", "Place", "Place: choose units, features and blueprints from the lists and place them on the map" },
@@ -1202,7 +1202,8 @@ local function headerRects()
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
-		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5) - m.HB, y1 = sideTop(5), side = true, kind = "td", value = "td", label = "TD", active = td.open,
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(6) - m.HB, y1 = sideTop(6), side = true, kind = "td", value = "td", label = "TD", active = td.open,
+			tint = td.cfg().enabled and (td.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Tower Defense is on for this level
 			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
 		-- Delete (rectangle, circle, line), then the experimental area attacks
 		local dels = {
@@ -2357,6 +2358,52 @@ function td.turrets(fac, tech, cat)
 	return out
 end
 
+-- Route state as text for the undo history: "sx,sz;gx,gz;x,z/x,z" ("-" for nothing)
+function td.routeState()
+	local c = td.cfg()
+	local function pt(p)
+		return p and string.format("%d,%d", p[1], p[2]) or "-"
+	end
+	local w = {}
+	for _, p in ipairs(c.waypoints or {}) do
+		w[#w + 1] = pt(p)
+	end
+	return pt(c.spawn) .. ";" .. pt(c.goal) .. ";" .. (#w > 0 and table.concat(w, "/") or "-")
+end
+
+function td.applyRoute(state)
+	local c = td.cfg(true)
+	local function pt(s)
+		local x, z = tostring(s):match("^(-?%d+),(-?%d+)$")
+		return x and { tonumber(x), tonumber(z) } or nil
+	end
+	local sp, gl_, wp = state:match("^([^;]*);([^;]*);(.*)$")
+	c.spawn, c.goal, c.waypoints = pt(sp), pt(gl_), {}
+	for s in tostring(wp):gmatch("[^/]+") do
+		c.waypoints[#c.waypoints + 1] = pt(s)
+	end
+end
+
+-- Notes a change of the route as a step of the undo history (before = td.routeState() from before the change)
+function td.commit(before)
+	local after = td.routeState()
+	if after ~= before then
+		ledStep()
+		led("led|tdroute|" .. before .. "|" .. after)
+	end
+end
+
+-- Undo / redo from the gadget: take over the new state
+function td.pollRoute()
+	local n = Spring.GetGameRulesParam("led_tdroute_n")
+	if td.routeSeen == nil then
+		td.routeSeen = n or 0
+	elseif n and n ~= td.routeSeen then
+		td.routeSeen = n
+		td.applyRoute(Spring.GetGameRulesParam("led_tdroute") or "-;-;-")
+	end
+end
+
 -- A new waypoint (x, z) goes into the route: onto a drawn line between two points of it (spawn point, waypoints, goal) it is
 -- inserted there, otherwise behind the nearest point of the route (spawn point or waypoint)
 function td.addWaypoint(x, z)
@@ -2432,7 +2479,9 @@ function td.deleteWaypoint()
 	if not i then
 		return false
 	end
+	local before = td.routeState()
 	table.remove(td.cfg(true).waypoints, i)
+	td.commit(before)
 	say("Waypoint removed")
 	return true
 end
@@ -2528,7 +2577,7 @@ function td.layout(rect)
 	local function num(field, row, value)
 		return editing(field, row) and (td.edit.buf .. "_") or tostring(value)
 	end
-	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled,
+	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
 		tip = "Switch Tower Defense on or off for this level (saved in the level file, section towerdefense)" } })
 	-- Corridor: material, how to draw it, width; Path: the way the enemies walk, spawn point and goal
 	head("Corridor (walls on both sides)")
@@ -2597,6 +2646,9 @@ function td.layout(rect)
 	end
 	y = y - 26 * S
 	local TYPE_TIP = { v = "V: vehicles (tanks)", b = "B: bots", h = "H: hovercraft" }
+	for k, v in pairs(TYPE_TIP) do
+		TYPE_TIP[k] = v .. " (several can be on at once, one always stays on)"
+	end
 	local last = math.min(#c.waves, td.scroll + td.VISIBLE)
 	for i = td.scroll + 1, last do
 		local w = c.waves[i]
@@ -2604,17 +2656,17 @@ function td.layout(rect)
 		local facs, techs, kinds = td.chosen(w, "fac"), td.chosen(w, "tech"), td.chosen(w, "kind")
 		for k, f in ipairs(td.CHOICES.fac) do
 			items[#items + 1] = { kind = "tdtog", row = i, field = "fac", value = f, label = "", icon = Shared.FACTION_ICONS[f], active = facs:find(f, 1, true) ~= nil,
-				w = W[1 + k], tip = td.FAC_TXT[f] }
+				w = W[1 + k], tip = td.FAC_TXT[f] .. " (several can be on at once, one always stays on)" }
 		end
 		for k, t in ipairs(td.CHOICES.tech) do
 			items[#items + 1] = { kind = "tdtog", row = i, field = "tech", value = t, label = "T" .. t, active = techs:find(t, 1, true) ~= nil, w = W[4 + k], fs = 18 * S,
-			tip = "T" .. t .. ": tech level " .. t .. " units (several can be on at once)" }
+			tip = "T" .. t .. ": tech level " .. t .. " units (several can be on at once, one always stays on)" }
 		end
 		for k, v in ipairs(td.CHOICES.kind) do
 			items[#items + 1] = { kind = "tdtog", row = i, field = "kind", value = v, label = v:upper(), active = kinds:find(v, 1, true) ~= nil, w = W[7 + k], tip = TYPE_TIP[v] }
 		end
 		items[#items + 1] = { kind = "tdcell", row = i, field = "count", label = num("count", i, w.count), active = editing("count", i), w = W[11], tip = "Number of enemies in this wave. Click, type a number, Enter accepts" }
-		items[#items + 1] = { kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[12], tip = "Seconds after the previous wave (wave 1: after the start)" }
+		items[#items + 1] = { kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[12], tip = "Gap: seconds after the previous wave (wave 1: after the start). 0 = at once. Click, type a number, Enter accepts" }
 		items[#items + 1] = { kind = "tdcell", row = i, field = "hp", label = num("hp", i, w.hp), active = editing("hp", i), w = W[13], tip = "Strength of the enemies in percent: 100 = normal, 200 = double health" }
 		line(items)
 	end
@@ -2622,7 +2674,9 @@ function td.layout(rect)
 		labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = y - 18 * S, size = 17 * S }
 		y = y - 24 * S
 	end
-	y = y - 14 * S
+	y = y - 6 * S
+	labels[#labels + 1] = { line = true, x1 = x1, x2 = x2, y = y }
+	y = y - 10 * S
 	head("Restrictions")
 	local economy, fog = c.economy ~= false, c.fog ~= false
 	line({
@@ -2688,10 +2742,7 @@ function td.layout(rect)
 		labels[#labels + 1] = { text = string.format("Rows %d-%d of %d (mouse wheel scrolls)", td.tscroll + 1, td.tscroll + shown, rows), x = x1, y = y - 14 * S, size = 17 * S }
 		y = y - 22 * S
 	end
-	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "Corridor: Single = one piece per click or drag, Line = click points, Free = drag.", x = x1, y = y - 58 * S, size = 17 * S }
-	y = y - 68 * S
+	y = y - 4 * S
 	-- very bottom: the button that starts the test (red message above it: what is missing)
 	local state = Spring.GetGameRulesParam("tdState") or ""
 	local running = state == "running"
@@ -2805,7 +2856,7 @@ function td.draw(rect)
 	for _, l in ipairs(labels) do
 		if l.line then
 			gl.Color(0.3, 0.85, 0.4, 1)
-			gl.Rect(l.x1, l.y - 2 * S, l.x2, l.y)
+			gl.Rect(l.x1, l.y - 3 * S, l.x2, l.y)
 		elseif l.color then
 			gl.Color(l.color[1], l.color[2], l.color[3], 1)
 		elseif l.head then
@@ -2960,8 +3011,10 @@ end
 
 -- Left click on the map in the pick mode
 function td.click(x, z)
+	local before = td.routeState()
 	if td.pick == "waypoint" then
 		local n = td.addWaypoint(x, z)
+		td.commit(before)
 		say(string.format("Waypoint placed (%d). Click for more, right click ends, Del over a waypoint removes it, Ctrl + drag moves it.", n))
 		return
 	end
@@ -2977,6 +3030,7 @@ function td.click(x, z)
 	end
 	local c = td.cfg(true)
 	c[td.pick] = { math.floor(x), math.floor(z) }
+	td.commit(before)
 	say(string.format("%s set at %d, %d", td.pick == "spawn" and "Spawn point" or "Goal", x, z))
 	td.endPick()
 end
@@ -2994,6 +3048,14 @@ function td.startSingle(x, z)
 	local gx, gz = math.floor(x / 16 + 0.5), math.floor(z / 16 + 0.5)
 	td.sdrag = { name = name, gx = gx, gz = gz, seen = { [gx * 100003 + gz] = true } }
 	placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d|1", name, team, gx * 16, gz * 16, 0, neutralOn and 1 or 0)
+end
+
+-- Ends the moving of a waypoint: one undo step
+function td.endWpDrag()
+	if td.wpDrag then
+		td.wpDrag = nil
+		td.commit(td.wpBefore)
+	end
 end
 
 function td.sample()
@@ -3023,7 +3085,7 @@ function td.sample()
 		local wps = td.cfg().waypoints
 		local _, pos = Spring.TraceScreenRay(mx, my, true)
 		if not left or not (wps and wps[td.wpDrag]) then
-			td.wpDrag = nil
+			td.endWpDrag()
 		elseif pos then
 			wps[td.wpDrag] = { math.floor(pos[1]), math.floor(pos[3]) }
 		end
@@ -3198,7 +3260,9 @@ function td.press(rect, mx, my)
 	elseif k == "tdgoal" then
 		td.startPick("goal")
 	elseif k == "tdspawnx" or k == "tdgoalx" then
+		local before = td.routeState()
 		td.cfg(true)[k == "tdspawnx" and "spawn" or "goal"] = nil
+		td.commit(before)
 	elseif k == "tdwidth" then
 		td.cfg(true).width = hit.value
 	elseif k == "tdminus" or k == "tdplus" then
@@ -3230,7 +3294,9 @@ function td.press(rect, mx, my)
 	elseif k == "tdwaypoint" then
 		td.startPick("waypoint")
 	elseif k == "tdwaypointx" then
+		local before = td.routeState()
 		td.cfg(true).waypoints = {}
+		td.commit(before)
 	elseif k == "tdfog" then
 		local c = td.cfg(true)
 		c.fog, td.tscroll = not (c.fog ~= false), 0
@@ -3402,7 +3468,7 @@ function widget:MousePress(mx, my, button)
 		local _, ctrl = Spring.GetModKeyState()
 		local i = ctrl and td.waypointAt()
 		if i and canEdit() then
-			td.wpDrag = i -- the waypoint follows the mouse while the button is held (td.sample)
+			td.wpDrag, td.wpBefore = i, td.routeState() -- the waypoint follows the mouse while the button is held (td.sample)
 			return true
 		end
 	end
@@ -3768,7 +3834,8 @@ function widget:MouseRelease(mx, my, button)
 		return
 	end
 	area:release()
-	td.wpDrag, td.sdrag = nil, nil
+	td.endWpDrag()
+	td.sdrag = nil
 	if td.stroke then
 		td.pts, td.stroke = td.stroke, nil
 		td.finishDraw()
@@ -4355,6 +4422,7 @@ function widget:Update()
 		td.endPick()
 	end
 	td.sample()
+	td.pollRoute()
 	-- Result of rotate/mirror/move: the newly placed units stay selected
 	local nn = Spring.GetGameRulesParam("led_newids_n")
 	if nn ~= lastNewN then
