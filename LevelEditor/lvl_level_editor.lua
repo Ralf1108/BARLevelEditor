@@ -68,7 +68,7 @@ local HELP_SECTIONS = {
 		{ "Recent", "Recently chosen blueprints and recently placed units." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
 		{ "I", "Scenario info: title, author, briefing, roles and tech (T1/T2/T3) per team, AI, win condition, resources, grace period, ID. Click a field and type; written with the level when you save it." },
-		{ "TD", "Tower Defense (button between I and ?): tick the box, draw a path (Path: teeth or walls: click points on the map, Enter builds walls on both sides), set spawn point and goal, number of waves, enemies allowed through, and per wave faction, type, tech, count, gap in seconds and HP %. Test: start waves runs it in the editor. Settings are saved with the level." },
+		{ "TD", "Tower Defense (button between I and ?): tick the box, draw a path (Teeth or Walls: click points on the map, right click builds walls on both sides, Ctrl+Z undoes), set spawn point and goal, enemies allowed through, number of waves, and per wave factions, tech, type (V vehicles, B bots, H hovercraft), count, gap in seconds and HP %. Play / Stop at the bottom runs the waves in the editor. Settings are saved with the level." },
 	} },
 	{ "Buttons left of the menu", {
 		{ "0, 1, 2 ...", "Team for new units and blueprints. With a selection: assigns the selection to this team." },
@@ -296,6 +296,7 @@ local SCENARIO_VERSION = 2 -- 2 = adds: grace (grace period in minutes)
 local scenario = nil -- Info of the loaded scenario or one created in the game
 local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
 local currentLevel = nil -- Name of the level loaded or saved last
+local td = { open = false, edit = nil, pick = nil, pts = {}, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
 
 local function decodeBlock(block)
 	local body = block and block:match("%[==%[(.*)%]==%]")
@@ -384,6 +385,9 @@ local function saveLevel(name, quiet)
 	if block then
 		f:write(block .. "\n")
 	end
+	if td.data then
+		f:write("\ttowerdefense = " .. td.lua(td.data, "\t") .. ",\n")
+	end
 	f:write("\t-- to be enabled in the main game (game options), otherwise some units are missing:\n")
 	f:write("\trequiredmodoptions = { " .. table.concat(needed, ", ") .. " },\n\tunitloadout = {\n")
 	f:write(table.concat(lines, "\n"))
@@ -450,6 +454,8 @@ local function load_level(_, _, args)
 		say("Loading failed: " .. tostring(err))
 		return true
 	end
+	td.data = type(data.towerdefense) == "table" and data.towerdefense or nil -- own section of the level file
+	td.scroll = 0
 	if tonumber(data.unitlimit) then
 		cfg.v.unitLimit = tonumber(data.unitlimit) -- the unit limit belongs to the level (used by the scenario builder)
 		cfg:sync()
@@ -576,8 +582,6 @@ local gen = {
 	tech = { [1] = true, [2] = false, [3] = false },
 	count = 100,
 }
--- Tower Defense page (button TD): state; the functions follow after the maze code
-local td = { open = false, edit = nil, pick = nil, pts = {}, wall = 1, scroll = 0 }
 local GEN_KINDS = { { "units", "Units" }, { "buildings", "Buildings" }, { "turrets", "Turrets" }, { "air", "Air" }, { "ships", "Ships" } }
 local delMode = false -- Delete: false or the shape "rect" | "circle" | "line" (buttons DR, DC, DL, key D = rectangle)
 local delDrag = nil -- { x, z }: start point of the delete shape
@@ -1129,7 +1133,7 @@ local function panelRect()
 	if scenarioOpen then
 		cw, ch = 0, scenarioHeight()
 	elseif td.open then
-		cw, ch = 0, td.height()
+		cw, ch = math.floor(780 * S), td.height() -- wider than the other pages: the wave table needs the room
 	elseif gen.open then
 		cw, ch = 0, genHeight()
 	elseif optionsOpen then
@@ -1168,10 +1172,6 @@ local function headerRects()
 		local ix1, ix2, iy1 = sx1, sx2, sideTop(3)
 		local hx1, hx2, hy1 = sx1, sx2, sideTop(5)
 		local dx1, dx2, dy1 = sx1, sx2, sideTop(5)
-		local playH = math.min(m.HB, titleH() - 2)
-		rects[#rects + 1] = { x1 = x2 - m.PAD - 170 * S, x2 = x2 - m.PAD, y0 = y1 - 4 - playH, y1 = y1 - 4, kind = "tdplay", value = "tdplay",
-			label = Spring.GetGameRulesParam("tdState") == "running" and "Stop" or "Play", active = Spring.GetGameRulesParam("tdState") == "running", fs = 24 * S,
-			tip = "Play: runs the tower defense waves in the editor (set them up with the button TD); Stop ends it" }
 		local tops = {
 			{ "place", "Place", "Place: choose units, features and blueprints from the lists and place them on the map" },
 			{ "gen", "Generate", "Generate: random units in a rectangle or circle, or a maze" },
@@ -1727,7 +1727,8 @@ local function drawMenuBody()
 		return
 	end
 	gl.Color(1, 1, 1, 1)
-	gl.Text("Level Editor", x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
+	-- with Tower Defense on (tick box) or its page open the title says so
+	gl.Text((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor", x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
 		drawScenario(rect, mx, my)
@@ -1902,10 +1903,6 @@ local function applyHeader0(r)
 	end
 	if r.kind == "help" then
 		helpOpen = true
-		return
-	end
-	if r.kind == "tdplay" then
-		td.toggle()
 		return
 	end
 	if r.kind == "del" then
@@ -2133,34 +2130,69 @@ end
 
 -- ---------------------------------------------------------------- Tower Defense (button TD)
 -- Waves of enemies walk from the spawn point along a path to the goal; the walls of the path are built here, the waves
--- themselves by the gadget td_waves.lua. The settings live in the scenario info (scenario.td), so they are saved with the level.
+-- themselves by the gadget td_waves.lua. The settings (td.data) are saved in their own section towerdefense of the level file.
 -- Everything is a field of td: the file is close to the limit of 200 locals.
 td.FAC = { "arm", "cor", "leg" }
 td.FAC_TXT = { arm = "Armada", cor = "Cortex", leg = "Legion" }
-td.KINDS = { "any", "bot", "vehicle" }
-td.KIND_TXT = { any = "Any", bot = "Bots", vehicle = "Vehicles" }
 td.MAX_WAVES = 30
 td.VISIBLE = 8 -- rows of the wave table shown at once (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
-td.DEFAULT = { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "any", tech = 1, count = 10, gap = 30, hp = 100 } } }
+function td.new()
+	return { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 30, hp = 100 } } }
+end
+td.DEFAULT = td.new()
 
--- Settings: without write the stored ones or the defaults (never changed by the caller); with write they are created
+-- Settings (td.data = section towerdefense of the level): without write the stored ones or the defaults (never
+-- changed by the caller); with write they are created
 function td.cfg(write)
-	local c = scenario and scenario.td
-	if type(c) == "table" then
-		if write then
-			scenarioDirty = true
-		end
-		return c
+	if type(td.data) == "table" then
+		return td.data
 	end
 	if not write then
 		return td.DEFAULT
 	end
-	scenario = scenario or {}
-	scenario.version = math.max(SCENARIO_VERSION, tonumber(scenario.version) or 0)
-	scenario.td = { enabled = false, width = 4, leaks = 10, path = {}, waves = { { fac = "arm", kind = "any", tech = 1, count = 10, gap = 30, hp = 100 } } }
-	scenarioDirty = true
-	return scenario.td
+	td.data = td.new()
+	return td.data
+end
+
+-- Lua text of a table of numbers, strings and booleans (arrays and records), for the level file
+function td.lua(v, indent)
+	local kind = type(v)
+	if kind == "number" then
+		return v == math.floor(v) and string.format("%d", v) or tostring(v)
+	elseif kind == "boolean" then
+		return tostring(v)
+	elseif kind == "string" then
+		return string.format("%q", v)
+	elseif kind ~= "table" then
+		return "nil"
+	end
+	local inner = indent .. "\t"
+	local parts = {}
+	if next(v) == nil or v[1] ~= nil then
+		local flat = true
+		for _, e in ipairs(v) do
+			if type(e) == "table" then
+				flat = false
+			end
+		end
+		for _, e in ipairs(v) do
+			parts[#parts + 1] = td.lua(e, inner)
+		end
+		if flat then
+			return "{ " .. table.concat(parts, ", ") .. (#parts > 0 and " }" or "}")
+		end
+		return "{\n" .. inner .. table.concat(parts, ",\n" .. inner) .. ",\n" .. indent .. "}"
+	end
+	local keys = {}
+	for k in pairs(v) do
+		keys[#keys + 1] = tostring(k)
+	end
+	table.sort(keys)
+	for _, k in ipairs(keys) do
+		parts[#parts + 1] = k .. " = " .. td.lua(v[k], inner)
+	end
+	return "{\n" .. inner .. table.concat(parts, ",\n" .. inner) .. ",\n" .. indent .. "}"
 end
 
 function td.height()
@@ -2173,12 +2205,54 @@ function td.resize(n)
 	n = math.max(1, math.min(td.MAX_WAVES, n))
 	while #c.waves < n do
 		local last = c.waves[#c.waves]
-		c.waves[#c.waves + 1] = { fac = last.fac, kind = last.kind, tech = last.tech, count = last.count, gap = math.max(last.gap, 10), hp = last.hp }
+		c.waves[#c.waves + 1] = { fac = td.chosen(last, "fac"), kind = td.chosen(last, "kind"), tech = td.chosen(last, "tech"), count = last.count, gap = math.max(last.gap, 10), hp = last.hp }
 	end
 	while #c.waves > n do
 		c.waves[#c.waves] = nil
 	end
 	td.scroll = math.max(0, math.min(td.scroll, #c.waves - td.VISIBLE))
+end
+
+-- Selection of a wave row as short strings: fac "armcor", tech "12", kind "vb" (v = vehicles, b = bots, h = hovercraft). Older levels stored
+-- single values (fac "arm", tech 1, kind "any" / "bot" / "vehicle"), they are read as well.
+td.CHOICES = {
+	fac = { "arm", "cor", "leg" },
+	tech = { "1", "2", "3" },
+	kind = { "v", "b", "h" },
+}
+function td.chosen(w, field)
+	local s = tostring(w[field] or "")
+	if field == "kind" then
+		s = (s == "any" or s == "") and "vb" or (s == "bot" and "b" or (s == "vehicle" and "v" or s))
+	elseif s == "" then
+		s = field == "fac" and "arm" or "1"
+	end
+	local out = {}
+	for _, v in ipairs(td.CHOICES[field]) do
+		if s:find(v, 1, true) then
+			out[#out + 1] = v
+		end
+	end
+	if #out == 0 then
+		out[1] = td.CHOICES[field][1]
+	end
+	return table.concat(out)
+end
+
+-- Toggles one choice; at least one stays on
+function td.toggleChoice(w, field, v)
+	local cur = td.chosen(w, field)
+	local on = cur:find(v, 1, true) ~= nil
+	if on and #cur == #v then
+		return
+	end
+	local out = {}
+	for _, c in ipairs(td.CHOICES[field]) do
+		if (c == v) ~= (cur:find(c, 1, true) ~= nil) then
+			out[#out + 1] = c
+		end
+	end
+	w[field] = table.concat(out)
 end
 
 function td.layout(rect)
@@ -2197,7 +2271,7 @@ function td.layout(rect)
 		for _, it in ipairs(items) do
 			local w = avail * (it.w or 1) / total
 			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
-				fs = it.fs or 22 * S, row = it.row, field = it.field, tint = it.tint }
+				fs = it.fs or 22 * S, row = it.row, field = it.field, tint = it.tint, icon = it.icon, tip = it.tip }
 			bx = bx + w + gap
 		end
 		y = y - m.HB - 6 * S
@@ -2212,10 +2286,12 @@ function td.layout(rect)
 	local function num(field, row, value)
 		return editing(field, row) and (td.edit.buf .. "_") or tostring(value)
 	end
+	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled } })
+	-- Path: material and width form one unit
+	head("Path")
 	line({
-		{ kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled, w = 2 },
-		{ kind = "tdpath", value = 1, label = "Path: teeth", active = td.pick == "path" and td.wall == 1 },
-		{ kind = "tdpath", value = 2, label = "Path: walls", active = td.pick == "path" and td.wall == 2 },
+		{ kind = "tdpath", value = 1, label = "Teeth", active = td.pick == "path" and td.wall == 1, tip = "Draw a path: click its points on the map, right click builds dragon teeth on both sides" },
+		{ kind = "tdpath", value = 2, label = "Walls", active = td.pick == "path" and td.wall == 2, tip = "Draw a path: click its points on the map, right click builds walls on both sides" },
 	})
 	head("Path width (Elmo)")
 	local widths = {}
@@ -2224,14 +2300,10 @@ function td.layout(rect)
 	end
 	line(widths)
 	line({
-		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn" },
-		{ kind = "tdgoal", label = c.goal and string.format("Goal: %d, %d", c.goal[1], c.goal[2]) or "Set goal", active = td.pick == "goal" },
-	})
-	head("Waves")
-	line({
-		{ kind = "tdminus", value = "nwaves", label = "-" },
-		{ kind = "tdedit", field = "nwaves", label = num("nwaves", nil, #c.waves), active = editing("nwaves"), w = 2 },
-		{ kind = "tdplus", value = "nwaves", label = "+" },
+		{ kind = "tdspawn", label = c.spawn and string.format("Spawn: %d, %d", c.spawn[1], c.spawn[2]) or "Set spawn point", active = td.pick == "spawn", w = 5 },
+		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
+		{ kind = "tdgoal", label = c.goal and string.format("Goal: %d, %d", c.goal[1], c.goal[2]) or "Set goal", active = td.pick == "goal", w = 5 },
+		{ kind = "tdgoalx", label = "X", tip = "Delete the goal", w = 1 },
 	})
 	head("Enemies allowed through (more = you lose)")
 	line({
@@ -2239,8 +2311,14 @@ function td.layout(rect)
 		{ kind = "tdedit", field = "leaks", label = num("leaks", nil, c.leaks), active = editing("leaks"), w = 2 },
 		{ kind = "tdplus", value = "leaks", label = "+" },
 	})
-	-- Table: one row per wave
-	local W = { 0.6, 1.1, 1.3, 0.8, 1, 1, 1 }
+	head("Waves")
+	line({
+		{ kind = "tdminus", value = "nwaves", label = "-" },
+		{ kind = "tdedit", field = "nwaves", label = num("nwaves", nil, #c.waves), active = editing("nwaves"), w = 2 },
+		{ kind = "tdplus", value = "nwaves", label = "+" },
+	})
+	-- Table: one row per wave: number, factions, tech levels, types, count, gap, health
+	local W = { 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.9, 0.9, 0.9 }
 	local total = 0
 	for _, w in ipairs(W) do
 		total = total + w
@@ -2251,30 +2329,46 @@ function td.layout(rect)
 		cx[i] = x1 + acc / total * avail + gap * (i - 1)
 		acc = acc + w
 	end
-	for i, t in ipairs({ "#", "Faction", "Type", "Tech", "Count", "Gap s", "HP %" }) do
-		labels[#labels + 1] = { text = t, x = cx[i] + 3 * S, y = y - 20 * S, size = 18 * S, head = true }
+	for _, h in ipairs({ { 1, "#" }, { 2, "Faction" }, { 5, "Tech" }, { 8, "Type" }, { 11, "Count" }, { 12, "Gap s" }, { 13, "HP %" } }) do
+		labels[#labels + 1] = { text = h[2], x = cx[h[1]] + 3 * S, y = y - 20 * S, size = 18 * S, head = true }
 	end
 	y = y - 26 * S
+	local TYPE_TIP = { v = "V: vehicles (tanks)", b = "B: bots", h = "H: hovercraft" }
 	local last = math.min(#c.waves, td.scroll + td.VISIBLE)
 	for i = td.scroll + 1, last do
 		local w = c.waves[i]
-		line({
-			{ kind = "tdnone", label = tostring(i), w = W[1], tint = { 0.15, 0.3, 0.5 } },
-			{ kind = "tdcell", row = i, field = "fac", label = td.FAC_TXT[w.fac] or w.fac, w = W[2], fs = 20 * S },
-			{ kind = "tdcell", row = i, field = "kind", label = td.KIND_TXT[w.kind] or w.kind, w = W[3], fs = 20 * S },
-			{ kind = "tdcell", row = i, field = "tech", label = "T" .. w.tech, w = W[4] },
-			{ kind = "tdcell", row = i, field = "count", label = num("count", i, w.count), active = editing("count", i), w = W[5] },
-			{ kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[6] },
-			{ kind = "tdcell", row = i, field = "hp", label = num("hp", i, w.hp), active = editing("hp", i), w = W[7] },
-		})
+		local items = { { kind = "tdnone", label = tostring(i), w = W[1], tint = { 0.15, 0.3, 0.5 } } }
+		local facs, techs, kinds = td.chosen(w, "fac"), td.chosen(w, "tech"), td.chosen(w, "kind")
+		for k, f in ipairs(td.CHOICES.fac) do
+			items[#items + 1] = { kind = "tdtog", row = i, field = "fac", value = f, label = "", icon = Shared.FACTION_ICONS[f], active = facs:find(f, 1, true) ~= nil,
+				w = W[1 + k], tip = td.FAC_TXT[f] }
+		end
+		for k, t in ipairs(td.CHOICES.tech) do
+			items[#items + 1] = { kind = "tdtog", row = i, field = "tech", value = t, label = "T" .. t, active = techs:find(t, 1, true) ~= nil, w = W[4 + k], fs = 18 * S }
+		end
+		for k, v in ipairs(td.CHOICES.kind) do
+			items[#items + 1] = { kind = "tdtog", row = i, field = "kind", value = v, label = v:upper(), active = kinds:find(v, 1, true) ~= nil, w = W[7 + k], tip = TYPE_TIP[v] }
+		end
+		items[#items + 1] = { kind = "tdcell", row = i, field = "count", label = num("count", i, w.count), active = editing("count", i), w = W[11] }
+		items[#items + 1] = { kind = "tdcell", row = i, field = "gap", label = num("gap", i, w.gap), active = editing("gap", i), w = W[12] }
+		items[#items + 1] = { kind = "tdcell", row = i, field = "hp", label = num("hp", i, w.hp), active = editing("hp", i), w = W[13] }
+		line(items)
 	end
 	if #c.waves > td.VISIBLE then
 		labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = y - 18 * S, size = 17 * S }
 		y = y - 24 * S
 	end
+	local running = Spring.GetGameRulesParam("tdState") == "running"
+	-- room for a message above Play (red, a few seconds): what is missing
+	if td.notice and os.clock() < td.notice.untilT then
+		labels[#labels + 1] = { text = td.notice.text, x = x1, y = y - 20 * S, size = 19 * S, color = { 1, 0.4, 0.35 } }
+	end
+	y = y - 26 * S
+	line({ { kind = "tdplay", label = running and "Stop" or "Play", active = running, fs = 26 * S,
+		tip = "Play: runs the waves in the editor (the state before is saved as _beforeplay). Stop ends it." } })
 	labels[#labels + 1] = { text = "Gap = seconds after the previous wave (wave 1: after the start).", x = x1, y = y - 18 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "HP 100 = normal strength.", x = x1, y = y - 38 * S, size = 17 * S }
-	labels[#labels + 1] = { text = "Path: click points on the map, Enter builds, right click cancels.", x = x1, y = y - 58 * S, size = 17 * S }
+	labels[#labels + 1] = { text = "HP 100 = normal strength. One choice per group always stays on.", x = x1, y = y - 38 * S, size = 17 * S }
+	labels[#labels + 1] = { text = "Path: click points on the map, right click builds, Ctrl+Z undoes.", x = x1, y = y - 58 * S, size = 17 * S }
 	y = y - 68 * S - m.PAD
 	return rects, labels, rect.top - y
 end
@@ -2282,8 +2376,27 @@ end
 function td.draw(rect)
 	local rects, labels = td.layout(rect)
 	Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+	for _, r in ipairs(rects) do
+		if r.kind == "tdspawn" or r.kind == "tdgoal" then
+			local cr, cg, cb = 0.3, 1, 0.4
+			if r.kind == "tdgoal" then
+				cr, cg, cb = 1, 0.35, 0.3
+			end
+			local mx0, my0, rad = r.x1 + 18 * S, (r.y0 + r.y1) / 2, (r.y1 - r.y0) * 0.26
+			gl.Color(cr, cg, cb, 1)
+			gl.BeginEnd(GL.TRIANGLE_FAN, function()
+				gl.Vertex(mx0, my0)
+				for k = 0, 24 do
+					local a = k / 24 * 2 * math.pi
+					gl.Vertex(mx0 + math.cos(a) * rad, my0 + math.sin(a) * rad)
+				end
+			end)
+		end
+	end
 	for _, l in ipairs(labels) do
-		if l.head then
+		if l.color then
+			gl.Color(l.color[1], l.color[2], l.color[3], 1)
+		elseif l.head then
 			gl.Color(0.5, 0.8, 1, 1)
 		else
 			gl.Color(0.8, 0.8, 0.8, 1)
@@ -2291,6 +2404,8 @@ function td.draw(rect)
 		gl.Text(l.text, l.x, l.y, l.size, "o")
 	end
 	gl.Color(1, 1, 1, 1)
+	local mx, my = Spring.GetMouseState()
+	Shared.drawTip(rects, mx, my)
 end
 
 -- Ends the entry in a number field (accept: take the value)
@@ -2346,7 +2461,7 @@ end
 function td.payload()
 	local c = td.cfg()
 	if not (c.spawn and c.goal) then
-		return nil, "Set the spawn point and the goal first."
+		return nil, "Cannot play: " .. (not c.spawn and not c.goal and "spawn point and goal are missing." or (not c.spawn and "the spawn point is missing." or "the goal is missing."))
 	end
 	local player, enemy
 	for _, t in ipairs(scenarioTeams()) do
@@ -2364,7 +2479,7 @@ function td.payload()
 		path[#path + 1] = string.format("%d,%d", p[1], p[2])
 	end
 	for _, w in ipairs(c.waves) do
-		waves[#waves + 1] = string.format("%s,%s,%d,%d,%d,%d", w.fac, w.kind, w.tech, w.count, w.gap, w.hp)
+		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
 	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/") }, ";")
 end
@@ -2392,17 +2507,28 @@ function td.startPick(kind, wall)
 	td.pick = kind
 	td.wall = wall or td.wall
 	if kind == "path" then
-		say("Path: click the points of the path on the map (start first), Enter builds the walls on both sides, right click cancels.")
+		say("Path: click the points of the path on the map (start first), right click builds the walls on both sides (Ctrl+Z undoes).")
 	else
 		say((kind == "spawn" and "Spawn point" or "Goal") .. ": click the place on the map, right click cancels.")
 	end
+end
+
+-- Right click in the pick mode: the path is built (undo with Ctrl+Z), otherwise the mode just ends
+function td.cancel()
+	if td.pick == "path" and #td.pts >= 2 then
+		td.build()
+		td.endPick()
+		return
+	end
+	td.endPick()
+	say("Tower Defense: mode ended")
 end
 
 -- Left click on the map in the pick mode
 function td.click(x, z)
 	if td.pick == "path" then
 		td.pts[#td.pts + 1] = { math.floor(x), math.floor(z) }
-		say(string.format("Path: %d points. Enter builds the walls.", #td.pts))
+		say(string.format("Path: %d points. Right click builds the walls.", #td.pts))
 		return
 	end
 	local c = td.cfg(true)
@@ -2504,6 +2630,8 @@ function td.press(rect, mx, my)
 		td.startPick("spawn")
 	elseif k == "tdgoal" then
 		td.startPick("goal")
+	elseif k == "tdspawnx" or k == "tdgoalx" then
+		td.cfg(true)[k == "tdspawnx" and "spawn" or "goal"] = nil
 	elseif k == "tdwidth" then
 		td.cfg(true).width = hit.value
 	elseif k == "tdminus" or k == "tdplus" then
@@ -2517,27 +2645,18 @@ function td.press(rect, mx, my)
 	elseif k == "tdedit" then
 		td.edit = { field = hit.field, buf = "" }
 		widgetHandler:OwnText()
+	elseif k == "tdtog" then
+		td.toggleChoice(td.cfg(true).waves[hit.row], hit.field, hit.value)
 	elseif k == "tdcell" then
-		local w = td.cfg(true).waves[hit.row]
-		if hit.field == "fac" or hit.field == "kind" then
-			local list = hit.field == "fac" and td.FAC or td.KINDS
-			for i, v in ipairs(list) do
-				if v == w[hit.field] then
-					w[hit.field] = list[i % #list + 1]
-					break
-				end
-			end
-		elseif hit.field == "tech" then
-			w.tech = w.tech % 3 + 1
-		else
-			td.edit = { field = hit.field, row = hit.row, buf = "" }
-			widgetHandler:OwnText()
-		end
+		td.edit = { field = hit.field, row = hit.row, buf = "" }
+		widgetHandler:OwnText()
+	elseif k == "tdplay" then
+		td.toggle()
 	end
 	return true
 end
 
--- Play / Stop (button in the title row): runs the waves in the editor; the state before is saved as _beforeplay
+-- Play / Stop (button at the bottom of the TD page): runs the waves in the editor; the state before is saved as _beforeplay
 function td.toggle()
 	if Spring.GetGameRulesParam("tdState") == "running" then
 		Spring.SendLuaRulesMsg("tdw|stop")
@@ -2545,7 +2664,8 @@ function td.toggle()
 	end
 	local payload, err = td.payload()
 	if not payload then
-		say(err .. " (button TD)")
+		say(err)
+		td.notice = { text = err, untilT = os.clock() + 6 }
 		return
 	end
 	saveLevel("_beforeplay", true)
@@ -2640,7 +2760,7 @@ function gen.cancelModes()
 	gen.armed, gen.drag = false, nil
 	delMode, delDrag = false, nil
 	mazeKind, mazeDrag = nil, nil
-	td.endPick()
+	td.cancel()
 	stampDrag, moveDrag, selBox = nil, nil, nil
 	area:disarm()
 	say("Mode ended")
@@ -2678,8 +2798,7 @@ function widget:MousePress(mx, my, button)
 			end
 			return true
 		elseif button == 3 then
-			td.endPick()
-			say("Tower Defense: mode ended")
+			td.cancel()
 			return true
 		end
 	end

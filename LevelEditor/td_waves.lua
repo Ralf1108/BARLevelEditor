@@ -4,8 +4,9 @@
 -- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
 --   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves
 --   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
---   waves = "faction,type,tech,count,gap,hp/..." faction arm|cor|leg, type any|bot|vehicle, tech 1-3, count of units,
---           gap = seconds after the previous wave (first wave: after the start), hp = health in percent
+--   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
+--           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
+--           the start), hp = health in percent. The units are chosen at random among all that match.
 -- State for the display: game rules parameters tdState, tdWave, tdWaves, tdLeaks, tdMaxLeaks, tdKilled, tdAlive.
 function gadget:GetInfo()
 	return {
@@ -73,9 +74,9 @@ local function parse(payload)
 		end
 	end
 	for _, w in ipairs(split(f[9] or "", "/")) do
-		local fac, kind, tech, count, gap, hp = w:match("^(%a+),(%a+),(%d),(%d+),(%d+),(%d+)$")
+		local fac, kind, tech, count, gap, hp = w:match("^(%a+),(%a+),(%d+),(%d+),(%d+),(%d+)$")
 		if fac then
-			cfg.waves[#cfg.waves + 1] = { fac = fac, kind = kind, tech = tonumber(tech), count = tonumber(count), gap = tonumber(gap), hp = tonumber(hp) }
+			cfg.waves[#cfg.waves + 1] = { fac = fac, kind = kind, tech = tech, count = tonumber(count), gap = tonumber(gap), hp = tonumber(hp) }
 		end
 	end
 	if #cfg.waves == 0 then
@@ -84,20 +85,35 @@ local function parse(payload)
 	return cfg
 end
 
--- Land units that walk: mobile, armed, not a builder, not a ship or an aircraft (same rules as Generate in the editor)
-local function pool(fac, kind, tech)
+-- True when at least one weapon can hit the ground (pure anti-air units are of no use against walking enemies)
+local function hitsGround(ud)
+	for _, w in ipairs(ud.weapons) do
+		local wd = WeaponDefs[w.weaponDef]
+		if wd and wd.canAttackGround then
+			return true
+		end
+	end
+	return false
+end
+
+-- Land units that walk: mobile, armed, not a builder, not a ship or an aircraft (same rules as Generate in the editor),
+-- and not pure anti-air.
+-- facs = "armcor", kinds = "vbh" (vehicles, bots, hovercraft), techs = "12": every unit that fits one choice of each group
+local function pool(facs, kinds, techs)
 	local out = {}
 	for name, ud in pairs(UnitDefNames) do
 		local cp = ud.customParams or {}
-		if name:sub(1, 3) == fac and not name:find("scav") and not name:find("decom") and not name:find("dummy")
+		local fac = name:sub(1, 3)
+		if facs:find(fac, 1, true) and not name:find("scav") and not name:find("decom") and not name:find("dummy")
 			and not name:find("drone") and not cp.iscommander and not cp.isdrone then
 			local mc = ud.modCategories or {}
+			local tech = tostring(tonumber(cp.techlevel) or 1)
 			if ud.canMove and not ud.canFly and not ud.isBuilder and not ud.isFactory and ud.speed and ud.speed > 0
-				and #ud.weapons > 0 and not (mc.ship or mc.underwater) and (tonumber(cp.techlevel) or 1) == tech then
+				and #ud.weapons > 0 and not (mc.ship or mc.underwater) and techs:find(tech, 1, true) and hitsGround(ud) then
 				-- the movement class tells bots (bot2, bot3 ...), vehicles (tank2, atank3 ...) and hovercraft (hover2 ...) apart
 				local move = ud.moveDef and ud.moveDef.name or ""
 				local bot, hover = move:find("bot") ~= nil, move:find("hover") ~= nil
-				if kind == "any" or (kind == "bot" and bot) or (kind == "vehicle" and not bot and not hover) then
+				if (bot and kinds:find("b", 1, true)) or (hover and kinds:find("h", 1, true)) or (not bot and not hover and kinds:find("v", 1, true)) then
 					out[#out + 1] = ud
 				end
 			end
@@ -169,7 +185,7 @@ local function launchWave(n)
 	td.wave = td.wave + 1
 	local list = pool(w.fac, w.kind, w.tech)
 	if #list == 0 then
-		say(string.format("Wave %d: no %s %s units of tech %d, wave skipped.", td.wave, w.fac, w.kind, w.tech))
+		say(string.format("Wave %d: no matching units (factions %s, types %s, tech %s), wave skipped.", td.wave, w.fac, w.kind, w.tech))
 	else
 		for _ = 1, w.count do
 			td.queue[#td.queue + 1] = { ud = list[math.random(#list)], hp = w.hp / 100 }

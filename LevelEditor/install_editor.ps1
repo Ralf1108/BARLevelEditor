@@ -53,7 +53,8 @@ return {
 	depend = { "$game" },
 }
 "@
-$widget = (Get-Content (Join-Path $here 'lvl_level_editor.lua') -Raw) -replace 'enabled = false,', 'enabled = true,'
+# switch the widget on in the mod: only the first 'enabled = false,' (GetInfo); the same text appears in the code as data
+$widget = ([regex]'enabled = false,').Replace((Get-Content (Join-Path $here 'lvl_level_editor.lua') -Raw), 'enabled = true,', 1)
 $gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
 $gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
 $shared = Get-Content $sharedFile -Raw

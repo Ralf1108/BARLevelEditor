@@ -12,6 +12,10 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/). Place
 |---|---|
 | ![Generate menu, Units](docs/level-editor-generate-units.jpg) | ![Generate menu, Maze](docs/level-editor-generate-maze.jpg) |
 
+| Tower Defense |
+|---|
+| ![Tower Defense page](docs/level-editor-tower-defense.jpg) |
+
 The editor runs inside BAR as an extra game ("Level Editor") that builds on the official one. Everything is free and finished instantly, no `/cheat` needed. The official game is not changed.
 
 This repository also contains **BluePrinter**, a small widget for normal games that queues saved building layouts as build plans, and the code both share.
@@ -23,6 +27,7 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 - **Rows and rectangles:** Shift + drag places a row, Shift + Alt + drag a rectangle; Shift + mouse wheel changes the spacing.
 - **Blueprints:** select units, press *Create* and the layout is saved as a tile with a preview. Click a tile to place it again, drag tiles to sort them.
 - **Generate:** random units, buildings, turrets, air or ships in a rectangle or circle (faction, tech level and count are up to you), or a **random maze** of dragon teeth or walls.
+- **Tower Defense:** draw a path (walls are built on both sides), set spawn point and goal and define the waves (factions, tech level, bots, vehicles or hovercraft, count, gap, strength); **Play** runs it in the editor: the enemies walk the path, kills pay metal and energy, too many through and the level is lost. Saved in the level.
 - **Copy and paste:** Ctrl+C / Ctrl+X / Ctrl+V, undo and redo with Ctrl+Z / Ctrl+Y, move with Alt + drag or the arrow keys, rotate and mirror selections.
 - **Delete** along a line, in a rectangle or in a circle with the buttons `DL`, `DR` and `DC` (units, wrecks and features), or select enemy units too with Ctrl + click.
 - **Area attacks (experimental):** the buttons `XL`, `XR` and `XC` send selected bombers, artillery, rocket launchers and nukes against a line, a rectangle or a circle; the bombers form up and attack together, front targets first. The bombs and shots of all selected units are spread evenly over the chosen area.
@@ -50,7 +55,7 @@ After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor
 | Place a unit | Pick it in **Place → Units**, then left click on the map. Right click ends. |
 | Place many | Arm a unit, feature or blueprint, then hold **Shift** and drag (a row) or **Shift + Alt** and drag (a rectangle); all of them are placed on release. **Shift + mouse wheel** changes the spacing, **[** and **]** rotate. |
 | Random army | **Generate**, choose faction / type / tech / count and *Area*, press **Generate**, drag on the map. |
-| Tower Defense | Button **TD** under **I**: draw a path with walls, set spawn point, goal and waves (faction, type, tech, count, gap, HP %), **Test: start waves**. |
+| Tower Defense | Button **TD** between **I** and **?**: draw a path (right click builds the walls), set spawn point, goal and waves (factions, tech, type, count, gap, HP %), then **Play** at the bottom of the page. |
 | Maze | **Generate → Maze**, choose the material and the corridor width, press **Generate**, drag on the map. |
 | Delete | **Del** on the selection or under the mouse. For whole areas use the buttons at the right: **DL** (along a line), **DR** (in a rectangle, key **D**) or **DC** (in a circle), then drag the shape on the map. |
 | Copy / cut / paste | **Ctrl+C** copies, **Ctrl+X** cuts (copies and deletes), **Ctrl+V** pastes at the mouse. |
