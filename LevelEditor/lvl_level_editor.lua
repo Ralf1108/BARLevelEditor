@@ -3427,6 +3427,10 @@ function td.press(rect, mx, my)
 	if k == "tdon" then
 		local c = td.cfg(true)
 		c.enabled = not c.enabled
+		if c.enabled and ctf.data and ctf.data.enabled then
+			ctf.data.enabled = false -- only one of the two game modes can be on
+			say("Capture the Flag switched off: Tower Defense and Capture the Flag exclude each other.")
+		end
 	elseif k == "tdmat" then
 		td.wall = hit.value
 	elseif k == "tddraw" then
@@ -3623,6 +3627,13 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 		td.endPick()
 	end,
 	disarmAll = function() gen.disarmAll() end,
+	-- Tower Defense off when Capture the Flag is switched on (only one of the two modes)
+	excludeTd = function()
+		if td.data and td.data.enabled then
+			td.data.enabled = false
+			say("Tower Defense switched off: Tower Defense and Capture the Flag exclude each other.")
+		end
+	end,
 	step = function() ledStep() end,
 	led = function(msg) led(msg) end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,
