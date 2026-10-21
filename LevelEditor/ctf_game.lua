@@ -4,8 +4,8 @@
 -- indestructible, neutral units; rings on the ground and the score are drawn by the unsynced part, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "ctf|start|<payload>" (stop: "ctf|stop"), or from the game option
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
---   mode;amount;radius;score;returnTime;homes;flags;visible
---   mode   = "own" (every team has its own flags, only the other teams take them) | "neutral" (every team may take every flag)
+--   amount;radius;score;returnTime;homes;flags;visible
+--   flags with a team (>= 0): the other teams take them, the team itself only brings a dropped one back; flags of team -1 (Gaia): every team takes them
 --   amount = metal per second for every flag a team holds at its collection point, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team must hold at once to win (0 = never ends),
 --            a flag at a collection point can be taken by units of other teams (its owner brings it back to its flag point),
 --   returnTime = seconds after which a dropped flag (carrier destroyed) goes back to its flag point; 0 = it stays where it fell until a unit takes it
@@ -193,10 +193,10 @@ local function parse(payload)
 		f[#f + 1] = p
 	end
 	local cfg = {
-		own = f[1] ~= "neutral", amount = tonumber(f[2]) or 0, radius = math.max(10, tonumber(f[3]) or 100),
-		score = math.max(0, tonumber(f[4]) or 0), returnTime = math.max(0, tonumber(f[5]) or 0), homes = {}, flags = points(f[7]), visible = f[8] ~= "0",
+		amount = tonumber(f[1]) or 0, radius = math.max(10, tonumber(f[2]) or 100),
+		score = math.max(0, tonumber(f[3]) or 0), returnTime = math.max(0, tonumber(f[4]) or 0), homes = {}, flags = points(f[6]), visible = f[7] ~= "0",
 	}
-	cfg.homeList = points(f[6])
+	cfg.homeList = points(f[5])
 	cfg.teams = {}
 	for _, h in ipairs(cfg.homeList) do
 		if not cfg.homes[h.team] then
@@ -323,7 +323,7 @@ local function start(cfg)
 		g.parked[h.team] = 0
 	end
 	for _, p in ipairs(cfg.flags) do
-		local owner = (cfg.own and p.team >= 0) and p.team or -1
+		local owner = p.team >= 0 and p.team or -1
 		local id = body(FLAG_UNIT, owner >= 0 and owner or gaia, p.x, p.z, cfg.visible)
 		if id then
 			g.flags[#g.flags + 1] = { id = id, owner = owner, hx = p.x, hz = p.z }
@@ -392,7 +392,7 @@ local function deliver(f, team, home)
 	Spring.SetUnitPosition(f.id, home.x + math.cos(a) * 60, home.z + math.sin(a) * 60)
 	g.score[team] = g.parked[team] -- the score is the number of flags held at the collection point
 	say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
-	if cfg.own and f.owner >= 0 and not g.out[f.owner] then
+	if f.owner >= 0 and not g.out[f.owner] then
 		local left = 0
 		for _, o in ipairs(g.flags) do
 			if o.owner == f.owner and not o.parked then
@@ -438,7 +438,7 @@ local function check(n)
 					local team = Spring.GetUnitTeam(u)
 					if team and allyOf(team) ~= allyOf(f.parked) and canCarry(u, team) then
 						local from = f.parked
-						if cfg.own and f.owner >= 0 and allyOf(team) == allyOf(f.owner) then
+						if f.owner >= 0 and allyOf(team) == allyOf(f.owner) then
 							unpark(f)
 							toHome(f)
 							say("Team " .. team .. " brought its flag back.")
@@ -474,7 +474,7 @@ local function check(n)
 					for _, u in ipairs(Spring.GetUnitsInCylinder(x, z, cfg.radius)) do
 						local team = Spring.GetUnitTeam(u)
 						if team and canCarry(u, team) then
-							if cfg.own and f.owner >= 0 and allyOf(team) == allyOf(f.owner) then
+							if f.owner >= 0 and allyOf(team) == allyOf(f.owner) then
 								if f.dropped then
 									say("Team " .. team .. " brought its flag back.")
 									toHome(f)

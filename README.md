@@ -110,7 +110,7 @@ Flags (the silver pods of the scavengers) lie on the map; units pick them up by 
 
 ![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)
 
-- **Own flags per team** (the other teams steal them) or **Neutral flags** (everybody takes every flag).
+- **Flags per team** (the other teams steal them) or **neutral flags** (placed for Gaia: everybody takes them), set per flag point.
 - **Income:** metal *per second* for every flag that lies at the collection point of a team. A delivered flag stays there and other teams can steal it; a carried flag pays nothing. If the carrier is destroyed the flag is dropped where it died.
 - Any number of **flag points** and one **collection point** per team, placed with a click on the map; capture radius, return time of a dropped flag and the number of flags that win are settings of the page.
 - **Start test** runs it in the editor; as a scenario it is packed with the level. For human against human; computer opponents do not play it.

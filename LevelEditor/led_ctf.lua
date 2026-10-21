@@ -12,7 +12,7 @@ return function(host)
 	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
 
 	function ctf.new()
-		return { enabled = false, mode = "own", amount = 100, score = 3, radius = 100, returnTime = 0, visible = true, homes = {}, flags = {} }
+		return { enabled = false, amount = 100, score = 3, radius = 100, returnTime = 0, visible = true, homes = {}, flags = {} }
 	end
 	ctf.DEFAULT = ctf.new()
 
@@ -181,13 +181,6 @@ return function(host)
 		y = y - 6 * S
 		line({ { kind = "ctfon", label = (c.enabled and "[x] " or "[ ] ") .. "Capture the Flag", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
 			tip = "Switch Capture the Flag on or off for this level (saved in the level file, section capture)" } })
-		head("Flags")
-		line({
-			{ kind = "ctfmode", value = "own", label = "Own flags per team", active = c.mode == "own",
-				tip = "Every team has its own flags (flag points of that team). The other teams take them to their collection point." },
-			{ kind = "ctfmode", value = "neutral", label = "Neutral flags", active = c.mode == "neutral",
-				tip = "The flags belong to nobody: every team may take every flag to its own collection point." },
-		})
 		line({ { kind = "ctfvisible", label = (c.visible ~= false and "[x] " or "[ ] ") .. "Flags always visible on the map", active = c.visible ~= false,
 			tip = "On: the flags are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees." } })
 		head("Income: metal per second per flag held")
@@ -284,7 +277,7 @@ return function(host)
 			end
 			return #out > 0 and table.concat(out, "/") or "-"
 		end
-		return table.concat({ c.mode, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
+		return table.concat({ c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
 	end
 
 	function ctf.endPick()
@@ -306,7 +299,7 @@ return function(host)
 		if kind == "home" then
 			host.say(string.format("Click the collection points of team %d on the map (team: strip at the left), right click ends.", t))
 		else
-			host.say(ctf.cfg().mode == "own" and string.format("Click the flag points of team %d on the map, right click ends.", t) or "Click the flag points on the map (neutral flags), right click ends.")
+			host.say(t == Spring.GetGaiaTeamID() and "Click the flag points on the map (Gaia = neutral flags that every team may take), right click ends." or string.format("Click the flag points of team %d on the map, right click ends.", t))
 		end
 	end
 
@@ -322,10 +315,14 @@ return function(host)
 		x, z = math.floor(x), math.floor(z)
 		local t = host.team()
 		if ctf.pick == "home" then
+			if t == Spring.GetGaiaTeamID() then
+				host.say("A collection point belongs to a team: choose a team in the strip at the left (Gaia only works for flag points).")
+				return
+			end
 			c.homes[#c.homes + 1] = { team = t, x = x, z = z }
 			host.say(string.format("Collection point of team %d placed at %d, %d", t, x, z))
 		else
-			c.flags[#c.flags + 1] = { team = c.mode == "own" and t or -1, x = x, z = z }
+			c.flags[#c.flags + 1] = { team = t == Spring.GetGaiaTeamID() and -1 or t, x = x, z = z } -- Gaia in the strip = neutral flag
 			host.say(string.format("Flag point %d placed (%s).", #c.flags, teamName(c.flags[#c.flags].team)))
 		end
 		ctf.commit(before)
@@ -402,8 +399,11 @@ return function(host)
 			local before = ctf.state()
 			local c = ctf.cfg(true)
 			local list, t = k == "ctfhomex" and c.homes or c.flags, host.team()
+			if t == Spring.GetGaiaTeamID() then
+				t = -1
+			end
 			for i = #list, 1, -1 do
-				if k == "ctfflagx" and c.mode ~= "own" or list[i].team == t then
+				if list[i].team == t then
 					table.remove(list, i)
 				end
 			end
@@ -415,8 +415,6 @@ return function(host)
 				if c.enabled then
 					host.excludeTd()
 				end
-			elseif k == "ctfmode" then
-				c.mode = hit.value
 			elseif k == "ctfvisible" then
 				c.visible = not (c.visible ~= false)
 			end
