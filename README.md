@@ -67,7 +67,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Save and load** levels with Ctrl+S, autosave when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others play with their own BAR.
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
-- **Capture the Flag:** flag points, a collection point per team and a reward in metal, for human against human.
+- **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human.
 
 | Blueprints | Generate: units |
 |---|---|

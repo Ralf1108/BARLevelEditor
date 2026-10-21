@@ -140,6 +140,45 @@ return function(host)
 		local function field(name, tip)
 			return { kind = "ctfedit", field = name, label = num(name), active = ctf.edit ~= nil and ctf.edit.field == name, tip = tip }
 		end
+		head("Places on the map (team: strip at the left)")
+		line({
+			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
+				tip = "Collection point of the team chosen in the strip at the left: click, then click the places on the map (as many as you like per team). Right click ends. Del over a point removes it, Alt + drag moves it." },
+			{ kind = "ctfhomex", label = "X", w = 1, tip = "Delete all collection points of the chosen team" },
+			{ kind = "ctfflag", label = "Flag point", active = ctf.pick == "flag", w = 5,
+				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it, Alt + drag moves it." },
+			{ kind = "ctfflagx", label = "X", w = 1, tip = "Delete all flag points (with 'Own flags': those of the chosen team)" },
+		})
+		-- what is placed
+		local homeCount, homeOrder = {}, {}
+		for _, h in ipairs(c.homes) do
+			if not homeCount[h.team] then
+				homeCount[h.team] = 0
+				homeOrder[#homeOrder + 1] = h.team
+			end
+			homeCount[h.team] = homeCount[h.team] + 1
+		end
+		table.sort(homeOrder)
+		local homes = {}
+		for _, tm in ipairs(homeOrder) do
+			homes[#homes + 1] = string.format("%d (team %d)", homeCount[tm], tm)
+		end
+		local byTeam, order = {}, {}
+		for _, f in ipairs(c.flags) do
+			if not byTeam[f.team] then
+				byTeam[f.team] = 0
+				order[#order + 1] = f.team
+			end
+			byTeam[f.team] = byTeam[f.team] + 1
+		end
+		table.sort(order)
+		local parts = {}
+		for _, t in ipairs(order) do
+			parts[#parts + 1] = string.format("%d (%s)", byTeam[t], teamName(t))
+		end
+		note("Collection points: " .. (#homes > 0 and table.concat(homes, ", ") or "none"), { 0.8, 0.8, 0.8 })
+		note("Flag points: " .. (#parts > 0 and table.concat(parts, ", ") or "none"), { 0.8, 0.8, 0.8 })
+		y = y - 6 * S
 		line({ { kind = "ctfon", label = (c.enabled and "[x] " or "[ ] ") .. "Capture the Flag", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
 			tip = "Switch Capture the Flag on or off for this level (saved in the level file, section capture)" } })
 		head("Flags")
@@ -159,35 +198,6 @@ return function(host)
 		line({ field("radius", "Distance within which a unit picks up a flag, delivers it, or brings its own dropped flag back. Click, type a number, Enter accepts") })
 		head("Dropped flag goes back after (s, 0 = stays)")
 		line({ field("returnTime", "When the unit that carries a flag is destroyed, the flag is dropped where it died. 0 = it stays there until a unit takes it, a number = it goes back to its flag point after this many seconds. A carrier cannot shoot. Click, type a number, Enter accepts") })
-		head("Places on the map (team: strip at the left)")
-		line({
-			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
-				tip = "Collection point of the team chosen in the strip at the left: click, then click the place on the map (one per team, a new one replaces it). Right click ends. Del over a point removes it, Alt + drag moves it." },
-			{ kind = "ctfhomex", label = "X", w = 1, tip = "Delete the collection point of the chosen team" },
-			{ kind = "ctfflag", label = "Flag point", active = ctf.pick == "flag", w = 5,
-				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it, Alt + drag moves it." },
-			{ kind = "ctfflagx", label = "X", w = 1, tip = "Delete all flag points (with 'Own flags': those of the chosen team)" },
-		})
-		-- what is placed
-		local homes = {}
-		for _, h in ipairs(c.homes) do
-			homes[#homes + 1] = tostring(h.team)
-		end
-		local byTeam, order = {}, {}
-		for _, f in ipairs(c.flags) do
-			if not byTeam[f.team] then
-				byTeam[f.team] = 0
-				order[#order + 1] = f.team
-			end
-			byTeam[f.team] = byTeam[f.team] + 1
-		end
-		table.sort(order)
-		local parts = {}
-		for _, t in ipairs(order) do
-			parts[#parts + 1] = string.format("%d (%s)", byTeam[t], teamName(t))
-		end
-		note("Collection points: " .. (#homes > 0 and ("teams " .. table.concat(homes, ", ")) or "none"), { 0.8, 0.8, 0.8 })
-		note("Flag points: " .. (#parts > 0 and table.concat(parts, ", ") or "none"), { 0.8, 0.8, 0.8 })
 		y = y - 6 * S
 		-- very bottom: the button that starts the test (red message above it: what is missing)
 		local state = Spring.GetGameRulesParam("ctfState") or ""
@@ -294,7 +304,7 @@ return function(host)
 		ctf.pick = kind
 		local t = host.team()
 		if kind == "home" then
-			host.say(string.format("Click the collection point of team %d on the map (team: strip at the left), right click ends.", t))
+			host.say(string.format("Click the collection points of team %d on the map (team: strip at the left), right click ends.", t))
 		else
 			host.say(ctf.cfg().mode == "own" and string.format("Click the flag points of team %d on the map, right click ends.", t) or "Click the flag points on the map (neutral flags), right click ends.")
 		end
@@ -312,13 +322,8 @@ return function(host)
 		x, z = math.floor(x), math.floor(z)
 		local t = host.team()
 		if ctf.pick == "home" then
-			for i = #c.homes, 1, -1 do
-				if c.homes[i].team == t then
-					table.remove(c.homes, i)
-				end
-			end
 			c.homes[#c.homes + 1] = { team = t, x = x, z = z }
-			host.say(string.format("Collection point of team %d set at %d, %d", t, x, z))
+			host.say(string.format("Collection point of team %d placed at %d, %d", t, x, z))
 		else
 			c.flags[#c.flags + 1] = { team = c.mode == "own" and t or -1, x = x, z = z }
 			host.say(string.format("Flag point %d placed (%s).", #c.flags, teamName(c.flags[#c.flags].team)))

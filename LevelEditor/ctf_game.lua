@@ -13,7 +13,7 @@
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
 -- Own flags: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
 -- standing wins).
---   homes  = "team,x,z/team,x,z/..." collection points, flags = "team,x,z/..." flag points (team -1: neutral)
+--   homes  = "team,x,z/team,x,z/..." collection points (several per team: a flag counts at any of them), flags = "team,x,z/..." flag points (team -1: neutral)
 -- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfOut (lost teams), ctfRadius, ctfHomes, ctfSpots,
 -- ctfFlagIds ("unitID:owner,..."; owner -1 = neutral), ctfVisible (1/0).
 function gadget:GetInfo()
@@ -197,8 +197,14 @@ local function parse(payload)
 		score = math.max(0, tonumber(f[4]) or 0), returnTime = math.max(0, tonumber(f[5]) or 0), homes = {}, flags = points(f[7]), visible = f[8] ~= "0",
 	}
 	cfg.homeList = points(f[6])
+	cfg.teams = {}
 	for _, h in ipairs(cfg.homeList) do
-		cfg.homes[h.team] = h
+		if not cfg.homes[h.team] then
+			cfg.homes[h.team] = {} -- the collection points of the team (as many as you like)
+			cfg.teams[#cfg.teams + 1] = h.team
+		end
+		table.insert(cfg.homes[h.team], h)
+		h.count = 0 -- flags lying at this collection point
 	end
 	if #cfg.homeList == 0 or #cfg.flags == 0 then
 		return nil
@@ -216,9 +222,9 @@ local function publish()
 		return
 	end
 	local teams, spots = {}, {}
-	for _, h in ipairs(g.cfg.homeList) do
-		teams[#teams + 1] = h.team
-		Spring.SetGameRulesParam("ctfScore" .. h.team, g.score[h.team] or 0)
+	for _, team in ipairs(g.cfg.teams) do
+		teams[#teams + 1] = team
+		Spring.SetGameRulesParam("ctfScore" .. team, g.score[team] or 0)
 	end
 	Spring.SetGameRulesParam("ctfState", g.state)
 	Spring.SetGameRulesParam("ctfTarget", g.cfg.score)
@@ -362,28 +368,28 @@ local function eliminate(team)
 	blowUp(team)
 	publish()
 	local left, last = 0, nil
-	for _, h in ipairs(g.cfg.homeList) do
-		if not g.out[h.team] then
-			left, last = left + 1, h.team
+	for _, t in ipairs(g.cfg.teams) do
+		if not g.out[t] then
+			left, last = left + 1, t
 		end
 	end
-	if left == 1 and #g.cfg.homeList >= 2 then
+	if left == 1 and #g.cfg.teams >= 2 then
 		finish(last, true)
 	end
 end
 
-local function deliver(f, team)
+local function deliver(f, team, home)
 	local cfg = g.cfg
 	local carrier = f.carrier
 	carrying[carrier] = nil
 	rearm(f, carrier)
 	f.carrier = nil
 	-- the flag stays at the collection point (it does not jump back to its flag point); units of other teams can take it from there
-	f.parked = team
+	f.parked, f.home = team, home
 	g.parked[team] = g.parked[team] + 1
-	local h = cfg.homes[team]
-	local a = g.parked[team] * 2.4
-	Spring.SetUnitPosition(f.id, h.x + math.cos(a) * 60, h.z + math.sin(a) * 60)
+	home.count = home.count + 1
+	local a = home.count * 2.4
+	Spring.SetUnitPosition(f.id, home.x + math.cos(a) * 60, home.z + math.sin(a) * 60)
 	g.score[team] = g.parked[team] -- the score is the number of flags held at the collection point
 	say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
 	if cfg.own and f.owner >= 0 and not g.out[f.owner] then
@@ -415,7 +421,8 @@ end
 local function unpark(f)
 	g.parked[f.parked] = math.max(0, g.parked[f.parked] - 1)
 	g.score[f.parked] = g.parked[f.parked]
-	f.parked = nil
+	f.home.count = math.max(0, f.home.count - 1)
+	f.parked, f.home = nil, nil
 	publish()
 end
 
@@ -450,10 +457,12 @@ local function check(n)
 			if f.carrier then
 				-- delivery: the carrier is within the radius of the collection point of its team
 				local team = Spring.GetUnitTeam(f.carrier)
-				local h = team and cfg.homes[team]
 				local x, _, z = Spring.GetUnitPosition(f.carrier)
-				if h and x and (x - h.x) ^ 2 + (z - h.z) ^ 2 <= r2 then
-					deliver(f, team)
+				for _, h in ipairs(team and cfg.homes[team] or {}) do
+					if x and (x - h.x) ^ 2 + (z - h.z) ^ 2 <= r2 then
+						deliver(f, team, h)
+						break
+					end
 				end
 			else
 				if f.dropped and cfg.returnTime > 0 and n - f.dropped >= cfg.returnTime * FPS then
