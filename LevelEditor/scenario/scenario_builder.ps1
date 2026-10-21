@@ -296,6 +296,41 @@ function Read-TowerDefense([string]$txt) {
     return $td
 }
 
+# Section "capture" of the level (written by the Level Editor): the settings of the Capture the Flag page.
+# $null when the section is missing, Capture the Flag is off or collection points or flag points are missing.
+function Read-Capture([string]$txt) {
+    $m = [regex]::Match($txt, '\bcapture\s*=\s*\{')
+    if (-not $m.Success) { return $null }
+    $open = $m.Index + $m.Length - 1
+    $close = Find-CloseBrace $txt $open
+    if ($close -lt 0) { return $null }
+    $body = $txt.Substring($open + 1, $close - $open - 1)
+    $en = [regex]::Match($body, '\benabled\s*=\s*(true|false)')
+    if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
+    function Num($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(\d+)"); if ($n.Success) { return [int]$n.Groups[1].Value } else { return $default } }
+    function Txt($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*`"(\w+)`""); if ($n.Success) { return $n.Groups[1].Value } else { return $default } }
+    function Points($key) {
+        $b = [regex]::Match($body, "\b$key\s*=\s*\{")
+        $out = @()
+        if (-not $b.Success) { return $out }
+        $o = $b.Index + $b.Length - 1
+        $c = Find-CloseBrace $body $o
+        if ($c -lt 0) { return $out }
+        foreach ($pm in [regex]::Matches($body.Substring($o + 1, $c - $o - 1), '\{([^{}]*)\}')) {
+            $q = @{ team = -1; x = 0; z = 0 }
+            foreach ($kv in [regex]::Matches($pm.Groups[1].Value, '(\w+)\s*=\s*(-?\d+)')) { $q[$kv.Groups[1].Value] = [int]$kv.Groups[2].Value }
+            $out += ,$q
+        }
+        return $out
+    }
+    $cap = @{ mode = (Txt 'mode' 'own'); reward = (Txt 'reward' 'once'); amount = (Num 'amount' 100); radius = (Num 'radius' 100); score = (Num 'score' 3); returnTime = (Num 'returnTime' 30); homes = (Points 'homes'); flags = (Points 'flags') }
+    if ($cap.homes.Count -eq 0 -or $cap.flags.Count -eq 0) {
+        Write-Host 'Note: Capture the Flag is on in the level, but collection points or flag points are missing: the scenario is built without it.' -ForegroundColor Yellow
+        return $null
+    }
+    return $cap
+}
+
 # ---------------------------------------------------------------- Read the level
 function Read-LevelFile([string]$path) {
     $txt = $BLOCK_RX.Replace([IO.File]::ReadAllText($path, $utf8), '')
@@ -335,6 +370,7 @@ function Read-LevelFile([string]$path) {
     $level.units = @($units)
     $level.features = @($features)
     $level.td = Read-TowerDefense $txt
+    $level.ctf = Read-Capture $txt
     return $level
 }
 
@@ -441,6 +477,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         # the waves belong to an enemy team: when the level has none, a team without units is added
         if ($teamsFound.Count -eq 1) { $teamsFound = @($teamsFound) + @([int]$teamsFound[0] + 1) }
     }
+    $ctf = $level.ctf
+    if ($ctf) {
+        Write-Host "Capture the Flag is on in the level: $($ctf.flags.Count) flag points, $($ctf.homes.Count) collection points, $($ctf.mode) flags. It is part of the scenario (against a computer opponent that does not play it: only a game of your own)." -ForegroundColor Cyan
+        # every team with a collection point must exist (a team without units is added)
+        $teamsFound = @(@($teamsFound) + @($ctf.homes | ForEach-Object { $_.team }) | Sort-Object -Unique)
+    }
     $info = "`nLevel ${base}: map $($level.map), $($level.units.Count) units, $($level.features.Count) features, teams [$($teamsFound -join ', ')]"
     if ($nGaia) { $info += ", $nGaia Gaia units" }
     Write-Host ($info + "`n")
@@ -503,7 +545,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                 @('Title', $title), @('Author', $author), @('Summary', $summary), @('Briefing', ($briefing -replace "`r?`n", ' / ')), @('Roles', $roleTxt),
                 @('Tech', $(if ($tierTxt) { $tierTxt } else { 'all tiers' })), @('AI behavior', $ai), @('Win condition', $WIN_TXT[$win]), @('Start metal', $metal),
                 @('Start energy', $energy), @('Grace period', $(if ($grace -gt 0) { (Format-Minutes $grace) + ' min' } else { 'none' })), @('ID', $sid),
-                @('Tower Defense', $(if ($td) { 'on: {0} waves, {1} waypoints' -f $td.waves.Count, $td.waypoints.Count } else { 'off' })))) {
+                @('Tower Defense', $(if ($td) { 'on: {0} waves, {1} waypoints' -f $td.waves.Count, $td.waypoints.Count } else { 'off' })),
+                @('Capture the Flag', $(if ($ctf) { 'on: {0} flag points, {1} collection points' -f $ctf.flags.Count, $ctf.homes.Count } else { 'off' })))) {
             $v = [string]$row[1]
             if ($v.Length -gt 90) { $v = $v.Substring(0, 87) + '...' }
             Write-Host ('  {0,-15} {1}' -f $row[0], $v)
@@ -532,8 +575,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     }
     # unknown fields from newer versions are kept, the version is never lowered
     # Tower Defense: the enemy team only gets the waves (no AI of its own that takes them over) and the gadget decides about winning and losing
-    $aiRun = if ($td) { 'NullAI' } else { $ai }
-    $winRun = if ($td) { 'neverend' } else { $win }
+    $aiRun = if ($td -or $ctf) { 'NullAI' } else { $ai }
+    $winRun = if ($td -or $ctf) { 'neverend' } else { $win }
     $answers = [ordered]@{}
     foreach ($k in $saved.Keys) { if ($KNOWN_FIELDS -notcontains $k) { $answers[$k] = $saved[$k] } } # also mapfields
     $answers['version'] = [math]::Max($SCENARIO_VERSION, [int](Get-Val $saved 'version' 0))
@@ -658,6 +701,14 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         }
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Tower Defense (the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
     }
+    if ($ctf) {
+        # settings for the gadget ctf_game.lua (mode;reward;amount;radius;score;returnTime;homes;flags, teams renumbered like the units)
+        $homes = @($ctf.homes | Where-Object { $newid.ContainsKey([int]$_.team) } | ForEach-Object { '{0},{1},{2}' -f $newid[[int]$_.team], $_.x, $_.z }) -join '/'
+        $flags = @($ctf.flags | ForEach-Object { '{0},{1},{2}' -f $(if ($ctf.mode -eq 'own' -and $newid.ContainsKey([int]$_.team)) { $newid[[int]$_.team] } else { -1 }), $_.x, $_.z }) -join '/'
+        $plain = (@($ctf.mode, $ctf.reward, $ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $homes, $flags) -join ';')
+        $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team with $($ctf.score) flags wins; 0 = no end)." -ForegroundColor Yellow }
+    }
     if ($grace -gt 0) { $mods['norushtimer'] = $grace.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }
     foreach ($mk in $level.mods.Keys) { $mods[$mk] = $level.mods[$mk] }
     $mtxt = ($mods.Keys | ForEach-Object { "`t`t$_=$($mods[$_]);`n" }) -join ''
@@ -674,13 +725,15 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
-    if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadget shares with the editor
+    if ($td -or $ctf) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
+    if ($ctf) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"
     [IO.File]::WriteAllText((Join-Path $folder 'Start Scenario.bat'), $bat, [Text.Encoding]::ASCII)
     $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$winRun]
     if ($td) { $winTxt = "Tower Defense: beat all $($td.waves.Count) waves (at most $($td.leaks) enemies may get through)" }
+    if ($ctf) { $winTxt = $(if ($ctf.score -gt 0) { "Capture the Flag: the first team with $($ctf.score) delivered flags wins" } else { 'Capture the Flag: no end' }) }
     $readme = New-Object Collections.ArrayList
     [void]$readme.Add($title); [void]$readme.Add('=' * $title.Length); [void]$readme.Add('')
     if ($author) { [void]$readme.Add("Author: $author"); [void]$readme.Add('') }
@@ -693,6 +746,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      '2. Double-click "Start Scenario.bat". The script finds BAR itself (otherwise it asks for the folder),',
                      '   downloads the map if needed and starts the game. Nothing in the game itself is changed.',
                      '3. The units are there right away, there is no start commander except those in the scenario.',
+                     $(if ($ctf) { '   Capture the Flag: the starter also builds the small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) with the flag gadget; no official file is changed.' } else { '' }),
                      $(if ($td) { '   Tower Defense: the starter also builds a small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) that builds on your Beyond All Reason and runs the enemy waves; no official file is changed.' } else { '' }),
                      $(if ($grace -gt 0) { 'Grace period: before the start the start position selection appears. Click into your start area (marked frame) and press Ready.' } else { '' }),
                      '', 'Note: the folder may be copied to any place, also to another computer.')) { [void]$readme.Add($l) }

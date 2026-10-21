@@ -30,7 +30,7 @@ Write-Host "Game: $game"
 
 # ---------------------------------------------------------------- 4. Build the extra game (zip)
 Step 'Build the extra game "Level Editor"'
-foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua', 'help_texts.lua')) {
+foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua', 'ctf_game.lua', 'led_ctf.lua', 'help_texts.lua')) {
     if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (LevelEditor folder copied completely?)" }
 }
 # shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
@@ -59,6 +59,8 @@ return {
 $widget = ([regex]'enabled = false,').Replace((Get-Content (Join-Path $here 'lvl_level_editor.lua') -Raw), 'enabled = true,', 1)
 $gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
 $gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
+$gadgetCtf = Get-Content (Join-Path $here 'ctf_game.lua') -Raw
+$ctfPage = Get-Content (Join-Path $here 'led_ctf.lua') -Raw
 $helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
 $shared = Get-Content $sharedFile -Raw
 $rules = Get-Content $rulesFile -Raw
@@ -68,9 +70,11 @@ foreach ($e in @(
     @('modinfo.lua', $modinfo),
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
+    @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
     @('luaui/Include/editor_common.lua', $shared),
     @('luaui/Include/bar_rules.lua', $rules),
+    @('luaui/Include/led_ctf.lua', $ctfPage),
     @('luaui/Include/led_help_texts.lua', $helpTexts))) {
     $entry = $zip.CreateEntry($e[0])
     $w = New-Object IO.StreamWriter($entry.Open(), $utf8)

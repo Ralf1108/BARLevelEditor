@@ -66,11 +66,13 @@ if (-not $Name) { $Name = $env:USERNAME }
 if (-not $Name) { $Name = 'Player' }
 $Name = $Name -replace '[^A-Za-z0-9_\-\[\]]', ''
 if (-not $Name) { $Name = 'Player' }
-# Tower Defense scenario: the waves run in a gadget (td_waves.lua in this folder). The official game cannot load it, so a small extra game
-# "Tower Defense Scenario" is built on the installed official game (only the gadget is added; nothing of the official game is changed).
+# Tower Defense and Capture the Flag scenarios: the waves run in a gadget (td_waves.lua in this folder), the flags in another (ctf_game.lua). The
+# official game cannot load them, so a small extra game "Tower Defense Scenario" is built on the installed official game (only the gadgets are
+# added; nothing of the official game is changed).
 $gametype = $game
 $tdGadget = Join-Path $here 'td_waves.lua'
-if (Test-Path $tdGadget) {
+$ctfGadget = Join-Path $here 'ctf_game.lua'
+if ((Test-Path $tdGadget) -or (Test-Path $ctfGadget)) {
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
     $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
@@ -90,7 +92,9 @@ return {
 "@
     $utf8n = New-Object Text.UTF8Encoding($false)
     $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
-    $files = @(@('modinfo.lua', $modinfo), @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)))
+    $files = @(, @('modinfo.lua', $modinfo))
+    if (Test-Path $tdGadget) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
+    if (Test-Path $ctfGadget) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
     $rulesFile = Join-Path $here 'bar_rules.lua' # shared rules (packages made before this file existed carry a gadget that does not need it)
     if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
     foreach ($e in $files) {
@@ -100,7 +104,7 @@ return {
     }
     $zip.Dispose()
     $gametype = 'Tower Defense Scenario 1'
-    Write-Host "Tower Defense: extra game built ($zipPath)"
+    Write-Host "Extra game built ($zipPath)"
 }
 $script = $script.Replace('__GAMETYPE__', $gametype).Replace('__PLAYERNAME__', $Name)
 $out = Join-Path $env:TEMP 'bar_scenario_start.txt'
