@@ -392,7 +392,8 @@ local function clearFeatures()
 end
 
 -- Data of a unit with which it can be set up again
-local indestructible = {} -- unitID -> true: walls of the tower defense corridors, nothing damages them (also not by crushing)
+GG.Indestructible = GG.Indestructible or {} -- unitID -> true: walls of the tower defense corridors; td_waves.lua protects them (damage, reclaim, capture, self destruction)
+local indestructible = GG.Indestructible
 local function setIndestructible(id)
 	indestructible[id] = true
 	Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true }) -- the widget writes it into the level file
@@ -1037,41 +1038,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 	return true
 end
 
-function gadget:UnitPreDamaged(unitID)
-	if indestructible[unitID] then
-		return 0, 0
-	end
-end
-
-function gadget:UnitDestroyed(unitID)
-	indestructible[unitID] = nil
-end
-
--- Indestructible units can also not be taken apart: no reclaiming, capturing or self destruction by orders. An order on one unit is
--- refused here, area orders (reclaim in a circle) by the build step below.
-function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
-	if (cmdID == CMD.RECLAIM or cmdID == CMD.CAPTURE) and cmdParams and #cmdParams == 1 and cmdParams[1] < Game.maxUnits and indestructible[cmdParams[1]] then
-		return false
-	end
-	if cmdID == CMD.SELFD and indestructible[unitID] then
-		return false
-	end
-	return true
-end
-
-function gadget:AllowUnitBuildStep(builderID, builderTeamID, unitID, unitDefID, part)
-	if part < 0 and indestructible[unitID] then
-		return false -- reclaiming
-	end
-	return true
-end
-
 function gadget:Initialize()
-	if gadgetHandler.RegisterAllowCommand then
-		gadgetHandler:RegisterAllowCommand(CMD.RECLAIM)
-		gadgetHandler:RegisterAllowCommand(CMD.CAPTURE)
-		gadgetHandler:RegisterAllowCommand(CMD.SELFD)
-	end
 	GG.LevelEditor = {
 		place = place, remove = remove, undo = undo, clear = clearAll, load = loadUnit, boom = boom, assign = assignTeam, removeIds = removeIds, generate = generate, feature = placeFeature, clearFeatures = clearFeatures,
 		recv = function(msg, playerID) return gadget:RecvLuaMsg(msg, playerID) end, -- for tests

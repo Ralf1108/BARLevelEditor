@@ -49,7 +49,8 @@ local alive = {} -- unitID -> { reward factor }
 local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
 local pendingCfg = nil -- configuration waiting for the start
 local fixedList = nil -- { { name, x, z } ... } units that stay indestructible
-local fixedIds = {} -- unitID -> true: nothing damages these units
+GG.Indestructible = GG.Indestructible or {}
+local fixedIds = GG.Indestructible -- unitID -> true: nothing damages, reclaims, captures or self-destructs these units (the editor gadget fills the same table)
 local applyFixed -- (defined below)
 
 local function say(text)
