@@ -1125,7 +1125,7 @@ local function genLayout(rect)
 			widths[#widths + 1] = { value = t, label = tostring(t * 16), active = gen.mazePath == t }
 		end
 		row("Corridor width (Elmo)", widths, "genmazew")
-		labels[#labels + 1] = { text = "Random maze. Entrance top left, exit bottom right (rectangle).", x = rect.x1 + m.PAD, y = y - 22 * S, size = 21 * S }
+		labels[#labels + 1] = { text = "Random maze: entrance top left, exit bottom right.", x = rect.x1 + m.PAD, y = y - 22 * S, size = 21 * S }
 		y = y - 34 * S
 		return bottom()
 	end
