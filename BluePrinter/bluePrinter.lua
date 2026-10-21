@@ -1609,8 +1609,7 @@ end
 -- BAR key for the build spacing ("buildspacing inc|dec"): works with an armed building stamp
 local function buildSpacingAction(_, _, words)
 	if armedUnit or bpGrid.armed then
-		local w = words and words[1]
-		setSpacing(spacing + ((w == "dec") and -1 or 1))
+		setSpacing(Shared.spacingFromWords(spacing, words))
 	end
 	return false -- BAR should get it as well
 end
@@ -1624,7 +1623,7 @@ local function gridKeyHook(_, _, _, _, isRepeat, release, _, key)
 	local alt, ctrl = Spring.GetModKeyState()
 	if alt and not ctrl and (key == 122 or key == 120) then
 		if not isRepeat then
-			setSpacing(spacing + ((key == 122) and 1 or -1))
+			setSpacing(Shared.spacingFromKey(spacing, key))
 		end
 		return true
 	end

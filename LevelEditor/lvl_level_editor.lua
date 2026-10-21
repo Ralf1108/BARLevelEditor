@@ -5051,7 +5051,7 @@ local function gridKeyHook(_, _, _, _, isRepeat, release, _, key)
 	-- Alt+Z / Alt+X (also with Shift): build spacing when dragging; the build menu otherwise eats these keys when a builder is selected
 	if (armedUnit or armedFeature or bpGrid.armed) and alt and not ctrl and (key == 122 or key == 120) then
 		if not isRepeat then
-			setSpacing(spacing + ((key == 122) and 1 or -1))
+			setSpacing(Shared.spacingFromKey(spacing, key))
 		end
 		return true
 	end
@@ -5073,8 +5073,7 @@ end
 -- BAR key for the build spacing ("buildspacing inc|dec"): works with an armed unit stamp
 local function buildSpacingAction(_, _, words)
 	if armedUnit or armedFeature or bpGrid.armed then
-		local w = words and words[1]
-		setSpacing(spacing + ((w == "dec") and -1 or 1))
+		setSpacing(Shared.spacingFromWords(spacing, words))
 	end
 	return false -- BAR should get it as well
 end

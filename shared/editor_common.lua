@@ -648,6 +648,15 @@ function M.clampSpacing(v)
 	return math.max(0, math.min(20, v))
 end
 
+-- The BAR action "buildspacing inc|dec" (words[1]) and the keys Alt+Z / Alt+X (122 = +1, 120 = -1): the new spacing
+function M.spacingFromWords(spacing, words)
+	return M.clampSpacing(spacing + ((words and words[1] == "dec") and -1 or 1))
+end
+
+function M.spacingFromKey(spacing, key)
+	return M.clampSpacing(spacing + ((key == 122) and 1 or -1))
+end
+
 ---------------------------------------------------------------- Team color
 function M.teamColor(t)
 	local r, g, b = Spring.GetTeamColor(t)
