@@ -12,7 +12,7 @@ return function(host)
 	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
 
 	function ctf.new()
-		return { enabled = false, mode = "own", reward = "once", amount = 100, score = 3, radius = 100, returnTime = 30, homes = {}, flags = {} }
+		return { enabled = false, mode = "own", reward = "once", amount = 100, score = 3, radius = 100, returnTime = 30, visible = true, homes = {}, flags = {} }
 	end
 	ctf.DEFAULT = ctf.new()
 
@@ -149,6 +149,8 @@ return function(host)
 			{ kind = "ctfmode", value = "neutral", label = "Neutral flags", active = c.mode == "neutral",
 				tip = "The flags belong to nobody: every team may take every flag to its own collection point." },
 		})
+		line({ { kind = "ctfvisible", label = (c.visible ~= false and "[x] " or "[ ] ") .. "Flags always visible on the map", active = c.visible ~= false,
+			tip = "On: the flags are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees." } })
 		head("Reward for a flag (metal)")
 		line({
 			{ kind = "ctfreward", value = "once", label = "Once", active = c.reward == "once", w = 3,
@@ -278,7 +280,7 @@ return function(host)
 			end
 			return #out > 0 and table.concat(out, "/") or "-"
 		end
-		return table.concat({ c.mode, c.reward, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags) }, ";")
+		return table.concat({ c.mode, c.reward, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
 	end
 
 	function ctf.endPick()
@@ -415,6 +417,8 @@ return function(host)
 				c.mode = hit.value
 			elseif k == "ctfreward" then
 				c.reward = hit.value
+			elseif k == "ctfvisible" then
+				c.visible = not (c.visible ~= false)
 			end
 		end
 		return true
