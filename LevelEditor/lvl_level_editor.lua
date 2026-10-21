@@ -147,12 +147,30 @@ local function canEdit()
 	return v == "1" or v == 1 or v == true
 end
 
+-- canEdit with the message for the user (editing needs the editor game or /cheat)
+local function editAllowed()
+	if canEdit() then
+		return true
+	end
+	say("Cheat mode is off: please type /cheat")
+	return false
+end
+
 local function mouseGround()
 	local mx, my = Spring.GetMouseState()
 	local _, pos = Spring.TraceScreenRay(mx, my, true)
 	if pos then
 		return pos[1], pos[3]
 	end
+end
+
+-- Like mouseGround, but says so when the pointer is not over the map
+local function mouseOnMap()
+	local x, z = mouseGround()
+	if not x then
+		say("The mouse must be over the map")
+	end
+	return x, z
 end
 
 local function snap(v)
@@ -207,8 +225,7 @@ end
 
 -- Assign the selected units to another team (click on a team button)
 local function assign(_, _, args)
-	if not canEdit() then
-		say("Cheat mode is off: please type /cheat")
+	if not editAllowed() then
 		return true
 	end
 	local t = args and tonumber(args[1])
@@ -251,8 +268,7 @@ end
 
 -- Rotate the selection (l / r by 90 degrees) or mirror it (m, left-right); the units are set up again, the selection stays
 local function editSelected(mode)
-	if not canEdit() then
-		say("Cheat mode is off: please type /cheat")
+	if not editAllowed() then
 		return true
 	end
 	local sel = selectedUnits()
@@ -449,8 +465,7 @@ function widget:ParseLevel(text)
 end
 
 local function load_level(_, _, args)
-	if not canEdit() then
-		say("Cheat mode is off: please type /cheat")
+	if not editAllowed() then
 		return true
 	end
 	local name = ((args and args[1]) or "level"):gsub("[^%w_%-]", "_")
@@ -499,8 +514,7 @@ local function load_level(_, _, args)
 end
 
 local function clear_all()
-	if not canEdit() then
-		say("Cheat mode is off: please type /cheat")
+	if not editAllowed() then
 		return true
 	end
 	loadQueue = {}
@@ -925,17 +939,15 @@ local function copyUnits()
 end
 
 local function pasteUnits()
-	if not canEdit() then
-		say("Cheat mode is off: please type /cheat")
+	if not editAllowed() then
 		return true
 	end
 	if #clipboard == 0 then
 		say("The clipboard is empty. Copy with Ctrl+C first.")
 		return true
 	end
-	local cx, cz = mouseGround()
+	local cx, cz = mouseOnMap()
 	if not cx then
-		say("The mouse must be over the map")
 		return true
 	end
 	placeBlueprintUnits(clipboard, cx, cz, nil, "Copy")
@@ -944,13 +956,11 @@ end
 
 -- Ctrl+D: create the builders of all factions (as at the start) again at the mouse pointer, for the current team
 local function spawnBuildersHere()
-	if not canEdit() then
-		say("Cheat mode is off: please type /cheat")
+	if not editAllowed() then
 		return true
 	end
-	local x, z = mouseGround()
+	local x, z = mouseOnMap()
 	if not x then
-		say("The mouse must be over the map")
 		return true
 	end
 	Spring.SendLuaRulesMsg(string.format("led|builders|%d|%d|%d", x, z, team))
