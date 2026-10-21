@@ -362,7 +362,19 @@ local function saveLevel(name, quiet)
 			old:close()
 		end
 	end
-	block = block or keptScenario
+	if not block and keptScenario then
+		block = keptScenario
+		if name:sub(1, 1) ~= "_" then
+			-- a level of its own, made from another one (Save as new): title and ID of the other level would build its scenario into
+			-- the folder of the other one, so they come from the name of this level
+			local sc = decodeBlock(keptScenario)
+			if sc then
+				sc.title = (name:gsub("_", " "):gsub("^%l", string.upper))
+				sc.sid = (name:lower():gsub("[^a-z0-9]", ""))
+				block = encodeBlock(sc) or block
+			end
+		end
+	end
 	local f, err = io.open(OUTDIR .. name .. ".lua", "w")
 	if not f then
 		if not quiet then
@@ -3146,7 +3158,8 @@ function td.payload()
 		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
 	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-",
-		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.economy ~= false and "economy" or "towers", c.fog ~= false and "1" or "0" }, ";")
+		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.economy ~= false and "economy" or "towers", c.fog ~= false and "1" or "0",
+		math.floor(scenario and tonumber(scenario.metal) or 1000), math.floor(scenario and tonumber(scenario.energy) or 1000) }, ";")
 end
 
 -- Ends the pick mode (spawn point, goal, corridor, route)

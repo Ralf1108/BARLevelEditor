@@ -1268,11 +1268,15 @@ if EDITOR_MODE then
 		if n % 15 ~= 0 then
 			return
 		end
+		-- while a Tower Defense test runs (td_waves.lua: tdState) the player keeps the start resources of the level
+		local tdPlayer = (Spring.GetGameRulesParam("tdState") or "") ~= "" and Spring.GetGameRulesParam("tdPlayer") or nil
 		for _, t in ipairs(Spring.GetTeamList()) do
-			Spring.SetTeamResource(t, "ms", 1e9)
-			Spring.SetTeamResource(t, "es", 1e10)
-			Spring.SetTeamResource(t, "m", 1e9)
-			Spring.SetTeamResource(t, "e", 1e10)
+			if t ~= tdPlayer then
+				Spring.SetTeamResource(t, "ms", 1e9)
+				Spring.SetTeamResource(t, "es", 1e10)
+				Spring.SetTeamResource(t, "m", 1e9)
+				Spring.SetTeamResource(t, "e", 1e10)
+			end
 		end
 	end
 end

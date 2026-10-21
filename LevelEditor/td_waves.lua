@@ -2,7 +2,7 @@
 -- to the goal, pays metal and energy for every kill and ends the level (won: all waves beaten, lost: too many got through).
 -- Configuration: from the Level Editor with the message "tdw|start|<payload>" (stop: "tdw|stop"), or from the game option
 -- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
---   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned;bannedTech;restrict;fog
+--   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned;bannedTech;restrict;fog;metal;energy
 --   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
 --   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
 --           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
@@ -12,6 +12,8 @@
 --           the player may build only towers ("towers") or towers and economy structures ("economy"); fog = 1 | 0: fog of war
 --           (radars may be built; in a finished scenario the whole map is visible without fog)
 --   path = the waypoints between spawn and goal, already in the order the units walk them
+--   metal, energy (optional): start resources of the player; only the editor uses them (it sets them at the start of the test, a finished
+--           scenario gets them from its game options)
 -- State for the display: game rules parameters tdState, tdWave, tdWaves, tdLeaks, tdMaxLeaks, tdKilled, tdAlive.
 function gadget:GetInfo()
 	return {
@@ -107,6 +109,7 @@ local function parse(payload)
 	end
 	cfg.restrict = f[12] == "economy" and "economy" or "towers"
 	cfg.fog = f[13] == "1"
+	cfg.metal, cfg.energy = tonumber(f[14]), tonumber(f[15])
 	return cfg
 end
 
@@ -171,6 +174,7 @@ local function publish()
 		n = n + 1
 	end
 	Spring.SetGameRulesParam("tdState", td.state)
+	Spring.SetGameRulesParam("tdPlayer", td.cfg.player) -- the editor does not refill the resources of this team during the test
 	Spring.SetGameRulesParam("tdWave", td.wave)
 	Spring.SetGameRulesParam("tdWaves", #td.cfg.waves)
 	Spring.SetGameRulesParam("tdLeaks", td.leaked)
@@ -210,7 +214,7 @@ local function start(cfg)
 		Spring.SetGlobalLos(ally, not cfg.fog)
 	end
 	local now = Spring.GetGameFrame()
-	td = { cfg = cfg, state = "running", wave = 0, leaked = 0, killed = 0, queue = {}, nextWave = now + cfg.waves[1].gap * FPS, nextSpawn = 0 }
+	td = { resFrame = (EDITOR_MODE and cfg.metal and cfg.energy) and now + 3 or nil, cfg = cfg, state = "running", wave = 0, leaked = 0, killed = 0, queue = {}, nextWave = now + cfg.waves[1].gap * FPS, nextSpawn = 0 }
 	publish()
 	say(string.format("Started: %d waves, the first one in %d s, %d enemies may get through.", #cfg.waves, cfg.waves[1].gap, cfg.leaks))
 end
@@ -277,6 +281,17 @@ local function spawnOne(entry)
 end
 
 function gadget:GameFrame(n)
+	if td and td.resFrame and n >= td.resFrame then
+		-- test in the editor: the player has the start resources of the level (the editor gives everybody a huge amount otherwise; it leaves
+		-- the player alone while the test runs and starts again after Stop). A few frames after the start: the removed commander took its
+		-- storage with it only now.
+		td.resFrame = nil
+		local c = td.cfg
+		Spring.SetTeamResource(c.player, "ms", math.max(1000, c.metal))
+		Spring.SetTeamResource(c.player, "es", math.max(1000, c.energy))
+		Spring.SetTeamResource(c.player, "m", c.metal)
+		Spring.SetTeamResource(c.player, "e", c.energy)
+	end
 	if pendingCfg and n >= START_FRAME then
 		local cfg = pendingCfg
 		pendingCfg = nil
