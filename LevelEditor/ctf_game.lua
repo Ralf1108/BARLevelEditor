@@ -14,7 +14,8 @@
 -- Own flags with income: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
 -- standing wins).
 --   homes  = "team,x,z/team,x,z/..." collection points, flags = "team,x,z/..." flag points (team -1: neutral)
--- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfRadius, ctfHomes, ctfSpots.
+-- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfOut (lost teams), ctfRadius, ctfHomes, ctfSpots,
+-- ctfFlagIds ("unitID:owner,..."; owner -1 = neutral), ctfVisible (1/0).
 function gadget:GetInfo()
 	return {
 		name = "Capture the Flag",
@@ -67,6 +68,66 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 		gl.LineWidth(1)
 		gl.Color(1, 1, 1, 1)
+	end
+
+	-- Marker of every flag you can see on the minimap in the color of its team (grey = neutral) and a ring around the collection points
+	-- (the pods themselves have no minimap icon: ctf_game sets SetUnitNoMinimap). Drawn from DrawScreen over the minimap (BAR's minimap
+	-- does not call DrawInMiniMap of gadgets): px, py = lower left corner of the minimap on the screen, sx, sy = its size
+	local function drawMiniMap(px, py, sx, sy)
+		local mapX, mapZ = Game.mapSizeX, Game.mapSizeZ
+		local unit = mapX / sx -- one pixel in map units
+		gl.PushMatrix()
+		gl.Translate(px, py + sy, 0)
+		gl.Scale(sx / mapX, -sy / mapZ, 1)
+		local radius = Spring.GetGameRulesParam("ctfRadius") or 100
+		gl.LineWidth(2)
+		for _, p in ipairs(list(Spring.GetGameRulesParam("ctfHomes"))) do
+			local r, g, b = teamColor(p[1])
+			gl.Color(r, g, b, 1)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for i = 0, 23 do
+					local a = i / 24 * 2 * math.pi
+					gl.Vertex(p[2] + math.cos(a) * math.max(radius, 5 * unit), p[3] + math.sin(a) * math.max(radius, 5 * unit))
+				end
+			end)
+		end
+		gl.LineWidth(1)
+		local always = Spring.GetGameRulesParam("ctfVisible") == 1
+		local _, fullView = Spring.GetSpectatingState()
+		local ally = Spring.GetMyAllyTeamID()
+		for id, owner in tostring(Spring.GetGameRulesParam("ctfFlagIds") or ""):gmatch("(%d+):(-?%d+)") do
+			local x, _, z = Spring.GetUnitPosition(tonumber(id))
+			local los = always or fullView
+			if x and not los then
+				local st = Spring.GetUnitLosState(tonumber(id), ally, false) -- option off: only a flag your units see (or a radar shows)
+				los = st and (st.los or st.radar)
+			end
+			if x and los then
+				local r, g, b = 0.75, 0.75, 0.75
+				if tonumber(owner) >= 0 then
+					r, g, b = teamColor(tonumber(owner))
+				end
+				local h = 5 * unit
+				gl.Color(0, 0, 0, 1)
+				gl.Rect(x - h - unit, z - h - unit, x + h + unit, z + h + unit)
+				gl.Color(r, g, b, 1)
+				gl.Rect(x - h, z - h, x + h, z + h)
+			end
+		end
+		gl.Color(1, 1, 1, 1)
+		gl.PopMatrix()
+	end
+
+	-- (after the minimap: the engine draws it after DrawScreen)
+	function gadget:DrawScreenPost()
+		local state = Spring.GetGameRulesParam("ctfState")
+		if not state or state == "" then
+			return
+		end
+		local mx, my, msx, msy = Spring.GetMiniMapGeometry()
+		if mx and msx and msx > 0 then
+			drawMiniMap(mx, my, msx, msy)
+		end
 	end
 
 	function gadget:DrawScreen()
@@ -175,6 +236,7 @@ local function body(name, team, x, z, visible)
 	if id then
 		Spring.SetUnitNeutral(id, true)
 		Spring.SetUnitNoSelect(id, true)
+		Spring.SetUnitNoMinimap(id, true) -- the unsynced part draws the marker (team color)
 		Spring.SetUnitAlwaysVisible(id, visible and true or false) -- seen without radar or line of sight
 		Spring.MoveCtrl.Enable(id) -- the pod is a drifting unit (speed 0.03): frozen, it stays where it lies
 		Spring.SetUnitRulesParam(id, "tdwave", 1, { public = true })
@@ -246,6 +308,12 @@ local function start(cfg)
 	Spring.SetGameRulesParam("ctfHomes", table.concat(homes, "/"))
 	Spring.SetGameRulesParam("ctfSpots", table.concat(spots, "/"))
 	Spring.SetGameRulesParam("ctfRadius", cfg.radius)
+	local ids = {}
+	for _, f in ipairs(g.flags) do
+		ids[#ids + 1] = f.id .. ":" .. f.owner
+	end
+	Spring.SetGameRulesParam("ctfFlagIds", table.concat(ids, ","))
+	Spring.SetGameRulesParam("ctfVisible", cfg.visible and 1 or 0)
 	publish()
 	say(string.format("Started: %d flags, %d collection points, %s%s.", #g.flags, #cfg.homeList, cfg.income and ("income " .. cfg.amount .. " metal per second per flag") or (cfg.amount .. " metal per flag"),
 		cfg.score > 0 and (", " .. cfg.score .. " flags win") or ""))
