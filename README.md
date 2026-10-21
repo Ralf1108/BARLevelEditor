@@ -26,7 +26,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 2. Run `LevelEditor\install_editor.bat`. It finds your BAR installation, builds the extra game and creates a desktop shortcut **BAR Level Editor**.
 3. Start the shortcut. The start menu offers: `1` new level (choose a map), `2` load a level, `0` continue where you left off, `3` build a scenario package, `4` start a scenario you built.
 
-After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay). The editor needs the repository folder to stay where it is.
+After a BAR update or a change of the code nothing has to be done: the start script updates the extra game by itself. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay). The editor needs the repository folder to stay where it is.
 
 <details>
 <summary>What the setup does exactly</summary>

@@ -7,7 +7,7 @@ This manual describes the editor part by part. The short version for newcomers i
 ## Setup (once per computer, BAR must be installed)
 1. Download or clone the repository and keep the folders `LevelEditor` and `shared` next to each other.
 2. Run `install_editor.bat`. It searches BAR on all fixed drives (e.g. C:\Games, D:\Games, Program Files) and finds BAR and the engine, determines the installed game version, builds the extra game `data\games\LevelEditorMod.sdz` ("Level Editor", builds on the official BAR), creates the junctions `data\LevelEditor` -> `levels` and `data\LevelEditorBlueprints` -> `blueprints`, writes `start_level_editor.bat` and creates the desktop shortcut "BAR Level Editor".
-3. After a BAR update run `install_editor.bat` again (the game version is stored in the extra game). Also after changes to the widget or gadget.
+3. After a BAR update or changes to the widget or gadget you do not have to run `install_editor.bat` again: `start_level_editor.bat` (and the desktop icon) compares a fingerprint of the files and the game version with the one of the last setup before every start and runs the setup by itself when they differ (not while a game is running).
 4. Removing it again: run `uninstall_editor.bat` (it asks first). It removes the extra game, the two junctions in the game folder, the desktop icon, `start_level_editor.bat`, the start script and the cached map files (`last_map.txt`, `maps_online_cache.json`). Saved levels and blueprints stay in the folders `levels` and `blueprints`, the official game is not touched. With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
 
 ## Starting
@@ -75,7 +75,8 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `help_texts.lua` - texts of the help board (?) and of `/led_help`
 - `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list
-- `install_editor.bat` / `install_editor.ps1` - setup
+- `install_editor.bat` / `install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
+- `ensure_installed.ps1`, `editor_stamp.ps1` - called by `start_level_editor.bat`: fingerprint of the packed files and the game version, runs the setup when it changed
 - `uninstall_editor.bat` / `uninstall_editor.ps1` - removal (levels and blueprints stay)
 - `start_level_editor.bat` - start (created by the setup)
 - `check_links.ps1` - called by `start_level_editor.bat` before every start: points the two junctions to the `levels` and `blueprints` folders again if the project folder was moved

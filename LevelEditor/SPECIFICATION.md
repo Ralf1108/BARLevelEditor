@@ -11,7 +11,7 @@ Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`). S
 - In editor mode (game option `leveleditor=1`) **no /cheat and no /globallos** are needed. Everything is free and finished instantly. Legion, the extra pack and release candidates are switched on. The unit limit is raised (`maxunits=32000`).
 - Source code and texts contain no reference to persons or private matters. Player name in the start script: "Player".
 - Structure: **widget** `lvl_level_editor.lua` (controls, menu, saving/loading), **gadget** `unit_level_editor.lua` (places, deletes, blows up, build mode), shared code `editor_common.lua`.
-- After every change to the widget, gadget or shared code: run `install_editor.bat` again (builds the extra game). Also after a BAR update (the game version is stored in the extra game).
+- After every change to the widget, gadget or shared code, or a BAR update, the extra game has to be built again. `start_level_editor.bat` does it: before every start it calls `ensure_installed.ps1`, which compares the stamp `data\games\LevelEditorMod.stamp` (SHA-256 over the game version and the packed files, `Get-EditorStamp` in `editor_stamp.ps1`, written by `install_editor.ps1` after building) with the current files and runs `install_editor.ps1 -Quick` (builds only the extra game and the stamp; does not rewrite the start file, because the batch file is running) when the stamp or the extra game is missing or differs. While a game is running (`spring` process) the update is skipped with a note. `install_editor.bat` still does the whole setup (start file, shortcut).
 
 ## 2. Installation and start
 

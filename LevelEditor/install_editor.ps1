@@ -1,6 +1,8 @@
 # Sets up the Level Editor on a machine with Beyond All Reason installed.
 # Run through install_editor.bat. Changes nothing in the official game: it only creates an extra game "Level Editor"
 # (data\games\LevelEditorMod.sdz) that builds on the official BAR, plus a start file and a level folder.
+# -Quick (used by ensure_installed.ps1 from start_level_editor.bat): only builds the extra game and its stamp.
+param([switch]$Quick)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -11,6 +13,7 @@ function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
 $common = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_common.ps1'
 if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to this folder)." -ForegroundColor Red; exit 1 }
 . $common
+. (Join-Path $here 'editor_stamp.ps1')
 
 # ---------------------------------------------------------------- 1. Find BAR
 Step 'Find Beyond All Reason'
@@ -30,7 +33,7 @@ Write-Host "Game: $game"
 
 # ---------------------------------------------------------------- 4. Build the extra game (zip)
 Step 'Build the extra game "Level Editor"'
-foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua', 'ctf_game.lua', 'led_ctf.lua', 'help_texts.lua')) {
+foreach ($f in $EditorFiles) {
     if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (LevelEditor folder copied completely?)" }
 }
 # shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
@@ -82,6 +85,9 @@ foreach ($e in @(
 }
 $zip.Dispose()
 Write-Host "Created: $zipPath"
+Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $here $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
+
+if ($Quick) { exit 0 }
 
 # ---------------------------------------------------------------- 5. Folder for saved levels
 Step 'Folder for saved levels'
@@ -100,7 +106,7 @@ Step 'Write the start file'
 $bat = @"
 @echo off
 rem Starts the Level Editor (created by install_editor.bat): first the map selection, then the game.
-rem Run install_editor.bat again when BAR was updated.
+rem The setup runs by itself (ensure_installed.ps1) when the code or the BAR version changed.
 setlocal
 set "L=%~dp0"
 set "DATA=$data"
@@ -110,6 +116,7 @@ if not defined ENGINE (
 	echo No engine found.
 	pause & exit /b 1
 )
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%ensure_installed.ps1" -Data "%DATA%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%check_links.ps1" -Data "%DATA%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%choose_map.ps1" -Data "%DATA%"
 if errorlevel 1 exit /b 1
@@ -136,4 +143,4 @@ Write-Host 'Shortcut "BAR Level Editor" created.'
 Write-Host ""
 Write-Host "Done. Start via the desktop shortcut 'BAR Level Editor'." -ForegroundColor Green
 Write-Host "In the game no /cheat is needed; the ? button shows all keys (the widget is already on)."
-Write-Host "After a BAR update run this setup again."
+Write-Host "The start script updates the extra game by itself when the code or the BAR version changed."
