@@ -92,7 +92,7 @@ Waves of enemy land units walk from a spawn point through waypoints to a goal; t
 
 ![Tower Defense page](docs/level-editor-tower-defense.jpg)
 
-- **Corridor:** walls on both sides of a way, as single pieces (click or drag), along clicked points (*Line*) or freehand (*Free*), made of dragon teeth or walls, 32 to 192 Elmo wide. Corners are closed. The pieces are **indestructible**. What stands in the way is overwritten while **W** (left of the menu) is on.
+- **Walls and corridors:** single wall pieces (*Single*: click or drag) or a corridor with walls on both sides, along clicked points (*Line*) or freehand (*Free*), made of dragon teeth or walls, 32 to 192 Elmo wide. Corners are closed. The pieces are **indestructible**. What stands in the way is overwritten while **W** (left of the menu) is on.
 - **Route:** *Spawn*, *Goal* and any number of *Waypoints*. A waypoint on the drawn line is inserted there, Ctrl + drag moves one, Del removes it. Everything can be undone with Ctrl+Z.
 - **Waves:** per wave the factions, tech levels and types (vehicles, bots, hovercraft), count, gap in seconds and strength in percent. Every kill pays the unit's metal and energy. How many enemies may get through is set too: more and the level is lost, all waves beaten and it is won.
 - **Restrictions:** what the player may build. Towers always; **Economy** (extractors, power plants, storage) and **Fog of war** (radars) can be switched on or off. Single towers get a red X and are forbidden, a red X on T1, T2 or T3 forbids every structure of that tech level. The player has no commander, the builders come from the level.
