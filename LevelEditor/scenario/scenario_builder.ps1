@@ -36,13 +36,6 @@ $SIDES = @{ arm = 'Armada'; cor = 'Cortex'; leg = 'Legion' }
 $ROLE_TXT = @{ s = 'Player'; v = 'Allied AI'; e = 'Enemy (AI)' }
 $WIN_TXT = @{ com = 'Commanders'; killall = 'All units'; neverend = 'No end' }
 
-# Version of the "scenario" block. Raise it when the structure changes and convert the old form in Update-Block.
-#   0 = block without "version" (first version, same fields as 1)
-#   1 = fields: version, title, author, summary, briefing, roles, ai, win, metal, energy, sid
-#   2 = adds: grace (grace period in minutes, 0 = none)
-$SCENARIO_VERSION = 2
-$KNOWN_FIELDS = @('version', 'title', 'author', 'summary', 'briefing', 'roles', 'ai', 'win', 'metal', 'energy', 'sid', 'grace', 'tiers')
-
 # ---------------------------------------------------------------- Questions
 function Ask([string]$prompt, $default = '') {
     if ($Auto) { return [string]$default }
@@ -324,7 +317,7 @@ function Read-Capture([string]$txt) {
         return $out
     }
     $vis = [regex]::Match($body, '\bvisible\s*=\s*(true|false)')
-    $cap = @{ visible = ((-not $vis.Success) -or $vis.Groups[1].Value -eq 'true'); mode = (Txt 'mode' 'own'); reward = (Txt 'reward' 'income'); amount = (Num 'amount' 100); radius = (Num 'radius' 100); score = (Num 'score' 3); returnTime = (Num 'returnTime' 0); homes = (Points 'homes'); flags = (Points 'flags') }
+    $cap = @{ visible = ((-not $vis.Success) -or $vis.Groups[1].Value -eq 'true'); mode = (Txt 'mode' 'own'); amount = (Num 'amount' 100); radius = (Num 'radius' 100); score = (Num 'score' 3); returnTime = (Num 'returnTime' 0); homes = (Points 'homes'); flags = (Points 'flags') }
     if ($cap.homes.Count -eq 0 -or $cap.flags.Count -eq 0) {
         Write-Host 'Note: Capture the Flag is on in the level, but collection points or flag points are missing: the scenario is built without it.' -ForegroundColor Yellow
         return $null
@@ -394,26 +387,13 @@ function Select-LevelFile([string]$wanted) {
 }
 
 # ---------------------------------------------------------------- Block "scenario" in the level
-function Update-Block($data) {
-    $v = Get-Val $data 'version' 0
-    if ($v -isnot [int] -and $v -isnot [long]) { $v = 0 }
-    if ($v -gt $SCENARIO_VERSION) {
-        Write-Host "Note: the info in the level comes from a newer version (version $v, this script knows $SCENARIO_VERSION)."
-        Write-Host '         Known fields are taken over, unknown ones are kept when saving.'
-        return $data
-    }
-    if ($v -lt 2 -and -not $data.Contains('grace')) { $data['grace'] = 0 } # version 2: grace period, none before
-    $data['version'] = $SCENARIO_VERSION
-    return $data
-}
-
 function Read-Block([string]$path) {
     $m = $BLOCK_RX.Match([IO.File]::ReadAllText($path, $utf8))
     if (-not $m.Success) { return $null }
     try {
         $t = ConvertTo-Table ($m.Groups[1].Value | ConvertFrom-Json)
         if ($t -isnot [System.Collections.IDictionary]) { return $null }
-        return (Update-Block $t)
+        return $t
     } catch { return $null }
 }
 
@@ -559,29 +539,13 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $title = $t2
         $sid = Confirm-ScenarioId $sid
     }
-    # Map size for the start areas: from the level, otherwise from earlier info, otherwise ask
+    # Map size for the start areas: from the level
     $mapX = $level.mapX; $mapZ = $level.mapZ
-    if ($grace -gt 0 -and $mapX -le 0) {
-        $mf = Get-Val $saved 'mapfields' $null
-        if ($mf -and @($mf).Count -eq 2) { $mapX = [int]$mf[0] * 512; $mapZ = [int]$mf[1] * 512 }
-        elseif ($Auto -and -not $script:AllowAsk) { throw 'The map size is missing for the grace period (the level was saved before this feature). Save it again once in the Level Editor.' }
-        else {
-            Write-Host 'The map size is not in the level (old level). Please enter it in fields as in the map description (e.g. 16 x 16).'
-            $script:Auto = $false # also ask when rebuilding after editing
-            $fx = AskInt 'Width in fields' 16 1 64
-            $fz = AskInt 'Height in fields' $fx 1 64
-            $script:Auto = $auto
-            $mapX = $fx * 512; $mapZ = $fz * 512
-            $saved['mapfields'] = @($fx, $fz)
-        }
-    }
-    # unknown fields from newer versions are kept, the version is never lowered
+    if ($grace -gt 0 -and $mapX -le 0) { throw 'The map size is missing in the level (needed for the grace period). Save the level again in the Level Editor.' }
     # Tower Defense: the enemy team only gets the waves (no AI of its own that takes them over) and the gadget decides about winning and losing
     $aiRun = if ($td -or $ctf) { 'NullAI' } else { $ai }
     $winRun = if ($td -or $ctf) { 'neverend' } else { $win }
     $answers = [ordered]@{}
-    foreach ($k in $saved.Keys) { if ($KNOWN_FIELDS -notcontains $k) { $answers[$k] = $saved[$k] } } # also mapfields
-    $answers['version'] = [math]::Max($SCENARIO_VERSION, [int](Get-Val $saved 'version' 0))
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['roles'] = $roles; $answers['tiers'] = $tiers; $answers['ai'] = $ai; $answers['win'] = $win; $answers['metal'] = $metal; $answers['energy'] = $energy; $answers['grace'] = $grace; $answers['sid'] = $sid
     Save-Block $path $answers
@@ -708,12 +672,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $mods['scenariomode'] = '__SCENARIOMODE__'
     }
     if ($ctf) {
-        # settings for the gadget ctf_game.lua (mode;reward;amount;radius;score;returnTime;homes;flags;visible, teams renumbered like the units)
+        # settings for the gadget ctf_game.lua (mode;amount;radius;score;returnTime;homes;flags;visible, teams renumbered like the units)
         $homes = @($ctf.homes | Where-Object { $newid.ContainsKey([int]$_.team) } | ForEach-Object { '{0},{1},{2}' -f $newid[[int]$_.team], $_.x, $_.z }) -join '/'
         $flags = @($ctf.flags | ForEach-Object { '{0},{1},{2}' -f $(if ($ctf.mode -eq 'own' -and $newid.ContainsKey([int]$_.team)) { $newid[[int]$_.team] } else { -1 }), $_.x, $_.z }) -join '/'
-        $plain = (@($ctf.mode, 'income', $ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $homes, $flags, $(if ($ctf.visible) { '1' } else { '0' })) -join ';')
+        $plain = (@($ctf.mode, $ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $homes, $flags, $(if ($ctf.visible) { '1' } else { '0' })) -join ';')
         $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team with $($ctf.score) flags wins; 0 = no end)." -ForegroundColor Yellow }
+        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team that holds $($ctf.score) flags at once wins; 0 = no end)." -ForegroundColor Yellow }
     }
     if ($grace -gt 0) { $mods['norushtimer'] = $grace.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }
     foreach ($mk in $level.mods.Keys) { $mods[$mk] = $level.mods[$mk] }
@@ -739,7 +703,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'Start Scenario.bat'), $bat, [Text.Encoding]::ASCII)
     $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$winRun]
     if ($td) { $winTxt = "Tower Defense: beat all $($td.waves.Count) waves (at most $($td.leaks) enemies may get through)" }
-    if ($ctf) { $winTxt = $(if ($ctf.score -gt 0) { "Capture the Flag: the first team with $($ctf.score) delivered flags wins" } else { 'Capture the Flag: no end' }) }
+    if ($ctf) { $winTxt = $(if ($ctf.score -gt 0) { "Capture the Flag: the first team that holds $($ctf.score) flags at once wins" } else { 'Capture the Flag: no end' }) }
     $readme = New-Object Collections.ArrayList
     [void]$readme.Add($title); [void]$readme.Add('=' * $title.Length); [void]$readme.Add('')
     if ($author) { [void]$readme.Add("Author: $author"); [void]$readme.Add('') }
@@ -843,13 +807,12 @@ function Edit-Scenario([string]$levelName) {
         else { $saved[$key] = Ask $label (Get-Val $saved $key '') }
         if (& $onePlayer) {
             $saved['roles'] = $roles
-            $saved['version'] = [math]::Max($SCENARIO_VERSION, [int](Get-Val $saved 'version' 0))
             Save-Block $path $saved
             Write-Host '   Saved.'
         }
     }
     if (-not (& $onePlayer)) { throw 'Not saved: there must be exactly one player team.' }
-    if ((Ask 'Rebuild the scenario package now? (y/n)' 'y').ToLower().StartsWith('y')) { $script:AllowAsk = $true; Build-Scenario $base $true }
+    if ((Ask 'Rebuild the scenario package now? (y/n)' 'y').ToLower().StartsWith('y')) { Build-Scenario $base $true }
 }
 
 try {

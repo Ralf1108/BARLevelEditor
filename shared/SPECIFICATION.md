@@ -115,7 +115,7 @@ On every call the host passes the rectangle `rect = { x1, y0, x2, top }` of the 
 - **Deleting:** a click on the x turns it red and shows "x again" / "(trash)"; a second click on the same x deletes (trash). Any other click cancels.
 - **Renaming:** double click (within 0.5 s) on the name area of the tile. Input through the text functions of the widget (`ownText`), `[A-Za-z0-9_-]` allowed, at most 40 characters. Enter accepts (keys 13 and 271), Esc cancels, Backspace deletes. A click elsewhere accepts the name. Display "Name_" with the hint "Enter / Esc".
 - **Sorting by dragging:** hold the mouse on the tile and move more than 8 pixels, the tile hangs on the mouse pointer as a semi-transparent ghost tile. A yellow horizontal line shows the insertion point (below the target tile when moving back, above it when moving forward). At the top and bottom edge the list scrolls along. A target in an empty cell of the last column means "to the end". After releasing, the order is saved.
-- **Mouse wheel:** scrolls by 234·S per notch (three times the speed of earlier versions, then raised by 30 %).
+- **Mouse wheel:** scrolls by 234·S per notch.
 - After deleting and renaming, stamp mode is ended.
 
 ## 9. Unit catalog and selection grid (`M.newUnits`)

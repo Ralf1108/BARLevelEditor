@@ -1713,7 +1713,7 @@ function widget:GetConfigData()
 		end
 	end
 	return {
-		side = side, sideV = 2, autoBuild = autoBuild, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
+		side = side, autoBuild = autoBuild, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
 		map = Game and Game.mapName, plans = saved,
 	}
 end
@@ -1722,10 +1722,7 @@ function widget:SetConfigData(data)
 	if type(data) ~= "table" then
 		return
 	end
-	-- The default side is right (as in the Level Editor); saved values of older versions (left) are ignored
-	if data.sideV == 2 then
-		side = (data.side == "left") and "left" or "right"
-	end
+	side = (data.side == "left") and "left" or "right"
 	if data.autoBuild ~= nil then
 		autoBuild = data.autoBuild and true or false
 	end

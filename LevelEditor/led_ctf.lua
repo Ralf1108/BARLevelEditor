@@ -12,7 +12,7 @@ return function(host)
 	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
 
 	function ctf.new()
-		return { enabled = false, mode = "own", reward = "income", amount = 100, score = 3, radius = 100, returnTime = 0, visible = true, homes = {}, flags = {} }
+		return { enabled = false, mode = "own", amount = 100, score = 3, radius = 100, returnTime = 0, visible = true, homes = {}, flags = {} }
 	end
 	ctf.DEFAULT = ctf.new()
 
@@ -154,7 +154,7 @@ return function(host)
 		head("Income: metal per second per flag held")
 		line({ field("amount", "Metal per second for every flag a team holds at its collection point; a flag that is carried or stolen pays nothing. Click, type a number, Enter accepts") })
 		head("Flags a team must hold at once to win (0 = never)")
-		line({ field("score", "The first team that has delivered this many flags wins. 0: the level does not end. Click, type a number, Enter accepts") })
+		line({ field("score", "The first team that holds this many flags at its collection point at the same time wins. 0: the level does not end. Click, type a number, Enter accepts") })
 		head("Capture radius (Elmo)")
 		line({ field("radius", "Distance within which a unit picks up a flag, delivers it, or brings its own dropped flag back. Click, type a number, Enter accepts") })
 		head("Dropped flag goes back after (s, 0 = stays)")
@@ -274,7 +274,7 @@ return function(host)
 			end
 			return #out > 0 and table.concat(out, "/") or "-"
 		end
-		return table.concat({ c.mode, "income", c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
+		return table.concat({ c.mode, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
 	end
 
 	function ctf.endPick()

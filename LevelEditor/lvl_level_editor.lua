@@ -259,9 +259,8 @@ local function scenarioBlockOf(text)
 end
 
 -- Edit the scenario info in the game (button I in the menu): table with the same fields as the scenario maker
--- (version, title, author, summary, briefing, roles, ai, win, metal, energy, sid). Unknown fields are kept.
+-- (title, author, summary, briefing, roles, ai, win, metal, energy, grace, sid).
 local Json = Json or VFS.Include("common/luaUtilities/json.lua")
-local SCENARIO_VERSION = 2 -- 2 = adds: grace (grace period in minutes)
 local scenario = nil -- Info of the loaded scenario or one created in the game
 local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
 local currentLevel = nil -- Name of the level loaded or saved last
@@ -1015,7 +1014,6 @@ end
 
 local function scenarioSet(row, value)
 	scenario = scenario or {}
-	scenario.version = math.max(SCENARIO_VERSION, tonumber(scenario.version) or 0)
 	if row.id == "role" then
 		if type(scenario.roles) ~= "table" then
 			scenario.roles = {}
@@ -1316,7 +1314,7 @@ local function headerRects()
 			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(9) - m.HB, y1 = sideTop(9), side = true, kind = "ctf", value = "ctf", label = "CF", active = ctf.open,
 			tint = ctf.cfg().enabled and (ctf.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Capture the Flag is on for this level
-			tip = "Capture the Flag: flags lie on the map, units carry them to the collection point of their team and earn metal (flag points, collection points, reward)" }
+			tip = "Capture the Flag: flags lie on the map, units carry them to the collection point of their team and earn metal (flag points, collection points, income)" }
 		local areas = {
 			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
@@ -2402,8 +2400,7 @@ function td.resize(n)
 	td.scroll = math.max(0, math.min(td.scroll, #c.waves - td.VISIBLE))
 end
 
--- Selection of a wave row as short strings: fac "armcor", tech "12", kind "vb" (v = vehicles, b = bots, h = hovercraft). Older levels stored
--- single values (fac "arm", tech 1, kind "any" / "bot" / "vehicle"), they are read as well.
+-- Selection of a wave row as short strings: fac "armcor", tech "12", kind "vb" (v = vehicles, b = bots, h = hovercraft).
 td.CHOICES = {
 	fac = { "arm", "cor", "leg" },
 	tech = { "1", "2", "3" },
@@ -2411,10 +2408,8 @@ td.CHOICES = {
 }
 function td.chosen(w, field)
 	local s = tostring(w[field] or "")
-	if field == "kind" then
-		s = (s == "any" or s == "") and "vb" or (s == "bot" and "b" or (s == "vehicle" and "v" or s))
-	elseif s == "" then
-		s = field == "fac" and "arm" or "1"
+	if s == "" then
+		s = field == "fac" and "arm" or (field == "kind" and "vb" or "1")
 	end
 	local out = {}
 	for _, v in ipairs(td.CHOICES[field]) do
@@ -2768,7 +2763,7 @@ function td.layout(rect)
 			tip = "Spawn point of the enemies: click, then click the place on the map" },
 		{ kind = "tdspawnx", label = "X", tip = "Delete the spawn point", w = 1 },
 		{ kind = "tdwaypoint", label = "Waypoint", active = td.pick == "waypoint", w = 4,
-			tip = "Place waypoints: every click on the map adds one (right click ends).\nMove a waypoint: Ctrl + hold the left mouse button over it and drag.\nRemove one: mouse over it, press Del." },
+			tip = "Place waypoints: every click on the map adds one (right click ends).\nMove a waypoint: Alt + hold the left mouse button over it and drag.\nRemove one: mouse over it, press Del." },
 		{ kind = "tdwaypointx", label = "X", tip = "Delete ALL waypoints.\nA single waypoint: move the mouse over it on the map and press Del.", w = 1 },
 		{ kind = "tdgoal", label = "Goal", active = td.pick == "goal", w = 4,
 			tip = "Goal: click, then click the place on the map. Enemies that get within 120 Elmo of it are through." },

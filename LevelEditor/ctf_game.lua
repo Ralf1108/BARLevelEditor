@@ -4,9 +4,8 @@
 -- indestructible, neutral units; rings on the ground and the score are drawn by the unsynced part, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "ctf|start|<payload>" (stop: "ctf|stop"), or from the game option
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
---   mode;reward;amount;radius;score;returnTime;homes;flags;visible
+--   mode;amount;radius;score;returnTime;homes;flags;visible
 --   mode   = "own" (every team has its own flags, only the other teams take them) | "neutral" (every team may take every flag)
---   reward = no longer used (always income; older levels may have "once")
 --   amount = metal per second for every flag a team holds at its collection point, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team must hold at once to win (0 = never ends),
 --            a flag at a collection point can be taken by units of other teams (its owner brings it back to its flag point),
 --   returnTime = seconds after which a dropped flag (carrier destroyed) goes back to its flag point; 0 = it stays where it fell until a unit takes it
@@ -20,7 +19,7 @@
 function gadget:GetInfo()
 	return {
 		name = "Capture the Flag",
-		desc = "Flags, collection points and rewards for capture the flag levels",
+		desc = "Flags, collection points and income for capture the flag levels",
 		author = "",
 		date = "2026",
 		license = "GNU GPL, v2 or later",
@@ -194,10 +193,10 @@ local function parse(payload)
 		f[#f + 1] = p
 	end
 	local cfg = {
-		own = f[1] ~= "neutral", amount = tonumber(f[3]) or 0, radius = math.max(10, tonumber(f[4]) or 100),
-		score = math.max(0, tonumber(f[5]) or 0), returnTime = math.max(0, tonumber(f[6]) or 0), homes = {}, flags = points(f[8]), visible = f[9] ~= "0",
+		own = f[1] ~= "neutral", amount = tonumber(f[2]) or 0, radius = math.max(10, tonumber(f[3]) or 100),
+		score = math.max(0, tonumber(f[4]) or 0), returnTime = math.max(0, tonumber(f[5]) or 0), homes = {}, flags = points(f[7]), visible = f[8] ~= "0",
 	}
-	cfg.homeList = points(f[7])
+	cfg.homeList = points(f[6])
 	for _, h in ipairs(cfg.homeList) do
 		cfg.homes[h.team] = h
 	end

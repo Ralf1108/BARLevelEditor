@@ -23,7 +23,6 @@ $rulesSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_rules
 if (-not (Test-Path $rulesSrc)) { Fail 'File bar_rules.lua missing (copy the shared folder next to BluePrinter as well).' }
 $idir = Join-Path $data 'LuaUI\Include'
 New-Item -ItemType Directory -Force $idir | Out-Null
-Remove-Item (Join-Path $idir 'bp_shared.lua') -Force -ErrorAction SilentlyContinue # old name
 Copy-Item $sharedSrc (Join-Path $idir 'editor_common.lua') -Force
 Copy-Item $rulesSrc (Join-Path $idir 'bar_rules.lua') -Force
 Write-Host "Shared code copied to $idir"
@@ -36,8 +35,6 @@ Set-Junction (Join-Path $cfgDir 'BluePrinter') (Join-Path $here 'blueprints')
 # Blueprints of the Level Editor (if the LevelEditor folder lies next to BluePrinter)
 $leDir = Join-Path (Join-Path (Split-Path $here -Parent) 'LevelEditor') 'blueprints'
 if (Test-Path $leDir) { Set-Junction (Join-Path $cfgDir 'LevelEditorBlueprints') $leDir }
-# remove the old junction from earlier versions (data\BluePrinter); the widget may not access it
-if (Remove-Junction (Join-Path $data 'BluePrinter')) { Write-Host 'Old junction data\BluePrinter removed.' }
 Write-Host ''
 Write-Host 'Done. In the game: Settings -> allow user widgets ("Allow user widgets") and then'
 Write-Host 'F11 (widget list) -> switch BluePrinter on, if it is not on already.'

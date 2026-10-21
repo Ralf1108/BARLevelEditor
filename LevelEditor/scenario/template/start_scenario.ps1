@@ -148,9 +148,6 @@ if (Test-Path $wsrc) {
     $wdir = Join-Path $data 'LuaUI\Widgets'
     New-Item -ItemType Directory -Force $wdir | Out-Null
     Copy-Item $wsrc (Join-Path $wdir 'scenario_briefing.lua') -Force
-    # remove the widget file of earlier versions (it had a different name and would show a second window)
-    $older = Join-Path $wdir ('szenario' + '_briefing.lua')
-    if (Test-Path $older) { Remove-Item $older -Force }
 }
 
 Write-Host 'Starting the game ...'
