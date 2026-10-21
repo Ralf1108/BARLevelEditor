@@ -165,6 +165,7 @@ local function body(name, team, x, z)
 	if id then
 		Spring.SetUnitNeutral(id, true)
 		Spring.SetUnitNoSelect(id, true)
+		Spring.MoveCtrl.Enable(id) -- the pod is a drifting unit (speed 0.03): frozen, it stays where it lies
 		Spring.SetUnitRulesParam(id, "tdwave", 1, { public = true })
 		protected[id] = true
 	end
