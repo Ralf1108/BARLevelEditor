@@ -51,8 +51,8 @@ The Place menu has the sub-tabs **Recent** (recently chosen blueprints and place
 
 ## Generate (button G)
 The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen on the left (N = neutral):
-- **Units:** choose faction, type (units, buildings, turrets, air, ships; several possible), tech T1-T3 and the count (input field, 1 to 2000), choose the **Area** (rectangle, or circle: drag from the center outwards), press **Generate** and drag it on the map; random units appear in it. Ctrl+Z undoes it.
-- **Maze:** choose faction, material (dragon teeth or walls) and the **corridor width** (32, 64, 128, 160 or 192 Elmo; the same widths as for Tower Defense corridors), then **Generate** (Area as above) and drag: a random maze appears in it, with the entrance top left and the exit bottom right. The key **M** cycles the maze mode (dragon teeth, walls, off).
+- **Units:** choose faction, type (units, buildings, turrets, air, ships; several possible), tech T1-T3 and the count (input field, 1 to 2000), press **Rectangle** or **Circle** (circle: drag from the center outwards) and drag the area on the map; random units appear in it (there is no separate Generate button: the shape button starts it, the same button again or a right click ends it). Ctrl+Z undoes it.
+- **Maze:** choose faction, material (dragon teeth or walls) and the **corridor width** (32, 64, 128, 160 or 192 Elmo; the same widths as for Tower Defense corridors), then press **Rectangle** or **Circle** and drag: a random maze appears in it, with the entrance top left and the exit bottom right. The key **M** cycles the maze mode (dragon teeth, walls, off).
 
 ## Selecting, editing and deleting
 - **Selecting:** the editor switches on the cheat mode and the god mode for all teams at the start (`/godmode 3`), so you select units of every team like your own: click or drag a rectangle, enemies too. The command menu of the game appears for them and their orders work (move, attack, patrol, stop, build ...; the orders of units of other teams are forwarded to the gadget). Delete, blow up, assign to a team, copy and blueprints use the selection.

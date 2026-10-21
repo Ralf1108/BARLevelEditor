@@ -1049,10 +1049,9 @@ local function genLayout(rect)
 		genkind = "Type of the generated units: several can be on at once",
 		gentech = "Tech level: several can be on at once, none chosen means all",
 		gencount = "Total number of units (1-2000). Click, type a number, Enter accepts",
-		genshape = "Shape of the area: a rectangle, or a circle dragged from its center outwards",
+		genshape = "Press, then drag the area on the map: the units (or the maze) appear in it for the chosen team. A rectangle, or a circle dragged from its center outwards. Press again or right click to end, Ctrl+Z undoes it.",
 		genmaze = "Material of the maze walls: dragon teeth or walls",
 		genmazew = "Width of the corridors of the maze in Elmo",
-		gengo = "Press, then drag the area on the map: the units (or the maze) appear in it for the chosen team. Right click ends, Ctrl+Z undoes it.",
 	}
 	local function row(title, items, kind)
 		labels[#labels + 1] = { text = title, x = rect.x1 + m.PAD, y = y - 30 * S, size = 25 * S, head = true }
@@ -1085,19 +1084,15 @@ local function genLayout(rect)
 			{ value = "leg", label = "Legion", active = gen.faction == "leg", icon = Shared.FACTION_ICONS["leg"] },
 		}, "genfac")
 	end
-	-- Bottom of both sub-tabs: team line, Area (rectangle / circle) and the Generate button
+	-- Bottom of both sub-tabs: team line and Area (rectangle / circle: pressing one starts the generating, there is no extra button)
 	local function bottom()
 		labels[#labels + 1] = { text = "Team " .. team .. (neutralOn and ", neutral" or "") .. "  (number buttons on the left; N = neutral)", x = rect.x1 + m.PAD, y = y - 26 * S, size = 22 * S }
 		y = y - 40 * S
-		row("Area (circle: drag from the center outwards)", {
-			{ value = "rect", label = "Rectangle", active = gen.shape == "rect" },
-			{ value = "circle", label = "Circle", active = gen.shape == "circle" },
-		}, "genshape")
 		local armed = gen.sub == "maze" and mazeKind ~= nil or gen.sub ~= "maze" and gen.armed
-		local what = gen.shape == "circle" and "a circle" or "a rectangle"
-		rects[#rects + 1] = { x1 = rect.x1 + m.PAD, x2 = rect.x2 - m.PAD, y0 = y - m.HB * 1.3, y1 = y, kind = "gengo", value = "go",
-			label = armed and ("Generate: drag " .. what .. " (right click ends)") or "Generate", active = armed, fs = 28 * S, tip = TIPS.gengo }
-		y = y - m.HB * 1.3 - m.PAD
+		row(armed and "Drag the area on the map (right click ends)" or "Generate in an area (circle: drag from the center outwards)", {
+			{ value = "rect", label = "Rectangle", active = armed and gen.shape == "rect" },
+			{ value = "circle", label = "Circle", active = armed and gen.shape == "circle" },
+		}, "genshape")
 		return rects, labels, rect.top - y
 	end
 	if gen.sub == "maze" then
@@ -2243,6 +2238,28 @@ local function mazeSetKind(k)
 		say("Maze of " .. MAZE_KINDS[k].label .. ": drag " .. (gen.shape == "circle" and "a circle from its center" or "a rectangle") .. " with the left mouse button held down. M switches, right click ends.")
 	else
 		say("Maze mode ended")
+	end
+end
+
+-- A shape button of the Generate page: draws the units (or the maze, in the Maze tab) in the area dragged on the map; the same shape again ends it
+function gen.arm(shape)
+	local armed = gen.sub == "maze" and mazeKind ~= nil or gen.sub ~= "maze" and gen.armed
+	local same = armed and gen.shape == shape
+	gen.shape = shape
+	if same then
+		if gen.sub == "maze" then
+			mazeSetKind(nil)
+		else
+			gen.armed, gen.drag = false, nil
+		end
+	elseif gen.sub == "maze" then
+		mazeSetKind(gen.mazeSel)
+	else
+		gen.armed, gen.drag = true, nil
+		armedUnit, armedFeature = false, false
+		bpGrid:setArmed(false)
+		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+		say("Generate: drag " .. (shape == "circle" and "a circle from its center" or "a rectangle") .. " with the left mouse button held down, right click ends.")
 	end
 end
 
@@ -3776,7 +3793,7 @@ local function panelPress(mx, my, button)
 					if gr.kind == "genfac" then
 						gen.faction = gr.value
 					elseif gr.kind == "genshape" then
-						gen.shape = gr.value
+						gen.arm(gr.value)
 					elseif gr.kind == "genkind" then
 						gen.kinds[gr.value] = not gen.kinds[gr.value] or nil
 					elseif gr.kind == "gentech" then
@@ -3800,17 +3817,6 @@ local function panelPress(mx, my, button)
 						end
 					elseif gr.kind == "genmazew" then
 						gen.mazePath = gr.value
-					elseif gr.kind == "gengo" and gen.sub == "maze" then
-						mazeSetKind(not mazeKind and gen.mazeSel or nil)
-					elseif gr.kind == "gengo" then
-						gen.armed = not gen.armed
-						gen.drag = nil
-						if gen.armed then
-							armedUnit, armedFeature = false, false
-							bpGrid:setArmed(false)
-							mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
-							say("Generate: drag a rectangle with the left mouse button held down, right click ends.")
-						end
 					end
 					break
 				end

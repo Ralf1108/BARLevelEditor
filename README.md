@@ -44,8 +44,8 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 |---|---|
 | Place a unit | **P** (Place) → **Units** → pick a unit → left click on the map. Right click ends. |
 | Place many | Hold the left mouse button and move: one is placed after every footprint. **Shift + drag** places a row, **Shift + Alt + drag** a rectangle, **Shift + mouse wheel** changes the spacing, **[** and **]** rotate. The button **W** decides whether occupied spots are overwritten (default) or left free. |
-| Random army | **G** (Generate) → choose faction / type / tech / count and *Area* → **Generate**, then drag on the map. |
-| Maze | **G → Maze**, choose the material and the corridor width, **Generate**, drag on the map. |
+| Random army | **G** (Generate) → choose faction / type / tech / count, press *Rectangle* or *Circle* and drag on the map. |
+| Maze | **G → Maze**, choose the material and the corridor width, press *Rectangle* or *Circle*, drag on the map. |
 | Tower Defense | **TD** → build walls and corridors, set **Spawn**, **Waypoint**s and **Goal**, define waves and restrictions → **Start test**. See [Tower Defense](#tower-defense). |
 | Delete | **Del** on the selection or under the mouse; **DL / DR / DC** delete along a line, in a rectangle or in a circle. |
 | Copy, cut, paste | **Ctrl+C**, **Ctrl+X**, **Ctrl+V** (pastes at the mouse). |
