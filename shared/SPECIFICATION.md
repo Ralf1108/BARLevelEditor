@@ -204,6 +204,12 @@ Sort key `rank = (filler 1000) + (water 100) + kind`, then alphabetically by nam
 - At most 150 models per preview (`ghost.max`): for large blueprints the units closest to the center.
 - Diagnosis: `command(mode, name)` returns the state as text and switches the mode: `gl`, `wg`, `auto` (chat commands `/led_ghost`, `/bp_ghost`). If the BAR widget is missing or returns nothing, a message is shown once and it switches to `gl.UnitShape`.
 
+### 11.1 Rotating pictures in the lists (hover over a tile)
+- `M.drawUnitPreview(defID, x1, y1, size, team)`, `M.drawBlueprintPreview(bp, x1, y1, size)` (all units in place, rotated as when placing) and `M.drawFeaturePreview(defID, x1, y1, size, thumb)` draw a rotating 3D picture next to the lists. Units and blueprints use a small shader of their own (fixed lighting, team color from the texture alpha), features run with the engine rendering (`gl.FeatureShape`).
+- `M.previewPos(rect, tileY, tileH, size)` gives the place: left of the team strip if there is room, otherwise right of the menu, at the height of the tile.
+- Feature pictures in the list: `M.featureThumb(defID)` renders a 96 px picture once into a texture when the tile first becomes visible (at most 3 new ones per frame, `M.featureThumbFrame()` resets that budget every frame), the cache lasts until quitting, `M.freeThumbs()` frees the textures.
+- `M.buildUnitCache()` builds the table `[faction][group][tech] = { { name, id, filler, rank } ... }` once from `UnitDefs`; the units list and the Tower Defense tower list use it. `M.unitGroup` is the group assignment (section 9.2), `M.FACTIONS`, `M.GROUPS` and `M.TECHS` are the name lists of the buttons.
+
 ## 12. Tests and quality assurance
 
 - The module is checked in the real game (headless engine): compiling under Lua 5.1, building the unit catalog, sorting, damage per shot.

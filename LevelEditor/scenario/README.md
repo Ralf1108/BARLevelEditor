@@ -1,4 +1,4 @@
-# Scenario maker
+# Scenario builder
 
 Builds a finished scenario from a saved level of the Level Editor that anyone can play with the **official Beyond All Reason**. Nothing in the game is changed and no mod is needed (only a Tower Defense scenario builds a small extra game next to the official one, see below).
 
