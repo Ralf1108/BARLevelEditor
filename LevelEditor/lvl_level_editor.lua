@@ -69,9 +69,11 @@ local HELP_SECTIONS = {
 		{ "Recent", "Recently chosen blueprints and recently placed units." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
 		{ "I", "Scenario info: title, author, briefing, roles and tech (T1/T2/T3) per team, AI, win condition, resources, grace period, ID. Click a field and type; written with the level when you save it." },
-		{ "TD", "Tower Defense (button between I and ?): tick the box. Corridor: choose Teeth or Walls, then Line (click points, right click builds) or Free (draw with the mouse held down); the walls on both sides are indestructible, Ctrl+Z undoes. Path: the way the enemies walk (Line or Free), through a maze too. Spawn point and goal, enemies allowed through, waves with factions, tech, type (V vehicles, B bots, H hovercraft), count, gap in seconds and HP %. Play / Stop at the bottom runs the waves in the editor. Settings are saved with the level." },
+		{ "TD", "Tower Defense (button TD below P and G): tick the box. Walls: choose Teeth or Walls; Single places single pieces (click or drag). Corridor (walls on both sides): Line (click points, right click builds) or Free (draw with the mouse held down) with the chosen width; the pieces are indestructible, Ctrl+Z undoes. Route: Spawn, Waypoint (click on the yellow line inserts, Ctrl + drag moves, Del removes) and Goal. Enemies allowed through, then waves with factions, tech, type (V vehicles, B bots, H hovercraft), count, gap in seconds and HP %. Restrictions: red X on a tower or tech level forbids it; Economy and Fog of war can be switched. Start test at the bottom runs the waves in the editor, Stop brings the level back. Settings are saved with the level." },
 	} },
 	{ "Buttons left of the menu", {
+		{ "W", "Write: on (green, default) = placing over something deletes what is in the way (Ctrl+Z brings it back); off = occupied spots are left free." },
+		{ "DL  /  DR  /  DC", "Delete along a line, in a rectangle or in a circle (see Placing)." },
 		{ "0, 1, 2 ...", "Team for new units and blueprints. With a selection: assigns the selection to this team." },
 		{ "N", "Toggle: new units are neutral (flag, the team stays)." },
 		{ "G", "Gaia team: belongs to no player, an enemy to everyone." },
@@ -3381,8 +3383,8 @@ function td.wallSpots(p, width)
 		local len = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
 		if len > 0 then
 			local dx, dz = (bx - ax) / len, (bz - az) / len
-			for s = 0, len + 8, 8 do
-				s = math.min(s, len)
+			for s0 = 0, len + 8, 8 do
+				local s = math.min(s0, len)
 				for _, side in ipairs({ 1, -1 }) do
 					add(ax + dx * s - dz * off * side, az + dz * s + dx * off * side)
 				end
@@ -4793,8 +4795,8 @@ local HELP_TOPICS = {
 	{
 		names = { "units", "group", "generate", "buildings", "turrets", "air", "ships" },
 		lines = {
-			"GENERATE: the Generate menu (next to Place) fills a rectangle or a circle with random units, buildings, turrets, air or ships. Choose team, faction, type(s), tech levels and the count, then Generate and drag the area.",
-			"The sub-tab Maze builds a random maze of dragon teeth or walls in the dragged area (also key M). At most 2000 pieces; buildings and turrets stand on free building spots, units on passable ground.",
+			"GENERATE: the Generate menu (button G of the button column) fills a rectangle or a circle with random units, buildings, turrets, air or ships. Choose team, faction, type(s), tech levels and the count, then Generate and drag the area.",
+			"The sub-tab Maze builds a random maze of dragon teeth or walls in the dragged area (also key M), corridors 32 to 192 Elmo wide. At most 12000 pieces; buildings and turrets stand on free building spots, units on passable ground.",
 			"Enemies fight on their own within range. Air units appear in the air in flight mode.",
 		},
 	},
