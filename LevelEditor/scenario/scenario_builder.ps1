@@ -540,6 +540,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['roles'] = $roles; $answers['tiers'] = $tiers; $answers['ai'] = $ai; $answers['win'] = $win; $answers['metal'] = $metal; $answers['energy'] = $energy; $answers['grace'] = $grace; $answers['sid'] = $sid
     Save-Block $path $answers
+    # Tower Defense: no grace period (the no-rush rules of the game keep every unit inside its start area while it runs, so the wave
+    # units could not leave the spawn point); the saved answer stays in the level
+    if ($td -and $grace -gt 0) {
+        Write-Host 'Note: no grace period in a Tower Defense scenario (the enemy waves could not leave their start area).' -ForegroundColor Yellow
+        $grace = 0
+    }
 
     # --- Renumber the teams (0..n-1, player first)
     $order = @($teamsFound | Where-Object { $roles[[string]$_] -eq 's' }) + @($teamsFound | Where-Object { $roles[[string]$_] -ne 's' })
