@@ -67,6 +67,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Save and load** levels with Ctrl+S, autosave when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others play with their own BAR.
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
+- **Capture the Flag:** flag points, a collection point per team and a reward in metal, for human against human.
 
 | Blueprints | Generate: units |
 |---|---|
@@ -102,6 +103,17 @@ Waves of enemy land units walk from a spawn point through waypoints to a goal; t
 - **As a scenario:** a level with Tower Defense switched on becomes a Tower Defense scenario with everything above (see [Scenario builder](#scenario-builder)); the recipient's starter builds a small extra game that only adds the wave script.
 
 Details are in the [Level Editor manual](LevelEditor/README.md#tower-defense) and the [specification](LevelEditor/SPECIFICATION.md).
+
+## Capture the Flag
+
+Flags (the silver pods of the scavengers) lie on the map; units pick them up by getting close, carry them to the collection point of their team and earn metal for it. Switch it on with the **CF** button:
+
+- **Own flags per team** (the other teams steal them) or **Neutral flags** (everybody takes every flag).
+- **Reward:** metal *once* per delivered flag, or metal *per second* for every flag that stays at the collection point.
+- Any number of **flag points** and one **collection point** per team, placed with a click on the map; capture radius, return time of a dropped flag and the number of flags that win are settings of the page.
+- **Start test** runs it in the editor; as a scenario it is packed with the level. For human against human; computer opponents do not play it.
+
+Details are in the [Level Editor manual](LevelEditor/README.md#capture-the-flag) and the [specification](LevelEditor/SPECIFICATION.md).
 
 ## BluePrinter (for the official game)
 

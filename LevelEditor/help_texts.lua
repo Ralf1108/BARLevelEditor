@@ -5,7 +5,7 @@
 local sections = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, P / G / TD pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, P / G / TD / CF pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Title row", "Drag the title \"Level Editor\" with the left mouse button: the whole menu (with the strip at the left and the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
@@ -15,6 +15,7 @@ local sections = {
 		{ "Recent", "Recently chosen blueprints and recently placed units." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
 		{ "I", "Scenario info: title, author, briefing, roles and tech (T1/T2/T3) per team, AI, win condition, resources, grace period, ID. Click a field and type; written with the level when you save it." },
+		{ "CF", "Capture the Flag (button CF below TD): tick the box. Flags: Own flags per team or Neutral flags. Reward: Once (metal per delivered flag) or Per second (the flag stays at the collection point and pays every second), the field is the amount. Flags to win (0 = no end), capture radius, return time of a dropped flag. Choose the team in the strip at the left, then Collection point (one per team) and Flag point (as many as you like) and click on the map; Del over a point removes it. Start test runs it, Stop brings the level back." },
 		{ "TD", "Tower Defense (button TD below P and G): tick the box. Walls: choose Teeth or Walls; Single places single pieces (click or drag). Corridor (walls on both sides): Line (click points, right click builds) or Free (draw with the mouse held down) with the chosen width; the pieces are indestructible, Ctrl+Z undoes. Route: Spawn, Waypoint (click on the yellow line inserts, Ctrl + drag moves, Del removes) and Goal. Enemies allowed through, then waves with factions, tech, type (V vehicles, B bots, H hovercraft), count, gap in seconds and HP %. Restrictions: red X on a tower or tech level forbids it; Economy and Fog of war can be switched. Start test at the bottom runs the waves in the editor, Stop brings the level back. Settings are saved with the level." },
 	} },
 	{ "Buttons left of the menu", {
