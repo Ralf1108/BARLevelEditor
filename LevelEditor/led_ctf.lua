@@ -9,10 +9,10 @@ return function(host)
 	local Shared = host.Shared
 	local ctf = { open = false, edit = nil, pick = nil, data = nil, notice = nil }
 	local DELETE_RADIUS = 80 -- Del: the point within this distance of the mouse pointer goes
-	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
+	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 }, xp = { 0, 1000 } }
 
 	function ctf.new()
-		return { enabled = false, mode = "own", reward = "once", amount = 100, score = 3, radius = 100, returnTime = 30, visible = true, homes = {}, flags = {} }
+		return { enabled = false, mode = "own", reward = "once", amount = 100, score = 3, radius = 100, returnTime = 0, xp = 50, visible = true, homes = {}, flags = {} }
 	end
 	ctf.DEFAULT = ctf.new()
 
@@ -163,8 +163,10 @@ return function(host)
 		line({ field("score", "The first team that has delivered this many flags wins. 0: the level does not end. Click, type a number, Enter accepts") })
 		head("Capture radius (Elmo)")
 		line({ field("radius", "Distance within which a unit picks up a flag, delivers it, or brings its own dropped flag back. Click, type a number, Enter accepts") })
-		head("Dropped flag goes back after (seconds)")
-		line({ field("returnTime", "A flag that was dropped (carrier destroyed) lies back at its flag point after this time. Click, type a number, Enter accepts") })
+		head("Carrier destroyed: flag goes back after (s, 0 = at once)")
+		line({ field("returnTime", "When the unit that carries a flag is destroyed, the flag is back at its flag point after this many seconds (0 = at once; otherwise it lies where the carrier died). A carrier cannot shoot. Click, type a number, Enter accepts") })
+		head("XP for the unit that delivers a flag (hundredths)")
+		line({ field("xp", "Experience the delivering unit gets, in hundredths: 50 = 0.5, 100 = 1.0. Click, type a number, Enter accepts") })
 		head("Places on the map (team: strip at the left)")
 		line({
 			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
@@ -280,7 +282,7 @@ return function(host)
 			end
 			return #out > 0 and table.concat(out, "/") or "-"
 		end
-		return table.concat({ c.mode, c.reward, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
+		return table.concat({ c.mode, c.reward, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0", c.xp or 50 }, ";")
 	end
 
 	function ctf.endPick()

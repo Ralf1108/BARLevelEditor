@@ -324,7 +324,7 @@ function Read-Capture([string]$txt) {
         return $out
     }
     $vis = [regex]::Match($body, '\bvisible\s*=\s*(true|false)')
-    $cap = @{ visible = ((-not $vis.Success) -or $vis.Groups[1].Value -eq 'true'); mode = (Txt 'mode' 'own'); reward = (Txt 'reward' 'once'); amount = (Num 'amount' 100); radius = (Num 'radius' 100); score = (Num 'score' 3); returnTime = (Num 'returnTime' 30); homes = (Points 'homes'); flags = (Points 'flags') }
+    $cap = @{ visible = ((-not $vis.Success) -or $vis.Groups[1].Value -eq 'true'); mode = (Txt 'mode' 'own'); reward = (Txt 'reward' 'once'); amount = (Num 'amount' 100); radius = (Num 'radius' 100); score = (Num 'score' 3); returnTime = (Num 'returnTime' 30); xp = (Num 'xp' 50); homes = (Points 'homes'); flags = (Points 'flags') }
     if ($cap.homes.Count -eq 0 -or $cap.flags.Count -eq 0) {
         Write-Host 'Note: Capture the Flag is on in the level, but collection points or flag points are missing: the scenario is built without it.' -ForegroundColor Yellow
         return $null
@@ -708,10 +708,10 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $mods['scenariomode'] = '__SCENARIOMODE__'
     }
     if ($ctf) {
-        # settings for the gadget ctf_game.lua (mode;reward;amount;radius;score;returnTime;homes;flags;visible, teams renumbered like the units)
+        # settings for the gadget ctf_game.lua (mode;reward;amount;radius;score;returnTime;homes;flags;visible;xp, teams renumbered like the units)
         $homes = @($ctf.homes | Where-Object { $newid.ContainsKey([int]$_.team) } | ForEach-Object { '{0},{1},{2}' -f $newid[[int]$_.team], $_.x, $_.z }) -join '/'
         $flags = @($ctf.flags | ForEach-Object { '{0},{1},{2}' -f $(if ($ctf.mode -eq 'own' -and $newid.ContainsKey([int]$_.team)) { $newid[[int]$_.team] } else { -1 }), $_.x, $_.z }) -join '/'
-        $plain = (@($ctf.mode, $ctf.reward, $ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $homes, $flags, $(if ($ctf.visible) { '1' } else { '0' })) -join ';')
+        $plain = (@($ctf.mode, $ctf.reward, $ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $homes, $flags, $(if ($ctf.visible) { '1' } else { '0' }), $ctf.xp) -join ';')
         $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team with $($ctf.score) flags wins; 0 = no end)." -ForegroundColor Yellow }
     }

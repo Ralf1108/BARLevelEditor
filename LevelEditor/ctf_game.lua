@@ -4,13 +4,14 @@
 -- indestructible, neutral units; rings on the ground and the score are drawn by the unsynced part, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "ctf|start|<payload>" (stop: "ctf|stop"), or from the game option
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
---   mode;reward;amount;radius;score;returnTime;homes;flags;visible
+--   mode;reward;amount;radius;score;returnTime;homes;flags;visible;xp
 --   mode   = "own" (every team has its own flags, only the other teams take them) | "neutral" (every team may take every flag)
 --   reward = "once" (amount of metal for every delivered flag, the flag goes back to its flag point) | "income" (amount of metal per
 --            second for every flag a team holds; the delivered flag stays at the collection point)
 --   amount = metal, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team needs to win (0 = never ends),
---   returnTime = seconds after which a dropped flag lies back at its flag point
+--   returnTime = seconds after a dropped flag (carrier destroyed) is back at its flag point; 0 = at once (the unit that carries a flag cannot shoot)
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
+--   xp = experience of the unit that delivers a flag, in hundredths (50 = 0.5)
 -- Own flags with income: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
 -- standing wins).
 --   homes  = "team,x,z/team,x,z/..." collection points, flags = "team,x,z/..." flag points (team -1: neutral)
@@ -194,7 +195,7 @@ local function parse(payload)
 	end
 	local cfg = {
 		own = f[1] ~= "neutral", income = f[2] == "income", amount = tonumber(f[3]) or 0, radius = math.max(10, tonumber(f[4]) or 100),
-		score = math.max(0, tonumber(f[5]) or 0), returnTime = math.max(0, tonumber(f[6]) or 30), homes = {}, flags = points(f[8]), visible = f[9] ~= "0",
+		score = math.max(0, tonumber(f[5]) or 0), returnTime = math.max(0, tonumber(f[6]) or 30), homes = {}, flags = points(f[8]), visible = f[9] ~= "0", xp = math.max(0, tonumber(f[10]) or 50) / 100,
 	}
 	cfg.homeList = points(f[7])
 	for _, h in ipairs(cfg.homeList) do
@@ -245,9 +246,31 @@ local function body(name, team, x, z, visible)
 	return id
 end
 
+-- The unit that carries a flag cannot shoot: its weapons get the range 0 (saved in the flag record) until it delivers or the flag is lost
+local function disarm(f, unitID)
+	f.ranges = {}
+	local ud = UnitDefs[Spring.GetUnitDefID(unitID)]
+	for w = 1, ud and #ud.weapons or 0 do
+		f.ranges[w] = Spring.GetUnitWeaponState(unitID, w, "range")
+		Spring.SetUnitWeaponState(unitID, w, "range", 0)
+	end
+end
+
+local function rearm(f, unitID)
+	if f.ranges and unitID and Spring.ValidUnitID(unitID) then
+		for w, r in pairs(f.ranges) do
+			if r then
+				Spring.SetUnitWeaponState(unitID, w, "range", r)
+			end
+		end
+	end
+	f.ranges = nil
+end
+
 local function clear()
 	if g then
 		for _, f in ipairs(g.flags) do
+			rearm(f, f.carrier)
 			protected[f.id] = nil
 			if Spring.ValidUnitID(f.id) then
 				Spring.DestroyUnit(f.id, false, true)
@@ -351,7 +374,12 @@ end
 
 local function deliver(f, team)
 	local cfg = g.cfg
-	carrying[f.carrier] = nil
+	local carrier = f.carrier
+	carrying[carrier] = nil
+	rearm(f, carrier)
+	if cfg.xp > 0 and Spring.ValidUnitID(carrier) then
+		Spring.SetUnitExperience(carrier, (Spring.GetUnitExperience(carrier) or 0) + cfg.xp) -- the carrier is rewarded with experience
+	end
 	f.carrier = nil
 	g.score[team] = (g.score[team] or 0) + 1
 	if cfg.income then
@@ -423,6 +451,7 @@ local function check(n)
 							else
 								f.carrier, f.dropped = u, nil
 								carrying[u] = f
+								disarm(f, u)
 								say("Team " .. team .. " took a flag.")
 								break
 							end
@@ -474,9 +503,14 @@ function gadget:UnitDestroyed(unitID)
 	local f = carrying[unitID]
 	if f then
 		carrying[unitID] = nil
-		f.carrier = nil
-		f.dropped = Spring.GetGameFrame() -- the flag lies where the carrier died
-		say("A flag was dropped.")
+		f.carrier, f.ranges = nil, nil
+		if g.cfg.returnTime == 0 then
+			toHome(f) -- the flag goes straight back to its flag point
+			say("The carrier was destroyed: the flag went back to its flag point.")
+		else
+			f.dropped = Spring.GetGameFrame() -- the flag lies where the carrier died until the return time is over
+			say("A flag was dropped.")
+		end
 	end
 end
 
