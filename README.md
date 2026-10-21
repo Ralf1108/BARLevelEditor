@@ -108,6 +108,8 @@ Details are in the [Level Editor manual](LevelEditor/README.md#tower-defense) an
 
 Flags (the silver pods of the scavengers) lie on the map; units pick them up by getting close, carry them to the collection point of their team and earn metal for it. Switch it on with the **CF** button:
 
+![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)
+
 - **Own flags per team** (the other teams steal them) or **Neutral flags** (everybody takes every flag).
 - **Reward:** metal *once* per delivered flag, or metal *per second* for every flag that stays at the collection point.
 - Any number of **flag points** and one **collection point** per team, placed with a click on the map; capture radius, return time of a dropped flag and the number of flags that win are settings of the page.
