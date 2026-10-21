@@ -34,6 +34,8 @@ In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are nee
 ## Files
 - `lvl_level_editor.lua` - widget (controls, saving, loading)
 - `unit_level_editor.lua` - gadget (places, deletes, blows up, build mode)
+- `td_waves.lua` - gadget of the Tower Defense waves and the build restrictions (also used by Tower Defense scenarios)
+- `help_texts.lua` - texts of the help board (?) and of `/led_help`
 - `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list
 - `install_editor.bat` / `install_editor.ps1` - setup
 - `uninstall_editor.bat` / `uninstall_editor.ps1` - removal (levels and blueprints stay)

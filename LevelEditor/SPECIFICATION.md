@@ -211,6 +211,7 @@ Waves of enemy land units walk from a spawn point through waypoints to a goal; t
 | `lvl_level_editor.lua` | widget |
 | `unit_level_editor.lua` | gadget |
 | `td_waves.lua` | gadget of the tower defense waves (see 11a) |
+| `help_texts.lua` | texts of the help board and of the chat help (data only; packed as `luaui/Include/led_help_texts.lua`, the widget is close to the limit of 200 local variables) |
 | `choose_map.ps1` | start menu and map selection |
 | `install_editor.bat`, `install_editor.ps1` | setup |
 | `uninstall_editor.bat`, `uninstall_editor.ps1` | removal (levels and blueprints stay) |
