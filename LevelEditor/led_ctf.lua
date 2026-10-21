@@ -154,7 +154,7 @@ return function(host)
 		head("Reward for a flag (metal)")
 		line({
 			{ kind = "ctfreward", value = "once", label = "Once", active = c.reward == "once", w = 3,
-				tip = "The team gets the metal once when it delivers a flag; the flag then lies again at its flag point." },
+				tip = "The team gets the metal once when it delivers a flag; the flag then stays at the collection point (units of other teams can steal it from there)." },
 			{ kind = "ctfreward", value = "income", label = "Per second", active = c.reward == "income", w = 3,
 				tip = "The delivered flag stays at the collection point and pays the metal every second, for as long as the game lasts." },
 			(function() local f = field("amount", "Metal per flag (once) or per flag and second. Click, type a number, Enter accepts") f.w = 2 return f end)(),

@@ -6,8 +6,9 @@
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
 --   mode;reward;amount;radius;score;returnTime;homes;flags;visible;xp
 --   mode   = "own" (every team has its own flags, only the other teams take them) | "neutral" (every team may take every flag)
---   reward = "once" (amount of metal for every delivered flag, the flag goes back to its flag point) | "income" (amount of metal per
---            second for every flag a team holds; the delivered flag stays at the collection point)
+--   reward = "once" (amount of metal for every delivered flag, the flag stays at the collection point) | "income" (amount of metal per
+--            second for every flag a team holds; the delivered flag stays at the collection point and pays)
+--            A flag at a collection point can be taken by units of other teams (its owner brings it back to its flag point)
 --   amount = metal, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team needs to win (0 = never ends),
 --   returnTime = seconds after a dropped flag (carrier destroyed) is back at its flag point; 0 = at once (the unit that carries a flag cannot shoot)
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
@@ -239,6 +240,7 @@ local function body(name, team, x, z, visible)
 		Spring.SetUnitNoSelect(id, true)
 		Spring.SetUnitNoMinimap(id, true) -- the unsynced part draws the marker (team color)
 		Spring.SetUnitAlwaysVisible(id, visible and true or false) -- seen without radar or line of sight
+		Spring.SetUnitBlocking(id, false, false, false, false, false, false, false) -- nothing collides with the pod: a carrier would be pushed off its way
 		Spring.MoveCtrl.Enable(id) -- the pod is a drifting unit (speed 0.03): frozen, it stays where it lies
 		Spring.SetUnitRulesParam(id, "tdwave", 1, { public = true })
 		protected[id] = true
@@ -382,13 +384,14 @@ local function deliver(f, team)
 	end
 	f.carrier = nil
 	g.score[team] = (g.score[team] or 0) + 1
+	-- the flag stays at the collection point (it does not jump back to its flag point); units of other teams can take it from there
+	f.parked = team
+	g.parked[team] = g.parked[team] + 1
+	local h = cfg.homes[team]
+	local a = g.parked[team] * 2.4
+	Spring.SetUnitPosition(f.id, h.x + math.cos(a) * 60, h.z + math.sin(a) * 60)
 	if cfg.income then
-		-- the flag stays at the collection point and pays every second
-		f.parked = team
-		g.parked[team] = g.parked[team] + 1
-		local h = cfg.homes[team]
-		local a = g.parked[team] * 2.4
-		Spring.SetUnitPosition(f.id, h.x + math.cos(a) * 60, h.z + math.sin(a) * 60)
+		-- it also pays every second
 		say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
 		if cfg.own and f.owner >= 0 and not g.out[f.owner] then
 			local left = 0
@@ -403,7 +406,6 @@ local function deliver(f, team)
 		end
 	else
 		Spring.AddTeamResource(team, "metal", cfg.amount)
-		toHome(f)
 		say(string.format("Team %d delivered a flag (%d): +%d metal.", team, g.score[team], cfg.amount))
 	end
 	publish()
@@ -420,11 +422,41 @@ local function canCarry(unitID, teamID)
 	return ud and (ud.speed or 0) > 0 and not ud.isBuilding
 end
 
+-- A flag lying at a collection point leaves it (stolen or taken back)
+local function unpark(f)
+	g.parked[f.parked] = math.max(0, g.parked[f.parked] - 1)
+	f.parked = nil
+	publish()
+end
+
 local function check(n)
 	local cfg = g.cfg
 	local r2 = cfg.radius * cfg.radius
 	for _, f in ipairs(g.flags) do
-		if not f.parked then
+		if f.parked then
+			-- a unit of another team near the flag at a collection point takes it; the owner of the flag only brings it back to its flag point
+			local x, _, z = Spring.GetUnitPosition(f.id)
+			if x then
+				for _, u in ipairs(Spring.GetUnitsInCylinder(x, z, cfg.radius)) do
+					local team = Spring.GetUnitTeam(u)
+					if team and allyOf(team) ~= allyOf(f.parked) and canCarry(u, team) then
+						local from = f.parked
+						if cfg.own and f.owner >= 0 and allyOf(team) == allyOf(f.owner) then
+							unpark(f)
+							toHome(f)
+							say("Team " .. team .. " brought its flag back.")
+						else
+							unpark(f)
+							f.carrier, f.dropped = u, nil
+							carrying[u] = f
+							disarm(f, u)
+							say("Team " .. team .. " took a flag from the collection point of team " .. from .. ".")
+						end
+						break
+					end
+				end
+			end
+		else
 			if f.carrier then
 				-- delivery: the carrier is within the radius of the collection point of its team
 				local team = Spring.GetUnitTeam(f.carrier)
