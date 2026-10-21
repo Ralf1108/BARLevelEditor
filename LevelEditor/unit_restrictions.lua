@@ -70,7 +70,8 @@ local function parse(payload)
 		end
 	end
 	for id, ud in pairs(UnitDefs) do
-		if names[ud.name] or techs[techLevel(ud)] then
+		-- the tech level as the Place menu shows it (1 to 3: the half levels count down, Epic units are T3)
+		if names[ud.name] or techs[math.max(1, math.min(3, math.floor(techLevel(ud))))] then
 			set[id] = true
 			count = count + 1
 		end

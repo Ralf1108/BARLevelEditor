@@ -1556,7 +1556,7 @@ end
 -- o: { cfg, groups = { "buildings", ... } (offer only these groups; default all), faction = "arm", canUse = fn(unitDefID) -> bool }
 function M.newUnits(o)
 	local u = {
-		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse,
+		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse, restrict = o.restrict,
 		query = "", focus = false, ownText = o.ownText, searchOn = (o.search ~= false), searchLabel = o.searchLabel or "Search ...",
 	}
 	u.groups = {}
@@ -1651,18 +1651,59 @@ function M.newUnits(o)
 		return ((#self.groups > 1) and 3 or 2) + (self.searchOn and 1 or 0)
 	end
 
+	-- The names of the units a faction or a group X stands for: everything in it right now (faction: all groups and tech levels,
+	-- group: all tech levels of the chosen faction)
+	function u:namesOf(kind, value)
+		if not self.cache then
+			self.cache = M.buildUnitCache()
+		end
+		local out = {}
+		local function add(list)
+			for _, e in ipairs(list) do
+				out[#out + 1] = e.name
+			end
+		end
+		if kind == "faction" then
+			for _, g in ipairs(self.groups) do
+				for t = 1, 3 do
+					add(self.cache[value][g[1]][t])
+				end
+			end
+		elseif kind == "group" then
+			for t = 1, 3 do
+				add(self.cache[self.faction][value][t])
+			end
+		end
+		return out
+	end
+
 	-- Buttons for faction/group/tech; top = top edge of the first row, hb = height of the buttons
 	function u:filterRects(x1, x2, top, hb)
 		local rects = {}
 		local pad = M.m.PAD
+		local rs = self.restrict
 		local function row(r, items, kind, active)
 			local n = #items
 			local bw = (x2 - x1 - 2 * pad - (n - 1) * 3) / n
 			local t = top - r * (hb + 3)
 			for i, it in ipairs(items) do
 				local bx = x1 + pad + (i - 1) * (bw + 3)
+				local banned = false
+				if rs then
+					banned = (kind == "tech") and rs.techBanned(it[1]) or (kind ~= "tech" and rs.allBanned(self:namesOf(kind, it[1])))
+				end
 				rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = t - hb, y1 = t, kind = kind, value = it[1], label = it[2], active = (it[1] == active),
-					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil }
+					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil, tint = banned and { 0.45, 0.12, 0.12 } or nil,
+					reserve = rs and (hb * 0.62 + 6) or nil }
+				if rs then
+					-- X in the right end of the button: forbids everything of it (the player cannot build it in the game)
+					local xs = hb * 0.62
+					local what = (kind == "faction" and "this faction") or (kind == "group" and "this group of the chosen faction") or "this tech level"
+					rects[#rects + 1] = { x1 = bx + bw - xs - 3, x2 = bx + bw - 3, y0 = t - hb / 2 - xs / 2, y1 = t - hb / 2 + xs / 2, kind = kind .. "x", value = it[1],
+						label = "X", fs = xs * 0.8, tint = banned and { 0.85, 0.1, 0.1 } or { 0.1, 0.1, 0.1 },
+						tip = banned and ("Forbidden: the player cannot build anything of " .. what .. " in the game. Click to allow it again.") or
+							("Click: the player cannot build anything of " .. what .. " in the game (you can always place it in the editor).") }
+				end
 			end
 		end
 		local r = 0
@@ -1702,6 +1743,16 @@ function M.newUnits(o)
 		end
 		if self.focus then
 			self:setFocus(false)
+		end
+		if self.restrict and (r.kind == "factionx" or r.kind == "groupx" or r.kind == "techx") then
+			local rs, kind = self.restrict, r.kind:sub(1, -2)
+			if kind == "tech" then
+				rs.toggleTech(r.value)
+			else
+				local names = self:namesOf(kind, r.value)
+				rs.setBanned(names, not rs.allBanned(names))
+			end
+			return true
 		end
 		if r.kind == "faction" then
 			self.faction = r.value
@@ -1756,6 +1807,27 @@ function M.newUnits(o)
 		self.scroll = math.max(0, math.min(self:maxScroll(rect), self.scroll - (up and 1 or -1) * 234 * M.S))
 	end
 
+	-- The X in the upper right corner of a symbol (restrictions): box of the symbol at (ix, iy)
+	function u:xBox(ix, iy)
+		local xs = M.m.UICON * 0.3
+		return ix + M.m.UICON - xs, iy + M.m.UICON - xs, ix + M.m.UICON, iy + M.m.UICON
+	end
+
+	-- Index of the tile whose X is under the mouse pointer (or nil)
+	function u:xAt(rect, mx, my)
+		if not self.restrict then
+			return nil
+		end
+		local i = self:at(rect, mx, my)
+		if i then
+			local ix, iy = self:geom(rect, i)
+			local x1, y0, x2, y1 = self:xBox(ix, iy)
+			if mx >= x1 and mx <= x2 and my >= y0 and my <= y1 then
+				return i
+			end
+		end
+	end
+
 	-- selectedName: highlighted unit (stamp mode), hint: text below the info, hot: mouse over the panel
 	function u:draw(rect, mx, my, selectedName, hint, hot)
 		local m, S = M.m, M.S
@@ -1773,10 +1845,42 @@ function M.newUnits(o)
 					gl.Color(1, 1, 1, 0.35)
 					gl.Rect(ix - 2, iy - 2, ix + m.UICON + 2, iy + m.UICON + 2)
 				end
-				gl.Color(1, 1, 1, usable and 1 or 0.3)
+				local rs = self.restrict
+				local banned = rs and (rs.isBanned(e.name) or rs.techBanned(math.max(1, math.min(3, math.floor(M.techLevel(UnitDefs[e.id])))))) or false
+				gl.Color(1, 1, 1, (usable and not banned) and 1 or 0.3)
 				gl.Texture("#" .. e.id)
 				gl.TexRect(ix, iy, ix + m.UICON, iy + m.UICON)
 				gl.Texture(false)
+				if rs then
+					if banned then
+						gl.Color(1, 0.1, 0.1, 1)
+						gl.LineWidth(5 * S)
+						gl.BeginEnd(GL.LINES, function()
+							gl.Vertex(ix + 4 * S, iy + 4 * S)
+							gl.Vertex(ix + m.UICON - 4 * S, iy + m.UICON - 4 * S)
+							gl.Vertex(ix + 4 * S, iy + m.UICON - 4 * S)
+							gl.Vertex(ix + m.UICON - 4 * S, iy + 4 * S)
+						end)
+						gl.LineWidth(1)
+					end
+					local bx1, by0, bx2, by1 = self:xBox(ix, iy)
+					if rs.isBanned(e.name) then
+						gl.Color(0.8, 0.1, 0.1, 0.95)
+					else
+						gl.Color(0, 0, 0, 0.75)
+					end
+					gl.Rect(bx1, by0, bx2, by1)
+					gl.Color(1, 0.15, 0.15, 1)
+					gl.LineWidth(3 * S)
+					local g = (bx2 - bx1) * 0.22
+					gl.BeginEnd(GL.LINES, function()
+						gl.Vertex(bx1 + g, by0 + g)
+						gl.Vertex(bx2 - g, by1 - g)
+						gl.Vertex(bx1 + g, by1 - g)
+						gl.Vertex(bx2 - g, by0 + g)
+					end)
+					gl.LineWidth(1)
+				end
 			end
 		end
 		gl.Scissor(false)
@@ -1798,6 +1902,9 @@ function M.newUnits(o)
 			local human = ud.translatedHumanName or ud.humanName or e.name
 			local shot, sps, isAA = M.shotInfo(e.id)
 			local title = string.format("%s (%s)", human, e.name)
+			if self.restrict and (self.restrict.isBanned(e.name) or self.restrict.techBanned(math.max(1, math.min(3, math.floor(M.techLevel(ud)))))) then
+				title = title .. "  - forbidden"
+			end
 			if shot > 0 then
 				-- Seconds per shot and damage per projectile: meaningful even for slowly reloading, strong weapons
 				local secs = (sps > 0) and (1 / sps) or 0
@@ -2534,11 +2641,12 @@ function M.drawButtons(rects, fontSize, hb)
 		local fs = r.fs or fontSize
 		-- text too long: shrink the font until it fits into the button
 		local tw = (tonumber(gl.GetTextWidth(r.label)) or 0) * fs
-		local avail = (r.x2 - tx1) - 8 * S
+		local tx2 = r.x2 - (r.reserve or 0) -- r.reserve: room at the right end for something else (the X of a filter button)
+		local avail = (tx2 - tx1) - 8 * S
 		if tw > avail and tw > 0 then
 			fs = fs * avail / tw
 		end
-		gl.Text(r.label, (tx1 + r.x2) / 2, r.y0 + (hb - fs) / 2 + 3 * S, fs, "co")
+		gl.Text(r.label, (tx1 + tx2) / 2, r.y0 + (hb - fs) / 2 + 3 * S, fs, "co")
 	end
 	gl.Color(1, 1, 1, 1)
 end
@@ -2696,7 +2804,8 @@ end
 
 -- Draws the tooltip (field tip) of the button under the mouse
 function M.drawTip(rects, mx, my)
-	for _, r in ipairs(rects) do
+	for i = #rects, 1, -1 do -- the last one lies on top (e.g. the small X in a button)
+		local r = rects[i]
 		if r.tip and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 			M.tooltipBox(r.tip, mx, my)
 			return true

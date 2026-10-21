@@ -593,7 +593,14 @@ local function ownText(on)
 		widgetHandler:DisownText()
 	end
 end
-local uGrid = Shared.newUnits({ cfg = cfg, ownText = ownText })
+local uGrid = Shared.newUnits({ cfg = cfg, ownText = ownText, restrict = {
+	-- the X marks of the Place menu write the restrictions of the level (rst, led_restrictions.lua, created below)
+	isBanned = function(name) return rst.isBanned(name) end,
+	techBanned = function(t) return rst.techBanned(t) end,
+	setBanned = function(names, on) rst.setBanned(names, on) end,
+	allBanned = function(names) return rst.allBanned(names) end,
+	toggleTech = function(t) rst.toggleTech(t) end,
+} })
 local fGrid = Shared.newFeatures({ cfg = cfg, ownText = ownText })
 local fav = Shared.newFav({ cfg = cfg, recent = recent, lib = lib })
 local optionsUI = Shared.newOptions(cfg, {
@@ -1995,6 +2002,11 @@ local function featStampList(name, pos)
 end
 
 -- Menu input
+-- For tests: the restrictions and the unit list of the Place menu
+function widget:DebugRestrictions()
+	return rst, uGrid
+end
+
 -- For tests: the Capture the Flag page
 function widget:DebugCtf()
 	return ctf
@@ -3736,7 +3748,9 @@ local function panelPress(mx, my, button)
 		return true
 	end
 	if button == 1 then
-		for _, r in ipairs((headerRects())) do
+		local hrects = (headerRects())
+		for i = #hrects, 1, -1 do -- the last one lies on top (the X in a filter button)
+			local r = hrects[i]
 			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 				applyHeader(r)
 				return true
@@ -3817,6 +3831,11 @@ local function panelPress(mx, my, button)
 		fGrid:setFocus(false)
 		searchFocus(false)
 		if menuMode == "units" then
+			local xi = uGrid:xAt(rect, mx, my)
+			if xi then
+				rst.toggle(uGrid:list()[xi].name) -- the X of a symbol: forbid it for the player in the game, or allow it again
+				return true
+			end
 			local ui = uGrid:at(rect, mx, my)
 			if ui then
 				local u = uGrid:list()[ui]
