@@ -9,10 +9,10 @@ return function(host)
 	local Shared = host.Shared
 	local ctf = { open = false, edit = nil, pick = nil, data = nil, notice = nil }
 	local DELETE_RADIUS = 80 -- Del: the point within this distance of the mouse pointer goes
-	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 }, xp = { 0, 1000 } }
+	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
 
 	function ctf.new()
-		return { enabled = false, mode = "own", reward = "once", amount = 100, score = 3, radius = 100, returnTime = 0, xp = 50, visible = true, homes = {}, flags = {} }
+		return { enabled = false, mode = "own", reward = "income", amount = 100, score = 3, radius = 100, returnTime = 0, visible = true, homes = {}, flags = {} }
 	end
 	ctf.DEFAULT = ctf.new()
 
@@ -151,22 +151,14 @@ return function(host)
 		})
 		line({ { kind = "ctfvisible", label = (c.visible ~= false and "[x] " or "[ ] ") .. "Flags always visible on the map", active = c.visible ~= false,
 			tip = "On: the flags are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees." } })
-		head("Reward for a flag (metal)")
-		line({
-			{ kind = "ctfreward", value = "once", label = "Once", active = c.reward == "once", w = 3,
-				tip = "The team gets the metal once when it delivers a flag; the flag then stays at the collection point (units of other teams can steal it from there)." },
-			{ kind = "ctfreward", value = "income", label = "Per second", active = c.reward == "income", w = 3,
-				tip = "The delivered flag stays at the collection point and pays the metal every second, for as long as the game lasts." },
-			(function() local f = field("amount", "Metal per flag (once) or per flag and second. Click, type a number, Enter accepts") f.w = 2 return f end)(),
-		})
-		head("Flags a team needs to win (0 = never)")
+		head("Income: metal per second per flag held")
+		line({ field("amount", "Metal per second for every flag a team holds at its collection point; a flag that is carried or stolen pays nothing. Click, type a number, Enter accepts") })
+		head("Flags a team must hold at once to win (0 = never)")
 		line({ field("score", "The first team that has delivered this many flags wins. 0: the level does not end. Click, type a number, Enter accepts") })
 		head("Capture radius (Elmo)")
 		line({ field("radius", "Distance within which a unit picks up a flag, delivers it, or brings its own dropped flag back. Click, type a number, Enter accepts") })
-		head("Carrier destroyed: flag goes back after (s, 0 = at once)")
-		line({ field("returnTime", "When the unit that carries a flag is destroyed, the flag is back at its flag point after this many seconds (0 = at once; otherwise it lies where the carrier died). A carrier cannot shoot. Click, type a number, Enter accepts") })
-		head("XP for the unit that delivers a flag (hundredths)")
-		line({ field("xp", "Experience the delivering unit gets, in hundredths: 50 = 0.5, 100 = 1.0. Click, type a number, Enter accepts") })
+		head("Dropped flag goes back after (s, 0 = stays)")
+		line({ field("returnTime", "When the unit that carries a flag is destroyed, the flag is dropped where it died. 0 = it stays there until a unit takes it, a number = it goes back to its flag point after this many seconds. A carrier cannot shoot. Click, type a number, Enter accepts") })
 		head("Places on the map (team: strip at the left)")
 		line({
 			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
@@ -282,7 +274,7 @@ return function(host)
 			end
 			return #out > 0 and table.concat(out, "/") or "-"
 		end
-		return table.concat({ c.mode, c.reward, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0", c.xp or 50 }, ";")
+		return table.concat({ c.mode, "income", c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
 	end
 
 	function ctf.endPick()
@@ -417,8 +409,6 @@ return function(host)
 				c.enabled = not c.enabled
 			elseif k == "ctfmode" then
 				c.mode = hit.value
-			elseif k == "ctfreward" then
-				c.reward = hit.value
 			elseif k == "ctfvisible" then
 				c.visible = not (c.visible ~= false)
 			end

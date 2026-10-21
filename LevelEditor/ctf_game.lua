@@ -1,19 +1,18 @@
 -- Capture the Flag (synchronized part): flags lie at flag points on the map, units pick them up by getting close, carry them to the
--- collection point of their team and are paid for it (once, or income per second as long as the flag stays there). The level ends when
--- a team has the wanted number of flags. The flags (silver pod of the scavengers) and the collection points (small nano tower) are real,
+-- collection point of their team and are paid for it (income per second for every flag that lies at the collection point; a carried or stolen flag pays nothing). The
+-- level ends when a team holds the wanted number of flags at the same time. The flags (silver pod of the scavengers) and the collection points (small nano tower) are real,
 -- indestructible, neutral units; rings on the ground and the score are drawn by the unsynced part, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "ctf|start|<payload>" (stop: "ctf|stop"), or from the game option
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
---   mode;reward;amount;radius;score;returnTime;homes;flags;visible;xp
+--   mode;reward;amount;radius;score;returnTime;homes;flags;visible
 --   mode   = "own" (every team has its own flags, only the other teams take them) | "neutral" (every team may take every flag)
---   reward = "once" (amount of metal for every delivered flag, the flag stays at the collection point) | "income" (amount of metal per
---            second for every flag a team holds; the delivered flag stays at the collection point and pays)
---            A flag at a collection point can be taken by units of other teams (its owner brings it back to its flag point)
---   amount = metal, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team needs to win (0 = never ends),
---   returnTime = seconds after a dropped flag (carrier destroyed) is back at its flag point; 0 = at once (the unit that carries a flag cannot shoot)
+--   reward = no longer used (always income; older levels may have "once")
+--   amount = metal per second for every flag a team holds at its collection point, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team must hold at once to win (0 = never ends),
+--            a flag at a collection point can be taken by units of other teams (its owner brings it back to its flag point),
+--   returnTime = seconds after which a dropped flag (carrier destroyed) goes back to its flag point; 0 = it stays where it fell until a unit takes it
+--            (the unit that carries a flag cannot shoot)
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
---   xp = experience of the unit that delivers a flag, in hundredths (50 = 0.5)
--- Own flags with income: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
+-- Own flags: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
 -- standing wins).
 --   homes  = "team,x,z/team,x,z/..." collection points, flags = "team,x,z/..." flag points (team -1: neutral)
 -- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfOut (lost teams), ctfRadius, ctfHomes, ctfSpots,
@@ -195,8 +194,8 @@ local function parse(payload)
 		f[#f + 1] = p
 	end
 	local cfg = {
-		own = f[1] ~= "neutral", income = f[2] == "income", amount = tonumber(f[3]) or 0, radius = math.max(10, tonumber(f[4]) or 100),
-		score = math.max(0, tonumber(f[5]) or 0), returnTime = math.max(0, tonumber(f[6]) or 30), homes = {}, flags = points(f[8]), visible = f[9] ~= "0", xp = math.max(0, tonumber(f[10]) or 50) / 100,
+		own = f[1] ~= "neutral", amount = tonumber(f[3]) or 0, radius = math.max(10, tonumber(f[4]) or 100),
+		score = math.max(0, tonumber(f[5]) or 0), returnTime = math.max(0, tonumber(f[6]) or 0), homes = {}, flags = points(f[8]), visible = f[9] ~= "0",
 	}
 	cfg.homeList = points(f[7])
 	for _, h in ipairs(cfg.homeList) do
@@ -340,7 +339,7 @@ local function start(cfg)
 	Spring.SetGameRulesParam("ctfFlagIds", table.concat(ids, ","))
 	Spring.SetGameRulesParam("ctfVisible", cfg.visible and 1 or 0)
 	publish()
-	say(string.format("Started: %d flags, %d collection points, %s%s.", #g.flags, #cfg.homeList, cfg.income and ("income " .. cfg.amount .. " metal per second per flag") or (cfg.amount .. " metal per flag"),
+	say(string.format("Started: %d flags, %d collection points, %s%s.", #g.flags, #cfg.homeList, cfg.amount .. " metal per second per flag",
 		cfg.score > 0 and (", " .. cfg.score .. " flags win") or ""))
 end
 
@@ -379,34 +378,25 @@ local function deliver(f, team)
 	local carrier = f.carrier
 	carrying[carrier] = nil
 	rearm(f, carrier)
-	if cfg.xp > 0 and Spring.ValidUnitID(carrier) then
-		Spring.SetUnitExperience(carrier, (Spring.GetUnitExperience(carrier) or 0) + cfg.xp) -- the carrier is rewarded with experience
-	end
 	f.carrier = nil
-	g.score[team] = (g.score[team] or 0) + 1
 	-- the flag stays at the collection point (it does not jump back to its flag point); units of other teams can take it from there
 	f.parked = team
 	g.parked[team] = g.parked[team] + 1
 	local h = cfg.homes[team]
 	local a = g.parked[team] * 2.4
 	Spring.SetUnitPosition(f.id, h.x + math.cos(a) * 60, h.z + math.sin(a) * 60)
-	if cfg.income then
-		-- it also pays every second
-		say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
-		if cfg.own and f.owner >= 0 and not g.out[f.owner] then
-			local left = 0
-			for _, o in ipairs(g.flags) do
-				if o.owner == f.owner and not o.parked then
-					left = left + 1
-				end
-			end
-			if left == 0 then
-				eliminate(f.owner)
+	g.score[team] = g.parked[team] -- the score is the number of flags held at the collection point
+	say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
+	if cfg.own and f.owner >= 0 and not g.out[f.owner] then
+		local left = 0
+		for _, o in ipairs(g.flags) do
+			if o.owner == f.owner and not o.parked then
+				left = left + 1
 			end
 		end
-	else
-		Spring.AddTeamResource(team, "metal", cfg.amount)
-		say(string.format("Team %d delivered a flag (%d): +%d metal.", team, g.score[team], cfg.amount))
+		if left == 0 then
+			eliminate(f.owner)
+		end
 	end
 	publish()
 	if cfg.score > 0 and g.score[team] >= cfg.score then
@@ -425,6 +415,7 @@ end
 -- A flag lying at a collection point leaves it (stolen or taken back)
 local function unpark(f)
 	g.parked[f.parked] = math.max(0, g.parked[f.parked] - 1)
+	g.score[f.parked] = g.parked[f.parked]
 	f.parked = nil
 	publish()
 end
@@ -466,7 +457,7 @@ local function check(n)
 					deliver(f, team)
 				end
 			else
-				if f.dropped and n - f.dropped >= cfg.returnTime * FPS then
+				if f.dropped and cfg.returnTime > 0 and n - f.dropped >= cfg.returnTime * FPS then
 					say("A dropped flag went back to its flag point.")
 					toHome(f)
 				end
@@ -521,7 +512,7 @@ function gadget:GameFrame(n)
 			blowUp(team) -- what a lost team builds afterwards blows up too
 		end
 	end
-	if g.cfg.income and n % FPS == 0 and g.cfg.amount > 0 then
+	if n % FPS == 0 and g.cfg.amount > 0 then
 		for team, count in pairs(g.parked) do
 			if count > 0 then
 				Spring.AddTeamResource(team, "metal", g.cfg.amount * count)
@@ -536,13 +527,8 @@ function gadget:UnitDestroyed(unitID)
 	if f then
 		carrying[unitID] = nil
 		f.carrier, f.ranges = nil, nil
-		if g.cfg.returnTime == 0 then
-			toHome(f) -- the flag goes straight back to its flag point
-			say("The carrier was destroyed: the flag went back to its flag point.")
-		else
-			f.dropped = Spring.GetGameFrame() -- the flag lies where the carrier died until the return time is over
-			say("A flag was dropped.")
-		end
+		f.dropped = Spring.GetGameFrame() -- the flag lies where the carrier died (until a unit takes it, or the return time is over)
+		say("A flag was dropped.")
 	end
 end
 
