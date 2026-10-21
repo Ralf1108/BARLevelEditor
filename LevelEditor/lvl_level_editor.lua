@@ -3486,6 +3486,7 @@ function td.toggle()
 		td.notice = { text = err, untilT = os.clock() + 6 }
 		return
 	end
+	gen.disarmAll()
 	saveLevel("_beforeplay", true)
 	Spring.SendLuaRulesMsg("tdw|start|" .. payload)
 	say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
@@ -3572,6 +3573,19 @@ function td.hud(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
+-- Ends every editor mode (stamp, delete, maze, generate, area attack, picking of the Tower Defense and Capture the Flag points) and every drag;
+-- called when a Tower Defense or Capture the Flag test starts, so that no mode swallows the clicks of the game
+function gen.disarmAll()
+	mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+	gen.armed, gen.drag = false, nil
+	armedUnit, armedFeature = false, false
+	stampDrag, moveDrag, selBox = nil, nil, nil
+	bpGrid:setArmed(false)
+	area:disarm()
+	td.endPick()
+	ctf.endPick()
+end
+
 -- Capture the Flag page (LevelEditor/led_ctf.lua): gets the services of the widget
 ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 	Shared = Shared,
@@ -3589,6 +3603,7 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 		area:disarm()
 		td.endPick()
 	end,
+	disarmAll = function() gen.disarmAll() end,
 	step = function() ledStep() end,
 	led = function(msg) led(msg) end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,

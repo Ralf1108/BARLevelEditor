@@ -3,7 +3,7 @@
 -- function that gets the host (the services of the widget) and returns the page; a file of its own because the widget is close to
 -- the limit of 200 local variables. The settings (ctf.data) are saved in their own section capture of the level file.
 --   host.Shared, host.S() (UI scale), host.say(text), host.canEdit(), host.team() (team chosen in the strip), host.serialize(table),
---   host.disarm() (ends the other modes), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back),
+--   host.disarm() (ends the other modes), host.disarmAll() (ends all modes when a test starts), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back),
 --   host.step() / host.led(message) (undo history of the editor gadget)
 return function(host)
 	local Shared = host.Shared
@@ -441,7 +441,7 @@ return function(host)
 			ctf.notice = { text = err, untilT = os.clock() + 6 }
 			return
 		end
-		ctf.endPick() -- a place mode that is still armed would swallow the clicks of the game
+		host.disarmAll() -- no editor mode may stay armed: it would swallow the clicks of the game
 		host.beforePlay()
 		Spring.SendLuaRulesMsg("ctf|start|" .. payload)
 		host.say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
