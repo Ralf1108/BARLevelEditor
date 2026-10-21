@@ -3491,12 +3491,12 @@ function td.toggle()
 	say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
 end
 
--- Markers in the world while the TD page is open: spawn point (green), goal (red), path and the points being clicked
+-- Markers in the world (also with the page closed): spawn point (green), goal (red), path and the points being clicked
 function td.drawWorld()
-	if not td.open then
-		return
-	end
 	local c = td.cfg()
+	if not td.open and not c.spawn and not c.goal and #(c.waypoints or {}) == 0 then
+		return -- the markers stay visible with the page closed, so nothing stays hidden
+	end
 	gl.DepthTest(false)
 	gl.LineWidth(3)
 	local function circle(p, r, cr, cg, cb)
@@ -3535,7 +3535,7 @@ function td.drawWorld()
 		list[#list + 1] = c.goal
 		polyline(list, 1, 0.9, 0.3) -- only to look at: the way of the enemies
 	end
-	local hot = td.waypointAt()
+	local hot = td.open and td.waypointAt() or nil
 	for i, p in ipairs(c.waypoints or {}) do
 		circle(p, i == hot and 44 or 28, i == hot and 1 or 1, i == hot and 0.3 or 0.9, i == hot and 0.3 or 0.3)
 	end
@@ -3605,6 +3605,10 @@ function gen.cancelModes()
 	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
 		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed() or td.pick or ctf.pick
 	if not was then
+		local ctfState, tdState = Spring.GetGameRulesParam("ctfState"), Spring.GetGameRulesParam("tdState")
+		if (ctfState and ctfState ~= "") or (tdState and tdState ~= "") then
+			return false -- a test is running: the right click gives the move order to the selected units
+		end
 		if #selectedUnits() > 0 then
 			foreignSel = {}
 			Spring.SelectUnitArray({})

@@ -441,17 +441,19 @@ return function(host)
 			ctf.notice = { text = err, untilT = os.clock() + 6 }
 			return
 		end
+		ctf.endPick() -- a place mode that is still armed would swallow the clicks of the game
 		host.beforePlay()
 		Spring.SendLuaRulesMsg("ctf|start|" .. payload)
 		host.say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
 	end
 
-	-- Markers in the world while the page is open: collection points (thick ring) and flag points (small ring), in the colors of the teams
+	-- Markers in the world (also with the page closed, so nothing stays hidden): collection points (thick ring) and flag points (small ring),
+	-- in the colors of the teams
 	function ctf.drawWorld()
-		if not ctf.open then
+		local c = ctf.cfg()
+		if not ctf.open and #c.homes == 0 and #c.flags == 0 then
 			return
 		end
-		local c = ctf.cfg()
 		gl.DepthTest(false)
 		local function circle(p, r, width)
 			local cr, cg, cb = 1, 1, 1
@@ -468,7 +470,10 @@ return function(host)
 				end
 			end)
 		end
-		local hotList, hotI = ctf.pointAt()
+		local hotList, hotI
+		if ctf.open then
+			hotList, hotI = ctf.pointAt()
+		end
 		for i, h in ipairs(c.homes) do
 			circle(h, c.radius, 4)
 			if hotList == c.homes and hotI == i then
