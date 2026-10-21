@@ -546,6 +546,7 @@ local optionsOpen = false
 local scenarioOpen = false -- Scenario info (button I)
 local scEdit = nil -- { row, buf }: text field being edited right now
 local collapsed = false -- Menu collapsed: only the small button V stays visible
+local panelMover = Shared.newPanelMover() -- the title row moves the menu
 local mazeKind = nil -- Maze mode: nil = off, otherwise index into MAZE_KINDS
 -- Generate page (button G): faction, type, tech, count; then drag an area, the units appear in it.
 -- All state lives in one table (a Lua function may only reference 60 outer variables).
@@ -1231,7 +1232,7 @@ local function titleH()
 	return 44 * S
 end
 
-local function panelRect()
+local function basePanelRect()
 	local m = Shared.m
 	local vsx, vsy = Spring.GetViewGeometry()
 	if collapsed then
@@ -1258,6 +1259,16 @@ local function panelRect()
 	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
+end
+
+-- The menu where it is now: its place at the right edge, moved by dragging the title row
+local function panelRect()
+	local x1, y0, x2, y1 = basePanelRect()
+	local m = Shared.m
+	if collapsed then
+		return panelMover:place(x1, y0, x2, y1, 0, 0, 40 * S)
+	end
+	return panelMover:place(x1, y0, x2, y1, 2 * m.HB + 12, m.HB + 2 * m.PAD, 40 * S) -- room for the team strip left and the button column right
 end
 
 -- Header: row 0 = mode and settings, below it Create (blueprints) or faction, group, tech (units)
@@ -3620,6 +3631,15 @@ end
 -- A click inside the menu panel: header buttons, the pages (settings, scenario, Generate, Tower Defense) and the lists of the Place menu;
 -- always handled (true)
 local function panelPress(mx, my, button)
+	if not collapsed and my >= select(4, panelRect()) - 4 - titleH() then
+		-- title row: drag = move the menu, right click = back to its place
+		if button == 1 then
+			panelMover:press(mx, my)
+		elseif button == 3 then
+			panelMover:reset()
+		end
+		return true
+	end
 	if button == 1 then
 		for _, r in ipairs((headerRects())) do
 			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
@@ -3966,6 +3986,9 @@ end
 
 function widget:MouseMove(mx, my, dx, dy, button)
 	rescale()
+	if panelMover:move(mx, my) then
+		return
+	end
 	if Shared.scrollbarMove(mx, my) then
 		return
 	end
@@ -4013,6 +4036,9 @@ local function finishSelBox(mx, my)
 end
 
 function widget:MouseRelease(mx, my, button)
+	if panelMover:release() then
+		return
+	end
 	if Shared.scrollbarRelease() then
 		return
 	end
@@ -5032,5 +5058,15 @@ function widget:DrawScreen()
 			helpOpen = false
 			say("Help board disabled: " .. tostring(err))
 		end
+	end
+end
+
+function widget:GetConfigData()
+	return { panel = panelMover:save() }
+end
+
+function widget:SetConfigData(data)
+	if type(data) == "table" then
+		panelMover:load(data.panel)
 	end
 end

@@ -6,6 +6,7 @@ local sections = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
 		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, P / G / TD pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
+		{ "Title row", "Drag the title \"Level Editor\" with the left mouse button: the whole menu (with the strip at the left and the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
 		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },

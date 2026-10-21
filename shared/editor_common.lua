@@ -821,6 +821,52 @@ function M.scrollbarRelease()
 	return was
 end
 
+---------------------------------------------------------------- Movable menu
+-- The title row of a menu is the handle: dragging it moves the whole menu (with its button columns).
+-- Host: in panelRect() the rectangle goes through mv:place(x1, y0, x2, y1, marginLeft, marginRight, marginBottom) and comes back moved
+-- (and kept on the screen: the margins are the room for the strips next to the menu); a click in the title row calls mv:press(mx, my)
+-- (button 1) or mv:reset() (button 3), MouseMove calls mv:move(mx, my), MouseRelease mv:release(); mv:save() / mv:load(t) for the config data
+function M.newPanelMover()
+	local p = { dx = 0, dy = 0, grab = nil }
+	function p:place(x1, y0, x2, y1, ml, mr, mb)
+		local vsx, vsy = Spring.GetViewGeometry()
+		self.dx = math.max(ml - x1, math.min(vsx - mr - x2, self.dx))
+		self.dy = math.max(mb - y0, math.min(vsy - y1, self.dy))
+		return x1 + self.dx, y0 + self.dy, x2 + self.dx, y1 + self.dy
+	end
+	function p:press(mx, my)
+		self.grab = { x = mx, y = my }
+	end
+	function p:move(mx, my)
+		local g = self.grab
+		if not g then
+			return false
+		end
+		self.dx, self.dy = self.dx + mx - g.x, self.dy + my - g.y
+		g.x, g.y = mx, my
+		return true
+	end
+	function p:release()
+		local was = self.grab ~= nil
+		self.grab = nil
+		return was
+	end
+	function p:reset()
+		self.dx, self.dy = 0, 0
+	end
+	function p:save() -- as a fraction of the screen: stays right when the resolution changes
+		local vsx, vsy = Spring.GetViewGeometry()
+		return { x = self.dx / vsx, y = self.dy / vsy }
+	end
+	function p:load(t)
+		if type(t) == "table" and tonumber(t.x) and tonumber(t.y) then
+			local vsx, vsy = Spring.GetViewGeometry()
+			self.dx, self.dy = t.x * vsx, t.y * vsy
+		end
+	end
+	return p
+end
+
 ---------------------------------------------------------------- Tile grid for blueprints
 -- o: { lib, cfg, say, unitWord = "Units", ownText = fn(on), onSelect = fn(index), onArm = fn(bool) }
 -- rect = { x1, y0, x2, top }: content area that the host passes every time.

@@ -23,6 +23,7 @@ When loading, the editor starts on the saved map and sets up the units automatic
 ## The screen
 In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are needed. Everything is free and finished instantly. Legion, the extra pack and release candidates are on. At the start only the commander stands there; the builders of all factions are created with **Ctrl+D** at the mouse pointer (markers ARMADA, CORTEX, LEGION; they are tools and are not saved in the level). The unit limit is raised to 32000 (`maxunits`). The menu follows the UI size slider of the BAR settings.
 
+- **Moving the menu:** drag the title row ("Level Editor") with the left mouse button, the whole menu moves with the strip at the left and the button column. A right click on the title puts it back. The position is remembered.
 - **Button column at the right edge** (top to bottom): **V** collapse the menu, **O** settings, **I** scenario info, **?** help; **P** Place, **G** Generate, **TD** Tower Defense; **XL / XR / XC** area attacks (experimental); **FX / FD** make buildings in a rectangle indestructible / destructible again.
 - **Strip left of the menu** (top to bottom): **W** (write/overwrite, see Placing), **DL / DR / DC** (delete along a line, in a rectangle, in a circle), **L / R / S** (rotate left / right, mirror; only with a selection), **N** (neutral), one button per team with its current unit count, **G** (Gaia: no owner, enemy to everyone).
 - **Teams:** you choose the team with the team buttons; selected units get the team with a click on a team button.

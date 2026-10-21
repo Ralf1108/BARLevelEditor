@@ -192,6 +192,9 @@ Sort key `rank = (filler 1000) + (water 100) + kind`, then alphabetically by nam
 - `M.unitSearchText(name)`, `M.featureSearchText(name, id)`, `M.blueprintSearchText(bp)`: the lower-case texts the lists are searched in (code and human name and description; for a blueprint its name plus the texts of its units). Results are cached.
 - Scrollbar (`M.scrollbarDraw(grid, rect)`, `M.scrollbarPress(grid, rect, mx, my)`, `M.scrollbarMove(mx, my)`, `M.scrollbarRelease()`): 24·S wide at the right edge of `rect`, drawn only if `grid:maxScroll(rect) > 0`. A click on the thumb keeps the grip, a click on the track centers the thumb under the pointer; the drag runs until the release. The three grids (blueprints, units, features) draw it themselves; hosts call press, move and release (the widgets do this before handling tile clicks).
 
+### 9.8 Movable menu (`M.newPanelMover`)
+- `mv = M.newPanelMover()` holds the offset of a menu that is dragged by its title row. `mv:place(x1, y0, x2, y1, marginLeft, marginRight, marginBottom)` returns the rectangle moved by the offset and keeps it on the screen (the margins are the room for strips next to the menu; the stored offset is clamped too). `mv:press(mx, my)` starts a drag, `mv:move(mx, my)` (true while dragging) moves by the change of the pointer position, `mv:release()` ends it (true if one was running), `mv:reset()` sets the offset to 0. `mv:save()` / `mv:load(t)` give and take the offset as a fraction of the screen size (stays right when the resolution changes). Both widgets pass their `panelRect()` through it.
+
 ## 10. Buttons (`M.drawButtons`)
 - Uniform look: active light blue (0.5 / 0.75 / 1, so the blue Armada symbol on the faction button stays visible), otherwise dark gray; text centered. The hosts pass font size and button height.
 
