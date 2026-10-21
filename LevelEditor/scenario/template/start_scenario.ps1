@@ -66,13 +66,15 @@ if (-not $Name) { $Name = $env:USERNAME }
 if (-not $Name) { $Name = 'Player' }
 $Name = $Name -replace '[^A-Za-z0-9_\-\[\]]', ''
 if (-not $Name) { $Name = 'Player' }
-# Tower Defense and Capture the Flag scenarios: the waves run in a gadget (td_waves.lua in this folder), the flags in another (ctf_game.lua). The
+# Tower Defense, Capture the Flag and restricted scenarios: the waves run in a gadget (td_waves.lua in this folder), the flags in another
+# (ctf_game.lua), the restrictions in a third (unit_restrictions.lua). The
 # official game cannot load them, so a small extra game "Tower Defense Scenario" is built on the installed official game (only the gadgets are
 # added; nothing of the official game is changed).
 $gametype = $game
 $tdGadget = Join-Path $here 'td_waves.lua'
 $ctfGadget = Join-Path $here 'ctf_game.lua'
-if ((Test-Path $tdGadget) -or (Test-Path $ctfGadget)) {
+$rstGadget = Join-Path $here 'unit_restrictions.lua'
+if ((Test-Path $tdGadget) -or (Test-Path $ctfGadget) -or (Test-Path $rstGadget)) {
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
     $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
@@ -95,6 +97,7 @@ return {
     $files = @(, @('modinfo.lua', $modinfo))
     if (Test-Path $tdGadget) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
     if (Test-Path $ctfGadget) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
+    if (Test-Path $rstGadget) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
     $rulesFile = Join-Path $here 'bar_rules.lua' # shared rules (packages made before this file existed carry a gadget that does not need it)
     if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
     foreach ($e in $files) {

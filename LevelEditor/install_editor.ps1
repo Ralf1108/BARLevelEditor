@@ -64,6 +64,8 @@ $gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
 $gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
 $gadgetCtf = Get-Content (Join-Path $here 'ctf_game.lua') -Raw
 $ctfPage = Get-Content (Join-Path $here 'led_ctf.lua') -Raw
+$gadgetRst = Get-Content (Join-Path $here 'unit_restrictions.lua') -Raw
+$rstData = Get-Content (Join-Path $here 'led_restrictions.lua') -Raw
 $helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
 $shared = Get-Content $sharedFile -Raw
 $rules = Get-Content $rulesFile -Raw
@@ -74,10 +76,12 @@ foreach ($e in @(
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
+    @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
     @('luaui/Include/editor_common.lua', $shared),
     @('luaui/Include/bar_rules.lua', $rules),
     @('luaui/Include/led_ctf.lua', $ctfPage),
+    @('luaui/Include/led_restrictions.lua', $rstData),
     @('luaui/Include/led_help_texts.lua', $helpTexts))) {
     $entry = $zip.CreateEntry($e[0])
     $w = New-Object IO.StreamWriter($entry.Open(), $utf8)

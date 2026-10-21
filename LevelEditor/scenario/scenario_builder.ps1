@@ -265,12 +265,10 @@ function Read-TowerDefense([string]$txt) {
         if ($c -lt 0) { return '' }
         return $body.Substring($o + 1, $c - $o - 1)
     }
-    $td = @{ spawn = (Pair 'spawn'); goal = (Pair 'goal'); economy = (Flag 'economy'); fog = (Flag 'fog'); leaks = 10; waypoints = @(); banned = @(); bannedTech = @(); waves = @() }
+    $td = @{ spawn = (Pair 'spawn'); goal = (Pair 'goal'); economy = (Flag 'economy'); fog = (Flag 'fog'); leaks = 10; waypoints = @(); waves = @() }
     $lk = [regex]::Match($body, '\bleaks\s*=\s*(\d+)')
     if ($lk.Success) { $td.leaks = [int]$lk.Groups[1].Value }
     foreach ($p in [regex]::Matches((Block 'waypoints'), '\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}')) { $td.waypoints += ,@([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
-    foreach ($b in [regex]::Matches((Block 'banned'), '"([^"]+)"')) { $td.banned += $b.Groups[1].Value }
-    foreach ($b in [regex]::Matches((Block 'bannedTech'), '\d')) { $td.bannedTech += $b.Value }
     foreach ($wm in [regex]::Matches((Block 'waves'), '\{([^{}]*)\}')) {
         $w = @{ fac = 'arm'; kind = 'vb'; tech = '1'; count = 10; gap = 30; hp = 100 }
         foreach ($kv in [regex]::Matches($wm.Groups[1].Value, '(\w+)\s*=\s*("[^"]*"|-?\d+)')) {
@@ -291,6 +289,29 @@ function Read-TowerDefense([string]$txt) {
 
 # Section "capture" of the level (written by the Level Editor): the settings of the Capture the Flag page.
 # $null when the section is missing, Capture the Flag is off or collection points or flag points are missing.
+# Section "restrictions" of the level (written by the Level Editor): the units and tech levels the player cannot build. $null when empty.
+function Read-Restrictions([string]$txt) {
+    $m = [regex]::Match($txt, 'restrictions\s*=\s*\{')
+    if (-not $m.Success) { return $null }
+    $open = $m.Index + $m.Length - 1
+    $close = Find-CloseBrace $txt $open
+    if ($close -lt 0) { return $null }
+    $body = $txt.Substring($open + 1, $close - $open - 1)
+    function Block($key) {
+        $b = [regex]::Match($body, "$key\s*=\s*\{")
+        if (-not $b.Success) { return '' }
+        $o = $b.Index + $b.Length - 1
+        $c = Find-CloseBrace $body $o
+        if ($c -lt 0) { return '' }
+        return $body.Substring($o + 1, $c - $o - 1)
+    }
+    $names = @(); $techs = @()
+    foreach ($b in [regex]::Matches((Block 'banned'), '"([^"]+)"')) { $names += $b.Groups[1].Value }
+    foreach ($b in [regex]::Matches((Block 'bannedTech'), '\d')) { $techs += $b.Value }
+    if ($names.Count -eq 0 -and $techs.Count -eq 0) { return $null }
+    return @{ banned = $names; bannedTech = $techs }
+}
+
 function Read-Capture([string]$txt) {
     $m = [regex]::Match($txt, '\bcapture\s*=\s*\{')
     if (-not $m.Success) { return $null }
@@ -365,6 +386,7 @@ function Read-LevelFile([string]$path) {
     $level.features = @($features)
     $level.td = Read-TowerDefense $txt
     $level.ctf = Read-Capture $txt
+    $level.rst = Read-Restrictions $txt
     return $level
 }
 
@@ -458,6 +480,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         # the waves belong to an enemy team: when the level has none, a team without units is added
         if ($teamsFound.Count -eq 1) { $teamsFound = @($teamsFound) + @([int]$teamsFound[0] + 1) }
     }
+    $rst = $level.rst
+    if ($rst) { Write-Host "Restrictions in the level: $($rst.banned.Count) units and $($rst.bannedTech.Count) tech levels the player cannot build." -ForegroundColor Cyan }
     $ctf = $level.ctf
     if ($ctf) {
         Write-Host "Capture the Flag is on in the level: $($ctf.flags.Count) flag points, $($ctf.homes.Count) collection points. It is part of the scenario (against a computer opponent that does not play it: only a game of your own)." -ForegroundColor Cyan
@@ -655,9 +679,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $enemyNew = $newid[[int]$enemyOld]
         $path = if ($td.waypoints.Count -gt 0) { ($td.waypoints | ForEach-Object { '{0},{1}' -f $_[0], $_[1] }) -join '/' } else { '-' }
         $waves = ($td.waves | ForEach-Object { '{0},{1},{2},{3},{4},{5}' -f $_.fac, $_.kind, $_.tech, $_.count, $_.gap, $_.hp }) -join '/'
-        $banned = if ($td.banned.Count -gt 0) { $td.banned -join ',' } else { '-' }
-        $bannedTech = if ($td.bannedTech.Count -gt 0) { $td.bannedTech -join ',' } else { '-' }
-        $plain = (@($enemyNew, 0, $td.spawn[0], $td.spawn[1], $td.goal[0], $td.goal[1], $td.leaks, $path, $waves, $banned, $bannedTech, $(if ($td.economy) { 'economy' } else { 'towers' }), $(if ($td.fog) { '1' } else { '0' })) -join ';')
+        $plain = (@($enemyNew, 0, $td.spawn[0], $td.spawn[1], $td.goal[0], $td.goal[1], $td.leaks, $path, $waves, $(if ($td.economy) { 'economy' } else { 'towers' }), $(if ($td.fog) { '1' } else { '0' })) -join ';')
         $mods['tdconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
         # indestructible units (corridor walls, buildings marked with FX): name:x,z,x,z|name:...
         $fixed = @($level.units | Where-Object { $_.fixed })
@@ -675,6 +697,11 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team that holds $($ctf.score) flags at once wins; 0 = no end)." -ForegroundColor Yellow }
     }
+    if ($rst) {
+        # settings for the gadget unit_restrictions.lua (banned;bannedTech: names and tech levels, "-" for none)
+        $plainR = ('{0};{1}' -f $(if ($rst.banned.Count -gt 0) { $rst.banned -join ',' } else { '-' }), $(if ($rst.bannedTech.Count -gt 0) { $rst.bannedTech -join ',' } else { '-' }))
+        $mods['restrictions'] = [Convert]::ToBase64String($utf8.GetBytes($plainR)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+    }
     if ($grace -gt 0) { $mods['norushtimer'] = $grace.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }
     foreach ($mk in $level.mods.Keys) { $mods[$mk] = $level.mods[$mk] }
     $mtxt = ($mods.Keys | ForEach-Object { "`t`t$_=$($mods[$_]);`n" }) -join ''
@@ -691,7 +718,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
-    if ($td -or $ctf) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
+    if ($rst) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
+    if ($td -or $ctf -or $rst) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     if ($ctf) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +

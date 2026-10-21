@@ -1,6 +1,6 @@
 # Fingerprint of what install_editor.ps1 packs into the extra game (dot-sourced by install_editor.ps1 and ensure_installed.ps1):
 # if it differs from the one stored at the last setup, the setup has to run again.
-$EditorFiles = @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua', 'ctf_game.lua', 'led_ctf.lua', 'help_texts.lua')
+$EditorFiles = @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua', 'ctf_game.lua', 'led_ctf.lua', 'unit_restrictions.lua', 'led_restrictions.lua', 'help_texts.lua')
 $SharedFiles = @('editor_common.lua', 'bar_rules.lua')
 
 function Get-EditorStamp([string]$here, [string]$game) {

@@ -2,14 +2,12 @@
 -- to the goal, pays metal and energy for every kill and ends the level (won: all waves beaten, lost: too many got through).
 -- Configuration: from the Level Editor with the message "tdw|start|<payload>" (stop: "tdw|stop"), or from the game option
 -- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
---   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;banned;bannedTech;restrict;fog;metal;energy
+--   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;restrict;fog;metal;energy
 --   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
 --   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
 --           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
 --           the start), hp = health in percent. The units are chosen at random among all that match.
---   banned = "name,name,..." or "-": units (towers) the player must not build while the game runs
---   bannedTech = "1,3" or "-": tech levels of which the player may build no structure; restrict = "towers" | "economy":
---           the player may build only towers ("towers") or towers and economy structures ("economy"); fog = 1 | 0: fog of war
+--   restrict = "towers" | "economy": the player may build only towers ("towers") or towers and economy structures ("economy"); fog = 1 | 0: fog of war
 --           (radars may be built; in a finished scenario the whole map is visible without fog)
 --   path = the waypoints between spawn and goal, already in the order the units walk them
 --   metal, energy (optional): start resources of the player; only the editor uses them (it sets them at the start of the test, a finished
@@ -100,22 +98,9 @@ local function parse(payload)
 	if #cfg.waves == 0 then
 		return nil
 	end
-	cfg.banned = {}
-	for _, name in ipairs(split(f[10] or "", ",")) do
-		local ud = UnitDefNames[name]
-		if ud then
-			cfg.banned[ud.id] = true
-		end
-	end
-	cfg.bannedTech = {}
-	for _, v in ipairs(split(f[11] or "", ",")) do
-		if tonumber(v) then
-			cfg.bannedTech[tonumber(v)] = true
-		end
-	end
-	cfg.restrict = f[12] == "economy" and "economy" or "towers"
-	cfg.fog = f[13] == "1"
-	cfg.metal, cfg.energy = tonumber(f[14]), tonumber(f[15])
+	cfg.restrict = f[10] == "economy" and "economy" or "towers"
+	cfg.fog = f[11] == "1"
+	cfg.metal, cfg.energy = tonumber(f[12]), tonumber(f[13])
 	return cfg
 end
 
@@ -338,8 +323,8 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 	end
 end
 
--- Build orders of the player that are not allowed are refused while the game runs: forbidden towers (red X), tech levels
--- without structures, and the restriction to towers (and economy). Units from factories are not restricted.
+-- Build orders of the player that are not allowed are refused while the game runs: the restriction to towers (and economy; the units
+-- that are forbidden in the level are refused by unit_restrictions.lua). Units from factories are not restricted.
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	-- indestructible units can also not be taken apart (reclaim, capture, self destruction); area reclaim: see AllowUnitBuildStep
 	if (cmdID == CMD.RECLAIM or cmdID == CMD.CAPTURE) and cmdParams and #cmdParams == 1 and cmdParams[1] < Game.maxUnits and fixedIds[cmdParams[1]] then
@@ -353,16 +338,10 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	end
 	local cfg, ud = td.cfg, UnitDefs[-cmdID]
 	local why
-	if cfg.banned[-cmdID] then
-		why = "forbidden"
-	elseif not ud.canMove then
-		if cfg.bannedTech[techLevel(ud)] then
-			why = "tech level " .. techLevel(ud) .. " is forbidden"
-		else
-			local cls = buildClass(ud)
-			if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy") or (cls == "radar" and cfg.fog)) then
-				why = cls == "radar" and "no radars without fog of war" or (cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built")
-			end
+	if not ud.canMove then
+		local cls = buildClass(ud)
+		if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy") or (cls == "radar" and cfg.fog)) then
+			why = cls == "radar" and "no radars without fog of war" or (cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built")
 		end
 	end
 	if why then

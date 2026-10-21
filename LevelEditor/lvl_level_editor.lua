@@ -253,6 +253,7 @@ local scenario = nil -- Info of the loaded scenario or one created in the game
 local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
 local currentLevel = nil -- Name of the level loaded or saved last
 local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke = nil, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
+local rst -- restrictions of the level (what the player may not build): LevelEditor/led_restrictions.lua, created below (data = section restrictions of the level file)
 local ctf -- Capture the Flag page (button CF): LevelEditor/led_ctf.lua, created below (data = section capture of the level file)
 
 local function decodeBlock(block)
@@ -361,6 +362,9 @@ local function saveLevel(name, quiet)
 	if ctf.data then
 		f:write("\tcapture = " .. ctf.lua() .. ",\n")
 	end
+	if not rst.empty() then
+		f:write("\trestrictions = " .. rst.lua() .. ",\n")
+	end
 	f:write("\t-- to be enabled in the main game (game options), otherwise some units are missing:\n")
 	f:write("\trequiredmodoptions = { " .. table.concat(needed, ", ") .. " },\n\tunitloadout = {\n")
 	f:write(table.concat(lines, "\n"))
@@ -428,6 +432,7 @@ local function load_level(_, _, args)
 	end
 	td.data = type(data.towerdefense) == "table" and data.towerdefense or nil -- own section of the level file
 	ctf.data = type(data.capture) == "table" and data.capture or nil
+	rst.load(data.restrictions)
 	td.scroll = 0
 	if tonumber(data.unitlimit) then
 		cfg.v.unitLimit = tonumber(data.unitlimit) -- the unit limit belongs to the level (used by the scenario builder)
@@ -2345,7 +2350,7 @@ td.tcat = "tower" -- category of the list: tower | economy | radar
 td.tscroll, td.TROWS = 0, 4 -- first row shown, rows shown at most (mouse wheel scrolls)
 td.GOAL_RADIUS = 120 -- as in td_waves.lua: an enemy this close to the goal got through
 function td.new()
-	return { enabled = false, width = 8, leaks = 10, economy = true, fog = true, waypoints = {}, banned = {}, bannedTech = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
+	return { enabled = false, width = 8, leaks = 10, economy = true, fog = true, waypoints = {}, waves = { { fac = "arm", kind = "vb", tech = "1", count = 10, gap = 0, hp = 100 } } }
 end
 td.DEFAULT = td.new()
 
@@ -2674,50 +2679,13 @@ function td.armUnit(name)
 	say("Unit: " .. name .. ". Left click on the map places, right click ends.")
 end
 
+-- The restrictions are one list for the whole level (led_restrictions.lua): the Tower Defense page and the Place menu write the same one
 function td.techBanned(t)
-	for _, v in ipairs(td.cfg().bannedTech or {}) do
-		if v == t then
-			return true
-		end
-	end
-	return false
-end
-
--- Forbid all structures of a tech level for the player in the game, or allow them again
-function td.toggleTech(t)
-	local c = td.cfg(true)
-	c.bannedTech = c.bannedTech or {}
-	for i, v in ipairs(c.bannedTech) do
-		if v == t then
-			table.remove(c.bannedTech, i)
-			return
-		end
-	end
-	c.bannedTech[#c.bannedTech + 1] = t
-	table.sort(c.bannedTech)
+	return rst.techBanned(t)
 end
 
 function td.isBanned(name)
-	for _, n in ipairs(td.cfg().banned or {}) do
-		if n == name then
-			return true
-		end
-	end
-	return false
-end
-
--- Forbid a tower for the player in the game (the editor can always place it) or allow it again
-function td.toggleBan(name)
-	local c = td.cfg(true)
-	c.banned = c.banned or {}
-	for i, n in ipairs(c.banned) do
-		if n == name then
-			table.remove(c.banned, i)
-			return
-		end
-	end
-	c.banned[#c.banned + 1] = name
-	table.sort(c.banned)
+	return rst.isBanned(name)
 end
 
 function td.layout(rect)
@@ -3135,8 +3103,8 @@ function td.payload()
 	for _, w in ipairs(c.waves) do
 		waves[#waves + 1] = string.format("%s,%s,%s,%d,%d,%d", td.chosen(w, "fac"), td.chosen(w, "kind"), td.chosen(w, "tech"), w.count, w.gap, w.hp)
 	end
-	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"), #(c.banned or {}) > 0 and table.concat(c.banned, ",") or "-",
-		#(c.bannedTech or {}) > 0 and table.concat(c.bannedTech, ",") or "-", c.economy ~= false and "economy" or "towers", c.fog ~= false and "1" or "0",
+	return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"),
+		c.economy ~= false and "economy" or "towers", c.fog ~= false and "1" or "0",
 		math.floor(scenario and tonumber(scenario.metal) or 1000), math.floor(scenario and tonumber(scenario.energy) or 1000) }, ";")
 end
 
@@ -3498,9 +3466,9 @@ function td.press(rect, mx, my)
 		local c = td.cfg(true)
 		c.fog, td.tscroll = not (c.fog ~= false), 0
 	elseif k == "tdban" then
-		td.toggleBan(hit.value)
+		rst.toggle(hit.value)
 	elseif k == "tdtechx" then
-		td.toggleTech(hit.value)
+		rst.toggleTech(hit.value)
 	elseif k == "tdeconomy" then
 		local c = td.cfg(true)
 		c.economy, td.tscroll = not (c.economy ~= false), 0
@@ -3514,6 +3482,7 @@ function td.toggle()
 	if state and state ~= "" then
 		-- running, won or lost: stop and bring the state before Play back (destroyed towers, wave units)
 		Spring.SendLuaRulesMsg("tdw|stop")
+		rst.stop()
 		local current = currentLevel
 		load_level(nil, nil, { "_beforeplay" })
 		currentLevel = current
@@ -3528,6 +3497,7 @@ function td.toggle()
 	end
 	gen.disarmAll()
 	saveLevel("_beforeplay", true)
+	rst.start()
 	Spring.SendLuaRulesMsg("tdw|start|" .. payload)
 	say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
 end
@@ -3626,6 +3596,11 @@ function gen.disarmAll()
 	ctf.endPick()
 end
 
+-- Restrictions of the level (LevelEditor/led_restrictions.lua)
+rst = VFS.Include("luaui/Include/led_restrictions.lua", nil, VFS.ZIP_FIRST)({
+	serialize = function(v) return td.lua(v, "\t") end,
+})
+
 -- Capture the Flag page (LevelEditor/led_ctf.lua): gets the services of the widget
 ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 	Shared = Shared,
@@ -3644,6 +3619,8 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 		td.endPick()
 	end,
 	disarmAll = function() gen.disarmAll() end,
+	restrictStart = function() rst.start() end,
+	restrictStop = function() rst.stop() end,
 	-- Tower Defense off when Capture the Flag is switched on (only one of the two modes)
 	excludeTd = function()
 		if td.data and td.data.enabled then
