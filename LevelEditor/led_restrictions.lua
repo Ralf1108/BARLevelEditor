@@ -12,12 +12,15 @@ return function(host)
 
 	-- The stored data (from the level file) or nothing; the set of the banned names is rebuilt
 	function rst.load(t)
-		rst.data = type(t) == "table" and t or nil
+		rst.data = nil
 		rst.set = {}
-		if rst.data then
-			rst.data.banned = type(rst.data.banned) == "table" and rst.data.banned or {}
-			for _, n in ipairs(rst.data.banned) do
-				rst.set[n] = true
+		if type(t) == "table" and type(t.banned) == "table" then
+			rst.data = { banned = {} } -- only the known field is taken over
+			for _, n in ipairs(t.banned) do
+				if type(n) == "string" and not rst.set[n] then
+					rst.set[n] = true
+					rst.data.banned[#rst.data.banned + 1] = n
+				end
 			end
 		end
 	end

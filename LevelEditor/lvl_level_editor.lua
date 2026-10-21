@@ -430,8 +430,9 @@ local function load_level(_, _, args)
 		say("Loading failed: " .. tostring(err))
 		return true
 	end
-	td.data = type(data.towerdefense) == "table" and data.towerdefense or nil -- own section of the level file
-	ctf.data = type(data.capture) == "table" and data.capture or nil
+	-- own sections of the level file: only the fields the editor knows are taken over (nothing old is kept and saved again)
+	td.data = gen.known(data.towerdefense, td.new(), { "spawn", "goal" })
+	ctf.data = gen.known(data.capture, ctf.new())
 	rst.load(data.restrictions)
 	td.scroll = 0
 	if tonumber(data.unitlimit) then
@@ -3592,6 +3593,25 @@ function td.hud(vsx, vsy)
 	gl.Color(1, 0.9, 0.4, 1)
 	gl.Text(text, vsx * 0.5, vsy - 70 * S, 22 * S, "co")
 	gl.Color(1, 1, 1, 1)
+end
+
+-- A section of the level file reduced to the fields of the defaults (and the listed extra fields): nil when it is no table
+function gen.known(t, defaults, extra)
+	if type(t) ~= "table" then
+		return nil
+	end
+	local out = {}
+	for k, v in pairs(defaults) do
+		if t[k] ~= nil then
+			out[k] = t[k]
+		else
+			out[k] = v
+		end
+	end
+	for _, k in ipairs(extra or {}) do
+		out[k] = t[k]
+	end
+	return out
 end
 
 -- Ends every editor mode (stamp, delete, maze, generate, area attack, picking of the Tower Defense and Capture the Flag points) and every drag;
