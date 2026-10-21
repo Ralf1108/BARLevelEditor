@@ -170,10 +170,10 @@ return function(host)
 		head("Places on the map (team: strip at the left)")
 		line({
 			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
-				tip = "Collection point of the team chosen in the strip at the left: click, then click the place on the map (one per team, a new one replaces it). Right click ends. Del over a point removes it, Ctrl + drag moves it." },
+				tip = "Collection point of the team chosen in the strip at the left: click, then click the place on the map (one per team, a new one replaces it). Right click ends. Del over a point removes it, Alt + drag moves it." },
 			{ kind = "ctfhomex", label = "X", w = 1, tip = "Delete the collection point of the chosen team" },
 			{ kind = "ctfflag", label = "Flag point", active = ctf.pick == "flag", w = 5,
-				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it, Ctrl + drag moves it." },
+				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it, Alt + drag moves it." },
 			{ kind = "ctfflagx", label = "X", w = 1, tip = "Delete all flag points (with 'Own flags': those of the chosen team)" },
 		})
 		-- what is placed
@@ -350,9 +350,9 @@ return function(host)
 		return true
 	end
 
-	-- Ctrl + left button over a point: it follows the mouse pointer (ctf.sample) until the button is released (ctf.endDrag); true if one was grabbed
+	-- Alt + left button over a point: it follows the mouse pointer (ctf.sample) until the button is released (ctf.endDrag); true if one was grabbed
 	function ctf.grab()
-		if not ctf.open or not host.canEdit() then
+		if not host.canEdit() then
 			return false
 		end
 		local list, i = ctf.pointAt()

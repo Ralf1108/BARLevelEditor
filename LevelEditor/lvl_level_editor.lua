@@ -2612,6 +2612,26 @@ function td.waypointAt()
 	return best
 end
 
+-- What Alt + drag grabs under the mouse pointer: the index of a waypoint, "spawn" or "goal" (or nil)
+function td.dragAt()
+	local i = td.waypointAt()
+	if i then
+		return i
+	end
+	local mx, my = Spring.GetMouseState()
+	local _, pos = Spring.TraceScreenRay(mx, my, true)
+	local c = td.cfg()
+	if pos then
+		for _, k in ipairs({ "spawn", "goal" }) do
+			local p, r = c[k], k == "spawn" and 64 or td.GOAL_RADIUS
+			if p and (p[1] - pos[1]) ^ 2 + (p[2] - pos[3]) ^ 2 <= r ^ 2 then
+				return k
+			end
+		end
+	end
+	return nil
+end
+
 -- Del over a waypoint removes it; true when there was one
 function td.deleteWaypoint()
 	local i = td.open and td.waypointAt()
@@ -3158,7 +3178,7 @@ function td.click(x, z)
 	if td.pick == "waypoint" then
 		local n = td.addWaypoint(x, z)
 		td.commit(before)
-		say(string.format("Waypoint placed (%d). Click for more, right click ends, Del over a waypoint removes it, Ctrl + drag moves it.", n))
+		say(string.format("Waypoint placed (%d). Click for more, right click ends, Del over a waypoint removes it, Alt + drag moves it.", n))
 		return
 	end
 	if td.pick == "corridor" and td.mode == "single" then
@@ -3234,12 +3254,13 @@ function td.sample()
 	end
 	if td.wpDrag then
 		local mx, my, left = Spring.GetMouseState()
-		local wps = td.cfg().waypoints
+		local c = td.cfg()
+		local holder = type(td.wpDrag) == "number" and c.waypoints or c -- waypoints[i] or c.spawn / c.goal
 		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		if not left or not (wps and wps[td.wpDrag]) then
+		if not left or not (holder and holder[td.wpDrag]) then
 			td.endWpDrag()
 		elseif pos then
-			wps[td.wpDrag] = { math.floor(pos[1]), math.floor(pos[3]) }
+			holder[td.wpDrag] = { math.floor(pos[1]), math.floor(pos[3]) }
 		end
 		return
 	end
@@ -3884,17 +3905,17 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if td.open and button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
-		local _, ctrl = Spring.GetModKeyState()
-		local i = ctrl and td.waypointAt()
+	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick then
+		local alt, ctrl, _, shift = Spring.GetModKeyState()
+		local i = alt and not ctrl and not shift and td.dragAt()
 		if i and canEdit() then
 			td.wpDrag, td.wpBefore = i, td.routeState() -- the waypoint follows the mouse while the button is held (td.sample)
 			return true
 		end
 	end
-	if ctf.open and button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
-		local _, ctrl = Spring.GetModKeyState()
-		if ctrl and ctf.grab() then
+	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick then
+		local alt, ctrl, _, shift = Spring.GetModKeyState()
+		if alt and not ctrl and not shift and ctf.grab() then
 			return true -- the point follows the mouse while the button is held (ctf.sample)
 		end
 	end
