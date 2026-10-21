@@ -269,8 +269,8 @@ local function deliver(f, team)
 end
 
 local function canCarry(unitID, teamID)
-	if protected[unitID] or carrying[unitID] or teamID == Spring.GetGaiaTeamID() then
-		return false
+	if protected[unitID] or carrying[unitID] or teamID == Spring.GetGaiaTeamID() or Spring.GetUnitIsDead(unitID) then
+		return false -- (a unit that is being destroyed is still listed in the frame it dies)
 	end
 	local ud = UnitDefs[Spring.GetUnitDefID(unitID)]
 	return ud and (ud.speed or 0) > 0 and not ud.isBuilding
