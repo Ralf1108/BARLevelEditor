@@ -1,0 +1,383 @@
+-- Capture the Flag page of the Level Editor (button CF): settings, collection points and flag points, test run.
+-- The game itself is run by the gadget ctf_game.lua. Loaded by lvl_level_editor.lua (VFS.Include("luaui/Include/led_ctf.lua")) as a
+-- function that gets the host (the services of the widget) and returns the page; a file of its own because the widget is close to
+-- the limit of 200 local variables. The settings (ctf.data) are saved in their own section capture of the level file.
+--   host.Shared, host.S() (UI scale), host.say(text), host.canEdit(), host.team() (team chosen in the strip), host.serialize(table),
+--   host.disarm() (ends the other modes), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back)
+return function(host)
+	local Shared = host.Shared
+	local ctf = { open = false, edit = nil, pick = nil, data = nil, notice = nil }
+	local DELETE_RADIUS = 80 -- Del: the point within this distance of the mouse pointer goes
+	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
+
+	function ctf.new()
+		return { enabled = false, mode = "own", reward = "once", amount = 100, score = 3, radius = 100, returnTime = 30, homes = {}, flags = {} }
+	end
+	ctf.DEFAULT = ctf.new()
+
+	-- Settings without write: the stored ones or the defaults (never changed by the caller); with write they are created
+	function ctf.cfg(write)
+		if type(ctf.data) == "table" then
+			return ctf.data
+		end
+		if not write then
+			return ctf.DEFAULT
+		end
+		ctf.data = ctf.new()
+		return ctf.data
+	end
+
+	function ctf.lua()
+		return host.serialize(ctf.data)
+	end
+
+	local function teamName(t)
+		return t >= 0 and ("team " .. t) or "neutral"
+	end
+
+	-- Buttons and labels of the page; returns rects, labels, height
+	function ctf.layout(rect)
+		local S, m = host.S(), Shared.m
+		local c = ctf.cfg()
+		local rects, labels = {}, {}
+		local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
+		local y = rect.top - m.PAD
+		local gap = 4 * S
+		local function line(items)
+			local total = 0
+			for _, it in ipairs(items) do
+				total = total + (it.w or 1)
+			end
+			local avail, bx = x2 - x1 - gap * (#items - 1), x1
+			for _, it in ipairs(items) do
+				local w = avail * (it.w or 1) / total
+				rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
+					fs = it.fs or 22 * S, field = it.field, tint = it.tint, tip = it.tip }
+				bx = bx + w + gap
+			end
+			y = y - m.HB - 6 * S
+		end
+		local function head(text)
+			labels[#labels + 1] = { text = text, x = x1, y = y - 26 * S, size = 22 * S, head = true }
+			y = y - 32 * S
+		end
+		local function note(text, color)
+			labels[#labels + 1] = { text = text, x = x1, y = y - 18 * S, size = 19 * S, color = color }
+			y = y - 24 * S
+		end
+		local function num(field)
+			return (ctf.edit and ctf.edit.field == field) and (ctf.edit.buf .. "_") or tostring(c[field])
+		end
+		local function field(name, tip)
+			return { kind = "ctfedit", field = name, label = num(name), active = ctf.edit ~= nil and ctf.edit.field == name, tip = tip }
+		end
+		line({ { kind = "ctfon", label = (c.enabled and "[x] " or "[ ] ") .. "Capture the Flag", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
+			tip = "Switch Capture the Flag on or off for this level (saved in the level file, section capture)" } })
+		head("Flags")
+		line({
+			{ kind = "ctfmode", value = "own", label = "Own flags per team", active = c.mode == "own",
+				tip = "Every team has its own flags (flag points of that team). The other teams take them to their collection point." },
+			{ kind = "ctfmode", value = "neutral", label = "Neutral flags", active = c.mode == "neutral",
+				tip = "The flags belong to nobody: every team may take every flag to its own collection point." },
+		})
+		head("Reward for a flag (metal)")
+		line({
+			{ kind = "ctfreward", value = "once", label = "Once", active = c.reward == "once", w = 3,
+				tip = "The team gets the metal once when it delivers a flag; the flag then lies again at its flag point." },
+			{ kind = "ctfreward", value = "income", label = "Per second", active = c.reward == "income", w = 3,
+				tip = "The delivered flag stays at the collection point and pays the metal every second, for as long as the game lasts." },
+			(function() local f = field("amount", "Metal per flag (once) or per flag and second. Click, type a number, Enter accepts") f.w = 2 return f end)(),
+		})
+		head("Flags a team needs to win (0 = never)")
+		line({ field("score", "The first team that has delivered this many flags wins. 0: the level does not end. Click, type a number, Enter accepts") })
+		head("Capture radius (Elmo)")
+		line({ field("radius", "Distance within which a unit picks up a flag, delivers it, or brings its own dropped flag back. Click, type a number, Enter accepts") })
+		head("Dropped flag goes back after (seconds)")
+		line({ field("returnTime", "A flag that was dropped (carrier destroyed) lies back at its flag point after this time. Click, type a number, Enter accepts") })
+		head("Places on the map (team: strip at the left)")
+		line({
+			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
+				tip = "Collection point of the team chosen in the strip at the left: click, then click the place on the map (one per team, a new one replaces it). Right click ends. Del over a point removes it." },
+			{ kind = "ctfhomex", label = "X", w = 1, tip = "Delete the collection point of the chosen team" },
+			{ kind = "ctfflag", label = "Flag point", active = ctf.pick == "flag", w = 5,
+				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it." },
+			{ kind = "ctfflagx", label = "X", w = 1, tip = "Delete all flag points (with 'Own flags': those of the chosen team)" },
+		})
+		-- what is placed
+		local homes = {}
+		for _, h in ipairs(c.homes) do
+			homes[#homes + 1] = tostring(h.team)
+		end
+		local byTeam, order = {}, {}
+		for _, f in ipairs(c.flags) do
+			if not byTeam[f.team] then
+				byTeam[f.team] = 0
+				order[#order + 1] = f.team
+			end
+			byTeam[f.team] = byTeam[f.team] + 1
+		end
+		table.sort(order)
+		local parts = {}
+		for _, t in ipairs(order) do
+			parts[#parts + 1] = string.format("%d (%s)", byTeam[t], teamName(t))
+		end
+		note("Collection points: " .. (#homes > 0 and ("teams " .. table.concat(homes, ", ")) or "none"), { 0.8, 0.8, 0.8 })
+		note("Flag points: " .. (#parts > 0 and table.concat(parts, ", ") or "none"), { 0.8, 0.8, 0.8 })
+		y = y - 6 * S
+		-- very bottom: the button that starts the test (red message above it: what is missing)
+		local state = Spring.GetGameRulesParam("ctfState") or ""
+		local running = state == "running"
+		if ctf.notice and os.clock() < ctf.notice.untilT then
+			note(ctf.notice.text, { 1, 0.4, 0.35 })
+		end
+		y = y - 8 * S
+		line({ { kind = "ctfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start test"), active = running, fs = 26 * S,
+			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
+			tip = "Start test: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
+		y = y - m.PAD
+		return rects, labels, rect.top - y
+	end
+
+	function ctf.height()
+		local _, _, h = ctf.layout({ x1 = 0, x2 = math.floor(560 * host.S()), top = 0 })
+		return h
+	end
+
+	function ctf.draw(rect)
+		local S = host.S()
+		local rects, labels = ctf.layout(rect)
+		Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+		for _, l in ipairs(labels) do
+			if l.color then
+				gl.Color(l.color[1], l.color[2], l.color[3], 1)
+			else
+				gl.Color(0.5, 0.8, 1, 1)
+			end
+			gl.Text(l.text, l.x, l.y, l.size, "o")
+		end
+		gl.Color(1, 1, 1, 1)
+		local mx, my = Spring.GetMouseState()
+		Shared.drawTip(rects, mx, my)
+	end
+
+	-- Ends the entry in a number field (accept: take the value)
+	function ctf.finish(accept)
+		local e = ctf.edit
+		if not e then
+			return
+		end
+		ctf.edit = nil
+		widgetHandler:DisownText()
+		local v = tonumber(e.buf)
+		if accept and v then
+			local lim = LIMITS[e.field]
+			ctf.cfg(true)[e.field] = math.max(lim[1], math.min(lim[2], math.floor(v)))
+		end
+	end
+
+	function ctf.key(key)
+		if key == 13 or key == 271 then
+			ctf.finish(true)
+		elseif key == 27 then
+			ctf.finish(false)
+		elseif key == 8 then
+			ctf.edit.buf = ctf.edit.buf:sub(1, -2)
+		end
+		return true
+	end
+
+	function ctf.text(ch)
+		if ch and ch:match("^%d$") and #ctf.edit.buf < 5 then
+			ctf.edit.buf = ctf.edit.buf .. ch
+		end
+		return true
+	end
+
+	-- Payload for the gadget (see ctf_game.lua); nil and a message if something is missing
+	function ctf.payload()
+		local c = ctf.cfg()
+		if #c.homes == 0 then
+			return nil, "Place at least one collection point first."
+		end
+		if #c.flags == 0 then
+			return nil, "Place at least one flag point first."
+		end
+		local function list(items)
+			local out = {}
+			for _, p in ipairs(items) do
+				out[#out + 1] = string.format("%d,%d,%d", p.team, p.x, p.z)
+			end
+			return #out > 0 and table.concat(out, "/") or "-"
+		end
+		return table.concat({ c.mode, c.reward, c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags) }, ";")
+	end
+
+	function ctf.endPick()
+		ctf.pick = nil
+	end
+
+	-- Arms picking on the map: "home" or "flag"; the same button again ends it
+	function ctf.startPick(kind)
+		ctf.finish(true)
+		local same = ctf.pick == kind
+		host.disarm()
+		ctf.endPick()
+		if same then
+			host.say("Capture the Flag: mode ended")
+			return
+		end
+		ctf.pick = kind
+		local t = host.team()
+		if kind == "home" then
+			host.say(string.format("Click the collection point of team %d on the map (team: strip at the left), right click ends.", t))
+		else
+			host.say(ctf.cfg().mode == "own" and string.format("Click the flag points of team %d on the map, right click ends.", t) or "Click the flag points on the map (neutral flags), right click ends.")
+		end
+	end
+
+	function ctf.cancel()
+		ctf.endPick()
+		host.say("Capture the Flag: mode ended")
+	end
+
+	-- Left click on the map in the pick mode
+	function ctf.click(x, z)
+		local c = ctf.cfg(true)
+		x, z = math.floor(x), math.floor(z)
+		local t = host.team()
+		if ctf.pick == "home" then
+			for i = #c.homes, 1, -1 do
+				if c.homes[i].team == t then
+					table.remove(c.homes, i)
+				end
+			end
+			c.homes[#c.homes + 1] = { team = t, x = x, z = z }
+			host.say(string.format("Collection point of team %d set at %d, %d", t, x, z))
+		else
+			c.flags[#c.flags + 1] = { team = c.mode == "own" and t or -1, x = x, z = z }
+			host.say(string.format("Flag point %d placed (%s).", #c.flags, teamName(c.flags[#c.flags].team)))
+		end
+	end
+
+	-- Del: removes the point (collection or flag point) next to the mouse pointer; true if there was one
+	function ctf.deleteAt()
+		if not ctf.open or not host.canEdit() then
+			return false
+		end
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if not pos then
+			return false
+		end
+		local c = ctf.cfg()
+		local best, list, bestD = nil, nil, DELETE_RADIUS ^ 2
+		for _, l in ipairs({ c.homes, c.flags }) do
+			for i, p in ipairs(l) do
+				local d = (p.x - pos[1]) ^ 2 + (p.z - pos[3]) ^ 2
+				if d <= bestD then
+					best, list, bestD = i, l, d
+				end
+			end
+		end
+		if best then
+			table.remove(list, best)
+			host.say("Point removed")
+			return true
+		end
+		return false
+	end
+
+	function ctf.press(rect, mx, my)
+		local hit
+		for _, r in ipairs((ctf.layout(rect))) do
+			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				hit = r
+			end
+		end
+		ctf.finish(true)
+		if not hit then
+			return true
+		end
+		local k = hit.kind
+		if k == "ctfplay" then
+			ctf.toggle()
+		elseif k == "ctfedit" then
+			ctf.edit = { field = hit.field, buf = "" }
+			widgetHandler:OwnText()
+		elseif k == "ctfhome" or k == "ctfflag" then
+			ctf.startPick(k == "ctfhome" and "home" or "flag")
+		elseif k == "ctfhomex" or k == "ctfflagx" then
+			local c = ctf.cfg(true)
+			local list, t = k == "ctfhomex" and c.homes or c.flags, host.team()
+			for i = #list, 1, -1 do
+				if k == "ctfflagx" and c.mode ~= "own" or list[i].team == t then
+					table.remove(list, i)
+				end
+			end
+		else
+			local c = ctf.cfg(true)
+			if k == "ctfon" then
+				c.enabled = not c.enabled
+			elseif k == "ctfmode" then
+				c.mode = hit.value
+			elseif k == "ctfreward" then
+				c.reward = hit.value
+			end
+		end
+		return true
+	end
+
+	-- Play / Stop: runs the game in the editor; the state before is saved as _beforeplay and comes back on Stop
+	function ctf.toggle()
+		local state = Spring.GetGameRulesParam("ctfState")
+		if state and state ~= "" then
+			Spring.SendLuaRulesMsg("ctf|stop")
+			host.afterPlay()
+			host.say("Stopped: the state before the test is back.")
+			return
+		end
+		local payload, err = ctf.payload()
+		if not payload then
+			host.say(err)
+			ctf.notice = { text = err, untilT = os.clock() + 6 }
+			return
+		end
+		host.beforePlay()
+		Spring.SendLuaRulesMsg("ctf|start|" .. payload)
+		host.say("Test started: the state before is saved as _beforeplay; Stop brings it back.")
+	end
+
+	-- Markers in the world while the page is open: collection points (thick ring) and flag points (small ring), in the colors of the teams
+	function ctf.drawWorld()
+		if not ctf.open then
+			return
+		end
+		local c = ctf.cfg()
+		gl.DepthTest(false)
+		local function circle(p, r, width)
+			local cr, cg, cb = 1, 1, 1
+			if p.team >= 0 then
+				cr, cg, cb = Spring.GetTeamColor(p.team)
+			end
+			gl.LineWidth(width)
+			gl.Color(cr or 1, cg or 1, cb or 1, 1)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for i = 0, 39 do
+					local a = i / 40 * 2 * math.pi
+					local x, z = p.x + math.cos(a) * r, p.z + math.sin(a) * r
+					gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
+				end
+			end)
+		end
+		for _, h in ipairs(c.homes) do
+			circle(h, c.radius, 4)
+		end
+		for _, f in ipairs(c.flags) do
+			circle(f, c.radius * 0.5, 2)
+		end
+		gl.LineWidth(1)
+		gl.Color(1, 1, 1, 1)
+	end
+
+	return ctf
+end

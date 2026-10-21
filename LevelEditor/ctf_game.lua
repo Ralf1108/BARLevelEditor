@@ -82,7 +82,7 @@ if not gadgetHandler:IsSyncedCode() then
 			text = text .. "   (" .. state .. ")"
 		end
 		gl.Color(1, 0.9, 0.5, 1)
-		gl.Text(text, vsx * 0.5, vsy - 96, 20, "co")
+		gl.Text(text, vsx * 0.5, vsy - 130, 20, "co")
 		gl.Color(1, 1, 1, 1)
 	end
 	return

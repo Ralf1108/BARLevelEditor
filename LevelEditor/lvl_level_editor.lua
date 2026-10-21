@@ -266,6 +266,7 @@ local scenario = nil -- Info of the loaded scenario or one created in the game
 local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
 local currentLevel = nil -- Name of the level loaded or saved last
 local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke = nil, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
+local ctf -- Capture the Flag page (button CF): LevelEditor/led_ctf.lua, created below (data = section capture of the level file)
 
 local function decodeBlock(block)
 	local body = block and block:match("%[==%[(.*)%]==%]")
@@ -370,6 +371,9 @@ local function saveLevel(name, quiet)
 	if td.data then
 		f:write("\ttowerdefense = " .. td.lua(td.data, "\t") .. ",\n")
 	end
+	if ctf.data then
+		f:write("\tcapture = " .. ctf.lua() .. ",\n")
+	end
 	f:write("\t-- to be enabled in the main game (game options), otherwise some units are missing:\n")
 	f:write("\trequiredmodoptions = { " .. table.concat(needed, ", ") .. " },\n\tunitloadout = {\n")
 	f:write(table.concat(lines, "\n"))
@@ -436,6 +440,7 @@ local function load_level(_, _, args)
 		return true
 	end
 	td.data = type(data.towerdefense) == "table" and data.towerdefense or nil -- own section of the level file
+	ctf.data = type(data.capture) == "table" and data.capture or nil
 	td.scroll = 0
 	if tonumber(data.unitlimit) then
 		cfg.v.unitLimit = tonumber(data.unitlimit) -- the unit limit belongs to the level (used by the scenario builder)
@@ -1193,7 +1198,7 @@ local function searchRects(x1, x2, top, hb)
 end
 
 local function headerRowCount() -- Rows of the header
-	if optionsOpen or scenarioOpen or gen.open or td.open then
+	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open then
 		return 0
 	end
 	-- Place menu: search, sub-tabs, then the rows of the chosen sub-tab
@@ -1244,6 +1249,8 @@ local function basePanelRect()
 		cw, ch = 0, scenarioHeight()
 	elseif td.open then
 		cw, ch = math.floor(780 * S), td.height() -- wider than the other pages: the wave table needs the room
+	elseif ctf.open then
+		cw, ch = 0, ctf.height()
 	elseif gen.open then
 		cw, ch = 0, genHeight()
 	elseif optionsOpen then
@@ -1256,7 +1263,7 @@ local function basePanelRect()
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
 	local top = vsy * 0.94 -- top edge of the menu: 94 % of the screen height
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
+	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
 end
@@ -1298,7 +1305,7 @@ local function headerRects()
 		}
 		for i, it in ipairs(tops) do
 			rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5 + i) - m.HB, y1 = sideTop(5 + i), side = true, kind = "top", value = it[1], label = it[2],
-				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open), tip = it[3] }
+				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open), tip = it[3] }
 		end
 		rects[#rects + 1] = { x1 = ix1, x2 = ix2, y0 = iy1 - m.HB, y1 = iy1, side = true, kind = "info", value = "info", label = "I", active = scenarioOpen,
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
@@ -1307,13 +1314,16 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(8) - m.HB, y1 = sideTop(8), side = true, kind = "td", value = "td", label = "TD", active = td.open,
 			tint = td.cfg().enabled and (td.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Tower Defense is on for this level
 			tip = "Tower Defense: enemy waves walk a path to a goal (spawn point, goal, path, waves)" }
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(9) - m.HB, y1 = sideTop(9), side = true, kind = "ctf", value = "ctf", label = "CF", active = ctf.open,
+			tint = ctf.cfg().enabled and (ctf.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Capture the Flag is on for this level
+			tip = "Capture the Flag: flags lie on the map, units carry them to the collection point of their team and earn metal (flag points, collection points, reward)" }
 		local areas = {
 			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(9 + k)
+			local top = sideTop(10 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1323,14 +1333,14 @@ local function headerRects()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(13 + k)
+			local top = sideTop(14 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	if not optionsOpen and not scenarioOpen and not gen.open and not td.open then
+	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open then
 		local rowTop = y1 - 4 - titleH()
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
@@ -1880,7 +1890,7 @@ local function drawMenuBody()
 	end
 	gl.Color(1, 1, 1, 1)
 	-- with Tower Defense on (tick box) or its page open the title says so
-	gl.Text((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor", x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
+	gl.Text(ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
 		drawScenario(rect, mx, my)
@@ -1888,6 +1898,10 @@ local function drawMenuBody()
 	end
 	if td.open then
 		td.draw(rect)
+		return
+	end
+	if ctf.open then
+		ctf.draw(rect)
 		return
 	end
 	if gen.open then
@@ -2004,7 +2018,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect()))
+	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect()))
 end
 
 -- Button of the column left of the team strip (V, O, I, ?) under the mouse pointer
@@ -2076,8 +2090,8 @@ local function applyHeader0(r)
 	end
 	searchFocus(false)
 	if r.kind == "top" then
-		local tdWas = td.open
-		td.open = false
+		local tdWas = td.open or ctf.open
+		td.open, ctf.open = false, false
 		if tdWas and r.value == "place" then
 			return
 		end
@@ -2086,10 +2100,11 @@ local function applyHeader0(r)
 		end
 		return
 	end
-	local tdWas = td.open
+	local tdWas, ctfWas = td.open, ctf.open
+	ctf.finish(true)
 	if r.kind ~= "create" then
 		gen.open, gen.armed, gen.drag = false, false, nil
-		td.open = false
+		td.open, ctf.open = false, false
 	end
 	uGrid:setFocus(false)
 	fGrid:setFocus(false)
@@ -2103,6 +2118,16 @@ local function applyHeader0(r)
 		scenarioOpen, optionsOpen = false, false
 		td.open = not tdWas
 		td.scroll = 0
+		bpGrid.scroll, uGrid.scroll = 0, 0
+		return
+	end
+	if r.kind == "ctf" then
+		bpGrid:resetEdit()
+		bpGrid:setArmed(false)
+		armedUnit = false
+		armedFeature = false
+		scenarioOpen, optionsOpen = false, false
+		ctf.open = not ctfWas
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
 	end
@@ -3542,11 +3567,36 @@ function td.hud(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
+-- Capture the Flag page (LevelEditor/led_ctf.lua): gets the services of the widget
+ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
+	Shared = Shared,
+	S = function() return S end,
+	say = function(text) say(text) end,
+	canEdit = function() return canEdit() end,
+	team = function() return team end,
+	serialize = function(v) return td.lua(v, "\t") end,
+	disarm = function()
+		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+		gen.armed, gen.drag = false, nil
+		armedUnit, armedFeature = false, false
+		stampDrag = nil
+		bpGrid:setArmed(false)
+		area:disarm()
+		td.endPick()
+	end,
+	beforePlay = function() saveLevel("_beforeplay", true) end,
+	afterPlay = function()
+		local current = currentLevel
+		load_level(nil, nil, { "_beforeplay" })
+		currentLevel = current
+	end,
+})
+
 -- Ends every stamp, delete, maze, generate and area-attack mode and every drag in progress (selection frame,
 -- Alt + drag move); without an active mode a right click clears the selection; returns true if it did something (a field of gen: the file is close to the limit of 200 locals)
 function gen.cancelModes()
 	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
-		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed() or td.pick
+		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed() or td.pick or ctf.pick
 	if not was then
 		if #selectedUnits() > 0 then
 			foreignSel = {}
@@ -3561,7 +3611,12 @@ function gen.cancelModes()
 	gen.armed, gen.drag = false, nil
 	delMode, delDrag = false, nil
 	mazeKind, mazeDrag = nil, nil
-	td.cancel()
+	if td.pick then
+		td.cancel()
+	end
+	if ctf.pick then
+		ctf.endPick()
+	end
 	stampDrag, moveDrag, selBox = nil, nil, nil
 	area:disarm()
 	say("Mode ended")
@@ -3656,6 +3711,9 @@ local function panelPress(mx, my, button)
 		end
 		if td.open then
 			return td.press(rect, mx, my)
+		end
+		if ctf.open then
+			return ctf.press(rect, mx, my)
 		end
 		if gen.open then
 			local hit
@@ -3823,6 +3881,18 @@ function widget:MousePress(mx, my, button)
 			return true
 		elseif button == 3 then
 			td.cancel()
+			return true
+		end
+	end
+	if ctf.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		if button == 1 then
+			local _, pos = Spring.TraceScreenRay(mx, my, true)
+			if pos and canEdit() then
+				ctf.click(pos[1], pos[3])
+			end
+			return true
+		elseif button == 3 then
+			ctf.cancel()
 			return true
 		end
 	end
@@ -4209,6 +4279,9 @@ function widget:TextInput(utf8char)
 	if td.edit then
 		return td.text(utf8char)
 	end
+	if ctf.edit then
+		return ctf.text(utf8char)
+	end
 	if scEdit then
 		return scenarioText(utf8char)
 	end
@@ -4237,6 +4310,9 @@ function widget:MouseWheel(up, value)
 	end
 	if td.open then
 		td.wheel(up)
+		return true
+	end
+	if ctf.open then
 		return true
 	end
 	if optionsOpen then
@@ -4594,6 +4670,7 @@ function widget:DrawWorld()
 		end
 	end
 	td.drawWorld()
+	ctf.drawWorld()
 	-- Editor selection (also foreign units): red frame around every unit
 	if #foreignSel > 0 and #Spring.GetSelectedUnits() == 0 then
 		gl.LineWidth(2.5)
@@ -4640,6 +4717,9 @@ function widget:Update()
 	end
 	if td.pick and (armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
 		td.endPick()
+	end
+	if ctf.pick and (not ctf.open or armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
+		ctf.endPick()
 	end
 	td.sample()
 	paintSample()
@@ -4727,7 +4807,7 @@ function bpQuickSave()
 	menuMode = "bp"
 	optionsOpen = false
 	scenarioOpen = false
-	td.open = false
+	td.open, ctf.open = false, false
 	bpGrid:scrollTo(contentRect(), bpGrid.selected)
 	return true
 end
@@ -4750,7 +4830,10 @@ function widget:KeyPress(key, mods, isRepeat)
 	if td.edit then
 		return td.key(key)
 	end
-	if key == 127 and td.deleteWaypoint() then
+	if ctf.edit then
+		return ctf.key(key)
+	end
+	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt()) then
 		return true
 	end
 	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and (key == 13 or key == 271) then
