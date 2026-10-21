@@ -4,7 +4,7 @@ Builds a finished scenario from a saved level of the Level Editor that anyone ca
 
 ## Using it
 1. Save the level in the Level Editor (Ctrl+S). It then lies in `..\levels`.
-2. In the start menu of the Level Editor press key 3 and choose the level (it first asks for the title (Enter keeps it) and then shows the target name = the ID of the scenario (a new title proposes a new name): Enter takes it, another name changes it and is stored in the level; an existing scenario of that name is only overwritten after a question; then it builds without more questions from the info in the level; or by hand `powershell -File scenario_builder.ps1`, which asks everything in the window, Enter takes the default):
+2. In the start menu of the Level Editor press key 3 and choose the level (at the end it lists the values stored in the level, asks for the title (Enter keeps it) and then shows the target name = the ID of the scenario (a new title proposes a new name): Enter takes it, another name changes it and is stored in the level; an existing scenario of that name is only overwritten after a question; then it builds without more questions from the info in the level; or by hand `powershell -File scenario_builder.ps1`, which asks everything in the window, Enter takes the default):
    - which level (list with numbers; `_last` is the automatically backed up state)
    - title, author, summary, briefing (several lines, an empty line ends)
    - role of every team in the level: **Player** (exactly one), **Allied AI**, **Enemy (AI)**

@@ -65,8 +65,10 @@ function AskLine([string]$prompt, $default = '') {
 }
 
 function AskChoice([string]$prompt, $options, [string]$default) {
-    Write-Host $prompt
-    foreach ($o in $options) { Write-Host ('   {0} = {1}' -f $o[0], $o[1]) }
+    if (-not $Auto) { # in the automatic mode the saved answer is taken without showing the choices
+        Write-Host $prompt
+        foreach ($o in $options) { Write-Host ('   {0} = {1}' -f $o[0], $o[1]) }
+    }
     $keys = @($options | ForEach-Object { $_[0] })
     while ($true) {
         $v = (Ask 'Choice' $default).ToLower()
@@ -445,21 +447,14 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
 
     $defTitle = if (-not $base.StartsWith('_')) { (Get-Culture).TextInfo.ToTitleCase(($base -replace '_', ' ').Trim()) } else { 'My scenario' }
     $title = Ask 'Title of the scenario' (Get-Val $saved 'title' $defTitle)
-    # From the start menu: the title first (Enter keeps it), then the name (ID) below
-    $titleChanged = $false
-    if ($AskName) {
-        Write-Host ''
-        $t2 = AskLine 'Title of the scenario' $title
-        $titleChanged = ($t2 -ne $title)
-        $title = $t2
-    }
     $author = Ask 'Author (may stay empty)' (Get-Val $saved 'author' '')
     $summary = Ask 'Summary (one line)' (Get-Val $saved 'summary' '')
     $briefDef = Get-Val $saved 'briefing' $summary
     $briefing = AskMultiline 'Briefing / task' $briefDef
 
     # --- Teams
-    Write-Host "`nRoles of the teams in the level. Player = the human (exactly one team), Allied = AI on the side of the player, Enemy = AI against the player."
+    if (-not $Auto) {
+        Write-Host "`nRoles of the teams in the level. Player = the human (exactly one team), Allied = AI on the side of the player, Enemy = AI against the player." }
     $savedRoles = Get-Val $saved 'roles' ([ordered]@{})
     $roles = [ordered]@{}
     $opts = @(@('s', 'Player'), @('v', 'Allied AI'), @('e', 'Enemy (AI)'))
@@ -495,10 +490,30 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $metal = AskInt 'Start metal per team' (Get-Val $saved 'metal' 1000) 0 100000
     $energy = AskInt 'Start energy per team' (Get-Val $saved 'energy' 1000) 0 100000
     $grace = AskMinutes 'Grace period as minutes:seconds, e.g. 2:30 (as long as that, every team stays in its start area and is safe from damage there; 0 = none)' (Get-Val $saved 'grace' 0)
-    $sid = if ($titleChanged) { Get-Slug $title } else { Get-Val $saved 'sid' (Get-Slug $title) } # a new title proposes a new name
+    $sid = Get-Val $saved 'sid' (Get-Slug $title)
     $sid = Get-Slug (Ask 'ID (lowercase letters and digits only)' $sid)
-    # From the start menu: show the target, take the name or change it (the ID is written into the level too), ask before overwriting
-    if ($AskName) { $sid = Confirm-ScenarioId $sid }
+    # From the start menu, at the end: the values stored in the level, then the title (Enter keeps it) and the name (ID) of the package; a new
+    # title proposes a new name, an existing scenario of that name is only overwritten after a question; title and ID are written into the level
+    if ($AskName) {
+        $roleTxt = ($roles.Keys | ForEach-Object { 'team {0} = {1}' -f $_, $ROLE_TXT[$roles[$_]] }) -join ', '
+        $tierTxt = ($tiers.Keys | Where-Object { $tiers[$_] -ne '123' } | ForEach-Object { 'team {0} only T{1}' -f $_, (($tiers[$_].ToCharArray()) -join '+T') }) -join ', '
+        Write-Host ''
+        Write-Host 'Scenario info stored in the level:' -ForegroundColor Cyan
+        foreach ($row in @(
+                @('Title', $title), @('Author', $author), @('Summary', $summary), @('Briefing', ($briefing -replace "`r?`n", ' / ')), @('Roles', $roleTxt),
+                @('Tech', $(if ($tierTxt) { $tierTxt } else { 'all tiers' })), @('AI behavior', $ai), @('Win condition', $WIN_TXT[$win]), @('Start metal', $metal),
+                @('Start energy', $energy), @('Grace period', $(if ($grace -gt 0) { (Format-Minutes $grace) + ' min' } else { 'none' })), @('ID', $sid),
+                @('Tower Defense', $(if ($td) { 'on: {0} waves, {1} waypoints' -f $td.waves.Count, $td.waypoints.Count } else { 'off' })))) {
+            $v = [string]$row[1]
+            if ($v.Length -gt 90) { $v = $v.Substring(0, 87) + '...' }
+            Write-Host ('  {0,-15} {1}' -f $row[0], $v)
+        }
+        Write-Host ''
+        $t2 = AskLine 'Title of the scenario' $title
+        if ($t2 -ne $title) { $sid = Get-Slug $t2 }
+        $title = $t2
+        $sid = Confirm-ScenarioId $sid
+    }
     # Map size for the start areas: from the level, otherwise from earlier info, otherwise ask
     $mapX = $level.mapX; $mapZ = $level.mapZ
     if ($grace -gt 0 -and $mapX -le 0) {
