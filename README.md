@@ -35,13 +35,13 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 - **Painting, rows and rectangles:** hold the left mouse button and move to place many (each one a whole footprint apart); Shift + drag places a row, Shift + Alt + drag a rectangle; Shift + mouse wheel changes the spacing. The button **W** decides whether placing overwrites what is in the way (default) or leaves occupied spots free.
 - **Blueprints:** select units, press *Create* and the layout is saved as a tile with a preview. Click a tile to place it again, drag tiles to sort them.
 - **Generate:** random units, buildings, turrets, air or ships in a rectangle or circle (faction, tech level and count are up to you), or a **random maze** of dragon teeth or walls.
-- **Tower Defense:** build your own tower defense levels: walls that guide the enemies, a route with spawn point, waypoints and goal, waves of enemies and rules for what the player may build. Test them in the editor and turn them into a scenario that others can play.
 - **Copy and paste:** Ctrl+C / Ctrl+X / Ctrl+V, undo and redo with Ctrl+Z / Ctrl+Y, move with Alt + drag or the arrow keys, rotate and mirror selections.
 - **Delete** along a line, in a rectangle or in a circle with the buttons `DL`, `DR` and `DC` left of the menu (units, wrecks and features), or select enemy units too with Ctrl + click. `FX` / `FD` make buildings in a rectangle indestructible or destructible again.
 - **Area attacks (experimental):** the buttons `XL`, `XR` and `XC` send selected bombers, artillery, rocket launchers and nukes against a line, a rectangle or a circle; the bombers form up and attack together, front targets first. The bombs and shots of all selected units are spread evenly over the chosen area.
 - **Teams:** pick the team (and "neutral") with the buttons next to the menu, with a live unit count per team. Up to 32,000 units.
 - **Save and load** levels with Ctrl+S; the editor also autosaves when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install (button **I** for the scenario info). Start menu key **3** builds it, key **4** starts a built scenario.
+- **Tower Defense:** build your own tower defense levels: walls that guide the enemies, a route with spawn point, waypoints and goal, waves of enemies and rules for what the player may build. Test them in the editor and turn them into a scenario that others can play.
 
 ## Installation (Windows)
 

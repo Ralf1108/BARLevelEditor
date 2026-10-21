@@ -1199,7 +1199,7 @@ local function genLayout(rect)
 			{ value = 2, label = "Walls", active = gen.mazeSel == 2 },
 		}, "genmaze")
 		local widths = {}
-		for _, t in ipairs({ 2, 3, 4, 6, 8 }) do
+		for _, t in ipairs({ 2, 4, 8, 10, 12 }) do -- the same widths as the corridors of Tower Defense
 			widths[#widths + 1] = { value = t, label = tostring(t * 16), active = gen.mazePath == t }
 		end
 		row("Corridor width (Elmo)", widths, "genmazew")
@@ -2778,8 +2778,8 @@ function td.layout(rect)
 	end
 	line({ { kind = "tdon", label = (c.enabled and "[x] " or "[ ] ") .. "Tower Defense", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
 		tip = "Switch Tower Defense on or off for this level (saved in the level file, section towerdefense)" } })
-	-- Corridor: material, how to draw it, width; Path: the way the enemies walk, spawn point and goal
-	head("Corridor (walls on both sides)")
+	-- Walls: material and single pieces; Corridor: walls on both sides of a line (Line, Free) and its width; Route: spawn point, waypoints, goal
+	head("Walls")
 	line({
 		{ kind = "tdmat", value = 1, label = "Teeth", active = td.wall == 1, tip = "Corridor of dragon teeth" },
 		{ kind = "tdmat", value = 2, label = "Walls", active = td.wall == 2, tip = "Corridor of walls" },
@@ -2787,6 +2787,9 @@ function td.layout(rect)
 	line({
 		{ kind = "tddraw", field = "corridor", value = "single", label = "Single", active = td.pick == "corridor" and td.mode == "single",
 			tip = "Place single wall pieces (indestructible): every click on the map places one piece of the chosen material; hold the mouse button and move it to place a piece in every grid cell. The mode stays on, right click ends it. Ctrl+Z undoes the last click or stroke." },
+	})
+	head("Corridor (walls on both sides)")
+	line({
 		{ kind = "tddraw", field = "corridor", value = "line", label = "Line", active = td.pick == "corridor" and td.mode == "line",
 			tip = "Build a corridor: click the points on the map, right click builds the walls (indestructible). The mode stays on for the next corridor, right click again ends it. Ctrl+Z undoes it." },
 		{ kind = "tddraw", field = "corridor", value = "free", label = "Free", active = td.pick == "corridor" and td.mode == "free",
