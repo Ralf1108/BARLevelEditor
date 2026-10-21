@@ -2015,6 +2015,11 @@ function widget:SelectionChanged(sel)
 	end
 end
 
+-- For tests: the Capture the Flag page
+function widget:DebugCtf()
+	return ctf
+end
+
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
@@ -3584,6 +3589,8 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 		area:disarm()
 		td.endPick()
 	end,
+	step = function() ledStep() end,
+	led = function(msg) led(msg) end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,
 	afterPlay = function()
 		local current = currentLevel
@@ -3866,6 +3873,12 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
+	if ctf.open and button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		local _, ctrl = Spring.GetModKeyState()
+		if ctrl and ctf.grab() then
+			return true -- the point follows the mouse while the button is held (ctf.sample)
+		end
+	end
 	if td.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
@@ -4114,6 +4127,7 @@ function widget:MouseRelease(mx, my, button)
 	end
 	area:release()
 	td.endWpDrag()
+	ctf.endDrag()
 	td.sdrag = nil
 	paint = nil
 	if td.stroke then
@@ -4722,8 +4736,10 @@ function widget:Update()
 		ctf.endPick()
 	end
 	td.sample()
+	ctf.sample()
 	paintSample()
 	td.pollRoute()
+	ctf.poll()
 	-- Result of rotate/mirror/move: the newly placed units stay selected
 	local nn = Spring.GetGameRulesParam("led_newids_n")
 	if nn ~= lastNewN then

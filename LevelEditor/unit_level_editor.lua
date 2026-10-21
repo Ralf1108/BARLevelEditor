@@ -408,6 +408,15 @@ local function publishRoute(state)
 	Spring.SetGameRulesParam("led_tdroute_n", tdRouteN)
 end
 
+-- Capture the Flag points (collection points and flag points) of the widget: the same way (op "ctfpts", game rules parameters
+-- led_ctfpts / led_ctfpts_n)
+local ctfPtsN = 0
+local function publishCtfPoints(state)
+	ctfPtsN = ctfPtsN + 1
+	Spring.SetGameRulesParam("led_ctfpts", state)
+	Spring.SetGameRulesParam("led_ctfpts_n", ctfPtsN)
+end
+
 local function clearIndestructible(id)
 	indestructible[id] = nil
 	Spring.SetUnitRulesParam(id, "indestructible", nil)
@@ -601,6 +610,8 @@ local function revert(op)
 		end
 	elseif k == "tdroute" then
 		publishRoute(op.before)
+	elseif k == "ctfpts" then
+		publishCtfPoints(op.before)
 	elseif k == "fix" then
 		if unitIs(op.id, op.name) then
 			if op.old then setIndestructible(op.id) else clearIndestructible(op.id) end
@@ -653,6 +664,8 @@ local function apply(op)
 		end
 	elseif k == "tdroute" then
 		publishRoute(op.after)
+	elseif k == "ctfpts" then
+		publishCtfPoints(op.after)
 	elseif k == "fix" then
 		if unitIs(op.id, op.name) then
 			if op.new then setIndestructible(op.id) else clearIndestructible(op.id) end
@@ -991,6 +1004,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 	elseif cmd == "tdroute" then
 		-- led|tdroute|before|after: the widget changed spawn point, goal or waypoints (state texts, see the widget), note it in the history
 		record({ k = "tdroute", before = parts[3] or "-;-;-", after = parts[4] or "-;-;-" })
+	elseif cmd == "ctfpts" then
+		-- led|ctfpts|before|after: the widget changed collection points or flag points (state texts, see led_ctf.lua)
+		record({ k = "ctfpts", before = parts[3] or "-;-", after = parts[4] or "-;-" })
 	elseif cmd == "step" then
 		-- new action of the user: everything up to the next "step" belongs to one step (undo takes it back as a whole)
 		current = nil

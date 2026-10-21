@@ -3,7 +3,8 @@
 -- function that gets the host (the services of the widget) and returns the page; a file of its own because the widget is close to
 -- the limit of 200 local variables. The settings (ctf.data) are saved in their own section capture of the level file.
 --   host.Shared, host.S() (UI scale), host.say(text), host.canEdit(), host.team() (team chosen in the strip), host.serialize(table),
---   host.disarm() (ends the other modes), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back)
+--   host.disarm() (ends the other modes), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back),
+--   host.step() / host.led(message) (undo history of the editor gadget)
 return function(host)
 	local Shared = host.Shared
 	local ctf = { open = false, edit = nil, pick = nil, data = nil, notice = nil }
@@ -33,6 +34,74 @@ return function(host)
 
 	local function teamName(t)
 		return t >= 0 and ("team " .. t) or "neutral"
+	end
+
+	-- Points as text for the undo history: "t,x,z/t,x,z" ("-" for none); state = "homes;flags"
+	local function pointsText(list)
+		local out = {}
+		for _, p in ipairs(list) do
+			out[#out + 1] = string.format("%d,%d,%d", p.team, p.x, p.z)
+		end
+		return #out > 0 and table.concat(out, "/") or "-"
+	end
+
+	local function pointsFrom(text)
+		local out = {}
+		for t, x, z in tostring(text):gmatch("(-?%d+),(-?%d+),(-?%d+)") do
+			out[#out + 1] = { team = tonumber(t), x = tonumber(x), z = tonumber(z) }
+		end
+		return out
+	end
+
+	function ctf.state()
+		local c = ctf.cfg()
+		return pointsText(c.homes) .. ";" .. pointsText(c.flags)
+	end
+
+	function ctf.applyState(state)
+		local c = ctf.cfg(true)
+		local h, f = tostring(state):match("^([^;]*);(.*)$")
+		c.homes, c.flags = pointsFrom(h or ""), pointsFrom(f or "")
+	end
+
+	-- Notes a change of the points as a step of the undo history (before = ctf.state() from before the change)
+	function ctf.commit(before)
+		local after = ctf.state()
+		if after ~= before then
+			host.step()
+			host.led("led|ctfpts|" .. before .. "|" .. after)
+		end
+	end
+
+	-- Undo / redo from the gadget: take over the new state (called every frame)
+	function ctf.poll()
+		local n = Spring.GetGameRulesParam("led_ctfpts_n")
+		if ctf.seen == nil then
+			ctf.seen = n or 0
+		elseif n and n ~= ctf.seen then
+			ctf.seen = n
+			ctf.applyState(Spring.GetGameRulesParam("led_ctfpts") or "-;-")
+		end
+	end
+
+	-- The point (collection or flag point) next to the mouse pointer: list, index; nil if none
+	function ctf.pointAt()
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if not pos then
+			return nil
+		end
+		local c = ctf.cfg()
+		local best, list, bestD = nil, nil, DELETE_RADIUS ^ 2
+		for _, l in ipairs({ c.homes, c.flags }) do
+			for i, p in ipairs(l) do
+				local d = (p.x - pos[1]) ^ 2 + (p.z - pos[3]) ^ 2
+				if d <= bestD then
+					best, list, bestD = i, l, d
+				end
+			end
+		end
+		return list, best
 	end
 
 	-- Buttons and labels of the page; returns rects, labels, height
@@ -97,10 +166,10 @@ return function(host)
 		head("Places on the map (team: strip at the left)")
 		line({
 			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
-				tip = "Collection point of the team chosen in the strip at the left: click, then click the place on the map (one per team, a new one replaces it). Right click ends. Del over a point removes it." },
+				tip = "Collection point of the team chosen in the strip at the left: click, then click the place on the map (one per team, a new one replaces it). Right click ends. Del over a point removes it, Ctrl + drag moves it." },
 			{ kind = "ctfhomex", label = "X", w = 1, tip = "Delete the collection point of the chosen team" },
 			{ kind = "ctfflag", label = "Flag point", active = ctf.pick == "flag", w = 5,
-				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it." },
+				tip = "Flag point: every click on the map adds one, a flag lies there (with 'Own flags' it belongs to the team chosen in the strip at the left). Right click ends. Del over a point removes it, Ctrl + drag moves it." },
 			{ kind = "ctfflagx", label = "X", w = 1, tip = "Delete all flag points (with 'Own flags': those of the chosen team)" },
 		})
 		-- what is placed
@@ -242,6 +311,7 @@ return function(host)
 
 	-- Left click on the map in the pick mode
 	function ctf.click(x, z)
+		local before = ctf.state()
 		local c = ctf.cfg(true)
 		x, z = math.floor(x), math.floor(z)
 		local t = host.team()
@@ -257,6 +327,7 @@ return function(host)
 			c.flags[#c.flags + 1] = { team = c.mode == "own" and t or -1, x = x, z = z }
 			host.say(string.format("Flag point %d placed (%s).", #c.flags, teamName(c.flags[#c.flags].team)))
 		end
+		ctf.commit(before)
 	end
 
 	-- Del: removes the point (collection or flag point) next to the mouse pointer; true if there was one
@@ -264,27 +335,47 @@ return function(host)
 		if not ctf.open or not host.canEdit() then
 			return false
 		end
-		local mx, my = Spring.GetMouseState()
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		if not pos then
+		local list, i = ctf.pointAt()
+		if not i then
 			return false
 		end
-		local c = ctf.cfg()
-		local best, list, bestD = nil, nil, DELETE_RADIUS ^ 2
-		for _, l in ipairs({ c.homes, c.flags }) do
-			for i, p in ipairs(l) do
-				local d = (p.x - pos[1]) ^ 2 + (p.z - pos[3]) ^ 2
-				if d <= bestD then
-					best, list, bestD = i, l, d
-				end
-			end
+		local before = ctf.state()
+		table.remove(list, i)
+		ctf.commit(before)
+		host.say("Point removed (Ctrl+Z brings it back)")
+		return true
+	end
+
+	-- Ctrl + left button over a point: it follows the mouse pointer (ctf.sample) until the button is released (ctf.endDrag); true if one was grabbed
+	function ctf.grab()
+		if not ctf.open or not host.canEdit() then
+			return false
 		end
-		if best then
-			table.remove(list, best)
-			host.say("Point removed")
-			return true
+		local list, i = ctf.pointAt()
+		if not i then
+			return false
 		end
-		return false
+		ctf.drag = { point = list[i], before = ctf.state() }
+		return true
+	end
+
+	function ctf.sample()
+		local d = ctf.drag
+		if not d then
+			return
+		end
+		local mx, my = Spring.GetMouseState()
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		if pos then
+			d.point.x, d.point.z = math.floor(pos[1]), math.floor(pos[3])
+		end
+	end
+
+	function ctf.endDrag()
+		if ctf.drag then
+			ctf.commit(ctf.drag.before)
+			ctf.drag = nil
+		end
 	end
 
 	function ctf.press(rect, mx, my)
@@ -307,6 +398,7 @@ return function(host)
 		elseif k == "ctfhome" or k == "ctfflag" then
 			ctf.startPick(k == "ctfhome" and "home" or "flag")
 		elseif k == "ctfhomex" or k == "ctfflagx" then
+			local before = ctf.state()
 			local c = ctf.cfg(true)
 			local list, t = k == "ctfhomex" and c.homes or c.flags, host.team()
 			for i = #list, 1, -1 do
@@ -314,6 +406,7 @@ return function(host)
 					table.remove(list, i)
 				end
 			end
+			ctf.commit(before)
 		else
 			local c = ctf.cfg(true)
 			if k == "ctfon" then
@@ -369,11 +462,18 @@ return function(host)
 				end
 			end)
 		end
-		for _, h in ipairs(c.homes) do
+		local hotList, hotI = ctf.pointAt()
+		for i, h in ipairs(c.homes) do
 			circle(h, c.radius, 4)
+			if hotList == c.homes and hotI == i then
+				circle(h, c.radius + 16, 2)
+			end
 		end
-		for _, f in ipairs(c.flags) do
+		for i, f in ipairs(c.flags) do
 			circle(f, c.radius * 0.5, 2)
+			if hotList == c.flags and hotI == i then
+				circle(f, c.radius * 0.5 + 16, 2)
+			end
 		end
 		gl.LineWidth(1)
 		gl.Color(1, 1, 1, 1)
