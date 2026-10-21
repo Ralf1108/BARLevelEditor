@@ -1,35 +1,70 @@
 # Level Editor
 
-Place units on the map with the mouse, blow them up, save them and load them again later. The result is a `unitloadout` list for scenarios.
+Place units, buildings, trees, rocks and wrecks on a BAR map with the mouse, generate armies and mazes, build tower defense levels, save everything and turn it into a scenario for the official game. The result of a level is a `unitloadout` list (the format of BAR scenarios).
+
+This manual describes the editor part by part. The short version for newcomers is in the [main README](../README.md); every button also has a tooltip and the **?** button shows all keys on the screen.
 
 ## Setup (once per computer, BAR must be installed)
 1. Download or clone the repository and keep the folders `LevelEditor` and `shared` next to each other.
 2. Run `install_editor.bat`. It searches BAR on all fixed drives (e.g. C:\Games, D:\Games, Program Files) and finds BAR and the engine, determines the installed game version, builds the extra game `data\games\LevelEditorMod.sdz` ("Level Editor", builds on the official BAR), creates the junctions `data\LevelEditor` -> `levels` and `data\LevelEditorBlueprints` -> `blueprints`, writes `start_level_editor.bat` and creates the desktop shortcut "BAR Level Editor".
 3. After a BAR update run `install_editor.bat` again (the game version is stored in the extra game). Also after changes to the widget or gadget.
 4. Removing it again: run `uninstall_editor.bat` (it asks first). It removes the extra game, the two junctions in the game folder, the desktop icon, `start_level_editor.bat`, the start script and the cached map files (`last_map.txt`, `maps_online_cache.json`). Saved levels and blueprints stay in the folders `levels` and `blueprints`, the official game is not touched. With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
-The official game is not changed.
 
 ## Starting
-Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). Menu (always shown; arrow up/down and Enter or a digit key): 0 = continue the last state (the editor saves every 2 minutes and when leaving as `_last`), 1 = new level (choose a map, search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones), 2 = load an existing level (list from `levels`, with search), 3 = build a scenario package (ZIP) from a level, 4 = start one of the built scenarios (choose it from the list; the scenario starter of that folder runs, also for Tower Defense scenarios). When loading, the editor starts on the saved map and sets up the units automatically (via `levels\_autoload.txt`).
+Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). The start menu is always shown (arrow up/down and Enter, or a digit key):
+- **0** continue the last state (the editor saves every 2 minutes and when leaving as `_last`),
+- **1** new level: choose a map (search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones),
+- **2** load an existing level (list from `levels`, with search),
+- **3** build a scenario package (ZIP) from a level,
+- **4** start one of the scenarios you built (choose it from the list; the starter of that folder runs, also for Tower Defense scenarios).
 
-## In the game
-In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are needed. Everything is free and finished instantly. Legion, the extra pack and release candidates are on. At the start only the commander stands there. You create the builders of all factions yourself when needed with Ctrl+D (see below); they are tools and are not saved in the level. The unit limit is raised to 32000 (`maxunits`).
-- The pages are chosen in the button column at the right screen edge: **P** (Place), **G** (Generate) and **TD** (Tower Defense) above each other (below V, O, I and ?). Place has the sub-tabs **Recent**, **Units**, **Features**, **Blueprints**, Generate the sub-tabs **Units**, **Maze**. **Recent** is the former Favorites tab.
-- Chat commands are only left for diagnosis: `/led_help` shows the short version and the topics (`/led_help <topic>` explains details: `start`, `keys`, `place`, `units`, `blueprint`, `save`, `team`, `edit`, `features`, `search`, `scenario`, `build`), `/led_clear` clears the map, `/led_ghost` shows the state of the 3D preview. Everything else works through keys and buttons.
-- The grid (1 = free, 16 normal) and the unit limit are set in the settings (button **O**). You choose unit and team in the menu and with the team buttons; selected units get the team with a click on a team button. Next to every team button the current number of units of that team is shown.
-- **Generate menu** (button **G** in the button column): the same, but with the mouse. Sub-tab **Units**: choose faction, type (units, buildings, turrets, air, ships; several possible), tech T1-T3 and the count (input field, 1 to 2000), choose the **Area** (rectangle, or circle: drag from the center outwards), press **Generate** and drag it on the map; random units appear in it for the team chosen on the left (N = neutral). Sub-tab **Maze**: choose faction and material (dragon teeth or walls), then press **Generate** (Area as above) and drag; a random maze appears in it (see below).
-- Save the selected units as a layout with **Create** in the blueprint menu (folder `blueprints`); a click on a tile chooses it, left click places it centered at the mouse pointer (with the saved teams, or for the team chosen on the left).
-- **Search**: one field at the top of the Place menu searches **recent items, units, features and blueprints at once** (words of the description or the code; all words must match; for blueprints also the units inside). The Recent, Units, Features and Blueprints tabs show the number of matches and list them. The field turns reddish while it contains a text. Enter = done, Esc or X = clear; a click on a faction/group/tech/feature-kind button ends the search. Sorting blueprints by dragging is off while a search is active. All lists have a **scrollbar** at the right edge (drag the thumb or click the track; the mouse wheel works as before).
-- Blueprint menu: the **Blueprints** tab of the Place menu shows tiles with preview pictures (unit positions in team colors, air units with a white border), the name, the number of units and the total cost of the blueprint (`M` metal, `E` energy). Click a tile, then left click on the map places it (with an outline preview at the mouse pointer), right click ends, the mouse wheel scrolls. The list comes from the folder `blueprints` (and from `_index.txt` as a fallback).
-- Air units appear in the air when placed and loaded (when loading with the saved height, otherwise cruise height) and stay in flight mode. Air units that stood on the ground when saving are loaded landed.
-- **Hold the left mouse button and move** to paint: with an armed unit or feature (also the structures of the Tower Defense list and the single wall pieces) one is placed after every footprint of mouse movement (plus the spacing); Ctrl+Z takes the whole stroke back. The button **W** at the very top of the strip left of the menu (green = on, default) decides what happens when something is placed where something already stands (units, features, single pieces, rows, blueprints, pasted copies, corridor wall pieces): **W on** overwrites, i.e. what is in the way is deleted (units and features under the footprint, in the same undo step: Ctrl+Z brings it back); **W off** places nothing on an occupied spot (a blueprint is placed only partly). **Generate** always looks for another free spot of the area instead (so you may get fewer units in a crowded area). Blueprints are not painted.
-- **Strip at the left of the menu** (top to bottom): **W** (see above), **DL / DR / DC** (delete along a line, in a rectangle or in a circle), **L / R / S** (rotate left / right, mirror; only with a selection), **N** (neutral), the teams and **G** (Gaia). Buttons at the right: V, O, I, ?, then **P**, **G**, **TD**, then **XL / XR / XC** (area attacks) and **FX / FD**.
-- **Shift + drag** places a row of the armed unit, feature or blueprint, **Shift + Alt + drag** a rectangle (all are placed on release); **Shift + mouse wheel** changes the spacing.
+When loading, the editor starts on the saved map and sets up the units automatically (via `levels\_autoload.txt`).
+
+## The screen
+In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are needed. Everything is free and finished instantly. Legion, the extra pack and release candidates are on. At the start only the commander stands there; the builders of all factions are created with **Ctrl+D** at the mouse pointer (markers ARMADA, CORTEX, LEGION; they are tools and are not saved in the level). The unit limit is raised to 32000 (`maxunits`). The menu follows the UI size slider of the BAR settings.
+
+- **Button column at the right edge** (top to bottom): **V** collapse the menu, **O** settings, **I** scenario info, **?** help; **P** Place, **G** Generate, **TD** Tower Defense; **XL / XR / XC** area attacks (experimental); **FX / FD** make buildings in a rectangle indestructible / destructible again.
+- **Strip left of the menu** (top to bottom): **W** (write/overwrite, see Placing), **DL / DR / DC** (delete along a line, in a rectangle, in a circle), **L / R / S** (rotate left / right, mirror; only with a selection), **N** (neutral), one button per team with its current unit count, **G** (Gaia: no owner, enemy to everyone).
+- **Teams:** you choose the team with the team buttons; selected units get the team with a click on a team button.
 - **Right click** anywhere (also over the menu and the buttons) ends every mode: placing, delete, maze, generate, area attack. Without a mode it clears the selection, e.g. after rotating or mirroring.
-- [ and ] rotate the unit or blueprint stamp by 90 degrees. Del deletes and Ctrl+B blows up (wreck stays); both work on the selected units, without a selection on the unit, wreck or feature at the mouse pointer. Ctrl+Z undoes the last action (placing, deleting, moving, generating ...), Ctrl+Y redoes it.
-- Ctrl+S writes `levels\<name>.lua` (units and features, so also wrecks and trees). The level list in the settings (button **O**) clears up (except the builder rows) and sets a level up again. `/led_clear` only clears up.
+- **Help:** the **?** button shows the keys and short explanations as a board on the screen; a click closes it. Chat commands are only left for diagnosis: `/led_help` shows the short version and the topics (`/led_help <topic>` explains details: `start`, `keys`, `place`, `units`, `blueprint`, `save`, `team`, `edit`, `features`, `search`, `scenario`, `build`), `/led_clear` clears the map, `/led_ghost` shows the state of the 3D preview.
+
+## Placing (button P)
+The Place menu has the sub-tabs **Recent** (recently chosen blueprints and placed units), **Units**, **Features** and **Blueprints**.
+- **Units tab:** choose faction (Armada, Cortex, Legion), group (buildings, air, vehicles, bots, hover, ships) and tech (T1 to T3). The units appear with their pictures; hovering shows name and metal cost below the menu and a rotating 3D view. Click one, then left click on the map places it (blue outline), right click ends, **[** and **]** rotate. The list comes straight from the game, so it also includes Legion, the extra pack and custom units.
+- **Search:** one field at the top of the Place menu searches recent items, units, features and blueprints at once (words of the description or the code; all words must match; for blueprints also the units inside). The tabs show the number of matches. The field turns reddish while it contains a text. Enter = done, Esc or X = clear; a click on a faction/group/tech/feature-kind button ends the search. All lists have a scrollbar at the right edge (drag the thumb or click the track; the mouse wheel works as before).
+- **Painting:** hold the left mouse button and move: with an armed unit or feature (also the structures of the Tower Defense list and the single wall pieces) one is placed after every footprint of mouse movement (plus the spacing); Ctrl+Z takes the whole stroke back. Blueprints are not painted.
+- **Rows and rectangles:** **Shift + drag** places a row of the armed unit, feature or blueprint, **Shift + Alt + drag** a rectangle (all are placed on release); **Shift + mouse wheel** (or Alt+Z / Alt+X) changes the spacing.
+- **W (write):** green = on (default) decides what happens when something is placed where something already stands (units, features, single pieces, rows, blueprints, pasted copies, corridor wall pieces): **on** overwrites, i.e. what is in the way is deleted (units and features under the footprint, in the same undo step: Ctrl+Z brings it back); **off** places nothing on an occupied spot (a blueprint is placed only partly). Generate always looks for another free spot of the area instead (so you may get fewer units in a crowded area).
+- **Features** (trees, rocks, wrecks) are placed like units; Del deletes the one under the mouse.
+- Air units appear in the air when placed and loaded (when loading with the saved height, otherwise cruise height) and stay in flight mode. Air units that stood on the ground when saving are loaded landed.
+- Nuclear silos and other units that stockpile missiles start **loaded** (10 missiles) when you place or generate them. The missiles are not saved in the level: a scenario built from it starts with empty silos.
 - Resurrected units are set to hold position.
-- Nuclear silos and other units that stockpile missiles start **loaded** (10 missiles) when you place or generate them, so you can try them at once. The missiles are not saved in the level: a scenario built from it starts with empty silos.
+
+## Blueprints
+- Select units and press **Create** (P → Blueprints): the layout is saved in the folder `blueprints`. The **Blueprints** tab shows tiles with preview pictures (unit positions in team colors, air units with a white border), the name, the number of units and the total cost (`M` metal, `E` energy). Click a tile, then left click on the map places it centered at the mouse pointer (outline preview; with the saved teams, or for the team chosen on the left), right click ends, the mouse wheel scrolls. The list comes from the folder `blueprints` (and from `_index.txt` as a fallback).
+- **Sorting:** drag a tile with the mouse and drop it elsewhere (order in `blueprints\_order.txt`; off while a search is active).
+- **Deleting:** small x at the top right of the tile, click twice. The file moves to `blueprints\_trash` and can be restored by hand.
+- **Renaming:** double click on the name, type, Enter. Esc cancels.
+- The blueprint menu is available right at the start of the editor. You save the whole level with Ctrl+S (blueprints only contain the units you selected).
+
+## Generate (button G)
+The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen on the left (N = neutral):
+- **Units:** choose faction, type (units, buildings, turrets, air, ships; several possible), tech T1-T3 and the count (input field, 1 to 2000), choose the **Area** (rectangle, or circle: drag from the center outwards), press **Generate** and drag it on the map; random units appear in it. Ctrl+Z undoes it.
+- **Maze:** choose faction, material (dragon teeth or walls) and the **corridor width** (32, 64, 128, 160 or 192 Elmo; the same widths as for Tower Defense corridors), then **Generate** (Area as above) and drag: a random maze appears in it, with the entrance top left and the exit bottom right. The key **M** cycles the maze mode (dragon teeth, walls, off).
+
+## Selecting, editing and deleting
+- **Selecting:** BAR only lets you select your own units; **Ctrl + click / Ctrl + drag a rectangle** also selects enemies (red frames).
+- **Del** deletes the selection, without a selection the unit, wreck or feature under the mouse pointer. **Ctrl+B** blows up (wreck stays). The buttons **DL**, **DR** and **DC** delete everything along a dragged line (a corridor 80 Elmo wide), in a dragged rectangle (key **D**) or in a dragged circle: units, wrecks, features.
+- **Copy and paste:** **Ctrl+C** copies the selected units/buildings (without a selection the unit at the mouse pointer), **Ctrl+X** cuts, **Ctrl+V** pastes them centered at the mouse pointer, with team, rotation and height, any number of times; the clipboard lasts until you quit the editor.
+- **Moving:** **Alt + drag** on a selected unit moves the selection; the **arrow keys** move it by one grid step (up = north). **[** and **]** rotate a stamp; **L / R / S** rotate and mirror a selection.
+- **Undo / redo:** **Ctrl+Z** / **Ctrl+Y** for placing, deleting, moving, rotating, generating, team changes, features and Tower Defense route changes.
+- **Indestructible buildings:** **FX / FD** (drag a rectangle) mark buildings as indestructible or destructible again; the flag is saved in levels, blueprints and the clipboard.
+- The shortcuts only work in the Level Editor; in the chat input and in the search fields of the menu they do not apply.
+
+## Levels and settings
+- **Ctrl+S** writes `levels\<name>.lua` (units and features, so also wrecks and trees) under the current name, otherwise as a new `level_001` ...
+- The button **O** opens the settings: the **grid** size (1 = free, 4, 8, 16, 32, 64 Elmo), the **unit limit** (500 to 32000; saved in the level file as `unitlimit` and used as `maxunits` by the scenario package; the editor itself always runs with 32000), columns and rows for the blueprint view and for the units view (default 3 columns and 4 rows each). The values are stored in `LuaUI\Config\LevelEditorUI.lua` in the game folder. Below them is the level list: **Load**, **Save** (a second click confirms) and **Save as new**; loading clears the map and sets the level up again. `/led_clear` only clears up.
 
 ## Files
 - `lvl_level_editor.lua` - widget (controls, saving, loading)
@@ -43,37 +78,7 @@ In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are nee
 - `check_links.ps1` - called by `start_level_editor.bat` before every start: points the two junctions to the `levels` and `blueprints` folders again if the project folder was moved
 - `scenario\` - scenario builder (start menu key 3, see `scenario\README.md`)
 - `levels\` - saved levels; `blueprints\` - saved layouts
-
-## Copy and paste
-**Ctrl+C** copies, **Ctrl+V** pastes, **Ctrl+X** cuts (copies and deletes), **Ctrl+Z** undoes, **Ctrl+Y** redoes, **Ctrl+B** blows up (wrecks stay), **Del** deletes. **Ctrl+S** saves the level (under the current name, otherwise as a new `level_001` ...). **Ctrl+D** creates the builders of all factions. The buttons **DL**, **DR** and **DC** in the strip left of the menu delete everything along a dragged line (a corridor 80 Elmo wide), in a dragged rectangle or in a dragged circle: units, wrecks, features (key **D** = rectangle, Ctrl+Z brings it back). The experimental buttons **XL**, **XR** and **XC** in the button column at the right (below TD, one slot free) start area attacks with the selected bombers, artillery, rocket launchers or nukes along a line, onto a rectangle or onto a circle (details in the BluePrinter readme). Below them (one slot free) **FX** and **FD**: drag a rectangle and the buildings in it become **indestructible** (FX) or destructible again (FD); Ctrl+Z undoes it. The flag is saved in levels, blueprints and the clipboard. **M** (or the Maze sub-tab of the Generate tab) cycles the maze mode (dragon teeth, walls, off); then drag a rectangle, a random maze appears in it with the entrance top left and the exit bottom right (Ctrl+Z undoes it). **Ctrl + click/rectangle** also selects enemies, **Alt + drag** on a selected unit moves the selection, the **arrow keys** move it by one grid step (up = north). You delete a feature with Del. The shortcuts only work in the Level Editor; in the chat input and in the search fields of the menu they do not apply.
-
-Ctrl+C copies the selected units/buildings (without a selection the unit at the mouse pointer). Ctrl+V pastes them centered at the mouse pointer, with team, rotation and height. Pasting works any number of times; the clipboard lasts until you quit the editor.
-
-## Builders
-Ctrl+D creates the builders of all factions (markers ARMADA, CORTEX, LEGION, grouped by kind, on reachable spots) at the mouse pointer for the team chosen on the left.
-
-## Editing the blueprint menu
-- **Sorting:** drag a tile with the mouse and drop it elsewhere. The order is stored in `blueprints\_order.txt`.
-- **Deleting:** small x at the top right of the tile, click twice. The file moves to `blueprints\_trash` (trash) and can be restored by hand.
-- **Renaming:** double click on the name, type, Enter. Esc cancels.
-
-## Saving
-The blueprint menu is available right at the start of the editor. You save the whole level with Ctrl+S (blueprints only contain the units you selected).
-
-## Units menu
-Open the **Units** tab of the Place menu. Below it you choose faction (Armada, Cortex, Legion), group (buildings, air, vehicles, bots, hover, ships) and tech (T1 to T3). The units appear with their pictures. Click one, then left click on the map places it (blue outline), right click ends, [ and ] rotate. You choose the team with the buttons left of the menu. When you hover over one, name and metal cost appear below the strip. The list comes straight from the game, so it also includes Legion, the extra pack and custom units.
-
-(The menu follows the UI size slider from the BAR settings.)
-
-## Settings
-In the button column at the far right sits the button **O**. It opens the settings: the **grid** size (1 = free, 4, 8, 16, 32, 64 Elmo), the **unit limit** (500 to 32000; it is saved in the level file as `unitlimit` and used as `maxunits` by the scenario package; the editor itself always runs with 32000), columns and rows for the blueprint view and for the units view (default 3 columns and 4 rows each). The values are stored in `LuaUI\Config\LevelEditorUI.lua` in the game folder. The blueprint view only grows up to this size; with few blueprints it stays small.
-
-## Shared code
-Blueprint view, units menu, settings and 3D preview come from `..\shared\editor_common.lua` (the same in the BluePrinter).
-`install_editor.bat` packs the file into the extra game. The folder `shared` must lie next to `LevelEditor` (also on the second computer).
-
-## Help
-The menu has a **?** button. It shows the keys and short explanations as a board on the screen; a click closes it.
+- `..\shared\` - shared code of the Level Editor and the BluePrinter (blueprint view, units menu, settings, 3D preview, rules); the folder must lie next to `LevelEditor`, `install_editor.bat` packs the files into the extra game.
 
 ## Tower Defense
 The button **TD** (in the button column at the right, below **P** and **G**) opens the tower defense page. Waves of enemy land units walk from a spawn point through waypoints to a goal; the player builds towers next to the route.
