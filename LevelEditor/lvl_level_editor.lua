@@ -2018,6 +2018,32 @@ function widget:DebugCtf()
 	return ctf
 end
 
+-- Orders for selected units of other teams: the engine only sends orders for the own units, so the command menu and the right click are
+-- forwarded to the gadget (led|order|cmdID|options|params|ids); the own units of the selection get their order from the engine as usual
+function widget:CommandNotify(cmdID, params, options)
+	local mine = Spring.GetMyTeamID()
+	local ids = {}
+	for _, id in ipairs(Spring.GetSelectedUnits()) do
+		if Spring.GetUnitTeam(id) ~= mine then
+			ids[#ids + 1] = id
+		end
+	end
+	if #ids == 0 or not canEdit() then
+		return false
+	end
+	local p = {}
+	for i = 1, #params do
+		p[i] = tostring(params[i])
+	end
+	Spring.SendLuaRulesMsg(string.format("led|order|%d|%d|%s|%s", cmdID, options and options.coded or 0, #p > 0 and table.concat(p, ",") or "-", table.concat(ids, ",")))
+	return false
+end
+
+-- For tests: select units of any team like Ctrl + click does
+function widget:SelectAnyUnits(ids)
+	gen.selectAny(ids)
+end
+
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
@@ -3636,17 +3662,7 @@ function gen.cancelModes()
 	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
 		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed() or td.pick or ctf.pick
 	if not was then
-		local ctfState, tdState = Spring.GetGameRulesParam("ctfState"), Spring.GetGameRulesParam("tdState")
-		if (ctfState and ctfState ~= "") or (tdState and tdState ~= "") then
-			return false -- a test is running: the right click gives the move order to the selected units
-		end
-		if #selectedUnits() > 0 then
-			foreignSel = {}
-			Spring.SelectUnitArray({})
-			say("Selection cleared")
-			return true
-		end
-		return false
+		return false -- the right click is the order of the game for the selected units (a left click on the ground clears the selection)
 	end
 	armedUnit, armedFeature = false, false
 	bpGrid:setArmed(false)
@@ -4118,6 +4134,29 @@ function widget:MouseMove(mx, my, dx, dy, button)
 	end
 end
 
+-- Selects units of any team as a real selection, so the command menu and the right click work for them: that needs the cheat mode and
+-- the god mode for all teams (/godmode 3; asked once, the selection follows as soon as it is on). Without it the editor selection
+-- (red frames, foreignSel) stays.
+local pendingSelect = nil -- { ids, untilFrame }
+function gen.selectAny(ids)
+	foreignSel = ids
+	pcall(Spring.SelectUnitArray, {})
+	if #ids == 0 then
+		pendingSelect = nil
+		return
+	end
+	if Spring.IsGodModeEnabled() then
+		pcall(Spring.SelectUnitArray, ids)
+		pendingSelect = nil
+		return
+	end
+	if not Spring.IsCheatingEnabled() then
+		Spring.SendCommands("cheat 1")
+	end
+	Spring.SendCommands("godmode 3")
+	pendingSelect = { ids = ids, untilFrame = Spring.GetGameFrame() + 90 }
+end
+
 -- Select units of every team in the rectangle or under the mouse pointer
 local function finishSelBox(mx, my)
 	local b = selBox
@@ -4148,8 +4187,7 @@ local function finishSelBox(mx, my)
 	else
 		ids = Spring.GetUnitsInScreenRectangle(math.min(mx, b.x), math.max(my, b.y), math.max(mx, b.x), math.min(my, b.y), -1) or {}
 	end
-	foreignSel = ids
-	pcall(Spring.SelectUnitArray, {}) -- the normal selection is cleared, the editor selection applies
+	gen.selectAny(ids)
 	say(#ids .. " units selected (any team)")
 end
 
@@ -4773,6 +4811,14 @@ function widget:Update()
 	td.sample()
 	ctf.sample()
 	paintSample()
+	if pendingSelect then
+		if Spring.IsGodModeEnabled() then
+			pcall(Spring.SelectUnitArray, pendingSelect.ids)
+			pendingSelect = nil
+		elseif Spring.GetGameFrame() > pendingSelect.untilFrame then
+			pendingSelect = nil -- the god mode did not come: the red frames stay
+		end
+	end
 	td.pollRoute()
 	ctf.poll()
 	-- Result of rotate/mirror/move: the newly placed units stay selected
@@ -4785,8 +4831,7 @@ function widget:Update()
 			for idStr in tostring(Spring.GetGameRulesParam("led_newids") or ""):gmatch("%d+") do
 				ids[#ids + 1] = tonumber(idStr)
 			end
-			foreignSel = ids
-			pcall(Spring.SelectUnitArray, {})
+			gen.selectAny(ids)
 		end
 	end
 	for _ = 1, LOAD_PER_UPDATE do

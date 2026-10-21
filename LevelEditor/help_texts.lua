@@ -8,7 +8,7 @@ local sections = {
 		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, P / G / TD / CF pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Title row", "Drag the title \"Level Editor\" with the left mouse button: the whole menu (with the strip at the left and the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
-		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it clears the selection." },
+		{ "Right click", "Anywhere: ends every mode (placing, delete, maze, generate, area attack). Without a mode it gives the order to the selected units." },
 		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },
 		{ "Search field", "At the top of Place: one search over Recent, Units, Features and Blueprints at once (words of the description or the code). The tabs show the number of matches. Enter = done, Esc or X = clear." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename, Create = save the selection." },
@@ -163,7 +163,7 @@ local topics = {
 			"DELETE: the buttons DL, DR and DC in the strip left of the menu delete everything along a dragged line, in a dragged rectangle (also key D) or in a dragged circle: units, wrecks and features. Ctrl+Z brings it back.",
 			"MAZE: Generate menu, sub-tab Maze (or key M): choose dragon teeth or walls, press Generate and drag the area; entrance top left, exit bottom right.",
 			"AREA ATTACK (experimental): select bombers, artillery, rocket launchers or nukes, press XL, XR or XC and drag a line, rectangle or circle; the bombs and shots of all of them are spread evenly over it.",
-			"RIGHT CLICK: anywhere it ends every mode (placing, delete, maze, generate, area attack); without a mode it clears the selection.",
+			"RIGHT CLICK: anywhere it ends every mode (placing, delete, maze, generate, area attack); without a mode it gives the order to the selected units.",
 		},
 	},
 	{

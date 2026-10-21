@@ -1029,6 +1029,18 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if mode == "l" or mode == "r" or mode == "m" then
 			transformUnits(parseIds(parts[4] or ""), mode)
 		end
+	elseif cmd == "order" then
+		-- led|order|cmdID|options|p1,p2,...|ids ("-" = no parameters): an order of the player for units of other teams (the engine only
+		-- sends orders for the own units); the widget forwards what the command menu or the right click gives to the selected units
+		local params = {}
+		for n in (parts[5] or ""):gmatch("[^,]+") do
+			params[#params + 1] = tonumber(n)
+		end
+		for _, id in ipairs(parseIds(parts[6] or "")) do
+			if Spring.ValidUnitID(id) then
+				Spring.GiveOrderToUnit(id, tonumber(parts[3]), params, tonumber(parts[4]) or 0)
+			end
+		end
 	elseif cmd == "redo" then
 		local any = false
 		for _ = 1, math.max(1, math.min(1000, tonumber(parts[3]) or 1)) do
