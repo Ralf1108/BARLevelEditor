@@ -3,10 +3,11 @@
 #   0 = continue the last state
 #   1 = new level (choose a map from the list, search while typing)
 #   2 = load an existing level (saved levels from the levels folder, search while typing)
+#   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\start_scenario.ps1)
 # Writes editor_script_installed.txt (and for "load" levels\_autoload.txt). Return value 1 on abort.
 # Call: choose_map.ps1 -Data <BAR\data>
-# Tests without a keyboard: -Test "searchtext" (maps), -TestLevels (saved levels)
-param([Parameter(Mandatory = $true)][string]$Data, [string]$Test = $null, [switch]$TestLevels, [switch]$TestMenu, [switch]$TestOnline, [string]$TestDownload = $null, [string]$MapsDir = $null)
+# Tests without a keyboard: -Test "searchtext" (maps), -TestLevels (saved levels), -TestScenarios (built scenarios)
+param([Parameter(Mandatory = $true)][string]$Data, [string]$Test = $null, [switch]$TestLevels, [switch]$TestScenarios, [switch]$TestMenu, [switch]$TestOnline, [string]$TestDownload = $null, [string]$MapsDir = $null)
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
 $levelsDir = Join-Path $here 'levels'
@@ -168,6 +169,26 @@ function Get-Levels {
     return @($res | Sort-Object Time -Descending)
 }
 
+# Built scenarios: folders scenario\scenarios\<id> with a scenario.txt (made by key 3); newest first
+function Get-Scenarios {
+    $res = @()
+    $dir = Join-Path $here 'scenario\scenarios'
+    if (-not (Test-Path $dir)) { return $res }
+    foreach ($d in Get-ChildItem $dir -Directory) {
+        $start = Join-Path $d.FullName 'start_scenario.ps1'
+        $script = Join-Path $d.FullName 'scenario.txt'
+        if (-not ((Test-Path $start) -and (Test-Path $script))) { continue }
+        $map = [regex]::Match([IO.File]::ReadAllText($script), '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
+        $title = $d.Name
+        $readme = Join-Path $d.FullName 'README.txt'
+        if (Test-Path $readme) { $first = (Get-Content $readme -TotalCount 1 -Encoding UTF8); if ($first) { $title = $first.Trim([char]0xFEFF).Trim() } }
+        $td = if (Test-Path (Join-Path $d.FullName 'td_waves.lua')) { '   Tower Defense' } else { '' }
+        $label = '{0}   "{1}"   Map: {2}{3}   {4}' -f $d.Name, $title, ($map -replace '_', ' '), $td, $d.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
+        $res += [pscustomobject]@{ Name = $d.Name; Path = $d.FullName; Time = $d.LastWriteTime; Label = $label; Search = ($d.Name + ' ' + $title + ' ' + $map).ToLower() -replace '_', ' ' }
+    }
+    return @($res | Sort-Object Time -Descending)
+}
+
 # The state saved by the editor when leaving (and every 2 minutes)
 function Get-LastLevel {
     $f = Join-Path $levelsDir '_last.lua'
@@ -183,6 +204,13 @@ if ($TestMenu) {
     Write-Host ('Menu: 0 = Continue the last state, 1 = New level, 2 = Load an existing level, 3 = Scenario package' + $hint)
     $ll = Get-LastLevel
     if ($ll) { Write-Host ('       0 = Continue the last state: ' + $ll.Label) } else { Write-Host '       0 = Continue the last state (grayed out, no state saved yet)' }
+    exit 0
+}
+
+if ($TestScenarios) {
+    $sc = @(Get-Scenarios)
+    Write-Host ("{0} built scenarios:" -f $sc.Count)
+    $sc | ForEach-Object { Write-Host ("  " + $_.Label) }
     exit 0
 }
 
@@ -334,11 +362,13 @@ while ($true) {
     # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package
     # (the last two only if there are levels already). Choose with arrow up/down and Enter or with the digit key.
     $haveLevels = $levels.Count -gt 0
+    $scenarios = @(Get-Scenarios)
     $menu = @(
         @{ Key = '0'; Mode = 3; On = [bool]$lastLevel; Text = $(if ($lastLevel) { 'Continue the last state: {0}' -f $lastLevel.Label } else { 'Continue the last state (no state saved yet)' }) },
         @{ Key = '1'; Mode = 1; On = $true; Text = 'Create a new level (choose a map)' },
         @{ Key = '2'; Mode = 2; On = $haveLevels; Text = $(if ($haveLevels) { 'Load an existing level ({0} saved)' -f $levels.Count } else { 'Load an existing level (no saved levels yet)' }) },
-        @{ Key = '3'; Mode = 4; On = $haveLevels; Text = $(if ($haveLevels) { 'Create a scenario package (ZIP) from a level (to pass on, official game)' } else { 'Create a scenario package (ZIP) from a level (no saved levels yet)' }) }
+        @{ Key = '3'; Mode = 4; On = $haveLevels; Text = $(if ($haveLevels) { 'Create a scenario package (ZIP) from a level (to pass on, official game)' } else { 'Create a scenario package (ZIP) from a level (no saved levels yet)' }) },
+        @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} built)' -f $scenarios.Count } else { 'Start a scenario (none built yet: key 3)' }) }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -346,7 +376,7 @@ while ($true) {
     Write-Host 'Level Editor' -ForegroundColor Cyan
     Write-Host ''
     $menuTop = [Console]::CursorTop
-    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
+    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
     Write-Host ''
     Write-Host 'Arrow up/down + Enter or digit key, Esc = cancel' -ForegroundColor DarkGray
     $mode = 0
@@ -374,6 +404,16 @@ while ($true) {
             'End'       { for ($j = $menu.Count - 1; $j -ge 0; $j--) { if ($menu[$j].On) { $sel = $j; break } } }
             default     { foreach ($m in $menu) { if ($m.On -and $k.KeyChar -eq $m.Key[0]) { $mode = $m.Mode } } }
         }
+    }
+
+    if ($mode -eq 5) {
+        # Start a built scenario: its own starter finds BAR, builds the extra game of a Tower Defense scenario and starts the game
+        $chosen = Show-Chooser $scenarios 'Start a scenario: choose one' 'Type to search, arrow up/down, Enter = start, Esc = back' $null
+        if (-not $chosen) { continue }
+        Clear-Host
+        Write-Host ('Starting the scenario ' + $chosen.Name + ' ...') -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent)
+        exit 1 # the scenario was played (or could not start): nothing else to start
     }
 
     if ($mode -eq 4) {

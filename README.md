@@ -48,7 +48,7 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 1. Install Beyond All Reason and start the launcher once.
 2. Download or clone this repository. Keep the folders `LevelEditor` and `shared` next to each other.
 3. Run `LevelEditor\install_editor.bat`. It finds your BAR installation, builds the extra game and creates a desktop shortcut **BAR Level Editor**.
-4. Start the shortcut. In the start menu press `1` for a new level (choose a map), `2` to load a level, `0` to continue where you left off or `3` to build a scenario package.
+4. Start the shortcut. In the start menu press `1` for a new level (choose a map), `2` to load a level, `0` to continue where you left off, `3` to build a scenario package or `4` to start one of the scenarios you built.
 
 After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay).
 
