@@ -40,6 +40,7 @@ local useCommander = true -- commanders should build too
 local rot = 0 -- 0 south, 1 east, 2 north, 3 west
 local optionsOpen = false
 local collapsed = false -- Menu collapsed: only the small button V stays visible
+local panelMover = Shared.newPanelMover() -- the title row moves the menu
 local menuMode = "bp" -- "bp" = blueprints, "units" = single buildings from the catalog
 local armedUnit = nil -- Name of the building in stamp mode (left click queues it)
 local helpOpen = false -- Help board on the screen
@@ -48,6 +49,7 @@ local helpOpen = false -- Help board on the screen
 local HELP_SECTIONS = {
 	{ "Menu", {
 		{ "Blueprints / Buildings", "Switch between saved blueprints and single buildings from the catalog." },
+		{ "Title row", "Drag the title \"BluePrinter\" with the left mouse button: the whole menu (with the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint or building. Left click on the map queues it, right click ends." },
 		{ "Search field", "In the building catalog and above the blueprint tiles: type words of the description or the code, the list filters at once. A scrollbar sits at the right edge of the lists. Enter = done, Esc = clear the search (sorting is off while searching)." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename." },
@@ -568,7 +570,7 @@ local function bpFilterHeight() -- search row above the blueprint tiles
 	return bpGrid:filterRowCount() * (Shared.m.HB + 3) + 4 * S
 end
 
-local function panelRect()
+local function basePanelRect()
 	local vsx, vsy = Spring.GetViewGeometry()
 	local colW = Shared.m.HB + 2 * Shared.m.PAD -- button column V, O, ? at the screen edge, next to the menu
 	if collapsed then
@@ -595,6 +597,25 @@ local function panelRect()
 	return x1, bottom, x1 + pw, top
 end
 
+-- The menu where it is now: its place at the screen edge, moved by dragging the title row
+local function panelRect()
+	local x1, y0, x2, y1 = basePanelRect()
+	local colW = Shared.m.HB + 2 * Shared.m.PAD
+	if collapsed then
+		return panelMover:place(x1, y0, x2, y1, 0, 0, 40 * S)
+	end
+	return panelMover:place(x1, y0, x2, y1, colW, colW, 40 * S) -- the button column sits next to the menu on one side
+end
+
+-- Left edge of the button column V, O, ?: next to the menu (on its outer side)
+local function columnX(x1, x2)
+	local colW = Shared.m.HB + 2 * Shared.m.PAD
+	if collapsed then
+		return x1
+	end
+	return (side == "right") and x2 or (x1 - colW)
+end
+
 local function inPanel(mx, my)
 	if not menuOpen then
 		return false
@@ -605,9 +626,8 @@ local function inPanel(mx, my)
 	end
 	-- the button column next to the menu
 	local m = Shared.m
-	local vsx = Spring.GetViewGeometry()
 	local colW = m.HB + 2 * m.PAD
-	local cx1 = (side == "right") and (vsx - colW) or 0
+	local cx1 = columnX(x1, x2)
 	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 9 * (m.HB + 3) - m.PAD
 end
 
@@ -668,9 +688,7 @@ local function layout()
 	local btns = {}
 	local y = y1 - pad - 52 * S -- below the title
 	-- button column at the screen edge next to the menu (as in the Level Editor): V (collapse/expand), O (settings), ? (help)
-	local vsx = Spring.GetViewGeometry()
-	local colW = m.HB + 2 * pad
-	local sx1 = ((side == "right") and (vsx - colW) or 0) + pad
+	local sx1 = columnX(x1, x2) + pad
 	local function colBtn(k, id, label, on, tip)
 		local t = y1 - (k - 1) * (m.HB + 3)
 		btns[#btns + 1] = { id = id, label = label, x1 = sx1, x2 = sx1 + m.HB, y0 = t - m.HB, y1 = t, on = on, active = on, tip = tip or TIPS[id] }
@@ -898,7 +916,12 @@ function widget:MousePress(mx, my, button)
 		radiusEnd(true)
 	end
 	if inPanel(mx, my) then
+		local _, _, _, top = panelRect()
+		local inTitle = not collapsed and my >= top - Shared.m.PAD - 52 * S
 		if button ~= 1 then
+			if button == 3 and inTitle then
+				panelMover:reset() -- right click on the title: the menu goes back to its place
+			end
 			return true
 		end
 		local L = layout()
@@ -918,6 +941,10 @@ function widget:MousePress(mx, my, button)
 		end
 		radiusEnd(true)
 		if collapsed then
+			return true
+		end
+		if inTitle and mx >= L.rect.x1 and mx <= L.rect.x2 then
+			panelMover:press(mx, my) -- drag the title row: the menu moves
 			return true
 		end
 		if optionsOpen then
@@ -1025,6 +1052,9 @@ end
 
 function widget:MouseMove(mx, my, dx, dy, button)
 	rescale()
+	if panelMover:move(mx, my) then
+		return
+	end
 	if Shared.scrollbarMove(mx, my) then
 		return
 	end
@@ -1034,6 +1064,9 @@ function widget:MouseMove(mx, my, dx, dy, button)
 end
 
 function widget:MouseRelease(mx, my, button)
+	if panelMover:release() then
+		return
+	end
 	if Shared.scrollbarRelease() then
 		return
 	end
@@ -1680,7 +1713,7 @@ function widget:GetConfigData()
 		end
 	end
 	return {
-		side = side, sideV = 2, autoBuild = autoBuild, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot,
+		side = side, sideV = 2, autoBuild = autoBuild, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
 		map = Game and Game.mapName, plans = saved,
 	}
 end
@@ -1704,6 +1737,7 @@ function widget:SetConfigData(data)
 		menuOpen = data.menuOpen and true or false
 	end
 	rot = tonumber(data.rot) or 0
+	panelMover:load(data.panel)
 	-- only take over remembered plans on the same map
 	if type(data.plans) == "table" and data.map and Game and data.map == Game.mapName then
 		batchCounter = batchCounter + 1

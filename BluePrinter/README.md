@@ -47,6 +47,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - Rotate: the BAR keys `[` and `]` (build rotation), or Alt + mouse wheel (there is no button; the direction is visible in the 3D preview at the mouse pointer).
 - Blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later). Every open plan also shows a semi-transparent 3D ghost of the building (the 150 closest to the mouse pointer if there are more).
 - **Right click on a plan** with builders selected: exactly these builders build exactly this plan now (Shift = add it behind their current orders). Builders that cannot build it give a message; without a selected builder the click keeps its normal meaning.
+- **Moving the menu:** drag the title ("BluePrinter") with the left mouse button, the menu moves with its button column. A right click on the title puts it back. The position is remembered.
 - Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **C** commanders help build yes/no (hover for a tooltip). In the menu: Undo, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
 - Only builders that are idle and can build the building take part (e.g. no T2 buildings with a T1 builder).
   If a builder has several plans nearby, it gets up to four in a row. When all plans are taken,
