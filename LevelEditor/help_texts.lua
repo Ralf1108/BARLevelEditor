@@ -129,7 +129,7 @@ local topics = {
 		lines = {
 			"EDITING THE SELECTION: when units are selected, three buttons appear on the left above the team buttons: L = rotate 90 degrees left, R = right, S = mirror left-right (around the center of the selection). The selection is kept.",
 			"MOVING: with the arrow keys the selection moves by one grid step. Or hold Alt, click a selected unit, drag, release. It moves in grid steps (green preview).",
-			"TEAM: a click on a team button assigns the selected units to that team. N = neutral (toggle), G = Gaia team. A tooltip appears when you hover over the buttons.",
+			"TEAM: a click on a team button assigns the selected units to that team. N = neutral (toggle), G = Gaia team (at most 500 units: the engine gives Gaia a fixed limit; use N for many neutral units). A tooltip appears when you hover over the buttons.",
 			"SELECTION INFO: at the top center you see the count, types and cost of the selection. Ctrl+Z undoes, Ctrl+Y redoes.",
 		},
 	},

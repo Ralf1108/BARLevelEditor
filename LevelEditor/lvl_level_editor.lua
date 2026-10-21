@@ -1084,10 +1084,8 @@ local function genLayout(rect)
 			{ value = "leg", label = "Legion", active = gen.faction == "leg", icon = Shared.FACTION_ICONS["leg"] },
 		}, "genfac")
 	end
-	-- Bottom of both sub-tabs: team line and Area (rectangle / circle: pressing one starts the generating, there is no extra button)
+	-- Bottom of both sub-tabs: Area (rectangle / circle: pressing one starts the generating, there is no extra button)
 	local function bottom()
-		labels[#labels + 1] = { text = "Team " .. team .. (neutralOn and ", neutral" or "") .. "  (number buttons on the left; N = neutral)", x = rect.x1 + m.PAD, y = y - 26 * S, size = 22 * S }
-		y = y - 40 * S
 		local armed = gen.sub == "maze" and mazeKind ~= nil or gen.sub ~= "maze" and gen.armed
 		row(armed and "Drag the area on the map (right click ends)" or "Generate in an area (circle: drag from the center outwards)", {
 			{ value = "rect", label = "Rectangle", active = armed and gen.shape == "rect" },
@@ -1528,6 +1526,8 @@ local function drawTeamStrip()
 					"Belongs to no player, nobody controls it.",
 					"An enemy to everyone, gets shot at,",
 					"unless N (neutral) is on as well.",
+					"Limit: " .. (Spring.GetTeamMaxUnits(r.team) or 500) .. " units (the other teams have far more),",
+					"use N (neutral) for many neutral units.",
 				}
 			else
 				local _, _, _, _, _, ally = Spring.GetTeamInfo(r.team)
