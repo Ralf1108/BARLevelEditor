@@ -3617,6 +3617,146 @@ local function paintSample()
 	end)
 end
 
+-- A click inside the menu panel: header buttons, the pages (settings, scenario, Generate, Tower Defense) and the lists of the Place menu;
+-- always handled (true)
+local function panelPress(mx, my, button)
+	if button == 1 then
+		for _, r in ipairs((headerRects())) do
+			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				applyHeader(r)
+				return true
+			end
+		end
+		if collapsed then
+			return true
+		end
+		local rect = contentRect()
+		if scenarioOpen then
+			return scenarioPress(rect, mx, my)
+		end
+		if td.open then
+			return td.press(rect, mx, my)
+		end
+		if gen.open then
+			local hit
+			for _, gr in ipairs((genLayout(rect))) do
+				if mx >= gr.x1 and mx <= gr.x2 and my >= gr.y0 and my <= gr.y1 then
+					hit = gr
+				end
+			end
+			if gen.edit and (not hit or hit.kind ~= "gencount") then
+				genFinish(true)
+			end
+			for _, gr in ipairs((genLayout(rect))) do
+				if mx >= gr.x1 and mx <= gr.x2 and my >= gr.y0 and my <= gr.y1 then
+					if gr.kind == "genfac" then
+						gen.faction = gr.value
+					elseif gr.kind == "genshape" then
+						gen.shape = gr.value
+					elseif gr.kind == "genkind" then
+						gen.kinds[gr.value] = not gen.kinds[gr.value] or nil
+					elseif gr.kind == "gentech" then
+						gen.tech[gr.value] = not gen.tech[gr.value]
+					elseif gr.kind == "gencount" then
+						if not gen.edit then
+							gen.edit = ""
+							widgetHandler:OwnText()
+						end
+					elseif gr.kind == "gensub" then
+						if gen.sub ~= gr.value then
+							genFinish(true)
+							gen.sub = gr.value
+							gen.armed, gen.drag = false, nil
+							mazeKind, mazeDrag = nil, nil
+						end
+					elseif gr.kind == "genmaze" then
+						gen.mazeSel = gr.value
+						if mazeKind then
+							mazeSetKind(gr.value)
+						end
+					elseif gr.kind == "genmazew" then
+						gen.mazePath = gr.value
+					elseif gr.kind == "gengo" and gen.sub == "maze" then
+						mazeSetKind(not mazeKind and gen.mazeSel or nil)
+					elseif gr.kind == "gengo" then
+						gen.armed = not gen.armed
+						gen.drag = nil
+						if gen.armed then
+							armedUnit, armedFeature = false, false
+							bpGrid:setArmed(false)
+							mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+							say("Generate: drag a rectangle with the left mouse button held down, right click ends.")
+						end
+					end
+					break
+				end
+			end
+			return true
+		end
+		if optionsOpen then
+			if optionsUI:press(rect, mx, my) then
+				grid = cfg.v.grid
+				bpGrid.scroll, uGrid.scroll = 0, 0
+			else
+				levelPress(rect, mx, my)
+			end
+			return true
+		end
+		local sbGrid = (menuMode == "units" and uGrid) or (menuMode == "features" and fGrid) or (menuMode == "bp" and bpGrid) or nil
+		if sbGrid and Shared.scrollbarPress(sbGrid, rect, mx, my) then
+			return true
+		end
+		uGrid:setFocus(false)
+		fGrid:setFocus(false)
+		searchFocus(false)
+		if menuMode == "units" then
+			local ui = uGrid:at(rect, mx, my)
+			if ui then
+				local u = uGrid:list()[ui]
+				unitName = u.name
+				armedUnit = true
+				armedFeature = false
+				bpGrid:setArmed(false)
+				say("Unit: " .. u.name .. ". Left click on the map places, right click ends.")
+			end
+			return true
+		end
+		if menuMode == "features" then
+			local fi = fGrid:at(rect, mx, my)
+			if fi then
+				armedFeature = fGrid:list()[fi].name
+				armedUnit = false
+				bpGrid:setArmed(false)
+				say("Feature: " .. armedFeature .. ". Left click places, right click ends, Del deletes.")
+			end
+			return true
+		end
+		if menuMode == "fav" then
+			local kind, name = fav:press(rect, mx, my)
+			if kind == "unit" then
+				unitName = name
+				armedUnit = true
+				armedFeature = false
+				bpGrid:setArmed(false)
+				say("Unit: " .. name)
+			elseif kind == "bp" then
+				local i = lib:index(name)
+				if i then
+					bpGrid.selected = i
+					armedUnit = false
+					armedFeature = false
+					bpGrid:setArmed(true)
+					recent:add("bp", name)
+					say("Blueprint: " .. name .. ". Left click on the map places, right click ends.")
+				end
+			end
+			return true
+		end
+		bpGrid:press(rect, mx, my)
+	end
+	return true
+end
+
 function widget:MousePress(mx, my, button)
 	rescale()
 	if gen.edit and not inPanel(mx, my) then
@@ -3760,141 +3900,7 @@ function widget:MousePress(mx, my, button)
 		end
 	end
 	if inPanel(mx, my) then
-		if button == 1 then
-			for _, r in ipairs((headerRects())) do
-				if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-					applyHeader(r)
-					return true
-				end
-			end
-			if collapsed then
-				return true
-			end
-			local rect = contentRect()
-			if scenarioOpen then
-				return scenarioPress(rect, mx, my)
-			end
-			if td.open then
-				return td.press(rect, mx, my)
-			end
-			if gen.open then
-				local hit
-				for _, gr in ipairs((genLayout(rect))) do
-					if mx >= gr.x1 and mx <= gr.x2 and my >= gr.y0 and my <= gr.y1 then
-						hit = gr
-					end
-				end
-				if gen.edit and (not hit or hit.kind ~= "gencount") then
-					genFinish(true)
-				end
-				for _, gr in ipairs((genLayout(rect))) do
-					if mx >= gr.x1 and mx <= gr.x2 and my >= gr.y0 and my <= gr.y1 then
-						if gr.kind == "genfac" then
-							gen.faction = gr.value
-						elseif gr.kind == "genshape" then
-							gen.shape = gr.value
-						elseif gr.kind == "genkind" then
-							gen.kinds[gr.value] = not gen.kinds[gr.value] or nil
-						elseif gr.kind == "gentech" then
-							gen.tech[gr.value] = not gen.tech[gr.value]
-						elseif gr.kind == "gencount" then
-							if not gen.edit then
-								gen.edit = ""
-								widgetHandler:OwnText()
-							end
-						elseif gr.kind == "gensub" then
-							if gen.sub ~= gr.value then
-								genFinish(true)
-								gen.sub = gr.value
-								gen.armed, gen.drag = false, nil
-								mazeKind, mazeDrag = nil, nil
-							end
-						elseif gr.kind == "genmaze" then
-							gen.mazeSel = gr.value
-							if mazeKind then
-								mazeSetKind(gr.value)
-							end
-						elseif gr.kind == "genmazew" then
-							gen.mazePath = gr.value
-						elseif gr.kind == "gengo" and gen.sub == "maze" then
-							mazeSetKind(not mazeKind and gen.mazeSel or nil)
-						elseif gr.kind == "gengo" then
-							gen.armed = not gen.armed
-							gen.drag = nil
-							if gen.armed then
-								armedUnit, armedFeature = false, false
-								bpGrid:setArmed(false)
-								mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
-								say("Generate: drag a rectangle with the left mouse button held down, right click ends.")
-							end
-						end
-						break
-					end
-				end
-				return true
-			end
-			if optionsOpen then
-				if optionsUI:press(rect, mx, my) then
-					grid = cfg.v.grid
-					bpGrid.scroll, uGrid.scroll = 0, 0
-				else
-					levelPress(rect, mx, my)
-				end
-				return true
-			end
-			local sbGrid = (menuMode == "units" and uGrid) or (menuMode == "features" and fGrid) or (menuMode == "bp" and bpGrid) or nil
-			if sbGrid and Shared.scrollbarPress(sbGrid, rect, mx, my) then
-				return true
-			end
-			uGrid:setFocus(false)
-			fGrid:setFocus(false)
-			searchFocus(false)
-			if menuMode == "units" then
-				local ui = uGrid:at(rect, mx, my)
-				if ui then
-					local u = uGrid:list()[ui]
-					unitName = u.name
-					armedUnit = true
-					armedFeature = false
-					bpGrid:setArmed(false)
-					say("Unit: " .. u.name .. ". Left click on the map places, right click ends.")
-				end
-				return true
-			end
-			if menuMode == "features" then
-				local fi = fGrid:at(rect, mx, my)
-				if fi then
-					armedFeature = fGrid:list()[fi].name
-					armedUnit = false
-					bpGrid:setArmed(false)
-					say("Feature: " .. armedFeature .. ". Left click places, right click ends, Del deletes.")
-				end
-				return true
-			end
-			if menuMode == "fav" then
-				local kind, name = fav:press(rect, mx, my)
-				if kind == "unit" then
-					unitName = name
-					armedUnit = true
-					armedFeature = false
-					bpGrid:setArmed(false)
-					say("Unit: " .. name)
-				elseif kind == "bp" then
-					local i = lib:index(name)
-					if i then
-						bpGrid.selected = i
-						armedUnit = false
-						armedFeature = false
-						bpGrid:setArmed(true)
-						recent:add("bp", name)
-						say("Blueprint: " .. name .. ". Left click on the map places, right click ends.")
-					end
-				end
-				return true
-			end
-			bpGrid:press(rect, mx, my)
-		end
-		return true
+		return panelPress(mx, my, button)
 	end
 	bpGrid.confirmDel = nil
 	if armedFeature then
