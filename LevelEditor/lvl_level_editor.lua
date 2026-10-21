@@ -2443,23 +2443,6 @@ function td.toggleChoice(w, field, v)
 	w[field] = table.concat(out)
 end
 
--- Kind of a structure for the build restriction (the gadget td_waves.lua sorts the same way): "tower" = armed, "economy" = metal and
--- energy structures, "radar"; nil = the rest
-function td.class(ud)
-	local cp = ud.customParams or {}
-	if ud.isFactory then
-		return nil
-	end
-	local ug = cp.unitgroup
-	if ug == "energy" or ug == "metal" or (tonumber(ud.extractsMetal) or 0) > 0 then
-		return "economy"
-	elseif #ud.weapons > 0 and ug ~= "explo" then
-		return "tower"
-	elseif (tonumber(ud.radarDistance) or 0) > 0 then
-		return "radar"
-	end
-end
-
 -- Categories of the list: Towers, with "Towers + economy" also Economy, with fog of war also Radars
 function td.cats()
 	local c = td.cfg()
@@ -2490,7 +2473,7 @@ function td.turrets(fac, tech, cat)
 			for t = 1, 3 do
 				local buckets = { tower = {}, economy = {}, radar = {} }
 				for _, e in ipairs(cache[f].buildings[t]) do
-					local cls = e.rank < 100 and td.class(UnitDefs[e.id])
+					local cls = e.rank < 100 and Shared.buildClass(UnitDefs[e.id])
 					if cls then
 						buckets[cls][#buckets[cls] + 1] = { name = e.name, id = e.id, class = cls }
 					end

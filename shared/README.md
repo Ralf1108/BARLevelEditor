@@ -11,9 +11,11 @@
 - Area attack (line, rectangle, circle with bombers, artillery, rockets and nukes; the experimental buttons XL, XR, XC of both widgets)
 - Helper functions (rotating, team color, scaling), the help board and the maze generator
 
+`bar_rules.lua` holds the rules about unit definitions that gadgets and widgets need in the same way (`techLevel`, `buildClass`, `hitsGround`); `editor_common.lua`, the two gadgets of the Level Editor and the Tower Defense scenario load it (`VFS.Include("luaui/Include/bar_rules.lua")`), so both installers and the scenario starter pack it as well.
+
 `bar_common.ps1` holds the shared parts of the setup scripts of both widgets: finding BAR, the engine and the game version, creating and removing junctions.
 
-A change here affects both widgets. Afterwards run `LevelEditor\install_editor.bat` and `BluePrinter\install_blueprinter.bat`:
+A change here affects both widgets (and the gadgets for `bar_rules.lua`). Afterwards run `LevelEditor\install_editor.bat` and `BluePrinter\install_blueprinter.bat`:
 they copy the file into the extra game and to `data\LuaUI\Include` respectively.
 
 On a second computer the folders `shared`, `LevelEditor` and `BluePrinter` must lie next to each other.

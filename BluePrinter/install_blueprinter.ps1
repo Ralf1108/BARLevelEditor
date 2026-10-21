@@ -19,10 +19,13 @@ Write-Host "Widget copied to $wdir"
 # Shared code of the Level Editor and the BluePrinter (folder shared next to BluePrinter)
 $sharedSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'editor_common.lua'
 if (-not (Test-Path $sharedSrc)) { Fail 'File editor_common.lua missing (copy the shared folder next to BluePrinter as well).' }
+$rulesSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_rules.lua'
+if (-not (Test-Path $rulesSrc)) { Fail 'File bar_rules.lua missing (copy the shared folder next to BluePrinter as well).' }
 $idir = Join-Path $data 'LuaUI\Include'
 New-Item -ItemType Directory -Force $idir | Out-Null
 Remove-Item (Join-Path $idir 'bp_shared.lua') -Force -ErrorAction SilentlyContinue # old name
 Copy-Item $sharedSrc (Join-Path $idir 'editor_common.lua') -Force
+Copy-Item $rulesSrc (Join-Path $idir 'bar_rules.lua') -Force
 Write-Host "Shared code copied to $idir"
 
 # Folders for blueprints, via junction in the write folder of the game. User widgets in BAR may only write under LuaUI\Config

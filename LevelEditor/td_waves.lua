@@ -39,6 +39,11 @@ local MAX_UNITS = 600 -- of all waves at the same time
 local opt = Spring.GetModOptions().leveleditor
 local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
 
+-- rules about unit definitions: shared with the editor (shared/bar_rules.lua)
+local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
+assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
+local techLevel, buildClass, hitsGround = Rules.techLevel, Rules.buildClass, Rules.hitsGround
+
 local td = nil -- running game: nil = none
 local alive = {} -- unitID -> { reward factor }
 local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
@@ -111,30 +116,6 @@ local function parse(payload)
 	cfg.fog = f[13] == "1"
 	cfg.metal, cfg.energy = tonumber(f[14]), tonumber(f[15])
 	return cfg
-end
-
--- True when at least one weapon can hit the ground (pure anti-air units are of no use against walking enemies)
--- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3
-local function techLevel(ud)
-	local t = tonumber(ud.customParams and ud.customParams.techlevel) or 1
-	if t < 3 then
-		local human = ud.translatedHumanName or ud.humanName or ""
-		local mv = ud.moveDef and ud.moveDef.name or ""
-		if human:find("^Epic") or tostring(mv):find("epic", 1, true) then
-			return 3
-		end
-	end
-	return t
-end
-
-local function hitsGround(ud)
-	for _, w in ipairs(ud.weapons) do
-		local wd = WeaponDefs[w.weaponDef]
-		if wd and wd.canAttackGround then
-			return true
-		end
-	end
-	return false
 end
 
 -- Land units that walk: mobile, armed, not a builder, not a ship or an aircraft (same rules as Generate in the editor),
@@ -354,24 +335,6 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 			publish()
 		end
 	end
-end
-
--- Kind of a structure for the build restriction (same sorting as the catalog of the editor): "economy" = metal and energy
--- structures (extractors, solar, wind, geothermal, fusion, storage, converters), "tower" = armed structure, "radar", nil = the rest
-local function buildClass(ud)
-	local cp = ud.customParams or {}
-	if ud.isFactory then
-		return nil
-	end
-	local ug = cp.unitgroup
-	if ug == "energy" or ug == "metal" or (tonumber(ud.extractsMetal) or 0) > 0 then
-		return "economy"
-	elseif #ud.weapons > 0 and ug ~= "explo" then
-		return "tower"
-	elseif (tonumber(ud.radarDistance) or 0) > 0 then
-		return "radar"
-	end
-	return nil
 end
 
 -- Build orders of the player that are not allowed are refused while the game runs: forbidden towers (red X), tech levels

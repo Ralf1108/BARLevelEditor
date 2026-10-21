@@ -36,6 +36,8 @@ foreach ($f in @('unit_level_editor.lua', 'lvl_level_editor.lua', 'td_waves.lua'
 # shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
 $sharedFile = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'editor_common.lua'
 if (-not (Test-Path $sharedFile)) { Fail "File missing: editor_common.lua (copy the shared folder next to LevelEditor as well)" }
+$rulesFile = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_rules.lua'
+if (-not (Test-Path $rulesFile)) { Fail "File missing: bar_rules.lua (copy the shared folder next to LevelEditor as well)" }
 $gamesDir = Join-Path $data 'games'
 New-Item -ItemType Directory -Force $gamesDir | Out-Null
 $zipPath = Join-Path $gamesDir 'LevelEditorMod.sdz'
@@ -58,6 +60,7 @@ $widget = ([regex]'enabled = false,').Replace((Get-Content (Join-Path $here 'lvl
 $gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
 $gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
 $shared = Get-Content $sharedFile -Raw
+$rules = Get-Content $rulesFile -Raw
 $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
 $utf8 = New-Object Text.UTF8Encoding($false)
 foreach ($e in @(
@@ -65,7 +68,8 @@ foreach ($e in @(
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
-    @('luaui/Include/editor_common.lua', $shared))) {
+    @('luaui/Include/editor_common.lua', $shared),
+    @('luaui/Include/bar_rules.lua', $rules))) {
     $entry = $zip.CreateEntry($e[0])
     $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
     $w.Write($e[1]); $w.Close()

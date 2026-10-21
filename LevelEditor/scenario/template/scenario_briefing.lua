@@ -161,7 +161,7 @@ end
 local tierPhase = 0
 local weEnabledCheats = false
 
--- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3
+-- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3 (copy of shared/bar_rules.lua: this widget runs alone in a foreign BAR; change both together)
 local function techLevel(ud)
 	local t = tonumber(ud.customParams and ud.customParams.techlevel) or 1
 	if t < 3 then

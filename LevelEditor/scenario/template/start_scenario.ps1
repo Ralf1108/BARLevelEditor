@@ -88,7 +88,10 @@ return {
 "@
     $utf8n = New-Object Text.UTF8Encoding($false)
     $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
-    foreach ($e in @(@('modinfo.lua', $modinfo), @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)))) {
+    $files = @(@('modinfo.lua', $modinfo), @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)))
+    $rulesFile = Join-Path $here 'bar_rules.lua' # shared rules (packages made before this file existed carry a gadget that does not need it)
+    if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
+    foreach ($e in $files) {
         $entry = $zip.CreateEntry($e[0])
         $w = New-Object IO.StreamWriter($entry.Open(), $utf8n)
         $w.Write($e[1]); $w.Close()

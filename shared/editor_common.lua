@@ -69,20 +69,13 @@ function M.parseBlueprint(text)
 	return data.blueprint
 end
 
--- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3
-local function techLevel(ud)
-	local t = tonumber(ud.customParams and ud.customParams.techlevel) or 1
-	if t < 3 then
-		local human = ud.translatedHumanName or ud.humanName or ""
-		local mv = ud.moveDef and ud.moveDef.name or ""
-		if human:find("^Epic") or tostring(mv):find("epic", 1, true) then
-			return 3
-		end
-	end
-	return t
-end
 
+-- rules about unit definitions, shared with the gadgets (bar_rules.lua lies next to this file)
+local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
+assert(Rules, "bar_rules.lua missing (run the installer again)")
+local techLevel = Rules.techLevel
 M.techLevel = techLevel
+M.buildClass = Rules.buildClass
 
 local function isBuildingDef(ud)
 	return ud and (ud.isBuilding or not ud.canMove)

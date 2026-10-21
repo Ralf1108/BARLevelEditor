@@ -674,6 +674,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
+    if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadget shares with the editor
     if ($td) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"
