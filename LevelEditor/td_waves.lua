@@ -376,7 +376,14 @@ end
 
 -- Build orders of the player that are not allowed are refused while the game runs: forbidden towers (red X), tech levels
 -- without structures, and the restriction to towers (and economy). Units from factories are not restricted.
-function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
+function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
+	-- indestructible units can also not be taken apart (reclaim, capture, self destruction); area reclaim: see AllowUnitBuildStep
+	if (cmdID == CMD.RECLAIM or cmdID == CMD.CAPTURE) and cmdParams and #cmdParams == 1 and cmdParams[1] < Game.maxUnits and fixedIds[cmdParams[1]] then
+		return false
+	end
+	if cmdID == CMD.SELFD and fixedIds[unitID] then
+		return false
+	end
 	if not (td and cmdID < 0 and teamID == td.cfg.player) then
 		return true
 	end
@@ -492,4 +499,11 @@ function gadget:UnitPreDamaged(unitID)
 	if fixedIds[unitID] then
 		return 0, 0
 	end
+end
+
+function gadget:AllowUnitBuildStep(builderID, builderTeamID, unitID, unitDefID, part)
+	if part < 0 and fixedIds[unitID] then
+		return false -- reclaiming
+	end
+	return true
 end
