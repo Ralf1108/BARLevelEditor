@@ -36,7 +36,7 @@ local sections = {
 		{ "M", "Maze: the key cycles through dragon teeth, walls, off (also the Maze sub-tab of the Generate tab). Then drag a rectangle or circle; a random maze appears in it (entrance top left, exit bottom right). Right click or arming something else ends the mode, Ctrl+Z undoes it." },
 	} },
 	{ "Editing the selection", {
-		{ "Ctrl + click / rectangle", "Select units of any team, enemies too (red frames)." },
+		{ "Click / rectangle", "Select units of any team, enemies too (god mode is on in the editor); the command menu and the orders work for them." },
 		{ "Alt + drag", "On a selected unit: move the selection (grid steps)." },
 		{ "Arrow keys", "Move the selection by one grid step (up = north). Without a selection they move the camera." },
 		{ "Del", "Delete (the selection, otherwise the unit, wreck or feature under the cursor)." },
@@ -76,7 +76,7 @@ local topics = {
 			"Del deletes and Ctrl+B blows up (wreck stays): works on the selection, without one on the unit, wreck or feature under the cursor. Ctrl+C copies, Ctrl+X cuts, Ctrl+V pastes, Ctrl+D creates the builders of all factions at the cursor.",
 			"Ctrl+Z undoes the last action (also delete, blow up, move, rotate, team and features), Ctrl+Y redoes it. Ctrl+S saves the level.",
 			"Hold the left mouse button and move to paint: with an armed unit or feature one is placed after every footprint (plus the spacing) of mouse movement, one undo step per stroke; places that are already occupied are skipped. Arrow keys move the selection by one grid step (up = north), Alt + drag moves it with the mouse. Shift + drag places a row, Shift+Alt + drag a rectangle, Shift+Mouse wheel changes the spacing.",
-			"CHOOSING ENEMIES: BAR only lets you select your own units. Ctrl + left click (or dragging a rectangle) selects units of EVERY team (red frames); then delete, blow up, assign to a team, copy or save as a blueprint. A normal selection replaces it.",
+			"CHOOSING ENEMIES: in the editor the god mode is on, so you select units of EVERY team like your own (click or rectangle); the command menu and the orders work for them. Then delete, blow up, assign to a team, copy or save as a blueprint.",
 		},
 	},
 	{

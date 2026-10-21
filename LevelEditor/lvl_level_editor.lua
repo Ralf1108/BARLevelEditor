@@ -44,8 +44,6 @@ local function ledStep()
 end
 -- BAR only lets you select your own units. With Ctrl + left click (or dragging a rectangle) the editor selects
 -- units of EVERY team in a selection of its own; delete, blow up, assign team, copy and blueprints use it.
-local foreignSel = {}
-local selBox = nil -- { x, y, cx, cy }: rectangle that is being dragged right now
 local armedFeature = false -- Stamp mode for a feature (tree, rock, wreck)
 local moveDrag = nil -- { x, z }: start point while the selection is moved with Alt + drag
 local pendingNew = false -- an edit (rotate, mirror, move) is under way, the new IDs are expected
@@ -68,17 +66,7 @@ local function placed()
 end
 
 local function selectedUnits()
-	local sel = Spring.GetSelectedUnits()
-	if #sel > 0 then
-		return sel
-	end
-	local out = {}
-	for _, id in ipairs(foreignSel) do
-		if Spring.ValidUnitID(id) then
-			out[#out + 1] = id
-		end
-	end
-	return out
+	return Spring.GetSelectedUnits()
 end
 local isBpArmed = function() return false end -- set below, as soon as 'bpGrid.armed' is known
 local FACING_NAME = { [0] = "South", [1] = "East", [2] = "North", [3] = "West" }
@@ -2007,12 +1995,6 @@ local function featStampList(name, pos)
 end
 
 -- Menu input
-function widget:SelectionChanged(sel)
-	if sel and #sel > 0 then
-		foreignSel = {} -- a normal selection replaces the editor selection
-	end
-end
-
 -- For tests: the Capture the Flag page
 function widget:DebugCtf()
 	return ctf
@@ -2037,11 +2019,6 @@ function widget:CommandNotify(cmdID, params, options)
 	end
 	Spring.SendLuaRulesMsg(string.format("led|order|%d|%d|%s|%s", cmdID, options and options.coded or 0, #p > 0 and table.concat(p, ",") or "-", table.concat(ids, ",")))
 	return false
-end
-
--- For tests: select units of any team like Ctrl + click does
-function widget:SelectAnyUnits(ids)
-	gen.selectAny(ids)
 end
 
 -- For tests without the game: position of the buttons and the content area
@@ -3621,7 +3598,7 @@ function gen.disarmAll()
 	mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
 	gen.armed, gen.drag = false, nil
 	armedUnit, armedFeature = false, false
-	stampDrag, moveDrag, selBox = nil, nil, nil
+	stampDrag, moveDrag = nil, nil
 	bpGrid:setArmed(false)
 	area:disarm()
 	td.endPick()
@@ -3660,7 +3637,7 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 -- Alt + drag move); without an active mode a right click clears the selection; returns true if it did something (a field of gen: the file is close to the limit of 200 locals)
 function gen.cancelModes()
 	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
-		or mazeKind or mazeDrag or stampDrag or moveDrag or selBox or area:armed() or td.pick or ctf.pick
+		or mazeKind or mazeDrag or stampDrag or moveDrag or area:armed() or td.pick or ctf.pick
 	if not was then
 		return false -- the right click is the order of the game for the selected units (a left click on the ground clears the selection)
 	end
@@ -3675,7 +3652,7 @@ function gen.cancelModes()
 	if ctf.pick then
 		ctf.endPick()
 	end
-	stampDrag, moveDrag, selBox = nil, nil, nil
+	stampDrag, moveDrag = nil, nil
 	area:disarm()
 	say("Mode ended")
 	return true
@@ -4047,10 +4024,6 @@ function widget:MousePress(mx, my, button)
 					end
 				end
 			end
-		elseif ctrl and not alt and not shift then
-			-- Ctrl + click or rectangle: select units of every team (also foreign ones)
-			selBox = { x = mx, y = my, cx = mx, cy = my }
-			return true
 		end
 	end
 	if inPanel(mx, my) then
@@ -4126,69 +4099,9 @@ function widget:MouseMove(mx, my, dx, dy, button)
 	if Shared.scrollbarMove(mx, my) then
 		return
 	end
-	if selBox then
-		selBox.cx, selBox.cy = mx, my
-	end
 	if bpGrid.drag then
 		bpGrid:move(contentRect(), mx, my)
 	end
-end
-
--- Selects units of any team as a real selection, so the command menu and the right click work for them: that needs the cheat mode and
--- the god mode for all teams (/godmode 3; asked once, the selection follows as soon as it is on). Without it the editor selection
--- (red frames, foreignSel) stays.
-local pendingSelect = nil -- { ids, untilFrame }
-function gen.selectAny(ids)
-	foreignSel = ids
-	pcall(Spring.SelectUnitArray, {})
-	if #ids == 0 then
-		pendingSelect = nil
-		return
-	end
-	if Spring.IsGodModeEnabled() then
-		pcall(Spring.SelectUnitArray, ids)
-		pendingSelect = nil
-		return
-	end
-	if not Spring.IsCheatingEnabled() then
-		Spring.SendCommands("cheat 1")
-	end
-	Spring.SendCommands("godmode 3")
-	pendingSelect = { ids = ids, untilFrame = Spring.GetGameFrame() + 90 }
-end
-
--- Select units of every team in the rectangle or under the mouse pointer
-local function finishSelBox(mx, my)
-	local b = selBox
-	selBox = nil
-	local ids = {}
-	if math.abs(mx - b.x) < 6 and math.abs(my - b.y) < 6 then
-		local kind, id = Spring.TraceScreenRay(mx, my)
-		if kind == "unit" and id then
-			ids[1] = id
-		else
-			local _, pos = Spring.TraceScreenRay(mx, my, true)
-			if pos then
-				local best, bestD
-				for _, u in ipairs(Spring.GetUnitsInCylinder(pos[1], pos[3], 80, -1) or {}) do
-					local ux, _, uz = Spring.GetUnitPosition(u)
-					if ux then
-						local d = (ux - pos[1]) ^ 2 + (uz - pos[3]) ^ 2
-						if not bestD or d < bestD then
-							best, bestD = u, d
-						end
-					end
-				end
-				if best then
-					ids[1] = best
-				end
-			end
-		end
-	else
-		ids = Spring.GetUnitsInScreenRectangle(math.min(mx, b.x), math.max(my, b.y), math.max(mx, b.x), math.min(my, b.y), -1) or {}
-	end
-	gen.selectAny(ids)
-	say(#ids .. " units selected (any team)")
 end
 
 function widget:MouseRelease(mx, my, button)
@@ -4207,9 +4120,6 @@ function widget:MouseRelease(mx, my, button)
 		td.pts, td.stroke = td.stroke, nil
 		td.finishDraw()
 		return
-	end
-	if selBox then
-		finishSelBox(mx, my)
 	end
 	if moveDrag then
 		local d = moveDrag
@@ -4758,29 +4668,6 @@ function widget:DrawWorld()
 	end
 	td.drawWorld()
 	ctf.drawWorld()
-	-- Editor selection (also foreign units): red frame around every unit
-	if #foreignSel > 0 and #Spring.GetSelectedUnits() == 0 then
-		gl.LineWidth(2.5)
-		gl.DepthTest(false)
-		gl.Color(1, 0.35, 0.35, 1)
-		for _, id in ipairs(foreignSel) do
-			if Spring.ValidUnitID(id) then
-				local x, y, z = Spring.GetUnitPosition(id)
-				local ud = UnitDefs[Spring.GetUnitDefID(id)]
-				if x and ud then
-					local r = math.max((ud.xsize or 4) * 4, 12)
-					gl.BeginEnd(GL.LINE_LOOP, function()
-						gl.Vertex(x - r, y + 6, z - r)
-						gl.Vertex(x + r, y + 6, z - r)
-						gl.Vertex(x + r, y + 6, z + r)
-						gl.Vertex(x - r, y + 6, z + r)
-					end)
-				end
-			end
-		end
-		gl.LineWidth(1)
-		gl.Color(1, 1, 1, 1)
-	end
 end
 
 -- Autosave: every 2 minutes and when leaving, as "_last" (to continue at the next start)
@@ -4789,6 +4676,18 @@ local lastAutosave = 0
 local autosave
 
 function widget:Update()
+	-- Cheat mode and god mode for all teams (once, in the editor game): units of every team can be selected like your own, the command menu
+	-- appears for them; the orders for units of other teams go through widget:CommandNotify and the gadget
+	if not gen.godAsked and Spring.GetGameFrame() > 5 then
+		gen.godAsked = true
+		local opt = Spring.GetModOptions().leveleditor
+		if opt == "1" or opt == 1 or opt == true then
+			if not Spring.IsCheatingEnabled() then
+				Spring.SendCommands("cheat 1")
+			end
+			Spring.SendCommands("godmode 3")
+		end
+	end
 	-- When something else is armed (unit, blueprint, feature), the maze mode ends
 	if mazeKind and (armedUnit or armedFeature or bpGrid.armed) then
 		mazeSetKind(nil)
@@ -4811,14 +4710,6 @@ function widget:Update()
 	td.sample()
 	ctf.sample()
 	paintSample()
-	if pendingSelect then
-		if Spring.IsGodModeEnabled() then
-			pcall(Spring.SelectUnitArray, pendingSelect.ids)
-			pendingSelect = nil
-		elseif Spring.GetGameFrame() > pendingSelect.untilFrame then
-			pendingSelect = nil -- the god mode did not come: the red frames stay
-		end
-	end
 	td.pollRoute()
 	ctf.poll()
 	-- Result of rotate/mirror/move: the newly placed units stay selected
@@ -4831,7 +4722,7 @@ function widget:Update()
 			for idStr in tostring(Spring.GetGameRulesParam("led_newids") or ""):gmatch("%d+") do
 				ids[#ids + 1] = tonumber(idStr)
 			end
-			gen.selectAny(ids)
+			Spring.SelectUnitArray(ids)
 		end
 	end
 	for _ = 1, LOAD_PER_UPDATE do
@@ -5165,18 +5056,6 @@ end
 
 function widget:DrawScreen()
 	rescale()
-	if selBox then
-		gl.Color(1, 0.35, 0.35, 0.25)
-		gl.Rect(selBox.x, selBox.y, selBox.cx, selBox.cy)
-		gl.Color(1, 0.35, 0.35, 1)
-		gl.BeginEnd(GL.LINE_LOOP, function()
-			gl.Vertex(selBox.x, selBox.y)
-			gl.Vertex(selBox.cx, selBox.y)
-			gl.Vertex(selBox.cx, selBox.cy)
-			gl.Vertex(selBox.x, selBox.cy)
-		end)
-		gl.Color(1, 1, 1, 1)
-	end
 	local vsx, vsy = Spring.GetViewGeometry()
 	td.hud(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
