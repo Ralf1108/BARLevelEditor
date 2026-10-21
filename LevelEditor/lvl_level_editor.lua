@@ -848,45 +848,8 @@ local function placeBlueprintUnits(units, cx, cz, teamOverride, label, k, noStep
 		skipped > 0 and (" (" .. skipped .. " occupied spots left out, switch W on to write over them)") or ""))
 end
 
-local function blueprintLoad(name, teamOverride)
-	local entry
-	for _, bp in ipairs(BP_LIST) do
-		if bp.name == name then
-			entry = bp
-		end
-	end
-	local units, err
-	if entry then
-		units = entry.units
-	else
-		local text = Shared.fileText(BPDIR .. name .. ".lua")
-		if text then
-			units, err = Shared.parseBlueprint(text)
-		else
-			err = "not found"
-		end
-	end
-	if not units then
-		say("Blueprint not found or invalid: " .. BPDIR .. name .. ".lua" .. (err and (" (" .. tostring(err) .. ")") or ""))
-		return
-	end
-	local cx, cz = mouseGround()
-	if not cx then
-		say("The mouse must be over the map")
-		return
-	end
-	placeBlueprintUnits(units, cx, cz, teamOverride, name, bpRot)
-end
-
 local function bpCurrent()
 	return BP_LIST[bpGrid.selected]
-end
-
-local function bpEnsureList()
-	if #BP_LIST == 0 then
-		bpScan()
-	end
-	return #BP_LIST > 0
 end
 
 local function bpSay()
@@ -904,7 +867,6 @@ gridHooks.select = function(i)
 	bpSay()
 end
 
--- Cycle the selection (dir = 1 next, -1 previous)
 -- Copy/paste: Ctrl+C remembers the selected units (without a selection the one at the mouse pointer),
 -- Ctrl+V sets them up again centered at the mouse pointer (with team, rotation and height)
 local clipboard = {}
@@ -994,14 +956,6 @@ local function spawnBuildersHere()
 	Spring.SendLuaRulesMsg(string.format("led|builders|%d|%d|%d", x, z, team))
 	say("Builders of all factions are being created at the cursor (team " .. team .. ")")
 	return true
-end
-
-local function bpDelete(name)
-	bpGrid:deleteByName(name)
-end
-
-local function bpRename(old, new)
-	return bpGrid:commitRename(old, new)
 end
 
 -- Menu geometry: bar at the right edge. Content (grid, units, settings) comes from editor_common.lua.

@@ -238,17 +238,6 @@ local function pendingCount()
 	return n
 end
 
-local function dropDone()
-	local out = {}
-	for _, s in ipairs(sites) do
-		if not s.done then
-			out[#out + 1] = s
-		end
-	end
-	sites = out
-	checkCursor = 1
-end
-
 local function undoLast()
 	if batchCounter <= 0 then
 		return

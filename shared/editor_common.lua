@@ -897,10 +897,6 @@ function M.newGrid(o)
 		return math.max(0, self:rowsPer() * self:tileH() + M.m.PAD - (rect.top - rect.y0))
 	end
 
-	function g:clampScroll(rect)
-		self.scroll = math.max(0, math.min(self:maxScroll(rect), self.scroll))
-	end
-
 	-- lower left corner of the preview of tile i
 	function g:geom(rect, i)
 		local rpc = self:rowsPer()
