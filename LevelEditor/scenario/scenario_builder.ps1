@@ -425,7 +425,7 @@ function Compress-Zlib([byte[]]$raw) {
 # ---------------------------------------------------------------- Build the scenario
 function Build-Scenario([string]$levelName, [bool]$auto) {
     $script:Auto = $auto
-    Write-Host "=== Scenario maker ===`n"
+    Write-Host "=== Scenario builder ===`n"
     $path = Select-LevelFile $levelName
     $base = [IO.Path]::GetFileNameWithoutExtension($path)
     $level = Read-LevelFile $path

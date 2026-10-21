@@ -10,6 +10,8 @@ $here = $PSScriptRoot
 function Fail($t) { Write-Host ""; Write-Host "ERROR: $t" -ForegroundColor Red; Read-Host 'Press Enter to exit'; exit 1 }
 
 # ---------------------------------------------------------------- Find BAR
+# (the same search as Find-Bar, Get-Engine and Get-GameVersion in shared\bar_common.ps1; this script runs alone on the recipient's computer, so it
+# carries its own copy: change both together)
 $memo = Join-Path $here 'bar_path.txt'
 $candidates = @()
 if ($BarPath) { $candidates += $BarPath }

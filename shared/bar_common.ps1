@@ -1,6 +1,7 @@
 # Shared helpers of the setup scripts (Level Editor and BluePrinter): find BAR, the engine and the installed game
 # version, create junctions. Dot-source it: . (Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\bar_common.ps1')
 
+# (scenario\template\start_scenario.ps1 runs alone on another computer and carries its own copy of the three search functions: change both together)
 function Fail($t) { Write-Host "ERROR: $t" -ForegroundColor Red; exit 1 }
 
 # Installation folder of Beyond All Reason (the folder with data\engine); asks if it is not found
