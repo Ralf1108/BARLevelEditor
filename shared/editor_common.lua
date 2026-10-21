@@ -1525,7 +1525,7 @@ function M.buildUnitCache()
 		local fac = cache[name:sub(1, 3)]
 		local cp = ud.customParams or {}
 		-- without decoration (arm_leftshoulder_..., cor_hat_..., armpw_wings): names with "_" at the 4th position or "_wings"
-		if fac and not name:find("scav") and not name:find("decom") and not name:find("dummy") and not name:find("drone")
+		if fac and not name:find("scav") and not name:find("decom") and not name:find("comlvl%d") and not name:find("dummy") and not name:find("drone")
 			and not cp.isdrone and name:sub(4, 4) ~= "_" and not name:find("_wings", 1, true) then
 			local tech = math.max(1, math.min(3, math.floor(techLevel(ud))))
 			local group = unitGroup(ud)

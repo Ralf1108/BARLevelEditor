@@ -125,7 +125,7 @@ Options: `cfg`, `groups` (offer only these groups; default all), `faction`, `can
 ### 9.1 Selection
 - Factions: Armada (`arm`), Cortex (`cor`), Legion (`leg`) – by the name prefix.
 - Groups in this order: **Buildings, Bots, Vehicles, Hover, Air, Ships**. Tech: T1 to T3 (`customParams.techlevel`, limited to 1 to 3, default 1; `M.techLevel(ud)` counts every unit named "Epic ..." or with an epic movement class as T3, because BAR files a few of them under T1 / T2).
-- Excluded: names with "scav", "decom", "dummy", "drone", `customParams.isdrone`, and also decoration (names with `_` at the fourth position like `arm_leftshoulder_nationwars_*`, `cor_hat_*`, and names with `_wings`).
+- Excluded: names with "scav", "decom", "comlvl<digit>" (the commander variants level 2 to 10), "dummy", "drone", `customParams.isdrone`, and also decoration (names with `_` at the fourth position like `arm_leftshoulder_nationwars_*`, `cor_hat_*`, and names with `_wings`).
 - The catalog is built once from `UnitDefs`: `[faction][group][tech]`.
 
 ### 9.2 Group assignment (order of the checks)
