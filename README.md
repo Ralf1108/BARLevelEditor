@@ -41,7 +41,8 @@ This repository also contains **BluePrinter**, a small widget for normal games t
 - **Area attacks (experimental):** the buttons `XL`, `XR` and `XC` send selected bombers, artillery, rocket launchers and nukes against a line, a rectangle or a circle; the bombers form up and attack together, front targets first. The bombs and shots of all selected units are spread evenly over the chosen area.
 - **Teams:** pick the team (and "neutral") with the buttons next to the menu, with a live unit count per team. Up to 32,000 units.
 - **Save and load** levels with Ctrl+S; the editor also autosaves when you leave.
-- **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install.
+- **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others can play with their own BAR install (button **I** for the scenario info). Start menu key **3** builds it, key **4** starts a built scenario.
+- **Tower Defense scenarios:** a level with Tower Defense switched on (button **TD**) becomes a Tower Defense scenario: waves, route, forbidden towers, restrictions and indestructible walls are packed too, so others can play it as Tower Defense.
 
 ## Installation (Windows)
 
@@ -60,24 +61,25 @@ After a BAR update run `install_editor.bat` again. `LevelEditor\uninstall_editor
 
 | | |
 |---|---|
-| Place a unit | Pick it in **Place → Units**, then left click on the map. Right click ends. |
+| Place a unit | Press **P** (Place) in the button column at the right, pick the unit in **Units**, then left click on the map. Right click ends. |
 | Place many | Arm a unit or feature, then hold the left mouse button and move: one is placed after every footprint. Or hold **Shift** and drag (a row) or **Shift + Alt** and drag (a rectangle) for units, features and blueprints; all of them are placed on release. **Shift + mouse wheel** changes the spacing, **[** and **]** rotate. The button **W** (left of the menu) decides whether occupied spots are overwritten (default) or left free. |
-| Random army | **Generate**, choose faction / type / tech / count and *Area*, press **Generate**, drag on the map. |
-| Tower Defense | Button **TD** in the button column: build corridors (Single / Line / Free), set **Spawn**, **Waypoint**s and **Goal**, define the waves (factions, tech, type, count, gap, HP %) and the **Restrictions** for the player, then **Start test** at the bottom of the page. |
-| Maze | **Generate → Maze**, choose the material and the corridor width, press **Generate**, drag on the map. |
+| Random army | Press **G** (Generate) in the button column at the right, choose faction / type / tech / count and *Area*, press **Generate**, drag on the map. |
+| Tower Defense | Click **TD** in the button column at the right (below P and G): build corridors (Single / Line / Free), set **Spawn**, **Waypoint**s and **Goal**, define the waves (factions, tech, type, count, gap, HP %) and the **Restrictions** for the player, then **Start test** at the bottom of the page. |
+| Maze | **G → Maze**, choose the material and the corridor width, press **Generate**, drag on the map. |
 | Delete | **Del** on the selection or under the mouse. For whole areas use the buttons in the strip left of the menu: **DL** (along a line), **DR** (in a rectangle, key **D**) or **DC** (in a circle), then drag the shape on the map. |
 | Copy / cut / paste | **Ctrl+C** copies, **Ctrl+X** cuts (copies and deletes), **Ctrl+V** pastes at the mouse. |
 | Undo / redo | **Ctrl+Z** undoes the last action (placing, deleting, moving, generating ...), **Ctrl+Y** redoes it. |
-| Save a layout | Select units, **Place → Blueprints → Create**. |
+| Save a layout | Select units, **P → Blueprints → Create**. |
 | Save the level | **Ctrl+S** (settings button **O** lists and loads saved levels). |
+| Scenario | **I** (information) opens the scenario info: title, briefing, roles ... Then in the start menu **3** builds the package and **4** starts a built scenario. For Tower Defense click **TD** first (see below). |
 | Help | The **?** button shows all keys and controls on screen. |
 
 ## Scenario creator
 
 A level you built can become a **scenario** that others play with their own, unmodified Beyond All Reason:
 
-1. Build the level (units, buildings, trees, wrecks, a maze ...) and save it with **Ctrl+S**.
-2. Press the **I** button (button column at the right). Fill in the scenario info: title, author, summary, briefing (Shift+Enter = new line), the role of every team (player, allied AI, enemy AI), the allowed tech levels per team, the AI behavior, the win condition, start metal and energy, an optional grace period (no attacks for the first minutes) and an ID. The info is stored in the level with the next Ctrl+S.
+1. Build the level (units, buildings, trees, wrecks, a maze ...) and save it with **Ctrl+S**. For a **Tower Defense** scenario click **TD** in the button column, tick *Tower Defense* and set up corridors, route, waves and restrictions (see [Tower Defense](#tower-defense)).
+2. Click **I** (information) in the button column at the right. Fill in the scenario info: title, author, summary, briefing (Shift+Enter = new line), the role of every team (player, allied AI, enemy AI), the allowed tech levels per team, the AI behavior, the win condition, start metal and energy, an optional grace period (no attacks for the first minutes) and an ID. The info is stored in the level with the next Ctrl+S.
 3. Start **BAR Level Editor** again and press **3** in the start menu (*create a scenario package*), then choose the level. The script first asks for the **title** (Enter keeps the one stored in the level) and then shows the **name of the scenario** (its ID, taken from the level, or made from a new title): press Enter to take it or type another name (title and name are stored in the level as well); if a scenario of that name already exists it asks before overwriting it. Then it builds the package without further questions: `LevelEditor\scenario\scenarios\<id>.zip` (and the same as a folder).
 4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR installation (it asks before it downloads a missing map). A level with **Tower Defense** switched on becomes a Tower Defense scenario: the waves, the route, the build restrictions and the indestructible walls are packed as well (the starter then builds a small extra game that only adds the wave script).
 
