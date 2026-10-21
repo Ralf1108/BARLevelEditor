@@ -1,5 +1,5 @@
 @echo off
-rem Installs the BluePrinter widget and starts a small test game (1 player vs. passive AI) to look at the menu.
+rem Installs the BluePrinter widget when it is not up to date and starts a small test game (1 player vs. passive AI) to look at the menu.
 rem Optional: start_blueprinter.bat "Map Name"
 setlocal
 if "%~1"=="" (

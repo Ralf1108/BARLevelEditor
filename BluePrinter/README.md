@@ -22,7 +22,7 @@ After a change to `bluePrinter.lua` run the installation again.
 **Removing:** run `uninstall_blueprinter.bat` (it asks first). It removes the widget, the shared code in `data\LuaUI\Include` and the two junctions; the blueprints stay. With `-WithSettings` the settings file `LuaUI\Config\BluePrinterUI.lua` is deleted too, with `-Yes` the confirmation is skipped.
 
 ## Trying it out
-`start_blueprinter.bat` installs the widget again and starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change. Start it from a command line with a map name to choose the map: `start_blueprinter.bat "Map Name"`.
+`start_blueprinter.bat` installs the widget when it is not up to date (compares the files with the installed ones) and starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change. Start it from a command line with a map name to choose the map: `start_blueprinter.bat "Map Name"`.
 
 ## Blueprints
 Files `<name>.lua` are read from `data\LuaUI\Config\BluePrinter` (that is from `BluePrinter\blueprints`) and from

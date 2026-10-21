@@ -131,7 +131,7 @@ Keys: **Ctrl+Alt+P** (blueprint from selection), `[`/`]` (rotate), **Alt+Z / Alt
 | `bluePrinter.lua` | the widget |
 | `install_blueprinter.bat`, `install_blueprinter.ps1` | installation |
 | `uninstall_blueprinter.bat`, `uninstall_blueprinter.ps1` | removal (asks first; widget, shared code, junctions; `-WithSettings` also `BluePrinterUI.lua`, `-Yes` without asking; the blueprints stay) |
-| `start_blueprinter.bat`, `start_blueprinter.ps1` | installs the widget again and starts a small test game (one player against a passive AI, first installed map or `start_blueprinter.bat "Map Name"`) to look at the menu |
+| `start_blueprinter.bat`, `start_blueprinter.ps1` | installs the widget when the installed files differ from the repository, then starts a small test game (one player against a passive AI, first installed map or `start_blueprinter.bat "Map Name"`) to look at the menu |
 | `blueprints\` | own blueprints, `_order.txt`, `_trash\` |
 | `README.md` | short manual |
 | `SPECIFICATION.md` | this specification |
