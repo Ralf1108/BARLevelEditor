@@ -14,7 +14,8 @@
 #   -Level name   choose a level from ..\levels without asking
 #   -Auto         no questions, take the saved info or the defaults (tests)
 #   -Edit         change the saved info in the level
-param([string]$Level = $null, [switch]$Auto, [switch]$Edit)
+#   -AskName      (start menu) show the target name (the ID) and ask whether to take it, change it or - if the scenario exists - overwrite it
+param([string]$Level = $null, [switch]$Auto, [switch]$Edit, [switch]$AskName)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -103,6 +104,27 @@ function AskMultiline([string]$prompt, [string]$default = '') {
 }
 
 # ---------------------------------------------------------------- Helpers
+# Target of the package: shows the name (the ID of the scenario = folder and zip in scenarios\), lets the user change it and, if a scenario
+# of that name exists, asks before it is overwritten. Returns the name to use (Get-Slug form).
+function Confirm-ScenarioId([string]$sid) {
+    while ($true) {
+        $exists = (Test-Path (Join-Path $OUT $sid)) -or (Test-Path (Join-Path $OUT ($sid + '.zip')))
+        Write-Host ''
+        Write-Host "The scenario is built as: scenarios\$sid (folder) and scenarios\$sid.zip" -ForegroundColor Cyan
+        if ($exists) { Write-Host 'A scenario of this name already exists.' -ForegroundColor Yellow }
+        Write-Host "Name (the ID, lowercase letters and digits) - Enter takes '$sid', or type another name: " -NoNewline
+        $v = [Console]::ReadLine()
+        if ($null -eq $v) { throw 'Input ended, aborted.' }
+        $v = $v.Trim()
+        if ($v) { $sid = Get-Slug $v; $exists = (Test-Path (Join-Path $OUT $sid)) -or (Test-Path (Join-Path $OUT ($sid + '.zip'))) }
+        if (-not $exists) { return $sid }
+        Write-Host "'$sid' exists. Overwrite it? (y = overwrite, n = choose another name, c = cancel): " -NoNewline
+        $a = ([Console]::ReadLine()).Trim().ToLower()
+        if ($a.StartsWith('y') -or $a.StartsWith('j')) { return $sid }
+        if ($a.StartsWith('c')) { throw 'Cancelled, nothing was built.' }
+    }
+}
+
 # Grace period: minutes as a number; input "2:30" (minutes:seconds), "2,5" or "2.5" or "3"; output "m:ss"
 function ConvertTo-Minutes([string]$text) {
     $t = $text.Trim().Replace(',', '.')
@@ -457,6 +479,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $grace = AskMinutes 'Grace period as minutes:seconds, e.g. 2:30 (as long as that, every team stays in its start area and is safe from damage there; 0 = none)' (Get-Val $saved 'grace' 0)
     $sid = Get-Val $saved 'sid' (Get-Slug $title)
     $sid = Get-Slug (Ask 'ID (lowercase letters and digits only)' $sid)
+    # From the start menu: show the target, take the name or change it (the ID is written into the level too), ask before overwriting
+    if ($AskName) { $sid = Confirm-ScenarioId $sid }
     # Map size for the start areas: from the level, otherwise from earlier info, otherwise ask
     $mapX = $level.mapX; $mapZ = $level.mapZ
     if ($grace -gt 0 -and $mapX -le 0) {

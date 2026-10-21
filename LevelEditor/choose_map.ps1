@@ -382,7 +382,7 @@ while ($true) {
         if (-not $chosen) { continue }
         Clear-Host
         $maker = Join-Path $PSScriptRoot 'scenario\scenario_builder.ps1'
-        & $maker -Level $chosen.Name -Auto
+        & $maker -Level $chosen.Name -Auto -AskName
         Write-Host ''
         Write-Host 'Continue with any key.'
         [void][Console]::ReadKey($true)
