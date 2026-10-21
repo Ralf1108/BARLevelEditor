@@ -596,10 +596,8 @@ end
 local uGrid = Shared.newUnits({ cfg = cfg, ownText = ownText, restrict = {
 	-- the X marks of the Place menu write the restrictions of the level (rst, led_restrictions.lua, created below)
 	isBanned = function(name) return rst.isBanned(name) end,
-	techBanned = function(t) return rst.techBanned(t) end,
 	setBanned = function(names, on) rst.setBanned(names, on) end,
 	allBanned = function(names) return rst.allBanned(names) end,
-	toggleTech = function(t) rst.toggleTech(t) end,
 } })
 local fGrid = Shared.newFeatures({ cfg = cfg, ownText = ownText })
 local fav = Shared.newFav({ cfg = cfg, recent = recent, lib = lib })
@@ -2692,8 +2690,8 @@ function td.armUnit(name)
 end
 
 -- The restrictions are one list for the whole level (led_restrictions.lua): the Tower Defense page and the Place menu write the same one
-function td.techBanned(t)
-	return rst.techBanned(t)
+function td.techBanned(t) -- every unit of the tech level is forbidden (the tech button X of the Place menu does the same)
+	return rst.allBanned(uGrid:namesOf("tech", t))
 end
 
 function td.isBanned(name)
@@ -2873,8 +2871,8 @@ function td.layout(rect)
 		end
 		rects[#rects + 1] = { x1 = rt.x2 - xs - 4 * S, x2 = rt.x2 - 4 * S, y0 = (rt.y0 + rt.y1) / 2 - xs / 2, y1 = (rt.y0 + rt.y1) / 2 + xs / 2, kind = "tdtechx",
 			value = rt.value, label = "", banned = tb,
-			tip = tb and ("Tech level " .. rt.value .. " is forbidden: no structure of it can be built in the game. Click to allow it again.") or
-				("Click: the player can build no structure of tech level " .. rt.value .. " (towers and economy) in the game.") }
+			tip = tb and ("Tech level " .. rt.value .. " is forbidden: no unit of it can be built in the game. Click to allow it again.") or
+				("Click: the player can build no unit of tech level " .. rt.value .. " in the game (all factions).") }
 	end
 	local list = td.turrets(td.tfac, td.ttech, td.tcat)
 	local cols, gapT = 8, 4 * S
@@ -2888,7 +2886,7 @@ function td.layout(rect)
 		local tx, ty = x1 + col * (tw + gapT), y - row * (tw + gapT)
 		local banned = td.isBanned(e.name)
 		rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "",
-			banned = banned or td.techBanned(td.ttech), armed = armedUnit and unitName == e.name }
+			banned = banned, armed = armedUnit and unitName == e.name }
 		local xs = tw * 0.36
 		rects[#rects + 1] = { x1 = tx + tw - xs, x2 = tx + tw, y0 = ty - xs, y1 = ty, kind = "tdban", value = e.name, id = e.id, label = "", banned = banned,
 			tip = banned and "Forbidden: the player cannot build this in the game. Click to allow it again." or
@@ -3480,7 +3478,8 @@ function td.press(rect, mx, my)
 	elseif k == "tdban" then
 		rst.toggle(hit.value)
 	elseif k == "tdtechx" then
-		rst.toggleTech(hit.value)
+		local names = uGrid:namesOf("tech", hit.value) -- all units of the tech level, like the tech X of the Place menu
+		rst.setBanned(names, not rst.allBanned(names))
 	elseif k == "tdeconomy" then
 		local c = td.cfg(true)
 		c.economy, td.tscroll = not (c.economy ~= false), 0

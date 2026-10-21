@@ -1651,8 +1651,8 @@ function M.newUnits(o)
 		return ((#self.groups > 1) and 3 or 2) + (self.searchOn and 1 or 0)
 	end
 
-	-- The names of the units a faction or a group X stands for: everything in it right now (faction: all groups and tech levels,
-	-- group: all tech levels of the chosen faction)
+	-- The names of the units a faction, group or tech X stands for: everything in it right now (faction: all groups and tech levels,
+	-- group: all tech levels of that group of the chosen faction, tech level: all factions and groups)
 	function u:namesOf(kind, value)
 		if not self.cache then
 			self.cache = M.buildUnitCache()
@@ -1673,6 +1673,12 @@ function M.newUnits(o)
 			for t = 1, 3 do
 				add(self.cache[self.faction][value][t])
 			end
+		elseif kind == "tech" then
+			for _, f in ipairs(M.FACTIONS) do
+				for _, g in ipairs(self.groups) do
+					add(self.cache[f[1]][g[1]][value])
+				end
+			end
 		end
 		return out
 	end
@@ -1690,7 +1696,7 @@ function M.newUnits(o)
 				local bx = x1 + pad + (i - 1) * (bw + 3)
 				local banned = false
 				if rs then
-					banned = (kind == "tech") and rs.techBanned(it[1]) or (kind ~= "tech" and rs.allBanned(self:namesOf(kind, it[1])))
+					banned = rs.allBanned(self:namesOf(kind, it[1]))
 				end
 				rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = t - hb, y1 = t, kind = kind, value = it[1], label = it[2], active = (it[1] == active),
 					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil, tint = banned and { 0.45, 0.12, 0.12 } or nil,
@@ -1698,7 +1704,7 @@ function M.newUnits(o)
 				if rs then
 					-- X in the right end of the button: forbids everything of it (the player cannot build it in the game)
 					local xs = hb * 0.62
-					local what = (kind == "faction" and "this faction") or (kind == "group" and "this group of the chosen faction") or "this tech level"
+					local what = (kind == "faction" and "this faction") or (kind == "group" and "this group of the chosen faction") or "this tech level (all factions and groups)"
 					rects[#rects + 1] = { x1 = bx + bw - xs - 3, x2 = bx + bw - 3, y0 = t - hb / 2 - xs / 2, y1 = t - hb / 2 + xs / 2, kind = kind .. "x", value = it[1],
 						label = "X", fs = xs * 0.8, tint = banned and { 0.85, 0.1, 0.1 } or { 0.1, 0.1, 0.1 },
 						tip = banned and ("Forbidden: the player cannot build anything of " .. what .. " in the game. Click to allow it again.") or
@@ -1746,12 +1752,8 @@ function M.newUnits(o)
 		end
 		if self.restrict and (r.kind == "factionx" or r.kind == "groupx" or r.kind == "techx") then
 			local rs, kind = self.restrict, r.kind:sub(1, -2)
-			if kind == "tech" then
-				rs.toggleTech(r.value)
-			else
-				local names = self:namesOf(kind, r.value)
-				rs.setBanned(names, not rs.allBanned(names))
-			end
+			local names = self:namesOf(kind, r.value)
+			rs.setBanned(names, not rs.allBanned(names))
 			return true
 		end
 		if r.kind == "faction" then
@@ -1846,7 +1848,7 @@ function M.newUnits(o)
 					gl.Rect(ix - 2, iy - 2, ix + m.UICON + 2, iy + m.UICON + 2)
 				end
 				local rs = self.restrict
-				local banned = rs and (rs.isBanned(e.name) or rs.techBanned(math.max(1, math.min(3, math.floor(M.techLevel(UnitDefs[e.id])))))) or false
+				local banned = rs and rs.isBanned(e.name) or false
 				gl.Color(1, 1, 1, (usable and not banned) and 1 or 0.3)
 				gl.Texture("#" .. e.id)
 				gl.TexRect(ix, iy, ix + m.UICON, iy + m.UICON)
@@ -1902,7 +1904,7 @@ function M.newUnits(o)
 			local human = ud.translatedHumanName or ud.humanName or e.name
 			local shot, sps, isAA = M.shotInfo(e.id)
 			local title = string.format("%s (%s)", human, e.name)
-			if self.restrict and (self.restrict.isBanned(e.name) or self.restrict.techBanned(math.max(1, math.min(3, math.floor(M.techLevel(ud)))))) then
+			if self.restrict and self.restrict.isBanned(e.name) then
 				title = title .. "  - forbidden"
 			end
 			if shot > 0 then

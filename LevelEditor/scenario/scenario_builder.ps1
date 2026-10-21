@@ -305,11 +305,10 @@ function Read-Restrictions([string]$txt) {
         if ($c -lt 0) { return '' }
         return $body.Substring($o + 1, $c - $o - 1)
     }
-    $names = @(); $techs = @()
+    $names = @()
     foreach ($b in [regex]::Matches((Block 'banned'), '"([^"]+)"')) { $names += $b.Groups[1].Value }
-    foreach ($b in [regex]::Matches((Block 'bannedTech'), '\d')) { $techs += $b.Value }
-    if ($names.Count -eq 0 -and $techs.Count -eq 0) { return $null }
-    return @{ banned = $names; bannedTech = $techs }
+    if ($names.Count -eq 0) { return $null }
+    return @{ banned = $names }
 }
 
 function Read-Capture([string]$txt) {
@@ -481,7 +480,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         if ($teamsFound.Count -eq 1) { $teamsFound = @($teamsFound) + @([int]$teamsFound[0] + 1) }
     }
     $rst = $level.rst
-    if ($rst) { Write-Host "Restrictions in the level: $($rst.banned.Count) units and $($rst.bannedTech.Count) tech levels the player cannot build." -ForegroundColor Cyan }
+    if ($rst) { Write-Host "Restrictions in the level: $($rst.banned.Count) units the player cannot build." -ForegroundColor Cyan }
     $ctf = $level.ctf
     if ($ctf) {
         Write-Host "Capture the Flag is on in the level: $($ctf.flags.Count) flag points, $($ctf.homes.Count) collection points. It is part of the scenario (against a computer opponent that does not play it: only a game of your own)." -ForegroundColor Cyan
@@ -698,8 +697,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team that holds $($ctf.score) flags at once wins; 0 = no end)." -ForegroundColor Yellow }
     }
     if ($rst) {
-        # settings for the gadget unit_restrictions.lua (banned;bannedTech: names and tech levels, "-" for none)
-        $plainR = ('{0};{1}' -f $(if ($rst.banned.Count -gt 0) { $rst.banned -join ',' } else { '-' }), $(if ($rst.bannedTech.Count -gt 0) { $rst.bannedTech -join ',' } else { '-' }))
+        # settings for the gadget unit_restrictions.lua (the names of the units)
+        $plainR = ($rst.banned -join ',')
         $mods['restrictions'] = [Convert]::ToBase64String($utf8.GetBytes($plainR)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
     }
     if ($grace -gt 0) { $mods['norushtimer'] = $grace.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }

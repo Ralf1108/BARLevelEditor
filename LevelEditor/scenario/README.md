@@ -36,7 +36,7 @@ If Tower Defense is switched on in the level (page **TD** of the editor, with sp
 | `README.txt` | briefing and instructions |
 | `ctf_game.lua` | only in a Capture the Flag scenario: the gadget that runs flags, collection points and rewards |
 | `td_waves.lua` | only in a Tower Defense scenario: the gadget that runs the waves and the restriction to towers (see below) |
-| `unit_restrictions.lua` | only if the level has restrictions (units and tech levels the player cannot build, set with the X marks of the Place menu): the gadget that refuses them; the starter then builds the small extra game "Tower Defense Scenario" also for an ordinary level (game option `restrictions`) |
+| `unit_restrictions.lua` | only if the level has restrictions (units the player cannot build, set with the X marks of the Place menu): the gadget that refuses them; the starter then builds the small extra game "Tower Defense Scenario" also for an ordinary level (game option `restrictions`) |
 
 ## How it works
 The official game knows scenarios: the game option `scenariooptions` contains the unit list (`unitloadout`) and the feature list (`featureloadout`). The game sets them up at the start and then places no start commanders. The option is in the start script as `base64url(zlib(json))`. The level files of the editor have exactly this format.

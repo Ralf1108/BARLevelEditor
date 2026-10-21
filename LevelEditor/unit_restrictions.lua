@@ -1,9 +1,7 @@
 -- Level restrictions (synchronized part): what the player may not build while a test or a finished scenario runs. One list for the whole
 -- level (the Place menu and the Tower Defense page of the editor write the same list), for every game mode.
 -- Configuration: from the Level Editor with the message "rst|start|<payload>" (stop: "rst|stop"), or from the game option
--- restrictions (same payload as base64url) for a finished scenario. Payload: "banned;bannedTech"
---   banned = "name,name,..." or "-": units that cannot be built
---   bannedTech = "1,3" or "-": tech levels (as the editor counts them, bar_rules.lua) of which no unit can be built
+-- restrictions (same payload as base64url) for a finished scenario. Payload: "name,name,..." or "-": the units that cannot be built
 -- The block goes through the build blocking of BAR (GG.BuildBlocking.AddBlockedUnit: the units are greyed out in the build menu) when it
 -- exists, and always through AllowCommand (build orders of builders and factories).
 function gadget:GetInfo()
@@ -30,7 +28,7 @@ local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
 
 local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
 assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
-local techLevel, decode64 = Rules.techLevel, Rules.decode64
+local decode64 = Rules.decode64
 
 local blocked = nil -- running restrictions: unitDefID -> true; nil = none
 local blockedTeams = {} -- teams the build blocking of BAR was told about
@@ -54,25 +52,13 @@ local function split(text, sep)
 	return out
 end
 
--- The units that follow from the payload
+-- The unitDefIDs of the names in the payload
 local function parse(payload)
-	local f = split(payload, ";")
-	local set = {}
-	local count = 0
-	local names = {}
-	for _, name in ipairs(split(f[1] or "", ",")) do
-		names[name] = true
-	end
-	local techs = {}
-	for _, v in ipairs(split(f[2] or "", ",")) do
-		if tonumber(v) then
-			techs[tonumber(v)] = true
-		end
-	end
-	for id, ud in pairs(UnitDefs) do
-		-- the tech level as the Place menu shows it (1 to 3: the half levels count down, Epic units are T3)
-		if names[ud.name] or techs[math.max(1, math.min(3, math.floor(techLevel(ud))))] then
-			set[id] = true
+	local set, count = {}, 0
+	for _, name in ipairs(split(payload, ",")) do
+		local ud = UnitDefNames[name]
+		if ud and not set[ud.id] then
+			set[ud.id] = true
 			count = count + 1
 		end
 	end
