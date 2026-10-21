@@ -54,6 +54,16 @@ function Ask([string]$prompt, $default = '') {
     if ($v) { return $v } else { return [string]$default }
 }
 
+# Like Ask, but also asks in the automatic mode (the start menu asks for the title and the name)
+function AskLine([string]$prompt, $default = '') {
+    $suffix = if ("$default" -ne '') { " [$default]" } else { '' }
+    Write-Host "${prompt}${suffix}: " -NoNewline
+    $v = [Console]::ReadLine()
+    if ($null -eq $v) { throw 'Input ended, aborted.' }
+    $v = $v.Trim()
+    if ($v) { return $v } else { return [string]$default }
+}
+
 function AskChoice([string]$prompt, $options, [string]$default) {
     Write-Host $prompt
     foreach ($o in $options) { Write-Host ('   {0} = {1}' -f $o[0], $o[1]) }
@@ -435,6 +445,14 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
 
     $defTitle = if (-not $base.StartsWith('_')) { (Get-Culture).TextInfo.ToTitleCase(($base -replace '_', ' ').Trim()) } else { 'My scenario' }
     $title = Ask 'Title of the scenario' (Get-Val $saved 'title' $defTitle)
+    # From the start menu: the title first (Enter keeps it), then the name (ID) below
+    $titleChanged = $false
+    if ($AskName) {
+        Write-Host ''
+        $t2 = AskLine 'Title of the scenario' $title
+        $titleChanged = ($t2 -ne $title)
+        $title = $t2
+    }
     $author = Ask 'Author (may stay empty)' (Get-Val $saved 'author' '')
     $summary = Ask 'Summary (one line)' (Get-Val $saved 'summary' '')
     $briefDef = Get-Val $saved 'briefing' $summary
@@ -477,7 +495,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $metal = AskInt 'Start metal per team' (Get-Val $saved 'metal' 1000) 0 100000
     $energy = AskInt 'Start energy per team' (Get-Val $saved 'energy' 1000) 0 100000
     $grace = AskMinutes 'Grace period as minutes:seconds, e.g. 2:30 (as long as that, every team stays in its start area and is safe from damage there; 0 = none)' (Get-Val $saved 'grace' 0)
-    $sid = Get-Val $saved 'sid' (Get-Slug $title)
+    $sid = if ($titleChanged) { Get-Slug $title } else { Get-Val $saved 'sid' (Get-Slug $title) } # a new title proposes a new name
     $sid = Get-Slug (Ask 'ID (lowercase letters and digits only)' $sid)
     # From the start menu: show the target, take the name or change it (the ID is written into the level too), ask before overwriting
     if ($AskName) { $sid = Confirm-ScenarioId $sid }
