@@ -10,6 +10,8 @@
 --            second for every flag a team holds; the delivered flag stays at the collection point)
 --   amount = metal, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team needs to win (0 = never ends),
 --   returnTime = seconds after which a dropped flag lies back at its flag point
+-- Own flags with income: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
+-- standing wins).
 --   homes  = "team,x,z/team,x,z/..." collection points, flags = "team,x,z/..." flag points (team -1: neutral)
 -- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfRadius, ctfHomes, ctfSpots.
 function gadget:GetInfo()
@@ -75,7 +77,8 @@ if not gadgetHandler:IsSyncedCode() then
 		local target = Spring.GetGameRulesParam("ctfTarget") or 0
 		local parts = {}
 		for t in tostring(Spring.GetGameRulesParam("ctfTeams") or ""):gmatch("%d+") do
-			parts[#parts + 1] = string.format("Team %s: %d%s", t, Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "")
+			local lost = (("," .. tostring(Spring.GetGameRulesParam("ctfOut") or "") .. ","):find("," .. t .. ",", 1, true)) and " (lost)" or ""
+			parts[#parts + 1] = string.format("Team %s: %d%s%s", t, Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "", lost)
 		end
 		local text = "Capture the Flag   " .. table.concat(parts, "   ")
 		if state ~= "running" then
@@ -90,6 +93,7 @@ end
 
 -- ---------------------------------------------------------------- synced
 local FPS = 30
+local LEAD = 1 -- frames of the carrier's speed the flag is put ahead of it (measured: 1 frame halves the lag against the carrier, more makes it worse)
 local CHECK_EVERY = 5 -- frames between two checks for pick up and delivery
 
 local opt = Spring.GetModOptions().leveleditor
@@ -157,6 +161,11 @@ local function publish()
 	Spring.SetGameRulesParam("ctfState", g.state)
 	Spring.SetGameRulesParam("ctfTarget", g.cfg.score)
 	Spring.SetGameRulesParam("ctfTeams", table.concat(teams, ","))
+	local out = {}
+	for t in pairs(g.out) do
+		out[#out + 1] = t
+	end
+	Spring.SetGameRulesParam("ctfOut", table.concat(out, ","))
 end
 
 -- A unit that marks a flag or a collection point: neutral (nobody attacks it), indestructible, not saved by the editor
@@ -198,10 +207,10 @@ local function stop()
 	end
 end
 
-local function finish(team)
+local function finish(team, lastStanding)
 	g.state = "won by team " .. team
 	publish()
-	say("Team " .. team .. " has " .. g.cfg.score .. " flags: level won!")
+	say(lastStanding and ("Team " .. team .. " is the last one standing: level won!") or ("Team " .. team .. " has " .. g.cfg.score .. " flags: level won!"))
 	if not EDITOR_MODE then
 		Spring.GameOver({ allyOf(team) })
 	end
@@ -209,7 +218,7 @@ end
 
 local function start(cfg)
 	clear()
-	g = { cfg = cfg, state = "running", flags = {}, markers = {}, score = {}, parked = {} }
+	g = { cfg = cfg, state = "running", flags = {}, markers = {}, score = {}, parked = {}, out = {} }
 	local gaia = Spring.GetGaiaTeamID()
 	local spots = {}
 	for _, h in ipairs(cfg.homeList) do
@@ -245,6 +254,31 @@ local function toHome(f)
 	Spring.SetUnitPosition(f.id, f.hx, f.hz)
 end
 
+-- A team that lost all its flags: its units blow up (flags and collection points stay); the last team standing wins
+local function blowUp(team)
+	for _, id in ipairs(Spring.GetTeamUnits(team)) do
+		if not protected[id] then
+			Spring.DestroyUnit(id, true, false)
+		end
+	end
+end
+
+local function eliminate(team)
+	g.out[team] = true
+	say("Team " .. team .. " has lost all its flags: its units blow up.")
+	blowUp(team)
+	publish()
+	local left, last = 0, nil
+	for _, h in ipairs(g.cfg.homeList) do
+		if not g.out[h.team] then
+			left, last = left + 1, h.team
+		end
+	end
+	if left == 1 and #g.cfg.homeList >= 2 then
+		finish(last, true)
+	end
+end
+
 local function deliver(f, team)
 	local cfg = g.cfg
 	carrying[f.carrier] = nil
@@ -258,6 +292,17 @@ local function deliver(f, team)
 		local a = g.parked[team] * 2.4
 		Spring.SetUnitPosition(f.id, h.x + math.cos(a) * 60, h.z + math.sin(a) * 60)
 		say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
+		if cfg.own and f.owner >= 0 and not g.out[f.owner] then
+			local left = 0
+			for _, o in ipairs(g.flags) do
+				if o.owner == f.owner and not o.parked then
+					left = left + 1
+				end
+			end
+			if left == 0 then
+				eliminate(f.owner)
+			end
+		end
 	else
 		Spring.AddTeamResource(team, "metal", cfg.amount)
 		toHome(f)
@@ -332,12 +377,18 @@ function gadget:GameFrame(n)
 		if f.carrier then
 			local x, _, z = Spring.GetUnitPosition(f.carrier)
 			if x then
-				Spring.SetUnitPosition(f.id, x, z) -- the flag follows the carrier
+				local vx, _, vz = Spring.GetUnitVelocity(f.carrier)
+				Spring.SetUnitPosition(f.id, x + (vx or 0) * LEAD, z + (vz or 0) * LEAD) -- the flag follows the carrier (a little ahead: the carrier moves after this call)
 			end
 		end
 	end
 	if n % CHECK_EVERY == 0 then
 		check(n)
+	end
+	if n % FPS == 0 then
+		for team in pairs(g.out) do
+			blowUp(team) -- what a lost team builds afterwards blows up too
+		end
 	end
 	if g.cfg.income and n % FPS == 0 and g.cfg.amount > 0 then
 		for team, count in pairs(g.parked) do
