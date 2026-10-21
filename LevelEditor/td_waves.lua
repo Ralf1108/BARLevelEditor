@@ -49,8 +49,6 @@ local alive = {} -- unitID -> { reward factor }
 local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
 local pendingCfg = nil -- configuration waiting for the start
 local fixedList = nil -- { { name, x, z } ... } units that stay indestructible
-local scenarioMode = nil -- game option scenariomode of a package that holds Tower Defense and Capture the Flag: "td" | "ctf" (the player chose); nil = no choice
-local WALL_PIECES = { armdrag = true, cordrag = true, legdrag = true, armfort = true, corfort = true, legforti = true } -- what the TD page builds
 GG.Indestructible = GG.Indestructible or {}
 local fixedIds = GG.Indestructible -- unitID -> true: nothing damages, reclaims, captures or self-destructs these units (the editor gadget fills the same table)
 local applyFixed -- (defined below)
@@ -409,8 +407,7 @@ local decode64 = Rules.decode64
 
 function gadget:GamePreload()
 	local mo = Spring.GetModOptions()
-	scenarioMode = (mo.scenariomode == "td" or mo.scenariomode == "ctf") and mo.scenariomode or nil
-	if mo.tdconfig and mo.tdconfig ~= "" and scenarioMode ~= "ctf" then
+	if mo.tdconfig and mo.tdconfig ~= "" then
 		pendingCfg = parse(decode64(mo.tdconfig))
 	end
 	if mo.tdfixed and mo.tdfixed ~= "" then
@@ -433,12 +430,8 @@ applyFixed = function()
 		for _, id in ipairs(Spring.GetUnitsInCylinder(f[2], f[3], 10)) do
 			local defID = Spring.GetUnitDefID(id)
 			if defID and UnitDefs[defID].name == f[1] then
-				if scenarioMode == "ctf" and WALL_PIECES[f[1]] then
-					Spring.DestroyUnit(id, false, true) -- Capture the Flag was chosen: the corridors of Tower Defense go
-				else
-					fixedIds[id] = true
-					Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true })
-				end
+				fixedIds[id] = true
+				Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true })
 			end
 		end
 	end

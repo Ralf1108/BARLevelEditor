@@ -461,7 +461,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $ctf = $level.ctf
     if ($ctf) {
         Write-Host "Capture the Flag is on in the level: $($ctf.flags.Count) flag points, $($ctf.homes.Count) collection points, $($ctf.mode) flags. It is part of the scenario (against a computer opponent that does not play it: only a game of your own)." -ForegroundColor Cyan
-        if ($td) { Write-Host 'Tower Defense is on as well: whoever starts the scenario chooses which of the two modes to play.' -ForegroundColor Cyan }
+        if ($td) { throw 'Tower Defense and Capture the Flag are both on in the level: switch one of them off in the editor (they exclude each other).' }
         # every team with a collection point must exist (a team without units is added)
         $teamsFound = @(@($teamsFound) + @($ctf.homes | ForEach-Object { $_.team }) | Sort-Object -Unique)
     }
@@ -667,10 +667,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         }
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Tower Defense (the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
     }
-    if ($td -and $ctf) {
-        # both modes in one package: the starter asks which one to play and puts it here (the gadgets leave the other one alone, Tower Defense walls go in Capture the Flag)
-        $mods['scenariomode'] = '__SCENARIOMODE__'
-    }
     if ($ctf) {
         # settings for the gadget ctf_game.lua (mode;amount;radius;score;returnTime;homes;flags;visible, teams renumbered like the units)
         $homes = @($ctf.homes | Where-Object { $newid.ContainsKey([int]$_.team) } | ForEach-Object { '{0},{1},{2}' -f $newid[[int]$_.team], $_.x, $_.z }) -join '/'
@@ -716,7 +712,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      '2. Double-click "Start Scenario.bat". The script finds BAR itself (otherwise it asks for the folder),',
                      '   downloads the map if needed and starts the game. Nothing in the game itself is changed.',
                      '3. The units are there right away, there is no start commander except those in the scenario.',
-                     $(if ($td -and $ctf) { '   This package holds Tower Defense and Capture the Flag: Start Scenario.bat asks which of the two you want to play (or: Start Scenario.bat -Mode td / -Mode ctf).' } else { '' }),
                      $(if ($ctf) { '   Capture the Flag: the starter also builds the small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) with the flag gadget; no official file is changed.' } else { '' }),
                      $(if ($td) { '   Tower Defense: the starter also builds a small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) that builds on your Beyond All Reason and runs the enemy waves; no official file is changed.' } else { '' }),
                      $(if ($grace -gt 0) { 'Grace period: before the start the start position selection appears. Click into your start area (marked frame) and press Ready.' } else { '' }),

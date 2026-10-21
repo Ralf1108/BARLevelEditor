@@ -1,8 +1,7 @@
 # Starts a scenario with the official Beyond All Reason (nothing in the game is changed).
 # Run through "Start Scenario.bat" in the same folder. The file scenario.txt is the finished start script
-# with two placeholders (__GAMETYPE__ = installed game version, __PLAYERNAME__ = player name) and, in a package that holds Tower Defense and
-# Capture the Flag, a third (__SCENARIOMODE__ = td or ctf, asked here or given with -Mode).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [string]$Mode = $null)
+# with two placeholders (__GAMETYPE__ = installed game version, __PLAYERNAME__ = player name).
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -63,18 +62,6 @@ if (-not $game) { Fail 'Game version not found.' }
 # ---------------------------------------------------------------- Fill the start script
 $script = [IO.File]::ReadAllText((Join-Path $here 'scenario.txt'))
 $map = [regex]::Match($script, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
-if ($script.Contains('__SCENARIOMODE__')) {
-    # the package holds two game modes: the other one is left out (the gadgets read the game option scenariomode)
-    while ($Mode -notin @('td', 'ctf')) {
-        Write-Host ''
-        Write-Host 'This scenario has two game modes:'
-        Write-Host '  1 = Tower Defense (waves of enemies walk to a goal)'
-        Write-Host '  2 = Capture the Flag (carry the flags to your collection point)'
-        $a = Read-Host 'Which one do you want to play? (1 or 2)'
-        if ($a.Trim() -eq '1') { $Mode = 'td' } elseif ($a.Trim() -eq '2') { $Mode = 'ctf' }
-    }
-    $script = $script.Replace('__SCENARIOMODE__', $Mode)
-}
 if (-not $Name) { $Name = $env:USERNAME }
 if (-not $Name) { $Name = 'Player' }
 $Name = $Name -replace '[^A-Za-z0-9_\-\[\]]', ''

@@ -595,7 +595,7 @@ end
 -- Finished scenario: the settings come in the game option ctfconfig (the payload as base64url)
 function gadget:GamePreload()
 	local mo = Spring.GetModOptions()
-	if mo.ctfconfig and mo.ctfconfig ~= "" and mo.scenariomode ~= "td" then -- (a package with both modes: the player chose, option scenariomode)
+	if mo.ctfconfig and mo.ctfconfig ~= "" then
 		pendingCfg = parse(decode64(mo.ctfconfig))
 	end
 end
