@@ -1,6 +1,6 @@
 # Specification: Shared code (`editor_common.lua`)
 
-Status: 2026-10-19 (with the area attack module, the cost line on the blueprint tiles, the search helpers, the scrollbar, the filtered blueprint grid, the maze generator and the English interface).
+Status: 2026-10-22 (the restriction marks of the unit list, the reserve of a button, the last-on-top rule of the tooltips, with the area attack module, the cost line on the blueprint tiles, the search helpers, the scrollbar, the filtered blueprint grid, the maze generator and the English interface).
 
 Status of the specification: everything that has been defined so far for the Level Editor and the BluePrinter and is implemented in `editor_common.lua`.
 Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECIFICATION.md`.
@@ -20,12 +20,12 @@ Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECI
 | Level Editor | `VFS.Include("luaui/Include/editor_common.lua", nil, VFS.ZIP_FIRST)` | in the extra game `LevelEditorMod.sdz` under `luaui/Include/editor_common.lua` |
 | BluePrinter | `VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)` | `data\LuaUI\Include\editor_common.lua` in the BAR write folder |
 
-- `LevelEditor\install_editor.ps1` packs `shared\editor_common.lua` into the `.sdz`. `BluePrinter\install_blueprinter.ps1` copies the file to `data\LuaUI\Include`.
+- `LevelEditor\install_editor.ps1` packs `shared\editor_common.lua` and `shared\bar_rules.lua` into the `.sdz`; the list of the files is `$SharedFiles` in `LevelEditor\editor_stamp.ps1`, which also computes the stamp that tells `start_level_editor.bat` when the setup has to run again. `BluePrinter\install_blueprinter.ps1` copies the file to `data\LuaUI\Include`.
 - Both scripts take the file from `..\shared\editor_common.lua` (next to the widget folder) and abort with an error message if it is missing.
 - **`bar_common.ps1`** holds what all setup scripts share (dot-sourced by `install_editor.ps1`, `uninstall_editor.ps1`, `check_links.ps1`, `install_blueprinter.ps1`, `uninstall_blueprinter.ps1` and through the installer `start_blueprinter.ps1`): `Fail`, `Find-Bar` (searches all fixed drives, asks if BAR is not found), `Get-Engine`, `Get-GameVersion` (byar:test, otherwise byar:stable, the first one whose package is installed), `Set-Junction` (creates a junction, points a stale one to the new target, leaves a real folder alone, prints only changes) and `Remove-Junction` (removes only the link). The scenario starter in the package (`start_scenario.ps1`) does not use it, because the package must work on its own.
 - The two load paths are deliberately separate (ZIP_FIRST and RAW_FIRST) so the copy in the extra game is never covered by the copy for the BluePrinter.
 - On a second computer the folders `shared`, `LevelEditor` and `BluePrinter` must lie next to each other.
-- After every change to `editor_common.lua` run both installations again.
+- After every change to `editor_common.lua`: the Level Editor updates itself at the next start with `start_level_editor.bat` (stamp, see the Level Editor specification); `BluePrinter\start_blueprinter.bat` installs the BluePrinter again only when the installed files differ; for the BluePrinter in a normal game run `install_blueprinter.bat`.
 
 - **File access:** the code reads and writes files through `io.open` and `VFS.DirList`. User widgets (BluePrinter) may only read under `LuaUI/` and only write under `LuaUI/Config/` in BAR; the folders of the library (`dirs`) must lie there. Game widgets (Level Editor) are not restricted.
 
@@ -37,7 +37,7 @@ Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECI
 
 ## 4. Helper functions
 
-- **`bar_rules.lua`** (own file next to `editor_common.lua`, installed as `luaui/Include/bar_rules.lua` in the extra game of the Level Editor, in `LuaUI\Include` for the BluePrinter and in the extra game of a Tower Defense scenario): rules about unit definitions that gadgets (synced) and widgets use alike: `techLevel(ud)` (1 to 3; every Epic unit counts as 3), `buildClass(ud)` ("economy", "tower", "radar" or nil, for the Tower Defense build restriction and its list), `decode64(text)` (base64url as the scenario builder writes game options, for the gadgets), `hitsGround(ud)` (a weapon that can attack the ground). `editor_common.lua` exposes `M.techLevel` and `M.buildClass`; `unit_level_editor.lua` and `td_waves.lua` load the file themselves. `scenario_briefing.lua` runs alone in a foreign BAR and keeps its own copy of `techLevel`: change both together.
+- **`bar_rules.lua`** (own file next to `editor_common.lua`, installed as `luaui/Include/bar_rules.lua` in the extra game of the Level Editor, in `LuaUI\Include` for the BluePrinter and in the extra game of a scenario with Tower Defense, Capture the Flag or restrictions): rules about unit definitions that gadgets (synced) and widgets use alike: `techLevel(ud)` (1 to 3; every Epic unit counts as 3), `buildClass(ud)` ("economy", "tower", "radar" or nil, for the Tower Defense build restriction and its list), `decode64(text)` (base64url as the scenario builder writes game options, for the gadgets), `hitsGround(ud)` (a weapon that can attack the ground). `editor_common.lua` exposes `M.techLevel` and `M.buildClass`; `unit_level_editor.lua`, `td_waves.lua`, `ctf_game.lua` and `unit_restrictions.lua` load the file themselves (`decode64` for the game options of a scenario). `scenario_briefing.lua` runs alone in a foreign BAR and keeps its own copy of `techLevel`: change both together.
 - `M.rotateOffset(dx, dz, k)`: rotates an offset by `k` quarter turns. Order south → east → north → west, formula `(dx, dz) → (dz, -dx)`.
 - `M.headingToFacing(h)`: Spring heading (−32768 to 32767) → facing 0 to 3 (`floor((h + 8192) / 16384) % 4`).
 - `M.parseBlueprint(text)`: reads the text of a blueprint file. A Lua table `{ blueprint = { ... } }` is valid.
@@ -120,7 +120,7 @@ On every call the host passes the rectangle `rect = { x1, y0, x2, top }` of the 
 
 ## 9. Unit catalog and selection grid (`M.newUnits`)
 
-Options: `cfg`, `groups` (offer only these groups; default all), `faction`, `canUse(unitDefID)` (unusable units are dimmed but remain selectable), `searchLabel` (text of the empty search field, default "Search ..."; the BluePrinter uses "Search Buildings", the blueprint grid "Search Blueprints").
+Options: `cfg`, `groups` (offer only these groups; default all), `faction`, `canUse(unitDefID)` (unusable units are dimmed but remain selectable), `restrict` (only the Level Editor passes it; table of the functions `isBanned(name)`, `setBanned(names, on)`, `allBanned(names)`: switches on the restriction marks described in 9.4b), `searchLabel` (text of the empty search field, default "Search ..."; the BluePrinter uses "Search Buildings", the blueprint grid "Search Blueprints").
 
 ### 9.1 Selection
 - Factions: Armada (`arm`), Cortex (`cor`), Legion (`leg`) – by the name prefix.
@@ -168,6 +168,11 @@ Sort key `rank = (filler 1000) + (water 100) + kind`, then alphabetically by nam
 - Spacing between two units: footprint (swapped for east/west) plus `spacing × 16` Elmo. Row: step size along the longer axis of the mouse movement; rectangle: step size per axis. At most 2000 pieces (the default of `maxN` in `stampPositionsSized`; the widgets pass 2000 for single units and 100 for blueprints).
 - Changing the spacing (0 to 20, `M.clampSpacing`): **Alt+Z / Alt+X** (also with Shift; BAR default for `buildspacing inc/dec`), mouse side buttons 4/5 with Shift, Shift + mouse wheel and the chat command `/bp_spacing` (`<n>`, `+`, `-`). The keys Alt+Z/X are caught by a handler in front of the BAR build menu (`gridmenu_key`), because the build menu otherwise eats them when a builder is selected; in addition the action `buildspacing` is registered. The preview shows frames and models (at most 150) for all positions.
 
+### 9.4b Restriction marks (option `restrict`)
+- Without the option nothing changes (the BluePrinter). With it: every symbol has an X box in its upper right corner (`u:xBox(ix, iy)` = 0.3 of the symbol; `u:xAt(rect, mx, my)` returns the index of the tile whose X is under the mouse); a forbidden unit (`isBanned`) is drawn dimmed with a big red X and its box is red, its title line gets "  - forbidden".
+- `u:filterRects` adds after every faction, group and tech button a small X rectangle (kind `factionx`, `groupx`, `techx`, `label = "X"`, tinted red when everything it stands for is forbidden; the button is tinted red too and keeps room for the X with the field `reserve`). `u:namesOf(kind, value)` lists the names it stands for **right now**: faction = all groups and tech levels of it, group = all tech levels of that group of the chosen faction, tech = all factions and groups of that level (the level as the menu counts it). `u:applyFilter` turns these kinds into `setBanned(names, not allBanned(names))`. The state is never stored here: it is computed from the list at every drawing, so an X goes off when one unit of it is allowed and on when the last one is forbidden.
+- The host passes the rectangles to `M.drawButtons` and `M.drawTip` and tests clicks from the last to the first, so the X (appended after its button) wins over the button.
+
 ### 9.5 Damage and time per shot (`M.shotInfo`)
 - For every weapon of the unit: damage per projectile = damage in the default armor class (`default`). **Anti-air weapons** carry only 1 (or a fraction) there in BAR and the actual damage in the armor class `vtol`; if the `vtol` damage is higher, it counts, the weapon is anti-air and the display gets the suffix "air" (e.g. `(0.9 s/shot - 125 damage air)`). If a unit has ground and air weapons, the ground weapons take priority. Projectiles per second = `projectiles × salvoSize / reload` (as with the DPS figure).
 - The **reciprocal** is shown, that is the **seconds per shot** (`reload / (projectiles × salvoSize)`), because then you do not have to convert in your head and the numbers get larger and smoother.
@@ -183,7 +188,7 @@ Sort key `rank = (filler 1000) + (water 100) + kind`, then alphabetically by nam
 - `M.paintChain(d, x, z, place)`: painting (hold the left mouse button and move) in both widgets: `d = { x, z, sx, sz }` is the last point of the stroke and the distance to the next (a footprint plus spacing, per axis); the function moves `d` towards (x, z) in steps of exactly that distance along the straight line and calls `place(px, pz)` for every step (at most 200 per call), so a fast mouse leaves no gaps.
 - `M.tooltipBox(text, x, y)` and `M.drawTip(rects, mx, my)`: tooltip for buttons with the field `tip`; lines wider than 30 % of the screen (at most 700 px) wrap into several lines, explicit line breaks stay. `M.drawButtons` respects a field `fs` (own font size per button), `icon` (symbol left in the button) and `tint = { r, g, b }` (fixed color instead of the active/inactive colors, e.g. reddish for a search field with text).
 - `M.drawHelp(title, sections, footer)`: help board over the screen; `sections = { { "Title", { { "Key", "Explanation" }, ... } }, ... }`. Two columns (sections distributed by line count), key column at most 45 % of the column width, long explanations are wrapped, font `max(19·S, screen height · 0.0155)`. If the board would be too tall for the screen the font is shrunk step by step until it fits; if the minimap frame (top left, drawn by BAR above the widgets) would overlap, the board stays below it. The host calls it last in `DrawScreen` (above the menu) and closes it with every click.
-- `M.drawButtons` shrinks the font of a button if the text does not fit.
+- `M.drawButtons` shrinks the font of a button if the text does not fit; the field `reserve` of a button keeps that much room free at its right end for something else (the X of a filter button). `M.drawTip` takes the last rectangle with a `tip` under the mouse (the one drawn on top).
 - `M.shortNumber(n)`: 950, 12.4k, 250k (labels with little space, e.g. the cost on the blueprint tiles).
 - `M.blueprintCost(units)`: sum of metal, energy, build effort and count of all units of a blueprint (computed once per table). When hovering over a tile the tile grid shows name, count and cost below the panel (29·S / 26·S, distances 40/78·S below the panel).
 

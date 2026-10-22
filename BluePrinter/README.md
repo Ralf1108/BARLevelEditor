@@ -14,7 +14,7 @@ cost and build time apply as usual.
 ## Installing
 1. BAR must be installed (launcher started once).
 2. Run `install_blueprinter.bat`. It copies `bluePrinter.lua` to `data\LuaUI\Widgets`, the shared code
-   `shared/editor_common.lua` to `data\LuaUI\Include` and creates the junctions `data\LuaUI\Config\BluePrinter` -> `blueprints` and `data\LuaUI\Config\LevelEditorBlueprints` -> blueprints of the Level Editor (BAR only allows user widgets to write under `LuaUI\Config` and to read under `LuaUI`). An old junction `data\BluePrinter` is removed.
+   `shared/editor_common.lua` and `shared/bar_rules.lua` to `data\LuaUI\Include` and creates the junctions `data\LuaUI\Config\BluePrinter` -> `blueprints` and `data\LuaUI\Config\LevelEditorBlueprints` -> blueprints of the Level Editor (BAR only allows user widgets to write under `LuaUI\Config` and to read under `LuaUI`). 
    The folder `shared` must lie next to `BluePrinter`.
 3. In the game switch on "Allow user widgets" in the settings, then switch BluePrinter on in the widget list (F11).
 After a change to `bluePrinter.lua` run the installation again.

@@ -1,6 +1,6 @@
 # BAR Level Editor
 
-A level editor for [Beyond All Reason](https://www.beyondallreason.info/) (BAR). Place units, buildings, trees, rocks and wrecks on any map with the mouse, generate whole armies or mazes in one drag, build **tower defense** levels, and turn the result into a ready-to-play **scenario** that others can start with their own BAR.
+A level editor for [Beyond All Reason](https://www.beyondallreason.info/) (BAR). Place units, buildings, trees, rocks and wrecks on any map with the mouse, generate whole armies or mazes in one drag, build **tower defense** or **capture the flag** levels, and turn the result into a ready-to-play **scenario** that others can start with their own BAR.
 
 ![Level Editor: Place menu with units](docs/level-editor-place-units.jpg)
 
@@ -11,6 +11,7 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/) (BAR).
 - [Features](#features)
 - [Scenario builder](#scenario-builder)
 - [Tower Defense](#tower-defense)
+- [Capture the Flag](#capture-the-flag)
 - [BluePrinter (for the official game)](#blueprinter-for-the-official-game)
 - [Experimental: area attacks](#experimental-area-attacks-xl-xr-xc)
 - [Documentation](#documentation)
@@ -46,7 +47,11 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 | Place many | Hold the left mouse button and move: one is placed after every footprint. **Shift + drag** places a row, **Shift + Alt + drag** a rectangle, **Shift + mouse wheel** changes the spacing, **[** and **]** rotate. The button **W** decides whether occupied spots are overwritten (default) or left free. |
 | Random army | **G** (Generate) → choose faction / type / tech / count, press *Rectangle* or *Circle* and drag on the map. |
 | Maze | **G → Maze**, choose the material and the corridor width, press *Rectangle* or *Circle*, drag on the map. |
+| Select, order | Click or drag a rectangle: units of **every team** are selected like your own (the editor switches on the god mode for it), the command menu appears and the right click orders them (move, attack ...). A left click on the ground clears the selection. |
+| Forbid units | The small **X** on a unit picture, a faction, a group or a tech button (Place menu, Units) forbids it for the player in the game (Start test, scenario). The editor itself can always place everything. |
 | Tower Defense | **TD** → build walls and corridors, set **Spawn**, **Waypoint**s and **Goal**, define waves and restrictions → **Start test**. See [Tower Defense](#tower-defense). |
+| Capture the Flag | **CF** → choose a team in the strip at the left, place its **collection points** and **flag points**, set the income → **Start test**. See [Capture the Flag](#capture-the-flag). |
+| Move | **Alt + drag** on a selected unit moves the selection; the arrow keys move it by one grid step. |
 | Delete | **Del** on the selection or under the mouse; **DL / DR / DC** delete along a line, in a rectangle or in a circle. |
 | Copy, cut, paste | **Ctrl+C**, **Ctrl+X**, **Ctrl+V** (pastes at the mouse). |
 | Undo / redo | **Ctrl+Z** / **Ctrl+Y** for everything (placing, deleting, moving, generating ...). |
@@ -63,11 +68,13 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Generate** random units, buildings, turrets, air or ships in a rectangle or circle, or a **random maze** of dragon teeth or walls.
 - **Copy, paste, move, rotate and mirror**, with undo and redo for everything.
 - **Delete** along a line, in a rectangle or in a circle; **FX / FD** make buildings indestructible or destructible again.
-- **Teams:** pick the team (and neutral) next to the menu, with a live unit count per team; up to 32,000 units.
+- **Teams:** pick the team (and neutral or Gaia) next to the menu, with a live unit count per team; up to 32,000 units (Gaia has at most 500: the engine fixes it, use neutral for many neutral units).
+- **Select and command units of every team:** the editor switches on the cheat and god mode for all teams, so enemies are selected like your own, the game's command menu appears and the right click gives orders.
+- **Restrictions:** one list of what the player may not build, set with small X marks in the Place menu (on units, factions, groups, tech levels), shared with the Tower Defense page, enforced in every mode.
 - **Save and load** levels with Ctrl+S, autosave when you leave.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others play with their own BAR.
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
-- **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human.
+- **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human. It excludes Tower Defense in the same level.
 
 | Blueprints | Generate: units | Generate: maze |
 |---|---|---|
@@ -77,7 +84,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 
 A level you built can become a **scenario** that others play with their own, unmodified Beyond All Reason:
 
-1. Build the level (units, buildings, trees, wrecks, a maze ...) and save it with **Ctrl+S**. For a Tower Defense scenario set up the **TD** page first.
+1. Build the level (units, buildings, trees, wrecks, a maze ...) and save it with **Ctrl+S**. For a Tower Defense or Capture the Flag scenario set up the **TD** or **CF** page first (a level has one of them, not both). Forbidden units (the X marks of the Place menu) are packed too.
 2. Click **I** (information) and fill in the scenario info: title, author, summary, briefing, the role of every team (player, allied AI, enemy AI), the allowed tech levels per team, AI behavior, win condition, start metal and energy, an optional grace period and an ID. It is stored in the level with the next Ctrl+S.
 3. Start **BAR Level Editor** again and press **3** (*create a scenario package*), then choose the level. The script then:
    - lists the **values stored in the level**,
@@ -100,19 +107,21 @@ Waves of enemy land units walk from a spawn point through waypoints to a goal; t
 - **Waves:** per wave the factions, tech levels and types (vehicles, bots, hovercraft), count, gap in seconds and strength in percent. Every kill pays the unit's metal and energy. How many enemies may get through is set too: more and the level is lost, all waves beaten and it is won.
 - **Restrictions:** what the player may build. Towers always; **Economy** (extractors, power plants, storage) and **Fog of war** (radars) can be switched on or off. A red X on a tower forbids it, a red X on T1, T2 or T3 forbids every unit of that tech level. The same red X marks are in the Place menu on every unit picture and on the faction, group and tech buttons: one list of what the player may not build, for the whole level and every mode. The player has no commander, the builders come from the level.
 - **Start test** runs the waves in the editor; **Stop** brings the level back to the state before.
-- **As a scenario:** a level with Tower Defense switched on becomes a Tower Defense scenario with everything above (see [Scenario builder](#scenario-builder)); the recipient's starter builds a small extra game that only adds the wave script.
+- **As a scenario:** a level with Tower Defense switched on becomes a Tower Defense scenario with everything above (see [Scenario builder](#scenario-builder)); the recipient's starter builds a small extra game that only adds the wave script (and the restrictions, if the level has any).
 
 Details are in the [Level Editor manual](LevelEditor/README.md#tower-defense) and the [specification](LevelEditor/SPECIFICATION.md).
 
 ## Capture the Flag
 
-Flags (the silver pods of the scavengers) lie on the map; units pick them up by getting close, carry them to the collection point of their team and earn metal for it. Switch it on with the **CF** button:
+Flags (the silver pods of the scavengers) lie on the map; units pick them up by getting close, carry them to a collection point of their team and earn metal for it. Switch it on with the **CF** button (it excludes Tower Defense: switching one on switches the other off):
 
 ![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)
 
-- **Flags per team** (the other teams steal them) or **neutral flags** (placed for Gaia: everybody takes them), set per flag point.
-- **Income:** metal *per second* for every flag that lies at the collection point of a team. A delivered flag stays there and other teams can steal it; a carried flag pays nothing. If the carrier is destroyed the flag is dropped where it died.
-- Any number of **flag points** and one **collection point** per team, placed with a click on the map; capture radius, return time of a dropped flag and the number of flags that win are settings of the page.
+- **Places:** the buttons at the top of the page place **collection points** and **flag points** for the team chosen in the strip at the left; any number of both, per team. A flag point of a team is a flag of that team (the other teams take it); a flag point placed for **Gaia (G)** is neutral: every team may take it. **Alt + drag** moves a point (like units), Ctrl+Z undoes it.
+- **Income:** metal *per second* for every flag that lies at a collection point of a team. A delivered flag stays there and other teams can steal it; a carried flag pays nothing. There is no one-time reward and no experience.
+- **Carrier:** the unit that carries a flag cannot shoot; if it is destroyed (own or enemy) the flag is dropped where it died and stays there until a unit takes it (or goes back to its flag point after a time you can set).
+- **Win and loss:** the first team that holds the set number of flags at the same time wins. A team whose flags all lie at the collection points of others has lost: its units blow up.
+- Capture radius, income, the flags that win and the time after which a dropped flag goes back are settings of the page; the flags can be shown on the whole map and the minimap (team colors, grey = neutral).
 - **Start test** runs it in the editor; as a scenario it is packed with the level. For human against human; computer opponents do not play it.
 
 Details are in the [Level Editor manual](LevelEditor/README.md#capture-the-flag) and the [specification](LevelEditor/SPECIFICATION.md).
