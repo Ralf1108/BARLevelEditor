@@ -7,7 +7,7 @@ function Get-EditorStamp([string]$here, [string]$game) {
     $sha = [Security.Cryptography.SHA256]::Create()
     $bytes = New-Object System.Collections.Generic.List[byte]
     $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($game))
-    $paths = @($EditorFiles | ForEach-Object { Join-Path $here $_ }) + @($SharedFiles | ForEach-Object { Join-Path (Join-Path (Split-Path $here -Parent) 'shared') $_ })
+    $paths = @($EditorFiles | ForEach-Object { Join-Path $here $_ }) + @($SharedFiles | ForEach-Object { Join-Path (Join-Path (Split-Path (Split-Path $here -Parent) -Parent) 'shared') $_ })
     foreach ($p in $paths) {
         if (-not (Test-Path $p)) { return $null }
         $bytes.AddRange([IO.File]::ReadAllBytes($p))

@@ -8,7 +8,7 @@ This manual describes the editor part by part. The short version for newcomers i
 1. Download or clone the repository and keep the folders `LevelEditor` and `shared` next to each other.
 2. Run `install_editor.bat`. It searches BAR on all fixed drives (e.g. C:\Games, D:\Games, Program Files) and finds BAR and the engine, determines the installed game version, builds the extra game `data\games\LevelEditorMod.sdz` ("Level Editor", builds on the official BAR), creates the junctions `data\LevelEditor` -> `levels` and `data\LevelEditorBlueprints` -> `blueprints`, writes `start_level_editor.bat` and creates the desktop shortcut "BAR Level Editor".
 3. After a BAR update or changes to the widget or gadget you do not have to run `install_editor.bat` again: `start_level_editor.bat` (and the desktop icon) compares a fingerprint of the files and the game version with the one of the last setup before every start and runs the setup by itself when they differ (not while a game is running).
-4. Removing it again: run `uninstall_editor.bat` (it asks first). It removes the extra game, the two junctions in the game folder, the desktop icon, `start_level_editor.bat`, the start script and the cached map files (`last_map.txt`, `maps_online_cache.json`). Saved levels and blueprints stay in the folders `levels` and `blueprints`, the official game is not touched. With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
+4. Removing it again: run `uninstall_editor.bat` (it asks first). It removes the extra game, the two junctions in the game folder, the desktop icon, `start_level_editor.bat`, the start script and the remembered map files (`Last Map.txt`, `Online Maps Cache.json` in `%LOCALAPPDATA%\BAR-Level-Editor`). Saved levels and blueprints stay in the folders `levels` and `blueprints`, the official game is not touched. With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
 
 ## Starting
 Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). The start menu is always shown (arrow up/down and Enter, or a digit key):
@@ -70,19 +70,20 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - The button **O** opens the settings: the **grid** size (1 = free, 4, 8, 16, 32, 64 Elmo), the **unit limit** (500 to 32000; saved in the level file as `unitlimit` and used as `maxunits` by the scenario package; the editor itself always runs with 32000), columns and rows for the blueprint view and for the units view (default 3 columns and 4 rows each). The values are stored in `LuaUI\Config\LevelEditorUI.lua` in the game folder. Below them is the level list: **Load**, **Save** (a second click confirms) and **Save as new**; loading clears the map and sets the level up again. `/led_clear` only clears up.
 
 ## Files
-- `lvl_level_editor.lua` - widget (controls, saving, loading)
-- `unit_level_editor.lua` - gadget (places, deletes, blows up, build mode)
-- `td_waves.lua` - gadget of the Tower Defense waves and the restriction to towers (also used by Tower Defense scenarios)
-- `unit_restrictions.lua`, `led_restrictions.lua` - gadget and list of the restrictions of the level (what the player may not build)
-- `ctf_game.lua` - gadget of Capture the Flag (flags, collection points, income; also used by scenarios)
-- `led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
-- `help_texts.lua` - texts of the help board (?) and of `/led_help`
-- `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list; `map_preview.ps1` draws the picture of the highlighted map next to the list with its size, number of players and terrain below it (and gives the data to the filters) (thumbnails of the game's lobby package, read directly, nothing is stored)
-- `install_editor.bat` / `install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
-- `ensure_installed.ps1`, `editor_stamp.ps1` - called by `start_level_editor.bat`: fingerprint of the packed files and the game version, runs the setup when it changed
-- `uninstall_editor.bat` / `uninstall_editor.ps1` - removal (levels and blueprints stay)
+- `scripts\lvl_level_editor.lua` - widget (controls, saving, loading)
+- `scripts\unit_level_editor.lua` - gadget (places, deletes, blows up, build mode)
+- `scripts\td_waves.lua` - gadget of the Tower Defense waves and the restriction to towers (also used by Tower Defense scenarios)
+- `scripts\unit_restrictions.lua`, `scripts\led_restrictions.lua` - gadget and list of the restrictions of the level (what the player may not build)
+- `scripts\ctf_game.lua` - gadget of Capture the Flag (flags, collection points, income; also used by scenarios)
+- `scripts\led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
+- `scripts\help_texts.lua` - texts of the help board (?) and of `/led_help`
+- `scripts\choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; the last chosen map (`Last Map.txt`) and the cached map list (`Online Maps Cache.json`) are kept in `%LOCALAPPDATA%\BAR-Level-Editor`; `scripts\map_preview.ps1` draws the picture of the highlighted map next to the list with its size, number of players and terrain below it (and gives the data to the filters) (thumbnails of the game's lobby package, read directly, nothing is stored)
+- `install_editor.bat` / `scripts\install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
+- `scripts\ensure_installed.ps1`, `scripts\editor_stamp.ps1` - called by `start_level_editor.bat`: fingerprint of the packed files and the game version, runs the setup when it changed
+- `uninstall_editor.bat` / `scripts\uninstall_editor.ps1` - removal (levels and blueprints stay)
 - `start_level_editor.bat` - start (created by the setup)
-- `check_links.ps1` - called by `start_level_editor.bat` before every start: points the two junctions to the `levels` and `blueprints` folders again if the project folder was moved
+- `scripts\check_links.ps1` - called by `start_level_editor.bat` before every start: points the two junctions to the `levels` and `blueprints` folders again if the project folder was moved
+- `scripts\` - all PowerShell and Lua files of the editor (the main folder only has the three `.bat` files, the two manuals and what the setup creates: `start_level_editor.bat` and `editor_script_installed.txt`)
 - `scenario\` - scenario builder (start menu key 3, see `scenario\README.md`)
 - `levels\` - saved levels; `blueprints\` - saved layouts
 - `..\shared\` - shared code of the Level Editor and the BluePrinter (blueprint view, units menu, settings, 3D preview, rules); the folder must lie next to `LevelEditor`, `install_editor.bat` packs the files into the extra game.

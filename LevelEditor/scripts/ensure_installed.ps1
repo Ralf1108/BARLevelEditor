@@ -2,7 +2,8 @@
 # match the files of this folder (changed code, new BAR version). Nothing is done while the game is running (it holds the file).
 param([Parameter(Mandatory)][string]$Data)
 $here = $PSScriptRoot
-. (Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_common.ps1')
+$repo = Split-Path (Split-Path $here -Parent) -Parent   # repository
+. (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
 . (Join-Path $here 'editor_stamp.ps1')
 $game = Get-GameVersion $Data
 $sdz = Join-Path $Data 'games\LevelEditorMod.sdz'

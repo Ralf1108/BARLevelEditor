@@ -1,14 +1,17 @@
 # Removes the Level Editor again, the way install_editor.ps1 set it up.
 # Run through uninstall_editor.bat. The official game stays unchanged. Saved levels and blueprints are kept:
-# they live in the folders levels and blueprints next to this script; only the junctions to them are removed.
+# they live in the folders levels and blueprints of the LevelEditor folder; only the junctions to them are removed.
 # -Yes: without asking. -WithSettings: also delete the editor's settings files in the game folder (LuaUI\Config).
 param([switch]$Yes, [switch]$WithSettings)
 $ErrorActionPreference = 'Stop'
-$here = $PSScriptRoot
+$here = $PSScriptRoot                    # scripts
+$root = Split-Path $here -Parent        # LevelEditor
+$repo = Split-Path $root -Parent        # repository
+$userDir = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor'   # last map and cache of the map list
 
 function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
-$common = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_common.ps1'
-if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to this folder)." -ForegroundColor Red; exit 1 }
+$common = Join-Path (Join-Path $repo 'shared') 'bar_common.ps1'
+if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to the folder LevelEditor)." -ForegroundColor Red; exit 1 }
 . $common
 
 # ---------------------------------------------------------------- Find BAR (as during setup)
@@ -25,10 +28,10 @@ $items = @(
     @{ Path = (Join-Path $data 'LevelEditor'); Text = 'Junction data\LevelEditor (the levels themselves stay in levels)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorBlueprints'); Text = 'Junction data\LevelEditorBlueprints (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
     @{ Path = (Join-Path $desktop 'BAR Level Editor.lnk'); Text = 'Desktop shortcut "BAR Level Editor"'; Kind = 'file' },
-    @{ Path = (Join-Path $here 'start_level_editor.bat'); Text = 'start_level_editor.bat'; Kind = 'file' },
-    @{ Path = (Join-Path $here 'editor_script_installed.txt'); Text = 'editor_script_installed.txt (start script)'; Kind = 'file' },
-    @{ Path = (Join-Path $here 'last_map.txt'); Text = 'last_map.txt (last chosen map)'; Kind = 'file' },
-    @{ Path = (Join-Path $here 'maps_online_cache.json'); Text = 'maps_online_cache.json (cached map list)'; Kind = 'file' }
+    @{ Path = (Join-Path $root 'start_level_editor.bat'); Text = 'start_level_editor.bat'; Kind = 'file' },
+    @{ Path = (Join-Path $root 'editor_script_installed.txt'); Text = 'editor_script_installed.txt (start script)'; Kind = 'file' },
+    @{ Path = (Join-Path $userDir 'Last Map.txt'); Text = 'Last Map.txt (last chosen map, in %LOCALAPPDATA%\BAR-Level-Editor)'; Kind = 'file' },
+    @{ Path = (Join-Path $userDir 'Online Maps Cache.json'); Text = 'Online Maps Cache.json (cached map list, in %LOCALAPPDATA%\BAR-Level-Editor)'; Kind = 'file' }
 )
 if ($WithSettings) {
     foreach ($n in 'LevelEditorRecent.lua', 'LevelEditorUI.lua') {
@@ -41,7 +44,7 @@ $found = @($items | Where-Object { Test-Path -LiteralPath $_.Path })
 if ($found.Count -eq 0) { Write-Host 'Nothing to remove, the Level Editor is not set up.'; exit 0 }
 foreach ($i in $found) { Write-Host "  - $($i.Text)" }
 Write-Host ''
-Write-Host "Kept: levels ($(Join-Path $here 'levels')), blueprints ($(Join-Path $here 'blueprints')), this folder and the official game."
+Write-Host "Kept: levels ($(Join-Path $root 'levels')), blueprints ($(Join-Path $root 'blueprints')), this folder and the official game."
 if (-not $Yes) {
     $a = Read-Host 'Remove now? (y/n)'
     if ($a.Trim().ToLower() -notin @('y', 'yes', 'j', 'ja')) { Write-Host 'Aborted, nothing changed.'; exit 0 }

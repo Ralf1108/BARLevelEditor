@@ -7,11 +7,13 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$here = $PSScriptRoot
+$here = $PSScriptRoot                    # scripts
+$root = Split-Path $here -Parent        # LevelEditor
+$repo = Split-Path $root -Parent        # repository
 
 function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
-$common = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_common.ps1'
-if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to this folder)." -ForegroundColor Red; exit 1 }
+$common = Join-Path (Join-Path $repo 'shared') 'bar_common.ps1'
+if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to the folder LevelEditor)." -ForegroundColor Red; exit 1 }
 . $common
 . (Join-Path $here 'editor_stamp.ps1')
 
@@ -34,12 +36,12 @@ Write-Host "Game: $game"
 # ---------------------------------------------------------------- 4. Build the extra game (zip)
 Step 'Build the extra game "Level Editor"'
 foreach ($f in $EditorFiles) {
-    if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (LevelEditor folder copied completely?)" }
+    if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (the folder scripts copied completely?)" }
 }
 # shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
-$sharedFile = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'editor_common.lua'
+$sharedFile = Join-Path (Join-Path $repo 'shared') 'editor_common.lua'
 if (-not (Test-Path $sharedFile)) { Fail "File missing: editor_common.lua (copy the shared folder next to LevelEditor as well)" }
-$rulesFile = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_rules.lua'
+$rulesFile = Join-Path (Join-Path $repo 'shared') 'bar_rules.lua'
 if (-not (Test-Path $rulesFile)) { Fail "File missing: bar_rules.lua (copy the shared folder next to LevelEditor as well)" }
 $gamesDir = Join-Path $data 'games'
 New-Item -ItemType Directory -Force $gamesDir | Out-Null
@@ -95,12 +97,12 @@ if ($Quick) { exit 0 }
 
 # ---------------------------------------------------------------- 5. Folder for saved levels
 Step 'Folder for saved levels'
-$levels = Join-Path $here 'levels'
+$levels = Join-Path $root 'levels'
 New-Item -ItemType Directory -Force $levels | Out-Null
 Set-Junction (Join-Path $data 'LevelEditor') $levels
 
 # Blueprints (Create / blueprint menu): own folder with its own junction
-$bpDir = Join-Path $here 'blueprints'
+$bpDir = Join-Path $root 'blueprints'
 New-Item -ItemType Directory -Force (Join-Path $bpDir '_trash') | Out-Null
 Set-Junction (Join-Path $data 'LevelEditorBlueprints') $bpDir
 Write-Host "Levels: $levels, blueprints: $bpDir"
@@ -120,15 +122,15 @@ if not defined ENGINE (
 	echo No engine found.
 	pause & exit /b 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%L%ensure_installed.ps1" -Data "%DATA%"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%L%check_links.ps1" -Data "%DATA%"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%L%choose_map.ps1" -Data "%DATA%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\ensure_installed.ps1" -Data "%DATA%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\check_links.ps1" -Data "%DATA%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\choose_map.ps1" -Data "%DATA%"
 if errorlevel 1 exit /b 1
 "%ENGINE%\spring.exe" --write-dir "%DATA%" "%L%editor_script_installed.txt"
 echo Done. Saved levels are in %L%levels
 endlocal
 "@
-Set-Content -Path (Join-Path $here 'start_level_editor.bat') -Value $bat -Encoding ASCII
+Set-Content -Path (Join-Path $root 'start_level_editor.bat') -Value $bat -Encoding ASCII
 Write-Host 'start_level_editor.bat written.'
 
 # ---------------------------------------------------------------- 7. Desktop shortcut
@@ -137,8 +139,8 @@ $desktop = [Environment]::GetFolderPath('Desktop')
 $wsh = New-Object -ComObject WScript.Shell
 $barExe = Join-Path $bar 'Beyond-All-Reason.exe'
 $lnk = $wsh.CreateShortcut((Join-Path $desktop 'BAR Level Editor.lnk'))
-$lnk.TargetPath = Join-Path $here 'start_level_editor.bat'
-$lnk.WorkingDirectory = $here
+$lnk.TargetPath = Join-Path $root 'start_level_editor.bat'
+$lnk.WorkingDirectory = $root
 $lnk.Description = 'Start Beyond All Reason with the Level Editor (map selection)'
 if (Test-Path $barExe) { $lnk.IconLocation = "$barExe,0" }
 $lnk.Save()

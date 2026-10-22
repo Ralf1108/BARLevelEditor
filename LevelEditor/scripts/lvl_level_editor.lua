@@ -253,8 +253,8 @@ local scenario = nil -- Info of the loaded scenario or one created in the game
 local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
 local currentLevel = nil -- Name of the level loaded or saved last
 local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke = nil, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
-local rst -- restrictions of the level (what the player may not build): LevelEditor/led_restrictions.lua, created below (data = section restrictions of the level file)
-local ctf -- Capture the Flag page (button CF): LevelEditor/led_ctf.lua, created below (data = section capture of the level file)
+local rst -- restrictions of the level (what the player may not build): LevelEditor/scripts/led_restrictions.lua, created below (data = section restrictions of the level file)
+local ctf -- Capture the Flag page (button CF): LevelEditor/scripts/led_ctf.lua, created below (data = section capture of the level file)
 
 local function decodeBlock(block)
 	local body = block and block:match("%[==%[(.*)%]==%]")
@@ -3627,12 +3627,12 @@ function gen.disarmAll()
 	ctf.endPick()
 end
 
--- Restrictions of the level (LevelEditor/led_restrictions.lua)
+-- Restrictions of the level (LevelEditor/scripts/led_restrictions.lua)
 rst = VFS.Include("luaui/Include/led_restrictions.lua", nil, VFS.ZIP_FIRST)({
 	serialize = function(v) return td.lua(v, "\t") end,
 })
 
--- Capture the Flag page (LevelEditor/led_ctf.lua): gets the services of the widget
+-- Capture the Flag page (LevelEditor/scripts/led_ctf.lua): gets the services of the widget
 ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 	Shared = Shared,
 	S = function() return S end,

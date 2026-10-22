@@ -4,17 +4,20 @@
 #   1 = new level (choose a map from the list, search while typing)
 #   2 = load an existing level (saved levels from the levels folder, search while typing)
 #   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\start_scenario.ps1)
-# Writes editor_script_installed.txt (and for "load" levels\_autoload.txt). Return value 1 on abort.
+# Writes editor_script_installed.txt in the LevelEditor folder (and for "load" levels\_autoload.txt); remembers the last map and the map list in
+# %LOCALAPPDATA%\BAR-Level-Editor. Return value 1 on abort.
 # Call: choose_map.ps1 -Data <BAR\data>
 # Tests without a keyboard: -Test "searchtext" (maps), -TestLevels (saved levels), -TestScenarios (built scenarios), -TestPreview "map name" (draws its preview)
 param([Parameter(Mandatory = $true)][string]$Data, [string]$Test = $null, [switch]$TestLevels, [switch]$TestScenarios, [switch]$TestMenu, [switch]$TestOnline, [string]$TestDownload = $null, [string]$TestPreview = $null, [string]$MapsDir = $null)
 $ErrorActionPreference = 'Stop'
-$here = $PSScriptRoot
-$levelsDir = Join-Path $here 'levels'
+$here = $PSScriptRoot                    # scripts
+$root = Split-Path $here -Parent        # LevelEditor (levels, scenario, the generated start script)
+$userDir = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor'   # what the editor remembers for the user: last map, cache of the map list
+$levelsDir = Join-Path $root 'levels'
 . (Join-Path $here 'map_preview.ps1')
 $pvOk = Initialize-MapPreview $Data   # thumbnails from the lobby package of the game (map_preview.ps1); $false = no previews
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
-$lastFile = Join-Path $here 'last_map.txt'
+$lastFile = Join-Path $userDir 'Last Map.txt'
 
 # ---------------------------------------------------------------- installed maps from the archive cache
 $cache = Get-ChildItem (Join-Path $Data 'cache') -Filter 'ArchiveCache*.lua' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
@@ -46,7 +49,7 @@ if (-not $MapsDir) { $MapsDir = Join-Path $Data 'maps' }
 # ---------------------------------------------------------------- all BAR maps (online) together with the installed ones
 $onlineOk = $false
 $onlineMaps = @()
-$jsonCache = Join-Path $here 'maps_online_cache.json'
+$jsonCache = Join-Path $userDir 'Online Maps Cache.json'
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $ProgressPreference = 'SilentlyContinue'
@@ -55,6 +58,7 @@ try {
     if ($content -is [byte[]]) { $content = [Text.Encoding]::UTF8.GetString($content) }
     $parsed = ConvertFrom-Json -InputObject $content
     $onlineMaps = @($parsed | ForEach-Object { $_ })
+    New-Item -ItemType Directory -Force $userDir | Out-Null
     [IO.File]::WriteAllText($jsonCache, $content, (New-Object Text.UTF8Encoding($false)))
     $onlineOk = $true
 } catch {
@@ -180,7 +184,7 @@ function Get-Levels {
 # Built scenarios: folders scenario\scenarios\<id> with a scenario.txt (made by key 3); newest first
 function Get-Scenarios {
     $res = @()
-    $dir = Join-Path $here 'scenario\scenarios'
+    $dir = Join-Path $root 'scenario\scenarios'
     if (-not (Test-Path $dir)) { return $res }
     foreach ($d in Get-ChildItem $dir -Directory) {
         $start = Join-Path $d.FullName 'start_scenario.ps1'
@@ -466,7 +470,7 @@ function Write-StartScript([string]$mapSpring) {
 	nohelperais=0;
 }
 "@
-    [IO.File]::WriteAllText((Join-Path $here 'editor_script_installed.txt'), $script, (New-Object Text.UTF8Encoding($false)))
+    [IO.File]::WriteAllText((Join-Path $root 'editor_script_installed.txt'), $script, (New-Object Text.UTF8Encoding($false)))
 }
 
 function Set-Autoload([string]$name) {
@@ -579,7 +583,7 @@ while ($true) {
         $chosen = Show-Chooser $levels 'Create a scenario package: choose a level' 'Type to search, arrow up/down, Enter = build, Esc = back' $null { param($l) $l.Map }
         if (-not $chosen) { continue }
         Clear-Host
-        $maker = Join-Path $PSScriptRoot 'scenario\scenario_builder.ps1'
+        $maker = Join-Path $root 'scenario\scenario_builder.ps1'
         & $maker -Level $chosen.Name -Auto -AskName
         Write-Host ''
         Write-Host 'Continue with any key.'
@@ -599,6 +603,7 @@ while ($true) {
                 continue
             }
         }
+        New-Item -ItemType Directory -Force $userDir | Out-Null
         Set-Content -Path $lastFile -Value $chosen.Spring -Encoding ASCII
         Write-StartScript $chosen.Spring
         if (Test-Path $autoloadFile) { Remove-Item $autoloadFile -Force }
