@@ -218,6 +218,27 @@ public class SplitDpi { [DllImport("user32.dll")] public static extern bool SetP
     return $res
 }
 
+# Split screen: asks for the number of players (2 to $max, typed digits); Enter without digits = $max, Esc = $null (back)
+function Read-PlayerCount([int]$max, [int]$teams) {
+    $buf = ''
+    Write-Host "Split screen: the scenario has $teams teams."
+    while ($true) {
+        Write-Host ("`rHow many players (2 to $max, Enter = $max, Esc = back): $buf ") -NoNewline
+        $k = [Console]::ReadKey($true)
+        if ($k.Key -eq 'Escape') { Write-Host ''; return $null }
+        if ($k.Key -eq 'Enter') {
+            if ($buf -eq '') { Write-Host ''; return $max }
+            $n = [int]$buf
+            if ($n -ge 2) { Write-Host ''; return [Math]::Min($n, $max) }
+            $buf = ''   # 0 or 1 players: start again
+        } elseif ($k.Key -eq 'Backspace') {
+            if ($buf.Length -gt 0) { $buf = $buf.Substring(0, $buf.Length - 1) }
+        } elseif ($k.KeyChar -match '^\d$' -and $buf.Length -lt 2) {
+            $buf += [string]$k.KeyChar
+        }
+    }
+}
+
 # Split screen: the names of the local players in the lobby, by the cell of their window (TopLeft, TopRight, BottomLeft, ...; with 3 or 4 columns
 # Top1, Top2, ...)
 function Get-SplitNames([int]$n) {
@@ -551,10 +572,8 @@ while ($true) {
                 $maxP = [Math]::Min(8, $teams)
                 Clear-Host
                 if ($maxP -lt 2) { Write-Host 'This scenario has only one team, there is nobody to play against.' -ForegroundColor Yellow; Start-Sleep 2; continue }
-                $in = (Read-Host "How many players (2 to $maxP; the scenario has $teams teams; Enter = back)").Trim()
-                $players = 0
-                if (-not [int]::TryParse($in, [ref]$players) -or $players -lt 2) { $players = 0; continue }
-                $players = [Math]::Min($players, $maxP)
+                $players = Read-PlayerCount $maxP $teams
+                if (-not $players) { $players = 0; continue }
             }
             break
         }
@@ -572,10 +591,10 @@ while ($true) {
                     '-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k]))
             }
             & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath $barDir -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
-            exit 1
+            continue # the games ended: back to the menu
         }
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent) $how.Args
-        exit 1 # the scenario was played (or could not start): nothing else to start
+        continue # the game ended (or could not start): back to the menu, the next one can be tried at once
     }
 
     if ($mode -eq 4) {
