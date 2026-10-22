@@ -247,10 +247,29 @@ if ($Test -ne $null -and $Test -ne '') {
     exit 0
 }
 
+# ---------------------------------------------------------------- filters of the map list (data: mapDetails.lua of the lobby package, see map_preview.ps1)
+# A map without data is hidden as soon as a filter is set
+function New-MapFilter([string]$name, [string[]]$values, [scriptblock]$test) { return @{ Name = $name; Values = (@('all') + $values); Test = $test } }
+$mapFilters = @(
+    (New-MapFilter 'Size' @('XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL') { param($m, $v) $d = Get-MapDetail $m.Spring; [bool]($d -and $d.Size -eq $v) }),
+    (New-MapFilter 'Players' @('2', '3-4', '5-6', '7-8', '9-12', '13-15', '16', '17+') {
+        param($m, $v)
+        $d = Get-MapDetail $m.Spring
+        if (-not $d -or $d.Players -lt 1) { return $false }
+        if ($v.EndsWith('+')) { return $d.Players -ge [int]$v.TrimEnd('+') }
+        $p = $v.Split('-')
+        return ($d.Players -ge [int]$p[0] -and $d.Players -le [int]$p[$p.Count - 1])
+    }),
+    (New-MapFilter 'Terrain' @('Flat', 'Hills', 'Water', 'Metal', 'Lava', 'Air', 'Asymmetrical') { param($m, $v) $d = Get-MapDetail $m.Spring; [bool]($d -and ($d.Terrain -contains $v)) })
+)
+
 # ---------------------------------------------------------------- selection with search while typing
 # Returns the chosen element, $null on Esc
-# $previewFn (optional): script block that returns the map name (Spring name) of an item; its picture is drawn right of the list
-function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewFn = $null) {
+# $previewFn (optional): script block that returns the map name (Spring name) of an item; its picture and a line with its size, players and
+#   terrain are drawn right of the list
+# $filters (optional): array of @{ Name; Values (first = 'all'); Test = { param($item, $value) ... } }; shown in a row above the search line,
+#   Tab / Shift+Tab choose a filter, Left/Right change its value
+function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewFn = $null, $filters = $null) {
     $items = @($items)
     $query = ''; $sel = 0; $offset = 0
     Clear-Host
@@ -263,45 +282,55 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
     $prev = @{}      # last drawn content per screen line; only changed lines are rewritten
     $lastW = -1; $lastH = -1
     $pvKey = $null   # what the preview area shows now
+    $filters = @($filters)
+    $fo = if ($filters.Count -gt 0 -and $filters[0]) { 1 } else { 0 }   # 1 = a row of filters above the search line
+    if ($fo -eq 0) { $filters = @() }
+    $fv = New-Object 'int[]' $filters.Count   # chosen value per filter (0 = all)
+    $fFocus = -1                              # filter that Left/Right change; -1 = none
+    $fKey = $null
     $fg0 = [Console]::ForegroundColor; $bg0 = [Console]::BackgroundColor
     while ($true) {
-        if ($resQuery -ne $query -or $null -eq $res) {
+        $rq = $query + '|' + ($fv -join ',')
+        if ($resQuery -ne $rq -or $null -eq $res) {
             $res = Get-Filtered $items $query $firstFn
-            $resQuery = $query
+            for ($j = 0; $j -lt $filters.Count; $j++) {
+                if ($fv[$j] -gt 0) { $fj = $filters[$j]; $fval = $fj.Values[$fv[$j]]; $res = @($res | Where-Object { & $fj.Test $_ $fval }) }
+            }
+            $resQuery = $rq
             $flags = New-Object 'bool[]' $res.Count
             if ($firstFn) { for ($i = 0; $i -lt $res.Count; $i++) { $flags[$i] = [bool](& $firstFn $res[$i]) } }
         }
         if ($sel -ge $res.Count) { $sel = [Math]::Max(0, $res.Count - 1) }
         $w = [Console]::WindowWidth - 1
         $h = [Console]::WindowHeight
-        if ($w -ne $lastW -or $h -ne $lastH) { $prev = @{}; $pvKey = $null; $lastW = $w; $lastH = $h; Clear-Host; Write-Host $title -ForegroundColor Cyan; Write-Host $hint -ForegroundColor DarkGray; Write-Host ''; $top = [Console]::CursorTop }
-        $rows = [Math]::Max(3, [Math]::Min(20, $h - $top - 4))
+        if ($w -ne $lastW -or $h -ne $lastH) { $prev = @{}; $pvKey = $null; $fKey = $null; $lastW = $w; $lastH = $h; Clear-Host; Write-Host $title -ForegroundColor Cyan; Write-Host $hint -ForegroundColor DarkGray; Write-Host ''; $top = [Console]::CursorTop }
+        $rows = [Math]::Max(3, [Math]::Min(20, $h - $top - 4 - $fo))
         # Preview: right of the list if the window is wide enough (the list keeps at least 55 characters)
         $lw = $w; $pvW = 0
         if ($previewFn -and $pvOk) {
-            $pvW = [Math]::Min(2 * ($rows + 2), 64)
+            $pvW = [Math]::Min(2 * ($rows + 1 + $fo), 64)
             if ($w - $pvW - 2 -lt 55) { $pvW = $w - 2 - 55 }
             if ($pvW -lt 20) { $pvW = 0 } else { $lw = $w - $pvW - 2 }
         }
         if ($sel -lt $offset) { $offset = $sel }
         if ($sel -ge $offset + $rows) { $offset = $sel - $rows + 1 }
-        # Build the lines: index 0 = search, 1 = counter, 2.. = lines of the list
-        $lines = New-Object 'string[]' ($rows + 2)
-        $kinds = New-Object 'int[]' ($rows + 2)   # 0 normal, 1 gelb, 2 grau, 3 markiert
-        $lines[0] = ('Search: ' + $query + '_'); $kinds[0] = 1
-        $lines[1] = ("{0} of {1}" -f $res.Count, $items.Count); $kinds[1] = 2
+        # Build the lines: index 0 = row of the filters (if there are any, drawn below), then search, counter, lines of the list
+        $lines = New-Object 'string[]' ($rows + 2 + $fo)
+        $kinds = New-Object 'int[]' ($rows + 2 + $fo)   # 0 normal, 1 gelb, 2 grau, 3 markiert
+        $lines[$fo] = ('Search: ' + $query + '_'); $kinds[$fo] = 1
+        $lines[$fo + 1] = ("{0} of {1}" -f $res.Count, $items.Count); $kinds[$fo + 1] = 2
         for ($i = 0; $i -lt $rows; $i++) {
             $idx = $offset + $i
             $line = ''
             if ($idx -lt $res.Count) {
                 $line = '  ' + $res[$idx].Label
                 if ($flags[$idx]) { $line += '  (last)' }
-                if ($idx -eq $sel) { $kinds[$i + 2] = 3 }
+                if ($idx -eq $sel) { $kinds[$i + 2 + $fo] = 3 }
             }
-            $lines[$i + 2] = $line
+            $lines[$i + 2 + $fo] = $line
         }
         [Console]::CursorVisible = $false
-        for ($i = 0; $i -lt $lines.Count; $i++) {
+        for ($i = $fo; $i -lt $lines.Count; $i++) {
             $t = $lines[$i]
             if ($t.Length -gt $lw) { $t = $t.Substring(0, $lw) }
             $key = [string]$kinds[$i] + $t
@@ -316,13 +345,42 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
             [Console]::Write($t.PadRight($lw))
             [Console]::ForegroundColor = $fg0; [Console]::BackgroundColor = $bg0
         }
+        if ($fo -gt 0) {
+            $k3 = ($fv -join ',') + "|$fFocus|$lw"
+            if ($k3 -ne $fKey) {
+                $fKey = $k3
+                [Console]::SetCursorPosition(0, $top)
+                $used = 0
+                for ($j = 0; $j -lt $filters.Count; $j++) {
+                    $seg = ('{0}: < {1} >' -f $filters[$j].Name, $filters[$j].Values[$fv[$j]])
+                    if ($used + $seg.Length + 3 -gt $lw) { break }
+                    if ($j -eq $fFocus) { [Console]::ForegroundColor = 'Black'; [Console]::BackgroundColor = 'Gray' }
+                    elseif ($fv[$j] -gt 0) { [Console]::ForegroundColor = 'Cyan' }
+                    else { [Console]::ForegroundColor = 'DarkGray' }
+                    [Console]::Write($seg)
+                    [Console]::ForegroundColor = $fg0; [Console]::BackgroundColor = $bg0
+                    [Console]::Write('   ')
+                    $used += $seg.Length + 3
+                }
+                $tipTxt = 'Tab = filters, Left/Right = change'
+                if ($used + $tipTxt.Length -le $lw) { [Console]::ForegroundColor = 'DarkGray'; [Console]::Write($tipTxt); $used += $tipTxt.Length; [Console]::ForegroundColor = $fg0 }
+                [Console]::Write(' ' * [Math]::Max(0, $lw - $used))
+            }
+        }
         if ($pvW -gt 0) {
             $spring = $null
             if ($res.Count -gt 0) { $spring = & $previewFn $res[$sel] }
             $k2 = "$spring|$pvW|$rows"
-            if ($k2 -ne $pvKey) { $pvKey = $k2; [void](Show-MapPreview $spring ($lw + 2) $top $pvW ($rows + 2)) }
+            if ($k2 -ne $pvKey) {
+                $pvKey = $k2
+                [void](Show-MapPreview $spring ($lw + 2) $top $pvW ($rows + 1 + $fo))
+                $cap = Get-MapInfoText $spring
+                if ($cap.Length -gt $pvW) { $cap = $cap.Substring(0, $pvW) }
+                [Console]::SetCursorPosition($lw + 2, $top + $rows + 1 + $fo)
+                [Console]::ForegroundColor = 'Cyan'; [Console]::Write($cap.PadRight($pvW)); [Console]::ForegroundColor = $fg0
+            }
         }
-        [Console]::SetCursorPosition(0, [Math]::Min($top + $rows + 2, $h - 1))
+        [Console]::SetCursorPosition(0, [Math]::Min($top + $rows + 2 + $fo, $h - 1))
         # Process the inputs; if several are pending (key held), process all first, then draw
         do {
             $k = [Console]::ReadKey($true)
@@ -333,6 +391,14 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
                 'DownArrow' { if ($sel -lt $res.Count - 1) { $sel++ } }
                 'PageUp'    { $sel = [Math]::Max(0, $sel - $rows) }
                 'PageDown'  { $sel = [Math]::Min([Math]::Max(0, $res.Count - 1), $sel + $rows) }
+                'Tab'       {
+                    if ($filters.Count -gt 0) {
+                        if ($k.Modifiers -band [ConsoleModifiers]::Shift) { $fFocus--; if ($fFocus -lt -1) { $fFocus = $filters.Count - 1 } }
+                        else { $fFocus++; if ($fFocus -ge $filters.Count) { $fFocus = -1 } }
+                    }
+                }
+                'LeftArrow' { if ($fFocus -ge 0) { $n = $filters[$fFocus].Values.Count; $fv[$fFocus] = ($fv[$fFocus] + $n - 1) % $n; $sel = 0; $offset = 0 } }
+                'RightArrow' { if ($fFocus -ge 0) { $n = $filters[$fFocus].Values.Count; $fv[$fFocus] = ($fv[$fFocus] + 1) % $n; $sel = 0; $offset = 0 } }
                 'Home'      { $sel = 0 }
                 'End'       { $sel = [Math]::Max(0, $res.Count - 1) }
                 'Backspace' { if ($query.Length -gt 0) { $query = $query.Substring(0, $query.Length - 1); $sel = 0; $offset = 0 } }
@@ -342,7 +408,7 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
             }
         } while ([Console]::KeyAvailable)
         # Limit the selection after the last key press (the search is recomputed above)
-        if ($resQuery -eq $query -and $sel -ge $res.Count) { $sel = [Math]::Max(0, $res.Count - 1) }
+        if ($resQuery -eq $rq -and $sel -ge $res.Count) { $sel = [Math]::Max(0, $res.Count - 1) }
     }
 }
 
@@ -454,7 +520,7 @@ while ($true) {
 
     if ($mode -eq 1) {
         $lastMap = $last
-        $chosen = Show-Chooser $maps ('New level: choose a map   (' + $maps.Count + ' maps, ' + @($maps | Where-Object { $_.Installed }).Count + ' installed)') 'Type to search, arrow up/down, Enter = start (missing maps are only downloaded then), Esc = back' { param($m) $m.Spring -eq $lastMap } { param($m) $m.Spring }
+        $chosen = Show-Chooser $maps ('New level: choose a map   (' + $maps.Count + ' maps, ' + @($maps | Where-Object { $_.Installed }).Count + ' installed)') 'Type to search, Tab = filters, arrow up/down, Enter = start (missing maps are only downloaded then), Esc = back' { param($m) $m.Spring -eq $lastMap } { param($m) $m.Spring } $mapFilters
         if (-not $chosen) { continue }
         if (-not $chosen.Installed) {
             Clear-Host

@@ -13,7 +13,7 @@ This manual describes the editor part by part. The short version for newcomers i
 ## Starting
 Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). The start menu is always shown (arrow up/down and Enter, or a digit key):
 - **0** continue the last state (the editor saves every 2 minutes and when leaving as `_last`),
-- **1** new level: choose a map (search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones),
+- **1** new level: choose a map (search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones; the picture of the highlighted map with its size, players and terrain is shown next to the list, and with **Tab** and **Left/Right** you filter by size, number of players and terrain),
 - **2** load an existing level (list from `levels`, with search),
 - **3** build a scenario package (ZIP) from a level,
 - **4** start one of the scenarios you built (choose it from the list; the starter of that folder runs, also for Tower Defense scenarios).
@@ -77,7 +77,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `ctf_game.lua` - gadget of Capture the Flag (flags, collection points, income; also used by scenarios)
 - `led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `help_texts.lua` - texts of the help board (?) and of `/led_help`
-- `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list; `map_preview.ps1` draws the picture of the highlighted map next to the list (thumbnails of the game's lobby package, read directly, nothing is stored)
+- `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list; `map_preview.ps1` draws the picture of the highlighted map next to the list with its size, number of players and terrain below it (and gives the data to the filters) (thumbnails of the game's lobby package, read directly, nothing is stored)
 - `install_editor.bat` / `install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
 - `ensure_installed.ps1`, `editor_stamp.ps1` - called by `start_level_editor.bat`: fingerprint of the packed files and the game version, runs the setup when it changed
 - `uninstall_editor.bat` / `uninstall_editor.ps1` - removal (levels and blueprints stay)
