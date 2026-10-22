@@ -6,11 +6,13 @@
 #   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\start_scenario.ps1)
 # Writes editor_script_installed.txt (and for "load" levels\_autoload.txt). Return value 1 on abort.
 # Call: choose_map.ps1 -Data <BAR\data>
-# Tests without a keyboard: -Test "searchtext" (maps), -TestLevels (saved levels), -TestScenarios (built scenarios)
-param([Parameter(Mandatory = $true)][string]$Data, [string]$Test = $null, [switch]$TestLevels, [switch]$TestScenarios, [switch]$TestMenu, [switch]$TestOnline, [string]$TestDownload = $null, [string]$MapsDir = $null)
+# Tests without a keyboard: -Test "searchtext" (maps), -TestLevels (saved levels), -TestScenarios (built scenarios), -TestPreview "map name" (draws its preview)
+param([Parameter(Mandatory = $true)][string]$Data, [string]$Test = $null, [switch]$TestLevels, [switch]$TestScenarios, [switch]$TestMenu, [switch]$TestOnline, [string]$TestDownload = $null, [string]$TestPreview = $null, [string]$MapsDir = $null)
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
 $levelsDir = Join-Path $here 'levels'
+. (Join-Path $here 'map_preview.ps1')
+$pvOk = Initialize-MapPreview $Data   # thumbnails from the lobby package of the game (map_preview.ps1); $false = no previews
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
 $lastFile = Join-Path $here 'last_map.txt'
 
@@ -127,6 +129,14 @@ if ($TestOnline) {
     $maps | Where-Object { -not $_.Installed } | Select-Object -First 5 | ForEach-Object { Write-Host ("  missing: " + $_.Label) }
     exit 0
 }
+if ($TestPreview) {
+    Write-Host ("Previews available: {0}, 24-bit colour: {1}" -f $pvOk, $script:PvTrue)
+    Clear-Host
+    $okp = Show-MapPreview $TestPreview 2 2 50 24
+    [Console]::SetCursorPosition(0, 28)
+    Write-Host ("Drawn: {0}" -f $okp)
+    exit 0
+}
 if ($TestDownload) {
     $m = $maps | Where-Object { $_.Spring -ieq $TestDownload } | Select-Object -First 1
     if (-not $m) { Write-Host 'Map not found'; exit 1 }
@@ -241,7 +251,8 @@ if ($Test -ne $null -and $Test -ne '') {
 
 # ---------------------------------------------------------------- selection with search while typing
 # Returns the chosen element, $null on Esc
-function Show-Chooser($items, [string]$title, [string]$hint, $firstFn) {
+# $previewFn (optional): script block that returns the map name (Spring name) of an item; its picture is drawn right of the list
+function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewFn = $null) {
     $items = @($items)
     $query = ''; $sel = 0; $offset = 0
     Clear-Host
@@ -253,6 +264,7 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn) {
     $flags = $null   # '(last)' marker per hit, only computed on a new search
     $prev = @{}      # last drawn content per screen line; only changed lines are rewritten
     $lastW = -1; $lastH = -1
+    $pvKey = $null   # what the preview area shows now
     $fg0 = [Console]::ForegroundColor; $bg0 = [Console]::BackgroundColor
     while ($true) {
         if ($resQuery -ne $query -or $null -eq $res) {
@@ -264,8 +276,15 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn) {
         if ($sel -ge $res.Count) { $sel = [Math]::Max(0, $res.Count - 1) }
         $w = [Console]::WindowWidth - 1
         $h = [Console]::WindowHeight
-        if ($w -ne $lastW -or $h -ne $lastH) { $prev = @{}; $lastW = $w; $lastH = $h; Clear-Host; Write-Host $title -ForegroundColor Cyan; Write-Host $hint -ForegroundColor DarkGray; Write-Host ''; $top = [Console]::CursorTop }
+        if ($w -ne $lastW -or $h -ne $lastH) { $prev = @{}; $pvKey = $null; $lastW = $w; $lastH = $h; Clear-Host; Write-Host $title -ForegroundColor Cyan; Write-Host $hint -ForegroundColor DarkGray; Write-Host ''; $top = [Console]::CursorTop }
         $rows = [Math]::Max(3, [Math]::Min(20, $h - $top - 4))
+        # Preview: right of the list if the window is wide enough (the list keeps at least 55 characters)
+        $lw = $w; $pvW = 0
+        if ($previewFn -and $pvOk) {
+            $pvW = [Math]::Min(2 * ($rows + 2), 64)
+            if ($w - $pvW - 2 -lt 55) { $pvW = $w - 2 - 55 }
+            if ($pvW -lt 20) { $pvW = 0 } else { $lw = $w - $pvW - 2 }
+        }
         if ($sel -lt $offset) { $offset = $sel }
         if ($sel -ge $offset + $rows) { $offset = $sel - $rows + 1 }
         # Build the lines: index 0 = search, 1 = counter, 2.. = lines of the list
@@ -286,7 +305,7 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn) {
         [Console]::CursorVisible = $false
         for ($i = 0; $i -lt $lines.Count; $i++) {
             $t = $lines[$i]
-            if ($t.Length -gt $w) { $t = $t.Substring(0, $w) }
+            if ($t.Length -gt $lw) { $t = $t.Substring(0, $lw) }
             $key = [string]$kinds[$i] + $t
             if ($prev[$i] -eq $key) { continue }
             $prev[$i] = $key
@@ -296,8 +315,14 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn) {
                 2 { [Console]::ForegroundColor = 'DarkGray' }
                 3 { [Console]::ForegroundColor = 'Black'; [Console]::BackgroundColor = 'Gray' }
             }
-            [Console]::Write($t.PadRight($w))
+            [Console]::Write($t.PadRight($lw))
             [Console]::ForegroundColor = $fg0; [Console]::BackgroundColor = $bg0
+        }
+        if ($pvW -gt 0) {
+            $spring = $null
+            if ($res.Count -gt 0) { $spring = & $previewFn $res[$sel] }
+            $k2 = "$spring|$pvW|$rows"
+            if ($k2 -ne $pvKey) { $pvKey = $k2; [void](Show-MapPreview $spring ($lw + 2) $top $pvW ($rows + 2)) }
         }
         [Console]::SetCursorPosition(0, [Math]::Min($top + $rows + 2, $h - 1))
         # Process the inputs; if several are pending (key held), process all first, then draw
@@ -418,7 +443,7 @@ while ($true) {
 
     if ($mode -eq 4) {
         # The scenario info is stored in the level (edited in the editor with button I); only the package is built here.
-        $chosen = Show-Chooser $levels 'Create a scenario package: choose a level' 'Type to search, arrow up/down, Enter = build, Esc = back' $null
+        $chosen = Show-Chooser $levels 'Create a scenario package: choose a level' 'Type to search, arrow up/down, Enter = build, Esc = back' $null { param($l) $l.Map }
         if (-not $chosen) { continue }
         Clear-Host
         $maker = Join-Path $PSScriptRoot 'scenario\scenario_builder.ps1'
@@ -431,7 +456,7 @@ while ($true) {
 
     if ($mode -eq 1) {
         $lastMap = $last
-        $chosen = Show-Chooser $maps ('New level: choose a map   (' + $maps.Count + ' maps, ' + @($maps | Where-Object { $_.Installed }).Count + ' installed)') 'Type to search, arrow up/down, Enter = start (missing maps are only downloaded then), Esc = back' { param($m) $m.Spring -eq $lastMap }
+        $chosen = Show-Chooser $maps ('New level: choose a map   (' + $maps.Count + ' maps, ' + @($maps | Where-Object { $_.Installed }).Count + ' installed)') 'Type to search, arrow up/down, Enter = start (missing maps are only downloaded then), Esc = back' { param($m) $m.Spring -eq $lastMap } { param($m) $m.Spring }
         if (-not $chosen) { continue }
         if (-not $chosen.Installed) {
             Clear-Host
@@ -452,7 +477,7 @@ while ($true) {
     if ($mode -eq 3) {
         $chosen = $lastLevel
     } else {
-        $chosen = Show-Chooser $levels 'Load an existing level' 'Type to search, arrow up/down, Enter = load and start, Esc = back' $null
+        $chosen = Show-Chooser $levels 'Load an existing level' 'Type to search, arrow up/down, Enter = load and start, Esc = back' $null { param($l) $l.Map }
     }
     if (-not $chosen) { continue }
     if (-not $chosen.Installed) {

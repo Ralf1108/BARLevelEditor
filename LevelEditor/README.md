@@ -77,7 +77,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `ctf_game.lua` - gadget of Capture the Flag (flags, collection points, income; also used by scenarios)
 - `led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `help_texts.lua` - texts of the help board (?) and of `/led_help`
-- `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list
+- `choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; `maps_online_cache.json` is the cached map list; `map_preview.ps1` draws the picture of the highlighted map next to the list (thumbnails of the game's lobby package, read directly, nothing is stored)
 - `install_editor.bat` / `install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
 - `ensure_installed.ps1`, `editor_stamp.ps1` - called by `start_level_editor.bat`: fingerprint of the packed files and the game version, runs the setup when it changed
 - `uninstall_editor.bat` / `uninstall_editor.ps1` - removal (levels and blueprints stay)
