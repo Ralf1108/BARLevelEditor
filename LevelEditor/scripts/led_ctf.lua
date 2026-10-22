@@ -140,6 +140,10 @@ return function(host)
 		local function field(name, tip)
 			return { kind = "ctfedit", field = name, label = num(name), active = ctf.edit ~= nil and ctf.edit.field == name, tip = tip }
 		end
+		-- the switch of the mode is the first thing on the page
+		line({ { kind = "ctfon", label = (c.enabled and "[x] " or "[ ] ") .. "Capture the Flag", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
+			tip = "Switch Capture the Flag on or off for this level (saved in the level file, section capture)" } })
+		y = y - 6 * S
 		head("Places on the map (team: strip at the left)")
 		line({
 			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
@@ -179,8 +183,6 @@ return function(host)
 		note("Collection points: " .. (#homes > 0 and table.concat(homes, ", ") or "none"), { 0.8, 0.8, 0.8 })
 		note("Flag points: " .. (#parts > 0 and table.concat(parts, ", ") or "none"), { 0.8, 0.8, 0.8 })
 		y = y - 6 * S
-		line({ { kind = "ctfon", label = (c.enabled and "[x] " or "[ ] ") .. "Capture the Flag", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
-			tip = "Switch Capture the Flag on or off for this level (saved in the level file, section capture)" } })
 		line({ { kind = "ctfvisible", label = (c.visible ~= false and "[x] " or "[ ] ") .. "Flags always visible on the map", active = c.visible ~= false,
 			tip = "On: the flags are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees." } })
 		head("Income: metal per second per flag held")
