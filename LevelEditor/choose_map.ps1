@@ -214,6 +214,19 @@ public class SplitDpi { [DllImport("user32.dll")] public static extern bool SetP
     return $res
 }
 
+# Split screen: the names of the local players in the lobby, by the cell of their window (TopLeft, TopRight, BottomLeft, ...; with 3 or 4 columns
+# Top1, Top2, ...)
+function Get-SplitNames([int]$n) {
+    $cols = if ($n -le 4) { 2 } elseif ($n -le 6) { 3 } else { 4 }
+    $res = @()
+    for ($i = 0; $i -lt $n; $i++) {
+        $row = if ([Math]::Floor($i / $cols) -eq 0) { 'Top' } else { 'Bottom' }
+        $col = $i % $cols
+        $res += $row + $(if ($cols -eq 2) { @('Left', 'Right')[$col] } else { [string]($col + 1) })
+    }
+    return $res
+}
+
 # The state saved by the editor when leaving (and every 2 minutes)
 function Get-LastLevel {
     $f = Join-Path $levelsDir '_last.lua'
@@ -517,8 +530,8 @@ while ($true) {
         # then how to play it: alone, host a game for the same network or join one (the options of start_scenario.ps1, like Host Game.bat / Join Game.bat)
         $playModes = @(
             [pscustomobject]@{ Label = 'Single player'; Search = 'single player alone'; Args = @() },
-            [pscustomobject]@{ Label = 'Host a game for others in the same network'; Search = 'host'; Args = @('-HostGame') },
-            [pscustomobject]@{ Label = 'Join a game hosted by another player'; Search = 'join'; Args = @('-Join') },
+            [pscustomobject]@{ Label = 'Host a game for others in the same network'; Search = 'host'; Args = @('-HostGame', '-Lobby') },
+            [pscustomobject]@{ Label = 'Join a game hosted by another player'; Search = 'join'; Args = @('-Join', '-Lobby') },
             [pscustomobject]@{ Label = 'Split screen (host and joiners on this computer, one window each)'; Search = 'split screen local test'; Args = @(); Split = $true }
         )
         $players = 0
@@ -538,9 +551,6 @@ while ($true) {
                 $players = 0
                 if (-not [int]::TryParse($in, [ref]$players) -or $players -lt 2) { $players = 0; continue }
                 $players = [Math]::Min($players, $maxP)
-                # who plays which team (shown, editable, the last one used is offered; the same dialog as the host of a network game has)
-                . (Join-Path $here 'scenario\template\player_mapping.ps1')
-                $roster = @(Get-PlayerMapping $players @(Get-TeamInfo ([IO.File]::ReadAllText((Join-Path $chosen.Path 'scenario.txt')))) (ConvertTo-PlayerName $env:USERNAME))
             }
             break
         }
@@ -550,13 +560,14 @@ while ($true) {
         if ($how.Split) {
             # The host first (top left), the joiners wait in minimized windows until the host listens (127.0.0.1: nothing leaves this computer)
             $rects = Get-SplitRects $players
+            $names = Get-SplitNames $players
             $starter = Join-Path $chosen.Path 'start_scenario.ps1'
             $barDir = Split-Path $Data -Parent
             for ($k = 1; $k -lt $players; $k++) {
                 [void](Start-Process powershell -WindowStyle Minimized -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"'), '-BarPath', ('"' + $barDir + '"'),
-                    '-JoinIp', '127.0.0.1', '-Name', $roster[$k].Name, '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k]))
+                    '-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k]))
             }
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath $barDir -HostGame -Mapping (ConvertTo-MappingText $roster) -HostIp 127.0.0.1 -Wait 10 -WindowRect $rects[0]
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath $barDir -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
             exit 1
         }
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent) $how.Args

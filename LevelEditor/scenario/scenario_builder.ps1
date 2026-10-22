@@ -717,6 +717,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
+    Copy-Item (Join-Path $TEMPLATE 'lobby.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
     if ($rst) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
     if ($td -or $ctf -or $rst) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
@@ -726,7 +727,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"
     [IO.File]::WriteAllText((Join-Path $folder 'Start Scenario.bat'), $bat, [Text.Encoding]::ASCII)
     # several human players in the same network: one hosts, the others join (start_scenario.ps1 -HostGame / -Join)
-    foreach ($m in @(@('Host Game', '-HostGame', 'Hosts the scenario for several players in the same network'), @('Join Game', '-Join', 'Joins a scenario hosted by another player in the same network'))) {
+    foreach ($m in @(@('Host Game', '-HostGame -Lobby', 'Hosts the scenario for several players in the same network'), @('Join Game', '-Join -Lobby', 'Joins a scenario hosted by another player in the same network'))) {
         $mb = "@echo off`r`nrem $($m[2]): `"$(Get-AsciiName $title)`".`r`n" +
               "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" $($m[1]) %*`r`n"
         [IO.File]::WriteAllText((Join-Path $folder ($m[0] + '.bat')), $mb, [Text.Encoding]::ASCII)
