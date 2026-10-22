@@ -200,6 +200,19 @@ function Get-Scenarios {
     return @($res | Sort-Object Time -Descending)
 }
 
+# The level a built scenario came from: the one whose saved scenario info has the ID of the scenario ("sid" in the block scenario of the level file),
+# otherwise the one whose name gives that ID (letters and digits only, lowercase)
+function Find-ScenarioLevel([string]$sid) {
+    $all = @(Get-Levels)
+    foreach ($l in $all) {
+        $t = [IO.File]::ReadAllText((Join-Path $levelsDir ($l.Name + '.lua')))
+        $m = [regex]::Match($t, '"sid"\s*:\s*"([^"]*)"')
+        if ($m.Success -and $m.Groups[1].Value -ieq $sid) { return $l }
+    }
+    foreach ($l in $all) { if (($l.Name.ToLower() -creplace '[^a-z0-9]+', '') -eq $sid.ToLower()) { return $l } }
+    return $null
+}
+
 # Split screen: the window rectangles ("x,y,w,h", outer size in screen pixels) for n games on the work area of the main screen (without the task bar):
 # up to 4 in 2 x 2, up to 6 in 3 x 2, up to 8 in 4 x 2 cells, row by row from the top left (the host is the first)
 function Get-SplitRects([int]$n) {
@@ -502,7 +515,7 @@ function Set-Autoload([string]$name) {
 while ($true) {
     $levels = @(Get-Levels)
     $lastLevel = Get-LastLevel
-    # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package
+    # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package, 4 = start a scenario, 5 = upgrade one
     # (the last two only if there are levels already). Choose with arrow up/down and Enter or with the digit key.
     $haveLevels = $levels.Count -gt 0
     $scenarios = @(Get-Scenarios)
@@ -511,7 +524,8 @@ while ($true) {
         @{ Key = '1'; Mode = 1; On = $true; Text = 'Create a new level (choose a map)' },
         @{ Key = '2'; Mode = 2; On = $haveLevels; Text = $(if ($haveLevels) { 'Load an existing level ({0} saved)' -f $levels.Count } else { 'Load an existing level (no saved levels yet)' }) },
         @{ Key = '3'; Mode = 4; On = $haveLevels; Text = $(if ($haveLevels) { 'Create a scenario package (ZIP) from a level (to pass on, official game)' } else { 'Create a scenario package (ZIP) from a level (no saved levels yet)' }) },
-        @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} built)' -f $scenarios.Count } else { 'Start a scenario (none built yet: key 3)' }) }
+        @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} built)' -f $scenarios.Count } else { 'Start a scenario (none built yet: key 3)' }) },
+        @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} built)' -f $scenarios.Count } else { 'Upgrade a scenario package (none built yet: key 3)' }) }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -519,7 +533,7 @@ while ($true) {
     Write-Host 'Level Editor' -ForegroundColor Cyan
     Write-Host ''
     $menuTop = [Console]::CursorTop
-    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
+    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
     Write-Host ''
     Write-Host 'Arrow up/down + Enter or digit key, Esc = cancel' -ForegroundColor DarkGray
     $mode = 0
@@ -595,6 +609,27 @@ while ($true) {
         }
         & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath (Split-Path $Data -Parent) -ScenarioDir $chosen.Path -EditorDir $root $how.Args
         continue # the game ended (or could not start): back to the menu, the next one can be tried at once
+    }
+
+    if ($mode -eq 6) {
+        # Upgrade a scenario package: it is built again from the level it came from, with the info saved in that level (key 3 without any question and
+        # without choosing a level): the package gets the current starter, lobby and gadgets of the editor and the current units of the level
+        $chosen = Show-Chooser $scenarios 'Upgrade a scenario package: choose one (it is built again from its level)' 'Type to search, arrow up/down, Enter = upgrade, Esc = back' $null
+        if (-not $chosen) { continue }
+        Clear-Host
+        $lvl = Find-ScenarioLevel $chosen.Name
+        if (-not $lvl) {
+            Write-Host ("No level found for the scenario '" + $chosen.Name + "' (its ID is not in the saved scenario info of any level, and no level has that name).") -ForegroundColor Yellow
+            Write-Host 'Build it again with key 3 from the level it was made from.'
+        } else {
+            Write-Host ("Upgrading the scenario '" + $chosen.Name + "' from the level '" + $lvl.Name + "' ...") -ForegroundColor Cyan
+            $maker = Join-Path $root 'scenario\scenario_builder.ps1'
+            & $maker -Level $lvl.Name -Auto
+        }
+        Write-Host ''
+        Write-Host 'Continue with any key.'
+        [void][Console]::ReadKey($true)
+        continue
     }
 
     if ($mode -eq 4) {
