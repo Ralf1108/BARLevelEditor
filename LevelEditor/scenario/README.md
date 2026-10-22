@@ -37,6 +37,9 @@ If Tower Defense is switched on in the level (page **TD** of the editor, with sp
 ## Restrictions
 If the level forbids units (the small X marks of the Place menu and the Tower Defense page: single units, whole factions, groups or tech levels as a list of unit names), the package contains them in the game option `restrictions` (base64url of the names) and the gadget `unit_restrictions.lua`. It refuses the build orders of builders and factories and tells the build blocking of BAR, so the player sees the forbidden units greyed out in the build menu. A level with restrictions needs the small extra game "Tower Defense Scenario" (built by the starter) even if it has neither Tower Defense nor Capture the Flag.
 
+## Which scripts run
+The package holds a copy of everything it needs (starter, lobby, gadgets, briefing), so that you can pass it on to people without the Level Editor: they unpack it and double-click `Start Scenario.bat`. **When you start a scenario from the start menu of the Level Editor (key 4) the copies in the package are not used:** the current starter, lobby and gadgets of the editor run, and only `scenario.txt` of the package is read (a scenario built long ago keeps working with the newest scripts; only the file name list of the gadgets decides which ones are needed). The copies in the package are therefore only as old as the day it was built.
+
 ## What is in the package
 | File | Content |
 |---|---|
