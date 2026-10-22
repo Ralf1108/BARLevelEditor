@@ -69,9 +69,9 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
 - **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human.
 
-| Blueprints | Generate: units |
-|---|---|
-| ![Place menu, Blueprints tab](docs/level-editor-place-blueprints.jpg) | ![Generate menu, Units](docs/level-editor-generate-units.jpg) |
+| Blueprints | Generate: units | Generate: maze |
+|---|---|---|
+| ![Place menu, Blueprints tab](docs/level-editor-place-blueprints.jpg) | ![Generate menu, Units](docs/level-editor-generate-units.jpg) | ![Generate menu, Maze](docs/level-editor-generate-maze.jpg) |
 
 ## Scenario builder
 
