@@ -90,7 +90,7 @@ A level you built can become a **scenario** that others play with their own, unm
    - lists the **values stored in the level**,
    - asks for the **title** (Enter keeps it) and the **name** of the scenario (its ID: Enter takes it, or type another; an existing scenario of that name is only overwritten after a question),
    - builds the package: `LevelEditor\scenario\scenarios\<id>.zip` (and the same as a folder).
-4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR (it asks before it downloads a missing map). Key **4** in the start menu starts a scenario you built yourself.
+4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR (it asks before it downloads a missing map). For several players in the same network the same folder has `Host Game.bat` (one player) and `Join Game.bat` (the others). Key **4** in the start menu starts a scenario you built yourself.
 
 ![Level Editor, scenario info (button I)](docs/level-editor-scenario.jpg)
 

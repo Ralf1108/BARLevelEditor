@@ -724,6 +724,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"
     [IO.File]::WriteAllText((Join-Path $folder 'Start Scenario.bat'), $bat, [Text.Encoding]::ASCII)
+    # several human players in the same network: one hosts, the others join (start_scenario.ps1 -HostGame / -Join)
+    foreach ($m in @(@('Host Game', '-HostGame', 'Hosts the scenario for several players in the same network'), @('Join Game', '-Join', 'Joins a scenario hosted by another player in the same network'))) {
+        $mb = "@echo off`r`nrem $($m[2]): `"$(Get-AsciiName $title)`".`r`n" +
+              "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" $($m[1]) %*`r`n"
+        [IO.File]::WriteAllText((Join-Path $folder ($m[0] + '.bat')), $mb, [Text.Encoding]::ASCII)
+    }
     $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$winRun]
     if ($td) { $winTxt = "Tower Defense: beat all $($td.waves.Count) waves (at most $($td.leaks) enemies may get through)" }
     if ($ctf) { $winTxt = $(if ($ctf.score -gt 0) { "Capture the Flag: the first team that holds $($ctf.score) flags at once wins" } else { 'Capture the Flag: no end' }) }
@@ -742,6 +748,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      $(if ($ctf) { '   Capture the Flag: the starter also builds the small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) with the flag gadget; no official file is changed.' } else { '' }),
                      $(if ($td) { '   Tower Defense: the starter also builds a small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) that builds on your Beyond All Reason and runs the enemy waves; no official file is changed.' } else { '' }),
                      $(if ($grace -gt 0) { 'Grace period: before the start the start position selection appears. Click into your start area (marked frame) and press Ready.' } else { '' }),
+                     '', 'Several players in the same network (LAN)',
+                     '1. Every player unpacks the folder on their own computer (same Beyond All Reason version, same folder contents).',
+                     '2. One player double-clicks "Host Game.bat", enters the number of players and gives the others the address and names shown in the window.',
+                     '3. The others double-click "Join Game.bat" within about 90 seconds after the host window has started and enter the address (the last ones are offered) and their name.',
+                     '   The first player has the first team, the second player the second team, and so on; the other teams keep their computer opponent.',
+                     '   If Windows asks about the firewall, allow spring.exe in the private network (the host needs UDP port 8452).',
                      '', 'Note: the folder may be copied to any place, also to another computer.')) { [void]$readme.Add($l) }
     [IO.File]::WriteAllText((Join-Path $folder 'README.txt'), (($readme -join "`r`n") + "`r`n"), (New-Object Text.UTF8Encoding($true)))
     $zpath = Join-Path $OUT ($sid + '.zip')
