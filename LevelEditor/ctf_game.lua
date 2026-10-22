@@ -4,12 +4,13 @@
 -- indestructible, neutral units; rings on the ground and the score are drawn by the unsynced part, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "ctf|start|<payload>" (stop: "ctf|stop"), or from the game option
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
---   amount;radius;score;returnTime;homes;flags;visible
+--   amount;radius;score;returnTime;speed;homes;flags;visible
 --   flags with a team (>= 0): the other teams take them, the team itself only brings a dropped one back; flags of team -1 (Gaia): every team takes them
 --   amount = metal per second for every flag a team holds at its collection point, radius = capture radius in Elmo (pick up, deliver, bring back), score = flags a team must hold at once to win (0 = never ends),
 --            a flag at a collection point can be taken by units of other teams (its owner brings it back to its flag point),
 --   returnTime = seconds after which a dropped flag (carrier destroyed) goes back to its flag point; 0 = it stays where it fell until a unit takes it
 --            (the unit that carries a flag cannot shoot)
+--   speed = top speed of a unit that carries a flag in Elmo per second (a faster unit is slowed down to it until it delivers or loses the flag); 0 = no limit
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
 -- Own flags: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
 -- standing wins).
@@ -194,9 +195,10 @@ local function parse(payload)
 	end
 	local cfg = {
 		amount = tonumber(f[1]) or 0, radius = math.max(10, tonumber(f[2]) or 100),
-		score = math.max(0, tonumber(f[3]) or 0), returnTime = math.max(0, tonumber(f[4]) or 0), homes = {}, flags = points(f[6]), visible = f[7] ~= "0",
+		score = math.max(0, tonumber(f[3]) or 0), returnTime = math.max(0, tonumber(f[4]) or 0), speed = math.max(0, tonumber(f[5]) or 0),
+		homes = {}, flags = points(f[7]), visible = f[8] ~= "0",
 	}
-	cfg.homeList = points(f[5])
+	cfg.homeList = points(f[6])
 	cfg.teams = {}
 	for _, h in ipairs(cfg.homeList) do
 		if not cfg.homes[h.team] then
@@ -252,10 +254,17 @@ local function body(name, team, x, z, visible)
 	return id
 end
 
--- The unit that carries a flag cannot shoot: its weapons get the range 0 (saved in the flag record) until it delivers or the flag is lost
+-- The unit that carries a flag cannot shoot: its weapons get the range 0 (saved in the flag record) until it delivers or the flag is lost;
+-- it is also slowed down to the top speed of the carrier (a scout would fetch the flags in no time); SetUnitCOBValue(MAX_SPEED) takes the
+-- speed in Elmo per second * 65536 / 30 (checked: 50 gives 50 Elmo/s, a higher value changes nothing)
 local function disarm(f, unitID)
 	f.ranges = {}
 	local ud = UnitDefs[Spring.GetUnitDefID(unitID)]
+	local cap = g and g.cfg.speed or 0
+	if cap > 0 and ud and (ud.speed or 0) > cap then
+		f.topSpeed = ud.speed
+		Spring.SetUnitCOBValue(unitID, COB.MAX_SPEED, cap * 65536 / 30)
+	end
 	for w = 1, ud and #ud.weapons or 0 do
 		f.ranges[w] = Spring.GetUnitWeaponState(unitID, w, "range")
 		Spring.SetUnitWeaponState(unitID, w, "range", 0)
@@ -263,6 +272,10 @@ local function disarm(f, unitID)
 end
 
 local function rearm(f, unitID)
+	if f.topSpeed and unitID and Spring.ValidUnitID(unitID) then
+		Spring.SetUnitCOBValue(unitID, COB.MAX_SPEED, f.topSpeed * 65536 / 30) -- its own speed again
+	end
+	f.topSpeed = nil
 	if f.ranges and unitID and Spring.ValidUnitID(unitID) then
 		for w, r in pairs(f.ranges) do
 			if r then

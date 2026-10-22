@@ -9,10 +9,10 @@ return function(host)
 	local Shared = host.Shared
 	local ctf = { open = false, edit = nil, pick = nil, data = nil, notice = nil }
 	local DELETE_RADIUS = 80 -- Del: the point within this distance of the mouse pointer goes
-	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 } }
+	local LIMITS = { amount = { 0, 99999 }, score = { 0, 99 }, radius = { 10, 2000 }, returnTime = { 0, 3600 }, speed = { 0, 2000 } }
 
 	function ctf.new()
-		return { enabled = false, amount = 100, score = 3, radius = 100, returnTime = 0, visible = true, homes = {}, flags = {} }
+		return { enabled = false, amount = 100, score = 3, radius = 100, returnTime = 0, speed = 50, visible = true, homes = {}, flags = {} }
 	end
 	ctf.DEFAULT = ctf.new()
 
@@ -189,6 +189,8 @@ return function(host)
 		line({ field("score", "The first team that holds this many flags at its collection point at the same time wins. 0: the level does not end. Click, type a number, Enter accepts") })
 		head("Capture radius (Elmo)")
 		line({ field("radius", "Distance within which a unit picks up a flag, delivers it, or brings its own dropped flag back. Click, type a number, Enter accepts") })
+		head("Top speed of a flag carrier (Elmo/s, 0 = no limit)")
+		line({ field("speed", "A unit that carries a flag is slowed down to this speed until it delivers the flag or loses it (a scout would fetch the flags in no time otherwise); slower units keep their own speed. For comparison: a scout drives about 100, a tank 30 to 60 Elmo per second. 0 = no limit. Click, type a number, Enter accepts") })
 		head("Dropped flag goes back after (s, 0 = stays)")
 		line({ field("returnTime", "When the unit that carries a flag is destroyed, the flag is dropped where it died. 0 = it stays there until a unit takes it, a number = it goes back to its flag point after this many seconds. A carrier cannot shoot. Click, type a number, Enter accepts") })
 		y = y - 6 * S
@@ -277,7 +279,7 @@ return function(host)
 			end
 			return #out > 0 and table.concat(out, "/") or "-"
 		end
-		return table.concat({ c.amount, c.radius, c.score, c.returnTime, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
+		return table.concat({ c.amount, c.radius, c.score, c.returnTime, c.speed, list(c.homes), list(c.flags), c.visible ~= false and "1" or "0" }, ";")
 	end
 
 	function ctf.endPick()
