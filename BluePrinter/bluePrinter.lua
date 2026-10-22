@@ -1460,6 +1460,17 @@ local function drawScreenBody()
 end
 
 -- For tests in the game: position of the buttons and the queue numbers
+-- For tests: queues blueprint number i of the list at the position (x, z) like a click on the map
+function widget:DebugPlan(i, x, z)
+	local bp = LIST[i]
+	return bp and addPlan(bp.units, snap16(x), snap16(z), rot) or 0
+end
+
+-- For tests: the grids of the blueprint view and the buildings view
+function widget:DebugGrids()
+	return bpGrid, uGrid
+end
+
 function widget:DebugLayout()
 	rescale()
 	return layout(), queueStats, #sites
