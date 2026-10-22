@@ -84,9 +84,7 @@ foreach ($m in $installedMaps) {
 }
 $maps = @($byName.Values | Sort-Object { $_.Display.ToLower() })
 foreach ($m in $maps) {
-    $suffix = ''
-    if (-not $m.Installed) { $suffix = '   - downloaded after you choose it' }
-    $m | Add-Member -NotePropertyName Label -NotePropertyValue ('{0}  [{1}]{2}' -f $m.Display, $m.Code, $suffix) -Force
+    $m | Add-Member -NotePropertyName Label -NotePropertyValue $m.Display -Force
 }
 if ($maps.Count -eq 0) { Write-Host 'No maps found.' -ForegroundColor Red; exit 1 }
 
@@ -114,7 +112,7 @@ function Download-Map($m, [string]$dir) {
         }
         Move-Item $tmp $target -Force
         $m.Installed = $true
-        $m.Label = ('{0}  [{1}]' -f $m.Display, $m.Code)
+        $m.Label = $m.Display
         return $true
     } catch {
         Write-Host ("Download failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
