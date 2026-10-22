@@ -16,7 +16,7 @@ Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). The start men
 - **1** new level: choose a map (search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones; the picture of the highlighted map with its size, players and terrain is shown next to the list, and with **Tab** and **Left/Right** you filter by size, number of players and terrain),
 - **2** load an existing level (list from `levels`, with search),
 - **3** build a scenario package (ZIP) from a level,
-- **4** start one of the scenarios you built (choose it from the list; the starter of that folder runs, also for Tower Defense scenarios).
+- **4** start one of the scenarios you built (choose it from the list, then choose **Single player**, **Host** a game for others in the same network or **Join** one; the starter of that folder runs, also for Tower Defense scenarios).
 
 When loading, the editor starts on the saved map and sets up the units automatically (via `levels\_autoload.txt`).
 

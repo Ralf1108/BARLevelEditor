@@ -497,11 +497,23 @@ while ($true) {
 
     if ($mode -eq 5) {
         # Start a built scenario: its own starter finds BAR, builds the extra game of a Tower Defense scenario and starts the game
-        $chosen = Show-Chooser $scenarios 'Start a scenario: choose one' 'Type to search, arrow up/down, Enter = start, Esc = back' $null
+        # then how to play it: alone, host a game for the same network or join one (the options of start_scenario.ps1, like Host Game.bat / Join Game.bat)
+        $playModes = @(
+            [pscustomobject]@{ Label = 'Single player'; Search = 'single player alone'; Args = @() },
+            [pscustomobject]@{ Label = 'Host a game for others in the same network'; Search = 'host'; Args = @('-HostGame') },
+            [pscustomobject]@{ Label = 'Join a game hosted by another player'; Search = 'join'; Args = @('-Join') }
+        )
+        $chosen = $null; $how = $null
+        while ($true) {
+            $chosen = Show-Chooser $scenarios 'Start a scenario: choose one' 'Type to search, arrow up/down, Enter = next, Esc = back' $null
+            if (-not $chosen) { break }
+            $how = Show-Chooser $playModes ('Scenario ' + $chosen.Name + ': how do you want to play?') 'Arrow up/down, Enter = start, Esc = back to the scenarios' $null
+            if ($how) { break }
+        }
         if (-not $chosen) { continue }
         Clear-Host
-        Write-Host ('Starting the scenario ' + $chosen.Name + ' ...') -ForegroundColor Cyan
-        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent)
+        Write-Host ('Starting the scenario ' + $chosen.Name + ' (' + $how.Label + ') ...') -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent) $how.Args
         exit 1 # the scenario was played (or could not start): nothing else to start
     }
 
