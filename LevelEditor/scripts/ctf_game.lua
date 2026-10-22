@@ -13,7 +13,7 @@
 --   speed = top speed of a unit that carries a flag in Elmo per second (a faster unit is slowed down to it until it delivers or loses the flag); 0 = no limit
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
 -- Own flags: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
--- standing wins).
+-- standing wins). A win by the number of flags ends the level the same way: every team that is not on the winner's side loses, its units blow up.
 --   homes  = "team,x,z/team,x,z/..." collection points (several per team: a flag counts at any of them), flags = "team,x,z/..." flag points (team -1: neutral)
 -- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfOut (lost teams), ctfRadius, ctfHomes, ctfSpots,
 -- ctfFlagIds ("unitID:owner,..."; owner -1 = neutral), ctfVisible (1/0).
@@ -313,8 +313,25 @@ local function stop()
 	end
 end
 
+-- The units of a team blow up (flags and collection points stay)
+local function blowUp(team)
+	for _, id in ipairs(Spring.GetTeamUnits(team)) do
+		if not protected[id] then
+			Spring.DestroyUnit(id, true, false)
+		end
+	end
+end
+
+-- The level is won: every team that is not on the winner's side loses (its units blow up, also when nobody had lost all flags)
 local function finish(team, lastStanding)
 	g.state = "won by team " .. team
+	local winners, gaia = allyOf(team), Spring.GetGaiaTeamID()
+	for _, t in ipairs(Spring.GetTeamList()) do
+		if t ~= gaia and allyOf(t) ~= winners and not g.out[t] then
+			g.out[t] = true
+			blowUp(t)
+		end
+	end
 	publish()
 	say(lastStanding and ("Team " .. team .. " is the last one standing: level won!") or ("Team " .. team .. " has " .. g.cfg.score .. " flags: level won!"))
 	if not EDITOR_MODE then
@@ -366,15 +383,7 @@ local function toHome(f)
 	Spring.SetUnitPosition(f.id, f.hx, f.hz)
 end
 
--- A team that lost all its flags: its units blow up (flags and collection points stay); the last team standing wins
-local function blowUp(team)
-	for _, id in ipairs(Spring.GetTeamUnits(team)) do
-		if not protected[id] then
-			Spring.DestroyUnit(id, true, false)
-		end
-	end
-end
-
+-- A team that lost all its flags: see eliminate
 local function eliminate(team)
 	g.out[team] = true
 	say("Team " .. team .. " has lost all its flags: its units blow up.")
@@ -513,6 +522,15 @@ function gadget:GameFrame(n)
 		pendingCfg = nil
 		start(cfg)
 	end
+	if n % 5 == 0 then
+		-- the capture progress that the game's lootbox gadget adds (enemy units within 1024 Elmo) is reset: the bar stays empty
+		for id in pairs(protected) do
+			local _, _, _, capture = Spring.GetUnitHealth(id)
+			if capture and capture > 0 then
+				Spring.SetUnitHealth(id, { capture = 0 })
+			end
+		end
+	end
 	if not g or g.state ~= "running" then
 		return
 	end
@@ -553,7 +571,14 @@ function gadget:UnitDestroyed(unitID)
 	end
 end
 
--- Flags and collection points cannot be taken apart: no damage, no reclaim, capture or self destruction
+-- Flags and collection points cannot be taken apart: no damage, no reclaim, capture or self destruction, and no change of the team
+function gadget:AllowUnitTransfer(unitID)
+	if protected[unitID] then
+		return false -- the capture of the game (pve_supply_drops.lua: lootboxes) would hand the unit to the enemy next to it
+	end
+	return true
+end
+
 function gadget:UnitPreDamaged(unitID)
 	if protected[unitID] then
 		return 0, 0
