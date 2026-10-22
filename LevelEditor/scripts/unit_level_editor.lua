@@ -97,6 +97,16 @@ local function airHeight(ud, x, z, y)
 	return ground + cruise, false
 end
 
+-- Takes a unit away. Not a death: the game's gadget that leaves a tombstone next to a commander wreck (unit_tombstones.lua) skips units with the
+-- rules parameter remove_decorations = 1, so moving, deleting or undoing a commander does not leave a gravestone. boom = a real explosion
+-- (the wreck and the tombstone stay).
+local function destroyUnit(id, boom)
+	if not boom then
+		Spring.SetUnitRulesParam(id, "remove_decorations", 1)
+	end
+	Spring.DestroyUnit(id, false, not boom)
+end
+
 local function place(name, team, x, z, facing, playerID, y)
 	if not UnitDefNames[name] then
 		tell(playerID, "unknown unit: " .. tostring(name))
@@ -454,7 +464,7 @@ local function clearAll()
 	local n = 0
 	for _, id in ipairs(Spring.GetAllUnits()) do
 		if Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 then
-			Spring.DestroyUnit(id, false, true)
+			destroyUnit(id)
 			n = n + 1
 		end
 	end
@@ -563,7 +573,7 @@ destroyRecorded = function(id, boom)
 	if boom then
 		capture = {}
 	end
-	Spring.DestroyUnit(id, false, not boom)
+	destroyUnit(id, boom)
 	if boom then
 		wrecks, capture = capture, nil
 	end
@@ -581,7 +591,7 @@ local function revert(op)
 	if k == "add" then
 		if unitIs(op.id, op.name) then
 			op.snap = snapshot(op.id)
-			Spring.DestroyUnit(op.id, false, true)
+			destroyUnit(op.id)
 		end
 	elseif k == "del" then
 		local nid = respawn(op.snap)
@@ -597,7 +607,7 @@ local function revert(op)
 		op.wrecks = nil
 	elseif k == "swap" then
 		if unitIs(op.id, op.name) then
-			Spring.DestroyUnit(op.id, false, true)
+			destroyUnit(op.id)
 		end
 		local nid = respawn(op.before)
 		if nid then
@@ -644,14 +654,14 @@ local function apply(op)
 			if op.boom then
 				capture = {}
 			end
-			Spring.DestroyUnit(op.id, false, not op.boom)
+			destroyUnit(op.id, op.boom)
 			if op.boom then
 				op.wrecks, capture = capture, nil
 			end
 		end
 	elseif k == "swap" then
 		if unitIs(op.id, op.name) then
-			Spring.DestroyUnit(op.id, false, true)
+			destroyUnit(op.id)
 		end
 		local nid = respawn(op.after)
 		if nid then
@@ -780,7 +790,7 @@ local function transformUnits(ids, mode, dx, dz)
 				f = 1
 			end
 		end
-		Spring.DestroyUnit(r.old, false, true)
+		destroyUnit(r.old)
 		suppress = suppress + 1
 		local id = place(r.name, r.team, nx, nz, f, nil, r.y)
 		suppress = suppress - 1
