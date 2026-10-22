@@ -4,7 +4,12 @@
 # Several players in the same network (LAN): -HostGame [-Players n] hosts the game (the other players use -JoinIp <address> and the name the
 # host shows), -Port is the UDP port of the host (default 8452), -Wait the seconds the others have to join after the host has loaded (default 90).
 # Without -JoinIp the join mode (Join Game.bat passes -Join) asks for the address.
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90)
+# Split screen (start menu of the Level Editor, several games on one computer): -WindowRect x,y,w,h starts the game in a framed window on this
+# rectangle of the screen (outer size, pixels) instead of the settings of the user (which are only read, never changed); -HostIp 127.0.0.1 lets
+# the host listen on this computer only; -NoBuild keeps the extra game that the host has built (it is locked while a game runs); -WaitForHost
+# waits (up to 2 minutes) until a host listens on the port before the game is started.
+# Hosting: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "Ralf=0,Anna=2" (first = host).
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -84,13 +89,26 @@ if ($Join -and -not $JoinIp) {
     if (-not $JoinIp) { Fail 'Aborted.' }
     New-Item -ItemType Directory -Force (Split-Path $addrFile) | Out-Null
     Set-Content -Path $addrFile -Value (@($JoinIp) + @($recent | Where-Object { $_ -ne $JoinIp }) | Select-Object -First 10) -Encoding ASCII
-    $in = (Read-Host 'Your name as the host shows it (Player2, Player3, ...; Enter = Player2)').Trim()
-    $Name = if ($in) { $in } else { 'Player2' }
+    # the name has to be the one the host gave this player; the last one used is offered
+    $nameFile = Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Last Player Name.txt'
+    $lastName = 'Player2'
+    if (Test-Path $nameFile) { $ln = ([IO.File]::ReadAllText($nameFile)).Trim(); if ($ln) { $lastName = $ln } }
+    $in = (Read-Host "Your name as the host shows it (Enter = $lastName)").Trim()
+    $Name = if ($in) { $in } else { $lastName }
+    Set-Content -Path $nameFile -Value $Name -Encoding ASCII
 }
 if (-not $Name) { $Name = $env:USERNAME }
 if (-not $Name) { $Name = 'Player' }
 $Name = $Name -replace '[^A-Za-z0-9_\-\[\]]', ''
 if (-not $Name) { $Name = 'Player' }
+if ($WaitForHost) {
+    Write-Host "Waiting for the host on port $Port ..."
+    $until = (Get-Date).AddSeconds(120)
+    while ((Get-Date) -lt $until) {
+        if (@([Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveUdpListeners() | Where-Object { $_.Port -eq $Port }).Count -gt 0) { break }
+        Start-Sleep -Milliseconds 500
+    }
+}
 # Tower Defense, Capture the Flag and restricted scenarios: the waves run in a gadget (td_waves.lua in this folder), the flags in another
 # (ctf_game.lua), the restrictions in a third (unit_restrictions.lua). The
 # official game cannot load them, so a small extra game "Tower Defense Scenario" is built on the installed official game (only the gadgets are
@@ -103,7 +121,8 @@ if ((Test-Path $tdGadget) -or (Test-Path $ctfGadget) -or (Test-Path $rstGadget))
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
     $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
-    if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+    $build = -not ($NoBuild -and (Test-Path $zipPath))
+    if ($build -and (Test-Path $zipPath)) { Remove-Item $zipPath -Force }
     $modinfo = @"
 return {
 	name = "Tower Defense Scenario",
@@ -118,54 +137,77 @@ return {
 }
 "@
     $utf8n = New-Object Text.UTF8Encoding($false)
-    $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
     $files = @(, @('modinfo.lua', $modinfo))
     if (Test-Path $tdGadget) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
     if (Test-Path $ctfGadget) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
     if (Test-Path $rstGadget) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
     $rulesFile = Join-Path $here 'bar_rules.lua' # shared rules (packages made before this file existed carry a gadget that does not need it)
     if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
-    foreach ($e in $files) {
-        $entry = $zip.CreateEntry($e[0])
-        $w = New-Object IO.StreamWriter($entry.Open(), $utf8n)
-        $w.Write($e[1]); $w.Close()
+    if ($build) {
+        $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
+        foreach ($e in $files) {
+            $entry = $zip.CreateEntry($e[0])
+            $w = New-Object IO.StreamWriter($entry.Open(), $utf8n)
+            $w.Write($e[1]); $w.Close()
+        }
+        $zip.Dispose()
+        Write-Host "Extra game built ($zipPath)"
     }
-    $zip.Dispose()
     $gametype = 'Tower Defense Scenario 1'
-    Write-Host "Extra game built ($zipPath)"
 }
-$script = $script.Replace('__GAMETYPE__', $gametype).Replace('__PLAYERNAME__', $Name)
+$script = $script.Replace('__GAMETYPE__', $gametype)
 if ($HostGame) {
-    # Every extra human takes over the team of a computer opponent: team 1 for the second player, team 2 for the third, ...
+    # Every human gets the team the mapping says (player_mapping.ps1: name = team, the first is the host); a team with a human loses its computer
+    # opponent, a team without one keeps (or gets) one
     $script = $script.Replace("`r`n", "`n")
-    $teams = ([regex]::Matches($script, '(?m)^\t\[team\d+\]')).Count
+    . (Join-Path $here 'player_mapping.ps1')
+    $teamInfo = @(Get-TeamInfo $script)
+    $teams = $teamInfo.Count
     if ($teams -lt 2) { Fail 'This scenario has only one team, there is nobody to play against.' }
-    if ($Players -lt 2) {
-        $in = Read-Host "How many human players (2 to $teams, you are one of them)"
-        if (-not [int]::TryParse($in, [ref]$Players)) { $Players = 2 }
+    if ($Mapping) {
+        $roster = @(ConvertFrom-MappingText $Mapping)
+        foreach ($e in $roster) { if ($e.Team -ge $teams) { Fail "Team $($e.Team) of the mapping does not exist (the scenario has the teams 0 to $($teams - 1))." } }
+    } else {
+        if ($Players -lt 2) {
+            $in = Read-Host "How many human players (2 to $teams, you are one of them)"
+            if (-not [int]::TryParse($in, [ref]$Players)) { $Players = 2 }
+        }
+        $Players = [Math]::Max(2, [Math]::Min($teams, $Players))
+        $roster = @(Get-PlayerMapping $Players $teamInfo $Name)
     }
-    $Players = [Math]::Max(2, [Math]::Min($teams, $Players))
-    $names = @($Name)
+    $Players = $roster.Count
+    $Name = $roster[0].Name
+    $aiPat = "(?s)\t\[ai\d+\]\s*\{{[^}}]*\bTeam={0};[^}}]*\}}\n"
+    $tpl = [regex]::Match($script, '(?s)\t\[ai\d+\]\s*\{[^}]*\}\n').Value
+    $aiName = [regex]::Match($tpl, '(?i)ShortName=([^;]*);').Groups[1].Value; if (-not $aiName) { $aiName = 'NullAI' }
+    $aiVer = [regex]::Match($tpl, '(?i)Version=([^;]*);').Groups[1].Value; if (-not $aiVer) { $aiVer = '0.1' }
+    foreach ($e in $roster) { $script = [regex]::Replace($script, ($aiPat -f $e.Team), '') }
+    $aiId = 0 + (@([regex]::Matches($script, '(?m)^\t\[ai(\d+)\]') | ForEach-Object { [int]$_.Groups[1].Value }) | Measure-Object -Maximum).Maximum + 1
+    $addAi = New-Object Text.StringBuilder
+    for ($tm = 0; $tm -lt $teams; $tm++) {
+        if (@($roster | Where-Object { $_.Team -eq $tm }).Count -gt 0) { continue }
+        if ([regex]::IsMatch($script, ($aiPat -f $tm))) { continue }
+        [void]$addAi.Append("`t[ai$aiId]`n`t{`n`t`tShortName=$aiName;`n`t`tName=${aiName}_$tm;`n`t`tTeam=$tm;`n`t`tHost=0;`n`t`tVersion=$aiVer;`n`t}`n")
+        $aiId++
+    }
+    $script = [regex]::Replace($script, '(?s)(\[player0\]\s*\{[^}]*?\bTeam=)\d+;', ('${1}' + $roster[0].Team + ';'))
     $extra = New-Object Text.StringBuilder
     for ($k = 1; $k -lt $Players; $k++) {
-        $pn = "Player$($k + 1)"
-        $names += $pn
-        $n0 = $script.Length
-        $script = [regex]::Replace($script, "(?s)\t\[ai\d+\]\s*\{[^}]*\bTeam=$k;[^}]*\}\n", '')
-        if ($script.Length -eq $n0) { Write-Host "Note: team $k had no computer opponent." -ForegroundColor Yellow }
-        [void]$extra.Append("`t[player$k]`n`t{`n`t`tName=$pn;`n`t`tTeam=$k;`n`t`tspectator=0;`n`t`trank=0;`n`t}`n")
+        [void]$extra.Append("`t[player$k]`n`t{`n`t`tName=$($roster[$k].Name);`n`t`tTeam=$($roster[$k].Team);`n`t`tspectator=0;`n`t`trank=0;`n`t}`n")
     }
+    $script = $script.Replace("`t[player0]", $addAi.ToString() + "`t[player0]")
     $script = $script.Replace("`t[modoptions]", $extra.ToString() + "`t[modoptions]")
     $ais = ([regex]::Matches($script, '(?m)^\t\[ai\d+\]')).Count
-    # hostip 0.0.0.0 = listen on all network cards (without a value the engine listens on the loopback address only)
-    $script = $script.Replace('hostip=127.0.0.1;', 'hostip=0.0.0.0;').Replace('hostport=0;', "hostport=$Port;")
+    # hostip 0.0.0.0 = listen on all network cards, 127.0.0.1 = this computer only (without a value the engine listens on the loopback address only)
+    $script = $script.Replace('hostip=127.0.0.1;', "hostip=$HostIp;").Replace('hostport=0;', "hostport=$Port;")
     # The game starts GameStartDelay seconds after the host has loaded; whoever connects later is refused ("Game has already started"), so this
     # is the time the others have to start "Join Game.bat" (found in the test of 2026-10-22: with 3 seconds a player who joined after 25 s was refused)
     $script = [regex]::Replace($script, 'GameStartDelay=\d+;', "GameStartDelay=$Wait;")
     $script = [regex]::Replace($script, 'numplayers=\d+;', "numplayers=$Players;")
     $script = [regex]::Replace($script, 'numusers=\d+;', "numusers=$($Players + $ais);")
 }
-$out =Join-Path $env:TEMP 'bar_scenario_start.txt'
+$script = $script.Replace('__PLAYERNAME__', $Name)
+$out = Join-Path $env:TEMP ('bar_scenario_start_' + $Name + '.txt') # one file per player: several games of one computer must not overwrite each other's script
 [IO.File]::WriteAllText($out, $script, (New-Object Text.UTF8Encoding($false)))
 Write-Host "Game: $game"
 Write-Host "Map: $map"
@@ -196,19 +238,62 @@ if (Test-Path $wsrc) {
 }
 
 $spring = Join-Path $engineDir.FullName 'spring.exe'
+
+# Runs the game; with -WindowRect in a framed window on that rectangle: an own copy of the settings of the user (the original is only read)
+# with the window values replaced, and after the window has appeared its outer rectangle is set exactly (the frame is part of it)
+function Start-Spring([string[]]$sargs) {
+    if (-not $WindowRect) { & $spring @sargs; return }
+    $r = @($WindowRect.Split(',') | ForEach-Object { [int]$_.Trim() })
+    if ($r.Count -ne 4) { Fail "-WindowRect needs x,y,w,h (got '$WindowRect')." }
+    $mine = @('Fullscreen', 'WindowBorderless', 'XResolution', 'YResolution', 'XResolutionWindowed', 'YResolutionWindowed', 'WindowPosX', 'WindowPosY', 'InitialNetworkTimeout', 'NetworkTimeout')
+    $src = Join-Path $data 'springsettings.cfg'
+    $lines = @()
+    if (Test-Path $src) { $lines = @(Get-Content $src | Where-Object { $l = $_; -not ($mine | Where-Object { $l -match ('^\s*' + $_ + '\s*=') }) }) }
+    $lines += @('Fullscreen = 0', 'WindowBorderless = 0', "XResolutionWindowed = $($r[2] - 16)", "YResolutionWindowed = $($r[3] - 47)", "XResolution = $($r[2] - 16)", "YResolution = $($r[3] - 47)", "WindowPosX = $($r[0])", "WindowPosY = $($r[1])",
+               'InitialNetworkTimeout = 600', 'NetworkTimeout = 600') # several games loading at once on one computer are slow: the server must not drop a game that is still loading
+    $cfgDir = Join-Path $env:TEMP 'BAR-Scenario'
+    New-Item -ItemType Directory -Force $cfgDir | Out-Null
+    $cfg = Join-Path $cfgDir ("window_$Name.cfg")
+    [IO.File]::WriteAllLines($cfg, $lines)
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public class SplitWin {
+    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+}
+'@
+    [void][SplitWin]::SetProcessDPIAware()
+    $all = @('--config', $cfg, '--write-dir', $data) + $sargs
+    $p = Start-Process -FilePath $spring -ArgumentList @($all | ForEach-Object { '"' + $_ + '"' }) -PassThru
+    $start = Get-Date
+    while (-not $p.HasExited) {
+        $p.Refresh()
+        if ($p.MainWindowHandle -ne [IntPtr]::Zero -and ((Get-Date) - $start).TotalSeconds -lt 90) {
+            $cur = New-Object SplitWin+RECT
+            [void][SplitWin]::GetWindowRect($p.MainWindowHandle, [ref]$cur)
+            if ($cur.L -ne $r[0] -or $cur.T -ne $r[1] -or ($cur.R - $cur.L) -ne $r[2] -or ($cur.B - $cur.T) -ne $r[3]) {
+                [void][SplitWin]::SetWindowPos($p.MainWindowHandle, [IntPtr]::Zero, $r[0], $r[1], $r[2], $r[3], 0x0014) # no z-order change, no activation
+            }
+        }
+        Start-Sleep -Milliseconds 500
+    }
+}
 if ($JoinIp) {
     Write-Host "Joining $($JoinIp):$Port as '$Name' (the host has to be running; the name must be the one the host showed) ..."
-    & $spring --write-dir $data "spring://$Name@$($JoinIp):$Port"
+    Start-Spring @('--write-dir', $data, "spring://$Name@$($JoinIp):$Port")
     exit 0
 }
 if ($HostGame) {
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     Write-Host ''
-    Write-Host "You host this game as '$Name' on UDP port $Port. The other players start ""Join Game.bat"" and enter:" -ForegroundColor Cyan
+    Write-Host "You host this game as '$Name' (team $($roster[0].Team)) on UDP port $Port. The other players start ""Join Game.bat"" and enter:" -ForegroundColor Cyan
     Write-Host "  address: $($addr -join ' or ')" -ForegroundColor Cyan
-    for ($k = 1; $k -lt $Players; $k++) { Write-Host "  player $($k + 1): name Player$($k + 1)" -ForegroundColor Cyan }
+    for ($k = 1; $k -lt $Players; $k++) { Write-Host "  name $($roster[$k].Name) (team $($roster[$k].Team))" -ForegroundColor Cyan }
     Write-Host "The game loads for you first; the others have about $Wait seconds after that to start ""Join Game.bat"" (a countdown runs in the game)." -ForegroundColor Cyan
     Write-Host 'If Windows asks about the firewall: allow spring.exe in the private network.'
 }
 Write-Host 'Starting the game ...'
-& $spring --write-dir $data $out
+Start-Spring @($out)

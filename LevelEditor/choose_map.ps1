@@ -197,6 +197,23 @@ function Get-Scenarios {
     return @($res | Sort-Object Time -Descending)
 }
 
+# Split screen: the window rectangles ("x,y,w,h", outer size in screen pixels) for n games on the work area of the main screen (without the task bar):
+# up to 4 in 2 x 2, up to 6 in 3 x 2, up to 8 in 4 x 2 cells, row by row from the top left (the host is the first)
+function Get-SplitRects([int]$n) {
+    Add-Type @'
+using System.Runtime.InteropServices;
+public class SplitDpi { [DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }
+'@
+    [void][SplitDpi]::SetProcessDPIAware()   # real pixels, not the scaled ones of a 150 % screen
+    Add-Type -AssemblyName System.Windows.Forms
+    $a = [Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $cols = if ($n -le 4) { 2 } elseif ($n -le 6) { 3 } else { 4 }
+    $w = [int][Math]::Floor($a.Width / $cols); $h = [int][Math]::Floor($a.Height / 2)
+    $res = @()
+    for ($i = 0; $i -lt $n; $i++) { $res += ('{0},{1},{2},{3}' -f ($a.X + ($i % $cols) * $w), ($a.Y + [Math]::Floor($i / $cols) * $h), $w, $h) }
+    return $res
+}
+
 # The state saved by the editor when leaving (and every 2 minutes)
 function Get-LastLevel {
     $f = Join-Path $levelsDir '_last.lua'
@@ -501,18 +518,47 @@ while ($true) {
         $playModes = @(
             [pscustomobject]@{ Label = 'Single player'; Search = 'single player alone'; Args = @() },
             [pscustomobject]@{ Label = 'Host a game for others in the same network'; Search = 'host'; Args = @('-HostGame') },
-            [pscustomobject]@{ Label = 'Join a game hosted by another player'; Search = 'join'; Args = @('-Join') }
+            [pscustomobject]@{ Label = 'Join a game hosted by another player'; Search = 'join'; Args = @('-Join') },
+            [pscustomobject]@{ Label = 'Split screen (host and joiners on this computer, one window each)'; Search = 'split screen local test'; Args = @(); Split = $true }
         )
+        $players = 0
         $chosen = $null; $how = $null
         while ($true) {
             $chosen = Show-Chooser $scenarios 'Start a scenario: choose one' 'Type to search, arrow up/down, Enter = next, Esc = back' $null
             if (-not $chosen) { break }
             $how = Show-Chooser $playModes ('Scenario ' + $chosen.Name + ': how do you want to play?') 'Arrow up/down, Enter = start, Esc = back to the scenarios' $null
-            if ($how) { break }
+            if (-not $how) { continue }
+            if ($how.Split) {
+                # Split screen: the number of players (at most 8, and not more than the scenario has teams)
+                $teams = ([regex]::Matches([IO.File]::ReadAllText((Join-Path $chosen.Path 'scenario.txt')), '(?m)^\s*\[team\d+\]')).Count
+                $maxP = [Math]::Min(8, $teams)
+                Clear-Host
+                if ($maxP -lt 2) { Write-Host 'This scenario has only one team, there is nobody to play against.' -ForegroundColor Yellow; Start-Sleep 2; continue }
+                $in = (Read-Host "How many players (2 to $maxP; the scenario has $teams teams; Enter = back)").Trim()
+                $players = 0
+                if (-not [int]::TryParse($in, [ref]$players) -or $players -lt 2) { $players = 0; continue }
+                $players = [Math]::Min($players, $maxP)
+                # who plays which team (shown, editable, the last one used is offered; the same dialog as the host of a network game has)
+                . (Join-Path $here 'scenario\template\player_mapping.ps1')
+                $roster = @(Get-PlayerMapping $players @(Get-TeamInfo ([IO.File]::ReadAllText((Join-Path $chosen.Path 'scenario.txt')))) (ConvertTo-PlayerName $env:USERNAME))
+            }
+            break
         }
         if (-not $chosen) { continue }
         Clear-Host
         Write-Host ('Starting the scenario ' + $chosen.Name + ' (' + $how.Label + ') ...') -ForegroundColor Cyan
+        if ($how.Split) {
+            # The host first (top left), the joiners wait in minimized windows until the host listens (127.0.0.1: nothing leaves this computer)
+            $rects = Get-SplitRects $players
+            $starter = Join-Path $chosen.Path 'start_scenario.ps1'
+            $barDir = Split-Path $Data -Parent
+            for ($k = 1; $k -lt $players; $k++) {
+                [void](Start-Process powershell -WindowStyle Minimized -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"'), '-BarPath', ('"' + $barDir + '"'),
+                    '-JoinIp', '127.0.0.1', '-Name', $roster[$k].Name, '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k]))
+            }
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath $barDir -HostGame -Mapping (ConvertTo-MappingText $roster) -HostIp 127.0.0.1 -Wait 10 -WindowRect $rects[0]
+            exit 1
+        }
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent) $how.Args
         exit 1 # the scenario was played (or could not start): nothing else to start
     }

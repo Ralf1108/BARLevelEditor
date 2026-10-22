@@ -716,6 +716,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     New-Item -ItemType Directory -Force $folder | Out-Null
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
+    Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
     Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
     if ($rst) { Copy-Item (Join-Path (Split-Path $HERE -Parent) 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
     if ($td -or $ctf -or $rst) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
@@ -752,7 +753,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      '1. Every player unpacks the folder on their own computer (same Beyond All Reason version, same folder contents).',
                      '2. One player double-clicks "Host Game.bat", enters the number of players and gives the others the address and names shown in the window.',
                      '3. The others double-click "Join Game.bat" within about 90 seconds after the host window has started and enter the address (the last ones are offered) and their name.',
-                     '   The first player has the first team, the second player the second team, and so on; the other teams keep their computer opponent.',
+                     '   The host is asked who plays which team (names and teams, every line can be edited; the last one used is offered); the other teams keep their computer opponent.',
                      '   If Windows asks about the firewall, allow spring.exe in the private network (the host needs UDP port 8452).',
                      '', 'Note: the folder may be copied to any place, also to another computer.')) { [void]$readme.Add($l) }
     [IO.File]::WriteAllText((Join-Path $folder 'README.txt'), (($readme -join "`r`n") + "`r`n"), (New-Object Text.UTF8Encoding($true)))
