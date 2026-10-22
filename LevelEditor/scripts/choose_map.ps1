@@ -3,7 +3,7 @@
 #   0 = continue the last state
 #   1 = new level (choose a map from the list, search while typing)
 #   2 = load an existing level (saved levels from the levels folder, search while typing)
-#   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\start_scenario.ps1)
+#   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\scenario.txt with the current starter of scenario\template)
 # Writes editor_script_installed.txt in the LevelEditor folder (and for "load" levels\_autoload.txt); remembers the last map and the map list in
 # %LOCALAPPDATA%\BAR-Level-Editor. Return value 1 on abort.
 # Call: choose_map.ps1 -Data <BAR\data>
@@ -187,9 +187,8 @@ function Get-Scenarios {
     $dir = Join-Path $root 'scenario\scenarios'
     if (-not (Test-Path $dir)) { return $res }
     foreach ($d in Get-ChildItem $dir -Directory) {
-        $start = Join-Path $d.FullName 'start_scenario.ps1'
         $script = Join-Path $d.FullName 'scenario.txt'
-        if (-not ((Test-Path $start) -and (Test-Path $script))) { continue }
+        if (-not (Test-Path $script)) { continue }   # the starter is the current one of the editor, so a scenario only needs its scenario.txt
         $map = [regex]::Match([IO.File]::ReadAllText($script), '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
         $title = $d.Name
         $readme = Join-Path $d.FullName 'README.txt'
@@ -561,6 +560,7 @@ while ($true) {
         )
         $players = 0
         $chosen = $null; $how = $null
+        $starter = Join-Path $root 'scenario\template\start_scenario.ps1'   # always the current starter, lobby and gadgets of the editor, not the copies in the package
         while ($true) {
             $chosen = Show-Chooser $scenarios 'Start a scenario: choose one' 'Type to search, arrow up/down, Enter = next, Esc = back' $null
             if (-not $chosen) { break }
@@ -584,16 +584,16 @@ while ($true) {
             # The host first (top left), the joiners wait in minimized windows until the host listens (127.0.0.1: nothing leaves this computer)
             $rects = Get-SplitRects $players
             $names = Get-SplitNames $players
-            $starter = Join-Path $chosen.Path 'start_scenario.ps1'
             $barDir = Split-Path $Data -Parent
+            $common = @('-BarPath', $barDir, '-ScenarioDir', $chosen.Path, '-EditorDir', $root)
             for ($k = 1; $k -lt $players; $k++) {
-                [void](Start-Process powershell -WindowStyle Minimized -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"'), '-BarPath', ('"' + $barDir + '"'),
-                    '-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k]))
+                [void](Start-Process powershell -WindowStyle Minimized -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"')) + @($common | ForEach-Object { '"' + $_ + '"' }) +
+                    @('-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k])))
             }
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath $barDir -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $starter @common -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
             continue # the games ended: back to the menu
         }
-        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $chosen.Path 'start_scenario.ps1') -BarPath (Split-Path $Data -Parent) $how.Args
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath (Split-Path $Data -Parent) -ScenarioDir $chosen.Path -EditorDir $root $how.Args
         continue # the game ended (or could not start): back to the menu, the next one can be tried at once
     }
 

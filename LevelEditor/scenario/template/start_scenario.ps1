@@ -8,14 +8,19 @@
 # rectangle of the screen (outer size, pixels) instead of the settings of the user (which are only read, never changed); -HostIp 127.0.0.1 lets
 # the host listen on this computer only; -NoBuild keeps the extra game that the host has built (it is locked while a game runs); -WaitForHost
 # waits (up to 2 minutes) until a host listens on the port before the game is started.
+# From the start menu of the Level Editor this script runs from the editor's own folder (scenario\template) with -ScenarioDir <folder of the scenario:
+# scenario.txt, which gadgets it needs> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, unit_restrictions in scripts\, bar_rules in
+# ..\shared), the starter, the lobby and the briefing are always the current ones of the editor, so a scenario built earlier is never out of date. Started
+# from the unpacked package of a scenario (Start Scenario.bat) both are empty: everything comes from the package folder.
 # Lobby (-Lobby with -HostGame or -Join): before anything is built the host sees a box per team and distributes the players who joined (TCP port
 # -LobbyPort, default 8453); a joiner only sends his name. When the host starts, everybody prepares (extra game, map), the host's game starts and
 # the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "Ralf=0,Anna=2" (first = host).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0)
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $here = $PSScriptRoot
+$pkg = if ($ScenarioDir) { $ScenarioDir } else { $here }   # the folder of the scenario (scenario.txt, which gadgets are needed)
 . (Join-Path $here 'player_mapping.ps1')
 . (Join-Path $here 'lobby.ps1')
 
@@ -24,7 +29,7 @@ function Fail($t) { Write-Host ""; Write-Host "ERROR: $t" -ForegroundColor Red; 
 # ---------------------------------------------------------------- Find BAR
 # (the same search as Find-Bar, Get-Engine and Get-GameVersion in shared\bar_common.ps1; this script runs alone on the recipient's computer, so it
 # carries its own copy: change both together)
-$memo = Join-Path $here 'bar_path.txt'
+$memo = Join-Path $pkg 'bar_path.txt'
 $candidates = @()
 if ($BarPath) { $candidates += $BarPath }
 if (Test-Path $memo) { $candidates += ([IO.File]::ReadAllText($memo)).Trim() }
@@ -72,7 +77,7 @@ if (-not $game) { $game = $fallback }
 if (-not $game) { Fail 'Game version not found.' }
 
 # ---------------------------------------------------------------- Fill the start script
-$script = [IO.File]::ReadAllText((Join-Path $here 'scenario.txt'))
+$script = [IO.File]::ReadAllText((Join-Path $pkg 'scenario.txt'))
 $map = [regex]::Match($script, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
 if ($Join -and -not $JoinIp) {
     # the last 10 addresses are kept for every scenario of this user (not in the scenario folder): pick one by its number or type a new one
@@ -143,15 +148,20 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
         Write-Host 'The host started the game. Getting ready ...'
     }
 }
-# Tower Defense, Capture the Flag and restricted scenarios: the waves run in a gadget (td_waves.lua in this folder), the flags in another
+# Tower Defense, Capture the Flag and restricted scenarios: the waves run in a gadget (td_waves.lua), the flags in another
 # (ctf_game.lua), the restrictions in a third (unit_restrictions.lua). The
 # official game cannot load them, so a small extra game "Tower Defense Scenario" is built on the installed official game (only the gadgets are
 # added; nothing of the official game is changed).
 $gametype = $game
-$tdGadget = Join-Path $here 'td_waves.lua'
-$ctfGadget = Join-Path $here 'ctf_game.lua'
-$rstGadget = Join-Path $here 'unit_restrictions.lua'
-if ((Test-Path $tdGadget) -or (Test-Path $ctfGadget) -or (Test-Path $rstGadget)) {
+# which gadgets the scenario needs: the ones its package holds; their text: the current one of the editor (-EditorDir) or the one of the package
+$tdNeeded = Test-Path (Join-Path $pkg 'td_waves.lua')
+$ctfNeeded = Test-Path (Join-Path $pkg 'ctf_game.lua')
+$rstNeeded = Test-Path (Join-Path $pkg 'unit_restrictions.lua')
+$gadgetDir = if ($EditorDir) { Join-Path $EditorDir 'scripts' } else { $pkg }
+$tdGadget = Join-Path $gadgetDir 'td_waves.lua'
+$ctfGadget = Join-Path $gadgetDir 'ctf_game.lua'
+$rstGadget = Join-Path $gadgetDir 'unit_restrictions.lua'
+if ($tdNeeded -or $ctfNeeded -or $rstNeeded) {
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
     $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
@@ -172,10 +182,10 @@ return {
 "@
     $utf8n = New-Object Text.UTF8Encoding($false)
     $files = @(, @('modinfo.lua', $modinfo))
-    if (Test-Path $tdGadget) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
-    if (Test-Path $ctfGadget) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
-    if (Test-Path $rstGadget) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
-    $rulesFile = Join-Path $here 'bar_rules.lua' # shared rules (packages made before this file existed carry a gadget that does not need it)
+    if ($tdNeeded) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
+    if ($ctfNeeded) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
+    if ($rstNeeded) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
+    $rulesFile = if ($EditorDir) { Join-Path (Join-Path (Split-Path $EditorDir -Parent) 'shared') 'bar_rules.lua' } else { Join-Path $pkg 'bar_rules.lua' } # shared rules (packages made before this file existed carry a gadget that does not need it)
     if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
     if ($build) {
         $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
