@@ -1,6 +1,6 @@
 # Start selection for the Level Editor:
 #   Main menu: arrow up/down + Enter or a digit key
-#   0 = continue the last state
+#   0 = continue the last saved map (the state saved by the editor)
 #   1 = new level (choose a map from the list, search while typing)
 #   2 = load an existing level (saved levels from the levels folder, search while typing)
 #   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\scenario.txt with the current starter of scenario\template)
@@ -520,12 +520,12 @@ while ($true) {
     $haveLevels = $levels.Count -gt 0
     $scenarios = @(Get-Scenarios)
     $menu = @(
-        @{ Key = '0'; Mode = 3; On = [bool]$lastLevel; Text = $(if ($lastLevel) { 'Continue the last state: {0}' -f $lastLevel.Label } else { 'Continue the last state (no state saved yet)' }) },
+        @{ Key = '0'; Mode = 3; On = [bool]$lastLevel; Text = $(if ($lastLevel) { 'Continue last saved map: {0}' -f $lastLevel.Label } else { 'Continue last saved map (nothing saved yet)' }) },
         @{ Key = '1'; Mode = 1; On = $true; Text = 'Create a new level (choose a map)' },
         @{ Key = '2'; Mode = 2; On = $haveLevels; Text = $(if ($haveLevels) { 'Load an existing level ({0} saved)' -f $levels.Count } else { 'Load an existing level (no saved levels yet)' }) },
         @{ Key = '3'; Mode = 4; On = $haveLevels; Text = $(if ($haveLevels) { 'Create a scenario package (ZIP) from a level (to pass on, official game)' } else { 'Create a scenario package (ZIP) from a level (no saved levels yet)' }) },
-        @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} built)' -f $scenarios.Count } else { 'Start a scenario (none built yet: key 3)' }) },
-        @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} built)' -f $scenarios.Count } else { 'Upgrade a scenario package (none built yet: key 3)' }) }
+        @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} available)' -f $scenarios.Count } else { 'Start a scenario (none available yet: key 3)' }) },
+        @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -533,7 +533,7 @@ while ($true) {
     Write-Host 'Level Editor' -ForegroundColor Cyan
     Write-Host ''
     $menuTop = [Console]::CursorTop
-    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
+    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
     Write-Host ''
     Write-Host 'Arrow up/down + Enter or digit key, Esc = cancel' -ForegroundColor DarkGray
     $mode = 0
@@ -543,14 +543,14 @@ while ($true) {
         for ($i = 0; $i -lt $menu.Count; $i++) {
             $line = ('  {0}  {1}' -f $menu[$i].Key, $menu[$i].Text)
             if ($line.Length -gt $w) { $line = $line.Substring(0, $w) }
-            [Console]::SetCursorPosition(0, $menuTop + $i)
+            [Console]::SetCursorPosition(0, $menuTop + $i + $(if ($i -ge 3) { 1 } else { 0 }))   # an empty line between the levels (0 to 2) and the scenarios (3 to 5)
             if ($i -eq $sel) { [Console]::ForegroundColor = 'Black'; [Console]::BackgroundColor = 'Gray' }
             elseif (-not $menu[$i].On) { [Console]::ForegroundColor = 'DarkGray' }
             elseif ($menu[$i].Key -eq '0') { [Console]::ForegroundColor = 'Green' }
             [Console]::Write($line.PadRight($w))
             [Console]::ForegroundColor = $fg0; [Console]::BackgroundColor = $bg0
         }
-        [Console]::SetCursorPosition(0, $menuTop + $menu.Count + 2)
+        [Console]::SetCursorPosition(0, $menuTop + $menu.Count + 3)
         $k = [Console]::ReadKey($true)
         if ($k.Key -eq 'Escape') { Clear-Host; Write-Host 'Cancelled.'; exit 1 }
         switch ($k.Key) {
