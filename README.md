@@ -32,7 +32,7 @@ After a BAR update or a change of the code nothing has to be done: the start scr
 <details>
 <summary>What the setup does exactly</summary>
 
-`install_editor.bat` starts the PowerShell script `install_editor.ps1` with `-ExecutionPolicy Bypass` (only for this script, your system setting stays untouched). It builds the extra game `LevelEditorMod.sdz` in your BAR `data\games` folder, creates folder junctions in the BAR data folder (`LevelEditor` and `LevelEditorBlueprints`, pointing to the `levels` and `blueprints` folders of this repository), writes `start_level_editor.bat` and puts a shortcut on your desktop. The official game files are not modified. Read the scripts first if you want to be sure; `uninstall_editor.bat` undoes everything.
+`install_editor.bat` starts the PowerShell script `scripts\install_editor.ps1` with `-ExecutionPolicy Bypass` (only for this script, your system setting stays untouched). It builds the extra game `LevelEditorMod.sdz` in your BAR `data\games` folder, creates folder junctions in the BAR data folder (`LevelEditor` and `LevelEditorBlueprints`, pointing to the `levels` and `blueprints` folders of this repository), writes `start_level_editor.bat` and puts a shortcut on your desktop. The official game files are not modified. Read the scripts first if you want to be sure; `uninstall_editor.bat` undoes everything.
 </details>
 
 **BluePrinter (optional, for normal games):** run `BluePrinter\install_blueprinter.bat`, then enable *Allow user widgets* in the game settings and switch **BluePrinter** on in the widget list (F11). `BluePrinter\uninstall_blueprinter.bat` removes it again (your blueprints stay).
@@ -90,7 +90,7 @@ A level you built can become a **scenario** that others play with their own, unm
    - lists the **values stored in the level**,
    - asks for the **title** (Enter keeps it) and the **name** of the scenario (its ID: Enter takes it, or type another; an existing scenario of that name is only overwritten after a question),
    - builds the package: `LevelEditor\scenario\scenarios\<id>.zip` (and the same as a folder).
-4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR (it asks before it downloads a missing map). For several players in the same network the same folder has `Host Game.bat` (one player) and `Join Game.bat` (the others). Key **4** in the start menu starts a scenario you built yourself.
+4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR (it asks before it downloads a missing map). For several players in the same network the same folder has `Host Game.bat` (one player: a lobby with a box per team in which he distributes the players who join) and `Join Game.bat` (the others only enter the address); the start menu key **4** of the Level Editor also offers a split screen with all games on one computer. Key **4** in the start menu starts a scenario you built yourself.
 
 ![Level Editor, scenario info (button I)](docs/level-editor-scenario.jpg)
 
