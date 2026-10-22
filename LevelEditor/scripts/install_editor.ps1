@@ -69,6 +69,7 @@ $ctfPage = Get-Content (Join-Path $here 'led_ctf.lua') -Raw
 $gadgetRst = Get-Content (Join-Path $here 'unit_restrictions.lua') -Raw
 $rstData = Get-Content (Join-Path $here 'led_restrictions.lua') -Raw
 $helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
+$lootStub = Get-Content (Join-Path $here 'pve_supply_drops_stub.lua') -Raw # replaces the lootbox gadget of the game (it let enemies capture the flags and collection points)
 $shared = Get-Content $sharedFile -Raw
 $rules = Get-Content $rulesFile -Raw
 $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
@@ -78,6 +79,7 @@ foreach ($e in @(
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
+    @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
     @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
     @('luaui/Include/editor_common.lua', $shared),

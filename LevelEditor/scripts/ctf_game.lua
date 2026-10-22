@@ -572,6 +572,8 @@ function gadget:UnitDestroyed(unitID)
 end
 
 -- Flags and collection points cannot be taken apart: no damage, no reclaim, capture or self destruction, and no change of the team
+-- (the extra game also replaces the gadget pve_supply_drops.lua of the game, which lets enemies capture units with "lootbox" in the name, by a stub:
+-- scripts/pve_supply_drops_stub.lua; the two protections here are the second line of defense)
 function gadget:AllowUnitTransfer(unitID)
 	if protected[unitID] then
 		return false -- the capture of the game (pve_supply_drops.lua: lootboxes) would hand the unit to the enemy next to it

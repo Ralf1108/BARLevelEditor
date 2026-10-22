@@ -722,6 +722,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     if ($rst) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
     if ($td -or $ctf -or $rst) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
+    if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'pve_supply_drops_stub.lua') (Join-Path $folder 'pve_supply_drops_stub.lua') } # the stub that replaces the lootbox gadget of the game (it let enemies capture the flags)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"

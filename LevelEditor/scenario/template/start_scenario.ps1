@@ -161,6 +161,7 @@ $gadgetDir = if ($EditorDir) { Join-Path $EditorDir 'scripts' } else { $pkg }
 $tdGadget = Join-Path $gadgetDir 'td_waves.lua'
 $ctfGadget = Join-Path $gadgetDir 'ctf_game.lua'
 $rstGadget = Join-Path $gadgetDir 'unit_restrictions.lua'
+$lootStub = Join-Path $gadgetDir 'pve_supply_drops_stub.lua'   # Capture the Flag: replaces the lootbox gadget of the game (it let enemies capture the flags)
 if ($tdNeeded -or $ctfNeeded -or $rstNeeded) {
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
@@ -184,6 +185,7 @@ return {
     $files = @(, @('modinfo.lua', $modinfo))
     if ($tdNeeded) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
     if ($ctfNeeded) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
+    if ($ctfNeeded -and (Test-Path $lootStub)) { $files += , @('luarules/gadgets/pve_supply_drops.lua', [IO.File]::ReadAllText($lootStub)) }
     if ($rstNeeded) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
     $rulesFile = if ($EditorDir) { Join-Path (Join-Path (Split-Path $EditorDir -Parent) 'shared') 'bar_rules.lua' } else { Join-Path $pkg 'bar_rules.lua' } # shared rules (packages made before this file existed carry a gadget that does not need it)
     if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
