@@ -12,7 +12,7 @@ This manual describes the editor part by part. The short version for newcomers i
 
 ## Starting
 Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). The start menu is always shown (arrow up/down and Enter, or a digit key):
-- **0** continue the last state (the editor saves every 2 minutes and when leaving as `_last`),
+- **0** continue the last saved map (the statethe editor saves every 2 minutes and when leaving as `_last`),
 - **1** new level: choose a map (search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones; the picture of the highlighted map with its size, players and terrain is shown next to the list, and with **Tab** and **Left/Right** you filter by size, number of players and terrain),
 - **2** load an existing level (list from `levels`, with search),
 - **3** build a scenario package (ZIP) from a level,
