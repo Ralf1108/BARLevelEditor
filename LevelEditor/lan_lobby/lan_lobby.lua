@@ -51,6 +51,35 @@ local function lobby() return WG.LibLobby and WG.LibLobby.lobby end
 local function setStatus(s) status = s; log("status:", s); if ui.status then ui.status:SetText(s) end end
 local function cleanName(n) return ((n or ""):gsub("[^%w_%-%[%]]", ""):sub(1, 20)) end
 
+-- the player name in a LAN game: what is typed on the LAN Play page; else the name the lobby logs in with (Configuration.userName, saved in the lobby settings; the
+-- player need not be logged in), else the name from Steam, else "Player". A name that differs from the account name is remembered in lan_name.txt.
+local function defaultName()
+	local cf = Config()
+	local n = cf and cf.userName
+	if type(n) ~= "string" or cleanName(n) == "" then n = cf and cf.suggestedNameFromSteam end
+	n = cleanName(type(n) == "string" and n or "")
+	return n ~= "" and n or "Player"
+end
+
+local function savedName()
+	local s = VFS.LoadFile("lan_name.txt", VFS.RAW)
+	s = s and cleanName(s)
+	if s and s ~= "" then return s end
+end
+
+local function playerName()
+	if cfg.name and cfg.name ~= "" then return cleanName(cfg.name) end
+	if ui.name and ui.name.text then
+		local n = cleanName(ui.name.text)
+		if n ~= "" then
+			if n == defaultName() then os.remove("lan_name.txt")
+			else local f = io.open("lan_name.txt", "w"); if f then f:write(n); f:close() end end
+			return n
+		end
+	end
+	return savedName() or defaultName()
+end
+
 ---------------------------------------------------------------- the small server (host only)
 local function sendLine(c, text) if c.sock then c.sock:send(text .. "\n") end end
 local function toAll(text, except) for _, c in ipairs(S.conns) do if c.name and c ~= except then sendLine(c, text) end end end
@@ -483,7 +512,7 @@ local function startHosting()
 	local s, e = socket.bind("*", PORT)
 	if not s then setStatus("Cannot listen on port " .. PORT .. ": " .. tostring(e)); return end
 	s:settimeout(0)
-	local name = cleanName(cfg.name or (cf and cf:GetPlayerName()) or "Player")
+	local name = playerName()
 	local game = cf and cf:GetDefaultGameName() or "Beyond All Reason"
 	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {} } }
 	found = {}; updateFoundUi()
@@ -494,7 +523,7 @@ end
 local function joinHost(ip)
 	local cf = Config()
 	if S then lanStop("join") end
-	local name = cleanName(cfg.name or (cf and cf:GetPlayerName()) or "Player")
+	local name = playerName()
 	setStatus("Connecting to " .. ip .. " as " .. name .. " ...")
 	lanConnect("client", ip, name)
 end
@@ -851,6 +880,10 @@ buildUi = function()
 	local y = 0
 	TextBox:New { parent = P, x = 0, y = y + 4, right = 0, height = 30, text = "LAN Play - play with computers in the same network (no server needed)", objectOverrideFont = font }
 	y = y + 44
+	TextBox:New { parent = P, x = 0, y = y + 8, width = 130, height = 30, text = "Your name", objectOverrideFont = font }
+	ui.name = EditBox:New { parent = P, x = 140, y = y + 2, width = 260, height = 36, text = savedName() or defaultName(), objectOverrideFont = font }
+	TextBox:New { parent = P, x = 416, y = y + 8, right = 0, height = 30, text = "(your account name; change it if you like)", objectOverrideFont = font }
+	y = y + 48
 	Button:New { parent = P, x = 0, y = y, width = 260, height = 44, caption = "Host a LAN game", objectOverrideFont = font, classname = "action_button", OnClick = { function() startHosting() end } }
 	TextBox:New { parent = P, x = 276, y = y + 8, right = 0, height = 30, text = "you get the multiplayer battle room: map, options, chat", objectOverrideFont = font }
 	y = y + 60
@@ -875,7 +908,7 @@ buildUi = function()
 		if sub and sub.CloseTabs then pcall(sub.CloseTabs) end
 	end } }
 	ui.panel = P
-	log("panel built")
+	log("panel built; player name on the page:", tostring(ui.name and ui.name.text), "(account name:", tostring(cf.userName) .. ")")
 	return true
 end
 
