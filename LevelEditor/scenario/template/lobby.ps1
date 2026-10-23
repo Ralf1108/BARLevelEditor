@@ -11,8 +11,9 @@
 # (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>\) answers "HAVE <hash>", otherwise he opens a second connection to the same port, sends "FETCH <hash>", gets
 # "SIZE <n>" and n bytes (a zip) and then says "HAVE <hash>"; "PROGRESS <percent>" tells the host how far he is. The host cannot start before everybody has it.
 # The map: the host adds "MAP <size> <sha256> <file name>" to the offer (if he has the archive of the map). A joiner who has not got the map chooses
-# D (download it from the internet, the official map service) or H (get it from the host): "MAPREQ", the host sees the question and answers Y / N with
-# "MAPYES" / "MAPNO"; after "MAPYES" the joiner fetches the file on a second connection ("FETCHMAP <sha256> <his name>"), checks the hash, keeps it in the
+# nothing is asked: a joiner in the same network as the host (Test-SameLan: the address of the other one is in a subnet of one of his network cards) says
+# "MAPREQ" at once and the host answers "MAPYES" (a request from outside the network gets "MAPNO"); everybody else downloads the map from the internet (the
+# official map service). Only if that fails the joiner is offered D (download again) or H (ask the host). After "MAPYES" the joiner fetches the file on a second connection ("FETCHMAP <sha256> <his name>"), checks the hash, keeps it in the
 # cache (an extra data folder of the engine) and says "MAPOK" (also when the map was there from the start); "MAPPROGRESS <percent>" shows how far he is.
 # Update of the editor: to a joiner whose files are older than the host's (and only if the host runs the editor from a folder with scripts) the host adds
 # "UPDATE <size> <sha256 of the zip> <number of files>" after VERSION; the joiner may fetch it ("FETCHUPDATE <sha256>" on a second connection), it is checked
@@ -326,6 +327,25 @@ $script:MapMaxBytes = 1GB
 # an extra data folder of the engine (SPRING_DATADIR; the maps are in maps inside): maps from hosts stay there and the data folder of the player is not touched
 function Get-MapExtraRoot { return (Join-Path (Get-BundleCacheRoot) 'Maps') }
 
+# $true if the address is on this computer or in a subnet of one of its network cards (the same local network); $addr: an address or a name
+function Test-SameLan([string]$addr) {
+    try {
+        $ip = $null
+        if (-not [Net.IPAddress]::TryParse($addr, [ref]$ip)) { $ip = [Net.Dns]::GetHostAddresses($addr) | Where-Object { $_.AddressFamily -eq 'InterNetwork' } | Select-Object -First 1 }
+        if (-not $ip) { return $false }
+        if ($ip.IsIPv4MappedToIPv6) { $ip = $ip.MapToIPv4() }
+        if ([Net.IPAddress]::IsLoopback($ip) -or $ip.AddressFamily -ne 'InterNetwork') { return [Net.IPAddress]::IsLoopback($ip) }
+        $o = [BitConverter]::ToUInt32($ip.GetAddressBytes()[3..0], 0)
+        foreach ($a in @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue)) {
+            if ($a.IPAddress -like '169.254.*' -or $a.PrefixLength -lt 8) { continue }
+            $m = [uint32](([uint64]4294967295 -shl (32 - $a.PrefixLength)) -band 4294967295)
+            $l = [BitConverter]::ToUInt32(([Net.IPAddress]::Parse($a.IPAddress)).GetAddressBytes()[3..0], 0)
+            if (($o -band $m) -eq ($l -band $m)) { return $true }
+        }
+    } catch { }
+    return $false
+}
+
 function Test-MapFileName([string]$n) { return (($n -cmatch '^[A-Za-z0-9._() \-]{1,100}\.(sd7|sdz)$') -and ($n -notmatch '\.\.')) }
 
 function Get-FileSha256([string]$path) {
@@ -457,7 +477,7 @@ function Complete-BundleFetch($f) {
 }
 
 function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null, $bundle = $null, [string]$updateRoot = $null) {
-    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); MapAsk = (New-Object Collections.ArrayList); UpdateRoot = $updateRoot; Update = $null; Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
+    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); UpdateRoot = $updateRoot; Update = $null; Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
               Focus = @($teamInfo).Count; Cursor = 0; Held = $null; HeldFrom = 0; Msg = ''; Info = ''; ConfirmCancel = $false; Dirty = $true; Done = $null }
 }
 
@@ -483,7 +503,6 @@ function Remove-LobbyPlayer($st, $p) {
     if ($p.Client) { try { $p.Client.Close() } catch { } }
     $st.Players.Remove($p)
     if ($st.Held -eq $p) { $st.Held = $null }
-    [void]$st.MapAsk.Remove($p)
     $st.Dirty = $true
 }
 
@@ -516,13 +535,6 @@ function Move-LobbyHeld($st, [int]$dir) {
 function Invoke-LobbyKey($st, $k) {
     $startBox = $st.Teams.Count   # the boxes are the teams 0 .. n-1, then "Start game"
     $st.Dirty = $true
-    if ($st.MapAsk.Count -gt 0) {
-        # a joiner asks for the map: Y sends it, N refuses (every other key is ignored while the question is there)
-        $ask = $st.MapAsk[0]; $kn = $k.Key.ToString()
-        if ($kn -eq 'Y' -or $kn -eq 'J') { $ask.MapGrant = $true; $ask.Map = 'loading'; $ask.MapPct = 0; Send-LobbyLine $ask 'MAPYES'; $st.MapAsk.RemoveAt(0); $st.Info = "The map goes to $($ask.Name)." }
-        elseif ($kn -eq 'N') { $ask.Map = 'missing'; Send-LobbyLine $ask 'MAPNO'; $st.MapAsk.RemoveAt(0); $st.Info = "$($ask.Name) did not get the map." }
-        return
-    }
     if ($st.ConfirmCancel) {
         if ($k.Key -eq 'Escape') { $st.Done = 'cancel'; return }
         $st.ConfirmCancel = $false
@@ -582,7 +594,7 @@ function Get-LobbyLines($st) {
             $p = $pl[$i]
             $txt = '    ' + $p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })
             if ($p.VerState -ne 'same') { $txt += '   (files ' + $(switch ($p.VerState) { 'older' { 'older than yours: needs an update' } 'newer' { 'newer than yours' } default { 'differ from yours' } }) + ')' }
-            if ($p.Data -eq 'ready' -and $p.Map -ne 'ready') { $txt += $(switch ($p.Map) { 'asking' { '   (asks for the map)' } 'loading' { "   (loading the map: $($p.MapPct) %)" } default { '   (map not there yet)' } }) }
+            if ($p.Data -eq 'ready' -and $p.Map -ne 'ready') { $txt += $(if ($p.Map -eq 'loading') { "   (loading the map from you: $($p.MapPct) %)" } else { '   (getting the map)' }) }
             if ($p.Data -ne 'ready') { $txt += $(if ($p.Data -eq 'loading') { "   (loading the scenario: $($p.Pct) %)" } else { '   (scenario not loaded yet)' }) }
             $kind = 0
             if ($st.Held -eq $p) { $txt += '   <- moving: arrows move, Enter drops, Esc puts back'; $kind = 5 }
@@ -592,11 +604,6 @@ function Get-LobbyLines($st) {
         for ($g = 0; $g -lt $gap; $g++) { Add-L '' 0 }
     }
     $why = Test-LobbyStart $st
-    if ($st.MapAsk.Count -gt 0) {
-        $mp = $st.Bundle.Map
-        Add-L ("{0} asks for the map '{1}' ({2} MB). Send it? Y = yes, N = no" -f $st.MapAsk[0].Name, $mp.Name, [Math]::Round($mp.Size / 1MB, 1)) 6
-        Add-L '' 0
-    }
     Add-L ('{0} [ Start game ]{1}' -f $(if ($st.Focus -eq $t) { '>' } else { ' ' }), $(if ($why) { '   ' + $why } else { '   ready' })) $(if ($st.Focus -eq $t) { 3 } elseif ($why) { 2 } else { 7 })
     Add-L '' 0
     if ($st.Msg) { Add-L $st.Msg 6 }
@@ -745,7 +752,12 @@ function Update-LobbyNet($st, $listener) {
             if ($l -eq 'BYE') { $p.Closed = $true }
             elseif ($l -like 'HAVE *' -and $st.Bundle -and $l.Substring(5).Trim() -eq $st.Bundle.Hash) { $p.Data = 'ready'; $st.Dirty = $true }
             elseif ($l -eq 'MAPOK') { $p.Map = 'ready'; $st.Dirty = $true }
-            elseif ($l -eq 'MAPREQ' -and $st.Bundle -and $st.Bundle.Map -and $p.Map -ne 'ready' -and -not $st.MapAsk.Contains($p)) { $p.Map = 'asking'; [void]$st.MapAsk.Add($p); $st.Dirty = $true }
+            elseif ($l -eq 'MAPREQ' -and $st.Bundle -and $st.Bundle.Map -and $p.Map -ne 'ready') {
+                # nothing is asked: a joiner of the same network gets the map, one from outside has to download it from the internet
+                if (Test-SameLan ([string]$p.Client.Client.RemoteEndPoint.Address)) { $p.MapGrant = $true; $p.Map = 'loading'; $p.MapPct = 0; Send-LobbyLine $p 'MAPYES'; $st.Info = "The map goes to $($p.Name)." }
+                else { Send-LobbyLine $p 'MAPNO' }
+                $st.Dirty = $true
+            }
             elseif ($l -like 'MAPPROGRESS *') { $pc = 0; if ([int]::TryParse($l.Substring(12).Trim(), [ref]$pc) -and $p.Map -eq 'loading') { $p.MapPct = $pc; $st.Dirty = $true } }
             elseif ($l -like 'PROGRESS *') { $pc = 0; if ([int]::TryParse($l.Substring(9).Trim(), [ref]$pc) -and $p.Data -ne 'ready') { $p.Pct = $pc; $p.Data = 'loading'; $st.Dirty = $true } }
         }
@@ -764,7 +776,7 @@ function New-LobbyKey([string]$key, [switch]$Shift) {
 # The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when he cancels.
 # $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
 # there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
-function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null, [bool]$autoMap = $false, [string]$updateRoot = $null) {
+function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null, [string]$updateRoot = $null) {
     $st = New-LobbyState $teamInfo $hostName $port $version $bundle $updateRoot
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     $st.Addr = if ($addr.Count -gt 0) { $addr -join ' / ' } else { '127.0.0.1' }
@@ -779,7 +791,6 @@ function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyF
         if ($console) { Clear-Host; [Console]::CursorVisible = $false }
         while (-not $st.Done) {
             Update-LobbyNet $st $listener
-            if ($autoMap -and $st.MapAsk.Count -gt 0) { Invoke-LobbyKey $st (New-LobbyKey 'Y') }   # tests / automation: a joiner who asks for the map gets it
             $k = $null
             if ($keyFeed) {
                 if ($fi -lt $feed.Count -and (Get-Date) -ge $nextFeed) {
@@ -862,7 +873,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
     $dataText = ''; $dataKind = 0; $fetch = $null; $lastPct = -10; $script:BundleDir = $null
     $verCmp = ''; $hostVerHash = ''; $updInfo = $null; $updState = ''; $updFetch = $null; $updStage = $null; $updLines = @(); $updAutoUsed = 0; $updLastPct = -10; $updChanges = @(); $updNote = ''; $updShown = $false
-    $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10
+    $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10; $mapChosen = $false; $sameLan = Test-SameLan $ip
     $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
     try {
@@ -899,7 +910,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     try { $mapFetch = Start-BundleFetch $ip $port $mapInfo.Hash ('FETCHMAP {0} {1}' -f $mapInfo.Hash, $script:JoinerName) $script:MapMaxBytes; $mapState = 'fetching'; $mapText = "Map: loading ..."; $mapKind = 6 }
                     catch { $mapState = 'prompt'; $mapText = 'Map: no connection for the map. ' }
                 }
-                elseif ($l -eq 'MAPNO' -and $mapState -eq 'waithost') { $mapState = 'prompt'; $mapText = 'Map: the host did not send it. ' }
+                elseif ($l -eq 'MAPNO' -and $mapState -eq 'waithost') { $mapState = 'prompt'; $mapText = 'Map: the host did not send it. '; $mapChosen = $true }
                 elseif ($l -like 'OFFER *') {
                     $o = @($l.Substring(6).Trim() -split ' ')
                     if (-not (Test-BundleId $o[0]) -or $o.Count -lt 2 -or [long]$o[1] -gt $script:BundleMaxBytes) { $result = 'refused: the host offered a scenario that cannot be taken' }
@@ -988,6 +999,8 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 if ($line -ne $script:LastMapPrompt) { $script:LastMapPrompt = $line; $dirty = $true }
                 $mapShown = $line; $mapKind = 6
                 if (-not $mapKey -and $mapCtx -and $mapCtx.Auto -and -not $mapAutoUsed) { $mapKey = $mapCtx.Auto; $mapAutoUsed = $true }
+                # nothing is asked: the same network as the host and he has the map: from him; otherwise from the internet. Only after a failure the choice is shown
+                if (-not $mapKey -and -not $mapChosen) { $mapChosen = $true; $mapKey = $(if ($sameLan -and $mapInfo) { 'H' } else { 'D' }) }
                 if ($mapKey -eq 'D') { $mapState = 'downloading'; $mapText = "Map: downloading '$mapName' from the internet ..."; $dirty = $true }
                 elseif ($mapKey -eq 'H' -and $mapInfo) { $mapState = 'waithost'; $mapText = 'Map: waiting for the host to agree ...'; Send-LobbyLine $p 'MAPREQ'; $dirty = $true }
                 $mapKey = $null
