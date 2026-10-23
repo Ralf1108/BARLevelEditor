@@ -6,6 +6,10 @@
 # "TEAM <n> <text>" and "ROSTER <name>=<team>;..." whenever something changes, at the end "START" (the
 # joiners prepare: extra game, map) or "CANCEL"; when every joiner has said "READY" and the host's game is running the host sends "GO" and the
 # joiners connect to it.
+# The scenario itself (a bundle: scenario.txt and the gadgets it uses, data only, never programs) goes from the host to the joiners through the lobby:
+# after "OK" and "VERSION" the host sends "OFFER <hash> <size>" (to a joiner with the same version); a joiner who has that hash in his cache
+# (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>\) answers "HAVE <hash>", otherwise he opens a second connection to the same port, sends "FETCH <hash>", gets
+# "SIZE <n>" and n bytes (a zip) and then says "HAVE <hash>"; "PROGRESS <percent>" tells the host how far he is. The host cannot start before everybody has it.
 # A joiner whose files are not the same as the host's (other hash) stays in the lobby, marked, but the game cannot start until he has the same version.
 # The focus starts on "Start game" (the last box): Enter or F5 starts at once.
 # Keys of the host: Tab / Shift+Tab or Left / Right = next box, Up / Down = player in the box, Enter = pick the player up (then Up / Down /
@@ -46,15 +50,151 @@ function Format-PlayDate([string]$d) {
     return $d
 }
 
-function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null) {
-    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
+# ---------------------------------------------------------------- Bundle: the scenario as data
+# What a bundle may hold (names only, in this order for the hash). Lua files only run inside the game engine; nothing that runs on the computer itself
+# (no .ps1, .bat) is ever taken from another computer.
+$script:BundleFiles = @('bar_rules.lua', 'ctf_game.lua', 'pve_supply_drops_stub.lua', 'scenario.txt', 'td_waves.lua', 'unit_restrictions.lua')
+$script:BundleMaxBytes = 64MB   # per bundle (zip and unpacked)
+
+function Get-BundleCacheRoot { return (Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Cache') }
+
+# SHA-256 over the names and bytes of the files of a bundle in the folder (the id of the bundle: the same data give the same id on every computer)
+function Get-BundleHash([string]$dir) {
+    $bytes = New-Object System.Collections.Generic.List[byte]
+    foreach ($n in $script:BundleFiles) {
+        $f = Join-Path $dir $n
+        if (-not (Test-Path $f)) { continue }
+        $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($n + "`n"))
+        $bytes.AddRange([IO.File]::ReadAllBytes($f))
+        $bytes.AddRange([Text.Encoding]::UTF8.GetBytes("`n"))
+    }
+    return ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($bytes.ToArray())) -replace '-', '')
+}
+
+# the id comes from the network: only 64 hex digits may become a folder name
+function Test-BundleId([string]$hash) { return ($hash -cmatch '^[0-9A-F]{64}$') }
+
+function Test-BundleCached([string]$hash) { return ((Test-BundleId $hash) -and (Test-Path (Join-Path (Join-Path (Get-BundleCacheRoot) $hash) 'complete.txt'))) }
+
+# puts the bundle files of a folder into the cache (folder <hash>, finished when complete.txt is there); returns Hash and Dir
+function Install-Bundle([string]$srcDir) {
+    $hash = Get-BundleHash $srcDir
+    $dest = Join-Path (Get-BundleCacheRoot) $hash
+    if (-not (Test-BundleCached $hash)) {
+        if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+        New-Item -ItemType Directory -Force $dest | Out-Null
+        foreach ($n in $script:BundleFiles) { if (Test-Path (Join-Path $srcDir $n)) { Copy-Item (Join-Path $srcDir $n) $dest } }
+        Set-Content -Path (Join-Path $dest 'complete.txt') -Value 'complete' -Encoding ASCII
+    }
+    return [pscustomobject]@{ Hash = $hash; Dir = $dest }
+}
+
+# the zip that goes over the network (only the bundle files)
+function New-BundleZip([string]$dir, [string]$zipPath) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+    $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
+    try {
+        foreach ($n in $script:BundleFiles) {
+            if (Test-Path (Join-Path $dir $n)) { [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $dir $n), $n, [IO.Compression.CompressionLevel]::Optimal) }
+        }
+    } finally { $zip.Dispose() }
+}
+
+# unpacks a zip from another computer into an empty folder: only the names of $script:BundleFiles, nothing else, no paths, at most BundleMaxBytes
+function Expand-BundleZip([string]$zipPath, [string]$destDir) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [IO.Compression.ZipFile]::OpenRead($zipPath)
+    try {
+        $total = 0L
+        foreach ($e in $zip.Entries) {
+            $name = $script:BundleFiles | Where-Object { $_ -eq $e.FullName } | Select-Object -First 1
+            if (-not $name) { throw "The scenario holds a file that is not allowed: $($e.FullName)" }
+            $total += $e.Length
+            if ($total -gt $script:BundleMaxBytes) { throw 'The scenario is too big.' }
+            $in = $e.Open(); $out = [IO.File]::Create((Join-Path $destDir $name))
+            try { $in.CopyTo($out) } finally { $out.Close(); $in.Close() }
+        }
+    } finally { $zip.Dispose() }
+}
+
+# the host's side: the bundle in the cache folder $dir as offered in the lobby (Hash, Size and the zip to send)
+function New-HostBundle([string]$dir) {
+    $zip = Join-Path $env:TEMP ('bar_bundle_' + [Guid]::NewGuid().ToString('N') + '.zip')
+    New-BundleZip $dir $zip
+    return [pscustomobject]@{ Hash = (Get-BundleHash $dir); Size = (Get-Item $zip).Length; Zip = $zip }
+}
+
+# the joiner's side of a transfer: a second connection that fetches the zip of the bundle. Returns the state for Step-BundleFetch / Complete-BundleFetch.
+function Start-BundleFetch([string]$ip, [int]$port, [string]$hash) {
+    $root = Get-BundleCacheRoot
+    New-Item -ItemType Directory -Force $root | Out-Null
+    $c = New-Object Net.Sockets.TcpClient
+    $ar = $c.BeginConnect($ip, $port, $null, $null)
+    if (-not $ar.AsyncWaitHandle.WaitOne(5000)) { $c.Close(); throw 'No connection to the host for the scenario.' }
+    $c.EndConnect($ar)
+    $b = [Text.Encoding]::UTF8.GetBytes("FETCH $hash`n"); $c.GetStream().Write($b, 0, $b.Length)
+    $part = Join-Path $root ($hash + '.part')
+    return @{ Client = $c; Hash = $hash; Part = $part; File = [IO.File]::Create($part); Total = -1L; Got = 0L; Header = ''; Buf = (New-Object byte[] 262144) }
+}
+
+# reads what has arrived: 'working', 'done' or 'error: <reason>'
+function Step-BundleFetch($f) {
+    try {
+        $c = $f.Client; $s = $c.GetStream()
+        while ($f.Total -lt 0 -and $c.Available -gt 0) {   # the first line "SIZE <n>"
+            $b = $s.ReadByte(); if ($b -lt 0) { break }
+            if ($b -eq 10) {
+                if ($f.Header -notmatch '^SIZE (\d+)$') { return 'error: the host answered something else' }
+                $f.Total = [long]$Matches[1]
+                if ($f.Total -gt $script:BundleMaxBytes) { return 'error: the scenario is too big' }
+            } else {
+                $f.Header += [char]$b
+                if ($f.Header.Length -gt 40) { return 'error: the host answered something else' }
+            }
+        }
+        if ($f.Total -ge 0) {
+            while ($c.Available -gt 0 -and $f.Got -lt $f.Total) {
+                $n = $s.Read($f.Buf, 0, [int][Math]::Min($f.Buf.Length, $f.Total - $f.Got))
+                if ($n -le 0) { break }
+                $f.File.Write($f.Buf, 0, $n); $f.Got += $n
+            }
+            if ($f.Got -ge $f.Total) { return 'done' }
+        }
+        if ($c.Available -eq 0 -and $c.Client.Poll(0, [Net.Sockets.SelectMode]::SelectRead)) { return 'error: the host closed the connection' }
+        return 'working'
+    } catch { return 'error: ' + $_.Exception.Message }
+}
+
+# unpacks and checks what was fetched and puts it into the cache; returns the folder (throws if something is wrong)
+function Complete-BundleFetch($f) {
+    $f.File.Close(); try { $f.Client.Close() } catch { }
+    $root = Get-BundleCacheRoot
+    $tmp = Join-Path $root ($f.Hash + '.tmp')
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    New-Item -ItemType Directory -Force $tmp | Out-Null
+    try {
+        Expand-BundleZip $f.Part $tmp
+        if ((Get-BundleHash $tmp) -ne $f.Hash) { throw 'The scenario received is not the one that was offered (the hash is wrong).' }
+    } catch { Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue; throw } finally { Remove-Item $f.Part -Force -ErrorAction SilentlyContinue }
+    $dest = Join-Path $root $f.Hash
+    if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+    Move-Item $tmp $dest
+    Set-Content -Path (Join-Path $dest 'complete.txt') -Value 'complete' -Encoding ASCII
+    return $dest
+}
+
+function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null, $bundle = $null) {
+    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
               Focus = @($teamInfo).Count; Cursor = 0; Held = $null; HeldFrom = 0; Msg = ''; Info = ''; ConfirmCancel = $false; Dirty = $true; Done = $null }
 }
 
 function Get-BoxPlayers($st, [int]$box) { return @($st.Players | Where-Object { $_.Box -eq $box }) }
 
 # The team of a new player: the one of the last mapping (by name) if nobody is there, otherwise the first team without a player, otherwise team 0
-function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same') {
+function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same', [string]$data = 'ready') {
     $box = -1
     foreach ($e in @(Read-LastMapping)) {
         if ($e.Name.ToLower() -eq $name.ToLower() -and $e.Team -lt $st.Teams.Count -and @(Get-BoxPlayers $st $e.Team).Count -eq 0) { $box = $e.Team }
@@ -63,7 +203,7 @@ function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same'
         for ($b = 0; $b -lt $st.Teams.Count; $b++) { if (@(Get-BoxPlayers $st $b).Count -eq 0) { $box = $b; break } }
     }
     if ($box -lt 0) { $box = 0 }
-    $p = [pscustomobject]@{ Name = $name; Box = $box; Client = $client; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false; VerState = $verState }
+    $p = [pscustomobject]@{ Name = $name; Box = $box; Client = $client; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false; VerState = $verState; Data = $data; Pct = 0 }
     [void]$st.Players.Add($p)
     $st.Dirty = $true
     return $p
@@ -82,6 +222,7 @@ function Test-LobbyStart($st) {
     foreach ($p in $st.Players) {
         if ($p.VerState -ne 'same') { return ('{0} has {1} files than yours.' -f $p.Name, $(switch ($p.VerState) { 'older' { 'older' } 'newer' { 'newer' } default { 'other' } })) }
     }
+    foreach ($p in $st.Players) { if ($p.Data -ne 'ready') { return ('{0} has not loaded the scenario yet.' -f $p.Name) } }
     return $null
 }
 
@@ -162,6 +303,7 @@ function Get-LobbyLines($st) {
             $p = $pl[$i]
             $txt = '    ' + $p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })
             if ($p.VerState -ne 'same') { $txt += '   (files ' + $(switch ($p.VerState) { 'older' { 'older than yours: needs an update' } 'newer' { 'newer than yours' } default { 'differ from yours' } }) + ')' }
+            if ($p.Data -ne 'ready') { $txt += $(if ($p.Data -eq 'loading') { "   (loading the scenario: $($p.Pct) %)" } else { '   (scenario not loaded yet)' }) }
             $kind = 0
             if ($st.Held -eq $p) { $txt += '   <- moving: arrows move, Enter drops, Esc puts back'; $kind = 5 }
             elseif ($st.Focus -eq $b -and [Math]::Min($st.Cursor, $pl.Count - 1) -eq $i) { $txt = '  > ' + $txt.Substring(4); $kind = 4 }
@@ -229,6 +371,36 @@ function Read-LobbyLines($p) {
     return $res
 }
 
+# a joiner's second connection ("FETCH <hash>") gets the zip of the bundle: first the line "SIZE <n>", then the n bytes (sent in pieces by Update-LobbyTransfers)
+function Start-LobbyTransfer($st, $q, [string]$hash) {
+    try {
+        if (-not $st.Bundle -or $hash -ne $st.Bundle.Hash) { throw 'not offered' }
+        $b = [Text.Encoding]::UTF8.GetBytes(('SIZE {0}' -f $st.Bundle.Size) + "`n")
+        $s = $q.Client.GetStream(); $s.Write($b, 0, $b.Length)
+        [void]$st.Transfers.Add(@{ Client = $q.Client; Stream = $s; File = [IO.File]::OpenRead($st.Bundle.Zip); Total = $st.Bundle.Size; Sent = 0L; Task = $null; Last = 0; Buf = (New-Object byte[] 262144) })
+    } catch { try { $q.Client.Close() } catch { } }
+}
+
+# one piece at a time per transfer, without waiting for a slow joiner
+function Update-LobbyTransfers($st) {
+    foreach ($t in @($st.Transfers)) {
+        $done = $false
+        try {
+            if ($t.Task) {
+                if (-not $t.Task.IsCompleted) { continue }
+                if ($t.Task.IsFaulted -or $t.Task.IsCanceled) { throw 'write failed' }
+                $t.Sent += $t.Last; $t.Task = $null
+            }
+            if ($t.Sent -ge $t.Total) { $done = $true }
+            else {
+                $n = $t.File.Read($t.Buf, 0, $t.Buf.Length)
+                if ($n -le 0) { $done = $true } else { $t.Last = $n; $t.Task = $t.Stream.WriteAsync($t.Buf, 0, $n) }
+            }
+        } catch { $done = $true }
+        if ($done) { try { $t.File.Close(); $t.Client.Close() } catch { }; [void]$st.Transfers.Remove($t) }
+    }
+}
+
 # accepts new connections, reads the lines of everybody, drops the ones that went away and tells the joiners where they are
 function Update-LobbyNet($st, $listener) {
     while ($listener.Pending()) {
@@ -236,11 +408,13 @@ function Update-LobbyNet($st, $listener) {
         [void]$st.Pending.Add([pscustomobject]@{ Client = $c; Buf = (New-Object Text.StringBuilder); Closed = $false; Name = $null; T = (Get-Date); VerHash = $null; VerDate = $null })
     }
     foreach ($q in @($st.Pending)) {
-        $hello = $null
+        $hello = $null; $fetch = $null
         foreach ($l in @(Read-LobbyLines $q)) {
             if ($l -like 'HELLO *') { $hello = $l.Substring(6).Trim() }
+            elseif ($l -like 'FETCH *') { $fetch = $l.Substring(6).Trim() }
             elseif ($l -like 'VERSION *') { $v = @($l.Substring(8).Trim() -split ' '); $q.VerHash = $v[0]; if ($v.Count -gt 1) { $q.VerDate = $v[1] } }
         }
+        if ($fetch) { Start-LobbyTransfer $st $q $fetch; [void]$st.Pending.Remove($q); continue }
         if ($hello) {
             $nm = ConvertTo-PlayerName $hello
             $taken = @($st.Players | Where-Object { $_.Name.ToLower() -eq $nm.ToLower() }).Count -gt 0
@@ -253,7 +427,9 @@ function Update-LobbyNet($st, $listener) {
                     Send-LobbyLine $q ('VERSION {0} {1}' -f $st.Version.Hash, $st.Version.Date)
                     $vs = if ($q.VerHash) { Compare-PlayVersion $st.Version $q.VerHash $q.VerDate } else { 'differs' }
                 }
-                [void](Add-LobbyPlayer $st $nm $q.Client $vs)
+                $dataState = 'ready'
+                if ($st.Bundle) { $dataState = 'wait'; if ($vs -eq 'same') { Send-LobbyLine $q ('OFFER {0} {1}' -f $st.Bundle.Hash, $st.Bundle.Size) } }
+                [void](Add-LobbyPlayer $st $nm $q.Client $vs $dataState)
                 $st.Info = "$nm joined."
                 [void]$st.Pending.Remove($q)
                 continue
@@ -264,11 +440,16 @@ function Update-LobbyNet($st, $listener) {
     $roster = (@($st.Players | ForEach-Object { '{0}={1}' -f $_.Name, $_.Box }) -join ';')
     foreach ($p in @($st.Players)) {
         if (-not $p.Client) { continue }
-        foreach ($l in @(Read-LobbyLines $p)) { if ($l -eq 'BYE') { $p.Closed = $true } }
+        foreach ($l in @(Read-LobbyLines $p)) {
+            if ($l -eq 'BYE') { $p.Closed = $true }
+            elseif ($l -like 'HAVE *' -and $st.Bundle -and $l.Substring(5).Trim() -eq $st.Bundle.Hash) { $p.Data = 'ready'; $st.Dirty = $true }
+            elseif ($l -like 'PROGRESS *') { $pc = 0; if ([int]::TryParse($l.Substring(9).Trim(), [ref]$pc) -and $p.Data -ne 'ready') { $p.Pct = $pc; $p.Data = 'loading'; $st.Dirty = $true } }
+        }
         if ($p.Closed) { $st.Info = "$($p.Name) left."; Remove-LobbyPlayer $st $p; continue }
         $state = ('TEAM {0} {1}' -f $p.Box, $st.Teams[$p.Box]) + '|' + $roster
         if ($state -ne $p.Sent) { Send-LobbyLine $p ('TEAM {0} {1}' -f $p.Box, $st.Teams[$p.Box]); Send-LobbyLine $p "ROSTER $roster"; $p.Sent = $state }
     }
+    Update-LobbyTransfers $st
 }
 
 function New-LobbyKey([string]$key, [switch]$Shift) {
@@ -279,8 +460,8 @@ function New-LobbyKey([string]$key, [switch]$Shift) {
 # The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when he cancels.
 # $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
 # there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
-function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null) {
-    $st = New-LobbyState $teamInfo $hostName $port $version
+function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null) {
+    $st = New-LobbyState $teamInfo $hostName $port $version $bundle
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     $st.Addr = if ($addr.Count -gt 0) { $addr -join ' / ' } else { '127.0.0.1' }
     $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Any, $port)
@@ -325,6 +506,7 @@ function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyF
     } finally {
         if ($st.Done -ne 'start') { foreach ($p in $st.Players) { if ($p.Client) { try { $p.Client.Close() } catch { } } } }
         $listener.Stop()
+        foreach ($t in @($st.Transfers)) { try { $t.File.Close(); $t.Client.Close() } catch { } }
         if ($console) { [Console]::CursorVisible = $true }
     }
 }
@@ -369,6 +551,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     Send-LobbyLine $p "HELLO $name"
     $console = -not $dumpFile
     $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
+    $dataText = ''; $dataKind = 0; $fetch = $null; $lastPct = -10; $script:BundleDir = $null
     $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
     try {
@@ -390,10 +573,36 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     }
                     $verKind = if ($cmp -eq 'same') { 7 } else { 6 }
                 }
+                elseif ($l -like 'OFFER *') {
+                    $o = @($l.Substring(6).Trim() -split ' ')
+                    if (-not (Test-BundleId $o[0]) -or $o.Count -lt 2 -or [long]$o[1] -gt $script:BundleMaxBytes) { $result = 'refused: the host offered a scenario that cannot be taken' }
+                    elseif (Test-BundleCached $o[0]) {
+                        $script:BundleDir = Join-Path (Get-BundleCacheRoot) $o[0]
+                        Send-LobbyLine $p ('HAVE ' + $o[0]); $dataText = 'Scenario: already there (cache ' + $o[0].Substring(0, 8) + ')'; $dataKind = 7
+                    } else {
+                        try { $fetch = Start-BundleFetch $ip $port $o[0]; $dataText = 'Scenario: loading ...'; $dataKind = 6 }
+                        catch { $result = 'refused: ' + $_.Exception.Message }
+                    }
+                }
                 elseif ($l -like 'TEAM *') { $team = ($l.Substring(5) -replace '^\d+ ', '') }
                 elseif ($l -like 'ROSTER *') { $roster = $l.Substring(7) }
                 elseif ($l -eq 'START') { $result = 'start' }
                 elseif ($l -eq 'CANCEL') { $result = 'cancel' }
+            }
+            if (-not $result -and $fetch) {
+                $r = Step-BundleFetch $fetch
+                if ($r -eq 'done') {
+                    try { $script:BundleDir = Complete-BundleFetch $fetch; Send-LobbyLine $p ('HAVE ' + $fetch.Hash); $dataText = 'Scenario: loaded (' + $fetch.Hash.Substring(0, 8) + ')'; $dataKind = 7 }
+                    catch { $result = 'refused: ' + $_.Exception.Message }
+                    $fetch = $null; $dirty = $true
+                } elseif ($r -ne 'working') { $result = 'refused: scenario - ' + $r; $dirty = $true }
+                elseif ($fetch.Total -gt 0) {
+                    $pct = [int][Math]::Floor(100 * $fetch.Got / $fetch.Total)
+                    if ($pct -ne $lastPct) {
+                        $dataText = 'Scenario: loading {0} % ({1} of {2} KB)' -f $pct, [int]($fetch.Got / 1024), [int]($fetch.Total / 1024); $dirty = $true
+                        if ($pct -ge $lastPct + 5 -or $pct -ge 100) { Send-LobbyLine $p "PROGRESS $pct"; $lastPct = $pct }
+                    }
+                }
             }
             if (-not $result -and $p.Closed) { $result = 'lost' }
             if (-not $result -and (Get-Date) -gt $until) { $result = 'left' }
@@ -403,14 +612,15 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
             if ($dirty) {
                 $dirty = $false
                 $who = ($roster -replace '=(\d+)', ' (team $1)') -replace ';', ', '
-                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, '', "Players: $who", '', 'Esc = leave')
-                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, $verKind, 0, 0, 0, 2) }) }
+                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, $dataText, '', "Players: $who", '', 'Esc = leave')
+                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, $verKind, $dataKind, 0, 0, 0, 2) }) }
                 else { [IO.File]::WriteAllLines($dumpFile, [string[]]$lines) }
             }
             Start-Sleep -Milliseconds 40
         }
         return $result
     } finally {
+        if ($fetch) { try { $fetch.File.Close(); $fetch.Client.Close() } catch { } }
         if ($result -ne 'start') { try { $c.Close() } catch { } }   # after the start the connection stays: READY and GO
         if ($console) { [Console]::CursorVisible = $true }
     }

@@ -12,10 +12,13 @@
 # scenario.txt, which gadgets it needs> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, unit_restrictions in scripts\, bar_rules in
 # ..\shared), the starter, the lobby and the briefing are always the current ones of the editor, so a scenario built earlier is never out of date. Started
 # from the unpacked package of a scenario (Start Scenario.bat) both are empty: everything comes from the package folder.
+# -Bundle (start menu key 6, "Play a level"): the scenario is a bundle in the cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>: scenario.txt and the gadgets, made from a
+# level by scenario_builder.ps1 -BundleDir and put there by Install-Bundle): the host gives -ScenarioDir <that folder> and offers it in the lobby, a joiner gives no
+# -ScenarioDir and gets the bundle from the host through the lobby (or from his cache). Needs -EditorDir (starter, lobby and gadgets are the editor's own).
 # Lobby (-Lobby with -HostGame or -Join): before anything is built the host sees a box per team and distributes the players who joined (TCP port
 # -LobbyPort, default 8453); a joiner only sends his name. When the host starts, everybody prepares (extra game, map), the host's game starts and
 # the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "Ralf=0,Anna=2" (first = host).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null)
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -29,7 +32,7 @@ function Fail($t) { Write-Host ""; Write-Host "ERROR: $t" -ForegroundColor Red; 
 # ---------------------------------------------------------------- Find BAR
 # (the same search as Find-Bar, Get-Engine and Get-GameVersion in shared\bar_common.ps1; this script runs alone on the recipient's computer, so it
 # carries its own copy: change both together)
-$memo = Join-Path $pkg 'bar_path.txt'
+$memo = if ($Bundle) { Join-Path $env:LOCALAPPDATA 'BAR-Scenario\bar_path.txt' } else { Join-Path $pkg 'bar_path.txt' }   # (a bundle in the cache holds data only)
 $candidates = @()
 if ($BarPath) { $candidates += $BarPath }
 if (Test-Path $memo) { $candidates += ([IO.File]::ReadAllText($memo)).Trim() }
@@ -49,6 +52,7 @@ while (-not $bar) {
     if (-not $in) { Fail 'Aborted.' }
     if (Test-Path (Join-Path $in 'data\engine')) { $bar = $in } else { Write-Host 'There is no data\engine folder there.' }
 }
+New-Item -ItemType Directory -Force (Split-Path $memo) | Out-Null
 [IO.File]::WriteAllText($memo, $bar)
 $data = Join-Path $bar 'data'
 
@@ -77,7 +81,8 @@ if (-not $game) { $game = $fallback }
 if (-not $game) { Fail 'Game version not found.' }
 
 # ---------------------------------------------------------------- Fill the start script
-$script = [IO.File]::ReadAllText((Join-Path $pkg 'scenario.txt'))
+$script = ''   # (a joiner with -Bundle gets the scenario through the lobby, see below)
+if (-not ($Bundle -and -not $ScenarioDir)) { $script = [IO.File]::ReadAllText((Join-Path $pkg 'scenario.txt')) }
 $map = [regex]::Match($script, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
 if ($Join -and -not $JoinIp) {
     # the last 10 addresses are kept for every scenario of this user (not in the scenario folder): pick one by its number or type a new one
@@ -131,7 +136,7 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
     if ($HostGame) {
         $teamInfo = @(Get-TeamInfo $script)
         if ($teamInfo.Count -lt 2) { Fail 'This scenario has only one team, there is nobody to play against.' }
-        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion
+        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion $(if ($Bundle) { New-HostBundle $pkg } else { $null })
         if (-not $lobbyRoster) { Write-Host 'The lobby was cancelled.'; exit 0 }
         Save-Mapping $lobbyRoster
         $Mapping = ConvertTo-MappingText $lobbyRoster
@@ -147,6 +152,13 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
             'left'      { exit 0 }
         }
         $Name = $script:JoinerName
+        if ($Bundle -and -not $ScenarioDir) {
+            # the scenario the host gave through the lobby (in the cache)
+            if (-not $script:BundleDir) { Fail 'The host did not give a scenario.' }
+            $pkg = $script:BundleDir
+            $script = [IO.File]::ReadAllText((Join-Path $pkg 'scenario.txt'))
+            $map = [regex]::Match($script, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
+        }
         Write-Host 'The host started the game. Getting ready ...'
     }
 }
