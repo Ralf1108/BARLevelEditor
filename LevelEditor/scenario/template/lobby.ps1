@@ -428,7 +428,7 @@ function Complete-MapFetch($f, [string]$mapName, [string]$file, $official = $nul
 }
 
 # the joiner's side of a transfer: a second connection that fetches the zip of the bundle. Returns the state for Step-BundleFetch / Complete-BundleFetch.
-function Start-BundleFetch([string]$ip, [int]$port, [string]$hash, [string]$request = $null, [long]$max = 0) {
+function Start-BundleFetch([string]$ip, [int]$port, [string]$hash, [string]$request = $null, [long]$max = 0, [long]$expect = -1) {
     if ($max -le 0) { $max = $script:BundleMaxBytes }
     if (-not $request) { $request = "FETCH $hash" }
     $root = Get-BundleCacheRoot
@@ -439,7 +439,7 @@ function Start-BundleFetch([string]$ip, [int]$port, [string]$hash, [string]$requ
     $c.EndConnect($ar)
     $b = [Text.Encoding]::UTF8.GetBytes($request + "`n"); $c.GetStream().Write($b, 0, $b.Length)
     $part = Join-Path $root ($hash + '.part')
-    return @{ Client = $c; Hash = $hash; Part = $part; File = [IO.File]::Create($part); Total = -1L; Got = 0L; Max = $max; Header = ''; Buf = (New-Object byte[] 262144) }
+    return @{ Client = $c; Hash = $hash; Part = $part; File = [IO.File]::Create($part); Total = -1L; Got = 0L; Max = $max; Expect = $expect; Header = ''; Buf = (New-Object byte[] 262144) }
 }
 
 # reads what has arrived: 'working', 'done' or 'error: <reason>'
@@ -452,6 +452,7 @@ function Step-BundleFetch($f) {
                 if ($f.Header -notmatch '^SIZE (\d+)$') { return 'error: the host answered something else' }
                 $f.Total = [long]$Matches[1]
                 if ($f.Total -gt $f.Max) { return 'error: it is too big' }
+                if ($f.Expect -ge 0 -and $f.Total -ne $f.Expect) { return 'error: the host sends another size than he offered' }
             } else {
                 $f.Header += [char]$b
                 if ($f.Header.Length -gt 40) { return 'error: the host answered something else' }
@@ -927,7 +928,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     if ($o.Count -eq 3 -and (Test-BundleId $o[1]) -and (Test-MapFileName $o[2]) -and [long]$o[0] -le $script:MapMaxBytes) { $mapInfo = @{ Size = [long]$o[0]; Hash = $o[1]; File = $o[2] } }
                 }
                 elseif ($l -eq 'MAPYES' -and $mapState -eq 'waithost' -and $mapInfo) {
-                    try { $mapFetch = Start-BundleFetch $ip $port $mapInfo.Hash ('FETCHMAP {0} {1}' -f $mapInfo.Hash, $script:JoinerName) $script:MapMaxBytes; $mapState = 'fetching'; $mapText = "Map: loading ..."; $mapKind = 6 }
+                    try { $mapFetch = Start-BundleFetch $ip $port $mapInfo.Hash ('FETCHMAP {0} {1}' -f $mapInfo.Hash, $script:JoinerName) $script:MapMaxBytes $mapInfo.Size; $mapState = 'fetching'; $mapText = "Map: loading ..."; $mapKind = 6 }
                     catch { $mapState = 'prompt'; $mapText = 'Map: no connection for the map. ' }
                 }
                 elseif ($l -eq 'MAPNO' -and $mapState -eq 'waithost') { $mapState = 'prompt'; $mapText = 'Map: the host did not send it. '; $mapChosen = $true }
@@ -938,7 +939,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                         $script:BundleDir = Join-Path (Get-BundleCacheRoot) $o[0]
                         Send-LobbyLine $p ('HAVE ' + $o[0]); $dataText = 'Scenario: already there (cache ' + $o[0].Substring(0, 8) + ')'; $dataKind = 7
                     } else {
-                        try { $fetch = Start-BundleFetch $ip $port $o[0]; $dataText = 'Scenario: loading ...'; $dataKind = 6 }
+                        try { $fetch = Start-BundleFetch $ip $port $o[0] $null 0 ([long]$o[1]); $dataText = 'Scenario: loading ...'; $dataKind = 6 }
                         catch { $result = 'refused: ' + $_.Exception.Message }
                     }
                 }
@@ -973,7 +974,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 }
                 if ($canUpdate -and -not $mapKey -and $mapCtx.AutoUpdate -and $updAutoUsed -eq 0) { $mapKey = 'U'; $updAutoUsed = 1 }
                 if ($canUpdate -and $mapKey -eq 'U') {
-                    try { $updFetch = Start-BundleFetch $ip $port $updInfo.Hash ('FETCHUPDATE ' + $updInfo.Hash) $script:UpdateMaxBytes; $updState = 'fetching'; $updLines = @('Update: loading ...') }
+                    try { $updFetch = Start-BundleFetch $ip $port $updInfo.Hash ('FETCHUPDATE ' + $updInfo.Hash) $script:UpdateMaxBytes $updInfo.Size; $updState = 'fetching'; $updLines = @('Update: loading ...') }
                     catch { $updNote = 'Update failed: ' + $_.Exception.Message; $updShown = $false }
                     $dirty = $true
                 }
