@@ -37,7 +37,7 @@ local function log(...)
 end
 
 local ui = {}
-local buildUi, updateFoundUi
+local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, SCENARIO_GAME
 local status = ""
 local returnAt
 local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
@@ -85,6 +85,67 @@ local function battleOpenedLine(c)
 	return string.format("BATTLEOPENED 1 0 0 %s %s %d 16 0 0 0 recoil\t%s\t%s\t%s\t%s", HOSTNAME, ip, GAMEPORT, engine, b.map, b.title, b.game)
 end
 
+-- ---- scenarios of the Level Editor (data\LevelEditorScenarios is a junction to scenario\scenarios): the team layout is the scenario's and cannot be changed
+SCENARIO_GAME = "Level Editor Scenarios 1"  -- the extra game the Level Editor setup builds (all gadgets; they switch on by the game options of the scenario)
+
+scenarioList = function()
+	local names = {}
+	for _, d in ipairs(VFS.SubDirs("LevelEditorScenarios/", "*", VFS.RAW) or {}) do
+		local n = d:match("([^/\\]+)[/\\]?$")
+		if n and VFS.LoadFile("LevelEditorScenarios/" .. n .. "/scenario.txt", VFS.RAW) then names[#names + 1] = n end
+	end
+	table.sort(names)
+	return names
+end
+
+local function encodeStatus(s)
+	local lsb = (s.isReady and 2 or 0) + (s.teamNumber % 16) * 4 + (s.allyNumber % 16) * 64 + (s.isSpectator and 0 or 1024) + ((s.handicap or 0) % 32) * 2048
+	local msb = math.floor((s.handicap or 0) / 32) % 4 + (math.floor(s.teamNumber / 16) % 16) * 4 + ((s.sync or 0) % 4) * 64 + ((s.side or 0) % 16) * 256 + (math.floor(s.allyNumber / 16) % 16) * 4096
+	return string.format("%d", msb * 65536 + lsb)
+end
+
+-- the user's status with the ally team the scenario wants (spectators stay as they are)
+forcedStatus = function(c)
+	local sc = S.battle.scenario
+	local l = lobby()
+	if not (sc and c.battleStatus and l) then return c.battleStatus end
+	local bs = l:ParseBattleStatus(c.battleStatus)
+	if bs.isSpectator or bs.allyNumber == sc.ally then return c.battleStatus end
+	bs.allyNumber = sc.ally
+	return encodeStatus(bs)
+end
+
+local function applyScenarioToUsers()
+	for _, c in ipairs(battleUsers()) do
+		local st = forcedStatus(c)
+		if st ~= c.battleStatus then c.battleStatus = st; toBattle("CLIENTBATTLESTATUS " .. c.name .. " " .. st .. " " .. (c.teamColor or "0")) end
+	end
+end
+
+selectScenario = function(name)
+	if not S then return end
+	if not name then
+		S.battle.scenario = nil
+		toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=")
+		say("Scenario removed: choose a map and the teams as you like.")
+		log("scenario cleared")
+		return
+	end
+	local text = VFS.LoadFile("LevelEditorScenarios/" .. name .. "/scenario.txt", VFS.RAW)
+	if not text then say("Scenario '" .. name .. "' could not be read."); return end
+	local low = text:lower()
+	local map = text:match("[Mm]apname%s*=%s*([^;]+);")
+	local team = low:match("%[player0%]%s*{.-team%s*=%s*(%d+)")
+	local ally = team and low:match("%[team" .. team .. "%]%s*{.-allyteam%s*=%s*(%d+)")
+	if not (map and team and ally) then say("Scenario '" .. name .. "' has no player team (map " .. tostring(map) .. ")."); return end
+	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
+	S.battle.map = map; updateBattleInfo()
+	toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=" .. name)
+	applyScenarioToUsers()
+	say("Scenario: " .. name .. " (map " .. map .. "). The teams are the scenario's; the players join the team of the first player.")
+	log("scenario selected:", name, map, "player team", team, "ally team", ally)
+end
+
 local function startGameNow()
 	if S.battle.running then return end
 	S.battle.running = true
@@ -99,6 +160,8 @@ local function autohostCommand(c, msg)
 	cmd = (cmd or ""):lower()
 	if not isHost then say("Only the host can use !" .. cmd); return end
 	if cmd == "map" and rest ~= "" then
+		-- choosing a map sets the official-map mode again: the scenario (and its fixed teams) is dropped
+		if S.battle.scenario then selectScenario(nil) end
 		S.battle.map = rest; updateBattleInfo(); say("Map: " .. rest)
 	elseif cmd == "bset" then
 		local k, v = rest:match("^(%S+)%s+(.*)$")
@@ -160,6 +223,7 @@ local function serverLine(c, line)
 			if o ~= c and o.battleStatus then sendLine(c, "CLIENTBATTLESTATUS " .. o.name .. " " .. o.battleStatus .. " " .. (o.teamColor or "0")) end
 		end
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
+		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
 		sendLine(c, "REQUESTBATTLESTATUS")
 		updateBattleInfo()
@@ -168,7 +232,11 @@ local function serverLine(c, line)
 		if c.inBattle then c.inBattle = false; toAll("LEFTBATTLE 1 " .. c.name); updateBattleInfo() end
 	elseif cmd == "MYBATTLESTATUS" then
 		local st, col = args:match("^(%S+)%s+(%S+)")
-		if st and c.inBattle then c.battleStatus, c.teamColor = st, col; toBattle("CLIENTBATTLESTATUS " .. c.name .. " " .. st .. " " .. col); updateBattleInfo() end
+		if st and c.inBattle then
+			c.battleStatus, c.teamColor = st, col
+			c.battleStatus = forcedStatus(c)   -- with a scenario the ally team is the scenario's: the corrected status goes to everybody, also the sender
+			toBattle("CLIENTBATTLESTATUS " .. c.name .. " " .. c.battleStatus .. " " .. col); updateBattleInfo()
+		end
 	elseif cmd == "SAYBATTLE" and c.inBattle then
 		if args:sub(1, 1) == "!" then autohostCommand(c, args) else toBattle("SAIDBATTLE " .. c.name .. " " .. args) end
 	elseif cmd == "SAYBATTLEEX" and c.inBattle then toBattle("SAIDBATTLEEX " .. c.name .. " " .. args)
@@ -219,7 +287,35 @@ local function updateServer()
 end
 
 -- the start script of the game, built from the state of the room (what the autohost SPADS does on a normal server)
-local function buildScript(myName)
+-- a scenario: its own script (teams, units, options, start positions); every human joins the team of the first player
+local function buildScenarioScript(myName)
+	local sc = S.battle.scenario
+	local text = sc.text
+	local players = {}
+	for _, c in ipairs(battleUsers()) do if c.name ~= myName then players[#players + 1] = c end end
+	local origPlayers = tonumber(text:match("numplayers%s*=%s*(%d+)")) or 1
+	local origUsers = tonumber(text:match("numusers%s*=%s*(%d+)")) or origPlayers
+	local l = lobby()
+	local extra = {}
+	for i, c in ipairs(players) do
+		local bs = c.battleStatus and l:ParseBattleStatus(c.battleStatus)
+		local spec = (not bs) or bs.isSpectator
+		extra[#extra + 1] = string.format("\t[player%d]\n\t{\n\t\tName=%s;\n\t\tPassword=%s;\n\t\tTeam=%d;\n\t\tspectator=%d;\n\t\trank=0;\n\t}\n", i, c.name, c.scriptPassword or "", sc.team, spec and 1 or 0)
+	end
+	text = text:gsub("__GAMETYPE__", SCENARIO_GAME):gsub("__PLAYERNAME__", myName)
+	text = text:gsub("hostip%s*=%s*[%d%.]+;", "hostip=0.0.0.0;"):gsub("hostport%s*=%s*%d+;", "hostport=" .. GAMEPORT .. ";")
+	text = text:gsub("numplayers%s*=%s*%d+;", "numplayers=" .. (1 + #players) .. ";"):gsub("numusers%s*=%s*%d+;", "numusers=" .. (1 + #players + (origUsers - origPlayers)) .. ";")
+	local at = text:find("[modoptions]", 1, true) or text:find("[MODOPTIONS]", 1, true)
+	if at and #extra > 0 then
+		local before = text:sub(1, at - 1)
+		local lineStart = #before - (before:match("[^\n]*$") or ""):len()
+		text = text:sub(1, lineStart) .. table.concat(extra) .. text:sub(lineStart + 1)
+	end
+	return text
+end
+
+buildScript = function(myName)
+	if S.battle.scenario then return buildScenarioScript(myName) end
 	local l = lobby()
 	local cf = Config()
 	local players, teams, ais = {}, {}, {}
@@ -274,6 +370,13 @@ local function hookConnect()
 			local script = buildScript(lan.name)
 			log("Spring.Reload (host) with start script:\n" .. script)
 			return Spring.Reload(script)
+		end
+		if lan and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" and not VFS.HasArchive(SCENARIO_GAME) then
+			-- the scenario needs the extra game of the Level Editor setup on this computer too
+			local msg = "The host plays the scenario '" .. self.modoptions.lanscenario .. "': it needs the game '" .. SCENARIO_GAME .. "' (installed by the Level Editor setup, install_editor.bat). Install the Level Editor and start the game again."
+			log("cannot join the scenario:", msg)
+			if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
+			return
 		end
 		return original(self, ...)
 	end
@@ -338,7 +441,6 @@ local function startHosting()
 	local name = cleanName(cfg.name or (cf and cf:GetPlayerName()) or "Player")
 	local game = cf and cf:GetDefaultGameName() or "Beyond All Reason"
 	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {} } }
-	hookConnect()
 	found = {}; updateFoundUi()
 	setStatus("Hosting as " .. name .. " (port " .. PORT .. ").")
 	lanConnect("host", "127.0.0.1", name)
@@ -483,8 +585,54 @@ local function autoScan()
 	if os.clock() >= nextScanAt then startScan(true) end
 end
 
+---------------------------------------------------------------- "Select Scenario": a floating button top left (host only, while the LAN battle room is open) and a list of the built scenarios
+local function scenarioMap(name)
+	local text = VFS.LoadFile("LevelEditorScenarios/" .. name .. "/scenario.txt", VFS.RAW) or ""
+	return text:match("[Mm]apname%s*=%s*([^;]+);") or "?"
+end
+
+local function fillScenarioList()
+	local font = Config():GetFont(2)
+	ui.scnList:ClearChildren()
+	local y = 0
+	local function add(caption, fn)
+		Button:New { parent = ui.scnList, x = 0, y = y, right = 0, height = 36, caption = caption, objectOverrideFont = font,
+			OnClick = { function() ui.scnWindow:Hide(); fn() end } }
+		y = y + 40
+	end
+	add("Official map (no scenario)", function() selectScenario(nil) end)
+	for _, name in ipairs(scenarioList()) do
+		add(name .. "   (" .. scenarioMap(name) .. ")", function() selectScenario(name) end)
+	end
+end
+
+local function ensureScenarioUi()
+	if not ui.panel or not Config() then return end
+	local show = (S ~= nil) and lan ~= nil and lan.step == "in"
+	if not ui.scnButton then
+		if not show then return end
+		local font = Config():GetFont(2)
+		ui.scnWindow = Window:New { parent = screen0, x = 8, y = 48, width = 420, height = 330, resizable = false, draggable = true, classname = "main_window" }
+		ui.scnList = ScrollPanel:New { parent = ui.scnWindow, x = 6, y = 6, right = 6, bottom = 6 }
+		ui.scnWindow:Hide()
+		ui.scnButton = Button:New { parent = screen0, x = 8, y = 8, width = 200, height = 36, caption = "Select Scenario", objectOverrideFont = font, classname = "action_button",
+			OnClick = { function()
+				if ui.scnWindow.visible then ui.scnWindow:Hide() else fillScenarioList(); ui.scnWindow:Show(); ui.scnWindow:BringToFront() end
+			end } }
+		log("Select Scenario button added")
+	end
+	if ui.scnButton.visible ~= show then ui.scnButton:SetVisibility(show) end
+	if not show and ui.scnWindow and ui.scnWindow.visible then ui.scnWindow:Hide() end
+end
+
 ---------------------------------------------------------------- per frame
 function widget:Update()
+	ensureScenarioUi()
+	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and os.clock() > 14 then
+		cfg.scenarioPicked = true
+		log("test: choosing the scenario", cfg.scenario)
+		selectScenario(cfg.scenario)
+	end
 	if lan and lan.left and os.clock() > lan.left + 0.3 then
 		log("left the battle room: back to the LAN Play page")
 		lanStop("left the room")
@@ -594,6 +742,7 @@ function widget:Initialize()
 		returnAt = os.clock() + 4
 	end
 	if Config() and not ui.panel then uiTried = buildUi() or false end
+	hookConnect()
 end
 
 function widget:Shutdown()

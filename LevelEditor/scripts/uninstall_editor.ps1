@@ -25,6 +25,7 @@ $desktop = [Environment]::GetFolderPath('Desktop')
 $items = @(
     @{ Path = (Join-Path $data 'games\LevelEditorMod.sdz'); Text = 'Extra game "Level Editor" (data\games\LevelEditorMod.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'games\LevelEditorMod.stamp'); Text = 'Stamp of the extra game (data\games\LevelEditorMod.stamp)'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'games\LevelEditorScenarios.sdz'); Text = 'Extra game "Level Editor Scenarios" (data\games\LevelEditorScenarios.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LevelEditor'); Text = 'Junction data\LevelEditor (the levels themselves stay in levels)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorBlueprints'); Text = 'Junction data\LevelEditorBlueprints (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorScenarios'); Text = 'Junction data\LevelEditorScenarios (the built scenarios themselves stay in scenario\scenarios)'; Kind = 'junction' },

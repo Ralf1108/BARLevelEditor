@@ -93,6 +93,41 @@ foreach ($e in @(
 }
 $zip.Dispose()
 Write-Host "Created: $zipPath"
+
+# The extra game for finished scenarios ("Level Editor Scenarios", used by LAN Play: the lobby starts a scenario with it): the gadgets of the scenarios, all
+# in one game. Each one switches itself on only when the game options of the scenario ask for it (tdconfig, ctfconfig, restrictions), so it is the same game
+# for every scenario and every computer with this version of the editor. The zip entries get a fixed time so that the archives of two computers are equal.
+$zipPath2 = Join-Path $gamesDir 'LevelEditorScenarios.sdz'
+if (Test-Path $zipPath2) { Remove-Item $zipPath2 -Force }
+$modinfo2 = @"
+return {
+	name = "Level Editor Scenarios",
+	shortName = "LEScn",
+	version = "1",
+	game = "LevelEditorScenarios",
+	shortGame = "LEScn",
+	description = "Beyond All Reason plus the gadgets of the scenarios of the Level Editor",
+	mutator = "Official",
+	modtype = 1,
+	depend = { "$game" },
+}
+"@
+$fixedTime = New-Object DateTimeOffset (2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
+$zip2 = [IO.Compression.ZipFile]::Open($zipPath2, 'Create')
+foreach ($e in @(
+    @('luarules/gadgets/td_waves.lua', $gadgetTd),
+    @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
+    @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
+    @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
+    @('luaui/Include/bar_rules.lua', $rules),
+    @('modinfo.lua', $modinfo2))) {
+    $entry = $zip2.CreateEntry($e[0])
+    $entry.LastWriteTime = $fixedTime
+    $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
+    $w.Write($e[1]); $w.Close()
+}
+$zip2.Dispose()
+Write-Host "Created: $zipPath2"
 Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $here $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
 
 if ($Quick) { exit 0 }
