@@ -12,6 +12,7 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/) (BAR).
 - [Scenario builder](#scenario-builder)
 - [Tower Defense](#tower-defense)
 - [Capture the Flag](#capture-the-flag)
+- [LAN Play](#lan-play)
 - [BluePrinter (for the official game)](#blueprinter-for-the-official-game)
 - [Experimental: area attacks](#experimental-area-attacks-xl-xr-xc)
 - [Documentation](#documentation)
@@ -126,6 +127,14 @@ Flags (the silver pods of the scavengers) lie on the map; units pick them up by 
 
 Details are in the [Level Editor manual](LevelEditor/README.md#capture-the-flag) and the [specification](LevelEditor/SPECIFICATION.md).
 
+## LAN Play
+
+**LAN Play** lets you play with computers in the same network without a server in the cloud. It is a small widget for the lobby of the game: the main menu gets an entry **LAN Play** right below Multiplayer (the normal Multiplayer stays as it is). One player hosts a game, the others find it on the LAN Play page (it looks for games by itself) and join with a click. You get the official multiplayer battle room: map, game options, AIs, teams and chat. The host can also pick a scenario you built with the Level Editor (button **Custom Scenario**); the extra game it needs is passed on to the other players before the start.
+
+`LevelEditor\install_editor.bat` installs it together with the editor (the game must be closed; it only needs TCP ports 8453 and 8452 between the computers). It is a prototype, so far tested with two lobbies on one computer.
+
+Details, the protocol and what is still open: [LAN Play readme](LevelEditor/lan_lobby/README.md).
+
 ## BluePrinter (for the official game)
 
 A second, much smaller widget for the **official** Beyond All Reason that brings the blueprints to normal games. It works with **buildings only** (placing units is only possible in the Level Editor):
@@ -158,6 +167,7 @@ Select the units, press a button and drag the shape on the map. A preview shows 
 
 - [Level Editor](LevelEditor/README.md) and its [specification](LevelEditor/SPECIFICATION.md)
 - [Scenario builder](LevelEditor/scenario/README.md)
+- [LAN Play](LevelEditor/lan_lobby/README.md)
 - [BluePrinter](BluePrinter/README.md) and its [specification](BluePrinter/SPECIFICATION.md)
 - [Shared code](shared/README.md) and its [specification](shared/SPECIFICATION.md)
 
