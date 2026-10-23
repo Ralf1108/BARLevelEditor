@@ -393,11 +393,31 @@ function Test-MapInstalled([string]$dataDir, [string]$mapName) {
     return ((Get-ArchiveCacheText $dataDir).Contains('name = "' + $mapName + '"') -or (Test-MapExtra $mapName))
 }
 
-# the fetched file: check the hash, then into the extra data folder
-function Complete-MapFetch($f, [string]$mapName, [string]$file) {
+# what the official map service (the file server of BAR, the one pr-downloader uses) says about a map, independent of the host:
+# Status 'official' (Md5, Size, File), 'unknown' (the service does not know the map: a map of your own) or 'offline' (no answer)
+$script:OfficialMapUrl = 'https://files-cdn.beyondallreason.dev/find'
+function Get-OfficialMap([string]$mapName) {
+    try {
+        $r = @(Invoke-RestMethod -Uri ($script:OfficialMapUrl + '?category=map&springname=' + [Uri]::EscapeDataString($mapName)) -TimeoutSec 6 -UseBasicParsing)
+    } catch { return [pscustomobject]@{ Status = 'offline' } }
+    foreach ($e in $r) {
+        if ($e.springname -eq $mapName -and [string]$e.md5 -match '^[0-9a-fA-F]{32}$' -and [long]$e.size -gt 0) {
+            return [pscustomobject]@{ Status = 'official'; Md5 = ([string]$e.md5).ToLower(); Size = [long]$e.size; File = [string]$e.filename }
+        }
+    }
+    return [pscustomobject]@{ Status = 'unknown' }
+}
+
+function Get-FileMd5([string]$path) { return (Get-FileHash -Path $path -Algorithm MD5).Hash.ToLower() }
+
+# the fetched file: check the hash (and, for an official map, the hash and the size of the official map service), then into the extra data folder
+function Complete-MapFetch($f, [string]$mapName, [string]$file, $official = $null) {
     $f.File.Close(); try { $f.Client.Close() } catch { }
     try {
         if ((Get-FileSha256 $f.Part) -ne $f.Hash) { throw 'The map received is not the one that was offered (the hash is wrong).' }
+        if ($official -and $official.Status -eq 'official' -and ((Get-Item $f.Part).Length -ne $official.Size -or (Get-FileMd5 $f.Part) -ne $official.Md5)) {
+            throw 'The map from the host is NOT the official map (the hash of the official map service differs). It was thrown away.'
+        }
         $dir = Join-Path (Get-MapExtraRoot) 'maps'
         New-Item -ItemType Directory -Force $dir | Out-Null
         $dest = Join-Path $dir $file
@@ -873,7 +893,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
     $dataText = ''; $dataKind = 0; $fetch = $null; $lastPct = -10; $script:BundleDir = $null
     $verCmp = ''; $hostVerHash = ''; $updInfo = $null; $updState = ''; $updFetch = $null; $updStage = $null; $updLines = @(); $updAutoUsed = 0; $updLastPct = -10; $updChanges = @(); $updNote = ''; $updShown = $false
-    $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10; $mapChosen = $false; $sameLan = Test-SameLan $ip
+    $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10; $mapChosen = $false; $sameLan = Test-SameLan $ip; $mapOfficial = $null; $mapOfficialNote = ''
     $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
     try {
@@ -1002,7 +1022,15 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 # nothing is asked: the same network as the host and he has the map: from him; otherwise from the internet. Only after a failure the choice is shown
                 if (-not $mapKey -and -not $mapChosen) { $mapChosen = $true; $mapKey = $(if ($sameLan -and $mapInfo) { 'H' } else { 'D' }) }
                 if ($mapKey -eq 'D') { $mapState = 'downloading'; $mapText = "Map: downloading '$mapName' from the internet ..."; $dirty = $true }
-                elseif ($mapKey -eq 'H' -and $mapInfo) { $mapState = 'waithost'; $mapText = 'Map: waiting for the host to agree ...'; Send-LobbyLine $p 'MAPREQ'; $dirty = $true }
+                elseif ($mapKey -eq 'H' -and $mapInfo) {
+                    # the official hash first (independent of the host); no internet or a map of your own: only the hash of the host counts
+                    $mapOfficial = Get-OfficialMap $mapName
+                    $mapOfficialNote = switch ($mapOfficial.Status) { 'official' { ' (checked against the official hash)' } 'unknown' { ' (not an official map: only the hash of the host is checked)' } default { ' (official hash not reachable: only the hash of the host is checked)' } }
+                    if ($mapOfficial.Status -eq 'official' -and $mapOfficial.Size -ne $mapInfo.Size) {
+                        $mapState = 'prompt'; $mapText = 'Map: the file of the host is not the official map (other size). '; $mapInfo = $null
+                    } else { $mapState = 'waithost'; $mapText = 'Map: waiting for the host to agree ...'; Send-LobbyLine $p 'MAPREQ' }
+                    $dirty = $true
+                }
                 $mapKey = $null
             }
             elseif (-not $result -and $mapState -eq 'downloading' -and -not $dirty) {
@@ -1014,7 +1042,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
             if (-not $result -and $mapFetch) {
                 $r = Step-BundleFetch $mapFetch
                 if ($r -eq 'done') {
-                    try { Complete-MapFetch $mapFetch $mapName $mapInfo.File; $mapState = 'ok'; Send-LobbyLine $p 'MAPOK'; $mapText = "Map: '$mapName' loaded from the host"; $mapKind = 7 }
+                    try { Complete-MapFetch $mapFetch $mapName $mapInfo.File $mapOfficial; $mapState = 'ok'; Send-LobbyLine $p 'MAPOK'; $mapText = "Map: '$mapName' loaded from the host$mapOfficialNote"; $mapKind = 7 }
                     catch { $mapState = 'prompt'; $mapText = 'Map: ' + $_.Exception.Message + ' ' }
                     $mapFetch = $null; $dirty = $true
                 } elseif ($r -ne 'working') { Close-Fetch $mapFetch; $mapState = 'prompt'; $mapText = 'Map: ' + $r + '. '; $mapFetch = $null; $dirty = $true }
