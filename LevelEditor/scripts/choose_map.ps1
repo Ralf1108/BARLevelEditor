@@ -19,6 +19,7 @@ $levelsDir = Join-Path $root 'levels'
 . (Join-Path $here 'map_preview.ps1')
 $pvOk = Initialize-MapPreview $Data   # thumbnails from the lobby package of the game (map_preview.ps1); $false = no previews
 . (Join-Path $root 'scenario\template\lobby.ps1')   # the lobby of a hosted game (the start menu starts it through start_scenario.ps1) and the version of the files that decide how a game runs
+try { [void](Remove-OldCache) } catch { }   # old scenarios and maps from hosts, half-finished downloads (lobby.ps1)
 $playVersion = Get-PlayVersion @($here, (Join-Path $root 'scenario\template'), (Join-Path (Split-Path $root -Parent) 'shared'))
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
 $lastFile = Join-Path $userDir 'Last Map.txt'
@@ -535,6 +536,7 @@ while ($true) {
     # (the last two only if there are levels already). Choose with arrow up/down and Enter or with the digit key.
     $haveLevels = $levels.Count -gt 0
     $scenarios = @(Get-Scenarios)
+    $cacheInfo = Get-CacheInfo
     $menu = @(
         @{ Key = '0'; Mode = 3; On = [bool]$lastLevel; Text = $(if ($lastLevel) { 'Continue last saved map: {0}' -f $lastLevel.Label } else { 'Continue last saved map (nothing saved yet)' }) },
         @{ Key = '1'; Mode = 1; On = $true; Text = 'Create a new level (choose a map)' },
@@ -542,7 +544,8 @@ while ($true) {
         @{ Key = '3'; Mode = 4; On = $haveLevels; Text = $(if ($haveLevels) { 'Create a scenario package (ZIP) from a level (to pass on, official game)' } else { 'Create a scenario package (ZIP) from a level (no saved levels yet)' }) },
         @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} available)' -f $scenarios.Count } else { 'Start a scenario (none available yet: key 3)' }) },
         @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) },
-        @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' }
+        @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' },
+        @{ Key = '7'; Mode = 8; On = ($cacheInfo.Bytes -gt 0); Text = $(if ($cacheInfo.Bytes -gt 0) { 'Clean the cache (scenarios and maps from hosts: {0} MB, {1} maps)' -f [Math]::Round($cacheInfo.Bytes / 1MB), $cacheInfo.Maps } else { 'Clean the cache (empty)' }) }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -551,7 +554,7 @@ while ($true) {
     Write-Host ('   version {0} of {1} UTC (the same on every computer that plays together)' -f $playVersion.Short, (Format-PlayDate $playVersion.Date)) -ForegroundColor DarkGray
     Write-Host ''
     $menuTop = [Console]::CursorTop
-    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
+    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
     Write-Host ''
     Write-Host 'Arrow up/down + Enter or digit key, Esc = cancel' -ForegroundColor DarkGray
     $mode = 0
@@ -627,6 +630,23 @@ while ($true) {
         }
         & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath (Split-Path $Data -Parent) -ScenarioDir $chosen.Path -EditorDir $root $how.Args
         continue # the game ended (or could not start): back to the menu, the next one can be tried at once
+    }
+
+    if ($mode -eq 8) {
+        # Clean the cache: what hosts gave (scenarios, maps) and unpacked updates; nothing of the game or of the editor, no levels, no backups of updates
+        Clear-Host
+        Write-Host ('The cache holds {0} MB: {1} scenarios and {2} maps that came from other computers (or were made for them).' -f [Math]::Round($cacheInfo.Bytes / 1MB), $cacheInfo.Bundles, $cacheInfo.Maps)
+        Write-Host 'Old things go by themselves (scenarios after 30 days, maps after 60 days or beyond 3 GB). Whatever is needed again is fetched again from the host.'
+        Write-Host 'The folder: ' (Get-BundleCacheRoot)
+        Write-Host ''
+        Write-Host 'Clean it now? (y/n)'
+        $k = [Console]::ReadKey($true)
+        if ($k.KeyChar -eq 'y' -or $k.KeyChar -eq 'j') {
+            $freed = Clear-BundleCache
+            Write-Host ('Done: {0} MB freed.' -f [Math]::Round($freed / 1MB)) -ForegroundColor Green
+            Write-Host 'Continue with any key.'; [void][Console]::ReadKey($true)
+        }
+        continue
     }
 
     if ($mode -eq 7) {
