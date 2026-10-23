@@ -15,7 +15,9 @@
 #   -Auto         no questions, take the saved info or the defaults (tests)
 #   -Edit         change the saved info in the level
 #   -AskName      (start menu) show the target name (the ID) and ask whether to take it, change it or - if the scenario exists - overwrite it
-param([string]$Level = $null, [switch]$Auto, [switch]$Edit, [switch]$AskName)
+#   -BundleDir d  (start menu key 6, "Play a level") only the data a game needs (scenario.txt and the gadgets it uses) go into the folder d (made new): no
+#                 package (no starters, bats, readme, zip) and nothing is written into the level; implies -Auto
+param([string]$Level = $null, [switch]$Auto, [switch]$Edit, [switch]$AskName, [string]$BundleDir = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -571,7 +573,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $answers = [ordered]@{}
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['roles'] = $roles; $answers['tiers'] = $tiers; $answers['ai'] = $ai; $answers['win'] = $win; $answers['metal'] = $metal; $answers['energy'] = $energy; $answers['grace'] = $grace; $answers['sid'] = $sid
-    Save-Block $path $answers
+    if (-not $BundleDir) { Save-Block $path $answers }   # (the temporary scenario of "Play a level" leaves the level as it is)
     # Tower Defense: no grace period (the no-rush rules of the game keep every unit inside its start area while it runs, so the wave
     # units could not leave the spawn point); the saved answer stays in the level
     if ($td -and $grace -gt 0) {
@@ -711,19 +713,25 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $script = ($lines -join "`n") + "`n"
 
     # --- Write the package
-    $folder = Join-Path $OUT $sid
+    $folder = if ($BundleDir) { $BundleDir } else { Join-Path $OUT $sid }
     if (Test-Path $folder) { Remove-Item $folder -Recurse -Force }
     New-Item -ItemType Directory -Force $folder | Out-Null
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
-    Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
-    Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
-    Copy-Item (Join-Path $TEMPLATE 'lobby.ps1') $folder
-    Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
+    if (-not $BundleDir) {
+        Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
+        Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
+        Copy-Item (Join-Path $TEMPLATE 'lobby.ps1') $folder
+        Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
+    }
     if ($rst) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
     if ($td -or $ctf -or $rst) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'pve_supply_drops_stub.lua') (Join-Path $folder 'pve_supply_drops_stub.lua') } # the stub that replaces the lootbox gadget of the game (it let enemies capture the flags)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
+    if ($BundleDir) {
+        Write-Host ("Temporary scenario: {0} units, {1} features, {2} KB start script." -f $units.Count, $level.features.Count, [int][math]::Floor($script.Length / 1024))
+        return
+    }
     $bat = "@echo off`r`nrem Starts the scenario `"$(Get-AsciiName $title)`" with the installed Beyond All Reason.`r`n" +
            "powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0start_scenario.ps1`" %*`r`n"
     [IO.File]::WriteAllText((Join-Path $folder 'Start Scenario.bat'), $bat, [Text.Encoding]::ASCII)
@@ -853,7 +861,7 @@ function Edit-Scenario([string]$levelName) {
 }
 
 try {
-    if ($Edit) { Edit-Scenario $Level } else { Build-Scenario $Level ([bool]$Auto) }
+    if ($Edit) { Edit-Scenario $Level } else { Build-Scenario $Level ([bool]($Auto -or $BundleDir)) }
 } catch {
     Write-Host ''
     Write-Host $_.Exception.Message -ForegroundColor Yellow
