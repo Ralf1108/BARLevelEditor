@@ -39,7 +39,7 @@ end
 local ui = {}
 local buildUi
 local status = ""
-local uiTried, autoStarted
+local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped
 local found, scan = {}, nil
 local S = nil            -- the server (host only)
 local lan = nil          -- { role = "host"|"client", saved = {address, port}, name, ip, step }
@@ -411,9 +411,57 @@ local function updateScan()
 	end
 end
 
+---------------------------------------------------------------- the entry in the main menu: a tab added to the menu the lobby has built (rank 1.5: right below Multiplayer, which is 1)
+local function findByName(ctrl, name, depth)
+	if not ctrl or depth > 12 then return nil end
+	if ctrl.name == name then return ctrl end
+	for _, ch in ipairs(ctrl.children or {}) do
+		local r = findByName(ch, name, depth + 1)
+		if r then return r end
+	end
+end
+
+local function ensureTab()
+	if not ui.panel then return end
+	if tabCheckAt and os.clock() < tabCheckAt then return end
+	tabCheckAt = os.clock() + 1
+	local root = WG.Chobby and WG.Chobby.interfaceRoot
+	local sub = root and root.GetSingleplayerSubmenu and root.GetSingleplayerSubmenu()
+	if not sub then return end
+	-- the lobby may build its menu again (the tabs are new then): check every second that the tab is there
+	local button = findByName(screen0, "LAN Play_button", 0)
+	if not sub.GetTabByName("LAN Play") or not button or not button.parent then
+		if sub.GetTabByName("LAN Play") then pcall(sub.RemoveTab, "LAN Play") end
+		local ok, err = pcall(sub.AddTab, "LAN Play", "LAN Play", ui.panel, nil, 1.5)
+		tabAdded = os.clock(); tabReported = false
+		if not tabDumped then
+			tabDumped = true
+			local h = findByName(screen0, "buttons_Main Menu", 0)
+			local names = {}
+			for _, ch in ipairs(h and h.children or {}) do names[#names + 1] = tostring(ch.name) .. "@" .. math.floor(ch.y or -1) end
+			log("holder children after AddTab:", table.concat(names, ", "))
+			local hb = findByName(screen0, "LAN Play_button", 0)
+			log("LAN button anywhere:", tostring(hb), hb and tostring(hb.parent and hb.parent.name))
+		end
+		log("tab added to the main menu:", tostring(ok), tostring(err), "indexes: LAN", tostring((sub.GetTabByName("LAN Play"))), "skirmish", tostring((sub.GetTabByName("skirmish"))))
+		return
+	end
+	if not tabReported and tabAdded and os.clock() > tabAdded + 3 then
+		tabReported = true
+		for _, n in ipairs({ "multiplayer_button", "LAN Play_button", "skirmish_button" }) do
+			local c = findByName(screen0, n, 0)
+			if c then
+				local x, y = c:LocalToScreen(0, 0)
+				log("button", n, "screen x/y", math.floor(x), math.floor(y), "size", math.floor(c.width), math.floor(c.height), "visible", tostring(c.visible))
+			else log("button", n, "not found") end
+		end
+	end
+end
+
 ---------------------------------------------------------------- per frame
 function widget:Update()
 	if not ui.panel and not uiTried and os.clock() > 3 then uiTried = buildUi() or false end
+	ensureTab()
 	if S then updateServer() end
 	updateLan()
 	updateScan()
@@ -474,8 +522,7 @@ buildUi = function()
 	ui.status = TextBox:New { parent = P, x = 0, y = y, right = 0, height = 30, text = status, objectOverrideFont = font }
 	Button:New { parent = P, x = 0, y = y + 40, width = 260, height = 40, caption = "Leave LAN play", objectOverrideFont = font, OnClick = { function() lanStop("left"); setStatus("Back on the normal server.") end } }
 	ui.panel = P
-	table.insert(cf.gameConfig.singleplayerConfig, 1, { name = "LAN Play", control = P })
-	log("menu entry added; singleplayer entries:", #cf.gameConfig.singleplayerConfig)
+	log("panel built")
 	return true
 end
 
