@@ -27,6 +27,8 @@ $items = @(
     @{ Path = (Join-Path $data 'games\LevelEditorMod.stamp'); Text = 'Stamp of the extra game (data\games\LevelEditorMod.stamp)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LevelEditor'); Text = 'Junction data\LevelEditor (the levels themselves stay in levels)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorBlueprints'); Text = 'Junction data\LevelEditorBlueprints (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
+    @{ Path = (Join-Path $data 'LevelEditorScenarios'); Text = 'Junction data\LevelEditorScenarios (the built scenarios themselves stay in scenario\scenarios)'; Kind = 'junction' },
+    @{ Path = (Join-Path $data 'LuaMenu\Widgets\lan_lobby.lua'); Text = 'LAN Play widget for the lobby (data\LuaMenu\Widgets\lan_lobby.lua)'; Kind = 'file' },
     @{ Path = (Join-Path $desktop 'BAR Level Editor.lnk'); Text = 'Desktop shortcut "BAR Level Editor"'; Kind = 'file' },
     @{ Path = (Join-Path $root 'start_level_editor.bat'); Text = 'start_level_editor.bat'; Kind = 'file' },
     @{ Path = (Join-Path $root 'editor_script_installed.txt'); Text = 'editor_script_installed.txt (start script)'; Kind = 'file' },

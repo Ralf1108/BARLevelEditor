@@ -435,29 +435,13 @@ local function updateScan()
 	end
 end
 
----------------------------------------------------------------- the entry in the main menu: a tab added to the menu the lobby has built (rank 1.5: right below Multiplayer, which is 1)
+---------------------------------------------------------------- the entry in the main menu: a tab added to the menu the lobby has built (rank 1.5: right below Multiplayer, which is 1; the menu is one column, there is no place beside it)
 local function findByName(ctrl, name, depth)
 	if not ctrl or depth > 12 then return nil end
 	if ctrl.name == name then return ctrl end
 	for _, ch in ipairs(ctrl.children or {}) do
 		local r = findByName(ch, name, depth + 1)
 		if r then return r end
-	end
-end
-
--- the LAN Play button sits right of the Multiplayer button, in the same row: the tab gets the last rank (its own row stays empty) and its button is moved
-local function placeButton()
-	local mp = findByName(screen0, "multiplayer_button", 0)
-	local lb = findByName(screen0, "LAN Play_button", 0)
-	if not (mp and lb and mp.parent) then return end
-	local s = mp.x
-	local total = mp.parent.width
-	local mpWidth = math.floor((total - 3 * s) * 0.62)
-	local lanWidth = total - 3 * s - mpWidth
-	if math.abs(mp.width - mpWidth) > 1 or math.abs(lb.x - (2 * s + mpWidth)) > 1 or math.abs(lb.y - mp.y) > 1 then
-		mp:SetPos(s, mp.y, mpWidth, mp.height); mp._relativeBounds.right = s * 2 + lanWidth; mp:UpdateClientArea()
-		lb:SetPos(2 * s + mpWidth, mp.y, lanWidth, mp.height); lb._relativeBounds.right = s; lb:UpdateClientArea()
-		lb:SetCaption("LAN")
 	end
 end
 
@@ -472,13 +456,12 @@ local function ensureTab()
 	local button = findByName(screen0, "LAN Play_button", 0)
 	if not sub.GetTabByName("LAN Play") or not button or not button.parent then
 		if sub.GetTabByName("LAN Play") then pcall(sub.RemoveTab, "LAN Play") end
-		local ok, err = pcall(sub.AddTab, "LAN Play", "LAN Play", ui.panel, nil, 99)
+		local ok, err = pcall(sub.AddTab, "LAN Play", "LAN Play", ui.panel, nil, 1.5)
 		tabAdded = os.clock(); tabReported = false
 		tabAddCount = (tabAddCount or 0) + 1
 		if tabAddCount <= 3 then log("tab added to the main menu:", tostring(ok), tostring(err), "indexes: LAN", tostring((sub.GetTabByName("LAN Play"))), "multiplayer", tostring((sub.GetTabByName("multiplayer")))) end
 		return
 	end
-	pcall(placeButton)
 	if not tabReported and tabAdded and os.clock() > tabAdded + 3 then
 		tabReported = true
 		for _, n in ipairs({ "multiplayer_button", "LAN Play_button", "skirmish_button" }) do
@@ -521,6 +504,18 @@ function widget:Update()
 		cfg.opened = true
 		local root = WG.Chobby and WG.Chobby.interfaceRoot
 		log("test: opening the LAN Play page:", tostring(pcall(root.OpenSingleplayerTabByName, "LAN Play")))
+	end
+	if cfg.scenarioTest and not cfg.scenDone and os.clock() > 12 then
+		cfg.scenDone = true
+		local dirs = VFS.SubDirs("LevelEditorScenarios/", "*", VFS.RAW) or {}
+		log("test: scenario folders seen through the junction:", #dirs, table.concat(dirs, " "))
+		local txt = VFS.LoadFile("LevelEditorScenarios/" .. cfg.scenarioTest .. "/scenario.txt", VFS.RAW)
+		log("test: scenario.txt read:", txt and #txt or "FAILED", "bytes; game archive 'Tower Defense Scenario 1' present:", tostring(VFS.HasArchive("Tower Defense Scenario 1")))
+		if txt then
+			local script = txt:gsub("__GAMETYPE__", cfg.scenarioGame or "Tower Defense Scenario 1"):gsub("__PLAYERNAME__", cfg.name or "Hanna")
+			log("test: starting the scenario with Spring.Reload")
+			Spring.Reload(script)
+		end
 	end
 	if cfg.leaveAfter and lan and lan.step == "in" then
 		lan.inAt = lan.inAt or os.clock()
@@ -592,12 +587,6 @@ buildUi = function()
 end
 
 function widget:Initialize()
-	-- active only when the LAN Play shortcut started the game (it creates this file and deletes it when the game ends): the normal start stays untouched
-	if not VFS.LoadFile("lan_play.flag", VFS.RAW) then
-		Spring.Echo("[LANPLAY] not started by the LAN Play shortcut: widget off")
-		widgetHandler:RemoveWidget(widget)
-		return
-	end
 	math.randomseed(os.time() + math.floor(os.clock() * 1000))
 	log("loaded; socket:", type(socket))
 	if VFS.LoadFile("lan_return.txt", VFS.RAW) then

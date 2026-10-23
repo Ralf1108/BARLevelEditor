@@ -1,12 +1,10 @@
 # Installs (or removes) LAN Play for the lobby of Beyond All Reason.
 #   1. copies lan_lobby.lua to <data>\LuaMenu\Widgets\ (only when it differs)
 #   2. sets ["Chili lobby"].loadLocalWidgets = true in <data>\LuaMenu\Config\IGL_data.lua (only when it is not set; the file is saved next to itself first)
-#   3. creates the desktop shortcut "Beyond All Reason - LAN Play" (it starts start_lan_play.ps1)
-# The widget is active only when the game was started with that shortcut: the shortcut creates <data>\lan_play.flag for the time the game runs. The normal
-# shortcut of the game does not, so it starts the normal lobby without any change.
-# The game and the launcher must not run: the lobby writes IGL_data.lua when it ends and would overwrite the change.
-# -NoShortcut: no desktop shortcut. -Uninstall: removes the widget, the flag and the shortcut and sets loadLocalWidgets = false again.
-param([string]$BarPath = $null, [switch]$NoShortcut, [switch]$Uninstall)
+# The widget only adds the entry "LAN Play" to the main menu; it changes nothing as long as LAN Play is not used (the normal Multiplayer works as before).
+# Run by install_editor.ps1 (the Level Editor setup). The game and the launcher must not run: the lobby writes IGL_data.lua when it ends and would
+# overwrite the change. -Uninstall removes the widget and sets loadLocalWidgets = false again.
+param([string]$BarPath = $null, [switch]$Uninstall)
 $ErrorActionPreference = 'Stop'
 function Fail($m) { Write-Host $m -ForegroundColor Red; exit 1 }
 
@@ -26,8 +24,6 @@ $widgetDir = Join-Path $data 'LuaMenu\Widgets'
 $cfgDir = Join-Path $data 'LuaMenu\Config'
 $cfg = Join-Path $cfgDir 'IGL_data.lua'
 $widget = Join-Path $widgetDir 'lan_lobby.lua'
-$flag = Join-Path $data 'lan_play.flag'
-$lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Beyond All Reason - LAN Play.lnk'
 New-Item -ItemType Directory -Force $widgetDir, $cfgDir | Out-Null
 
 function Set-LocalWidgets([bool]$on) {
@@ -49,26 +45,14 @@ function Set-LocalWidgets([bool]$on) {
 }
 
 if ($Uninstall) {
-    foreach ($f in $widget, $flag, $lnk) { if (Test-Path $f) { Remove-Item $f -Force } }
+    foreach ($f in $widget) { if (Test-Path $f) { Remove-Item $f -Force } }
     Set-LocalWidgets $false
-    Write-Host "LAN Play removed from $data (loadLocalWidgets = false), shortcut removed." -ForegroundColor Green
+    Write-Host "LAN Play removed from $data (loadLocalWidgets = false)." -ForegroundColor Green
     exit 0
 }
 $src = Join-Path $PSScriptRoot 'lan_lobby.lua'
 if (-not (Test-Path $src)) { Fail "lan_lobby.lua is not next to this script ($PSScriptRoot)." }
 if (-not (Test-Path $widget) -or (Get-FileHash $src).Hash -ne (Get-FileHash $widget).Hash) { Copy-Item $src $widget -Force; Write-Host 'Widget copied.' }
 Set-LocalWidgets $true
-if (-not $NoShortcut) {
-    $start = Join-Path $PSScriptRoot 'start_lan_play.ps1'
-    $sh = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
-    $sh.TargetPath = (Get-Command powershell.exe).Source
-    $sh.Arguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $start + '"'
-    $sh.WorkingDirectory = $PSScriptRoot
-    $exe = Join-Path $BarPath 'Beyond-All-Reason.exe'
-    if (Test-Path $exe) { $sh.IconLocation = "$exe,0" }
-    $sh.Description = 'Beyond All Reason with LAN Play'
-    $sh.Save()
-    Write-Host "Shortcut: $lnk"
-}
 Write-Host "LAN Play installed in $data." -ForegroundColor Green
-Write-Host 'Start the game with the shortcut "Beyond All Reason - LAN Play". The normal shortcut starts the normal game.'
+Write-Host 'Start the game as usual: the main menu has the entry "LAN Play" below Multiplayer.'

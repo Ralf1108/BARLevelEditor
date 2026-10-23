@@ -109,6 +109,18 @@ New-Item -ItemType Directory -Force (Join-Path $bpDir '_trash') | Out-Null
 Set-Junction (Join-Path $data 'LevelEditorBlueprints') $bpDir
 Write-Host "Levels: $levels, blueprints: $bpDir"
 
+# Built scenarios (scenario\scenarios): junction, so that the lobby (LAN Play) can read them (the lobby cannot read folders outside the game folder)
+$scDir = Join-Path $root 'scenario\scenarios'
+New-Item -ItemType Directory -Force $scDir | Out-Null
+Set-Junction (Join-Path $data 'LevelEditorScenarios') $scDir
+
+# ---------------------------------------------------------------- 5b. LAN Play (widget for the lobby; changes nothing of the official game)
+Step 'LAN Play (widget for the lobby)'
+try {
+    & (Join-Path $root 'lan_lobby\install_lan_play.ps1') -BarPath $bar
+    if ($LASTEXITCODE -ne 0) { Write-Host 'LAN Play was not installed (is the game or the launcher running? Close it and run this setup again).' -ForegroundColor Yellow }
+} catch { Write-Host "LAN Play was not installed: $($_.Exception.Message)" -ForegroundColor Yellow }
+
 # ---------------------------------------------------------------- 6. Start file (with map selection)
 Step 'Write the start file'
 $bat = @"
