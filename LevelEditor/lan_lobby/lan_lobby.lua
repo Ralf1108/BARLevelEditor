@@ -37,9 +37,9 @@ local function log(...)
 end
 
 local ui = {}
-local buildUi
+local buildUi, updateFoundUi
 local status = ""
-local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped
+local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
 local found, scan = {}, nil
 local S = nil            -- the server (host only)
 local lan = nil          -- { role = "host"|"client", saved = {address, port}, name, ip, step }
@@ -322,6 +322,7 @@ local function startHosting()
 	local game = cf and cf:GetDefaultGameName() or "Beyond All Reason"
 	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {} } }
 	hookConnect()
+	found = {}; updateFoundUi()
 	setStatus("Hosting as " .. name .. " (port " .. PORT .. ").")
 	lanConnect("host", "127.0.0.1", name)
 end
@@ -354,21 +355,22 @@ local function updateLan()
 end
 
 ---------------------------------------------------------------- finding games: WHO on the lobby port of every address of the own /24 network
-local function startScan()
-	found = {}
+local function startScan(quiet)
 	local me = (socket.dns and socket.dns.toip and socket.dns.toip(socket.dns.gethostname())) or "127.0.0.1"
 	local a, b, c = tostring(me):match("^(%d+)%.(%d+)%.(%d+)%.%d+$")
-	local list = { "127.0.0.1" }
-	if a then for i = 1, 254 do list[#list + 1] = a .. "." .. b .. "." .. c .. "." .. i end end
-	scan = { list = list, next = 1, open = {}, until_ = os.clock() + 8, started = os.clock() }
-	log("scan from own address", me, "(", #list, "addresses )")
-	setStatus("Searching for games in the network ...")
+	local list = {}
+	if a then for i = 1, 254 do list[#list + 1] = a .. "." .. b .. "." .. c .. "." .. i end else list[1] = "127.0.0.1" end
+	scan = { list = list, next = 1, open = {}, until_ = os.clock() + 8, started = os.clock(), results = {}, quiet = quiet }
+	if not quiet then
+		log("scan from own address", me, "(", #list, "addresses )")
+		setStatus("Searching for games in the network ...")
+	end
 end
 
-local function updateFoundUi()
+updateFoundUi = function()
 	if not ui.found then return end
 	for i, b in ipairs(ui.found) do
-		local f = found[i]
+		local f = (not S) and found[i] or nil
 		if f then b:SetCaption(f.ip .. "   " .. f.name .. "   " .. f.map .. "   (" .. f.players .. ")"); b:Show() else b:Hide() end
 	end
 end
@@ -397,7 +399,7 @@ local function updateScan()
 			if data and #data > 0 then o.buf = o.buf .. data end
 			for l in o.buf:gmatch("[^\r\n]+") do
 				local name, map, players = l:match("^LANHOST (.-)|(.-)|(%d+)$")
-				if name and not o.done then o.done = true; found[#found + 1] = { ip = o.ip, name = name, map = map, players = players }; log("found", o.ip, name, map, players); updateFoundUi() end
+				if name and not o.done then o.done = true; scan.results[#scan.results + 1] = { ip = o.ip, name = name, map = map, players = players } end
 			end
 			if err == "closed" or os.clock() - o.t > 3 then drop = true end
 		end
@@ -405,8 +407,13 @@ local function updateScan()
 	end
 	if (scan.next > #scan.list and #scan.open == 0) or os.clock() > scan.until_ then
 		for _, o in ipairs(scan.open) do o.sock:close() end
-		log("scan finished:", #found, "game(s) in", string.format("%.1f", os.clock() - scan.started), "s")
-		setStatus(#found > 0 and ("Found " .. #found .. " game(s).") or "No game found.")
+		local results, quiet = scan.results, scan.quiet
+		found = results
+		updateFoundUi()
+		if not quiet or #results ~= lastFoundCount then log("scan finished:", #results, "game(s) in", string.format("%.1f", os.clock() - scan.started), "s"); for _, f in ipairs(results) do log("found", f.ip, f.name, f.map, f.players) end end
+		lastFoundCount = #results
+		if ui.status and not (lan or S) then ui.status:SetText(#results > 0 and ("Games found: " .. #results .. " - click one to join it.") or "No LAN game found (searching again every few seconds).") end
+		nextScanAt = os.clock() + 4
 		scan = nil
 	end
 end
@@ -421,6 +428,22 @@ local function findByName(ctrl, name, depth)
 	end
 end
 
+-- the LAN Play button sits right of the Multiplayer button, in the same row: the tab gets the last rank (its own row stays empty) and its button is moved
+local function placeButton()
+	local mp = findByName(screen0, "multiplayer_button", 0)
+	local lb = findByName(screen0, "LAN Play_button", 0)
+	if not (mp and lb and mp.parent) then return end
+	local s = mp.x
+	local total = mp.parent.width
+	local mpWidth = math.floor((total - 3 * s) * 0.62)
+	local lanWidth = total - 3 * s - mpWidth
+	if math.abs(mp.width - mpWidth) > 1 or math.abs(lb.x - (2 * s + mpWidth)) > 1 or math.abs(lb.y - mp.y) > 1 then
+		mp:SetPos(s, mp.y, mpWidth, mp.height); mp._relativeBounds.right = s * 2 + lanWidth; mp:UpdateClientArea()
+		lb:SetPos(2 * s + mpWidth, mp.y, lanWidth, mp.height); lb._relativeBounds.right = s; lb:UpdateClientArea()
+		lb:SetCaption("LAN")
+	end
+end
+
 local function ensureTab()
 	if not ui.panel then return end
 	if tabCheckAt and os.clock() < tabCheckAt then return end
@@ -432,20 +455,13 @@ local function ensureTab()
 	local button = findByName(screen0, "LAN Play_button", 0)
 	if not sub.GetTabByName("LAN Play") or not button or not button.parent then
 		if sub.GetTabByName("LAN Play") then pcall(sub.RemoveTab, "LAN Play") end
-		local ok, err = pcall(sub.AddTab, "LAN Play", "LAN Play", ui.panel, nil, 1.5)
+		local ok, err = pcall(sub.AddTab, "LAN Play", "LAN Play", ui.panel, nil, 99)
 		tabAdded = os.clock(); tabReported = false
-		if not tabDumped then
-			tabDumped = true
-			local h = findByName(screen0, "buttons_Main Menu", 0)
-			local names = {}
-			for _, ch in ipairs(h and h.children or {}) do names[#names + 1] = tostring(ch.name) .. "@" .. math.floor(ch.y or -1) end
-			log("holder children after AddTab:", table.concat(names, ", "))
-			local hb = findByName(screen0, "LAN Play_button", 0)
-			log("LAN button anywhere:", tostring(hb), hb and tostring(hb.parent and hb.parent.name))
-		end
-		log("tab added to the main menu:", tostring(ok), tostring(err), "indexes: LAN", tostring((sub.GetTabByName("LAN Play"))), "skirmish", tostring((sub.GetTabByName("skirmish"))))
+		tabAddCount = (tabAddCount or 0) + 1
+		if tabAddCount <= 3 then log("tab added to the main menu:", tostring(ok), tostring(err), "indexes: LAN", tostring((sub.GetTabByName("LAN Play"))), "multiplayer", tostring((sub.GetTabByName("multiplayer")))) end
 		return
 	end
+	pcall(placeButton)
 	if not tabReported and tabAdded and os.clock() > tabAdded + 3 then
 		tabReported = true
 		for _, n in ipairs({ "multiplayer_button", "LAN Play_button", "skirmish_button" }) do
@@ -458,15 +474,31 @@ local function ensureTab()
 	end
 end
 
+-- while the LAN Play page is open (and this computer neither hosts nor plays a LAN game): look for games every few seconds
+local function autoScan()
+	if scan or S or lan then return end
+	local visible = ui.panel and ui.panel.parent and ui.panel.visible
+	if not visible then nextScanAt = nil; return end
+	if not nextScanAt then nextScanAt = os.clock() end
+	if os.clock() >= nextScanAt then startScan(true) end
+end
+
 ---------------------------------------------------------------- per frame
 function widget:Update()
 	if not ui.panel and not uiTried and os.clock() > 3 then uiTried = buildUi() or false end
 	ensureTab()
+	autoScan()
 	if S then updateServer() end
 	updateLan()
 	updateScan()
 
 	-- test automation
+	if cfg.openTab and tabAdded and not cfg.opened and os.clock() > tabAdded + 2 then
+		cfg.opened = true
+		local root = WG.Chobby and WG.Chobby.interfaceRoot
+		log("test: opening the LAN Play page:", tostring(pcall(root.OpenSingleplayerTabByName, "LAN Play")))
+	end
+	if cfg.clickFirst and not lan and not S and #found > 0 then log("test: click on the first entry"); joinHost(found[1].ip) end
 	local l = lobby()
 	if cfg.auto and not autoStarted and os.clock() > 8 and Config() and l then
 		autoStarted = true
