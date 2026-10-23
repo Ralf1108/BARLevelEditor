@@ -37,7 +37,7 @@ local function log(...)
 end
 
 local ui = {}
-local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, SCENARIO_GAME
+local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, SCENARIO_GAME, SCENARIO_FILE, localGameHash
 local status = ""
 local returnAt
 local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
@@ -86,6 +86,7 @@ local function battleOpenedLine(c)
 end
 
 -- ---- scenarios of the Level Editor (data\LevelEditorScenarios is a junction to scenario\scenarios): the team layout is the scenario's and cannot be changed
+SCENARIO_FILE = "games/LevelEditorScenarios.sdz"
 SCENARIO_GAME = "Level Editor Scenarios 1"  -- the extra game the Level Editor setup builds (all gadgets; they switch on by the game options of the scenario)
 
 scenarioList = function()
@@ -127,6 +128,7 @@ selectScenario = function(name)
 	if not name then
 		S.battle.scenario = nil
 		toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=")
+		toBattle("SETSCRIPTTAGS game/modoptions/lansync=")
 		say("Scenario removed: choose a map and the teams as you like.")
 		log("scenario cleared")
 		return
@@ -139,6 +141,15 @@ selectScenario = function(name)
 	local ally = team and low:match("%[team" .. team .. "%]%s*{.-allyteam%s*=%s*(%d+)")
 	if not (map and team and ally) then say("Scenario '" .. name .. "' has no player team (map " .. tostring(map) .. ")."); return end
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
+	-- the extra game: every computer needs the same file; the clients compare hash and size and fetch it from the host when theirs differs or is missing
+	local data = VFS.LoadFile(SCENARIO_FILE, VFS.RAW)
+	S.gameFile = nil
+	if data then
+		S.gameFile = { data = data, size = #data, hash = VFS.CalculateHash(data, 0) }
+		toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.hash .. "|" .. S.gameFile.size)
+	else
+		say("Warning: the extra game " .. SCENARIO_FILE .. " is not installed on the host (run the Level Editor setup).")
+	end
 	S.battle.map = map; updateBattleInfo()
 	toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=" .. name)
 	applyScenarioToUsers()
@@ -192,6 +203,12 @@ local function serverLine(c, line)
 	line = line:gsub("^#%d+%s+", "")
 	local cmd, args = line:match("^(%S+)%s*(.*)$")
 	if not cmd then return end
+	if cmd == "FETCHGAME" and not c.name then
+		local g = S.gameFile
+		if g and args == g.hash then c.serve = { pos = 1, header = "SIZE " .. g.size .. "\n" }; log("serving the extra game to", tostring(c.sock:getpeername()))
+		else c.close = true end
+		return
+	end
 	if cmd == "WHO" then
 		sendLine(c, "LANHOST " .. (S.hostName or "?") .. "|" .. S.battle.map .. "|" .. #battleUsers()); c.close = true
 	elseif cmd == "PING" then sendLine(c, "PONG")
@@ -224,6 +241,7 @@ local function serverLine(c, line)
 		end
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
+		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
 		sendLine(c, "REQUESTBATTLESTATUS")
 		updateBattleInfo()
@@ -282,7 +300,19 @@ local function updateServer()
 			local ok, e = pcall(serverLine, c, line)
 			if not ok then log("server error:", tostring(e), "in", line:sub(1, 60)) end
 		end
-		if err == "closed" or c.close or (not c.name and os.clock() - c.t > 6) then removeConn(c) end
+		if c.serve and S.gameFile then
+			local sv = c.serve
+			if sv.header then
+				local n = c.sock:send(sv.header)
+				if n then sv.header = nil end
+			else
+				local last, e, partial = c.sock:send(S.gameFile.data, sv.pos, math.min(sv.pos + 65535, S.gameFile.size))
+				local sent = last or partial
+				if sent then sv.pos = sent + 1 end
+				if sv.pos > S.gameFile.size then c.close = true; log("extra game served") end
+			end
+		end
+		if err == "closed" or c.close or (not c.name and not c.serve and os.clock() - c.t > 6) then removeConn(c) end
 	end
 end
 
@@ -371,6 +401,21 @@ local function hookConnect()
 			log("Spring.Reload (host) with start script:\n" .. script)
 			return Spring.Reload(script)
 		end
+		if lan and lan.role == "client" and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" then
+			local tag = self.modoptions.lansync or ""
+			local hash = tag:match("^(.-)|") or ""
+			if lan.fetch or lan.syncPending or (hash ~= "" and lan.syncHash ~= hash and lan.syncFailed ~= hash and localGameHash() ~= hash) then
+				-- still loading (or about to ask): the connection to the game is made as soon as the file is there
+				lan.pendingConnect = { orig = original, args = { ... } }
+				log("start postponed until the scenario game is loaded")
+				return
+			end
+			if lan.syncFailed == hash and hash ~= "" and localGameHash() ~= hash then
+				local msg = "The scenario game of the host was not loaded: the scenario cannot start for you."
+				log(msg); if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
+				return
+			end
+		end
 		if lan and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" and not VFS.HasArchive(SCENARIO_GAME) then
 			-- the scenario needs the extra game of the Level Editor setup on this computer too
 			local msg = "The host plays the scenario '" .. self.modoptions.lanscenario .. "': it needs the game '" .. SCENARIO_GAME .. "' (installed by the Level Editor setup, install_editor.bat). Install the Level Editor and start the game again."
@@ -454,7 +499,107 @@ local function joinHost(ip)
 	lanConnect("client", ip, name)
 end
 
+-- ---- the extra game of the scenario on a joiner: the host announces hash and size (game option lansync); a different or missing file is fetched from the host after a question
+localGameHash = function()
+	local data = VFS.LoadFile(SCENARIO_FILE, VFS.RAW)
+	return data and VFS.CalculateHash(data, 0) or nil, data and #data or 0
+end
+
+local function finishFetch(f, ok, reason)
+	pcall(function() f.sock:close() end)
+	lan.fetch = nil
+	if ok then
+		lan.syncHash = f.hash; lan.syncPending = false
+		setStatus("The scenario game is up to date.")
+		if lan.pendingConnect then
+			local a = lan.pendingConnect; lan.pendingConnect = nil
+			local l = lobby()
+			if l then a.orig(l, unpack(a.args)) end
+		end
+	else
+		lan.syncFailed = f.hash; lan.syncPending = false; lan.pendingConnect = nil
+		setStatus("Could not load the scenario game from the host: " .. tostring(reason))
+		if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup("Could not load the scenario game from the host: " .. tostring(reason)) end
+	end
+end
+
+local function startFetch(hash, size)
+	local s = socket.tcp(); s:settimeout(3)
+	local ok, e = s:connect(lan.ip, PORT)
+	if not ok then finishFetch({ sock = s, hash = hash }, false, "no connection (" .. tostring(e) .. ")"); return end
+	s:settimeout(0)
+	s:send("FETCHGAME " .. hash .. "\n")
+	lan.fetch = { sock = s, hash = hash, size = size, buf = "", parts = {}, got = 0, total = nil, t = os.clock() }
+	lan.syncPending = true
+	setStatus("Loading the scenario game from the host ...")
+end
+
+local function updateFetch()
+	local f = lan.fetch
+	local data, err, partial = f.sock:receive(65536)
+	data = data or partial
+	if data and #data > 0 then
+		if not f.total then
+			f.buf = f.buf .. data
+			-- the server greets every connection first (TASSERVER ...); then comes "SIZE <n>" and the bytes
+			while not f.total do
+				local nl = f.buf:find("\n", 1, true)
+				if not nl then break end
+				local line = f.buf:sub(1, nl - 1)
+				f.buf = f.buf:sub(nl + 1)
+				local n = line:match("^SIZE (%d+)$")
+				if n then
+					f.total = tonumber(n)
+					if f.total ~= f.size or f.total > 4 * 1024 * 1024 then finishFetch(f, false, "the host sends another size than he announced"); return end
+					local rest = f.buf; f.buf = ""
+					if #rest > 0 then f.parts[#f.parts + 1] = rest:sub(1, f.total); f.got = math.min(#rest, f.total) end
+				elseif not line:find("^TASSERVER") then
+					finishFetch(f, false, "the host answered something else"); return
+				end
+			end
+		else
+			local take = math.min(#data, f.total - f.got)   -- never more than the announced size
+			if take > 0 then f.parts[#f.parts + 1] = data:sub(1, take); f.got = f.got + take end
+		end
+	end
+	if f.total and f.got >= f.total then
+		local all = table.concat(f.parts)
+		if VFS.CalculateHash(all, 0) ~= f.hash then finishFetch(f, false, "the file is not the one that was announced (hash)"); return end
+		local part = SCENARIO_FILE .. ".part"
+		local fh = io.open(part, "wb")
+		if not fh then finishFetch(f, false, "cannot write " .. part); return end
+		fh:write(all); fh:close()
+		os.remove(SCENARIO_FILE)
+		if not os.rename(part, SCENARIO_FILE) then finishFetch(f, false, "cannot replace " .. SCENARIO_FILE); return end
+		pcall(VFS.ScanAllDirs)
+		log("the extra game was loaded from the host:", f.total, "bytes; archive present:", tostring(VFS.HasArchive(SCENARIO_GAME)))
+		finishFetch(f, true)
+	elseif err == "closed" or os.clock() - f.t > 30 then
+		finishFetch(f, false, err == "closed" and "the host closed the connection" or "timeout")
+	end
+end
+
+local function updateSync()
+	if not lan or lan.role ~= "client" then return end
+	local l = lobby()
+	local mo = l and l.modoptions
+	if lan.fetch then updateFetch(); return end
+	local tag = mo and mo.lansync
+	if not (mo and mo.lanscenario and mo.lanscenario ~= "" and tag and tag ~= "") then return end
+	local hash, size = tag:match("^(.-)|(%d+)$")
+	if not hash or lan.syncHash == hash or lan.syncAsked == hash then return end
+	local mine = localGameHash()
+	if mine == hash then lan.syncHash = hash; return end
+	lan.syncAsked = hash
+	local function yes() startFetch(hash, tonumber(size)) end
+	local function no() lan.syncFailed = hash; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
+	if cfg.autoAccept then yes(); return end
+	local q = "The host plays the scenario '" .. mo.lanscenario .. "'. Your game '" .. SCENARIO_GAME .. "' is " .. (mine and "different from his" or "missing") .. ". Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
+	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
+end
+
 local function updateLan()
+	updateSync()
 	if not lan then return end
 	local l = lobby()
 	if not l then return end
