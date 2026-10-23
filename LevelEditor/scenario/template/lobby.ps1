@@ -82,7 +82,13 @@ function Get-BundleHash([string]$dir) {
 # the id comes from the network: only 64 hex digits may become a folder name
 function Test-BundleId([string]$hash) { return ($hash -cmatch '^[0-9A-F]{64}$') }
 
-function Test-BundleCached([string]$hash) { return ((Test-BundleId $hash) -and (Test-Path (Join-Path (Join-Path (Get-BundleCacheRoot) $hash) 'complete.txt'))) }
+function Test-BundleCached([string]$hash) {
+    if (-not (Test-BundleId $hash)) { return $false }
+    $dir = Join-Path (Get-BundleCacheRoot) $hash
+    if (-not (Test-Path (Join-Path $dir 'complete.txt'))) { return $false }
+    Use-CacheItem $dir   # (in use: not pruned for another 30 days)
+    return $true
+}
 
 # puts the bundle files of a folder into the cache (folder <hash>, finished when complete.txt is there); returns Hash and Dir
 function Install-Bundle([string]$srcDir) {
@@ -253,6 +259,68 @@ function Install-EditorUpdate([string]$stage, [string]$root) {
     return [pscustomobject]@{ Count = $changes.Count; Backup = $backup }
 }
 
+# ---------------------------------------------------------------- The cache: looking after it
+# What came from other computers or was made for them lives in %LOCALAPPDATA%\BAR-Scenario: Cache\<hash> (scenarios), Cache\Maps\maps (maps), Update\ (unpacked
+# updates); Backup\ (files an update replaced) is never touched here.
+function Get-DirSize([string]$dir) {
+    if (-not (Test-Path $dir)) { return [long]0 }
+    $s = (Get-ChildItem $dir -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+    if ($s) { return [long]$s } else { return [long]0 }
+}
+
+function Get-UpdateCacheRoot { return (Join-Path (Split-Path (Get-BundleCacheRoot) -Parent) 'Update') }
+
+# Bytes, Bundles and Maps (numbers) of the cache
+function Get-CacheInfo {
+    $root = Get-BundleCacheRoot
+    $bundles = @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | Where-Object { Test-BundleId $_.Name })
+    $maps = @(Get-ChildItem (Join-Path $root 'Maps\maps') -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -eq '.sd7' -or $_.Extension -eq '.sdz' })
+    return [pscustomobject]@{ Bytes = ((Get-DirSize $root) + (Get-DirSize (Get-UpdateCacheRoot))); Bundles = $bundles.Count; Maps = $maps.Count }
+}
+
+# marks something in the cache as used just now (the pruning goes by this time)
+function Use-CacheItem([string]$path) { try { (Get-Item $path -Force).LastWriteTime = Get-Date } catch { } }
+
+# Throws away what is not needed any more: scenarios not used for 30 days, maps not used for 60 days and (oldest first) as many more as are needed to stay
+# below 3 GB, half-finished downloads and unpacked updates older than a day, zips of hosts that were left in TEMP. Returns the number of bytes freed.
+function Remove-OldCache {
+    $freed = [long]0
+    $now = Get-Date
+    $root = Get-BundleCacheRoot
+    function Drop($item) { $script:dropped += (Get-DirSize $item.FullName) + $(if (-not $item.PSIsContainer) { $item.Length } else { 0 }); Remove-Item $item.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+    $script:dropped = [long]0
+    if (Test-Path $root) {
+        foreach ($d in @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue)) {
+            if ((Test-BundleId $d.Name) -and ($now - $d.LastWriteTime).TotalDays -gt 30) { Drop $d }
+            elseif ($d.Name -match '\.(part|tmp)$' -and ($now - $d.LastWriteTime).TotalDays -gt 1) { Drop $d }
+        }
+        foreach ($f in @(Get-ChildItem $root -File -Filter '*.part' -ErrorAction SilentlyContinue)) { if (($now - $f.LastWriteTime).TotalDays -gt 1) { Drop $f } }
+        $mapDir = Join-Path $root 'Maps\maps'
+        if (Test-Path $mapDir) {
+            $maps = @(Get-ChildItem $mapDir -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -eq '.sd7' -or $_.Extension -eq '.sdz' } | Sort-Object LastWriteTime)
+            $total = ($maps | Measure-Object -Property Length -Sum).Sum
+            foreach ($m in $maps) {
+                if (($now - $m.LastWriteTime).TotalDays -gt 60 -or $total -gt 3GB) {
+                    $total -= $m.Length
+                    Drop $m
+                    if (Test-Path ($m.FullName + '.mapinfo')) { Remove-Item ($m.FullName + '.mapinfo') -Force -ErrorAction SilentlyContinue }
+                }
+            }
+        }
+    }
+    $upd = Get-UpdateCacheRoot
+    if (Test-Path $upd) { foreach ($d in @(Get-ChildItem $upd -Directory -ErrorAction SilentlyContinue)) { if (($now - $d.LastWriteTime).TotalDays -gt 1) { Drop $d } } }
+    foreach ($f in @(Get-ChildItem $env:TEMP -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'bar_bundle_*.zip' -or $_.Name -like 'bar_update_*.zip' })) { if (($now - $f.LastWriteTime).TotalDays -gt 1) { Drop $f } }
+    return $script:dropped
+}
+
+# the menu's "clean the cache": everything that came from hosts goes (the scenarios are made again from the levels or fetched again, the maps fetched again)
+function Clear-BundleCache {
+    $freed = (Get-CacheInfo).Bytes
+    foreach ($d in @((Get-BundleCacheRoot), (Get-UpdateCacheRoot))) { if (Test-Path $d) { Get-ChildItem $d -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue } }
+    return $freed
+}
+
 # ---------------------------------------------------------------- The map from the host
 $script:MapMaxBytes = 1GB
 # an extra data folder of the engine (SPRING_DATADIR; the maps are in maps inside): maps from hosts stay there and the data folder of the player is not touched
@@ -296,7 +364,7 @@ function Test-MapExtra([string]$mapName) {
     if (-not (Test-Path $dir)) { return $false }
     foreach ($s in @(Get-ChildItem $dir -Filter '*.mapinfo' -ErrorAction SilentlyContinue)) {
         $l = @(Get-Content $s.FullName)
-        if ($l.Count -ge 2 -and $l[0] -eq $mapName -and (Test-Path (Join-Path $dir ($s.Name -replace '\.mapinfo$', '')))) { return $true }
+        if ($l.Count -ge 2 -and $l[0] -eq $mapName -and (Test-Path (Join-Path $dir ($s.Name -replace '\.mapinfo$', '')))) { Use-CacheItem (Join-Path $dir ($s.Name -replace '\.mapinfo$', '')); return $true }
     }
     return $false
 }
@@ -360,6 +428,14 @@ function Step-BundleFetch($f) {
         if ($c.Available -eq 0 -and $c.Client.Poll(0, [Net.Sockets.SelectMode]::SelectRead)) { return 'error: the host closed the connection' }
         return 'working'
     } catch { return 'error: ' + $_.Exception.Message }
+}
+
+# gives up a fetch (error, leaving): closes the connection and the file and throws the half-finished file away
+function Close-Fetch($f) {
+    if (-not $f) { return }
+    try { $f.File.Close() } catch { }
+    try { $f.Client.Close() } catch { }
+    Remove-Item $f.Part -Force -ErrorAction SilentlyContinue
 }
 
 # unpacks and checks what was fetched and puts it into the cache; returns the folder (throws if something is wrong)
@@ -846,7 +922,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     try { $script:BundleDir = Complete-BundleFetch $fetch; Send-LobbyLine $p ('HAVE ' + $fetch.Hash); $dataText = 'Scenario: loaded (' + $fetch.Hash.Substring(0, 8) + ')'; $dataKind = 7 }
                     catch { $result = 'refused: ' + $_.Exception.Message }
                     $fetch = $null; $dirty = $true
-                } elseif ($r -ne 'working') { $result = 'refused: scenario - ' + $r; $dirty = $true }
+                } elseif ($r -ne 'working') { Close-Fetch $fetch; $fetch = $null; $result = 'refused: scenario - ' + $r; $dirty = $true }
                 elseif ($fetch.Total -gt 0) {
                     $pct = [int][Math]::Floor(100 * $fetch.Got / $fetch.Total)
                     if ($pct -ne $lastPct) {
@@ -885,7 +961,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                         $updState = 'confirm'
                     } catch { $updState = 'offer'; $updNote = 'Update failed: ' + $_.Exception.Message; $updShown = $false }
                     $updFetch = $null; $dirty = $true
-                } elseif ($r -ne 'working') { $updState = 'offer'; $updNote = 'Update failed: ' + $r; $updShown = $false; $updFetch = $null; $dirty = $true }
+                } elseif ($r -ne 'working') { Close-Fetch $updFetch; $updState = 'offer'; $updNote = 'Update failed: ' + $r; $updShown = $false; $updFetch = $null; $dirty = $true }
                 elseif ($updFetch.Total -gt 0) {
                     $pct = [int][Math]::Floor(100 * $updFetch.Got / $updFetch.Total)
                     if ($pct -ne $updLastPct) { $updLastPct = $pct; $updLines = @("Update: loading $pct % ($([int]($updFetch.Got / 1024)) of $([int]($updFetch.Total / 1024)) KB)"); $dirty = $true }
@@ -928,7 +1004,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     try { Complete-MapFetch $mapFetch $mapName $mapInfo.File; $mapState = 'ok'; Send-LobbyLine $p 'MAPOK'; $mapText = "Map: '$mapName' loaded from the host"; $mapKind = 7 }
                     catch { $mapState = 'prompt'; $mapText = 'Map: ' + $_.Exception.Message + ' ' }
                     $mapFetch = $null; $dirty = $true
-                } elseif ($r -ne 'working') { $mapState = 'prompt'; $mapText = 'Map: ' + $r + '. '; $mapFetch = $null; $dirty = $true }
+                } elseif ($r -ne 'working') { Close-Fetch $mapFetch; $mapState = 'prompt'; $mapText = 'Map: ' + $r + '. '; $mapFetch = $null; $dirty = $true }
                 elseif ($mapFetch.Total -gt 0) {
                     $pct = [int][Math]::Floor(100 * $mapFetch.Got / $mapFetch.Total)
                     if ($pct -ne $mapLastPct) {
@@ -961,9 +1037,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
         }
         return $result
     } finally {
-        if ($fetch) { try { $fetch.File.Close(); $fetch.Client.Close() } catch { } }
-        if ($mapFetch) { try { $mapFetch.File.Close(); $mapFetch.Client.Close() } catch { } }
-        if ($updFetch) { try { $updFetch.File.Close(); $updFetch.Client.Close() } catch { } }
+        Close-Fetch $fetch; Close-Fetch $mapFetch; Close-Fetch $updFetch
         if ($result -ne 'start') { try { $c.Close() } catch { } }   # after the start the connection stays: READY and GO
         if ($console) { [Console]::CursorVisible = $true }
     }
