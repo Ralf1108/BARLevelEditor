@@ -517,6 +517,17 @@ function Set-Autoload([string]$name) {
 
 # ---------------------------------------------------------------- main menu
 while ($true) {
+    if ($LASTEXITCODE -eq 10) {
+        # the starter updated the files of the editor from the host (lobby.ps1): this menu still runs the old ones in memory
+        Clear-Host
+        Write-Host 'The Level Editor was updated from the host.' -ForegroundColor Green
+        Write-Host 'Please start the Level Editor again (the new files are used from then on).'
+        Write-Host ''
+        Write-Host 'Press any key.'
+        [void][Console]::ReadKey($true)
+        exit 1
+    }
+    $global:LASTEXITCODE = 0
     $levels = @(Get-Levels)
     $lastLevel = Get-LastLevel
     # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package, 4 = start a scenario, 5 = upgrade one,
