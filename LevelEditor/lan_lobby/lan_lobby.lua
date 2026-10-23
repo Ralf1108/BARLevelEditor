@@ -39,6 +39,7 @@ end
 local ui = {}
 local buildUi, updateFoundUi
 local status = ""
+local returnAt
 local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
 local found, scan = {}, nil
 local S = nil            -- the server (host only)
@@ -279,28 +280,39 @@ local function hookConnect()
 	hookedConnect = true
 end
 
-local function lanStop(reason)
+local function openLanPage()
+	local root = WG.Chobby and WG.Chobby.interfaceRoot
+	if root and root.OpenSingleplayerTabByName then pcall(root.OpenSingleplayerTabByName, "LAN Play") end
+end
+
+local function lanStop(reason, noReconnect)
+	log("lanStop:", reason, "configured server", tostring(Config() and Config().serverAddress))
 	local l = lobby()
 	if S then
 		for _, c in ipairs(S.conns) do pcall(function() c.sock:close() end) end
 		pcall(function() S.srv:close() end)
 		S = nil
 	end
-	if lan and lan.saved then
-		local cf = Config()
-		if cf then cf.serverAddress, cf.serverPort = lan.saved.address, lan.saved.port end
-		if l and l.Disconnect then pcall(function() l:Disconnect(reason or "LAN play ended") end) end
-	end
+	local wasLan = lan ~= nil
+	if lan and lan.leftListener and l then pcall(l.RemoveListener, l, "OnLeftBattle", lan.leftListener) end
 	lan = nil
+	if wasLan and not noReconnect and l then
+		-- back to the normal server: the lobby is disconnected from the LAN server and logs in again the way the settings window does after a server change
+		pcall(function() l:Disconnect(reason or "LAN play ended") end)
+		local cf = Config()
+		if cf and cf.serverAddress then pcall(function() l.host = cf.serverAddress end) end
+		if WG.LoginWindowHandler and WG.LoginWindowHandler.TryLogin then pcall(WG.LoginWindowHandler.TryLogin) end
+		log("back on the normal server:", tostring(cf and cf.serverAddress))
+	end
 end
 
 local function lanConnect(role, ip, name)
 	local l, cf = lobby(), Config()
 	if not (l and cf) then setStatus("The lobby is not ready."); return false end
-	if lan then lanStop("new LAN game") end
-	lan = { role = role, ip = ip, name = name, saved = { address = cf.serverAddress, port = cf.serverPort }, step = "connecting", t = os.clock() }
+	if lan then lanStop("new LAN game", true) end
+	lan = { role = role, ip = ip, name = name, step = "connecting", t = os.clock() }
+	-- the configuration (server address) stays as it is: the lobby saves it when it ends. Only this connection goes to the LAN server.
 	pcall(function() l:Disconnect("LAN play") end)
-	cf.serverAddress, cf.serverPort = ip, PORT
 	-- the login window sends the login when the server has greeted (OnConnect): do the same here
 	local function onConnect()
 		l:RemoveListener("OnConnect", onConnect)
@@ -308,6 +320,11 @@ local function lanConnect(role, ip, name)
 		l:Login(name, "lan", 3, nil, "Chobby")
 	end
 	l:AddListener("OnConnect", onConnect)
+	-- leaving the battle room (the Leave button) ends the LAN game and brings the player back to the LAN Play page
+	lan.leftListener = function(listener, battleID, userName)
+		if lan and userName == l:GetMyUserName() then lan.left = os.clock() end
+	end
+	l:AddListener("OnLeftBattle", lan.leftListener)
 	l:Connect(ip, PORT, name, "lan", 0, "*", "Chobby")
 	return true
 end
@@ -485,6 +502,13 @@ end
 
 ---------------------------------------------------------------- per frame
 function widget:Update()
+	if lan and lan.left and os.clock() > lan.left + 0.3 then
+		log("left the battle room: back to the LAN Play page")
+		lanStop("left the room")
+		openLanPage()
+		setStatus("You left the LAN game.")
+	end
+	if returnAt and tabAdded and os.clock() > returnAt then returnAt = nil; log("back from the game: the LAN Play page"); openLanPage() end
 	if not ui.panel and not uiTried and os.clock() > 3 then uiTried = buildUi() or false end
 	ensureTab()
 	autoScan()
@@ -497,6 +521,10 @@ function widget:Update()
 		cfg.opened = true
 		local root = WG.Chobby and WG.Chobby.interfaceRoot
 		log("test: opening the LAN Play page:", tostring(pcall(root.OpenSingleplayerTabByName, "LAN Play")))
+	end
+	if cfg.leaveAfter and lan and lan.step == "in" then
+		lan.inAt = lan.inAt or os.clock()
+		if os.clock() > lan.inAt + tonumber(cfg.leaveAfter) and not lan.leaveSent then lan.leaveSent = true; log("test: pressing Leave in the room (lobby:LeaveBattle)"); WG.BattleRoomWindow.LeaveBattle() end
 	end
 	if cfg.clickFirst and not lan and not S and #found > 0 then log("test: click on the first entry"); joinHost(found[1].ip) end
 	local l = lobby()
@@ -553,17 +581,36 @@ buildUi = function()
 	y = y + 6 * 46 + 10
 	ui.status = TextBox:New { parent = P, x = 0, y = y, right = 0, height = 30, text = status, objectOverrideFont = font }
 	Button:New { parent = P, x = 0, y = y + 40, width = 260, height = 40, caption = "Leave LAN play", objectOverrideFont = font, OnClick = { function() lanStop("left"); setStatus("Back on the normal server.") end } }
+	Button:New { parent = P, x = 276, y = y + 40, width = 180, height = 40, caption = "Back", objectOverrideFont = font, OnClick = { function()
+		local root = WG.Chobby and WG.Chobby.interfaceRoot
+		local sub = root and root.GetSingleplayerSubmenu and root.GetSingleplayerSubmenu()
+		if sub and sub.CloseTabs then pcall(sub.CloseTabs) end
+	end } }
 	ui.panel = P
 	log("panel built")
 	return true
 end
 
 function widget:Initialize()
+	-- active only when the LAN Play shortcut started the game (it creates this file and deletes it when the game ends): the normal start stays untouched
+	if not VFS.LoadFile("lan_play.flag", VFS.RAW) then
+		Spring.Echo("[LANPLAY] not started by the LAN Play shortcut: widget off")
+		widgetHandler:RemoveWidget(widget)
+		return
+	end
 	math.randomseed(os.time() + math.floor(os.clock() * 1000))
 	log("loaded; socket:", type(socket))
+	if VFS.LoadFile("lan_return.txt", VFS.RAW) then
+		os.remove("lan_return.txt")
+		returnAt = os.clock() + 4
+	end
 	if Config() and not ui.panel then uiTried = buildUi() or false end
 end
 
 function widget:Shutdown()
-	lanStop("shutdown")
+	if lan and lan.step == "in" then
+		local f = io.open("lan_return.txt", "w")
+		if f then f:write("back to the LAN Play page after the game"); f:close() end
+	end
+	lanStop("shutdown", true)
 end
