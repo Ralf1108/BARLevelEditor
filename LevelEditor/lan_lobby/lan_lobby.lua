@@ -585,7 +585,7 @@ local function autoScan()
 	if os.clock() >= nextScanAt then startScan(true) end
 end
 
----------------------------------------------------------------- "Select Scenario": a floating button top left (host only, while the LAN battle room is open) and a list of the built scenarios
+---------------------------------------------------------------- "Custom Scenario": a floating button top left (host only, while the LAN battle room is open) and a list of the built scenarios
 local function scenarioMap(name)
 	local text = VFS.LoadFile("LevelEditorScenarios/" .. name .. "/scenario.txt", VFS.RAW) or ""
 	return text:match("[Mm]apname%s*=%s*([^;]+);") or "?"
@@ -615,11 +615,11 @@ local function ensureScenarioUi()
 		ui.scnWindow = Window:New { parent = screen0, x = 8, y = 48, width = 420, height = 330, resizable = false, draggable = true, classname = "main_window" }
 		ui.scnList = ScrollPanel:New { parent = ui.scnWindow, x = 6, y = 6, right = 6, bottom = 6 }
 		ui.scnWindow:Hide()
-		ui.scnButton = Button:New { parent = screen0, x = 8, y = 8, width = 200, height = 36, caption = "Select Scenario", objectOverrideFont = font, classname = "action_button",
+		ui.scnButton = Button:New { parent = screen0, x = 8, y = 8, width = 200, height = 36, caption = "Custom Scenario", objectOverrideFont = font, classname = "action_button",
 			OnClick = { function()
 				if ui.scnWindow.visible then ui.scnWindow:Hide() else fillScenarioList(); ui.scnWindow:Show(); ui.scnWindow:BringToFront() end
 			end } }
-		log("Select Scenario button added")
+		log("Custom Scenario button added")
 	end
 	if ui.scnButton.visible ~= show then ui.scnButton:SetVisibility(show) end
 	if not show and ui.scnWindow and ui.scnWindow.visible then ui.scnWindow:Hide() end
