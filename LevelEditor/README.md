@@ -122,6 +122,7 @@ In the start menu **key 3** (create a scenario package from a level): choose a l
 
 ## LAN Play (play in the same network, with the lobby of the game)
 **LAN Play** is an entry in the main menu of the game, right below Multiplayer. It gives you the multiplayer battle room of the game (map, options, AIs, teams, chat) for a game with computers in the same network, without the lobby server. The normal Multiplayer is not changed. It is a widget for the lobby (`lan_lobby\lan_lobby.lua`, installed by `install_editor.bat`); it only needs TCP port 8453 (lobby) and 8452 (the game) between the computers (Windows may ask once for the firewall).
+- **Name:** the page shows your name (the account name of the game; you need not be logged in); change it in the field if you like.
 - **Host:** open **LAN Play**, press **Host a LAN game**. You are in the battle room. Choose the map and the options as in the normal multiplayer room, then press Start. Others can join while you are in the room.
 - **Join:** open **LAN Play**: the page looks for games in the network by itself every few seconds (a /24 network, e.g. 192.168.1.x); click a game to join it. Or type the address and press Join. Whoever hosts does not look for games (so you never find yourself).
 - **Leave:** leaving the battle room (or **Leave LAN play**) takes you back to the LAN Play page and logs the lobby in to the normal server again. After a game you come back to the LAN Play page.
