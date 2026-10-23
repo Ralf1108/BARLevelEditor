@@ -18,7 +18,8 @@ if (-not $BarPath) {
 }
 if (-not $BarPath -or -not (Test-Path (Join-Path $BarPath 'data'))) { Fail 'Beyond All Reason was not found. Give its folder with -BarPath.' }
 $data = Join-Path $BarPath 'data'
-if (Get-Process -Name 'spring', 'Beyond-All-Reason' -ErrorAction SilentlyContinue) { Fail 'The game or the launcher is running. Close it first (the lobby would overwrite the setting when it ends).' }
+$running = @(Get-Process -Name 'spring' -ErrorAction SilentlyContinue)
+if ($running.Count -gt 0) { Fail ("The game is running (spring.exe, process $($running[0].Id)). Close the game first: the lobby writes its settings file when it ends and would overwrite the change.") }
 
 $widgetDir = Join-Path $data 'LuaMenu\Widgets'
 $cfgDir = Join-Path $data 'LuaMenu\Config'
@@ -56,3 +57,4 @@ if (-not (Test-Path $widget) -or (Get-FileHash $src).Hash -ne (Get-FileHash $wid
 Set-LocalWidgets $true
 Write-Host "LAN Play installed in $data." -ForegroundColor Green
 Write-Host 'Start the game as usual: the main menu has the entry "LAN Play" below Multiplayer.'
+exit 0

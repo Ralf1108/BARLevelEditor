@@ -152,8 +152,8 @@ Set-Junction (Join-Path $data 'LevelEditorScenarios') $scDir
 # ---------------------------------------------------------------- 5b. LAN Play (widget for the lobby; changes nothing of the official game)
 Step 'LAN Play (widget for the lobby)'
 try {
-    & (Join-Path $root 'lan_lobby\install_lan_play.ps1') -BarPath $bar
-    if ($LASTEXITCODE -ne 0) { Write-Host 'LAN Play was not installed (is the game or the launcher running? Close it and run this setup again).' -ForegroundColor Yellow }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'lan_lobby\install_lan_play.ps1') -BarPath $bar
+    if ($LASTEXITCODE -ne 0) { Write-Host 'LAN Play was not installed (the reason is printed above). The rest of the setup is done; run this setup again to install LAN Play.' -ForegroundColor Yellow }
 } catch { Write-Host "LAN Play was not installed: $($_.Exception.Message)" -ForegroundColor Yellow }
 
 # ---------------------------------------------------------------- 6. Start file (with map selection)
