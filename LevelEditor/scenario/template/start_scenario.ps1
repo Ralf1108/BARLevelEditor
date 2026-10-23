@@ -15,10 +15,12 @@
 # -Bundle (start menu key 6, "Play a level"): the scenario is a bundle in the cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>: scenario.txt and the gadgets, made from a
 # level by scenario_builder.ps1 -BundleDir and put there by Install-Bundle): the host gives -ScenarioDir <that folder> and offers it in the lobby, a joiner gives no
 # -ScenarioDir and gets the bundle from the host through the lobby (or from his cache). Needs -EditorDir (starter, lobby and gadgets are the editor's own).
+# -LobbyMapKey D or H (tests, automation): a joiner without the map takes this answer at once (D = download it, H = get it from the host); -LobbyAutoMapYes: the host
+# agrees at once when a joiner asks for the map.
 # Lobby (-Lobby with -HostGame or -Join): before anything is built the host sees a box per team and distributes the players who joined (TCP port
 # -LobbyPort, default 8453); a joiner only sends his name. When the host starts, everybody prepares (extra game, map), the host's game starts and
 # the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "Ralf=0,Anna=2" (first = host).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle)
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null, [switch]$LobbyAutoMapYes)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -136,14 +138,20 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
     if ($HostGame) {
         $teamInfo = @(Get-TeamInfo $script)
         if ($teamInfo.Count -lt 2) { Fail 'This scenario has only one team, there is nobody to play against.' }
-        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion $(if ($Bundle) { New-HostBundle $pkg } else { $null })
+        $hostBundle = $null
+        if ($Bundle) {
+            $hostBundle = New-HostBundle $pkg
+            $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (he has to ask and the host has to agree)
+            if (-not $hostBundle.Map) { Write-Host "Note: the archive of the map '$map' was not found, a joiner without the map has to download it from the internet." -ForegroundColor Yellow }
+        }
+        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion $hostBundle ([bool]$LobbyAutoMapYes)
         if (-not $lobbyRoster) { Write-Host 'The lobby was cancelled.'; exit 0 }
         Save-Mapping $lobbyRoster
         $Mapping = ConvertTo-MappingText $lobbyRoster
         if (-not $PSBoundParameters.ContainsKey('Wait')) { $Wait = 15 }   # everybody is known: the joiners connect at once
         Write-Host "Lobby finished: $Mapping"
     } else {
-        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null $playVersion
+        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null $playVersion $(if ($Bundle) { @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey } } else { $null })
         switch -Wildcard ($res) {
             'noconnect' { Fail "No lobby of a host found at $($JoinIp):$LobbyPort." }
             'refused*'  { Fail "The host refused you: $($res.Substring(9))" }
@@ -276,6 +284,7 @@ if ($ScriptOnly) { Write-Host "Start script: $out"; exit 0 }
 $cache = Get-ChildItem (Join-Path $data 'cache') -Filter 'ArchiveCache*.lua' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
 $have = $false
 if ($cache) { $have = ([IO.File]::ReadAllText($cache.FullName)).Contains('name = "' + $map + '"') }
+if (-not $have) { $have = Test-MapExtra $map }   # a map that a host sent (in the extra data folder of the cache)
 if (-not $have) {
     Write-Host ''
     Write-Host "This scenario needs the map '$map'. It is not installed on this computer yet." -ForegroundColor Yellow
@@ -297,6 +306,9 @@ if (Test-Path $wsrc) {
 }
 
 $spring = Join-Path $engineDir.FullName 'spring.exe'
+# maps that a host sent are in an extra data folder of the cache (the engine reads maps\ of every folder of SPRING_DATADIR; the folder of the player stays as it is)
+$mapsExtra = Get-MapExtraRoot
+if (Test-Path (Join-Path $mapsExtra 'maps')) { $env:SPRING_DATADIR = (@($env:SPRING_DATADIR, $mapsExtra) | Where-Object { $_ }) -join ';' }
 
 # Runs the game; with -WindowRect in a framed window on that rectangle: an own copy of the settings of the user (the original is only read)
 # with the window values replaced, and after the window has appeared its outer rectangle is set exactly (the frame is part of it)

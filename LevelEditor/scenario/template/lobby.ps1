@@ -10,6 +10,10 @@
 # after "OK" and "VERSION" the host sends "OFFER <hash> <size>" (to a joiner with the same version); a joiner who has that hash in his cache
 # (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>\) answers "HAVE <hash>", otherwise he opens a second connection to the same port, sends "FETCH <hash>", gets
 # "SIZE <n>" and n bytes (a zip) and then says "HAVE <hash>"; "PROGRESS <percent>" tells the host how far he is. The host cannot start before everybody has it.
+# The map: the host adds "MAP <size> <sha256> <file name>" to the offer (if he has the archive of the map). A joiner who has not got the map chooses
+# D (download it from the internet, the official map service) or H (get it from the host): "MAPREQ", the host sees the question and answers Y / N with
+# "MAPYES" / "MAPNO"; after "MAPYES" the joiner fetches the file on a second connection ("FETCHMAP <sha256> <his name>"), checks the hash, keeps it in the
+# cache (an extra data folder of the engine) and says "MAPOK" (also when the map was there from the start); "MAPPROGRESS <percent>" shows how far he is.
 # A joiner whose files are not the same as the host's (other hash) stays in the lobby, marked, but the game cannot start until he has the same version.
 # The focus starts on "Start game" (the last box): Enter or F5 starts at once.
 # Keys of the host: Tab / Shift+Tab or Left / Right = next box, Up / Down = player in the box, Enter = pick the player up (then Up / Down /
@@ -124,20 +128,88 @@ function Expand-BundleZip([string]$zipPath, [string]$destDir) {
 function New-HostBundle([string]$dir) {
     $zip = Join-Path $env:TEMP ('bar_bundle_' + [Guid]::NewGuid().ToString('N') + '.zip')
     New-BundleZip $dir $zip
-    return [pscustomobject]@{ Hash = (Get-BundleHash $dir); Size = (Get-Item $zip).Length; Zip = $zip }
+    return [pscustomobject]@{ Hash = (Get-BundleHash $dir); Size = (Get-Item $zip).Length; Zip = $zip; Map = $null }
+}
+
+# ---------------------------------------------------------------- The map from the host
+$script:MapMaxBytes = 1GB
+# an extra data folder of the engine (SPRING_DATADIR; the maps are in maps inside): maps from hosts stay there and the data folder of the player is not touched
+function Get-MapExtraRoot { return (Join-Path (Get-BundleCacheRoot) 'Maps') }
+
+function Test-MapFileName([string]$n) { return (($n -cmatch '^[A-Za-z0-9._() \-]{1,100}\.(sd7|sdz)$') -and ($n -notmatch '\.\.')) }
+
+function Get-FileSha256([string]$path) {
+    $fs = [IO.File]::OpenRead($path)
+    try { return ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($fs)) -replace '-', '') } finally { $fs.Close() }
+}
+
+function Get-ArchiveCacheText([string]$dataDir) {
+    $cache = Get-ChildItem (Join-Path $dataDir 'cache') -Filter 'ArchiveCache*.lua' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+    if ($cache) { return [IO.File]::ReadAllText($cache.FullName) }
+    return ''
+}
+
+# the file of a map in the data folder of the game (found in the archive cache of the engine), $null if there is none
+function Find-MapArchive([string]$dataDir, [string]$mapName) {
+    $rx = New-Object Text.RegularExpressions.Regex('name = "([^"]+\.(?:sd7|sdz))",\s*path = "([^"]*maps/)",.*?modtype = 3,\s*name = "([^"]+)"', 'Singleline')
+    foreach ($m in $rx.Matches((Get-ArchiveCacheText $dataDir))) {
+        if ($m.Groups[3].Value -eq $mapName) { $f = Join-Path $m.Groups[2].Value $m.Groups[1].Value; if (Test-Path $f) { return $f } }
+    }
+    return $null
+}
+
+# what the host offers: Name, Path, File, Size and Hash of his map archive, or $null (no archive found, a name or size that cannot be sent)
+function Get-HostMap([string]$dataDir, [string]$mapName) {
+    $f = Find-MapArchive $dataDir $mapName
+    if (-not $f) { return $null }
+    $name = Split-Path $f -Leaf
+    $len = (Get-Item $f).Length
+    if (-not (Test-MapFileName $name) -or $len -gt $script:MapMaxBytes) { return $null }
+    return [pscustomobject]@{ Name = $mapName; Path = $f; File = $name; Size = $len; Hash = (Get-FileSha256 $f) }
+}
+
+# a map that came from a host: the file in the extra data folder has a small file next to it with the name of the map and the hash
+function Test-MapExtra([string]$mapName) {
+    $dir = Join-Path (Get-MapExtraRoot) 'maps'
+    if (-not (Test-Path $dir)) { return $false }
+    foreach ($s in @(Get-ChildItem $dir -Filter '*.mapinfo' -ErrorAction SilentlyContinue)) {
+        $l = @(Get-Content $s.FullName)
+        if ($l.Count -ge 2 -and $l[0] -eq $mapName -and (Test-Path (Join-Path $dir ($s.Name -replace '\.mapinfo$', '')))) { return $true }
+    }
+    return $false
+}
+
+function Test-MapInstalled([string]$dataDir, [string]$mapName) {
+    return ((Get-ArchiveCacheText $dataDir).Contains('name = "' + $mapName + '"') -or (Test-MapExtra $mapName))
+}
+
+# the fetched file: check the hash, then into the extra data folder
+function Complete-MapFetch($f, [string]$mapName, [string]$file) {
+    $f.File.Close(); try { $f.Client.Close() } catch { }
+    try {
+        if ((Get-FileSha256 $f.Part) -ne $f.Hash) { throw 'The map received is not the one that was offered (the hash is wrong).' }
+        $dir = Join-Path (Get-MapExtraRoot) 'maps'
+        New-Item -ItemType Directory -Force $dir | Out-Null
+        $dest = Join-Path $dir $file
+        if (Test-Path $dest) { Remove-Item $dest -Force }
+        Move-Item $f.Part $dest
+        Set-Content -Path (Join-Path $dir ($file + '.mapinfo')) -Value @($mapName, $f.Hash) -Encoding ASCII
+    } finally { Remove-Item $f.Part -Force -ErrorAction SilentlyContinue }
 }
 
 # the joiner's side of a transfer: a second connection that fetches the zip of the bundle. Returns the state for Step-BundleFetch / Complete-BundleFetch.
-function Start-BundleFetch([string]$ip, [int]$port, [string]$hash) {
+function Start-BundleFetch([string]$ip, [int]$port, [string]$hash, [string]$request = $null, [long]$max = 0) {
+    if ($max -le 0) { $max = $script:BundleMaxBytes }
+    if (-not $request) { $request = "FETCH $hash" }
     $root = Get-BundleCacheRoot
     New-Item -ItemType Directory -Force $root | Out-Null
     $c = New-Object Net.Sockets.TcpClient
     $ar = $c.BeginConnect($ip, $port, $null, $null)
     if (-not $ar.AsyncWaitHandle.WaitOne(5000)) { $c.Close(); throw 'No connection to the host for the scenario.' }
     $c.EndConnect($ar)
-    $b = [Text.Encoding]::UTF8.GetBytes("FETCH $hash`n"); $c.GetStream().Write($b, 0, $b.Length)
+    $b = [Text.Encoding]::UTF8.GetBytes($request + "`n"); $c.GetStream().Write($b, 0, $b.Length)
     $part = Join-Path $root ($hash + '.part')
-    return @{ Client = $c; Hash = $hash; Part = $part; File = [IO.File]::Create($part); Total = -1L; Got = 0L; Header = ''; Buf = (New-Object byte[] 262144) }
+    return @{ Client = $c; Hash = $hash; Part = $part; File = [IO.File]::Create($part); Total = -1L; Got = 0L; Max = $max; Header = ''; Buf = (New-Object byte[] 262144) }
 }
 
 # reads what has arrived: 'working', 'done' or 'error: <reason>'
@@ -149,7 +221,7 @@ function Step-BundleFetch($f) {
             if ($b -eq 10) {
                 if ($f.Header -notmatch '^SIZE (\d+)$') { return 'error: the host answered something else' }
                 $f.Total = [long]$Matches[1]
-                if ($f.Total -gt $script:BundleMaxBytes) { return 'error: the scenario is too big' }
+                if ($f.Total -gt $f.Max) { return 'error: it is too big' }
             } else {
                 $f.Header += [char]$b
                 if ($f.Header.Length -gt 40) { return 'error: the host answered something else' }
@@ -187,14 +259,14 @@ function Complete-BundleFetch($f) {
 }
 
 function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null, $bundle = $null) {
-    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
+    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); MapAsk = (New-Object Collections.ArrayList); Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
               Focus = @($teamInfo).Count; Cursor = 0; Held = $null; HeldFrom = 0; Msg = ''; Info = ''; ConfirmCancel = $false; Dirty = $true; Done = $null }
 }
 
 function Get-BoxPlayers($st, [int]$box) { return @($st.Players | Where-Object { $_.Box -eq $box }) }
 
 # The team of a new player: the one of the last mapping (by name) if nobody is there, otherwise the first team without a player, otherwise team 0
-function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same', [string]$data = 'ready') {
+function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same', [string]$data = 'ready', [string]$map = 'ready') {
     $box = -1
     foreach ($e in @(Read-LastMapping)) {
         if ($e.Name.ToLower() -eq $name.ToLower() -and $e.Team -lt $st.Teams.Count -and @(Get-BoxPlayers $st $e.Team).Count -eq 0) { $box = $e.Team }
@@ -203,7 +275,7 @@ function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same'
         for ($b = 0; $b -lt $st.Teams.Count; $b++) { if (@(Get-BoxPlayers $st $b).Count -eq 0) { $box = $b; break } }
     }
     if ($box -lt 0) { $box = 0 }
-    $p = [pscustomobject]@{ Name = $name; Box = $box; Client = $client; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false; VerState = $verState; Data = $data; Pct = 0 }
+    $p = [pscustomobject]@{ Name = $name; Box = $box; Client = $client; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false; VerState = $verState; Data = $data; Pct = 0; Map = $map; MapPct = 0; MapGrant = $false }
     [void]$st.Players.Add($p)
     $st.Dirty = $true
     return $p
@@ -213,6 +285,7 @@ function Remove-LobbyPlayer($st, $p) {
     if ($p.Client) { try { $p.Client.Close() } catch { } }
     $st.Players.Remove($p)
     if ($st.Held -eq $p) { $st.Held = $null }
+    [void]$st.MapAsk.Remove($p)
     $st.Dirty = $true
 }
 
@@ -223,6 +296,7 @@ function Test-LobbyStart($st) {
         if ($p.VerState -ne 'same') { return ('{0} has {1} files than yours.' -f $p.Name, $(switch ($p.VerState) { 'older' { 'older' } 'newer' { 'newer' } default { 'other' } })) }
     }
     foreach ($p in $st.Players) { if ($p.Data -ne 'ready') { return ('{0} has not loaded the scenario yet.' -f $p.Name) } }
+    foreach ($p in $st.Players) { if ($p.Map -ne 'ready') { return ('{0} has no map yet.' -f $p.Name) } }
     return $null
 }
 
@@ -244,6 +318,13 @@ function Move-LobbyHeld($st, [int]$dir) {
 function Invoke-LobbyKey($st, $k) {
     $startBox = $st.Teams.Count   # the boxes are the teams 0 .. n-1, then "Start game"
     $st.Dirty = $true
+    if ($st.MapAsk.Count -gt 0) {
+        # a joiner asks for the map: Y sends it, N refuses (every other key is ignored while the question is there)
+        $ask = $st.MapAsk[0]; $kn = $k.Key.ToString()
+        if ($kn -eq 'Y' -or $kn -eq 'J') { $ask.MapGrant = $true; $ask.Map = 'loading'; $ask.MapPct = 0; Send-LobbyLine $ask 'MAPYES'; $st.MapAsk.RemoveAt(0); $st.Info = "The map goes to $($ask.Name)." }
+        elseif ($kn -eq 'N') { $ask.Map = 'missing'; Send-LobbyLine $ask 'MAPNO'; $st.MapAsk.RemoveAt(0); $st.Info = "$($ask.Name) did not get the map." }
+        return
+    }
     if ($st.ConfirmCancel) {
         if ($k.Key -eq 'Escape') { $st.Done = 'cancel'; return }
         $st.ConfirmCancel = $false
@@ -303,6 +384,7 @@ function Get-LobbyLines($st) {
             $p = $pl[$i]
             $txt = '    ' + $p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })
             if ($p.VerState -ne 'same') { $txt += '   (files ' + $(switch ($p.VerState) { 'older' { 'older than yours: needs an update' } 'newer' { 'newer than yours' } default { 'differ from yours' } }) + ')' }
+            if ($p.Data -eq 'ready' -and $p.Map -ne 'ready') { $txt += $(switch ($p.Map) { 'asking' { '   (asks for the map)' } 'loading' { "   (loading the map: $($p.MapPct) %)" } default { '   (map not there yet)' } }) }
             if ($p.Data -ne 'ready') { $txt += $(if ($p.Data -eq 'loading') { "   (loading the scenario: $($p.Pct) %)" } else { '   (scenario not loaded yet)' }) }
             $kind = 0
             if ($st.Held -eq $p) { $txt += '   <- moving: arrows move, Enter drops, Esc puts back'; $kind = 5 }
@@ -312,6 +394,11 @@ function Get-LobbyLines($st) {
         for ($g = 0; $g -lt $gap; $g++) { Add-L '' 0 }
     }
     $why = Test-LobbyStart $st
+    if ($st.MapAsk.Count -gt 0) {
+        $mp = $st.Bundle.Map
+        Add-L ("{0} asks for the map '{1}' ({2} MB). Send it? Y = yes, N = no" -f $st.MapAsk[0].Name, $mp.Name, [Math]::Round($mp.Size / 1MB, 1)) 6
+        Add-L '' 0
+    }
     Add-L ('{0} [ Start game ]{1}' -f $(if ($st.Focus -eq $t) { '>' } else { ' ' }), $(if ($why) { '   ' + $why } else { '   ready' })) $(if ($st.Focus -eq $t) { 3 } elseif ($why) { 2 } else { 7 })
     Add-L '' 0
     if ($st.Msg) { Add-L $st.Msg 6 }
@@ -372,12 +459,16 @@ function Read-LobbyLines($p) {
 }
 
 # a joiner's second connection ("FETCH <hash>") gets the zip of the bundle: first the line "SIZE <n>", then the n bytes (sent in pieces by Update-LobbyTransfers)
-function Start-LobbyTransfer($st, $q, [string]$hash) {
+function Start-LobbyTransfer($st, $q, [string]$line) {
     try {
-        if (-not $st.Bundle -or $hash -ne $st.Bundle.Hash) { throw 'not offered' }
-        $b = [Text.Encoding]::UTF8.GetBytes(('SIZE {0}' -f $st.Bundle.Size) + "`n")
+        $w = @($line -split ' ')
+        if ($w[0] -eq 'FETCH' -and $st.Bundle -and $w[1] -eq $st.Bundle.Hash) { $path = $st.Bundle.Zip; $size = $st.Bundle.Size }
+        elseif ($w[0] -eq 'FETCHMAP' -and $st.Bundle -and $st.Bundle.Map -and $w[1] -eq $st.Bundle.Map.Hash -and $w.Count -ge 3 -and
+                @($st.Players | Where-Object { $_.Name -eq $w[2] -and $_.MapGrant }).Count -gt 0) { $path = $st.Bundle.Map.Path; $size = $st.Bundle.Map.Size }
+        else { throw 'not offered' }
+        $b = [Text.Encoding]::UTF8.GetBytes(('SIZE {0}' -f $size) + "`n")
         $s = $q.Client.GetStream(); $s.Write($b, 0, $b.Length)
-        [void]$st.Transfers.Add(@{ Client = $q.Client; Stream = $s; File = [IO.File]::OpenRead($st.Bundle.Zip); Total = $st.Bundle.Size; Sent = 0L; Task = $null; Last = 0; Buf = (New-Object byte[] 262144) })
+        [void]$st.Transfers.Add(@{ Client = $q.Client; Stream = $s; File = [IO.File]::OpenRead($path); Total = $size; Sent = 0L; Task = $null; Last = 0; Buf = (New-Object byte[] 262144) })
     } catch { try { $q.Client.Close() } catch { } }
 }
 
@@ -411,7 +502,7 @@ function Update-LobbyNet($st, $listener) {
         $hello = $null; $fetch = $null
         foreach ($l in @(Read-LobbyLines $q)) {
             if ($l -like 'HELLO *') { $hello = $l.Substring(6).Trim() }
-            elseif ($l -like 'FETCH *') { $fetch = $l.Substring(6).Trim() }
+            elseif ($l -like 'FETCH *' -or $l -like 'FETCHMAP *') { $fetch = $l.Trim() }
             elseif ($l -like 'VERSION *') { $v = @($l.Substring(8).Trim() -split ' '); $q.VerHash = $v[0]; if ($v.Count -gt 1) { $q.VerDate = $v[1] } }
         }
         if ($fetch) { Start-LobbyTransfer $st $q $fetch; [void]$st.Pending.Remove($q); continue }
@@ -427,9 +518,15 @@ function Update-LobbyNet($st, $listener) {
                     Send-LobbyLine $q ('VERSION {0} {1}' -f $st.Version.Hash, $st.Version.Date)
                     $vs = if ($q.VerHash) { Compare-PlayVersion $st.Version $q.VerHash $q.VerDate } else { 'differs' }
                 }
-                $dataState = 'ready'
-                if ($st.Bundle) { $dataState = 'wait'; if ($vs -eq 'same') { Send-LobbyLine $q ('OFFER {0} {1}' -f $st.Bundle.Hash, $st.Bundle.Size) } }
-                [void](Add-LobbyPlayer $st $nm $q.Client $vs $dataState)
+                $dataState = 'ready'; $mapState = 'ready'
+                if ($st.Bundle) {
+                    $dataState = 'wait'; $mapState = 'missing'
+                    if ($vs -eq 'same') {
+                        Send-LobbyLine $q ('OFFER {0} {1}' -f $st.Bundle.Hash, $st.Bundle.Size)
+                        if ($st.Bundle.Map) { Send-LobbyLine $q ('MAP {0} {1} {2}' -f $st.Bundle.Map.Size, $st.Bundle.Map.Hash, $st.Bundle.Map.File) }
+                    }
+                }
+                [void](Add-LobbyPlayer $st $nm $q.Client $vs $dataState $mapState)
                 $st.Info = "$nm joined."
                 [void]$st.Pending.Remove($q)
                 continue
@@ -443,6 +540,9 @@ function Update-LobbyNet($st, $listener) {
         foreach ($l in @(Read-LobbyLines $p)) {
             if ($l -eq 'BYE') { $p.Closed = $true }
             elseif ($l -like 'HAVE *' -and $st.Bundle -and $l.Substring(5).Trim() -eq $st.Bundle.Hash) { $p.Data = 'ready'; $st.Dirty = $true }
+            elseif ($l -eq 'MAPOK') { $p.Map = 'ready'; $st.Dirty = $true }
+            elseif ($l -eq 'MAPREQ' -and $st.Bundle -and $st.Bundle.Map -and $p.Map -ne 'ready' -and -not $st.MapAsk.Contains($p)) { $p.Map = 'asking'; [void]$st.MapAsk.Add($p); $st.Dirty = $true }
+            elseif ($l -like 'MAPPROGRESS *') { $pc = 0; if ([int]::TryParse($l.Substring(12).Trim(), [ref]$pc) -and $p.Map -eq 'loading') { $p.MapPct = $pc; $st.Dirty = $true } }
             elseif ($l -like 'PROGRESS *') { $pc = 0; if ([int]::TryParse($l.Substring(9).Trim(), [ref]$pc) -and $p.Data -ne 'ready') { $p.Pct = $pc; $p.Data = 'loading'; $st.Dirty = $true } }
         }
         if ($p.Closed) { $st.Info = "$($p.Name) left."; Remove-LobbyPlayer $st $p; continue }
@@ -460,7 +560,7 @@ function New-LobbyKey([string]$key, [switch]$Shift) {
 # The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when he cancels.
 # $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
 # there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
-function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null) {
+function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null, [bool]$autoMap = $false) {
     $st = New-LobbyState $teamInfo $hostName $port $version $bundle
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     $st.Addr = if ($addr.Count -gt 0) { $addr -join ' / ' } else { '127.0.0.1' }
@@ -475,6 +575,7 @@ function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyF
         if ($console) { Clear-Host; [Console]::CursorVisible = $false }
         while (-not $st.Done) {
             Update-LobbyNet $st $listener
+            if ($autoMap -and $st.MapAsk.Count -gt 0) { Invoke-LobbyKey $st (New-LobbyKey 'Y') }   # tests / automation: a joiner who asks for the map gets it
             $k = $null
             if ($keyFeed) {
                 if ($fi -lt $feed.Count -and (Get-Date) -ge $nextFeed) {
@@ -540,7 +641,7 @@ function Close-Lobby {
 
 # The lobby of a joiner. Returns 'start', 'cancel' (the host cancelled), 'lost' (the host went away), 'left' (Esc), 'refused: <reason>' or 'noconnect'.
 # $dumpFile / $timeoutSec: for tests like above
-function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0, [string]$dumpFile = $null, $version = $null) {
+function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0, [string]$dumpFile = $null, $version = $null, $mapCtx = $null) {
     $c = New-Object Net.Sockets.TcpClient
     $ar = $c.BeginConnect($ip, $port, $null, $null)
     if (-not $ar.AsyncWaitHandle.WaitOne(5000)) { $c.Close(); return 'noconnect' }
@@ -552,6 +653,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     $console = -not $dumpFile
     $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
     $dataText = ''; $dataKind = 0; $fetch = $null; $lastPct = -10; $script:BundleDir = $null
+    $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10
     $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
     try {
@@ -573,6 +675,15 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     }
                     $verKind = if ($cmp -eq 'same') { 7 } else { 6 }
                 }
+                elseif ($l -like 'MAP *') {
+                    $o = @($l.Substring(4).Trim() -split ' ', 3)
+                    if ($o.Count -eq 3 -and (Test-BundleId $o[1]) -and (Test-MapFileName $o[2]) -and [long]$o[0] -le $script:MapMaxBytes) { $mapInfo = @{ Size = [long]$o[0]; Hash = $o[1]; File = $o[2] } }
+                }
+                elseif ($l -eq 'MAPYES' -and $mapState -eq 'waithost' -and $mapInfo) {
+                    try { $mapFetch = Start-BundleFetch $ip $port $mapInfo.Hash ('FETCHMAP {0} {1}' -f $mapInfo.Hash, $script:JoinerName) $script:MapMaxBytes; $mapState = 'fetching'; $mapText = "Map: loading ..."; $mapKind = 6 }
+                    catch { $mapState = 'prompt'; $mapText = 'Map: no connection for the map. ' }
+                }
+                elseif ($l -eq 'MAPNO' -and $mapState -eq 'waithost') { $mapState = 'prompt'; $mapText = 'Map: the host did not send it. ' }
                 elseif ($l -like 'OFFER *') {
                     $o = @($l.Substring(6).Trim() -split ' ')
                     if (-not (Test-BundleId $o[0]) -or $o.Count -lt 2 -or [long]$o[1] -gt $script:BundleMaxBytes) { $result = 'refused: the host offered a scenario that cannot be taken' }
@@ -604,16 +715,61 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                     }
                 }
             }
+            # the map: as soon as the scenario is there, look whether its map is installed
+            if (-not $result -and $script:BundleDir -and $mapState -eq '') {
+                $sc = [IO.File]::ReadAllText((Join-Path $script:BundleDir 'scenario.txt'))
+                $mapName = [regex]::Match($sc, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
+                if (-not $mapCtx -or (Test-MapInstalled $mapCtx.Data $mapName)) {
+                    $mapState = 'ok'; Send-LobbyLine $p 'MAPOK'; $mapText = "Map: '$mapName' is there"; $mapKind = 7
+                } else { $mapState = 'prompt'; $mapText = '' }
+                $dirty = $true
+            }
+            if (-not $result -and $mapState -eq 'prompt') {
+                $hostPart = if ($mapInfo) { '   H = get it from the host (' + [Math]::Round($mapInfo.Size / 1MB, 1) + ' MB, he has to agree)' } else { '' }
+                $line = $mapText + "The map '$mapName' is not installed.   D = download it from the internet (official map service)" + $hostPart
+                if ($line -ne $script:LastMapPrompt) { $script:LastMapPrompt = $line; $dirty = $true }
+                $mapShown = $line; $mapKind = 6
+                if (-not $mapKey -and $mapCtx -and $mapCtx.Auto -and -not $mapAutoUsed) { $mapKey = $mapCtx.Auto; $mapAutoUsed = $true }
+                if ($mapKey -eq 'D') { $mapState = 'downloading'; $mapText = "Map: downloading '$mapName' from the internet ..."; $dirty = $true }
+                elseif ($mapKey -eq 'H' -and $mapInfo) { $mapState = 'waithost'; $mapText = 'Map: waiting for the host to agree ...'; Send-LobbyLine $p 'MAPREQ'; $dirty = $true }
+                $mapKey = $null
+            }
+            elseif (-not $result -and $mapState -eq 'downloading' -and -not $dirty) {
+                $pd = Start-Process -FilePath $mapCtx.Downloader -ArgumentList ('--filesystem-writepath "{0}" --download-map "{1}"' -f $mapCtx.Data, $mapName) -Wait -PassThru -NoNewWindow
+                if ($pd.ExitCode -eq 0) { $mapState = 'ok'; Send-LobbyLine $p 'MAPOK'; $mapText = "Map: '$mapName' downloaded"; $mapKind = 7 }
+                else { $mapState = 'prompt'; $mapText = 'Map: the download failed. ' }
+                $dirty = $true
+            }
+            if (-not $result -and $mapFetch) {
+                $r = Step-BundleFetch $mapFetch
+                if ($r -eq 'done') {
+                    try { Complete-MapFetch $mapFetch $mapName $mapInfo.File; $mapState = 'ok'; Send-LobbyLine $p 'MAPOK'; $mapText = "Map: '$mapName' loaded from the host"; $mapKind = 7 }
+                    catch { $mapState = 'prompt'; $mapText = 'Map: ' + $_.Exception.Message + ' ' }
+                    $mapFetch = $null; $dirty = $true
+                } elseif ($r -ne 'working') { $mapState = 'prompt'; $mapText = 'Map: ' + $r + '. '; $mapFetch = $null; $dirty = $true }
+                elseif ($mapFetch.Total -gt 0) {
+                    $pct = [int][Math]::Floor(100 * $mapFetch.Got / $mapFetch.Total)
+                    if ($pct -ne $mapLastPct) {
+                        $mapText = 'Map: loading {0} % ({1} of {2} MB)' -f $pct, [Math]::Round($mapFetch.Got / 1MB, 1), [Math]::Round($mapFetch.Total / 1MB, 1); $dirty = $true
+                        if ($pct -ge $mapLastPct + 5 -or $pct -ge 100) { Send-LobbyLine $p "MAPPROGRESS $pct"; $mapLastPct = $pct }
+                    }
+                }
+            }
             if (-not $result -and $p.Closed) { $result = 'lost' }
             if (-not $result -and (Get-Date) -gt $until) { $result = 'left' }
             if (-not $result -and $console) {
-                try { if ([Console]::KeyAvailable -and [Console]::ReadKey($true).Key -eq 'Escape') { Send-LobbyLine $p 'BYE'; $result = 'left' } } catch { }
+                try {
+                    if ([Console]::KeyAvailable) {
+                        $kk = [Console]::ReadKey($true).Key.ToString()
+                        if ($kk -eq 'Escape') { Send-LobbyLine $p 'BYE'; $result = 'left' } else { $mapKey = $kk }
+                    }
+                } catch { }
             }
             if ($dirty) {
                 $dirty = $false
                 $who = ($roster -replace '=(\d+)', ' (team $1)') -replace ';', ', '
-                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, $dataText, '', "Players: $who", '', 'Esc = leave')
-                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, $verKind, $dataKind, 0, 0, 0, 2) }) }
+                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, $dataText, $(if ($mapState -eq 'prompt') { $mapShown } else { $mapText }), '', "Players: $who", '', 'Esc = leave')
+                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, $verKind, $dataKind, $mapKind, 0, 0, 0, 2) }) }
                 else { [IO.File]::WriteAllLines($dumpFile, [string[]]$lines) }
             }
             Start-Sleep -Milliseconds 40
@@ -621,6 +777,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
         return $result
     } finally {
         if ($fetch) { try { $fetch.File.Close(); $fetch.Client.Close() } catch { } }
+        if ($mapFetch) { try { $mapFetch.File.Close(); $mapFetch.Client.Close() } catch { } }
         if ($result -ne 'start') { try { $c.Close() } catch { } }   # after the start the connection stays: READY and GO
         if ($console) { [Console]::CursorVisible = $true }
     }
