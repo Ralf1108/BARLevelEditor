@@ -4,6 +4,8 @@
 #   1 = new level (choose a map from the list, search while typing)
 #   2 = load an existing level (saved levels from the levels folder, search while typing)
 #   3 = build a scenario package from a level, 4 = start a built scenario (scenario\scenarios\<id>\scenario.txt with the current starter of scenario\template)
+#   5 = build a package again from its level (upgrade), 6 = play a level at once (temporary scenario, nothing is built or saved; the other players of a
+#   hosted game get it from the host through the lobby)
 # Writes editor_script_installed.txt in the LevelEditor folder (and for "load" levels\_autoload.txt); remembers the last map and the map list in
 # %LOCALAPPDATA%\BAR-Level-Editor. Return value 1 on abort.
 # Call: choose_map.ps1 -Data <BAR\data>
@@ -517,7 +519,8 @@ function Set-Autoload([string]$name) {
 while ($true) {
     $levels = @(Get-Levels)
     $lastLevel = Get-LastLevel
-    # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package, 4 = start a scenario, 5 = upgrade one
+    # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package, 4 = start a scenario, 5 = upgrade one,
+    # 6 = play a level at once
     # (the last two only if there are levels already). Choose with arrow up/down and Enter or with the digit key.
     $haveLevels = $levels.Count -gt 0
     $scenarios = @(Get-Scenarios)
@@ -527,7 +530,8 @@ while ($true) {
         @{ Key = '2'; Mode = 2; On = $haveLevels; Text = $(if ($haveLevels) { 'Load an existing level ({0} saved)' -f $levels.Count } else { 'Load an existing level (no saved levels yet)' }) },
         @{ Key = '3'; Mode = 4; On = $haveLevels; Text = $(if ($haveLevels) { 'Create a scenario package (ZIP) from a level (to pass on, official game)' } else { 'Create a scenario package (ZIP) from a level (no saved levels yet)' }) },
         @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} available)' -f $scenarios.Count } else { 'Start a scenario (none available yet: key 3)' }) },
-        @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) }
+        @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) },
+        @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -536,7 +540,7 @@ while ($true) {
     Write-Host ('   version {0} of {1} UTC (the same on every computer that plays together)' -f $playVersion.Short, (Format-PlayDate $playVersion.Date)) -ForegroundColor DarkGray
     Write-Host ''
     $menuTop = [Console]::CursorTop
-    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
+    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
     Write-Host ''
     Write-Host 'Arrow up/down + Enter or digit key, Esc = cancel' -ForegroundColor DarkGray
     $mode = 0
@@ -612,6 +616,71 @@ while ($true) {
         }
         & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath (Split-Path $Data -Parent) -ScenarioDir $chosen.Path -EditorDir $root $how.Args
         continue # the game ended (or could not start): back to the menu, the next one can be tried at once
+    }
+
+    if ($mode -eq 7) {
+        # Play a level at once: the scenario is built from the level into a temporary bundle (scenario.txt and the gadgets, nothing is written into the level
+        # and no package is made), put into the cache (Cache\<hash>) and played from there. The host offers it in the lobby, the others get it from him
+        # (or from their cache) and only need the same version of the editor.
+        $playModes = @(
+            [pscustomobject]@{ Label = 'Single player'; Search = 'single player alone'; Args = @(); Level = $true },
+            [pscustomobject]@{ Label = 'Host a game for others in the same network'; Search = 'host'; Args = @('-HostGame', '-Lobby'); Level = $true },
+            [pscustomobject]@{ Label = 'Join a game hosted by another player (the level comes from the host)'; Search = 'join'; Args = @('-Join', '-Lobby'); Level = $false },
+            [pscustomobject]@{ Label = 'Split screen (host and joiners on this computer, one window each)'; Search = 'split screen local test'; Args = @(); Split = $true; Level = $true }
+        )
+        $starter = Join-Path $root 'scenario\template\start_scenario.ps1'
+        $barDir = Split-Path $Data -Parent
+        $players = 0; $how = $null; $inst = $null; $lvl = $null
+        while ($true) {
+            $how = Show-Chooser $playModes 'Play a level at once: how do you want to play?' 'Arrow up/down, Enter = next, Esc = back' $null
+            if (-not $how) { break }
+            if (-not $how.Level) { break }
+            $lvl = Show-Chooser $levels 'Play a level: choose a level' 'Type to search, arrow up/down, Enter = play, Esc = back' $null { param($l) $l.Map }
+            if (-not $lvl) { continue }
+            if (-not $lvl.Installed) {
+                Clear-Host
+                $loaded = $false
+                if ($lvl.Loadable) { $loaded = Download-Map $lvl.MapItem $MapsDir }
+                else { Write-Host ('The map ' + $lvl.Map + ' of this level is not installed and not in the map list.') -ForegroundColor Yellow }
+                if (-not $loaded) { Write-Host 'Continue with any key.'; [void][Console]::ReadKey($true); continue }
+            }
+            Clear-Host
+            Write-Host ('Playing the level ' + $lvl.Name + ': ' + $how.Label) -ForegroundColor Cyan
+            $tmp = Join-Path $env:TEMP ('bar_bundle_' + [Guid]::NewGuid().ToString('N'))
+            & (Join-Path $root 'scenario\scenario_builder.ps1') -Level $lvl.Name -BundleDir $tmp
+            if (-not (Test-Path (Join-Path $tmp 'scenario.txt'))) {
+                Write-Host 'The level could not be turned into a scenario (see above).' -ForegroundColor Yellow
+                Write-Host 'Continue with any key.'; [void][Console]::ReadKey($true); continue
+            }
+            $inst = Install-Bundle $tmp
+            Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+            if ($how.Split) {
+                $teams = ([regex]::Matches([IO.File]::ReadAllText((Join-Path $inst.Dir 'scenario.txt')), '(?m)^\s*\[team\d+\]')).Count
+                $maxP = [Math]::Min(8, $teams)
+                Clear-Host
+                if ($maxP -lt 2) { Write-Host 'This level has only one team, there is nobody to play against.' -ForegroundColor Yellow; Start-Sleep 2; continue }
+                $players = Read-PlayerCount $maxP $teams
+                if (-not $players) { $players = 0; continue }
+            }
+            break
+        }
+        if (-not $how -or ($how.Level -and -not $inst)) { continue }
+        Clear-Host
+        Write-Host ('Starting (' + $how.Label + ') ...') -ForegroundColor Cyan
+        $common = @('-BarPath', $barDir, '-EditorDir', $root, '-Bundle')
+        if ($how.Split) {
+            $rects = Get-SplitRects $players
+            $names = Get-SplitNames $players
+            for ($k = 1; $k -lt $players; $k++) {
+                [void](Start-Process powershell -WindowStyle Minimized -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"')) + @($common | ForEach-Object { '"' + $_ + '"' }) +
+                    @('-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k])))
+            }
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $starter @common -ScenarioDir $inst.Dir -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
+            continue
+        }
+        if ($how.Level) { & powershell -NoProfile -ExecutionPolicy Bypass -File $starter @common -ScenarioDir $inst.Dir $how.Args }
+        else { & powershell -NoProfile -ExecutionPolicy Bypass -File $starter @common $how.Args }
+        continue # the game ended (or could not start): back to the menu
     }
 
     if ($mode -eq 6) {
