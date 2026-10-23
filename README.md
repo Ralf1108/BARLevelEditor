@@ -131,7 +131,7 @@ Details are in the [Level Editor manual](LevelEditor/README.md#capture-the-flag)
 
 **LAN Play** lets you play with computers in the same network without a server in the cloud. It is a small widget for the lobby of the game: the main menu gets an entry **LAN Play** right below Multiplayer (the normal Multiplayer stays as it is). One player hosts a game, the others find it on the LAN Play page (it looks for games by itself) and join with a click. You get the official multiplayer battle room: map, game options, AIs, teams and chat. The host can also pick a scenario you built with the Level Editor (button **Custom Scenario**); the extra game it needs is passed on to the other players before the start.
 
-![LAN Play: the menu entry on the left, Host a LAN game on the page](docs/lanPlay.png)
+<img src="docs/lanPlay.png" alt="LAN Play: the menu entry on the left, Host a LAN game on the page" width="740">
 
 The entry **LAN Play** is in the menu on the left; **Host a LAN game** opens the battle room, **Find LAN games** (or the address field and **Join**) joins a game of another computer.
 
