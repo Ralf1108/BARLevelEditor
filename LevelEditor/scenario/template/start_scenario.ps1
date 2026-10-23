@@ -17,10 +17,13 @@
 # -ScenarioDir and gets the bundle from the host through the lobby (or from his cache). Needs -EditorDir (starter, lobby and gadgets are the editor's own).
 # -LobbyMapKey D or H (tests, automation): a joiner without the map takes this answer at once (D = download it, H = get it from the host); -LobbyAutoMapYes: the host
 # agrees at once when a joiner asks for the map.
+# Update of the editor files through the lobby (-EditorDir needed): a joiner whose files are older than the host's can fetch the host's files in the lobby (U), sees which
+# files would change and has to say Y; the old files are saved in %LOCALAPPDATA%\BAR-Scenario\Backup first and the starter ends with exit code 10 (start the editor again).
+# -LobbyAutoUpdate (tests, automation): the joiner says U and Y at once.
 # Lobby (-Lobby with -HostGame or -Join): before anything is built the host sees a box per team and distributes the players who joined (TCP port
 # -LobbyPort, default 8453); a joiner only sends his name. When the host starts, everybody prepares (extra game, map), the host's game starts and
 # the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "Ralf=0,Anna=2" (first = host).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null, [switch]$LobbyAutoMapYes)
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null, [switch]$LobbyAutoMapYes, [switch]$LobbyAutoUpdate)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -144,15 +147,26 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
             $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (he has to ask and the host has to agree)
             if (-not $hostBundle.Map) { Write-Host "Note: the archive of the map '$map' was not found, a joiner without the map has to download it from the internet." -ForegroundColor Yellow }
         }
-        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion $hostBundle ([bool]$LobbyAutoMapYes)
+        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion $hostBundle ([bool]$LobbyAutoMapYes) $(if ($EditorDir) { Split-Path $EditorDir -Parent } else { $null })
         if (-not $lobbyRoster) { Write-Host 'The lobby was cancelled.'; exit 0 }
         Save-Mapping $lobbyRoster
         $Mapping = ConvertTo-MappingText $lobbyRoster
         if (-not $PSBoundParameters.ContainsKey('Wait')) { $Wait = 15 }   # everybody is known: the joiners connect at once
         Write-Host "Lobby finished: $Mapping"
     } else {
-        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null $playVersion $(if ($Bundle) { @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey } } else { $null })
+        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null $playVersion @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey; UpdateRoot = $(if ($EditorDir) { Split-Path $EditorDir -Parent } else { $null }); AutoUpdate = [bool]$LobbyAutoUpdate }
         switch -Wildcard ($res) {
+            'update' {
+                # the joiner agreed to the update of his editor files (lobby.ps1): put it in place, the old files are saved first
+                try {
+                    $upd = Install-EditorUpdate $script:UpdateStage (Split-Path $EditorDir -Parent)
+                    Remove-Item $script:UpdateStage -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Host ''
+                    Write-Host "The Level Editor was updated from the host: $($upd.Count) files replaced (the old ones are in $($upd.Backup))." -ForegroundColor Green
+                    Write-Host 'Please start the Level Editor again and join again.'
+                    exit 10
+                } catch { Fail $_.Exception.Message }
+            }
             'noconnect' { Fail "No lobby of a host found at $($JoinIp):$LobbyPort." }
             'refused*'  { Fail "The host refused you: $($res.Substring(9))" }
             'cancel'    { Write-Host 'The host cancelled the lobby.'; exit 0 }

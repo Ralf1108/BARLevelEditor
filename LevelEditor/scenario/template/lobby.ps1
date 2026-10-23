@@ -14,6 +14,10 @@
 # D (download it from the internet, the official map service) or H (get it from the host): "MAPREQ", the host sees the question and answers Y / N with
 # "MAPYES" / "MAPNO"; after "MAPYES" the joiner fetches the file on a second connection ("FETCHMAP <sha256> <his name>"), checks the hash, keeps it in the
 # cache (an extra data folder of the engine) and says "MAPOK" (also when the map was there from the start); "MAPPROGRESS <percent>" shows how far he is.
+# Update of the editor: to a joiner whose files are older than the host's (and only if the host runs the editor from a folder with scripts) the host adds
+# "UPDATE <size> <sha256 of the zip> <number of files>" after VERSION; the joiner may fetch it ("FETCHUPDATE <sha256>" on a second connection), it is checked
+# and unpacked into a folder of the cache, he sees which files would change and has to answer Y; only then the files are replaced (the old ones are saved
+# first, a failure puts them back) and the joiner leaves the lobby (the editor has to be started again).
 # A joiner whose files are not the same as the host's (other hash) stays in the lobby, marked, but the game cannot start until he has the same version.
 # The focus starts on "Start game" (the last box): Enter or F5 starts at once.
 # Keys of the host: Tab / Shift+Tab or Left / Right = next box, Up / Down = player in the box, Enter = pick the player up (then Up / Down /
@@ -129,6 +133,124 @@ function New-HostBundle([string]$dir) {
     $zip = Join-Path $env:TEMP ('bar_bundle_' + [Guid]::NewGuid().ToString('N') + '.zip')
     New-BundleZip $dir $zip
     return [pscustomobject]@{ Hash = (Get-BundleHash $dir); Size = (Get-Item $zip).Length; Zip = $zip; Map = $null }
+}
+
+# ---------------------------------------------------------------- Update of the editor files
+# Which files an update may hold (paths relative to the folder that holds LevelEditor and shared): programs of the editor only, no levels, no scenarios, no
+# generated files (start_level_editor.bat is made for each computer)
+$script:UpdateNameRx = '^(LevelEditor/(scripts|scenario|scenario/template)/[A-Za-z0-9_\-]+\.(ps1|lua)|LevelEditor/(install_editor|uninstall_editor)\.bat|shared/[A-Za-z0-9_\-]+\.(ps1|lua))$'
+$script:UpdateMaxBytes = 16MB
+
+# the files of the editor that an update carries: relative names (with /) and full paths
+function Get-UpdateFiles([string]$root) {
+    $res = @()
+    foreach ($spec in @(@('LevelEditor/scripts', '*.ps1'), @('LevelEditor/scripts', '*.lua'), @('LevelEditor/scenario', '*.ps1'), @('LevelEditor/scenario/template', '*.ps1'),
+                        @('LevelEditor/scenario/template', '*.lua'), @('LevelEditor', 'install_editor.bat'), @('LevelEditor', 'uninstall_editor.bat'), @('shared', '*.ps1'), @('shared', '*.lua'))) {
+        $dir = Join-Path $root ($spec[0] -replace '/', '\')
+        if (-not (Test-Path $dir)) { continue }
+        foreach ($f in @(Get-ChildItem $dir -Filter $spec[1] -File)) {
+            $rel = $spec[0] + '/' + $f.Name
+            if ($rel -cmatch $script:UpdateNameRx) { $res += [pscustomobject]@{ Rel = $rel; Path = $f.FullName } }
+        }
+    }
+    return $res
+}
+
+# the host's side: the zip of his editor files; Zip, Size, Hash (SHA-256 of the zip) and Count
+function New-HostUpdate([string]$root) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $files = @(Get-UpdateFiles $root)
+    if ($files.Count -eq 0) { return $null }
+    $zipPath = Join-Path $env:TEMP ('bar_update_' + [Guid]::NewGuid().ToString('N') + '.zip')
+    $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
+    try { foreach ($f in $files) { [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $f.Path, $f.Rel, [IO.Compression.CompressionLevel]::Optimal) } } finally { $zip.Dispose() }
+    return [pscustomobject]@{ Zip = $zipPath; Size = (Get-Item $zipPath).Length; Hash = (Get-FileSha256 $zipPath); Count = $files.Count }
+}
+
+# unpacks an update from another computer into an empty folder: only names that match UpdateNameRx, nothing else, at most UpdateMaxBytes
+function Expand-UpdateZip([string]$zipPath, [string]$destDir) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [IO.Compression.ZipFile]::OpenRead($zipPath)
+    try {
+        $total = 0L
+        foreach ($e in $zip.Entries) {
+            if ($e.FullName -cnotmatch $script:UpdateNameRx) { throw "The update holds a file that is not allowed: $($e.FullName)" }
+            $total += $e.Length
+            if ($total -gt $script:UpdateMaxBytes) { throw 'The update is too big.' }
+            $target = Join-Path $destDir ($e.FullName -replace '/', '\')
+            New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+            $in = $e.Open(); $out = [IO.File]::Create($target)
+            try { $in.CopyTo($out) } finally { $out.Close(); $in.Close() }
+        }
+    } finally { $zip.Dispose() }
+}
+
+# the version (Get-PlayVersion) of the files in an unpacked update
+function Get-StagedVersion([string]$stage) {
+    return Get-PlayVersion @((Join-Path $stage 'LevelEditor\scripts'), (Join-Path $stage 'LevelEditor\scenario\template'), (Join-Path $stage 'shared'))
+}
+
+# fetched zip -> checked and unpacked folder (throws if something is wrong); $hostHash: the version hash of the host, the unpacked files must give it
+function Complete-UpdateFetch($f, [string]$hostHash) {
+    $f.File.Close(); try { $f.Client.Close() } catch { }
+    try {
+        if ((Get-FileSha256 $f.Part) -ne $f.Hash) { throw 'The update received is not the one that was offered (the hash is wrong).' }
+        $stage = Join-Path (Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Update') $f.Hash.Substring(0, 16)   # (a short name: the paths inside must stay below 260 characters)
+        if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+        New-Item -ItemType Directory -Force $stage | Out-Null
+        try {
+            Expand-UpdateZip $f.Part $stage
+            if ((Get-StagedVersion $stage).Hash -ne $hostHash) { throw 'The files of the update do not give the version of the host.' }
+        } catch { Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue; throw }
+        return $stage
+    } finally { Remove-Item $f.Part -Force -ErrorAction SilentlyContinue }
+}
+
+# which files of the unpacked update differ from the installed ones: Rel (with backslashes), Status 'new' or 'changed'
+function Get-UpdateChanges([string]$stage, [string]$root) {
+    if (-not $stage -or -not (Test-Path $stage -PathType Container)) { throw 'There is no unpacked update.' }
+    if (-not $root -or -not (Test-Path $root -PathType Container)) { throw 'There is no editor folder to update.' }
+    $res = @()
+    foreach ($f in @(Get-ChildItem $stage -Recurse -File)) {
+        $rel = $f.FullName.Substring($stage.Length).TrimStart('\')
+        if ((($rel -replace '\\', '/') -cnotmatch $script:UpdateNameRx) -or -not ([IO.Path]::GetFullPath((Join-Path $root $rel))).StartsWith([IO.Path]::GetFullPath($root), [StringComparison]::OrdinalIgnoreCase)) { throw "The update holds a file that is not allowed: $rel" }
+        $dest = Join-Path $root $rel
+        if (-not (Test-Path $dest)) { $res += [pscustomobject]@{ Rel = $rel; Status = 'new' } }
+        elseif ((Get-FileSha256 $dest) -ne (Get-FileSha256 $f.FullName)) { $res += [pscustomobject]@{ Rel = $rel; Status = 'changed' } }
+    }
+    return $res
+}
+
+# replaces the changed files of $root by the ones of the update; the old ones are saved first (%LOCALAPPDATA%\BAR-Scenario\Backup\<time>\); a failure puts everything back.
+# Refuses a folder with a .git (a working copy is updated with git). Returns the number of files and the backup folder.
+function Install-EditorUpdate([string]$stage, [string]$root) {
+    if (Test-Path (Join-Path $root '.git')) { throw 'This folder is a git working copy: update it with git pull, not through the lobby.' }
+    $changes = @(Get-UpdateChanges $stage $root)
+    $backup = Join-Path (Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Backup') (Get-Date -Format 'yyyyMMdd-HHmmss')
+    $done = New-Object Collections.ArrayList
+    try {
+        foreach ($c in $changes) {
+            $dest = Join-Path $root $c.Rel
+            if ($c.Status -eq 'changed') {
+                $b = Join-Path $backup $c.Rel
+                New-Item -ItemType Directory -Force (Split-Path $b) | Out-Null
+                Copy-Item $dest $b -Force
+            }
+            New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
+            [void]$done.Add($c)
+            Copy-Item (Join-Path $stage $c.Rel) $dest -Force
+        }
+    } catch {
+        $err = $_.Exception.Message
+        foreach ($c in $done) {
+            $dest = Join-Path $root $c.Rel
+            try { if ($c.Status -eq 'changed') { Copy-Item (Join-Path $backup $c.Rel) $dest -Force } else { Remove-Item $dest -Force -ErrorAction SilentlyContinue } } catch { }
+        }
+        throw "The update could not be installed ($err); the old files were put back."
+    }
+    return [pscustomobject]@{ Count = $changes.Count; Backup = $backup }
 }
 
 # ---------------------------------------------------------------- The map from the host
@@ -258,8 +380,8 @@ function Complete-BundleFetch($f) {
     return $dest
 }
 
-function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null, $bundle = $null) {
-    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); MapAsk = (New-Object Collections.ArrayList); Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
+function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null, $bundle = $null, [string]$updateRoot = $null) {
+    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Bundle = $bundle; Transfers = (New-Object Collections.ArrayList); MapAsk = (New-Object Collections.ArrayList); UpdateRoot = $updateRoot; Update = $null; Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
               Focus = @($teamInfo).Count; Cursor = 0; Held = $null; HeldFrom = 0; Msg = ''; Info = ''; ConfirmCancel = $false; Dirty = $true; Done = $null }
 }
 
@@ -465,6 +587,7 @@ function Start-LobbyTransfer($st, $q, [string]$line) {
         if ($w[0] -eq 'FETCH' -and $st.Bundle -and $w[1] -eq $st.Bundle.Hash) { $path = $st.Bundle.Zip; $size = $st.Bundle.Size }
         elseif ($w[0] -eq 'FETCHMAP' -and $st.Bundle -and $st.Bundle.Map -and $w[1] -eq $st.Bundle.Map.Hash -and $w.Count -ge 3 -and
                 @($st.Players | Where-Object { $_.Name -eq $w[2] -and $_.MapGrant }).Count -gt 0) { $path = $st.Bundle.Map.Path; $size = $st.Bundle.Map.Size }
+        elseif ($w[0] -eq 'FETCHUPDATE' -and $st.Update -and $w[1] -eq $st.Update.Hash) { $path = $st.Update.Zip; $size = $st.Update.Size }
         else { throw 'not offered' }
         $b = [Text.Encoding]::UTF8.GetBytes(('SIZE {0}' -f $size) + "`n")
         $s = $q.Client.GetStream(); $s.Write($b, 0, $b.Length)
@@ -502,7 +625,7 @@ function Update-LobbyNet($st, $listener) {
         $hello = $null; $fetch = $null
         foreach ($l in @(Read-LobbyLines $q)) {
             if ($l -like 'HELLO *') { $hello = $l.Substring(6).Trim() }
-            elseif ($l -like 'FETCH *' -or $l -like 'FETCHMAP *') { $fetch = $l.Trim() }
+            elseif ($l -like 'FETCH *' -or $l -like 'FETCHMAP *' -or $l -like 'FETCHUPDATE *') { $fetch = $l.Trim() }
             elseif ($l -like 'VERSION *') { $v = @($l.Substring(8).Trim() -split ' '); $q.VerHash = $v[0]; if ($v.Count -gt 1) { $q.VerDate = $v[1] } }
         }
         if ($fetch) { Start-LobbyTransfer $st $q $fetch; [void]$st.Pending.Remove($q); continue }
@@ -517,6 +640,11 @@ function Update-LobbyNet($st, $listener) {
                 if ($st.Version) {
                     Send-LobbyLine $q ('VERSION {0} {1}' -f $st.Version.Hash, $st.Version.Date)
                     $vs = if ($q.VerHash) { Compare-PlayVersion $st.Version $q.VerHash $q.VerDate } else { 'differs' }
+                    # older files (or other ones with the same date): the host offers his editor files if he runs from a folder that has them
+                    if (($vs -eq 'older' -or $vs -eq 'differs') -and $st.UpdateRoot -and -not $st.Update) {
+                        try { $st.Update = New-HostUpdate $st.UpdateRoot } catch { $st.Update = $null }
+                    }
+                    if (($vs -eq 'older' -or $vs -eq 'differs') -and $st.Update) { Send-LobbyLine $q ('UPDATE {0} {1} {2}' -f $st.Update.Size, $st.Update.Hash, $st.Update.Count) }
                 }
                 $dataState = 'ready'; $mapState = 'ready'
                 if ($st.Bundle) {
@@ -560,8 +688,8 @@ function New-LobbyKey([string]$key, [switch]$Shift) {
 # The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when he cancels.
 # $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
 # there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
-function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null, [bool]$autoMap = $false) {
-    $st = New-LobbyState $teamInfo $hostName $port $version $bundle
+function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null, $bundle = $null, [bool]$autoMap = $false, [string]$updateRoot = $null) {
+    $st = New-LobbyState $teamInfo $hostName $port $version $bundle $updateRoot
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     $st.Addr = if ($addr.Count -gt 0) { $addr -join ' / ' } else { '127.0.0.1' }
     $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Any, $port)
@@ -608,6 +736,9 @@ function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyF
         if ($st.Done -ne 'start') { foreach ($p in $st.Players) { if ($p.Client) { try { $p.Client.Close() } catch { } } } }
         $listener.Stop()
         foreach ($t in @($st.Transfers)) { try { $t.File.Close(); $t.Client.Close() } catch { } }
+        # the zips that were made for the joiners
+        if ($st.Update) { Remove-Item $st.Update.Zip -Force -ErrorAction SilentlyContinue }
+        if ($st.Bundle -and $st.Bundle.Zip) { Remove-Item $st.Bundle.Zip -Force -ErrorAction SilentlyContinue }
         if ($console) { [Console]::CursorVisible = $true }
     }
 }
@@ -639,7 +770,8 @@ function Close-Lobby {
     $script:LobbyPlayers = @()
 }
 
-# The lobby of a joiner. Returns 'start', 'cancel' (the host cancelled), 'lost' (the host went away), 'left' (Esc), 'refused: <reason>' or 'noconnect'.
+# The lobby of a joiner. Returns 'start', 'cancel' (the host cancelled), 'lost' (the host went away), 'left' (Esc), 'update' (the joiner agreed to the update of
+# his editor files: the unpacked update is in $script:UpdateStage, Install-EditorUpdate puts it in place), 'refused: <reason>' or 'noconnect'.
 # $dumpFile / $timeoutSec: for tests like above
 function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0, [string]$dumpFile = $null, $version = $null, $mapCtx = $null) {
     $c = New-Object Net.Sockets.TcpClient
@@ -653,6 +785,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     $console = -not $dumpFile
     $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
     $dataText = ''; $dataKind = 0; $fetch = $null; $lastPct = -10; $script:BundleDir = $null
+    $verCmp = ''; $hostVerHash = ''; $updInfo = $null; $updState = ''; $updFetch = $null; $updStage = $null; $updLines = @(); $updAutoUsed = 0; $updLastPct = -10; $updChanges = @(); $updNote = ''; $updShown = $false
     $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10
     $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
@@ -674,6 +807,13 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                         default  { 'Files: different from the host (yours ' + $version.Short + ', his ' + $v[0].Substring(0, 8) + ')' }
                     }
                     $verKind = if ($cmp -eq 'same') { 7 } else { 6 }
+                    $verCmp = $cmp; $hostVerHash = $v[0]
+                }
+                elseif ($l -like 'UPDATE *') {
+                    $o = @($l.Substring(7).Trim() -split ' ')
+                    if ($o.Count -ge 3 -and (Test-BundleId $o[1]) -and [long]$o[0] -le $script:UpdateMaxBytes -and ($verCmp -eq 'newer' -or $verCmp -eq 'differs')) {
+                        $updInfo = @{ Size = [long]$o[0]; Hash = $o[1]; Count = $o[2] }; $updState = 'offer'; $dirty = $true
+                    }
                 }
                 elseif ($l -like 'MAP *') {
                     $o = @($l.Substring(4).Trim() -split ' ', 3)
@@ -714,6 +854,48 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                         if ($pct -ge $lastPct + 5 -or $pct -ge 100) { Send-LobbyLine $p "PROGRESS $pct"; $lastPct = $pct }
                     }
                 }
+            }
+            # the update of the editor files: U fetches it (nothing is replaced yet), then the changed files are shown and Y installs them
+            if (-not $result -and $updState -eq 'offer') {
+                $canUpdate = $mapCtx -and $mapCtx.UpdateRoot
+                if (-not $updShown) {
+                    $updLines = @(if ($updNote) { $updNote })
+                    $updLines += $(if ($canUpdate) { @('Your files are older than the host''s (' + $updInfo.Count + ' files, ' + [Math]::Round($updInfo.Size / 1KB) + ' KB).', 'U = get the update from the host: it is only looked at first, nothing is replaced before you say Y') }
+                                   else { @('Your files are older than the host''s. The update is not possible from here (no editor folder): get the new version of the editor or the scenario package.') })
+                    $updShown = $true; $dirty = $true
+                }
+                if ($canUpdate -and -not $mapKey -and $mapCtx.AutoUpdate -and $updAutoUsed -eq 0) { $mapKey = 'U'; $updAutoUsed = 1 }
+                if ($canUpdate -and $mapKey -eq 'U') {
+                    try { $updFetch = Start-BundleFetch $ip $port $updInfo.Hash ('FETCHUPDATE ' + $updInfo.Hash) $script:UpdateMaxBytes; $updState = 'fetching'; $updLines = @('Update: loading ...') }
+                    catch { $updNote = 'Update failed: ' + $_.Exception.Message; $updShown = $false }
+                    $dirty = $true
+                }
+                $mapKey = $null
+            }
+            elseif (-not $result -and $updState -eq 'fetching' -and $updFetch) {
+                $r = Step-BundleFetch $updFetch
+                if ($r -eq 'done') {
+                    try {
+                        $updStage = Complete-UpdateFetch $updFetch $hostVerHash
+                        $updChanges = @(Get-UpdateChanges $updStage $mapCtx.UpdateRoot)
+                        $names = @($updChanges | Select-Object -First 8 | ForEach-Object { $_.Rel + ' (' + $_.Status + ')' })
+                        $updLines = @("Update from the host is ready: $($updChanges.Count) of $($updInfo.Count) files would change.") + @($names | ForEach-Object { '   ' + $_ }) +
+                                    $(if ($updChanges.Count -gt 8) { @('   ... and ' + ($updChanges.Count - 8) + ' more') } else { @() }) +
+                                    @('These are programs: only do this if you trust the host. The old files are saved first.', 'Y = install the update   N = do not')
+                        $updState = 'confirm'
+                    } catch { $updState = 'offer'; $updNote = 'Update failed: ' + $_.Exception.Message; $updShown = $false }
+                    $updFetch = $null; $dirty = $true
+                } elseif ($r -ne 'working') { $updState = 'offer'; $updNote = 'Update failed: ' + $r; $updShown = $false; $updFetch = $null; $dirty = $true }
+                elseif ($updFetch.Total -gt 0) {
+                    $pct = [int][Math]::Floor(100 * $updFetch.Got / $updFetch.Total)
+                    if ($pct -ne $updLastPct) { $updLastPct = $pct; $updLines = @("Update: loading $pct % ($([int]($updFetch.Got / 1024)) of $([int]($updFetch.Total / 1024)) KB)"); $dirty = $true }
+                }
+            }
+            elseif (-not $result -and $updState -eq 'confirm') {
+                if (-not $mapKey -and $mapCtx.AutoUpdate -and $updAutoUsed -eq 1) { $mapKey = 'Y'; $updAutoUsed = 2 }
+                if ($mapKey -eq 'Y') { $script:UpdateStage = $updStage; Send-LobbyLine $p 'BYE'; $result = 'update' }
+                elseif ($mapKey -eq 'N') { Remove-Item $updStage -Recurse -Force -ErrorAction SilentlyContinue; $updStage = $null; $updState = 'offer'; $updNote = ''; $updShown = $false; $updAutoUsed = 3 }
+                $mapKey = $null
             }
             # the map: as soon as the scenario is there, look whether its map is installed
             if (-not $result -and $script:BundleDir -and $mapState -eq '') {
@@ -768,8 +950,11 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
             if ($dirty) {
                 $dirty = $false
                 $who = ($roster -replace '=(\d+)', ' (team $1)') -replace ';', ', '
-                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, $dataText, $(if ($mapState -eq 'prompt') { $mapShown } else { $mapText }), '', "Players: $who", '', 'Esc = leave')
-                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, $verKind, $dataKind, $mapKind, 0, 0, 0, 2) }) }
+                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, $dataText, $(if ($mapState -eq 'prompt') { $mapShown } else { $mapText }))
+                $kinds = @(1, 0, 0, 7, $verKind, $dataKind, $mapKind)
+                foreach ($ul in $updLines) { $lines += $ul; $kinds += 6 }
+                $lines += @('', "Players: $who", '', 'Esc = leave'); $kinds += @(0, 0, 0, 2)
+                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = $kinds }) }
                 else { [IO.File]::WriteAllLines($dumpFile, [string[]]$lines) }
             }
             Start-Sleep -Milliseconds 40
@@ -778,6 +963,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     } finally {
         if ($fetch) { try { $fetch.File.Close(); $fetch.Client.Close() } catch { } }
         if ($mapFetch) { try { $mapFetch.File.Close(); $mapFetch.Client.Close() } catch { } }
+        if ($updFetch) { try { $updFetch.File.Close(); $updFetch.Client.Close() } catch { } }
         if ($result -ne 'start') { try { $c.Close() } catch { } }   # after the start the connection stays: READY and GO
         if ($console) { [Console]::CursorVisible = $true }
     }
