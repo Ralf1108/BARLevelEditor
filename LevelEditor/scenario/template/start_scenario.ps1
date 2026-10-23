@@ -126,17 +126,19 @@ if ($WaitForHost) {
 # The lobby, before the extra game is built and the map is fetched (lobby.ps1). The host distributes the players; when he starts, the script goes on
 # with the roster as -Mapping (the host builds the game and starts it, the joiners prepare and wait for GO)
 if ($Lobby -and ($HostGame -or $JoinIp)) {
+    # the version of the files that decide how the game runs: the editor's (scripts, scenario\template, shared) or the package's
+    $playVersion = Get-PlayVersion $(if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path $EditorDir 'scenario\template'), (Join-Path (Split-Path $EditorDir -Parent) 'shared')) } else { @($here) })
     if ($HostGame) {
         $teamInfo = @(Get-TeamInfo $script)
         if ($teamInfo.Count -lt 2) { Fail 'This scenario has only one team, there is nobody to play against.' }
-        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart
+        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion
         if (-not $lobbyRoster) { Write-Host 'The lobby was cancelled.'; exit 0 }
         Save-Mapping $lobbyRoster
         $Mapping = ConvertTo-MappingText $lobbyRoster
         if (-not $PSBoundParameters.ContainsKey('Wait')) { $Wait = 15 }   # everybody is known: the joiners connect at once
         Write-Host "Lobby finished: $Mapping"
     } else {
-        $res = Join-Lobby $JoinIp $LobbyPort $Name
+        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null $playVersion
         switch -Wildcard ($res) {
             'noconnect' { Fail "No lobby of a host found at $($JoinIp):$LobbyPort." }
             'refused*'  { Fail "The host refused you: $($res.Substring(9))" }

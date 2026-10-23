@@ -16,6 +16,8 @@ $userDir = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor'   # what the editor re
 $levelsDir = Join-Path $root 'levels'
 . (Join-Path $here 'map_preview.ps1')
 $pvOk = Initialize-MapPreview $Data   # thumbnails from the lobby package of the game (map_preview.ps1); $false = no previews
+. (Join-Path $root 'scenario\template\lobby.ps1')   # the lobby of a hosted game (the start menu starts it through start_scenario.ps1) and the version of the files that decide how a game runs
+$playVersion = Get-PlayVersion @($here, (Join-Path $root 'scenario\template'), (Join-Path (Split-Path $root -Parent) 'shared'))
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
 $lastFile = Join-Path $userDir 'Last Map.txt'
 
@@ -530,7 +532,8 @@ while ($true) {
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
     Clear-Host
-    Write-Host 'Level Editor' -ForegroundColor Cyan
+    Write-Host 'Level Editor' -ForegroundColor Cyan -NoNewline
+    Write-Host ('   version {0} of {1} UTC (the same on every computer that plays together)' -f $playVersion.Short, (Format-PlayDate $playVersion.Date)) -ForegroundColor DarkGray
     Write-Host ''
     $menuTop = [Console]::CursorTop
     Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''

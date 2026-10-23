@@ -1,24 +1,60 @@
 # Lobby before a hosted game (dot-sourced by start_scenario.ps1; needs player_mapping.ps1 for ConvertTo-PlayerName and the last mapping).
 # The host sees one box per team; every player who joins lands in a team box at once (the team he had last time if it is free, otherwise the first
 # team without a player) and the host moves them. The joiners only send their name; a joiner whose connection breaks is removed.
-# Protocol (one text line each, UTF-8, TCP): joiner -> host: "HELLO <name>", "BYE", later "READY"; host -> joiner: "OK <name as the host
-# knows it>" or "ERR <reason>", then "TEAM <n> <text>" and "ROSTER <name>=<team>;..." whenever something changes, at the end "START" (the
+# Protocol (one text line each, UTF-8, TCP): joiner -> host: "VERSION <hash> <date>" (the version of his files, see Get-PlayVersion), "HELLO <name>",
+# "BYE", later "READY"; host -> joiner: "OK <name as the host knows it>" or "ERR <reason>", "VERSION <hash> <date>" (the host's), then
+# "TEAM <n> <text>" and "ROSTER <name>=<team>;..." whenever something changes, at the end "START" (the
 # joiners prepare: extra game, map) or "CANCEL"; when every joiner has said "READY" and the host's game is running the host sends "GO" and the
 # joiners connect to it.
+# A joiner whose files are not the same as the host's (other hash) stays in the lobby, marked, but the game cannot start until he has the same version.
 # The focus starts on "Start game" (the last box): Enter or F5 starts at once.
 # Keys of the host: Tab / Shift+Tab or Left / Right = next box, Up / Down = player in the box, Enter = pick the player up (then Up / Down /
 # Left / Right move him into the neighbouring box, Enter drops him, Esc brings him back), Enter on "Start game" (the last stop) or F5 = start,
 # Esc twice = cancel.
 
-function New-LobbyState($teamInfo, [string]$hostName, [int]$port) {
-    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
+# The version of the files that decide how a game runs: the starter, the lobby, the briefing and the gadgets. Looked for by file name in the given
+# folders (the editor: scripts, scenario\template, shared; the unpacked package of a scenario: one folder). The hash is made of the names and the texts
+# (without carriage returns, so the line endings of git do not matter); the date (UTC) is the newest change of these files and only says who is
+# probably newer: the hash decides whether two computers are the same. Returns Hash (hex), Date (yyyyMMddHHmmss), Count and Short (for the screen).
+$script:PlayVersionFiles = @('bar_rules.lua', 'ctf_game.lua', 'lobby.ps1', 'player_mapping.ps1', 'pve_supply_drops_stub.lua', 'scenario_briefing.lua', 'start_scenario.ps1', 'td_waves.lua', 'unit_restrictions.lua')
+function Get-PlayVersion([string[]]$dirs) {
+    $bytes = New-Object System.Collections.Generic.List[byte]
+    $newest = [DateTime]::MinValue; $count = 0
+    foreach ($n in $script:PlayVersionFiles) {
+        $f = $null
+        foreach ($d in $dirs) { $c = Join-Path $d $n; if ($d -and (Test-Path $c)) { $f = $c; break } }
+        if (-not $f) { continue }
+        $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($n + "`n"))
+        $bytes.AddRange([Text.Encoding]::UTF8.GetBytes(([IO.File]::ReadAllText($f)).Replace("`r", '') + "`n"))
+        $t = (Get-Item $f).LastWriteTimeUtc; if ($t -gt $newest) { $newest = $t }
+        $count++
+    }
+    $hash = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($bytes.ToArray())) -replace '-', '')
+    return [pscustomobject]@{ Hash = $hash; Date = $newest.ToString('yyyyMMddHHmmss'); Count = $count; Short = $hash.Substring(0, 8) }
+}
+
+# 'same' (same hash), 'older' (the other one is older than mine), 'newer' (the other one is newer than mine), 'differs' (other hash, same date)
+function Compare-PlayVersion($mine, [string]$otherHash, [string]$otherDate) {
+    if ($otherHash -eq $mine.Hash) { return 'same' }
+    if ($otherDate -and $otherDate -lt $mine.Date) { return 'older' }
+    if ($otherDate -and $otherDate -gt $mine.Date) { return 'newer' }
+    return 'differs'
+}
+
+function Format-PlayDate([string]$d) {
+    if ($d -match '^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)') { return '{0}-{1}-{2} {3}:{4}' -f $Matches[1], $Matches[2], $Matches[3], $Matches[4], $Matches[5] }
+    return $d
+}
+
+function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $null) {
+    return @{ Teams = @($teamInfo); HostName = $hostName; Port = $port; Version = $version; Addr = ''; Players = (New-Object Collections.ArrayList); Pending = (New-Object Collections.ArrayList)
               Focus = @($teamInfo).Count; Cursor = 0; Held = $null; HeldFrom = 0; Msg = ''; Info = ''; ConfirmCancel = $false; Dirty = $true; Done = $null }
 }
 
 function Get-BoxPlayers($st, [int]$box) { return @($st.Players | Where-Object { $_.Box -eq $box }) }
 
 # The team of a new player: the one of the last mapping (by name) if nobody is there, otherwise the first team without a player, otherwise team 0
-function Add-LobbyPlayer($st, [string]$name, $client) {
+function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same') {
     $box = -1
     foreach ($e in @(Read-LastMapping)) {
         if ($e.Name.ToLower() -eq $name.ToLower() -and $e.Team -lt $st.Teams.Count -and @(Get-BoxPlayers $st $e.Team).Count -eq 0) { $box = $e.Team }
@@ -27,7 +63,7 @@ function Add-LobbyPlayer($st, [string]$name, $client) {
         for ($b = 0; $b -lt $st.Teams.Count; $b++) { if (@(Get-BoxPlayers $st $b).Count -eq 0) { $box = $b; break } }
     }
     if ($box -lt 0) { $box = 0 }
-    $p = [pscustomobject]@{ Name = $name; Box = $box; Client = $client; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false }
+    $p = [pscustomobject]@{ Name = $name; Box = $box; Client = $client; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false; VerState = $verState }
     [void]$st.Players.Add($p)
     $st.Dirty = $true
     return $p
@@ -43,6 +79,9 @@ function Remove-LobbyPlayer($st, $p) {
 # $null if the game can start, otherwise the reason
 function Test-LobbyStart($st) {
     if ($st.Players.Count -lt 2) { return 'At least two players are needed.' }
+    foreach ($p in $st.Players) {
+        if ($p.VerState -ne 'same') { return ('{0} has {1} files than yours.' -f $p.Name, $(switch ($p.VerState) { 'older' { 'older' } 'newer' { 'newer' } default { 'other' } })) }
+    }
     return $null
 }
 
@@ -113,6 +152,7 @@ function Get-LobbyLines($st) {
     $winH = 40; try { $winH = [Console]::WindowHeight } catch { }
     $gap = 2; while ($gap -gt 0 -and ($need + $gap * $t) -gt $winH - 2) { $gap-- }
     Add-L ("Lobby of {0}   address {1}   port {2}   {3} player(s)" -f $st.HostName, $st.Addr, $st.Port, $st.Players.Count) 1
+    if ($st.Version) { Add-L ('Version {0} of {1} (UTC)' -f $st.Version.Short, (Format-PlayDate $st.Version.Date)) 2 } else { Add-L '' 0 }
     Add-L '' 0
     for ($b = 0; $b -lt $t; $b++) {
         Add-L ('{0} {1}' -f $(if ($st.Focus -eq $b) { '>' } else { ' ' }), $st.Teams[$b]) $(if ($st.Focus -eq $b) { 3 } else { 1 })
@@ -121,6 +161,7 @@ function Get-LobbyLines($st) {
         for ($i = 0; $i -lt $pl.Count; $i++) {
             $p = $pl[$i]
             $txt = '    ' + $p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })
+            if ($p.VerState -ne 'same') { $txt += '   (files ' + $(switch ($p.VerState) { 'older' { 'older than yours: needs an update' } 'newer' { 'newer than yours' } default { 'differ from yours' } }) + ')' }
             $kind = 0
             if ($st.Held -eq $p) { $txt += '   <- moving: arrows move, Enter drops, Esc puts back'; $kind = 5 }
             elseif ($st.Focus -eq $b -and [Math]::Min($st.Cursor, $pl.Count - 1) -eq $i) { $txt = '  > ' + $txt.Substring(4); $kind = 4 }
@@ -192,11 +233,14 @@ function Read-LobbyLines($p) {
 function Update-LobbyNet($st, $listener) {
     while ($listener.Pending()) {
         $c = $listener.AcceptTcpClient()
-        [void]$st.Pending.Add([pscustomobject]@{ Client = $c; Buf = (New-Object Text.StringBuilder); Closed = $false; Name = $null; T = (Get-Date) })
+        [void]$st.Pending.Add([pscustomobject]@{ Client = $c; Buf = (New-Object Text.StringBuilder); Closed = $false; Name = $null; T = (Get-Date); VerHash = $null; VerDate = $null })
     }
     foreach ($q in @($st.Pending)) {
         $hello = $null
-        foreach ($l in @(Read-LobbyLines $q)) { if ($l -like 'HELLO *') { $hello = $l.Substring(6).Trim() } }
+        foreach ($l in @(Read-LobbyLines $q)) {
+            if ($l -like 'HELLO *') { $hello = $l.Substring(6).Trim() }
+            elseif ($l -like 'VERSION *') { $v = @($l.Substring(8).Trim() -split ' '); $q.VerHash = $v[0]; if ($v.Count -gt 1) { $q.VerDate = $v[1] } }
+        }
         if ($hello) {
             $nm = ConvertTo-PlayerName $hello
             $taken = @($st.Players | Where-Object { $_.Name.ToLower() -eq $nm.ToLower() }).Count -gt 0
@@ -204,7 +248,12 @@ function Update-LobbyNet($st, $listener) {
             elseif ($taken) { Send-LobbyLine $q 'ERR That name is used already.'; $q.Closed = $true }
             else {
                 Send-LobbyLine $q "OK $nm"
-                [void](Add-LobbyPlayer $st $nm $q.Client)
+                $vs = 'same'
+                if ($st.Version) {
+                    Send-LobbyLine $q ('VERSION {0} {1}' -f $st.Version.Hash, $st.Version.Date)
+                    $vs = if ($q.VerHash) { Compare-PlayVersion $st.Version $q.VerHash $q.VerDate } else { 'differs' }
+                }
+                [void](Add-LobbyPlayer $st $nm $q.Client $vs)
                 $st.Info = "$nm joined."
                 [void]$st.Pending.Remove($q)
                 continue
@@ -230,8 +279,8 @@ function New-LobbyKey([string]$key, [switch]$Shift) {
 # The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when he cancels.
 # $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
 # there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
-function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0) {
-    $st = New-LobbyState $teamInfo $hostName $port
+function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $version = $null) {
+    $st = New-LobbyState $teamInfo $hostName $port $version
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     $st.Addr = if ($addr.Count -gt 0) { $addr -join ' / ' } else { '127.0.0.1' }
     $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Any, $port)
@@ -309,16 +358,17 @@ function Close-Lobby {
 
 # The lobby of a joiner. Returns 'start', 'cancel' (the host cancelled), 'lost' (the host went away), 'left' (Esc), 'refused: <reason>' or 'noconnect'.
 # $dumpFile / $timeoutSec: for tests like above
-function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0, [string]$dumpFile = $null) {
+function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0, [string]$dumpFile = $null, $version = $null) {
     $c = New-Object Net.Sockets.TcpClient
     $ar = $c.BeginConnect($ip, $port, $null, $null)
     if (-not $ar.AsyncWaitHandle.WaitOne(5000)) { $c.Close(); return 'noconnect' }
     try { $c.EndConnect($ar) } catch { $c.Close(); return 'noconnect' }
     $p = [pscustomobject]@{ Name = $name; Box = 0; Client = $c; Buf = (New-Object Text.StringBuilder); Sent = ''; Closed = $false }
     $script:JoinerLobby = $p; $script:JoinerName = $name
+    if ($version) { Send-LobbyLine $p ('VERSION {0} {1}' -f $version.Hash, $version.Date) }
     Send-LobbyLine $p "HELLO $name"
     $console = -not $dumpFile
-    $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null
+    $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
     $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
     try {
@@ -328,6 +378,18 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 $dirty = $true
                 if ($l -eq 'OK' -or $l -like 'OK *') { $status = 'waiting for the host to start the game'; if ($l.Length -gt 3) { $script:JoinerName = $l.Substring(3).Trim() } }
                 elseif ($l -like 'ERR *') { $result = 'refused: ' + $l.Substring(4) }
+                elseif ($l -like 'VERSION *' -and $version) {
+                    $v = @($l.Substring(8).Trim() -split ' ')
+                    # the host's files seen from here: 'older' means the host is older than I am
+                    $cmp = Compare-PlayVersion $version $v[0] $(if ($v.Count -gt 1) { $v[1] } else { '' })
+                    $verText = switch ($cmp) {
+                        'same'   { 'Files: the same as on the host (' + $version.Short + ')' }
+                        'older'  { 'Files: NEWER than on the host - the host has to update (yours ' + $version.Short + ' of ' + (Format-PlayDate $version.Date) + ', his ' + $v[0].Substring(0, 8) + ' of ' + (Format-PlayDate $v[1]) + ')' }
+                        'newer'  { 'Files: OLDER than on the host - you need an update (yours ' + $version.Short + ' of ' + (Format-PlayDate $version.Date) + ', his ' + $v[0].Substring(0, 8) + ' of ' + (Format-PlayDate $v[1]) + ')' }
+                        default  { 'Files: different from the host (yours ' + $version.Short + ', his ' + $v[0].Substring(0, 8) + ')' }
+                    }
+                    $verKind = if ($cmp -eq 'same') { 7 } else { 6 }
+                }
                 elseif ($l -like 'TEAM *') { $team = ($l.Substring(5) -replace '^\d+ ', '') }
                 elseif ($l -like 'ROSTER *') { $roster = $l.Substring(7) }
                 elseif ($l -eq 'START') { $result = 'start' }
@@ -341,8 +403,8 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
             if ($dirty) {
                 $dirty = $false
                 $who = ($roster -replace '=(\d+)', ' (team $1)') -replace ';', ', '
-                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", '', "Players: $who", '', 'Esc = leave')
-                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, 0, 0, 0, 2) }) }
+                $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, '', "Players: $who", '', 'Esc = leave')
+                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = @(1, 0, 0, 7, $verKind, 0, 0, 0, 2) }) }
                 else { [IO.File]::WriteAllLines($dumpFile, [string[]]$lines) }
             }
             Start-Sleep -Milliseconds 40
