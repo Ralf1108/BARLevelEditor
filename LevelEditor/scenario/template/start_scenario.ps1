@@ -357,7 +357,7 @@ public class SplitWin {
 }
 '@
     [void][SplitWin]::SetProcessDPIAware()
-    $all = @('--config', $cfg, '--write-dir', $data) + $sargs
+    $all = @('--config', $cfg) + $sargs   # every caller passes --write-dir itself
     $p = Start-Process -FilePath $spring -ArgumentList @($all | ForEach-Object { '"' + $_ + '"' }) -PassThru
     $start = Get-Date
     $launched = $false
@@ -398,9 +398,10 @@ if ($HostGame -and $Lobby) {
     # every joiner has the extra game and the map: start the game, give the engine a moment to listen, then let the joiners connect
     if (-not (Wait-LobbyReady 300)) { Close-Lobby; Fail 'The game was not started: not everybody got ready.' }
     Write-Host 'Starting the game ...'
-    Start-Spring @($out) { Start-Sleep -Seconds 5; Send-LobbyGo }
+    Start-Spring @('--write-dir', $data, $out) { Start-Sleep -Seconds 5; Send-LobbyGo }
     Close-Lobby
     exit 0
 }
 Write-Host 'Starting the game ...'
-Start-Spring @($out)
+# without --write-dir the engine uses its own folder as data folder (found 2026-10-23: "Dependent archive ... not found" for a map that was just downloaded)
+Start-Spring @('--write-dir', $data, $out)
