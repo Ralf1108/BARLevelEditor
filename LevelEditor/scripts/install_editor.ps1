@@ -66,6 +66,8 @@ $gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
 $gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
 $gadgetCtf = Get-Content (Join-Path $here 'ctf_game.lua') -Raw
 $ctfPage = Get-Content (Join-Path $here 'led_ctf.lua') -Raw
+$gadgetRtf = Get-Content (Join-Path $here 'rtf_game.lua') -Raw
+$rtfPage = Get-Content (Join-Path $here 'led_rtf.lua') -Raw
 $gadgetRst = Get-Content (Join-Path $here 'unit_restrictions.lua') -Raw
 $rstData = Get-Content (Join-Path $here 'led_restrictions.lua') -Raw
 $helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
@@ -79,12 +81,14 @@ foreach ($e in @(
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
+    @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
     @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
     @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
     @('luaui/Include/editor_common.lua', $shared),
     @('luaui/Include/bar_rules.lua', $rules),
     @('luaui/Include/led_ctf.lua', $ctfPage),
+    @('luaui/Include/led_rtf.lua', $rtfPage),
     @('luaui/Include/led_restrictions.lua', $rstData),
     @('luaui/Include/led_help_texts.lua', $helpTexts))) {
     $entry = $zip.CreateEntry($e[0])
@@ -95,7 +99,7 @@ $zip.Dispose()
 Write-Host "Created: $zipPath"
 
 # The extra game for finished scenarios ("Level Editor Scenarios", used by LAN Play: the lobby starts a scenario with it): the gadgets of the scenarios, all
-# in one game. Each one switches itself on only when the game options of the scenario ask for it (tdconfig, ctfconfig, restrictions), so it is the same game
+# in one game. Each one switches itself on only when the game options of the scenario ask for it (tdconfig, ctfconfig, rtfconfig, restrictions), so it is the same game
 # for every scenario and every computer with this version of the editor. The zip entries get a fixed time so that the archives of two computers are equal.
 $zipPath2 = Join-Path $gamesDir 'LevelEditorScenarios.sdz'
 if (Test-Path $zipPath2) { Remove-Item $zipPath2 -Force }
@@ -117,6 +121,7 @@ $zip2 = [IO.Compression.ZipFile]::Open($zipPath2, 'Create')
 foreach ($e in @(
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
+    @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
     @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
     @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
     @('luaui/Include/bar_rules.lua', $rules),

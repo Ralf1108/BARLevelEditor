@@ -255,6 +255,7 @@ local currentLevel = nil -- Name of the level loaded or saved last
 local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke = nil, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD); data = section towerdefense of the level file
 local rst -- restrictions of the level (what the player may not build): LevelEditor/scripts/led_restrictions.lua, created below (data = section restrictions of the level file)
 local ctf -- Capture the Flag page (button CF): LevelEditor/scripts/led_ctf.lua, created below (data = section capture of the level file)
+local rtf -- Reclaim the Fame page (button RF): LevelEditor/scripts/led_rtf.lua, created below (data = section reclaim of the level file)
 
 local function decodeBlock(block)
 	local body = block and block:match("%[==%[(.*)%]==%]")
@@ -362,6 +363,9 @@ local function saveLevel(name, quiet)
 	if ctf.data then
 		f:write("\tcapture = " .. ctf.lua() .. ",\n")
 	end
+	if rtf.data then
+		f:write("\treclaim = " .. rtf.lua() .. ",\n")
+	end
 	if not rst.empty() then
 		f:write("\trestrictions = " .. rst.lua() .. ",\n")
 	end
@@ -452,6 +456,7 @@ local function load_level(_, _, args)
 	-- own sections of the level file: only the fields the editor knows are taken over (nothing old is kept and saved again)
 	td.data = knownFields(data.towerdefense, td.new(), { "spawn", "goal" })
 	ctf.data = knownFields(data.capture, ctf.new())
+	rtf.data = knownFields(data.reclaim, rtf.new())
 	rst.load(data.restrictions)
 	td.scroll = 0
 	if tonumber(data.unitlimit) then
@@ -1207,7 +1212,7 @@ local function searchRects(x1, x2, top, hb)
 end
 
 local function headerRowCount() -- Rows of the header
-	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open then
+	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open then
 		return 0
 	end
 	-- Place menu: search, sub-tabs, then the rows of the chosen sub-tab
@@ -1260,6 +1265,8 @@ local function basePanelRect()
 		cw, ch = math.floor(780 * S), td.height() -- wider than the other pages: the wave table needs the room
 	elseif ctf.open then
 		cw, ch = 0, ctf.height()
+	elseif rtf.open then
+		cw, ch = 0, rtf.height()
 	elseif gen.open then
 		cw, ch = 0, genHeight()
 	elseif optionsOpen then
@@ -1272,7 +1279,7 @@ local function basePanelRect()
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
 	local top = vsy * 0.94 -- top edge of the menu: 94 % of the screen height
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
+	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
 end
@@ -1314,7 +1321,7 @@ local function headerRects()
 		}
 		for i, it in ipairs(tops) do
 			rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5 + i) - m.HB, y1 = sideTop(5 + i), side = true, kind = "top", value = it[1], label = it[2],
-				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open), tip = it[3] }
+				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open), tip = it[3] }
 		end
 		rects[#rects + 1] = { x1 = ix1, x2 = ix2, y0 = iy1 - m.HB, y1 = iy1, side = true, kind = "info", value = "info", label = "I", active = scenarioOpen,
 			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
@@ -1326,13 +1333,16 @@ local function headerRects()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(9) - m.HB, y1 = sideTop(9), side = true, kind = "ctf", value = "ctf", label = "CF", active = ctf.open,
 			tint = ctf.cfg().enabled and (ctf.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Capture the Flag is on for this level
 			tip = "Capture the Flag: flags lie on the map, units carry them to the collection point of their team and earn metal (flag points, collection points, income)" }
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(10) - m.HB, y1 = sideTop(10), side = true, kind = "rtf", value = "rtf", label = "RF", active = rtf.open,
+			tint = rtf.cfg().enabled and (rtf.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Reclaim the Fame is on for this level
+			tip = "Reclaim the Fame: construction units earn points by reclaiming the crystals on the map; the first team at the score limit wins (crystals, factors, score limit, rate)" }
 		local areas = {
 			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(10 + k)
+			local top = sideTop(11 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1342,14 +1352,14 @@ local function headerRects()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(14 + k)
+			local top = sideTop(15 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open then
+	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open then
 		local rowTop = y1 - 4 - titleH()
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
@@ -1901,7 +1911,7 @@ local function drawMenuBody()
 	end
 	gl.Color(1, 1, 1, 1)
 	-- with Tower Defense on (tick box) or its page open the title says so
-	gl.Text(ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
+	gl.Text(rtf.open and "Level Editor - Reclaim the Fame" or ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
 		drawScenario(rect, mx, my)
@@ -1913,6 +1923,10 @@ local function drawMenuBody()
 	end
 	if ctf.open then
 		ctf.draw(rect)
+		return
+	end
+	if rtf.open then
+		rtf.draw(rect)
 		return
 	end
 	if gen.open then
@@ -2030,6 +2044,11 @@ function widget:DebugCtf()
 	return ctf
 end
 
+-- For tests: the Reclaim the Fame page
+function widget:DebugRtf()
+	return rtf
+end
+
 -- Orders for selected units of other teams: the engine only sends orders for the own units, so the command menu and the right click are
 -- forwarded to the gadget (led|order|cmdID|options|params|ids); the own units of the selection get their order from the engine as usual
 function widget:CommandNotify(cmdID, params, options)
@@ -2054,7 +2073,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect()))
+	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect()))
 end
 
 -- Button of the column left of the team strip (V, O, I, ?) under the mouse pointer
@@ -2126,8 +2145,8 @@ local function applyHeader0(r)
 	end
 	searchFocus(false)
 	if r.kind == "top" then
-		local tdWas = td.open or ctf.open
-		td.open, ctf.open = false, false
+		local tdWas = td.open or ctf.open or rtf.open
+		td.open, ctf.open, rtf.open = false, false, false
 		if tdWas and r.value == "place" then
 			return
 		end
@@ -2136,11 +2155,12 @@ local function applyHeader0(r)
 		end
 		return
 	end
-	local tdWas, ctfWas = td.open, ctf.open
+	local tdWas, ctfWas, rtfWas = td.open, ctf.open, rtf.open
 	ctf.finish(true)
+	rtf.finish(true)
 	if r.kind ~= "create" then
 		gen.open, gen.armed, gen.drag = false, false, nil
-		td.open, ctf.open = false, false
+		td.open, ctf.open, rtf.open = false, false, false
 	end
 	uGrid:setFocus(false)
 	fGrid:setFocus(false)
@@ -2164,6 +2184,16 @@ local function applyHeader0(r)
 		armedFeature = false
 		scenarioOpen, optionsOpen = false, false
 		ctf.open = not ctfWas
+		bpGrid.scroll, uGrid.scroll = 0, 0
+		return
+	end
+	if r.kind == "rtf" then
+		bpGrid:resetEdit()
+		bpGrid:setArmed(false)
+		armedUnit = false
+		armedFeature = false
+		scenarioOpen, optionsOpen = false, false
+		rtf.open = not rtfWas
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
 	end
@@ -3446,6 +3476,10 @@ function td.press(rect, mx, my)
 			ctf.data.enabled = false -- only one of the two game modes can be on
 			say("Capture the Flag switched off: Tower Defense and Capture the Flag exclude each other.")
 		end
+		if c.enabled and rtf.data and rtf.data.enabled then
+			rtf.data.enabled = false
+			say("Reclaim the Fame switched off: only one game mode can be on.")
+		end
 	elseif k == "tdmat" then
 		td.wall = hit.value
 	elseif k == "tddraw" then
@@ -3652,15 +3686,63 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 	disarmAll = function() gen.disarmAll() end,
 	restrictStart = function() rst.start() end,
 	restrictStop = function() rst.stop() end,
-	-- Tower Defense off when Capture the Flag is switched on (only one of the two modes)
-	excludeTd = function()
+	-- Tower Defense and Reclaim the Fame off when Capture the Flag is switched on (only one game mode)
+	excludeOthers = function()
 		if td.data and td.data.enabled then
 			td.data.enabled = false
 			say("Tower Defense switched off: Tower Defense and Capture the Flag exclude each other.")
 		end
+		if rtf.data and rtf.data.enabled then
+			rtf.data.enabled = false
+			say("Reclaim the Fame switched off: only one game mode can be on.")
+		end
 	end,
 	step = function() ledStep() end,
 	led = function(msg) led(msg) end,
+	beforePlay = function() saveLevel("_beforeplay", true) end,
+	afterPlay = function()
+		local current = currentLevel
+		load_level(nil, nil, { "_beforeplay" })
+		currentLevel = current
+	end,
+})
+
+-- Reclaim the Fame page (LevelEditor/scripts/led_rtf.lua): gets the services of the widget
+rtf = VFS.Include("luaui/Include/led_rtf.lua", nil, VFS.ZIP_FIRST)({
+	Shared = Shared,
+	cfg = cfg,
+	S = function() return S end,
+	say = function(text) say(text) end,
+	canEdit = function() return canEdit() end,
+	serialize = function(v) return td.lua(v, "\t") end,
+	armedFeature = function() return armedFeature end,
+	-- arms the placing of a feature (like a click on its tile in the Features list)
+	armFeature = function(name)
+		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
+		gen.armed, gen.drag = false, nil
+		stampDrag = nil
+		area:disarm()
+		td.endPick()
+		ctf.endPick()
+		armedFeature = name
+		armedUnit = false
+		bpGrid:setArmed(false)
+		say("Feature: " .. name .. ". Left click places, right click ends, Del deletes.")
+	end,
+	disarmAll = function() gen.disarmAll() end,
+	restrictStart = function() rst.start() end,
+	restrictStop = function() rst.stop() end,
+	-- Tower Defense and Capture the Flag off when Reclaim the Fame is switched on (only one game mode)
+	excludeOthers = function()
+		if td.data and td.data.enabled then
+			td.data.enabled = false
+			say("Tower Defense switched off: only one game mode can be on.")
+		end
+		if ctf.data and ctf.data.enabled then
+			ctf.data.enabled = false
+			say("Capture the Flag switched off: only one game mode can be on.")
+		end
+	end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,
 	afterPlay = function()
 		local current = currentLevel
@@ -3787,6 +3869,9 @@ local function panelPress(mx, my, button)
 		end
 		if ctf.open then
 			return ctf.press(rect, mx, my)
+		end
+		if rtf.open then
+			return rtf.press(rect, mx, my)
 		end
 		if gen.open then
 			local hit
@@ -4311,6 +4396,9 @@ function widget:TextInput(utf8char)
 	if ctf.edit then
 		return ctf.text(utf8char)
 	end
+	if rtf.edit then
+		return rtf.text(utf8char)
+	end
 	if scEdit then
 		return scenarioText(utf8char)
 	end
@@ -4341,7 +4429,7 @@ function widget:MouseWheel(up, value)
 		td.wheel(up)
 		return true
 	end
-	if ctf.open then
+	if ctf.open or rtf.open then
 		return true
 	end
 	if optionsOpen then
@@ -4826,7 +4914,7 @@ function bpQuickSave()
 	menuMode = "bp"
 	optionsOpen = false
 	scenarioOpen = false
-	td.open, ctf.open = false, false
+	td.open, ctf.open, rtf.open = false, false, false
 	bpGrid:scrollTo(contentRect(), bpGrid.selected)
 	return true
 end
@@ -4851,6 +4939,9 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if ctf.edit then
 		return ctf.key(key)
+	end
+	if rtf.edit then
+		return rtf.key(key)
 	end
 	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt()) then
 		return true

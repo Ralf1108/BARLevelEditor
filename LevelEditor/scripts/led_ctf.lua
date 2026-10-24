@@ -3,7 +3,7 @@
 -- function that gets the host (the services of the widget) and returns the page; a file of its own because the widget is close to
 -- the limit of 200 local variables. The settings (ctf.data) are saved in their own section capture of the level file.
 --   host.Shared, host.S() (UI scale), host.say(text), host.canEdit(), host.team() (team chosen in the strip), host.serialize(table),
---   host.disarm() (ends the other modes), host.disarmAll() (ends all modes when a test starts), host.excludeTd() (switches Tower Defense off), host.restrictStart() / host.restrictStop() (the restrictions of the level), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back),
+--   host.disarm() (ends the other modes), host.disarmAll() (ends all modes when a test starts), host.excludeOthers() (switches Tower Defense and Reclaim the Fame off), host.restrictStart() / host.restrictStop() (the restrictions of the level), host.beforePlay() / host.afterPlay() (state before the test: saved and brought back),
 --   host.step() / host.led(message) (undo history of the editor gadget)
 return function(host)
 	local Shared = host.Shared
@@ -417,7 +417,7 @@ return function(host)
 			if k == "ctfon" then
 				c.enabled = not c.enabled
 				if c.enabled then
-					host.excludeTd()
+					host.excludeOthers()
 				end
 			elseif k == "ctfvisible" then
 				c.visible = not (c.visible ~= false)

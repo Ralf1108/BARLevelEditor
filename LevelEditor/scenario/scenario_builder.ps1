@@ -347,6 +347,22 @@ function Read-Capture([string]$txt) {
     return $cap
 }
 
+# Section "reclaim" of the level (written by the Level Editor): the settings of the Reclaim the Fame page. $null when the section is missing or
+# Reclaim the Fame is off. The nodes are features of the level (pilha_crystal1/2/3 in any color), not part of the section.
+function Read-Reclaim([string]$txt) {
+    $m = [regex]::Match($txt, '(?m)^\s*reclaim\s*=\s*\{')
+    if (-not $m.Success) { return $null }
+    $open = $m.Index + $m.Length - 1
+    $close = Find-CloseBrace $txt $open
+    if ($close -lt 0) { return $null }
+    $body = $txt.Substring($open + 1, $close - $open - 1)
+    $en = [regex]::Match($body, '\benabled\s*=\s*(true|false)')
+    if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
+    function Num($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(\d+)"); if ($n.Success) { return [int]$n.Groups[1].Value } else { return $default } }
+    function Flag($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(true|false)"); if ($n.Success) { return ($n.Groups[1].Value -eq 'true') } else { return $default } }
+    return @{ score = (Num 'score' 100000); rate = (Num 'rate' 100); f1 = (Num 'f1' 100); f2 = (Num 'f2' 200); f3 = (Num 'f3' 400); visible = (Flag 'visible' $true); statics = (Flag 'statics' $false) }
+}
+
 # ---------------------------------------------------------------- Read the level
 function Read-LevelFile([string]$path) {
     $txt = $BLOCK_RX.Replace([IO.File]::ReadAllText($path, $utf8), '')
@@ -387,6 +403,7 @@ function Read-LevelFile([string]$path) {
     $level.features = @($features)
     $level.td = Read-TowerDefense $txt
     $level.ctf = Read-Capture $txt
+    $level.rtf = Read-Reclaim $txt
     $level.rst = Read-Restrictions $txt
     return $level
 }
@@ -490,6 +507,17 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         # every team with a collection point must exist (a team without units is added)
         $teamsFound = @(@($teamsFound) + @($ctf.homes | ForEach-Object { $_.team }) | Sort-Object -Unique)
     }
+    $rtf = $level.rtf
+    if ($rtf) {
+        $crystals = @($level.features | Where-Object { $_.name -match '^pilha_crystal[a-z_]*[123]$' })
+        if ($crystals.Count -eq 0) {
+            Write-Host 'Note: Reclaim the Fame is on in the level, but there are no crystals (features pilha_crystal1, 2, 3): the scenario is built without it.' -ForegroundColor Yellow
+            $rtf = $null
+        } else {
+            Write-Host "Reclaim the Fame is on in the level: $($crystals.Count) crystals, $($rtf.score) points win. It is part of the scenario (against a computer opponent that does not play it: only a game of your own)." -ForegroundColor Cyan
+            if ($td -or $ctf) { throw 'Reclaim the Fame and another game mode (Tower Defense or Capture the Flag) are both on in the level: switch one of them off in the editor (only one game mode can be on).' }
+        }
+    }
     $info = "`nLevel ${base}: map $($level.map), $($level.units.Count) units, $($level.features.Count) features, teams [$($teamsFound -join ', ')]"
     if ($nGaia) { $info += ", $nGaia Gaia units" }
     Write-Host ($info + "`n")
@@ -553,7 +581,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                 @('Tech', $(if ($tierTxt) { $tierTxt } else { 'all tiers' })), @('AI behavior', $ai), @('Win condition', $WIN_TXT[$win]), @('Start metal', $metal),
                 @('Start energy', $energy), @('Grace period', $(if ($grace -gt 0) { (Format-Minutes $grace) + ' min' } else { 'none' })), @('ID', $sid),
                 @('Tower Defense', $(if ($td) { 'on: {0} waves, {1} waypoints' -f $td.waves.Count, $td.waypoints.Count } else { 'off' })),
-                @('Capture the Flag', $(if ($ctf) { 'on: {0} flag points, {1} collection points' -f $ctf.flags.Count, $ctf.homes.Count } else { 'off' })))) {
+                @('Capture the Flag', $(if ($ctf) { 'on: {0} flag points, {1} collection points' -f $ctf.flags.Count, $ctf.homes.Count } else { 'off' })),
+                @('Reclaim the Fame', $(if ($rtf) { 'on: {0} crystals, {1} points win' -f $crystals.Count, $rtf.score } else { 'off' })))) {
             $v = [string]$row[1]
             if ($v.Length -gt 90) { $v = $v.Substring(0, 87) + '...' }
             Write-Host ('  {0,-15} {1}' -f $row[0], $v)
@@ -568,8 +597,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $mapX = $level.mapX; $mapZ = $level.mapZ
     if ($grace -gt 0 -and $mapX -le 0) { throw 'The map size is missing in the level (needed for the grace period). Save the level again in the Level Editor.' }
     # Tower Defense: the enemy team only gets the waves (no AI of its own that takes them over) and the gadget decides about winning and losing
-    $aiRun = if ($td -or $ctf) { 'NullAI' } else { $ai }
-    $winRun = if ($td -or $ctf) { 'neverend' } else { $win }
+    $aiRun = if ($td -or $ctf -or $rtf) { 'NullAI' } else { $ai }
+    $winRun = if ($td -or $ctf -or $rtf) { 'neverend' } else { $win }
     $answers = [ordered]@{}
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['roles'] = $roles; $answers['tiers'] = $tiers; $answers['ai'] = $ai; $answers['win'] = $win; $answers['metal'] = $metal; $answers['energy'] = $energy; $answers['grace'] = $grace; $answers['sid'] = $sid
@@ -698,6 +727,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team that holds $($ctf.score) flags at once wins; 0 = no end)." -ForegroundColor Yellow }
     }
+    if ($rtf) {
+        # settings for the gadget rtf_game.lua (rate;score;f1;f2;f3;visible;statics); the crystals are features of the level
+        $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), $(if ($rtf.statics) { '1' } else { '0' })) -join ';')
+        $mods['rtfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Reclaim the Fame (the points decide: the first team that reaches $($rtf.score) points wins; 0 = no end)." -ForegroundColor Yellow }
+    }
     if ($rst) {
         # settings for the gadget unit_restrictions.lua (the names of the units)
         $plainR = ($rst.banned -join ',')
@@ -724,10 +759,11 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
     }
     if ($rst) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
-    if ($td -or $ctf -or $rst) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
+    if ($td -or $ctf -or $rst -or $rtf) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'pve_supply_drops_stub.lua') (Join-Path $folder 'pve_supply_drops_stub.lua') } # the stub that replaces the lootbox gadget of the game (it let enemies capture the flags)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
+    if ($rtf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'rtf_game.lua') (Join-Path $folder 'rtf_game.lua') } # the crystals are scored in this gadget (the starter builds a small extra game from it)
     if ($BundleDir) {
         Write-Host ("Temporary scenario: {0} units, {1} features, {2} KB start script." -f $units.Count, $level.features.Count, [int][math]::Floor($script.Length / 1024))
         return
@@ -744,6 +780,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$winRun]
     if ($td) { $winTxt = "Tower Defense: beat all $($td.waves.Count) waves (at most $($td.leaks) enemies may get through)" }
     if ($ctf) { $winTxt = $(if ($ctf.score -gt 0) { "Capture the Flag: the first team that holds $($ctf.score) flags at once wins" } else { 'Capture the Flag: no end' }) }
+    if ($rtf) { $winTxt = $(if ($rtf.score -gt 0) { "Reclaim the Fame: the first team that reaches $($rtf.score) points by reclaiming crystals wins" } else { 'Reclaim the Fame: no end' }) }
     $readme = New-Object Collections.ArrayList
     [void]$readme.Add($title); [void]$readme.Add('=' * $title.Length); [void]$readme.Add('')
     if ($author) { [void]$readme.Add("Author: $author"); [void]$readme.Add('') }
@@ -757,6 +794,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      '   downloads the map if needed and starts the game. Nothing in the game itself is changed.',
                      '3. The units are there right away, there is no start commander except those in the scenario.',
                      $(if ($ctf) { '   Capture the Flag: the starter also builds the small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) with the flag gadget; no official file is changed.' } else { '' }),
+                     $(if ($rtf) { '   Reclaim the Fame: the starter also builds the small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) with the gadget that scores the crystals; no official file is changed.' } else { '' }),
                      $(if ($td) { '   Tower Defense: the starter also builds a small extra game "Tower Defense Scenario" (data\games\TowerDefenseScenario.sdz) that builds on your Beyond All Reason and runs the enemy waves; no official file is changed.' } else { '' }),
                      $(if ($grace -gt 0) { 'Grace period: before the start the start position selection appears. Click into your start area (marked frame) and press Ready.' } else { '' }),
                      '', 'Several players in the same network (LAN)',

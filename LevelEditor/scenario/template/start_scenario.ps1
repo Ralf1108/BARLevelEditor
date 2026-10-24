@@ -9,7 +9,7 @@
 # the host listen on this computer only; -NoBuild keeps the extra game that the host has built (it is locked while a game runs); -WaitForHost
 # waits (up to 2 minutes) until a host listens on the port before the game is started.
 # From the start menu of the Level Editor this script runs from the editor's own folder (scenario\template) with -ScenarioDir <folder of the scenario:
-# scenario.txt, which gadgets it needs> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, unit_restrictions in scripts\, bar_rules in
+# scenario.txt, which gadgets it needs> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, rtf_game, unit_restrictions in scripts\, bar_rules in
 # ..\shared), the starter, the lobby and the briefing are always the current ones of the editor, so a scenario built earlier is never out of date. Started
 # from the unpacked package of a scenario (Start Scenario.bat) both are empty: everything comes from the package folder.
 # -Bundle (start menu key 6, "Play a level"): the scenario is a bundle in the cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>: scenario.txt and the gadgets, made from a
@@ -184,21 +184,23 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
         Write-Host 'The host started the game. Getting ready ...'
     }
 }
-# Tower Defense, Capture the Flag and restricted scenarios: the waves run in a gadget (td_waves.lua), the flags in another
-# (ctf_game.lua), the restrictions in a third (unit_restrictions.lua). The
+# Tower Defense, Capture the Flag, Reclaim the Fame and restricted scenarios: the waves run in a gadget (td_waves.lua), the flags in another
+# (ctf_game.lua), the crystals in a third (rtf_game.lua), the restrictions in a fourth (unit_restrictions.lua). The
 # official game cannot load them, so a small extra game "Tower Defense Scenario" is built on the installed official game (only the gadgets are
 # added; nothing of the official game is changed).
 $gametype = $game
 # which gadgets the scenario needs: the ones its package holds; their text: the current one of the editor (-EditorDir) or the one of the package
 $tdNeeded = Test-Path (Join-Path $pkg 'td_waves.lua')
 $ctfNeeded = Test-Path (Join-Path $pkg 'ctf_game.lua')
+$rtfNeeded = Test-Path (Join-Path $pkg 'rtf_game.lua')
 $rstNeeded = Test-Path (Join-Path $pkg 'unit_restrictions.lua')
 $gadgetDir = if ($EditorDir) { Join-Path $EditorDir 'scripts' } else { $pkg }
 $tdGadget = Join-Path $gadgetDir 'td_waves.lua'
 $ctfGadget = Join-Path $gadgetDir 'ctf_game.lua'
+$rtfGadget = Join-Path $gadgetDir 'rtf_game.lua'
 $rstGadget = Join-Path $gadgetDir 'unit_restrictions.lua'
 $lootStub = Join-Path $gadgetDir 'pve_supply_drops_stub.lua'   # Capture the Flag: replaces the lootbox gadget of the game (it let enemies capture the flags)
-if ($tdNeeded -or $ctfNeeded -or $rstNeeded) {
+if ($tdNeeded -or $ctfNeeded -or $rstNeeded -or $rtfNeeded) {
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
     $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
@@ -221,6 +223,7 @@ return {
     $files = @(, @('modinfo.lua', $modinfo))
     if ($tdNeeded) { $files += , @('luarules/gadgets/td_waves.lua', [IO.File]::ReadAllText($tdGadget)) }
     if ($ctfNeeded) { $files += , @('luarules/gadgets/ctf_game.lua', [IO.File]::ReadAllText($ctfGadget)) }
+    if ($rtfNeeded) { $files += , @('luarules/gadgets/rtf_game.lua', [IO.File]::ReadAllText($rtfGadget)) }
     if ($ctfNeeded -and (Test-Path $lootStub)) { $files += , @('luarules/gadgets/pve_supply_drops.lua', [IO.File]::ReadAllText($lootStub)) }
     if ($rstNeeded) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
     $rulesFile = if ($EditorDir) { Join-Path (Join-Path (Split-Path $EditorDir -Parent) 'shared') 'bar_rules.lua' } else { Join-Path $pkg 'bar_rules.lua' } # shared rules (packages made before this file existed carry a gadget that does not need it)
