@@ -360,7 +360,7 @@ function Read-Reclaim([string]$txt) {
     if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
     function Num($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(\d+)"); if ($n.Success) { return [int]$n.Groups[1].Value } else { return $default } }
     function Flag($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(true|false)"); if ($n.Success) { return ($n.Groups[1].Value -eq 'true') } else { return $default } }
-    return @{ score = (Num 'score' 100000); rate = (Num 'rate' 100); f1 = (Num 'f1' 100); f2 = (Num 'f2' 200); f3 = (Num 'f3' 400); visible = (Flag 'visible' $true); statics = (Flag 'statics' $false) }
+    return @{ score = (Num 'score' 100000); rate = (Num 'rate' 100); f1 = (Num 'f1' 100); f2 = (Num 'f2' 200); f3 = (Num 'f3' 400); visible = (Flag 'visible' $true); statics = (Flag 'statics' $false); ground = (Flag 'ground' $true); ships = (Flag 'ships' $true); air = (Flag 'air' $false) }
 }
 
 # ---------------------------------------------------------------- Read the level
@@ -728,8 +728,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team that holds $($ctf.score) flags at once wins; 0 = no end)." -ForegroundColor Yellow }
     }
     if ($rtf) {
-        # settings for the gadget rtf_game.lua (rate;score;f1;f2;f3;visible;statics); the crystals are features of the level
-        $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), $(if ($rtf.statics) { '1' } else { '0' })) -join ';')
+        # settings for the gadget rtf_game.lua (rate;score;f1;f2;f3;visible;cats: buildings, ground, ships, air as 0/1); the crystals are features of the level
+        $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), ($(if ($rtf.statics) { '1' } else { '0' }) + $(if ($rtf.ground) { '1' } else { '0' }) + $(if ($rtf.ships) { '1' } else { '0' }) + $(if ($rtf.air) { '1' } else { '0' }))) -join ';')
         $mods['rtfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Reclaim the Fame (the points decide: the first team that reaches $($rtf.score) points wins; 0 = no end)." -ForegroundColor Yellow }
     }

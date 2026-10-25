@@ -5,12 +5,13 @@
 -- this gadget, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "rtf|start|<payload>" (stop: "rtf|stop"), or from the game option
 -- rtfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
---   rate;score;f1;f2;f3;visible;statics
+--   rate;score;f1;f2;f3;visible;cats
 --   rate    = percent of the basic rate (100 = 1 point per second for every 100 build power), 1 to 10000
 --   score   = points an ally team needs to win (0 = never ends)
 --   f1..f3  = factor in percent of a small (pilha_crystal1), medium (2) and large (3) crystal: the digit at the end of the name of the feature
 --   visible = 1 (default) | 0: the crystals are drawn on the minimap and seen on the whole map, also without radar or a unit in sight
---   statics = 0 (default) | 1: stationary builders (nano turrets) also earn points; 0: only mobile construction units
+--   cats    = four digits 0 | 1 for the kinds of builder that earn points: buildings (nano turrets), ground (bots, vehicles, hovercraft, amphibious),
+--             ships (surface ships and submarines), air (builder aircraft, seaplanes); default "0110": ground and ships
 -- Every feature of the map whose name is pilha_crystal[_color]<1|2|3> is a node (those placed by the editor, but also those of the map).
 -- State for the display: game rules parameters rtfState ("", "running", "won by team N"), rtfScore<ally>, rtfRate<ally> (points per second now),
 -- rtfTarget, rtfTeams (ally team ids), rtfOut (lost), rtfNodes ("x,z,size,factor in percent/..."), rtfVisible (1/0).
@@ -26,6 +27,7 @@ function gadget:GetInfo()
 	}
 end
 
+local CATEGORIES = { "static", "ground", "ship", "air" } -- the order of the digits of cats
 local REACH = 130 -- reclaim range of an ordinary construction unit (Elmo): the ring around a node reaches that far from its edge
 
 -- 1, 2 or 3 for the name of a crystal feature; nil for every other feature
@@ -181,10 +183,15 @@ local function parse(payload)
 	local function pct(v, default)
 		return math.max(0, math.min(100000, tonumber(v) or default)) / 100
 	end
-	return {
+	local cfg = {
 		rate = math.max(1, math.min(10000, tonumber(f[1]) or 100)), score = math.max(0, tonumber(f[2]) or 0),
-		factor = { pct(f[3], 100), pct(f[4], 200), pct(f[5], 400) }, visible = f[6] ~= "0", statics = f[7] == "1",
+		factor = { pct(f[3], 100), pct(f[4], 200), pct(f[5], 400) }, visible = f[6] ~= "0", cats = {},
 	}
+	local digits = tostring(f[7] or "") ~= "" and f[7] or "0110"
+	for i, name in ipairs(CATEGORIES) do
+		cfg.cats[name] = digits:sub(i, i) == "1"
+	end
+	return cfg
 end
 
 local function allyOf(team)
@@ -316,13 +323,29 @@ local function start(cfg)
 		cfg.score > 0 and (", " .. cfg.score .. " points win") or "", total % 2 == 0 and ", note: an even number of crystals lets both sides farm in peace" or ""))
 end
 
+-- The kind of a builder: "static" (speed 0: nano turrets), "air" (canFly: builder aircraft and seaplanes), "ship" (movement class boat* or uboat*:
+-- surface ships and submarines), otherwise "ground" (bots, vehicles, hovercraft, amphibious vehicles)
+local function category(ud)
+	if (ud.speed or 0) <= 0 then
+		return "static"
+	end
+	if ud.canFly then
+		return "air"
+	end
+	local md = ud.moveDef
+	if md and md.name and (md.name:find("^boat") or md.name:find("^uboat")) then
+		return "ship"
+	end
+	return "ground"
+end
+
 -- Points per frame of a construction unit at a node with that factor: build power / 100 per second times the rate; nil if it does not count
 local function pointsPerFrame(unitID, factor)
 	local ud = UnitDefs[Spring.GetUnitDefID(unitID)]
 	if not ud or Spring.GetUnitIsDead(unitID) then
 		return nil
 	end
-	if (ud.speed or 0) <= 0 and not g.cfg.statics then
+	if not g.cfg.cats[category(ud)] then
 		return nil
 	end
 	return (ud.buildSpeed or 0) / 100 * (g.cfg.rate / 100) * factor / FPS

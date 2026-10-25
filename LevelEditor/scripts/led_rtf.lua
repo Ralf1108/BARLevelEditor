@@ -12,7 +12,7 @@ return function(host)
 	local LIMITS = { score = { 0, 9999999 }, rate = { 1, 10000 }, f1 = { 0, 100000 }, f2 = { 0, 100000 }, f3 = { 0, 100000 } }
 
 	function rtf.new()
-		return { enabled = false, score = 100000, rate = 100, f1 = 100, f2 = 200, f3 = 400, visible = true, statics = false }
+		return { enabled = false, score = 100000, rate = 100, f1 = 100, f2 = 200, f3 = 400, visible = true, statics = false, ground = true, ships = true, air = false }
 	end
 	rtf.DEFAULT = rtf.new()
 
@@ -140,8 +140,17 @@ return function(host)
 		line({ field("rate", "100 = a construction unit that reclaims a crystal earns 1 point per second for every 100 build power. The factor of the crystal comes on top. Click, type a number, Enter accepts") })
 		line({ box("rtfvisible", c.visible ~= false, "Crystals always visible on the map",
 			"On: the crystals are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees.") })
-		line({ box("rtfstatics", c.statics == true, "Nano turrets score too",
-			"On: stationary builders (nano turrets) earn points as well. Off (default): only mobile construction units, so a ring of cheap nano turrets cannot farm a crystal.") })
+		head("Builders that score")
+		line({
+			{ kind = "rtfcat", value = "statics", label = (c.statics and "[x] " or "[ ] ") .. "Buildings", active = c.statics, fs = 19 * S,
+				tip = "Buildings that can reclaim (nano turrets) earn points. Off by default: a ring of cheap nano turrets would farm a crystal without any builder to hunt." },
+			{ kind = "rtfcat", value = "ground", label = (c.ground and "[x] " or "[ ] ") .. "Ground", active = c.ground, fs = 19 * S,
+				tip = "Ground builders earn points: bots, vehicles, hovercraft and amphibious vehicles (on by default)." },
+			{ kind = "rtfcat", value = "ships", label = (c.ships and "[x] " or "[ ] ") .. "Ships", active = c.ships, fs = 19 * S,
+				tip = "Ships and submarines that build earn points (on by default)." },
+			{ kind = "rtfcat", value = "air", label = (c.air and "[x] " or "[ ] ") .. "Air", active = c.air, fs = 19 * S,
+				tip = "Builder aircraft and seaplanes earn points. Off by default: they reach a crystal from anywhere and ignore the space around it." },
+		})
 		y = y - 6 * S
 		-- very bottom: the button that starts the test (red message above it: what is missing)
 		local state = Spring.GetGameRulesParam("rtfState") or ""
@@ -235,7 +244,8 @@ return function(host)
 		if n[1] + n[2] + n[3] == 0 then
 			return nil, "Place at least one crystal first."
 		end
-		return table.concat({ c.rate, c.score, c.f1, c.f2, c.f3, c.visible ~= false and "1" or "0", c.statics and "1" or "0" }, ";")
+		local cats = (c.statics and "1" or "0") .. (c.ground and "1" or "0") .. (c.ships and "1" or "0") .. (c.air and "1" or "0")
+		return table.concat({ c.rate, c.score, c.f1, c.f2, c.f3, c.visible ~= false and "1" or "0", cats }, ";")
 	end
 
 	function rtf.press(rect, mx, my)
@@ -272,8 +282,8 @@ return function(host)
 				end
 			elseif k == "rtfvisible" then
 				c.visible = not (c.visible ~= false)
-			elseif k == "rtfstatics" then
-				c.statics = not c.statics
+			elseif k == "rtfcat" then
+				c[hit.value] = not c[hit.value]
 			end
 		end
 		return true
