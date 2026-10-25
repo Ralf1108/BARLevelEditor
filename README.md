@@ -10,9 +10,7 @@ A level editor for [Beyond All Reason](https://www.beyondallreason.info/) (BAR).
 - [Quick start](#quick-start)
 - [Features](#features)
 - [Scenario builder](#scenario-builder)
-- [Tower Defense](#tower-defense)
-- [Capture the Flag](#capture-the-flag)
-- [Reclaim the Fame](#reclaim-the-fame)
+- [Game modes](#game-modes)
 - [LAN Play](#lan-play)
 - [BluePrinter (for the official game)](#blueprinter-for-the-official-game)
 - [Experimental: area attacks](#experimental-area-attacks-xl-xr-xc)
@@ -51,9 +49,9 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 | Maze | **G → Maze**, choose the material and the corridor width, press *Rectangle* or *Circle*, drag on the map. |
 | Select, order | Click or drag a rectangle: units of **every team** are selected like your own (the editor switches on the god mode for it), the command menu appears and the right click orders them (move, attack ...). A left click on the ground clears the selection. |
 | Forbid units | The small **X** on a unit picture, a faction, a group or a tech button (Place menu, Units) forbids it for the player in the game (Start test, scenario). The editor itself can always place everything. |
-| Tower Defense | **TD** → build walls and corridors, set **Spawn**, **Waypoint**s and **Goal**, define waves and restrictions → **Start test**. See [Tower Defense](#tower-defense). |
-| Capture the Flag | **CF** → choose a team in the strip at the left, place its **collection points** and **flag points**, set the income → **Start test**. See [Capture the Flag](#capture-the-flag). |
-| Reclaim the Fame | **RF** → place **crystals** with the tiles at the bottom of the page, set the points factors and the score limit → **Start test**. See [Reclaim the Fame](#reclaim-the-fame). |
+| Tower Defense | **TD** → build walls and corridors, set **Spawn**, **Waypoint**s and **Goal**, define waves and restrictions → **Start test**. See [Tower Defense](LevelEditor/game-modes/tower-defense.md). |
+| Capture the Flag | **CF** → choose a team in the strip at the left, place its **collection points** and **flag points**, set the income → **Start test**. See [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md). |
+| Reclaim the Fame | **RF** → place **crystals** with the tiles at the bottom of the page, set the points factors and the score limit → **Start test**. See [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md). |
 | Move | **Alt + drag** on a selected unit moves the selection; the arrow keys move it by one grid step. |
 | Delete | **Del** on the selection or under the mouse; **DL / DR / DC** delete along a line, in a rectangle or in a circle. |
 | Copy, cut, paste | **Ctrl+C**, **Ctrl+X**, **Ctrl+V** (pastes at the mouse). |
@@ -100,49 +98,15 @@ A level you built can become a **scenario** that others play with their own, unm
 
 Details are in the [scenario builder readme](LevelEditor/scenario/README.md).
 
-## Tower Defense
+## Game modes
 
-Waves of enemy land units walk from a spawn point through waypoints to a goal; the player builds towers next to the route. Switch it on with the **TD** button and build the level on that page:
+A level can be one of three game modes (they exclude each other). Each has its own page in the editor, a test run, and becomes a scenario that others play with their own BAR. Click a picture for the full description with all settings:
 
-![Tower Defense page](docs/level-editor-tower-defense.jpg)
-
-- **Walls and corridors:** single wall pieces (*Single*: click or drag) or a corridor with walls on both sides, along clicked points (*Line*) or freehand (*Free*), made of dragon teeth or walls, 32 to 192 Elmo wide (Elmo is BAR's unit of length; a building square is 16 Elmo). Corners are closed. The pieces are **indestructible**. What stands in the way is overwritten while **W** is on.
-- **Route:** *Spawn*, *Goal* and any number of *Waypoints*. A waypoint on the drawn line is inserted there, Alt + drag moves a waypoint, the spawn or the goal (like units), Del removes it. Everything can be undone with Ctrl+Z.
-- **Waves:** per wave the factions, tech levels and types (vehicles, bots, hovercraft), count, gap in seconds and strength in percent. Every kill pays the unit's metal and energy. How many enemies may get through is set too: more and the level is lost, all waves beaten and it is won.
-- **Restrictions:** what the player may build. Towers always; **Economy** (extractors, power plants, storage) and **Fog of war** (radars) can be switched on or off. A red X on a tower forbids it, a red X on T1, T2 or T3 forbids every unit of that tech level. The same red X marks are in the Place menu on every unit picture and on the faction, group and tech buttons: one list of what the player may not build, for the whole level and every mode. The player has no commander, the builders come from the level.
-- **Start test** runs the waves in the editor; **Stop** brings the level back to the state before.
-- **As a scenario:** a level with Tower Defense switched on becomes a Tower Defense scenario with everything above (see [Scenario builder](#scenario-builder)); the recipient's starter builds a small extra game that only adds the wave script (and the restrictions, if the level has any).
-
-Details are in the [Level Editor manual](LevelEditor/README.md#tower-defense) and the [specification](LevelEditor/SPECIFICATION.md).
-
-## Capture the Flag
-
-Flags (the silver pods of the scavengers) lie on the map; units pick them up by getting close, carry them to a collection point of their team and earn metal for it. Switch it on with the **CF** button (it excludes Tower Defense: switching one on switches the other off):
-
-![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)
-
-- **Places:** the buttons at the top of the page place **collection points** and **flag points** for the team chosen in the strip at the left; any number of both, per team. A flag point of a team is a flag of that team (the other teams take it); a flag point placed for **Gaia (G)** is neutral: every team may take it. **Alt + drag** moves a point (like units), Ctrl+Z undoes it.
-- **Income:** metal *per second* for every flag that lies at a collection point of a team. A delivered flag stays there and other teams can steal it; a carried flag pays nothing. There is no one-time reward and no experience.
-- **Carrier:** the unit that carries a flag cannot shoot and is slowed down to a top speed you set (default 50 Elmo per second; a scout would fetch the flags in no time otherwise; 0 = no limit; slower units keep their speed); if it is destroyed (own or enemy) the flag is dropped where it died and stays there until a unit takes it (or goes back to its flag point after a time you can set).
-- **Win and loss:** the first team that holds the set number of flags at the same time wins. A team whose flags all lie at the collection points of others has lost: its units blow up.
-- Capture radius, income, the flags that win and the time after which a dropped flag goes back are settings of the page; the flags can be shown on the whole map and the minimap (team colors, grey = neutral).
-- **Start test** runs it in the editor; as a scenario it is packed with the level. For human against human; computer opponents do not play it.
-
-Details are in the [Level Editor manual](LevelEditor/README.md#capture-the-flag) and the [specification](LevelEditor/SPECIFICATION.md).
-
-## Reclaim the Fame
-
-**Crystals** stand on the map. A construction unit that is reclaiming a crystal earns **points for its alliance**: 1 point per second for every 100 build power (a 300 build power unit reclaiming a small crystal for 10 seconds = 30 points, a large crystal pays four times as much by default). The crystal is never used up and gives no resources. The first alliance that reaches the score limit wins. So everyone builds many construction units to farm the crystals, and the builders are fragile: defend yours, scout where the enemy farms, raid his builders. Switch it on with the **RF** button (it excludes Tower Defense and Capture the Flag):
-
-![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)
-
-- **Crystals:** the **tiles at the bottom of the page** place them (click a tile, click the map): small, medium and large crystals in eleven colors, filtered with **All / Small / Medium / Large**. They are ordinary features, so the Place menu has them too (Features → **Crystals**). Every crystal on the map counts, also those the map brings itself. The page counts what is on the map and warns about an even number (use an odd number, ideally in the middle third of the map, so that one side has to fight for the middle).
-- **Points:** linear in build power: a unit earns build power / 100 points per second, times the **rate** (page, default 100 %) and the **factor** of the crystal (default 100 % small, 200 % medium, 400 % large; the number over a crystal in the game is its factor). Only a unit that is **actively reclaiming** scores. Which kinds of builder score is a setting (**Builders that score**): **Buildings** (nano turrets; off by default, a ring of cheap nano turrets would farm a crystal without any builder to hunt), **Ground** (bots, vehicles, hovercraft, amphibious vehicles, commanders; on), **Ships** (surface ships and submarines; on) and **Air** (builder aircraft and seaplanes; **off by default**: they reach a crystal from anywhere and ignore the space around it, which makes the game dull). The points of all teams of an alliance are added.
-- **Win:** the first alliance that reaches the **score limit** (default 100000, 0 = no end) wins, the units of all other alliances blow up.
-- **In the game:** a gold ring around every crystal shows roughly from where a builder reaches it; the score and the points per second of every team are at the top of the screen and gold diamonds mark the crystals on the minimap (on the whole map, or only where you see them: box).
-- **Start test** runs it in the editor; as a scenario it is packed with the level. For human against human; computer opponents do not play it.
-
-Details are in the [Level Editor manual](LevelEditor/README.md#reclaim-the-fame) and the [specification](LevelEditor/SPECIFICATION.md).
+| [Tower Defense](LevelEditor/game-modes/tower-defense.md) | [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md) | [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md) |
+|---|---|---|
+| [![Tower Defense page](docs/level-editor-tower-defense.jpg)](LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)](LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)](LevelEditor/game-modes/reclaim-the-fame.md) |
+| Waves of enemy land units walk along a route you build to a goal, and the player builds towers next to it. Rules for what may be built, a test run in the editor and export as a scenario. | Flags lie on the map; units carry them to the collection point of their team and earn metal for it. For human against human. | Crystals on the map pay points to the construction units that reclaim them; the first team at the score limit wins. Defend your builders, hunt the enemy's. For human against human. |
+| **Button TD** | **Button CF** | **Button RF** |
 
 ## LAN Play
 
@@ -187,6 +151,7 @@ Select the units, press a button and drag the shape on the map. A preview shows 
 ## Documentation
 
 - [Level Editor](LevelEditor/README.md) and its [specification](LevelEditor/SPECIFICATION.md)
+- Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
 - [Scenario builder](LevelEditor/scenario/README.md)
 - [LAN Play](LevelEditor/lan_lobby/README.md)
 - [BluePrinter](BluePrinter/README.md) and its [specification](BluePrinter/SPECIFICATION.md)
