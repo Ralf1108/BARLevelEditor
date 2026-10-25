@@ -757,6 +757,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
         Copy-Item (Join-Path $TEMPLATE 'lobby.ps1') $folder
         Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
+        Copy-Item (Join-Path $TEMPLATE 'shared_start.lua') $folder
     }
     if ($rst) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
     if ($td -or $ctf -or $rst -or $rtf) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor

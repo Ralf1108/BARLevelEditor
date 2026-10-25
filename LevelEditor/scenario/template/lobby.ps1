@@ -24,12 +24,17 @@
 # Keys of the host: Tab / Shift+Tab or Left / Right = next box, Up / Down = player in the box, Enter = pick the player up (then Up / Down /
 # Left / Right move him into the neighbouring box, Enter drops him, Esc brings him back), Enter on "Start game" (the last stop) or F5 = start,
 # Esc twice = cancel.
+# Player numbers: a box is one player of the game (one team of the scenario) and the boxes of one ally team are its players 1, 2, 3 ...; every human who
+# joins gets a box of his own if one is free. N on a human puts him into the next player of his ally team (after the last one the first again), so the humans with the
+# same number play ONE player together (all of them can give orders to its units, they share its resources). Marked in the lobby: "player 2" after
+# the name, "together with Ben" when a box holds more than one human. The game of such a team does not start by itself (the engine waits for a
+# second "ready" that never comes): the little widget shared_start.lua starts it from the host's game (see there).
 
 # The version of the files that decide how a game runs: the starter, the lobby, the briefing and the gadgets. Looked for by file name in the given
 # folders (the editor: scripts, scenario\template, shared; the unpacked package of a scenario: one folder). The hash is made of the names and the texts
 # (without carriage returns, so the line endings of git do not matter); the date (UTC) is the newest change of these files and only says who is
 # probably newer: the hash decides whether two computers are the same. Returns Hash (hex), Date (yyyyMMddHHmmss), Count and Short (for the screen).
-$script:PlayVersionFiles = @('bar_rules.lua', 'ctf_game.lua', 'lobby.ps1', 'player_mapping.ps1', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario_briefing.lua', 'start_scenario.ps1', 'td_waves.lua', 'unit_restrictions.lua')
+$script:PlayVersionFiles = @('bar_rules.lua', 'ctf_game.lua', 'lobby.ps1', 'player_mapping.ps1', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario_briefing.lua', 'shared_start.lua', 'start_scenario.ps1', 'td_waves.lua', 'unit_restrictions.lua')
 function Get-PlayVersion([string[]]$dirs) {
     $bytes = New-Object System.Collections.Generic.List[byte]
     $newest = [DateTime]::MinValue; $count = 0
@@ -504,6 +509,34 @@ function New-LobbyState($teamInfo, [string]$hostName, [int]$port, $version = $nu
 
 function Get-BoxPlayers($st, [int]$box) { return @($st.Players | Where-Object { $_.Box -eq $box }) }
 
+# The ally team of a box (the text of a team is "Team 1: Cortex, ally team 1"); without that text the box is its own ally team
+function Get-BoxAlly($st, [int]$box) {
+    $m = [regex]::Match([string]$st.Teams[$box], 'ally team (\d+)')
+    if ($m.Success) { return [int]$m.Groups[1].Value }
+    return $box
+}
+
+# The boxes (= the players of the game) of the ally team that holds this box, in order
+function Get-AllyBoxes($st, [int]$box) {
+    $a = Get-BoxAlly $st $box
+    return @(0..($st.Teams.Count - 1) | Where-Object { (Get-BoxAlly $st $_) -eq $a })
+}
+
+# The number of a box inside its ally team: 1, 2, 3 ...
+function Get-SlotNumber($st, [int]$box) { return (@(Get-AllyBoxes $st $box).IndexOf($box)) + 1 }
+
+# A human gets the next player number of his ally team (after the last one the first again); with the number of another human he plays that player together with him
+function Step-LobbyNumber($st, $p) {
+    $boxes = @(Get-AllyBoxes $st $p.Box)
+    if ($boxes.Count -lt 2) { $st.Msg = 'This team has only one player: everybody in it plays that player together.'; return }
+    $nb = $boxes[($boxes.IndexOf($p.Box) + 1) % $boxes.Count]
+    $p.Box = $nb
+    $st.Focus = $nb
+    $st.Cursor = [Math]::Max(0, @(Get-BoxPlayers $st $nb).IndexOf($p))
+    $with = @(Get-BoxPlayers $st $nb | Where-Object { $_ -ne $p } | ForEach-Object { $_.Name })
+    $st.Msg = if ($with.Count -gt 0) { '{0} is player {1} now and plays together with {2}.' -f $p.Name, (Get-SlotNumber $st $nb), ($with -join ', ') } else { '{0} is player {1} now (alone).' -f $p.Name, (Get-SlotNumber $st $nb) }
+}
+
 # The team of a new player: the one of the last mapping (by name) if nobody is there, otherwise the first team without a player, otherwise team 0
 function Add-LobbyPlayer($st, [string]$name, $client, [string]$verState = 'same', [string]$data = 'ready', [string]$map = 'ready') {
     $box = -1
@@ -590,6 +623,12 @@ function Invoke-LobbyKey($st, $k) {
             }
         }
         'F5' { $why = Test-LobbyStart $st; if ($why) { $st.Msg = $why } else { $st.Done = 'start' } }
+        'N' {
+            if ($st.Focus -lt $startBox -and $n -gt 0) {
+                $who = @(Get-BoxPlayers $st $st.Focus)[[Math]::Min($st.Cursor, $n - 1)]
+                Step-LobbyNumber $st $who
+            }
+        }
         'Escape' { $st.ConfirmCancel = $true; $st.Msg = 'Press Esc again to cancel the lobby (any other key goes on).' }
     }
 }
@@ -608,12 +647,14 @@ function Get-LobbyLines($st) {
     if ($st.Version) { Add-L ('Version {0} of {1} (UTC)' -f $st.Version.Short, (Format-PlayDate $st.Version.Date)) 2 } else { Add-L '' 0 }
     Add-L '' 0
     for ($b = 0; $b -lt $t; $b++) {
-        Add-L ('{0} {1}' -f $(if ($st.Focus -eq $b) { '>' } else { ' ' }), $st.Teams[$b]) $(if ($st.Focus -eq $b) { 3 } else { 1 })
+        $slots = @(Get-AllyBoxes $st $b).Count
+        Add-L ('{0} {1}{2}' -f $(if ($st.Focus -eq $b) { '>' } else { ' ' }), $st.Teams[$b], $(if ($slots -gt 1) { '   (player {0} of {1} in its team)' -f (Get-SlotNumber $st $b), $slots } else { '' })) $(if ($st.Focus -eq $b) { 3 } else { 1 })
         $pl = @(Get-BoxPlayers $st $b)
         if ($pl.Count -eq 0) { Add-L '      (empty)' 2 }
         for ($i = 0; $i -lt $pl.Count; $i++) {
             $p = $pl[$i]
-            $txt = '    ' + $p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })
+            $txt = '    ' + ($p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })).PadRight(24) + ('player {0}' -f (Get-SlotNumber $st $b))
+            if ($pl.Count -gt 1) { $txt += '   + together with ' + ((@($pl | Where-Object { $_ -ne $p } | ForEach-Object { $_.Name })) -join ', ') }
             if ($p.VerState -ne 'same') { $txt += '   (files ' + $(switch ($p.VerState) { 'older' { 'older than yours: needs an update' } 'newer' { 'newer than yours' } default { 'differ from yours' } }) + ')' }
             if ($p.Data -eq 'ready' -and $p.Map -ne 'ready') { $txt += $(if ($p.Map -eq 'loading') { "   (loading the map from you: $($p.MapPct) %)" } else { '   (getting the map)' }) }
             if ($p.Data -ne 'ready') { $txt += $(if ($p.Data -eq 'loading') { "   (loading the scenario: $($p.Pct) %)" } else { '   (scenario not loaded yet)' }) }
@@ -629,7 +670,7 @@ function Get-LobbyLines($st) {
     Add-L '' 0
     if ($st.Msg) { Add-L $st.Msg 6 }
     if ($st.Info) { Add-L $st.Info 2 }
-    Add-L 'Tab/Left/Right = box, Up/Down = player, Enter = pick up/drop, F5 = start, Esc x2 = cancel' 2
+    Add-L 'Tab/Left/Right = box, Up/Down = player, Enter = pick up/drop, N = next player number (same number = one player together), F5 = start, Esc x2 = cancel' 2
     return [pscustomobject]@{ Lines = @($lines); Kinds = @($kinds) }
 }
 

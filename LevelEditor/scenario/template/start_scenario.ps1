@@ -321,6 +321,13 @@ if (Test-Path $wsrc) {
     New-Item -ItemType Directory -Force $wdir | Out-Null
     Copy-Item $wsrc (Join-Path $wdir 'scenario_briefing.lua') -Force
 }
+# Start of a game in which two humans control one team (the engine does not start such a game by itself; only the host's copy acts)
+$ssrc = Join-Path $here 'shared_start.lua'
+if (Test-Path $ssrc) {
+    $wdir = Join-Path $data 'LuaUI\Widgets'
+    New-Item -ItemType Directory -Force $wdir | Out-Null
+    Copy-Item $ssrc (Join-Path $wdir 'shared_start.lua') -Force
+}
 
 $spring = Join-Path $engineDir.FullName 'spring.exe'
 # maps that a host sent are in an extra data folder of the cache (the engine reads maps\ of every folder of SPRING_DATADIR; the folder of the player stays as it is)

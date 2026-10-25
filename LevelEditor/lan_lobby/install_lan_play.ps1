@@ -1,5 +1,6 @@
 # Installs (or removes) LAN Play for the lobby of Beyond All Reason.
-#   1. copies lan_lobby.lua to <data>\LuaMenu\Widgets\ (only when it differs)
+#   1. copies lan_lobby.lua to <data>\LuaMenu\Widgets\ (only when it differs) and the little game widget shared_start.lua (a game in which two humans
+#      control one team does not start by itself; the host's copy starts it) to <data>\LuaUI\Widgets\
 #   2. sets ["Chili lobby"].loadLocalWidgets = true in <data>\LuaMenu\Config\IGL_data.lua (only when it is not set; the file is saved next to itself first)
 # The widget only adds the entry "LAN Play" to the main menu; it changes nothing as long as LAN Play is not used (the normal Multiplayer works as before).
 # Run by install_editor.ps1 (the Level Editor setup). The game and the launcher must not run: the lobby writes IGL_data.lua when it ends and would
@@ -25,6 +26,8 @@ $widgetDir = Join-Path $data 'LuaMenu\Widgets'
 $cfgDir = Join-Path $data 'LuaMenu\Config'
 $cfg = Join-Path $cfgDir 'IGL_data.lua'
 $widget = Join-Path $widgetDir 'lan_lobby.lua'
+$gameWidgetDir = Join-Path $data 'LuaUI\Widgets'
+$gameWidget = Join-Path $gameWidgetDir 'shared_start.lua'
 New-Item -ItemType Directory -Force $widgetDir, $cfgDir | Out-Null
 
 function Set-LocalWidgets([bool]$on) {
@@ -46,7 +49,7 @@ function Set-LocalWidgets([bool]$on) {
 }
 
 if ($Uninstall) {
-    foreach ($f in $widget) { if (Test-Path $f) { Remove-Item $f -Force } }
+    foreach ($f in @($widget, $gameWidget)) { if (Test-Path $f) { Remove-Item $f -Force } }
     Set-LocalWidgets $false
     Write-Host "LAN Play removed from $data (loadLocalWidgets = false)." -ForegroundColor Green
     exit 0
@@ -54,6 +57,11 @@ if ($Uninstall) {
 $src = Join-Path $PSScriptRoot 'lan_lobby.lua'
 if (-not (Test-Path $src)) { Fail "lan_lobby.lua is not next to this script ($PSScriptRoot)." }
 if (-not (Test-Path $widget) -or (Get-FileHash $src).Hash -ne (Get-FileHash $widget).Hash) { Copy-Item $src $widget -Force; Write-Host 'Widget copied.' }
+$gsrc = Join-Path (Join-Path (Split-Path $PSScriptRoot -Parent) 'scenario\template') 'shared_start.lua'
+if (Test-Path $gsrc) {
+    New-Item -ItemType Directory -Force $gameWidgetDir | Out-Null
+    if (-not (Test-Path $gameWidget) -or (Get-FileHash $gsrc).Hash -ne (Get-FileHash $gameWidget).Hash) { Copy-Item $gsrc $gameWidget -Force; Write-Host 'Game widget shared_start.lua copied.' }
+}
 Set-LocalWidgets $true
 Write-Host "LAN Play installed in $data." -ForegroundColor Green
 Write-Host 'Start the game as usual: the main menu has the entry "LAN Play" below Multiplayer.'

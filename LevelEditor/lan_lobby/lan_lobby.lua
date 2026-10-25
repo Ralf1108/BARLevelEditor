@@ -93,6 +93,65 @@ local function battleUsers()
 	return t
 end
 
+-- SHARE-BEGIN (pure functions, no lobby needed; the test of the Level Editor loads this part by itself)
+-- Player numbers: inside an ally team every human has a number 1 .. n (n = the humans of that ally team). By default everybody has a number of his
+-- own; the host can give several humans the same number: they play ONE player together (one team of the start script, all of them can give orders to
+-- its units and share its resources). humans: list of { name = , ally = , slot = number the host chose or nil }, in the order of joining; returns name -> number.
+local function effectiveSlots(humans)
+	local byAlly, out = {}, {}
+	for _, h in ipairs(humans) do
+		byAlly[h.ally] = byAlly[h.ally] or {}
+		table.insert(byAlly[h.ally], h)
+	end
+	for _, list in pairs(byAlly) do
+		local n = #list
+		for i, h in ipairs(list) do
+			-- the number the host chose (a number above the count of the team is not valid any more), otherwise the place in the team: so a human who
+			-- chose the number of another one plays together with him, and the other one keeps his number
+			out[h.name] = (h.slot and h.slot >= 1 and h.slot <= n) and h.slot or i
+		end
+	end
+	return out
+end
+
+-- the number after this one inside a team of n humans (1 .. n, then 1 again)
+local function nextSlot(current, n)
+	return (current % math.max(1, n)) + 1
+end
+
+-- the humans who play one player together: list of { ally = , number = , names = { ... } } (only groups of two or more), ordered by ally and number
+local function sharedGroups(humans, eff)
+	local groups, order = {}, {}
+	for _, h in ipairs(humans) do
+		local key = h.ally .. ":" .. tostring(eff[h.name])
+		if not groups[key] then
+			groups[key] = { ally = h.ally, number = eff[h.name], names = {} }
+			order[#order + 1] = groups[key]
+		end
+		table.insert(groups[key].names, h.name)
+	end
+	local out = {}
+	for _, g in ipairs(order) do if #g.names > 1 then out[#out + 1] = g end end
+	table.sort(out, function(a, b) if a.ally ~= b.ally then return a.ally < b.ally end return a.number < b.number end)
+	return out
+end
+-- SHARE-END
+
+-- the humans (not spectators) of the battle with their ally team and the number the host gave them
+local function humanList(users)
+	local l = lobby()
+	local out = {}
+	for _, c in ipairs(users or battleUsers()) do
+		local bs = c.battleStatus and l and l:ParseBattleStatus(c.battleStatus)
+		if bs and not bs.isSpectator then out[#out + 1] = { name = c.name, ally = bs.allyNumber, slot = c.slot } end
+	end
+	return out
+end
+
+local function groupText(g)
+	return table.concat(g.names, " + ")
+end
+
 local function spectatorCount()
 	local n = 1 -- the autohost
 	local l = lobby()
@@ -190,6 +249,10 @@ local function startGameNow()
 	if S.battle.running then return end
 	S.battle.running = true
 	log("the autohost starts the game")
+	local humans = humanList()
+	local parts = {}
+	for _, g in ipairs(sharedGroups(humans, effectiveSlots(humans))) do parts[#parts + 1] = groupText(g) end
+	if #parts > 0 and not S.battle.scenario then say("Playing together as one player: " .. table.concat(parts, "; ")) end
 	say("Starting the game ...")
 	toAll("CLIENTSTATUS " .. HOSTNAME .. " 65") -- bot + in game: every lobby in the battle connects
 end
@@ -381,14 +444,27 @@ buildScript = function(myName)
 	local allyIndex = {}
 	local function ally(a) if allyIndex[a] == nil then local n = 0; for _ in pairs(allyIndex) do n = n + 1 end; allyIndex[a] = n end; return allyIndex[a] end
 	local pi = 0
+	local eff = effectiveSlots(humanList())
+	-- the start positions are chosen in the game (2) unless humans play one player together: the game of such a team is started by the little widget
+	-- shared_start.lua as soon as everybody has loaded, nobody could place a start position before that, so the positions of the map are used (0)
+	local startPos = (#sharedGroups(humanList(), eff) > 0) and 0 or 2
+	local groupTeam = {} -- "ally:number" -> the team of the start script (the humans with the same number play it together)
 	local function rgb(col) col = tonumber(col) or 0; return string.format("%.4f %.4f %.4f", (col % 256) / 255, (math.floor(col / 256) % 256) / 255, (math.floor(col / 65536) % 256) / 255) end
 	local function sideName(s) local sd = cf and cf:GetSideById(s); return (sd and sd.name) or "Armada" end
-	for _, c in ipairs(battleUsers()) do
+	-- the host is player 0 (the little widget shared_start.lua acts only in the game of player 0)
+	local users = {}
+	for _, c in ipairs(battleUsers()) do if c.name == myName then users[#users + 1] = c end end
+	for _, c in ipairs(battleUsers()) do if c.name ~= myName then users[#users + 1] = c end end
+	for _, c in ipairs(users) do
 		local bs = c.battleStatus and l:ParseBattleStatus(c.battleStatus) or { isSpectator = true }
 		local p = { name = c.name, password = c.scriptPassword, spec = bs.isSpectator, index = pi }
 		if not bs.isSpectator then
-			p.team = #teams
-			teams[#teams + 1] = { leader = pi, ally = ally(bs.allyNumber), color = rgb(c.teamColor), side = sideName(bs.side), handicap = bs.handicap or 0 }
+			local key = tostring(bs.allyNumber) .. ":" .. tostring(eff[c.name])
+			if groupTeam[key] == nil then
+				groupTeam[key] = #teams
+				teams[#teams + 1] = { leader = pi, ally = ally(bs.allyNumber), color = rgb(c.teamColor), side = sideName(bs.side), handicap = bs.handicap or 0 }
+			end
+			p.team = groupTeam[key]
 		end
 		players[#players + 1] = p; pi = pi + 1
 	end
@@ -399,7 +475,7 @@ buildScript = function(myName)
 		teams[#teams + 1] = { leader = 0, ally = ally(bs.allyNumber), color = rgb(bot.color), side = sideName(bs.side), handicap = bs.handicap or 0 }
 	end
 	local t = { "[GAME]\n{\n\tGameType=", S.battle.game, ";\n\tMapName=", S.battle.map, ";\n\tHostIP=0.0.0.0;\n\tHostPort=", GAMEPORT,
-		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=2;\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" }
+		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=", startPos, ";\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" }
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
 	for k, v in pairs(S.battle.modoptions) do t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end
 	t[#t + 1] = string.format("\t\tdate_year=%s;\n\t\tdate_month=%s;\n\t\tdate_day=%s;\n\t\tdate_hour=%s;\n\t}\n", os.date("%Y"), os.date("%m"), os.date("%d"), os.date("%H"))
@@ -799,9 +875,108 @@ local function ensureScenarioUi()
 	if not show and ui.scnWindow and ui.scnWindow.visible then ui.scnWindow:Hide() end
 end
 
+---------------------------------------------------------------- "Play together": numbers per human; the same number inside an ally team = one player together
+-- Pressing the button of a human gives him the next number of his ally team (1 .. number of humans in it); everybody in the room gets a chat line.
+local function cycleSlot(name)
+	if not S then return end
+	local humans = humanList()
+	local eff = effectiveSlots(humans)
+	local me
+	local n = 0
+	for _, h in ipairs(humans) do if h.name == name then me = h end end
+	if not me then return end
+	for _, h in ipairs(humans) do if h.ally == me.ally then n = n + 1 end end
+	local newNo = nextSlot(eff[name], n)
+	for _, c in ipairs(battleUsers()) do if c.name == name then c.slot = newNo end end
+	humans = humanList()
+	eff = effectiveSlots(humans)
+	local with = {}
+	for _, h in ipairs(humans) do if h.name ~= name and h.ally == me.ally and eff[h.name] == eff[name] then with[#with + 1] = h.name end end
+	if #with > 0 then
+		say(name .. " is player " .. eff[name] .. " of his team now and plays it together with " .. table.concat(with, ", ") .. ".")
+	else
+		say(name .. " is player " .. eff[name] .. " of his team now (alone).")
+	end
+	log("slot:", name, "->", eff[name], #with > 0 and ("together with " .. table.concat(with, ", ")) or "alone")
+end
+
+local function slotSignature()
+	if not S then return "" end
+	local humans = humanList()
+	local eff = effectiveSlots(humans)
+	local t = {}
+	for _, h in ipairs(humans) do t[#t + 1] = h.name .. ":" .. h.ally .. ":" .. tostring(eff[h.name]) end
+	return table.concat(t, "|") .. (S.battle.scenario and "|scenario" or "")
+end
+
+local function fillSlotList()
+	local font = Config():GetFont(2)
+	ui.slotList:ClearChildren()
+	local y = 0
+	local humans = humanList()
+	if S.battle.scenario then
+		TextBox:New { parent = ui.slotList, x = 0, y = y, right = 0, height = 60, text = "A scenario: every human plays the team of the scenario together.", objectOverrideFont = font }
+		return
+	end
+	if #humans == 0 then
+		TextBox:New { parent = ui.slotList, x = 0, y = y, right = 0, height = 30, text = "No players in the room (spectators do not count).", objectOverrideFont = font }
+		return
+	end
+	table.sort(humans, function(a, b) if a.ally ~= b.ally then return a.ally < b.ally end return a.name < b.name end)
+	local eff = effectiveSlots(humans)
+	local groupOf = {}
+	for _, g in ipairs(sharedGroups(humans, eff)) do groupOf[g.ally .. ":" .. g.number] = g end
+	local lastAlly
+	for _, h in ipairs(humans) do
+		if h.ally ~= lastAlly then
+			lastAlly = h.ally
+			TextBox:New { parent = ui.slotList, x = 0, y = y + 4, right = 0, height = 30, text = "Team " .. (h.ally + 1), objectOverrideFont = font }
+			y = y + 36
+		end
+		local name = h.name
+		TextBox:New { parent = ui.slotList, x = 12, y = y + 8, width = 190, height = 30, text = name, objectOverrideFont = font }
+		Button:New { parent = ui.slotList, x = 210, y = y, width = 130, height = 36, caption = "player " .. eff[name], objectOverrideFont = font,
+			OnClick = { function() cycleSlot(name); fillSlotList() end } }
+		local g = groupOf[h.ally .. ":" .. eff[name]]
+		if g then
+			local others = {}
+			for _, o in ipairs(g.names) do if o ~= name then others[#others + 1] = o end end
+			TextBox:New { parent = ui.slotList, x = 350, y = y + 8, right = 0, height = 30, text = "+ together with " .. table.concat(others, ", "), objectOverrideFont = font }
+		end
+		y = y + 42
+	end
+end
+
+local function ensureSlotUi()
+	if not ui.panel or not Config() then return end
+	local show = (S ~= nil) and lan ~= nil and lan.step == "in"
+	if not ui.slotButton then
+		if not show then return end
+		local font = Config():GetFont(2)
+		ui.slotWindow = Window:New { parent = screen0, x = 216, y = 48, width = 560, height = 420, resizable = false, draggable = true, classname = "main_window" }
+		TextBox:New { parent = ui.slotWindow, x = 12, y = 8, right = 12, height = 56, text = "Click a player to give him the next number of his team. Players with the same number play one player together.", objectOverrideFont = Config():GetFont(1) }
+		ui.slotList = ScrollPanel:New { parent = ui.slotWindow, x = 6, y = 70, right = 6, bottom = 6 }
+		ui.slotWindow:Hide()
+		ui.slotButton = Button:New { parent = screen0, x = 216, y = 8, width = 200, height = 36, caption = "Play together", objectOverrideFont = font, classname = "action_button",
+			OnClick = { function()
+				if ui.slotWindow.visible then ui.slotWindow:Hide() else fillSlotList(); ui.slotSig = slotSignature(); ui.slotWindow:Show(); ui.slotWindow:BringToFront() end
+			end } }
+		log("Play together button added")
+	end
+	if ui.slotButton.visible ~= show then ui.slotButton:SetVisibility(show) end
+	if not show and ui.slotWindow and ui.slotWindow.visible then ui.slotWindow:Hide() end
+	-- a player came or left, changed his team: the list follows (only when the window is open)
+	if show and ui.slotWindow and ui.slotWindow.visible and os.clock() > (ui.slotNext or 0) then
+		ui.slotNext = os.clock() + 1
+		local sig = slotSignature()
+		if sig ~= ui.slotSig then ui.slotSig = sig; fillSlotList() end
+	end
+end
+
 ---------------------------------------------------------------- per frame
 function widget:Update()
 	ensureScenarioUi()
+	ensureSlotUi()
 	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and os.clock() > 14 then
 		cfg.scenarioPicked = true
 		log("test: choosing the scenario", cfg.scenario)
@@ -911,6 +1086,14 @@ buildUi = function()
 	log("panel built; player name on the page:", tostring(ui.name and ui.name.text), "(account name:", tostring(cf.userName) .. ")")
 	return true
 end
+
+-- for the test of the Level Editor: the file is loaded in a stub environment (no lobby), a fake server is put in and the start script is built from it
+widget.DebugShare = {
+	setServer = function(server) S = server end,
+	buildScript = function(name) return buildScript(name) end,
+	cycle = function(name) return cycleSlot(name) end,
+	list = function() local h = humanList(); local e = effectiveSlots(h); local out = {}; for _, x in ipairs(h) do out[x.name] = e[x.name] end; return out end,
+}
 
 function widget:Initialize()
 	math.randomseed(os.time() + math.floor(os.clock() * 1000))

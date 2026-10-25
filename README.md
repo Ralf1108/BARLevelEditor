@@ -116,6 +116,8 @@ A level can be one of three game modes (they exclude each other). Each has its o
 
 The entry **LAN Play** is in the menu on the left; **Host a LAN game** opens the battle room, **Find LAN games** (or the address field and **Join**) joins a game of another computer.
 
+**Several players, one player:** the host can let two or more humans of a team play **one** player together (button **Play together**; in the console lobby of *Host Game* the key **N**): one fights at the front, another builds the base. The same number inside a team means one player; the lobby marks it.
+
 `LevelEditor\install_editor.bat` installs it together with the editor (the game must be closed; it only needs TCP ports 8453 and 8452 between the computers). It is a prototype, so far tested with two lobbies on one computer.
 
 Details, the protocol and what is still open: [LAN Play readme](LevelEditor/lan_lobby/README.md).
