@@ -77,6 +77,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
 - **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human. It excludes Tower Defense in the same level.
 - **Reclaim the Fame:** crystals on the map that give **points** to the construction units that reclaim them (1 point per second for every 100 build power, more for bigger crystals); the first team at the score limit wins. For human against human. It excludes the other two game modes in the same level.
+- **Several humans, one player:** in a LAN game two or more people of a team can play **one** player together (one fights at the front, another builds the base): give them the same number in the lobby (key **N** in the console lobby, button **Play together** in the LAN room).
 
 | Blueprints | Generate: units | Generate: maze |
 |---|---|---|
