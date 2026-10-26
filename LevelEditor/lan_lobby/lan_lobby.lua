@@ -17,7 +17,7 @@ end
 -- as chat: !map, !bSet, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, name=, map=, players=, ip=
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, name=, map=, players=, ip=, copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
 
 local PORT, GAMEPORT = 8453, 8452
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
@@ -252,7 +252,7 @@ local function startGameNow()
 	local humans = humanList()
 	local parts = {}
 	for _, g in ipairs(sharedGroups(humans, effectiveSlots(humans))) do parts[#parts + 1] = groupText(g) end
-	if #parts > 0 and not S.battle.scenario then say("Playing together as one player: " .. table.concat(parts, "; ")) end
+	if #parts > 0 and not S.battle.scenario then say("Copilot (one player, several humans): " .. table.concat(parts, "; ")) end
 	say("Starting the game ...")
 	toAll("CLIENTSTATUS " .. HOSTNAME .. " 65") -- bot + in game: every lobby in the battle connects
 end
@@ -856,26 +856,71 @@ local function fillScenarioList()
 	end
 end
 
+-- The two host buttons sit in the middle column of the battle room, under the "Update Ready" / "Map Ready" lines (floating at the top left they were
+-- hidden behind the lobby's own windows). The column is the parent of those labels; it is looked for about once a second, because the room is built again at times.
+local function roomColumn()
+	local found
+	local function walk(c, depth)
+		if found then return end
+		local txt = c.caption or c.text
+		if c.classname == "label" and type(txt) == "string" and (txt:find("^Map ") or txt:find("^Update ")) then found = c.parent; return end
+		if depth < 16 and c.children then for _, ch in ipairs(c.children) do walk(ch, depth + 1) end end
+	end
+	walk(screen0, 0)
+	return found
+end
+
+local function roomPlace(btn, y, show)
+	if os.clock() > (ui.roomAt or 0) then ui.roomAt = os.clock() + 1; ui.roomCol = show and roomColumn() or nil end
+	local col = ui.roomCol
+	local mark = "lanButton" .. y -- the controls of the lobby are proxies here: a column is told apart by a field, not by ==
+	if col and not col[mark] then
+		if btn.parent then btn.parent:RemoveChild(btn) end
+		col:AddChild(btn)
+		btn:SetPos(5, y, 364, 35)
+		col[mark] = true
+	end
+	local vis = show and col ~= nil
+	if btn.visible ~= vis then btn:SetVisibility(vis) end
+end
+
+-- The two lists (scenarios, Copilot) are windows in the same column, below the two buttons (the main window of the room does not draw windows added to it).
+local function roomMain()
+	if os.clock() > (ui.roomAt or 0) then ui.roomAt = os.clock() + 1; ui.roomCol = roomColumn() end
+	return ui.roomCol
+end
+
+-- The window is made new at every click, inside the column the room has just now (the lobby builds the room again at times; a window made earlier
+-- would sit in the old one). A field of the column tells that this one has it (the controls are proxies here: no ==).
+local function toggleScenarioWindow()
+	ui.roomAt = 0
+	local main = roomMain()
+	if not main then return end
+	if main.lanScnWin and ui.scnWindow and ui.scnWindow.visible then ui.scnWindow:Hide(); return end
+	if ui.scnWindow then pcall(function() ui.scnWindow:Dispose() end) end
+	if ui.slotWindow then pcall(function() ui.slotWindow:Hide() end) end
+	ui.scnWindow = Window:New { parent = main, x = 5, y = 360, width = 364, height = 430, resizable = false, draggable = false, classname = "main_window" }
+	ui.scnList = ScrollPanel:New { parent = ui.scnWindow, x = 6, y = 6, right = 6, bottom = 6 }
+	main.lanScnWin = true
+	fillScenarioList()
+	ui.scnWindow:BringToFront()
+end
+
 local function ensureScenarioUi()
 	if not ui.panel or not Config() then return end
 	local show = (S ~= nil) and lan ~= nil and lan.step == "in"
 	if not ui.scnButton then
-		if not show then return end
+		if not show or not roomMain() then return end
 		local font = Config():GetFont(2)
-		ui.scnWindow = Window:New { parent = screen0, x = 8, y = 48, width = 420, height = 330, resizable = false, draggable = true, classname = "main_window" }
-		ui.scnList = ScrollPanel:New { parent = ui.scnWindow, x = 6, y = 6, right = 6, bottom = 6 }
-		ui.scnWindow:Hide()
-		ui.scnButton = Button:New { parent = screen0, x = 8, y = 8, width = 200, height = 36, caption = "Custom Scenario", objectOverrideFont = font, classname = "action_button",
-			OnClick = { function()
-				if ui.scnWindow.visible then ui.scnWindow:Hide() else fillScenarioList(); ui.scnWindow:Show(); ui.scnWindow:BringToFront() end
-			end } }
+		ui.scnButton = Button:New { parent = screen0, x = 8, y = 8, width = 364, height = 35, caption = "Custom Scenario", objectOverrideFont = font, classname = "action_button",
+			OnClick = { toggleScenarioWindow } }
 		log("Custom Scenario button added")
 	end
-	if ui.scnButton.visible ~= show then ui.scnButton:SetVisibility(show) end
-	if not show and ui.scnWindow and ui.scnWindow.visible then ui.scnWindow:Hide() end
+	roomPlace(ui.scnButton, 272, show)
+	if not show then pcall(function() ui.scnButton:Dispose() end); ui.scnButton = nil end
 end
 
----------------------------------------------------------------- "Play together": numbers per human; the same number inside an ally team = one player together
+---------------------------------------------------------------- "Copilot": numbers per human; the same number inside an ally team = one player together
 -- Pressing the button of a human gives him the next number of his ally team (1 .. number of humans in it); everybody in the room gets a chat line.
 local function cycleSlot(name)
 	if not S then return end
@@ -893,7 +938,7 @@ local function cycleSlot(name)
 	local with = {}
 	for _, h in ipairs(humans) do if h.name ~= name and h.ally == me.ally and eff[h.name] == eff[name] then with[#with + 1] = h.name end end
 	if #with > 0 then
-		say(name .. " is player " .. eff[name] .. " of his team now and plays it together with " .. table.concat(with, ", ") .. ".")
+		say(name .. " is player " .. eff[name] .. " of his team now and is Copilot with " .. table.concat(with, ", ") .. ".")
 	else
 		say(name .. " is player " .. eff[name] .. " of his team now (alone).")
 	end
@@ -922,8 +967,8 @@ local function fillSlotList()
 		TextBox:New { parent = ui.slotList, x = 0, y = y, right = 0, height = 30, text = "No players in the room (spectators do not count).", objectOverrideFont = font }
 		return
 	end
+	local eff = effectiveSlots(humans) -- before sorting: the default number is the place in the order of joining
 	table.sort(humans, function(a, b) if a.ally ~= b.ally then return a.ally < b.ally end return a.name < b.name end)
-	local eff = effectiveSlots(humans)
 	local groupOf = {}
 	for _, g in ipairs(sharedGroups(humans, eff)) do groupOf[g.ally .. ":" .. g.number] = g end
 	local lastAlly
@@ -934,37 +979,47 @@ local function fillSlotList()
 			y = y + 36
 		end
 		local name = h.name
-		TextBox:New { parent = ui.slotList, x = 12, y = y + 8, width = 190, height = 30, text = name, objectOverrideFont = font }
-		Button:New { parent = ui.slotList, x = 210, y = y, width = 130, height = 36, caption = "player " .. eff[name], objectOverrideFont = font,
+		TextBox:New { parent = ui.slotList, x = 6, y = y + 8, width = 70, height = 30, text = name, objectOverrideFont = font }
+		Button:New { parent = ui.slotList, x = 76, y = y, width = 100, height = 36, caption = "player " .. eff[name], objectOverrideFont = font,
 			OnClick = { function() cycleSlot(name); fillSlotList() end } }
 		local g = groupOf[h.ally .. ":" .. eff[name]]
 		if g then
 			local others = {}
 			for _, o in ipairs(g.names) do if o ~= name then others[#others + 1] = o end end
-			TextBox:New { parent = ui.slotList, x = 350, y = y + 8, right = 0, height = 30, text = "+ together with " .. table.concat(others, ", "), objectOverrideFont = font }
+			TextBox:New { parent = ui.slotList, x = 184, y = y + 8, right = 0, height = 30, text = "+ Copilot: " .. table.concat(others, ", "), objectOverrideFont = font }
 		end
 		y = y + 42
 	end
+end
+
+local function toggleSlotWindow(forceShow)
+	ui.roomAt = 0
+	local main = roomMain()
+	if not main then return end
+	if not forceShow and main.lanSlotWin and ui.slotWindow and ui.slotWindow.visible then ui.slotWindow:Hide(); return end
+	if ui.slotWindow then pcall(function() ui.slotWindow:Dispose() end) end
+	if ui.scnWindow then pcall(function() ui.scnWindow:Hide() end) end
+	ui.slotWindow = Window:New { parent = main, x = 5, y = 360, width = 364, height = 430, resizable = false, draggable = false, classname = "main_window" }
+	TextBox:New { parent = ui.slotWindow, x = 10, y = 8, right = 10, height = 90, text = "Click a player to give him the next number of his team. Players with the same number are Copilots: they play one player together.", objectOverrideFont = Config():GetFont(1) }
+	ui.slotList = ScrollPanel:New { parent = ui.slotWindow, x = 6, y = 100, right = 6, bottom = 6 }
+	main.lanSlotWin = true
+	fillSlotList()
+	ui.slotSig = slotSignature()
+	ui.slotWindow:BringToFront()
 end
 
 local function ensureSlotUi()
 	if not ui.panel or not Config() then return end
 	local show = (S ~= nil) and lan ~= nil and lan.step == "in"
 	if not ui.slotButton then
-		if not show then return end
+		if not show or not roomMain() then return end
 		local font = Config():GetFont(2)
-		ui.slotWindow = Window:New { parent = screen0, x = 216, y = 48, width = 560, height = 420, resizable = false, draggable = true, classname = "main_window" }
-		TextBox:New { parent = ui.slotWindow, x = 12, y = 8, right = 12, height = 56, text = "Click a player to give him the next number of his team. Players with the same number play one player together.", objectOverrideFont = Config():GetFont(1) }
-		ui.slotList = ScrollPanel:New { parent = ui.slotWindow, x = 6, y = 70, right = 6, bottom = 6 }
-		ui.slotWindow:Hide()
-		ui.slotButton = Button:New { parent = screen0, x = 216, y = 8, width = 200, height = 36, caption = "Play together", objectOverrideFont = font, classname = "action_button",
-			OnClick = { function()
-				if ui.slotWindow.visible then ui.slotWindow:Hide() else fillSlotList(); ui.slotSig = slotSignature(); ui.slotWindow:Show(); ui.slotWindow:BringToFront() end
-			end } }
-		log("Play together button added")
+		ui.slotButton = Button:New { parent = screen0, x = 8, y = 8, width = 364, height = 35, caption = "Copilot", objectOverrideFont = font, classname = "action_button",
+			OnClick = { function() toggleSlotWindow() end } }
+		log("Copilot button added")
 	end
-	if ui.slotButton.visible ~= show then ui.slotButton:SetVisibility(show) end
-	if not show and ui.slotWindow and ui.slotWindow.visible then ui.slotWindow:Hide() end
+	roomPlace(ui.slotButton, 312, show)
+	if not show then pcall(function() ui.slotButton:Dispose() end); ui.slotButton = nil end
 	-- a player came or left, changed his team: the list follows (only when the window is open)
 	if show and ui.slotWindow and ui.slotWindow.visible and os.clock() > (ui.slotNext or 0) then
 		ui.slotNext = os.clock() + 1
@@ -1017,6 +1072,14 @@ function widget:Update()
 	if cfg.leaveAfter and lan and lan.step == "in" then
 		lan.inAt = lan.inAt or os.clock()
 		if os.clock() > lan.inAt + tonumber(cfg.leaveAfter) and not lan.leaveSent then lan.leaveSent = true; log("test: pressing Leave in the room (lobby:LeaveBattle)"); WG.BattleRoomWindow.LeaveBattle() end
+	end
+	if cfg.copilot and S and lan and lan.step == "in" and ui.slotButton and not cfg.copilotDone and #humanList() >= 2 then
+		cfg.copilotAt = cfg.copilotAt or (os.clock() + 4)
+		if os.clock() > cfg.copilotAt then
+			cfg.copilotDone = true
+			log("test: Copilot for", cfg.copilot)
+			cycleSlot(cfg.copilot)
+		end
 	end
 	if cfg.clickFirst and not lan and not S and #found > 0 then log("test: click on the first entry"); joinHost(found[1].ip) end
 	local l = lobby()

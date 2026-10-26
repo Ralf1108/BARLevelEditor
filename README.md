@@ -77,7 +77,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
 - **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human. It excludes Tower Defense in the same level.
 - **Reclaim the Fame:** crystals on the map that give **points** to the construction units that reclaim them (1 point per second for every 100 build power, more for bigger crystals); the first team at the score limit wins. For human against human. It excludes the other two game modes in the same level.
-- **Several humans, one player:** in a LAN game two or more people of a team can play **one** player together (one fights at the front, another builds the base): give them the same number in the lobby (key **N** in the console lobby, button **Play together** in the LAN room).
+- **Copilot:** in a LAN game two or more people of a team can play **one** player together (one fights at the front, another builds the base): give them the same number in the lobby (key **N** in the console lobby, button **Copilot** in the LAN room).
 
 | Blueprints | Generate: units | Generate: maze |
 |---|---|---|
@@ -117,7 +117,11 @@ A level can be one of three game modes (they exclude each other). Each has its o
 
 The entry **LAN Play** is in the menu on the left; **Host a LAN game** opens the battle room, **Find LAN games** (or the address field and **Join**) joins a game of another computer.
 
-**Several players, one player:** the host can let two or more humans of a team play **one** player together (button **Play together**; in the console lobby of *Host Game* the key **N**): one fights at the front, another builds the base. The same number inside a team means one player; the lobby marks it.
+**Copilot:** the host can let two or more humans of a team play **one** player together (button **Copilot**; in the console lobby of *Host Game* the key **N**): one fights at the front, another builds the base. The same number inside a team means one player; the lobby marks it.
+
+<img src="docs/lanCopilot.png" alt="LAN room of the host: the buttons Custom Scenario (choose a scenario) and Copilot, and the Copilot list with Ben and Ralf as one player" width="740">
+
+The buttons **Custom Scenario** (choose a scenario you built) and **Copilot** sit in the middle of the room under *Map Ready*; the list below them shows Ben and Ralf as **player 1**: they play that player together.
 
 `LevelEditor\install_editor.bat` installs it together with the editor (the game must be closed; it only needs TCP ports 8453 and 8452 between the computers). It is a prototype, so far tested with two lobbies on one computer.
 

@@ -27,7 +27,7 @@
 # Player numbers: a box is one player of the game (one team of the scenario) and the boxes of one ally team are its players 1, 2, 3 ...; every human who
 # joins gets a box of his own if one is free. N on a human puts him into the next player of his ally team (after the last one the first again), so the humans with the
 # same number play ONE player together (all of them can give orders to its units, they share its resources). Marked in the lobby: "player 2" after
-# the name, "together with Ben" when a box holds more than one human. The game of such a team does not start by itself (the engine waits for a
+# the name, "Copilot with Ben" when a box holds more than one human. The game of such a team does not start by itself (the engine waits for a
 # second "ready" that never comes): the little widget shared_start.lua starts it from the host's game (see there).
 
 # The version of the files that decide how a game runs: the starter, the lobby, the briefing and the gadgets. Looked for by file name in the given
@@ -528,13 +528,13 @@ function Get-SlotNumber($st, [int]$box) { return (@(Get-AllyBoxes $st $box).Inde
 # A human gets the next player number of his ally team (after the last one the first again); with the number of another human he plays that player together with him
 function Step-LobbyNumber($st, $p) {
     $boxes = @(Get-AllyBoxes $st $p.Box)
-    if ($boxes.Count -lt 2) { $st.Msg = 'This team has only one player: everybody in it plays that player together.'; return }
+    if ($boxes.Count -lt 2) { $st.Msg = 'This team has only one player: everybody in it is Copilot of that player.'; return }
     $nb = $boxes[($boxes.IndexOf($p.Box) + 1) % $boxes.Count]
     $p.Box = $nb
     $st.Focus = $nb
     $st.Cursor = [Math]::Max(0, @(Get-BoxPlayers $st $nb).IndexOf($p))
     $with = @(Get-BoxPlayers $st $nb | Where-Object { $_ -ne $p } | ForEach-Object { $_.Name })
-    $st.Msg = if ($with.Count -gt 0) { '{0} is player {1} now and plays together with {2}.' -f $p.Name, (Get-SlotNumber $st $nb), ($with -join ', ') } else { '{0} is player {1} now (alone).' -f $p.Name, (Get-SlotNumber $st $nb) }
+    $st.Msg = if ($with.Count -gt 0) { '{0} is player {1} now and is Copilot with {2}.' -f $p.Name, (Get-SlotNumber $st $nb), ($with -join ', ') } else { '{0} is player {1} now (alone).' -f $p.Name, (Get-SlotNumber $st $nb) }
 }
 
 # The team of a new player: the one of the last mapping (by name) if nobody is there, otherwise the first team without a player, otherwise team 0
@@ -654,7 +654,7 @@ function Get-LobbyLines($st) {
         for ($i = 0; $i -lt $pl.Count; $i++) {
             $p = $pl[$i]
             $txt = '    ' + ($p.Name + $(if ($p.Client -eq $null) { '  (host)' } else { '' })).PadRight(24) + ('player {0}' -f (Get-SlotNumber $st $b))
-            if ($pl.Count -gt 1) { $txt += '   + together with ' + ((@($pl | Where-Object { $_ -ne $p } | ForEach-Object { $_.Name })) -join ', ') }
+            if ($pl.Count -gt 1) { $txt += '   + Copilot with ' + ((@($pl | Where-Object { $_ -ne $p } | ForEach-Object { $_.Name })) -join ', ') }
             if ($p.VerState -ne 'same') { $txt += '   (files ' + $(switch ($p.VerState) { 'older' { 'older than yours: needs an update' } 'newer' { 'newer than yours' } default { 'differ from yours' } }) + ')' }
             if ($p.Data -eq 'ready' -and $p.Map -ne 'ready') { $txt += $(if ($p.Map -eq 'loading') { "   (loading the map from you: $($p.MapPct) %)" } else { '   (getting the map)' }) }
             if ($p.Data -ne 'ready') { $txt += $(if ($p.Data -eq 'loading') { "   (loading the scenario: $($p.Pct) %)" } else { '   (scenario not loaded yet)' }) }
@@ -670,7 +670,7 @@ function Get-LobbyLines($st) {
     Add-L '' 0
     if ($st.Msg) { Add-L $st.Msg 6 }
     if ($st.Info) { Add-L $st.Info 2 }
-    Add-L 'Tab/Left/Right = box, Up/Down = player, Enter = pick up/drop, N = next player number (same number = one player together), F5 = start, Esc x2 = cancel' 2
+    Add-L 'Tab/Left/Right = box, Up/Down = player, Enter = pick up/drop, N = next player number (same number = Copilot: one player together), F5 = start, Esc x2 = cancel' 2
     return [pscustomobject]@{ Lines = @($lines); Kinds = @($kinds) }
 }
 
