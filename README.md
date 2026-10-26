@@ -121,7 +121,7 @@ The entry **LAN Play** is in the menu on the left; **Host a LAN game** opens the
 
 <img src="docs/lanCopilot.png" alt="LAN room of the host: the buttons Custom Scenario (choose a scenario) and Copilot, and the Copilot list with Ben and Ralf as one player" width="740">
 
-The buttons **Custom Scenario** (choose a scenario you built) and **Copilot** sit in the middle of the room under *Map Ready*; the list below them shows Ben and Ralf as **player 1**: they play that player together.
+The buttons **Custom Scenario** (choose a scenario you built) and **Copilot** sit in the middle of the room under *Map Ready* and follow the size of the window. **Copilot** opens a list of the humans of the room: the host clicks a player to give him the next number of his team (the tooltip says so), and humans with the same number play one player together (Ben and Ralf are both **player 1** in the picture). The other players see the same list, read only (without the button Custom Scenario).
 
 `LevelEditor\install_editor.bat` installs it together with the editor (the game must be closed; it only needs TCP ports 8453 and 8452 between the computers). It is a prototype, so far tested with two lobbies on one computer.
 
