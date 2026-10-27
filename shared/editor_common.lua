@@ -1153,11 +1153,11 @@ function M.newGrid(o)
 				local lines, h = M.infoLayout({
 					{ text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 },
 					{ parts = M.costParts(c.metal, c.energy), fs = 22 },
-				}, size)
+				}, size + 2 * M.infoGap())
 				local _, by = self:geom(rect, hi)
 				local px, py = M.previewPos(rect, by, TILE, size, h + 4 * S)
 				pcall(M.drawBlueprintPreview, bp, px, py, size)
-				M.infoDraw(lines, px, py - 2 * S, size, h)
+				M.infoDraw(lines, px - M.infoGap(), py - 2 * S, size + 2 * M.infoGap(), h)
 				gl.Color(1, 1, 1, 1)
 			end
 		end
@@ -2045,11 +2045,11 @@ function M.newUnits(o)
 					items[#items + 1] = { text = x, fs = 18, color = { 0.85, 0.85, 0.85 } }
 				end
 			end
-			local lines, h = M.infoLayout(items, size)
+			local lines, h = M.infoLayout(items, size + 2 * M.infoGap())
 			local _, uy = self:geom(rect, hoverIdx)
 			local px, py = M.previewPos(rect, uy, self:icon(), size, h + 4 * S)
 			pcall(M.drawUnitPreview, e.id, px, py, size)
-			M.infoDraw(lines, px, py - 2 * S, size, h)
+			M.infoDraw(lines, px - M.infoGap(), py - 2 * S, size + 2 * M.infoGap(), h)
 			gl.Color(1, 1, 1, 1)
 		end
 		if hint then
@@ -2316,6 +2316,11 @@ end
 -- "Metal 100   Energy 1500   (Eco time 1:25)" as parts that wrap only between the parts
 function M.costParts(metal, energy)
 	return { string.format("Metal %d", metal or 0), string.format("Energy %d", energy or 0), "(Eco time " .. M.ecoTime(metal, energy) .. ")" }
+end
+
+-- The block is wider than the picture by the gap between the picture and the menu on both sides
+function M.infoGap()
+	return M.m.HB + 14 * M.S
 end
 
 -- Text block under the 3D preview. items = { { text = "...", fs = 24, color = { r, g, b }, parts = { "a", "b" } } ... }: a long text wraps at
@@ -2638,11 +2643,11 @@ function M.newFeatures(o)
 			if desc then
 				items[#items + 1] = { text = desc, fs = 20, color = { 0.8, 0.8, 0.8 } }
 			end
-			local lines, h = M.infoLayout(items, size)
+			local lines, h = M.infoLayout(items, size + 2 * M.infoGap())
 			local _, ty = self:geom(rect, hoverIdx)
 			local px, py = M.previewPos(rect, ty, cellH(), size, h + 4 * S)
 			pcall(M.drawFeaturePreview, e.id, px, py, size)
-			M.infoDraw(lines, px, py - 2 * S, size, h)
+			M.infoDraw(lines, px - M.infoGap(), py - 2 * S, size + 2 * M.infoGap(), h)
 			gl.Color(1, 1, 1, 1)
 		end
 	end
