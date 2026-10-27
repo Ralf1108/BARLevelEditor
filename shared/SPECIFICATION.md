@@ -150,6 +150,7 @@ Sort key `rank = (faction block 10000) + (filler 1000) + (water 100) + kind`, th
 - Commander note: units with `customParams.iscommander` belong to the commander bots (kind 3).
 
 ### 9.4 Grid and display
+- **The menu keeps the width of 3 columns (2026-10-27):** with a setting of more than 3 columns (`uCols`, for blueprints `bpCols`) the pictures get smaller instead of the menu wider: `u:cell()` = `floor(3 · UCELL / uCols)` and `u:icon()` = cell - (`UCELL` - `UICON`); the blueprint tile `g:tile()` = `floor(3 · (TILE + 2·PAD) / bpCols) - 2·PAD`, its texts shrink with it (`k = TILE / base`). With 1 to 3 columns the size is the one below. The feature list keeps only its width.
 - Symbol size `UICON = 270·S`, cell size `UCELL = 284·S`, margin `UPAD = 7·S`. Default 3 columns and 4 rows (setting `uCols`, `uRows`), width `uCols·UCELL + 2·UPAD + 4`, height `uRows·UCELL + 2·UPAD`.
 - At most 4 rows visible at the same time (adjustable); below that there is room for the info lines. The mouse wheel scrolls by 234·S per notch.
 - **Empty buttons are slightly red** (`u:emptyButton`): a faction button when there is no unit of it in any group and tech level, a group button when the chosen faction has none in the group, a tech button when the chosen faction has none in the chosen group (chosen button: light red, others: dark red; forbidden by the restrictions is stronger red and wins). So after a click on a faction or group you see at once which tabs are empty.

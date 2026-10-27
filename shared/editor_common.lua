@@ -927,12 +927,21 @@ function M.newGrid(o)
 		return math.max(1, math.min(self.cfg.v.bpCols, math.ceil(#list() / self:rowsPer())))
 	end
 
+	-- Picture size: with more than 3 columns the menu stays as wide as with 3 and the pictures get smaller
+	function g:tile()
+		local cols = math.max(1, self.cfg.v.bpCols)
+		if cols <= 3 then
+			return M.m.TILE
+		end
+		return math.floor(3 * (M.m.TILE + 2 * M.m.PAD) / cols) - 2 * M.m.PAD
+	end
+
 	function g:cellW()
-		return M.m.TILE + 2 * M.m.PAD
+		return self:tile() + 2 * M.m.PAD
 	end
 
 	function g:tileH()
-		return M.m.TILE + M.m.LABEL + M.m.PAD
+		return self:tile() + M.m.LABEL + M.m.PAD
 	end
 
 	-- wanted size of the content area (width, height)
@@ -953,7 +962,7 @@ function M.newGrid(o)
 		local gx0 = rect.x1 + 2 + math.max(0, ((rect.x2 - rect.x1 - 4) - self:cols() * self:cellW()) / 2)
 		local tx = gx0 + col * self:cellW() + M.m.PAD
 		local top = rect.top - row * self:tileH() + self.scroll
-		return tx, top - M.m.PAD - M.m.TILE
+		return tx, top - M.m.PAD - self:tile()
 	end
 
 	function g:tileAt(rect, mx, my)
@@ -971,13 +980,14 @@ function M.newGrid(o)
 
 	function g:inXButton(rect, mx, my, i)
 		local tx, ty = self:geom(rect, i)
-		local T, X = M.m.TILE, M.m.XSIZE
+		local T = self:tile()
+		local X = M.m.XSIZE * T / M.m.TILE
 		return mx >= tx + T - X and mx <= tx + T and my >= ty + T - X and my <= ty + T
 	end
 
 	function g:inLabel(rect, mx, my, i)
 		local tx, ty = self:geom(rect, i)
-		return mx >= tx and mx <= tx + M.m.TILE and my >= ty - M.m.LABEL and my < ty
+		return mx >= tx and mx <= tx + self:tile() and my >= ty - M.m.LABEL and my < ty
 	end
 
 	function g:resetEdit()
@@ -1022,7 +1032,7 @@ function M.newGrid(o)
 
 	local function drawTile(tx, ty, bp, i, ghost, self)
 		local m, S = M.m, M.S
-		local TILE, LABEL = m.TILE, m.LABEL
+		local TILE, LABEL = self:tile(), m.LABEL
 		local a = ghost and 0.6 or 1
 		if bp == self.lib.list[self.selected] then
 			gl.Color(0.25, 0.5, 1, 0.55 * a)
@@ -1092,7 +1102,8 @@ function M.newGrid(o)
 	-- hot: mouse is over the panel (for the x buttons)
 	function g:draw(rect, mx, my, hot)
 		local m, S = M.m, M.S
-		local TILE, XSIZE = m.TILE, m.XSIZE
+		local TILE = self:tile()
+		local XSIZE = m.XSIZE * TILE / m.TILE
 		gl.Scissor(rect.x1, rect.y0, rect.x2 - rect.x1, rect.top - rect.y0)
 		local th = self:tileH()
 		local rpc = self:rowsPer()
@@ -1858,18 +1869,28 @@ function M.newUnits(o)
 		return true
 	end
 
+	-- Cell and picture size: with more than 3 columns the menu stays as wide as with 3 and the pictures get smaller
+	function u:cell()
+		local cols = math.max(1, self.cfg.v.uCols)
+		return cols <= 3 and M.m.UCELL or math.floor(3 * M.m.UCELL / cols)
+	end
+
+	function u:icon()
+		return self:cell() - (M.m.UCELL - M.m.UICON)
+	end
+
 	function u:colsFor(rect)
-		return math.max(1, math.floor((rect.x2 - rect.x1 - 2 * M.m.UPAD) / M.m.UCELL))
+		return math.max(1, math.floor((rect.x2 - rect.x1 - 2 * M.m.UPAD) / self:cell()))
 	end
 
 	-- wanted size of the content area
 	function u:size()
-		return self.cfg.v.uCols * M.m.UCELL + 2 * M.m.UPAD + 4, self.cfg.v.uRows * M.m.UCELL + 2 * M.m.UPAD
+		return self.cfg.v.uCols * self:cell() + 2 * M.m.UPAD + 4, self.cfg.v.uRows * self:cell() + 2 * M.m.UPAD
 	end
 
 	function u:maxScroll(rect)
 		local rows = math.ceil(#self:list() / self:colsFor(rect))
-		return math.max(0, rows * M.m.UCELL + M.m.UPAD * 2 - (rect.top - rect.y0))
+		return math.max(0, rows * self:cell() + M.m.UPAD * 2 - (rect.top - rect.y0))
 	end
 
 	-- lower left corner of the symbol of entry i
@@ -1877,14 +1898,14 @@ function M.newUnits(o)
 		local cols = self:colsFor(rect)
 		local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
 		local m = M.m
-		return rect.x1 + m.UPAD + col * m.UCELL, rect.top - m.UPAD - (row + 1) * m.UCELL + self.scroll + (m.UCELL - m.UICON)
+		return rect.x1 + m.UPAD + col * self:cell(), rect.top - m.UPAD - (row + 1) * self:cell() + self.scroll + (M.m.UCELL - M.m.UICON)
 	end
 
 	function u:at(rect, mx, my)
 		local m = M.m
 		local cols = self:colsFor(rect)
-		local col = math.floor((mx - rect.x1 - m.UPAD) / m.UCELL)
-		local row = math.floor((rect.top - m.UPAD - my + self.scroll) / m.UCELL)
+		local col = math.floor((mx - rect.x1 - m.UPAD) / self:cell())
+		local row = math.floor((rect.top - m.UPAD - my + self.scroll) / self:cell())
 		if col < 0 or col >= cols or row < 0 then
 			return nil
 		end
@@ -1900,8 +1921,8 @@ function M.newUnits(o)
 
 	-- The X in the upper right corner of a symbol (restrictions): box of the symbol at (ix, iy)
 	function u:xBox(ix, iy)
-		local xs = M.m.UICON * 0.3
-		return ix + M.m.UICON - xs, iy + M.m.UICON - xs, ix + M.m.UICON, iy + M.m.UICON
+		local xs = self:icon() * 0.3
+		return ix + self:icon() - xs, iy + self:icon() - xs, ix + self:icon(), iy + self:icon()
 	end
 
 	-- Index of the tile whose X is under the mouse pointer (or nil)
@@ -1927,20 +1948,20 @@ function M.newUnits(o)
 		local hoverIdx = hot and self:at(rect, mx, my) or nil
 		for i, e in ipairs(list) do
 			local ix, iy = self:geom(rect, i)
-			if iy + m.UICON > rect.y0 and iy < rect.top then
+			if iy + self:icon() > rect.y0 and iy < rect.top then
 				local usable = not self.canUse or self.canUse(e.id)
 				if selectedName and selectedName == e.name then
 					gl.Color(0.25, 0.5, 1, 0.8)
-					gl.Rect(ix - 3, iy - 3, ix + m.UICON + 3, iy + m.UICON + 3)
+					gl.Rect(ix - 3, iy - 3, ix + self:icon() + 3, iy + self:icon() + 3)
 				elseif i == hoverIdx then
 					gl.Color(1, 1, 1, 0.35)
-					gl.Rect(ix - 2, iy - 2, ix + m.UICON + 2, iy + m.UICON + 2)
+					gl.Rect(ix - 2, iy - 2, ix + self:icon() + 2, iy + self:icon() + 2)
 				end
 				local rs = self.restrict
 				local banned = rs and rs.isBanned(e.name) or false
 				gl.Color(1, 1, 1, (usable and not banned) and 1 or 0.3)
 				gl.Texture("#" .. e.id)
-				gl.TexRect(ix, iy, ix + m.UICON, iy + m.UICON)
+				gl.TexRect(ix, iy, ix + self:icon(), iy + self:icon())
 				gl.Texture(false)
 				if rs then
 					if banned then
@@ -1948,9 +1969,9 @@ function M.newUnits(o)
 						gl.LineWidth(5 * S)
 						gl.BeginEnd(GL.LINES, function()
 							gl.Vertex(ix + 4 * S, iy + 4 * S)
-							gl.Vertex(ix + m.UICON - 4 * S, iy + m.UICON - 4 * S)
-							gl.Vertex(ix + 4 * S, iy + m.UICON - 4 * S)
-							gl.Vertex(ix + m.UICON - 4 * S, iy + 4 * S)
+							gl.Vertex(ix + self:icon() - 4 * S, iy + self:icon() - 4 * S)
+							gl.Vertex(ix + 4 * S, iy + self:icon() - 4 * S)
+							gl.Vertex(ix + self:icon() - 4 * S, iy + 4 * S)
 						end)
 						gl.LineWidth(1)
 					end
@@ -2026,7 +2047,7 @@ function M.newUnits(o)
 			end
 			local lines, h = M.infoLayout(items, size)
 			local _, uy = self:geom(rect, hoverIdx)
-			local px, py = M.previewPos(rect, uy, m.UICON, size, h + 4 * S)
+			local px, py = M.previewPos(rect, uy, self:icon(), size, h + 4 * S)
 			pcall(M.drawUnitPreview, e.id, px, py, size)
 			M.infoDraw(lines, px, py - 2 * S, size, h)
 			gl.Color(1, 1, 1, 1)
@@ -2275,13 +2296,12 @@ end
 function M.ecoTime(metal, energy)
 	local mi, ei = M.stableIncome()
 	local secs = 0
-	for _, r in ipairs({ { "metal", metal or 0 }, { "energy", energy or 0 } }) do
-		if r[2] > 0 then
-			local _, _, _, income = Spring.GetTeamResources(team, r[1])
-			if not income or income <= 0 then
+	for _, r in ipairs({ { metal or 0, mi }, { energy or 0, ei } }) do
+		if r[1] > 0 then
+			if r[2] <= 0 then
 				return "-"
 			end
-			secs = math.max(secs, r[2] / income)
+			secs = math.max(secs, r[1] / r[2])
 		end
 	end
 	secs = math.ceil(secs)
@@ -2532,7 +2552,7 @@ function M.newFeatures(o)
 	end
 
 	function f:size()
-		return self.cfg.v.uCols * M.m.UCELL + 2 * M.m.UPAD + 4, self.cfg.v.uRows * M.m.UCELL + 2 * M.m.UPAD
+		return math.min(3, self.cfg.v.uCols) * M.m.UCELL + 2 * M.m.UPAD + 4, self.cfg.v.uRows * M.m.UCELL + 2 * M.m.UPAD
 	end
 
 	function f:maxScroll(rect)
