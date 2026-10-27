@@ -281,12 +281,14 @@ end
 local function saveLevel(name, quiet)
 	local gaia = Spring.GetGaiaTeamID()
 	local lines, count = {}, 0
+	local scavOrRaptor = false -- a Scavenger or Raptor unit: the level needs the game option forceallunits
 	for _, id in ipairs(Spring.GetAllUnits()) do
 		local t = Spring.GetUnitTeam(id)
 		-- not part of the level: the builders of Ctrl+D (ledbuilder) and the units of a running game (led_nosave: waves, flags, collection points)
 		if Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 and Spring.GetUnitRulesParam(id, "led_nosave") ~= 1 then
 			local x, y, z = Spring.GetUnitPosition(id)
 			local ud = UnitDefs[Spring.GetUnitDefID(id)]
+			scavOrRaptor = scavOrRaptor or ud.name:sub(-5) == "_scav" or ud.name:sub(1, 7) == "raptor_"
 			-- Gaia units additionally carry gaia = true (the Gaia number depends on the team count)
 			lines[#lines + 1] = string.format(
 				"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s%s },",
@@ -349,12 +351,8 @@ local function saveLevel(name, quiet)
 		end
 	end
 	-- Scavenger and Raptor units (the *_scav copies, raptor_*) exist only with forceallunits: the level asks for it only when it holds such a unit
-	for _, id in ipairs(Spring.GetAllUnits()) do
-		local n = UnitDefs[Spring.GetUnitDefID(id)].name
-		if n:sub(-5) == "_scav" or n:sub(1, 7) == "raptor_" then
-			needed[#needed + 1] = 'forceallunits = "1"'
-			break
-		end
+	if scavOrRaptor then
+		needed[#needed + 1] = 'forceallunits = "1"'
 	end
 	w(string.format("return {\n\tmap = %q,\n", Game.mapName))
 	-- Map size in Elmo: the scenario builder needs it for the grace period (start boxes as a fraction of the map)
@@ -5272,22 +5270,17 @@ function widget:Shutdown()
 	end
 end
 
-function widget:DrawScreen()
-	rescale()
-	local vsx, vsy = Spring.GetViewGeometry()
-	td.hud(vsx, vsy)
-	gl.Color(1, 1, 1, 1)
-	gl.Text(
-		string.format("Level Editor  |  %s  |  Team %d  |  Grid %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
-		vsx * 0.5, vsy - 24 * S, 14 * S, "co"
-	)
-	local bp = bpCurrent()
-	if bp then
-		gl.Text(string.format("Blueprint: %s (%d/%d)%s", bp.name, bpGrid.selected, #BP_LIST, bpGrid.armed and "  - stamp mode" or ""), vsx * 0.5, vsy - 44 * S, 12 * S, "co")
-	end
-	-- Selection: count, types and cost
-	local sel = selectedUnits()
-	if #sel > 0 then
+-- the line about the selection (count, the most frequent types, cost): made again only when the selection changes (or once a second)
+local selectionLine
+do
+	local key, text, frame = nil, nil, -100
+	selectionLine = function(sel)
+		local n = Spring.GetGameFrame()
+		local k = #sel .. ":" .. tostring(sel[1]) .. ":" .. tostring(sel[#sel])
+		if k == key and n - frame < 30 then
+			return text
+		end
+		key, frame = k, n
 		local counts, order, metal, energy = {}, {}, 0, 0
 		for _, id in ipairs(sel) do
 			local ud = UnitDefs[Spring.GetUnitDefID(id)]
@@ -5314,9 +5307,29 @@ function widget:DrawScreen()
 		if #order > 4 then
 			parts[#parts + 1] = "+" .. (#order - 4) .. " types"
 		end
+		text = string.format("Selection: %d units (%s)   Metal %d   Energy %d", #sel, table.concat(parts, ", "), metal, energy)
+		return text
+	end
+end
+
+function widget:DrawScreen()
+	rescale()
+	local vsx, vsy = Spring.GetViewGeometry()
+	td.hud(vsx, vsy)
+	gl.Color(1, 1, 1, 1)
+	gl.Text(
+		string.format("Level Editor  |  %s  |  Team %d  |  Grid %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
+		vsx * 0.5, vsy - 24 * S, 14 * S, "co"
+	)
+	local bp = bpCurrent()
+	if bp then
+		gl.Text(string.format("Blueprint: %s (%d/%d)%s", bp.name, bpGrid.selected, #BP_LIST, bpGrid.armed and "  - stamp mode" or ""), vsx * 0.5, vsy - 44 * S, 12 * S, "co")
+	end
+	-- Selection: count, types and cost
+	local sel = selectedUnits()
+	if #sel > 0 then
 		gl.Color(1, 0.8, 0.6, 1)
-		gl.Text(string.format("Selection: %d units (%s)   Metal %d   Energy %d", #sel, table.concat(parts, ", "), metal, energy),
-			vsx * 0.5, vsy - 66 * S, 14 * S, "co")
+		gl.Text(selectionLine(sel), vsx * 0.5, vsy - 66 * S, 14 * S, "co")
 		gl.Color(1, 1, 1, 1)
 	end
 	if menuOpen then
