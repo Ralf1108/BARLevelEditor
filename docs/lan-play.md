@@ -23,6 +23,7 @@ Play with computers in the same network, no server in the cloud.
 ## Status
 
 - Prototype, tested with two game instances on one computer
-- Capture the Flag, Reclaim the Fame, Tower Defense and Copilot ran through
+- Capture the Flag, Reclaim the Fame, Tower Defense and Copilot ran through (last checked 2026-10-28)
+- Only computers of the local network (or of a VPN such as Tailscale or Hamachi) can join
 
 Details: [LAN Play readme](../LevelEditor/lan_lobby/README.md)

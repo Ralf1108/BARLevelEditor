@@ -29,8 +29,7 @@ Sockets of the lobby: TCP listen and connect to any address are allowed, UDP rec
 - Clicking (the test calls the same functions) and how the menu entry and the room look (screenshots of the OpenGL window come out black here).
 - Chat is relayed by the server, but it was not checked that it shows up in the other room. Game options (`!bSet`), AIs and team/colour changes are answered but were not tried.
 - Two computers. The join of a lobby that is logged in to the normal server (it is disconnected for the LAN game; coming back to the normal server is `Leave LAN play`).
-- Own maps (a joiner without the map), scenarios, version check, update.
-- Scenario button (planned): a list of the scenarios built in the Level Editor folder; start positions of a scenario are fixed.
+- Own maps (a joiner without the map).
 - `RapidTagResolutionOrder` has to be in the springsettings in the sandbox (the launcher sets it in the real install).
 
 ## Copilot: several humans play one player (2026-10-25)
