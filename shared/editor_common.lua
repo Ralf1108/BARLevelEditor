@@ -1903,7 +1903,20 @@ function M.newUnits(o)
 		gl.Color(1, 1, 1, 1)
 		local cx = (rect.x1 + rect.x2) / 2
 		if #list == 0 then
-			gl.Text("No units in this selection", cx, rect.top - 30 * S, 12 * S, "co")
+			local loaded = false -- are there any units of this faction at all? Scavengers and Raptors exist only with the game option forceallunits
+			for _, g in ipairs(M.GROUPS) do
+				for tl = 1, 3 do
+					if #self.cache[self.faction][g[1]][tl] > 0 then
+						loaded = true
+					end
+				end
+			end
+			if loaded then
+				gl.Text("No units in this selection", cx, rect.top - 30 * S, 12 * S, "co")
+			else
+				gl.Text("These units are not loaded.", cx, rect.top - 30 * S, 12 * S, "co")
+				gl.Text("Start menu key 8: Scavenger and Raptor units ON, then start again.", cx, rect.top - 30 * S - 16 * S, 11 * S, "co")
+			end
 		end
 		-- Line 1: name (code), line 2: description, line 3: metal and energy cost
 		local e = hoverIdx and list[hoverIdx]
