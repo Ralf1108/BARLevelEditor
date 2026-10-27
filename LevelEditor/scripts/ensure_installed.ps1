@@ -9,7 +9,7 @@ $game = Get-GameVersion $Data
 $sdz = Join-Path $Data 'games\LevelEditorMod.sdz'
 $stampFile = Join-Path $Data 'games\LevelEditorMod.stamp'
 $want = Get-EditorStamp $here $game
-$have = if (Test-Path $stampFile) { (Get-Content $stampFile -Raw).Trim() } else { '' }
+$have = if (Test-Path $stampFile) { ([string](Get-Content $stampFile -Raw)).Trim() } else { '' }   # (an empty file gives $null)
 if ((Test-Path $sdz) -and $want -and $have -eq $want) { exit 0 }
 if (Get-Process spring -ErrorAction SilentlyContinue) {
     Write-Host 'The Level Editor is not up to date, but a game is running: the update is skipped. Close the game and start again.' -ForegroundColor Yellow

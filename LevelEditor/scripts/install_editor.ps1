@@ -182,8 +182,17 @@ echo [2/3] Checking the links ...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\check_links.ps1" -Data "%DATA%"
 echo [3/3] Loading the map list and the levels ...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\choose_map.ps1" -Data "%DATA%"
-if errorlevel 1 exit /b 1
+rem exit code 2 = cancelled (Esc), 1 = an error: keep the window open so the message can be read
+if errorlevel 2 exit /b 0
+if errorlevel 1 (
+	pause
+	exit /b 1
+)
 "%ENGINE%\spring.exe" --write-dir "%DATA%" "%L%editor_script_installed.txt"
+if errorlevel 1 (
+	echo The game ended with an error, see %DATA%\infolog.txt
+	pause
+)
 echo Done. Saved levels are in %L%levels
 endlocal
 "@

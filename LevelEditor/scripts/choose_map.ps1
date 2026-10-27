@@ -586,7 +586,7 @@ while ($true) {
         }
         [Console]::SetCursorPosition(0, $menuTop + $menu.Count + 3)
         $k = [Console]::ReadKey($true)
-        if ($k.Key -eq 'Escape') { Clear-Host; Write-Host 'Cancelled.'; exit 1 }
+        if ($k.Key -eq 'Escape') { Clear-Host; Write-Host 'Cancelled.'; exit 2 }   # 2 = cancelled (the start file ends quietly), 1 = error
         switch ($k.Key) {
             'Enter'     { $mode = $menu[$sel].Mode }
             'UpArrow'   { for ($j = $sel - 1; $j -ge 0; $j--) { if ($menu[$j].On) { $sel = $j; break } } }
