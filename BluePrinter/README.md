@@ -67,7 +67,7 @@ Automatic building may count as automation in some ranked or tournament games. I
 At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders; only factions your builders can build for are shown) and the tech tier,
 click a building, then every left click on the map queues one (hold the button and move to paint more, right click ends, `[` and `]` rotate). Buildings that
 your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
-You set the display (columns/rows) with the **O** button. Below the menu the info lines of the building under the mouse pointer are shown (name and code, seconds per shot and damage, description, metal and energy, explosion), the same as in the Level Editor.
+You set the display (columns/rows) with the **O** button. Under the 3D preview the info of the building under the mouse pointer is shown (name and code, description, metal and energy with the **Eco time**, damage per second, explosion), the same as in the Level Editor. **Eco time** is how long your current income needs to produce the metal and energy of the building (or of a whole blueprint); it counts the worst case, the stock in your store is not counted, and it shows `-` without income.
 
 ## Shared code
 The blueprint view (grid, dragging, renaming, trash, settings, 3D preview) comes from `shared/editor_common.lua`

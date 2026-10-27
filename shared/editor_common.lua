@@ -1134,14 +1134,16 @@ function M.newGrid(o)
 			local bp = hi and list()[hi]
 			if bp and bp.units then
 				local size = M.PREVIEW_SIZE * S
-				local _, by = self:geom(rect, hi)
-				local px, py = M.previewPos(rect, by, TILE, size)
-				pcall(M.drawBlueprintPreview, bp, px, py, size)
-				gl.Color(1, 1, 1, 1)
 				local c = M.blueprintCost(bp.units)
-				local cx = (rect.x1 + rect.x2) / 2
-				gl.Text(string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), cx, rect.y0 - 40 * S, 29 * S, "co")
-				gl.Text(string.format("Metal %d   Energy %d", c.metal, c.energy), cx, rect.y0 - 78 * S, 26 * S, "co")
+				local lines, h = M.infoLayout({
+					{ text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 },
+					{ parts = M.costParts(c.metal, c.energy), fs = 22 },
+				}, size)
+				local _, by = self:geom(rect, hi)
+				local px, py = M.previewPos(rect, by, TILE, size, h + 4 * S)
+				pcall(M.drawBlueprintPreview, bp, px, py, size)
+				M.infoDraw(lines, px, py - 2 * S, size, h)
+				gl.Color(1, 1, 1, 1)
 			end
 		end
 	end
@@ -1988,15 +1990,10 @@ function M.newUnits(o)
 				gl.Text("Start menu key 7: Scavenger and Raptor units ON, then start again.", cx, rect.top - 30 * S - 16 * S, 11 * S, "co")
 			end
 		end
-		-- Line 1: name (code), line 2: description, line 3: metal and energy cost
+		-- Under the 3D preview: name (code), description, cost with Eco time, for a unit that shoots shots per second x damage = DPS, explosion
 		local e = hoverIdx and list[hoverIdx]
-		local bottomY = 152 -- lowest info line (the hint stays below it)
 		if e then
 			local size = M.PREVIEW_SIZE * S
-			local _, uy = self:geom(rect, hoverIdx)
-			local px, py = M.previewPos(rect, uy, m.UICON, size)
-			pcall(M.drawUnitPreview, e.id, px, py, size)
-			gl.Color(1, 1, 1, 1)
 			local ud = UnitDefs[e.id]
 			local human = ud.translatedHumanName or ud.humanName or e.name
 			local shot, sps, isAA = M.shotInfo(e.id)
@@ -2004,43 +2001,34 @@ function M.newUnits(o)
 			if self.restrict and self.restrict.isBanned(e.name) then
 				title = title .. "  - forbidden"
 			end
-			gl.Text(title, cx, rect.y0 - 40 * S, 29 * S, "co")
-			local desc = tostring(ud.translatedTooltip or ud.tooltip or "")
-			local size = 24 * S
-			local perLine = math.max(10, math.floor((rect.x2 - rect.x1) / (size * 0.5)))
-			if #desc > perLine then
-				desc = desc:sub(1, perLine - 1) .. "~"
-			end
-			gl.Text(desc, cx, rect.y0 - 78 * S, size, "co")
-			-- Line 3: what it costs to build; line 4, for a unit that shoots: shots per second x damage per shot = damage per second (DPS)
-			gl.Text(string.format("Metal %d   Energy %d", ud.metalCost or 0, ud.energyCost or 0), cx, rect.y0 - 116 * S, 26 * S, "co")
-			local lastY = 116
+			local items = {
+				{ text = title, fs = 26 },
+				{ text = tostring(ud.translatedTooltip or ud.tooltip or ""), fs = 20, color = { 0.85, 0.85, 0.85 } },
+				{ parts = M.costParts(ud.metalCost, ud.energyCost), fs = 22 },
+			}
 			if shot > 0 then
-				local weapon = string.format("%s shots/s x %d damage = %s DPS%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   (air)" or "")
-				local wsize = 26 * S
-				local wmax = (rect.x2 - rect.x1) / (#weapon * 0.5) -- a long line gets a smaller font so that it fits into the menu
-				if wsize > wmax then
-					wsize = wmax
-				end
-				gl.Text(weapon, cx, rect.y0 - 152 * S, wsize, "co")
-				lastY = 152
+				items[#items + 1] = { text = string.format("%s shots/s x %d damage = %s DPS%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   (air)" or ""), fs = 22 }
 			end
 			if isBuildingDef(ud) then
 				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
 				local bd, br, sd, sr = M.explosionInfo(e.id)
 				if bd > 0 or sd > 0 then
-					local t = string.format("Explosion %d damage, radius %d", bd, br)
+					local x = string.format("Explosion %d damage, radius %d", bd, br)
 					if sd > 0 and (sd ~= bd or sr ~= br) then
-						t = t .. string.format("  |  Self-destruct %d, radius %d", sd, sr)
+						x = x .. string.format("  |  Self-destruct %d, radius %d", sd, sr)
 					end
-					lastY = lastY + 36
-					bottomY = lastY
-					gl.Text(t, cx, rect.y0 - lastY * S, 22 * S, "co")
+					items[#items + 1] = { text = x, fs = 18, color = { 0.85, 0.85, 0.85 } }
 				end
 			end
+			local lines, h = M.infoLayout(items, size)
+			local _, uy = self:geom(rect, hoverIdx)
+			local px, py = M.previewPos(rect, uy, m.UICON, size, h + 4 * S)
+			pcall(M.drawUnitPreview, e.id, px, py, size)
+			M.infoDraw(lines, px, py - 2 * S, size, h)
+			gl.Color(1, 1, 1, 1)
 		end
 		if hint then
-			gl.Text(hint, cx, rect.y0 - (bottomY + 38) * S, 25 * S, "co")
+			gl.Text(hint, cx, rect.y0 - 40 * S, 25 * S, "co")
 		end
 	end
 
@@ -2247,18 +2235,103 @@ function M.drawBlueprintPreview(bp, x1, y1, size)
 	end)
 end
 
--- Place of the preview next to the panel: left (next to the team strip), otherwise right; at the height of tileY
-function M.previewPos(rect, tileY, tileH, size)
+-- Place of the preview next to the panel: left (next to the team strip), otherwise right; at the height of tileY.
+-- infoH: height of the text block under the preview (the picture moves up so that the text stays on the screen)
+function M.previewPos(rect, tileY, tileH, size, infoH)
 	local S = M.S
 	local vsx, vsy = Spring.GetViewGeometry()
 	local px = rect.x1 - M.m.HB - 14 * S - size
 	if px < 10 * S then
 		px = math.min(vsx - size - 10 * S, rect.x2 + 14 * S)
 	end
-	local py = math.max(10 * S, math.min(vsy - size - 10 * S, tileY + tileH / 2 - size / 2))
+	local py = math.max(10 * S + (infoH or 0), math.min(vsy - size - 10 * S, tileY + tileH / 2 - size / 2))
 	return px, py
 end
 M.PREVIEW_SIZE = 400
+
+-- Time until the current income has produced the given metal and energy ("Eco time"): worst case, the stock is not counted. The larger of
+-- the two times counts; no income of a needed resource gives "-". Under a minute in seconds, then m:ss, from an hour h:mm:ss.
+function M.ecoTime(metal, energy)
+	local team = Spring.GetMyTeamID()
+	local secs = 0
+	for _, r in ipairs({ { "metal", metal or 0 }, { "energy", energy or 0 } }) do
+		if r[2] > 0 then
+			local _, _, _, income = Spring.GetTeamResources(team, r[1])
+			if not income or income <= 0 then
+				return "-"
+			end
+			secs = math.max(secs, r[2] / income)
+		end
+	end
+	secs = math.ceil(secs)
+	if secs < 60 then
+		return secs .. " s"
+	elseif secs < 3600 then
+		return string.format("%d:%02d", math.floor(secs / 60), secs % 60)
+	end
+	return string.format("%d:%02d:%02d", math.floor(secs / 3600), math.floor(secs / 60) % 60, secs % 60)
+end
+
+-- "Metal 100   Energy 1500   (Eco time 1:25)" as parts that wrap only between the parts
+function M.costParts(metal, energy)
+	return { string.format("Metal %d", metal or 0), string.format("Energy %d", energy or 0), "(Eco time " .. M.ecoTime(metal, energy) .. ")" }
+end
+
+-- Text block under the 3D preview. items = { { text = "...", fs = 24, color = { r, g, b }, parts = { "a", "b" } } ... }: a long text wraps at
+-- the words (parts: only between the parts), the following lines are indented. Returns the lines and the height.
+function M.infoLayout(items, width)
+	local S = M.S
+	local lines, h = {}, 8 * S
+	local indent = 18 * S
+	for _, it in ipairs(items) do
+		local fs = it.fs * S * 1.25 -- the block under the picture has room: larger than the other text
+		local words = it.parts
+		local sep = "   "
+		if not words then
+			words = {}
+			for w in tostring(it.text):gmatch("%S+") do
+				words[#words + 1] = w
+			end
+			sep = " "
+		end
+		local cur, first = "", true
+		local function flush()
+			if cur ~= "" then
+				lines[#lines + 1] = { text = cur, fs = fs, color = it.color, indent = first and 0 or indent }
+				h = h + fs * 1.3
+				first = false
+			end
+		end
+		for _, w in ipairs(words) do
+			local try = (cur == "") and w or (cur .. sep .. w)
+			local avail = width - 16 * S - (first and 0 or indent)
+			if cur ~= "" and (tonumber(gl.GetTextWidth(try)) or 0) * fs > avail then
+				flush()
+				cur = w
+			else
+				cur = try
+			end
+		end
+		flush()
+	end
+	return lines, h + 4 * S
+end
+
+-- Draws the block with its upper left corner at (x, topY) on a dark ground
+function M.infoDraw(lines, x, topY, width, h)
+	local S = M.S
+	gl.Color(0, 0, 0, 0.72)
+	gl.Rect(x, topY - h, x + width, topY)
+	local y = topY - 6 * S
+	for _, l in ipairs(lines) do
+		y = y - l.fs
+		local c = l.color or { 1, 1, 1 }
+		gl.Color(c[1], c[2], c[3], 1)
+		gl.Text(l.text, x + 8 * S + l.indent, y + 3 * S, l.fs, "o")
+		y = y - l.fs * 0.3
+	end
+	gl.Color(1, 1, 1, 1)
+end
 
 -- Small pictures of the features for the list: rendered once per feature into a texture, a few per frame
 local THUMB = 96
@@ -2514,23 +2587,22 @@ function M.newFeatures(o)
 		local e = hoverIdx and list[hoverIdx]
 		if e then
 			local fd = FeatureDefs[e.id]
-			-- Picture left of the team strip, at the height of the tile
+			-- Picture left of the team strip, at the height of the tile; the text under it
 			local size = M.PREVIEW_SIZE * S
-			local _, ty = self:geom(rect, hoverIdx)
-			local px, py = M.previewPos(rect, ty, cellH(), size)
-			pcall(M.drawFeaturePreview, e.id, px, py, size)
-			gl.Color(1, 1, 1, 1)
-			local cx = (rect.x1 + rect.x2) / 2
 			local desc = fd and ((fd.translatedDescription and fd.translatedDescription ~= "" and fd.translatedDescription) or (fd.description and fd.description ~= "" and fd.description) or nil)
-			gl.Text(string.format("%s", e.name), cx, rect.y0 - 40 * S, 29 * S, "co")
+			local items = { { text = tostring(e.name), fs = 26 } }
 			if fd then
-				gl.Text(string.format("Metal %d   Energy %d", fd.metal or 0, fd.energy or 0), cx, rect.y0 - 78 * S, 26 * S, "co")
+				items[#items + 1] = { parts = M.costParts(fd.metal, fd.energy), fs = 22 }
 			end
 			if desc then
-				gl.Color(0.8, 0.8, 0.8, 1)
-				gl.Text(desc, cx, rect.y0 - 112 * S, 22 * S, "co")
-				gl.Color(1, 1, 1, 1)
+				items[#items + 1] = { text = desc, fs = 20, color = { 0.8, 0.8, 0.8 } }
 			end
+			local lines, h = M.infoLayout(items, size)
+			local _, ty = self:geom(rect, hoverIdx)
+			local px, py = M.previewPos(rect, ty, cellH(), size, h + 4 * S)
+			pcall(M.drawFeaturePreview, e.id, px, py, size)
+			M.infoDraw(lines, px, py - 2 * S, size, h)
+			gl.Color(1, 1, 1, 1)
 		end
 	end
 
