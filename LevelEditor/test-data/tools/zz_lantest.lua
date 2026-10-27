@@ -61,6 +61,14 @@ function widget:GameFrame(f)
 		end
 		log("orders given by", me, "to", tostring(sent), "units of team", tostring(team))
 	end
+	if mode == "cp" and (f == 60 or f == 900) then
+		local team = Spring.GetMyTeamID()
+		for _, u in ipairs(Spring.GetTeamUnits(team)) do
+			local x, _, z = Spring.GetUnitPosition(u)
+			local cmds = Spring.GetUnitCommands(u, 0) or 0
+			log(string.format("  census f%d team%d %s at %.0f,%.0f commands=%s", f, team, UnitDefs[Spring.GetUnitDefID(u)].name, x, z, tostring(cmds)))
+		end
+	end
 	if mode == "cp" then
 		local team = Spring.GetMyTeamID()
 		local com

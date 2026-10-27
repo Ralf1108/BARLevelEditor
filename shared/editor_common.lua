@@ -1363,9 +1363,11 @@ function M.newGrid(o)
 end
 
 ---------------------------------------------------------------- Unit catalog and selection grid
-M.FACTIONS = { { "arm", "Armada" }, { "cor", "Cortex" }, { "leg", "Legion" } }
+-- "scv" (Scavengers: the *_scav copies of all units) and "rap" (Raptors: raptor_*) are no side of the game: the units exist only with the game option
+-- forceallunits (the editor and the scenarios of such levels set it), and nobody controls them (no Scavenger or Raptor AI in the team)
+M.FACTIONS = { { "arm", "Armada" }, { "cor", "Cortex" }, { "leg", "Legion" }, { "scv", "Scavengers" }, { "rap", "Raptors" } }
 -- Faction symbols (in the game under sidepics/), left in the faction button
-M.FACTION_ICONS = { arm = "sidepics/armada.png", cor = "sidepics/cortex.png", leg = "sidepics/Legion.png" }
+M.FACTION_ICONS = { arm = "sidepics/armada.png", cor = "sidepics/cortex.png", leg = "sidepics/Legion.png", rap = "icons/raptor.png" }
 M.GROUPS = {
 	{ "buildings", "Buildings" }, { "bot", "Bots" }, { "vehicle", "Vehicles" }, { "hover", "Hover" },
 	{ "air", "Air" }, { "ships", "Ships" },
@@ -1511,6 +1513,16 @@ local function fmtRate(v)
 	return t
 end
 
+-- The faction key of a unit name: arm / cor / leg, scv for the *_scav copies, rap for the raptors (nil: not offered, e.g. critters)
+function M.factionOf(name)
+	if name:sub(-5) == "_scav" then
+		return "scv", name:sub(1, -6)
+	elseif name:sub(1, 7) == "raptor_" then
+		return "rap", name
+	end
+	return name:sub(1, 3), name
+end
+
 -- [faction][group][tech] = { { name, id, filler, rank } ... }, built once from UnitDefs
 function M.buildUnitCache()
 	local cache = {}
@@ -1522,11 +1534,12 @@ function M.buildUnitCache()
 	end
 	for id, ud in pairs(UnitDefs) do
 		local name = ud.name
-		local fac = cache[name:sub(1, 3)]
+		local key, base = M.factionOf(name) -- base: the name without _scav (the checks below are about the normal unit)
+		local fac = cache[key]
 		local cp = ud.customParams or {}
 		-- without decoration (arm_leftshoulder_..., cor_hat_..., armpw_wings): names with "_" at the 4th position or "_wings"
-		if fac and not name:find("scav") and not name:find("decom") and not name:find("comlvl%d") and not name:find("dummy") and not name:find("drone")
-			and not cp.isdrone and name:sub(4, 4) ~= "_" and not name:find("_wings", 1, true) then
+		if fac and (key == "scv" or key == "rap" or not name:find("scav")) and not base:find("scav") and not base:find("decom") and not base:find("comlvl%d")
+			and not base:find("dummy") and not base:find("drone") and not cp.isdrone and (key == "rap" or base:sub(4, 4) ~= "_") and not name:find("_wings", 1, true) then
 			local tech = math.max(1, math.min(3, math.floor(techLevel(ud))))
 			local group = unitGroup(ud)
 			local list = fac[group][tech]

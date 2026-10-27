@@ -350,6 +350,14 @@ local function saveLevel(name, quiet)
 			needed[#needed + 1] = key .. ' = "1"'
 		end
 	end
+	-- Scavenger and Raptor units (the *_scav copies, raptor_*) exist only with forceallunits: the level asks for it only when it holds such a unit
+	for _, id in ipairs(Spring.GetAllUnits()) do
+		local n = UnitDefs[Spring.GetUnitDefID(id)].name
+		if n:sub(-5) == "_scav" or n:sub(1, 7) == "raptor_" then
+			needed[#needed + 1] = 'forceallunits = "1"'
+			break
+		end
+	end
 	f:write("return {\n\tmap = \"" .. Game.mapName .. "\",\n")
 	-- Map size in Elmo: the scenario builder needs it for the grace period (start boxes as a fraction of the map)
 	f:write(string.format("\tmapsize = { %d, %d },\n", Game.mapSizeX or 0, Game.mapSizeZ or 0))

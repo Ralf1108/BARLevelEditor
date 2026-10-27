@@ -496,7 +496,7 @@ function Write-StartScript([string]$mapSpring) {
 	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
 	[ai0] { shortname=NullAI; team=1; host=0; name=Null1; }
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; }
+	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1; }
 	ishost=1;
 	hostip=127.0.0.1;
 	myplayername=Player;
