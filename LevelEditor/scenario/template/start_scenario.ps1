@@ -13,17 +13,16 @@
 # ..\shared), the starter, the lobby and the briefing are always the current ones of the editor, so a scenario built earlier is never out of date. Started
 # from the unpacked package of a scenario (Start Scenario.bat) both are empty: everything comes from the package folder.
 # -Bundle (start menu key 6, "Play a level"): the scenario is a bundle in the cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>: scenario.txt and the gadgets, made from a
-# level by scenario_builder.ps1 -BundleDir and put there by Install-Bundle): the host gives -ScenarioDir <that folder> and offers it in the lobby, a joiner gives no
-# -ScenarioDir and gets the bundle from the host through the lobby (or from his cache). Needs -EditorDir (starter, lobby and gadgets are the editor's own).
+# level by scenario_builder.ps1 -BundleDir and put there by Install-Bundle): the host gives -ScenarioDir <that folder>, a joiner gives no -ScenarioDir (he gets the
+# scenario through the lobby, as in every hosted game). Needs -EditorDir (starter, lobby and gadgets are the editor's own).
 # -LobbyMapKey D or H (tests, automation): a joiner without the map takes this answer at once (D = download it, H = get it from the host).
 # The map of a hosted game: a joiner in the same network as the host gets it from the host, everybody else downloads it from the internet (nothing is asked).
-# Update of the editor files through the lobby (-EditorDir needed): a joiner whose files are older than the host's can fetch the host's files in the lobby (U), sees which
-# files would change and has to say Y; the old files are saved in %LOCALAPPDATA%\BAR-Scenario\Backup first and the starter ends with exit code 10 (start the editor again).
-# -LobbyAutoUpdate (tests, automation): the joiner says U and Y at once.
+# In a hosted game with the lobby everybody plays the host's game: the host offers a bundle (scenario.txt and the Lua files of his extra game) and the
+# joiners build their extra game from it. Only the lobby version (lobby.ps1) must be the same; another one is refused ("update the Level Editor manually").
 # Lobby (-Lobby with -HostGame or -Join): before anything is built the host sees a box per team and distributes the players who joined (TCP port
 # -LobbyPort, default 8453); a joiner only sends his name. When the host starts, everybody prepares (extra game, map), the host's game starts and
 # the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "Ralf=0,Anna=2" (first = host).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null, [switch]$LobbyAutoUpdate)
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -94,40 +93,29 @@ if ($WaitForHost) {
         Start-Sleep -Milliseconds 500
     }
 }
+# The files of the extra game of the scenarios (see below): the current ones of the editor (-EditorDir) or the ones of the package; a joiner of a
+# lobby takes the host's (the bundle)
+$gameDirs = if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path (Split-Path $EditorDir -Parent) 'shared'), $here) } else { @($pkg) }
 # The lobby, before the extra game is built and the map is fetched (lobby.ps1). The host distributes the players; when he starts, the script goes on
 # with the roster as -Mapping (the host builds the game and starts it, the joiners prepare and wait for GO)
 if ($Lobby -and ($HostGame -or $JoinIp)) {
-    # the version of the files that decide how the game runs: the editor's (scripts, scenario\template, shared) or the package's
-    $playVersion = Get-PlayVersion $(if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path $EditorDir 'scenario\template'), (Join-Path (Split-Path $EditorDir -Parent) 'shared')) } else { @($here) })
     if ($HostGame) {
         $teamInfo = @(Get-TeamInfo $script)
         if ($teamInfo.Count -lt 2) { Fail 'This scenario has only one team, there is nobody to play against.' }
-        $hostBundle = $null
-        if ($Bundle) {
-            $hostBundle = New-HostBundle $pkg
-            $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (he has to ask and the host has to agree)
-            if (-not $hostBundle.Map) { Write-Host "Note: the archive of the map '$map' was not found, a joiner without the map has to download it from the internet." -ForegroundColor Yellow }
-        }
-        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $playVersion $hostBundle $(if ($EditorDir) { Split-Path $EditorDir -Parent } else { $null })
+        # the scenario and the Lua files of the game this computer runs ($gameDirs) go to the joiners: everybody plays the host's game
+        $hostBundle = New-HostBundle $pkg $gameDirs
+        $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (he has to ask and the host has to agree)
+        if (-not $hostBundle.Map) { Write-Host "Note: the archive of the map '$map' was not found, a joiner without the map has to download it from the internet." -ForegroundColor Yellow }
+        $gameDirs = @($hostBundle.Dir)
+        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $hostBundle
         if (-not $lobbyRoster) { Write-Host 'The lobby was cancelled.'; exit 0 }
         Save-Mapping $lobbyRoster
         $Mapping = ConvertTo-MappingText $lobbyRoster
         if (-not $PSBoundParameters.ContainsKey('Wait')) { $Wait = 15 }   # everybody is known: the joiners connect at once
         Write-Host "Lobby finished: $Mapping"
     } else {
-        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null $playVersion @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey; UpdateRoot = $(if ($EditorDir) { Split-Path $EditorDir -Parent } else { $null }); AutoUpdate = [bool]$LobbyAutoUpdate }
+        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey }
         switch -Wildcard ($res) {
-            'update' {
-                # the joiner agreed to the update of his editor files (lobby.ps1): put it in place, the old files are saved first
-                try {
-                    $upd = Install-EditorUpdate $script:UpdateStage (Split-Path $EditorDir -Parent)
-                    Remove-Item $script:UpdateStage -Recurse -Force -ErrorAction SilentlyContinue
-                    Write-Host ''
-                    Write-Host "The Level Editor was updated from the host: $($upd.Count) files replaced (the old ones are in $($upd.Backup))." -ForegroundColor Green
-                    Write-Host 'Please start the Level Editor again and join again.'
-                    exit 10
-                } catch { Fail $_.Exception.Message }
-            }
             'noconnect' { Fail "No lobby of a host found at $($JoinIp):$LobbyPort." }
             'refused*'  { Fail "The host refused you: $($res.Substring(9))" }
             'cancel'    { Write-Host 'The host cancelled the lobby.'; exit 0 }
@@ -135,13 +123,12 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
             'left'      { exit 0 }
         }
         $Name = $script:JoinerName
-        if ($Bundle -and -not $ScenarioDir) {
-            # the scenario the host gave through the lobby (in the cache)
-            if (-not $script:BundleDir) { Fail 'The host did not give a scenario.' }
-            $pkg = $script:BundleDir
-            $script = [IO.File]::ReadAllText((Join-Path $pkg 'scenario.txt'))
-            $map = [regex]::Match($script, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
-        }
+        # the scenario and the Lua files the host gave through the lobby (in the cache): this computer plays exactly the host's game
+        if (-not $script:BundleDir) { Fail 'The host did not give a scenario.' }
+        $pkg = $script:BundleDir
+        $gameDirs = @($pkg)
+        $script = [IO.File]::ReadAllText((Join-Path $pkg 'scenario.txt'))
+        $map = [regex]::Match($script, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
         Write-Host 'The host started the game. Getting ready ...'
     }
 }
@@ -149,7 +136,6 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
 # restrictions and the indestructible buildings, built on the installed official game (nothing of the official game is changed). Its files: the
 # current ones of the editor (-EditorDir: scripts\ and ..\shared, so a scenario built earlier never runs outdated code) or the ones of the package.
 # The version comes from the files: the editor's setup has built the same game already, so normally nothing is built here.
-$gameDirs = if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path (Split-Path $EditorDir -Parent) 'shared'), $here) } else { @($pkg) }
 $scGame = Write-ScenarioGame $data $game $gameDirs
 $gametype = $scGame.Name
 $script = $script.Replace('__GAMETYPE__', $gametype)

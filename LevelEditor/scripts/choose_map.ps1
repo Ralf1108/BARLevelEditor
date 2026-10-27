@@ -18,9 +18,8 @@ $userDir = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor'   # what the editor re
 $levelsDir = Join-Path $root 'levels'
 . (Join-Path $here 'map_preview.ps1')
 $pvOk = Initialize-MapPreview $Data   # thumbnails from the lobby package of the game (map_preview.ps1); $false = no previews
-. (Join-Path $root 'scenario\template\lobby.ps1')   # the lobby of a hosted game (the start menu starts it through start_scenario.ps1) and the version of the files that decide how a game runs
+. (Join-Path $root 'scenario\template\lobby.ps1')   # the lobby of a hosted game (the start menu starts it through start_scenario.ps1), its version and the cache
 try { [void](Remove-OldCache) } catch { }   # old scenarios and maps from hosts, half-finished downloads (lobby.ps1)
-$playVersion = Get-PlayVersion @($here, (Join-Path $root 'scenario\template'), (Join-Path (Split-Path $root -Parent) 'shared'))
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
 $lastFile = Join-Path $userDir 'Last Map.txt'
 $scavFile = Join-Path $userDir 'Scav Units.txt'   # 1 = the editor loads the Scavenger and Raptor units (game option forceallunits; the start takes about 10 s longer)
@@ -530,16 +529,6 @@ function Set-Autoload([string]$name) {
 
 # ---------------------------------------------------------------- main menu
 while ($true) {
-    if ($LASTEXITCODE -eq 10) {
-        # the starter updated the files of the editor from the host (lobby.ps1): this menu still runs the old ones in memory
-        Clear-Host
-        Write-Host 'The Level Editor was updated from the host.' -ForegroundColor Green
-        Write-Host 'Please start the Level Editor again (the new files are used from then on).'
-        Write-Host ''
-        Write-Host 'Press any key.'
-        [void][Console]::ReadKey($true)
-        exit 1
-    }
     $global:LASTEXITCODE = 0
     $levels = @(Get-Levels)
     $lastLevel = Get-LastLevel
@@ -564,7 +553,7 @@ while ($true) {
     while (-not $menu[$sel].On) { $sel++ }
     Clear-Host
     Write-Host 'Level Editor' -ForegroundColor Cyan -NoNewline
-    Write-Host ('   version {0} of {1} UTC (the same on every computer that plays together)' -f $playVersion.Short, (Format-PlayDate $playVersion.Date)) -ForegroundColor DarkGray
+    Write-Host ('   lobby version {0} (the same on every computer that plays together over the network)' -f $script:LobbyProtocol) -ForegroundColor DarkGray
     Write-Host ''
     $menuTop = [Console]::CursorTop
     Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
