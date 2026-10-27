@@ -101,6 +101,8 @@ if ($maps.Count -eq 0) { Write-Host 'No maps found.' -ForegroundColor Red; exit 
 # Download a map (only after the selection): file into the maps folder, check the checksum
 function Download-Map($m, [string]$dir) {
     if (-not $m.Url) { Write-Host 'No download address known.' -ForegroundColor Yellow; return $false }
+    # the file name comes from the online list: only a plain map file name may become a path (Test-MapFileName of lobby.ps1)
+    if (-not (Test-MapFileName ([string]$m.FileName))) { Write-Host "The map list names an unusable file name: '$($m.FileName)'." -ForegroundColor Yellow; return $false }
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         New-Item -ItemType Directory -Force $dir | Out-Null
