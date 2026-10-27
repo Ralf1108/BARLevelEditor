@@ -243,7 +243,7 @@ local function body(name, team, x, z, visible)
 		Spring.SetUnitAlwaysVisible(id, visible and true or false) -- seen without radar or line of sight
 		Spring.SetUnitBlocking(id, false, false, false, false, false, false, false) -- nothing collides with the pod: a carrier would be pushed off its way
 		Spring.MoveCtrl.Enable(id) -- the pod is a drifting unit (speed 0.03): frozen, it stays where it lies
-		Spring.SetUnitRulesParam(id, "tdwave", 1, { public = true })
+		Spring.SetUnitRulesParam(id, "led_nosave", 1, { public = true }) -- a unit of the running game: the editor does not save it
 		protected[id] = true
 	end
 	return id

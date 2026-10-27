@@ -283,8 +283,8 @@ local function saveLevel(name, quiet)
 	local lines, count = {}, 0
 	for _, id in ipairs(Spring.GetAllUnits()) do
 		local t = Spring.GetUnitTeam(id)
-		-- the builder rows from the start (the gadget marks them) are not part of the level
-		if Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 and Spring.GetUnitRulesParam(id, "tdwave") ~= 1 then
+		-- not part of the level: the builders of Ctrl+D (ledbuilder) and the units of a running game (led_nosave: waves, flags, collection points)
+		if Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 and Spring.GetUnitRulesParam(id, "led_nosave") ~= 1 then
 			local x, y, z = Spring.GetUnitPosition(id)
 			local ud = UnitDefs[Spring.GetUnitDefID(id)]
 			-- Gaia units additionally carry gaia = true (the Gaia number depends on the team count)

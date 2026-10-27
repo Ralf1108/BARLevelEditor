@@ -272,7 +272,7 @@ local function spawnOne(entry)
 		end
 	end
 	giveRoute(id, 1)
-	Spring.SetUnitRulesParam(id, "tdwave", 1, { public = true }) -- the editor does not save these units
+	Spring.SetUnitRulesParam(id, "led_nosave", 1, { public = true }) -- a unit of the running game: the editor does not save it
 	alive[id] = { x = x, z = z, frame = Spring.GetGameFrame(), tries = 0 }
 end
 
