@@ -37,7 +37,7 @@ local function log(...)
 end
 
 local ui = {}
-local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, SCENARIO_GAME, SCENARIO_FILE, localGameHash
+local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, ownGame, gameOfTag
 local status = ""
 local returnAt
 local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
@@ -183,8 +183,23 @@ local function battleOpenedLine(c)
 end
 
 -- ---- scenarios of the Level Editor (data\LevelEditorScenarios is a junction to scenario\scenarios): the team layout is the scenario's and cannot be changed
-SCENARIO_FILE = "games/LevelEditorScenarios.sdz"
-SCENARIO_GAME = "Level Editor Scenarios 1"  -- the extra game the Level Editor setup builds (all gadgets; they switch on by the game options of the scenario)
+-- The extra game of the scenarios: "Level Editor Scenarios <version>" in games/LevelEditorScenarios_<version>.sdz (all gadgets; they switch on by the
+-- game options of the scenario). The version comes from its files (Write-ScenarioGame in shared/bar_common.ps1), so another version never replaces
+-- this one: a joiner who has not got the host's version gets it as a file of its own.
+local SCENARIO_POINTER = "games/LevelEditorScenarios.txt" -- written by the Level Editor setup: file name and game name of its own version
+
+-- the game of a version: file and name (nil for a version that is not 8 hex digits: it comes from the network)
+gameOfTag = function(ver)
+	if type(ver) ~= "string" or not ver:match("^%x%x%x%x%x%x%x%x$") then return nil end
+	return { ver = ver, file = "games/LevelEditorScenarios_" .. ver .. ".sdz", name = "Level Editor Scenarios " .. ver }
+end
+
+-- the version the Level Editor setup built on this computer (nil when it is not installed)
+ownGame = function()
+	local text = VFS.LoadFile(SCENARIO_POINTER, VFS.RAW) or ""
+	local ver = text:match("LevelEditorScenarios_(%x+)%.sdz")
+	return gameOfTag(ver)
+end
 
 scenarioList = function()
 	local names = {}
@@ -260,13 +275,14 @@ selectScenario = function(name)
 		if opp then S.battle.scenario.versus = true; S.battle.scenario.oppTeam = tonumber(opp) end
 	end
 	-- the extra game: every computer needs the same file; the clients compare hash and size and fetch it from the host when theirs differs or is missing
-	local data = VFS.LoadFile(SCENARIO_FILE, VFS.RAW)
+	local own = ownGame()
+	local data = own and VFS.LoadFile(own.file, VFS.RAW)
 	S.gameFile = nil
 	if data then
-		S.gameFile = { data = data, size = #data, hash = VFS.CalculateHash(data, 0) }
-		toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.hash .. "|" .. S.gameFile.size)
+		S.gameFile = { data = data, size = #data, hash = VFS.CalculateHash(data, 0), ver = own.ver, name = own.name }
+		toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size)
 	else
-		say("Warning: the extra game " .. SCENARIO_FILE .. " is not installed on the host (run the Level Editor setup).")
+		say("Warning: the extra game of the scenarios is not installed on the host (run the Level Editor setup).")
 	end
 	S.battle.map = map; updateBattleInfo()
 	toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=" .. name)
@@ -371,7 +387,7 @@ local function serverLine(c, line)
 		end
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
-		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
+		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
 		sendLine(c, "REQUESTBATTLESTATUS")
 		updateBattleInfo()
@@ -475,7 +491,7 @@ local function buildScenarioScript(myName)
 		text, removedAi = text:gsub("\t%[ai%d+%]%s*{[^}]*[Tt]eam%s*=%s*" .. sc.oppTeam .. "%s*;[^}]*}\n", "")
 		text = text:gsub("(%[team" .. sc.oppTeam .. "%]%s*{[^}]-TeamLeader%s*=%s*)%d+", "%1" .. oppLeader, 1)
 	end
-	text = text:gsub("__GAMETYPE__", SCENARIO_GAME):gsub("__PLAYERNAME__", myName)
+	text = text:gsub("__GAMETYPE__", (S.gameFile and S.gameFile.name) or (ownGame() or {}).name or "Level Editor Scenarios"):gsub("__PLAYERNAME__", myName)
 	text = text:gsub("hostip%s*=%s*[%d%.]+;", "hostip=0.0.0.0;"):gsub("hostport%s*=%s*%d+;", "hostport=" .. GAMEPORT .. ";")
 	text = text:gsub("numplayers%s*=%s*%d+;", "numplayers=" .. (1 + #players) .. ";"):gsub("numusers%s*=%s*%d+;", "numusers=" .. (1 + #players + (origUsers - origPlayers) - removedAi) .. ";")
 	local at = text:find("[modoptions]", 1, true) or text:find("[MODOPTIONS]", 1, true)
@@ -558,26 +574,24 @@ local function hookConnect()
 			return Spring.Reload(script)
 		end
 		if lan and lan.role == "client" and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" then
-			local tag = self.modoptions.lansync or ""
-			local hash = tag:match("^(.-)|") or ""
-			if lan.fetch or lan.syncPending or (hash ~= "" and lan.syncHash ~= hash and lan.syncFailed ~= hash and localGameHash() ~= hash) then
+			local want = gameOfTag((self.modoptions.lansync or ""):match("^(%x+)|"))
+			if not want then
+				local msg = "The host plays the scenario '" .. self.modoptions.lanscenario .. "' with another version of the Level Editor (no game version announced): please update the Level Editor manually."
+				log("cannot join the scenario:", msg)
+				if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
+				return
+			end
+			if lan.fetch or lan.syncPending or (not VFS.HasArchive(want.name) and lan.syncFailed ~= want.ver) then
 				-- still loading (or about to ask): the connection to the game is made as soon as the file is there
 				lan.pendingConnect = { orig = original, args = { ... } }
 				log("start postponed until the scenario game is loaded")
 				return
 			end
-			if lan.syncFailed == hash and hash ~= "" and localGameHash() ~= hash then
-				local msg = "The scenario game of the host was not loaded: the scenario cannot start for you."
+			if not VFS.HasArchive(want.name) then
+				local msg = "The scenario game of the host (" .. want.name .. ") was not loaded: the scenario cannot start for you."
 				log(msg); if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
 				return
 			end
-		end
-		if lan and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" and not VFS.HasArchive(SCENARIO_GAME) then
-			-- the scenario needs the extra game of the Level Editor setup on this computer too
-			local msg = "The host plays the scenario '" .. self.modoptions.lanscenario .. "': it needs the game '" .. SCENARIO_GAME .. "' (installed by the Level Editor setup, install_editor.bat). Install the Level Editor and start the game again."
-			log("cannot join the scenario:", msg)
-			if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
-			return
 		end
 		return original(self, ...)
 	end
@@ -655,17 +669,15 @@ local function joinHost(ip)
 	lanConnect("client", ip, name)
 end
 
--- ---- the extra game of the scenario on a joiner: the host announces hash and size (game option lansync); a different or missing file is fetched from the host after a question
-localGameHash = function()
-	local data = VFS.LoadFile(SCENARIO_FILE, VFS.RAW)
-	return data and VFS.CalculateHash(data, 0) or nil, data and #data or 0
-end
+-- ---- the extra game of the scenario on a joiner: the host announces version, hash and size (game option lansync "<version>|<hash>|<size>"); a joiner who
+-- has not got that version fetches it from the host after a question and keeps it as a file of its own (games/LevelEditorScenarios_<version>.sdz):
+-- his own version is never replaced. A version he has already is used as it is (the version is made of the files, equal versions are equal games).
 
 local function finishFetch(f, ok, reason)
 	pcall(function() f.sock:close() end)
 	lan.fetch = nil
 	if ok then
-		lan.syncHash = f.hash; lan.syncPending = false
+		lan.syncPending = false
 		setStatus("The scenario game is up to date.")
 		if lan.pendingConnect then
 			local a = lan.pendingConnect; lan.pendingConnect = nil
@@ -673,7 +685,7 @@ local function finishFetch(f, ok, reason)
 			if l then a.orig(l, unpack(a.args)) end
 		end
 	else
-		lan.syncFailed = f.hash; lan.syncPending = false; lan.pendingConnect = nil
+		lan.syncFailed = f.game and f.game.ver; lan.syncPending = false; lan.pendingConnect = nil
 		setStatus("Could not load the scenario game from the host: " .. tostring(reason))
 		if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup("Could not load the scenario game from the host: " .. tostring(reason)) end
 	end
@@ -685,7 +697,7 @@ local function startFetch(hash, size)
 	if not ok then finishFetch({ sock = s, hash = hash }, false, "no connection (" .. tostring(e) .. ")"); return end
 	s:settimeout(0)
 	s:send("FETCHGAME " .. hash .. "\n")
-	lan.fetch = { sock = s, hash = hash, size = size, buf = "", parts = {}, got = 0, total = nil, t = os.clock() }
+	lan.fetch = { sock = s, hash = hash, size = size, game = lan.syncGame, buf = "", parts = {}, got = 0, total = nil, t = os.clock() }
 	lan.syncPending = true
 	setStatus("Loading the scenario game from the host ...")
 end
@@ -721,14 +733,13 @@ local function updateFetch()
 	if f.total and f.got >= f.total then
 		local all = table.concat(f.parts)
 		if VFS.CalculateHash(all, 0) ~= f.hash then finishFetch(f, false, "the file is not the one that was announced (hash)"); return end
-		local part = SCENARIO_FILE .. ".part"
+		local part = f.game.file .. ".part"
 		local fh = io.open(part, "wb")
 		if not fh then finishFetch(f, false, "cannot write " .. part); return end
 		fh:write(all); fh:close()
-		os.remove(SCENARIO_FILE)
-		if not os.rename(part, SCENARIO_FILE) then finishFetch(f, false, "cannot replace " .. SCENARIO_FILE); return end
+		if not os.rename(part, f.game.file) then os.remove(part); finishFetch(f, false, "cannot write " .. f.game.file); return end
 		pcall(VFS.ScanAllDirs)
-		log("the extra game was loaded from the host:", f.total, "bytes; archive present:", tostring(VFS.HasArchive(SCENARIO_GAME)))
+		log("the extra game was loaded from the host:", f.total, "bytes; archive present:", tostring(VFS.HasArchive(f.game.name)))
 		finishFetch(f, true)
 	elseif err == "closed" or os.clock() - f.t > 30 then
 		finishFetch(f, false, err == "closed" and "the host closed the connection" or "timeout")
@@ -742,15 +753,14 @@ local function updateSync()
 	if lan.fetch then updateFetch(); return end
 	local tag = mo and mo.lansync
 	if not (mo and mo.lanscenario and mo.lanscenario ~= "" and tag and tag ~= "") then return end
-	local hash, size = tag:match("^(.-)|(%d+)$")
-	if not hash or lan.syncHash == hash or lan.syncAsked == hash then return end
-	local mine = localGameHash()
-	if mine == hash then lan.syncHash = hash; return end
-	lan.syncAsked = hash
-	local function yes() startFetch(hash, tonumber(size)) end
-	local function no() lan.syncFailed = hash; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
+	local ver, hash, size = tag:match("^(%x+)|(.-)|(%d+)$")
+	local want = gameOfTag(ver)
+	if not want or lan.syncAsked == ver or VFS.HasArchive(want.name) then return end
+	lan.syncAsked = ver
+	local function yes() lan.syncGame = want; startFetch(hash, tonumber(size)) end
+	local function no() lan.syncFailed = ver; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
 	if cfg.autoAccept then yes(); return end
-	local q = "The host plays the scenario '" .. mo.lanscenario .. "'. Your game '" .. SCENARIO_GAME .. "' is " .. (mine and "different from his" or "missing") .. ". Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
+	local q = "The host plays the scenario '" .. mo.lanscenario .. "' with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
 	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
 end
 
@@ -1211,9 +1221,10 @@ function widget:Update()
 		local dirs = VFS.SubDirs("LevelEditorScenarios/", "*", VFS.RAW) or {}
 		log("test: scenario folders seen through the junction:", #dirs, table.concat(dirs, " "))
 		local txt = VFS.LoadFile("LevelEditorScenarios/" .. cfg.scenarioTest .. "/scenario.txt", VFS.RAW)
-		log("test: scenario.txt read:", txt and #txt or "FAILED", "bytes; game archive 'Tower Defense Scenario 1' present:", tostring(VFS.HasArchive("Tower Defense Scenario 1")))
+		local own = ownGame() or {}
+		log("test: scenario.txt read:", txt and #txt or "FAILED", "bytes; game archive '" .. tostring(own.name) .. "' present:", tostring(own.name and VFS.HasArchive(own.name)))
 		if txt then
-			local script = txt:gsub("__GAMETYPE__", cfg.scenarioGame or "Tower Defense Scenario 1"):gsub("__PLAYERNAME__", cfg.name or "Hanna")
+			local script = txt:gsub("__GAMETYPE__", cfg.scenarioGame or own.name or "Level Editor Scenarios"):gsub("__PLAYERNAME__", cfg.name or "Hanna")
 			log("test: starting the scenario with Spring.Reload")
 			Spring.Reload(script)
 		end

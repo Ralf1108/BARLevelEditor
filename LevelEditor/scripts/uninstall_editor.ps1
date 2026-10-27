@@ -26,7 +26,9 @@ $desktop = [Environment]::GetFolderPath('Desktop')
 $items = @(
     @{ Path = (Join-Path $data 'games\LevelEditorMod.sdz'); Text = 'Extra game "Level Editor" (data\games\LevelEditorMod.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'games\LevelEditorMod.stamp'); Text = 'Stamp of the extra game (data\games\LevelEditorMod.stamp)'; Kind = 'file' },
-    @{ Path = (Join-Path $data 'games\LevelEditorScenarios.sdz'); Text = 'Extra game "Level Editor Scenarios" (data\games\LevelEditorScenarios.sdz)'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'games\LevelEditorScenarios.txt'); Text = 'Name of the extra game "Level Editor Scenarios" (data\games\LevelEditorScenarios.txt)'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'games\LevelEditorScenarios.sdz'); Text = 'Extra game "Level Editor Scenarios" of an older setup (data\games\LevelEditorScenarios.sdz)'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'games\TowerDefenseScenario.sdz'); Text = 'Extra game "Tower Defense Scenario" of an older starter (data\games\TowerDefenseScenario.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LevelEditor'); Text = 'Junction data\LevelEditor (the levels themselves stay in levels)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorBlueprints'); Text = 'Junction data\LevelEditorBlueprints (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorScenarios'); Text = 'Junction data\LevelEditorScenarios (the built scenarios themselves stay in scenario\scenarios)'; Kind = 'junction' },
@@ -42,6 +44,12 @@ $items = @(
 )
 # loadLocalWidgets in the settings of the lobby: set by the LAN Play setup, switched off again (install_lan_play.ps1 -Uninstall)
 $lanSetup = Join-Path $root 'lan_lobby\install_lan_play.ps1'
+# the editor's own version of the extra game of the scenarios (named in LevelEditorScenarios.txt; versions received from LAN hosts stay)
+$ptr = Join-Path $data 'games\LevelEditorScenarios.txt'
+if (Test-Path $ptr) {
+    $own = @(Get-Content $ptr)[0]
+    if ($own -match '^LevelEditorScenarios_[0-9a-f]{8}\.sdz$') { $items += @{ Path = (Join-Path $data "games\$own"); Text = "Extra game ""Level Editor Scenarios"" (data\games\$own)"; Kind = 'file' } }
+}
 if ($WithSettings) {
     foreach ($n in 'LevelEditorRecent.lua', 'LevelEditorUI.lua') {
         $items += @{ Path = (Join-Path $data "LuaUI\Config\$n"); Text = "Settings file LuaUI\Config\$n"; Kind = 'file' }

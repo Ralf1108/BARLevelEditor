@@ -103,3 +103,68 @@ function Remove-Junction($path) {
     cmd /c rmdir "$path" | Out-Null
     return $true
 }
+
+# Writes a zip with the entries @(name, text) to $path: first into a temporary file that then replaces the old one, so a failure in between
+# leaves the old file in place. $fixedTime: optional time for all entries (equal archives on every computer).
+function Write-GameZip([string]$path, $entries, $fixedTime = $null) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $tmp = $path + '.tmp'
+    if (Test-Path $tmp) { Remove-Item $tmp -Force }
+    $utf8 = New-Object Text.UTF8Encoding($false)
+    $zip = [IO.Compression.ZipFile]::Open($tmp, 'Create')
+    try {
+        foreach ($e in $entries) {
+            $entry = $zip.CreateEntry($e[0])
+            if ($fixedTime) { $entry.LastWriteTime = $fixedTime }
+            $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
+            try { $w.Write($e[1]) } finally { $w.Close() }
+        }
+    } finally { $zip.Dispose() }
+    Move-Item $tmp $path -Force
+}
+
+# ---------------------------------------------------------------- The extra game of the scenarios: "Level Editor Scenarios <version>"
+# One game for every scenario (Tower Defense, Capture the Flag, Reclaim the Fame, restrictions, indestructible buildings, the briefing): the gadgets
+# switch themselves on only by the game options of a scenario. The version is made of the texts of its files and of the BAR version it builds on
+# (the first 8 hex digits of a SHA-256), the file is games\LevelEditorScenarios_<version>.sdz: different files give a different game, so a game that
+# came from somewhere else (a LAN host, an older package) never replaces another one, and equal files give the same game on every computer.
+# Files: source name -> name in the archive, in this order (the order of the version hash too).
+$ScenarioGameFiles = @(
+    @('td_waves.lua', 'luarules/gadgets/td_waves.lua'),
+    @('ctf_game.lua', 'luarules/gadgets/ctf_game.lua'),
+    @('rtf_game.lua', 'luarules/gadgets/rtf_game.lua'),
+    @('unit_restrictions.lua', 'luarules/gadgets/unit_restrictions.lua'),
+    @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
+    @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
+    @('bar_rules.lua', 'luaui/Include/bar_rules.lua'))
+$ScenarioGamePointer = 'LevelEditorScenarios.txt'   # in data\games: file name and game name of the one the editor setup built (read by LAN Play)
+
+# Builds the game from the files found in $dirs (for every file the first folder that has it; missing files are left out) unless it exists already.
+# Returns Name (the game name for the start script), Version, Path and File (the file name).
+function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
+    $entries = @()
+    $bytes = New-Object System.Collections.Generic.List[byte]
+    $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($game + "`n"))
+    foreach ($f in $ScenarioGameFiles) {
+        $src = $null
+        foreach ($d in $dirs) { if ($d -and (Test-Path (Join-Path $d $f[0]))) { $src = Join-Path $d $f[0]; break } }
+        if (-not $src) { continue }
+        $text = [IO.File]::ReadAllText($src).Replace("`r", '')
+        $entries += , @($f[1], $text)
+        $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($f[1] + "`n" + $text + "`n"))
+    }
+    $ver = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($bytes.ToArray())) -replace '-', '').Substring(0, 8).ToLower()
+    $name = "Level Editor Scenarios $ver"
+    $file = "LevelEditorScenarios_$ver.sdz"
+    $gamesDir = Join-Path $data 'games'
+    New-Item -ItemType Directory -Force $gamesDir | Out-Null
+    $path = Join-Path $gamesDir $file
+    if (-not (Test-Path $path)) {
+        $modinfo = "return {`n`tname = `"Level Editor Scenarios`",`n`tshortName = `"LEScn`",`n`tversion = `"$ver`",`n`tgame = `"LevelEditorScenarios`",`n`tshortGame = `"LEScn`",`n" +
+                   "`tdescription = `"Beyond All Reason plus the gadgets of the scenarios of the Level Editor`",`n`tmutator = `"Official`",`n`tmodtype = 1,`n`tdepend = { `"$game`" },`n}`n"
+        $fixedTime = New-Object DateTimeOffset (2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
+        Write-GameZip $path (@(, @('modinfo.lua', $modinfo)) + $entries) $fixedTime
+    }
+    return [pscustomobject]@{ Name = $name; Version = $ver; Path = $path; File = $file }
+}

@@ -24,25 +24,6 @@ $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
 if (Get-Process spring -ErrorAction SilentlyContinue) { Fail 'The game is running: close it first (it holds the extra game files).' }
 
-# Writes a zip with the entries @(name, text) to $path: first into a temporary file that then replaces the old one, so a failure in between
-# leaves the old extra game in place. $fixedTime: optional time for all entries (equal archives on every computer).
-function Write-GameZip([string]$path, $entries, $fixedTime = $null) {
-    $tmp = $path + '.tmp'
-    if (Test-Path $tmp) { Remove-Item $tmp -Force }
-    $utf8 = New-Object Text.UTF8Encoding($false)
-    $zip = [IO.Compression.ZipFile]::Open($tmp, 'Create')
-    try {
-        foreach ($e in $entries) {
-            $entry = $zip.CreateEntry($e[0])
-            if ($fixedTime) { $entry.LastWriteTime = $fixedTime }
-            $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
-            try { $w.Write($e[1]) } finally { $w.Close() }
-        }
-    } finally { $zip.Dispose() }
-    Move-Item $tmp $path -Force
-    Write-Host "Created: $path"
-}
-
 # ---------------------------------------------------------------- 2. Engine
 Step 'Find the engine'
 $engineDir = Get-Engine $data
@@ -111,33 +92,19 @@ Write-GameZip $zipPath @(
     @('luaui/Include/led_restrictions.lua', $rstData),
     @('luaui/Include/led_help_texts.lua', $helpTexts))
 
-# The extra game for finished scenarios ("Level Editor Scenarios", used by LAN Play: the lobby starts a scenario with it): the gadgets of the scenarios, all
-# in one game. Each one switches itself on only when the game options of the scenario ask for it (tdconfig, ctfconfig, rtfconfig, restrictions), so it is the same game
-# for every scenario and every computer with this version of the editor. The zip entries get a fixed time so that the archives of two computers are equal.
-$zipPath2 = Join-Path $gamesDir 'LevelEditorScenarios.sdz'
-$modinfo2 = @"
-return {
-	name = "Level Editor Scenarios",
-	shortName = "LEScn",
-	version = "1",
-	game = "LevelEditorScenarios",
-	shortGame = "LEScn",
-	description = "Beyond All Reason plus the gadgets of the scenarios of the Level Editor",
-	mutator = "Official",
-	modtype = 1,
-	depend = { "$game" },
-}
-"@
-$fixedTime = New-Object DateTimeOffset (2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
-Write-GameZip $zipPath2 @(
-    @('luarules/gadgets/td_waves.lua', $gadgetTd),
-    @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
-    @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
-    @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
-    @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
-    @('luarules/gadgets/unit_indestructible.lua', $gadgetFix),
-    @('luaui/Include/bar_rules.lua', $rules),
-    @('modinfo.lua', $modinfo2)) $fixedTime
+Write-Host "Created: $zipPath"
+
+# The extra game of the finished scenarios ("Level Editor Scenarios <version>", Write-ScenarioGame in bar_common.ps1): all gadgets of the scenarios in
+# one game, each switches itself on only by the game options of a scenario. The scenario starter of the editor builds the same file from the same
+# files; LAN Play reads its name from the pointer file. Other versions (received from LAN hosts, or of an older editor) stay; key 8 of the start
+# menu cleans them. The files of the older names (one fixed version) are removed.
+$prev = Join-Path $gamesDir $ScenarioGamePointer
+$prevFile = if (Test-Path $prev) { @(Get-Content $prev)[0] } else { $null }
+$scGame = Write-ScenarioGame $data $game @($here, (Join-Path $repo 'shared'))
+Set-Content -Path $prev -Value @($scGame.File, $scGame.Name) -Encoding ASCII
+Write-Host "Created: $($scGame.Path)"
+if ($prevFile -and $prevFile -ne $scGame.File -and $prevFile -match '^LevelEditorScenarios_[0-9a-f]{8}\.sdz$') { Remove-Item (Join-Path $gamesDir $prevFile) -Force -ErrorAction SilentlyContinue }   # the editor's own older version
+foreach ($old in 'LevelEditorScenarios.sdz', 'TowerDefenseScenario.sdz') { Remove-Item (Join-Path $gamesDir $old) -Force -ErrorAction SilentlyContinue }
 Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $here $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
 
 if ($Quick) { exit 0 }
