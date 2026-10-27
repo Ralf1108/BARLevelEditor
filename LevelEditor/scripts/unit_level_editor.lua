@@ -23,11 +23,11 @@ end
 -- The widget sends "led|step" before every action; everything else up to the next "led|step" belongs to this step.
 -- Units are created anew on undo/redo (new ID); replaceId then swaps the ID in all steps.
 local history, redoStack = {}, {}
+local opsByUnit, opsByFeature = {}, {} -- unit / feature ID -> the operations that name it (replaceId and replaceFid look only at these)
 local HISTORY_MAX = 300
 local current, sticky = nil, false
 local suppress = 0 -- > 0: actions are not recorded (undo, redo, loading a level)
 local capture -- list into which the wrecks that appear during a blow-up are entered
-local inflight -- the step that is being undone or redone right now
 local record, destroyRecorded -- defined below
 
 -- Editor mode (game option leveleditor=1, set by start_level_editor.bat): then no /cheat is needed
@@ -395,6 +395,7 @@ end
 
 local function resetHistory()
 	history, redoStack, current = {}, {}, nil
+	opsByUnit, opsByFeature = {}, {}
 end
 
 local function clearFeatures()
@@ -486,36 +487,38 @@ record = function(op)
 		end
 	end
 	st.ops[#st.ops + 1] = op
+	for key, index in pairs({ id = opsByUnit, fid = opsByFeature }) do
+		local id = op[key]
+		if id then
+			index[id] = index[id] or {}
+			table.insert(index[id], op)
+		end
+	end
+end
+
+-- A unit or feature was made again with a new ID: every operation that named the old one names the new one (through the index, not the whole history)
+local function replaceIn(index, key, old, new)
+	if old == new or not index[old] then
+		return
+	end
+	local list = index[old]
+	index[old] = nil
+	local into = index[new] or {}
+	index[new] = into
+	for _, op in ipairs(list) do
+		if op[key] == old then
+			op[key] = new
+			into[#into + 1] = op
+		end
+	end
 end
 
 local function replaceId(old, new)
-	if old == new then
-		return
-	end
-	for _, list in ipairs({ history, redoStack, { inflight } }) do
-		for _, st in ipairs(list) do
-			for _, op in ipairs(st.ops) do
-				if op.id == old then
-					op.id = new
-				end
-			end
-		end
-	end
+	replaceIn(opsByUnit, "id", old, new)
 end
 
 local function replaceFid(old, new)
-	if old == new then
-		return
-	end
-	for _, list in ipairs({ history, redoStack, { inflight } }) do
-		for _, st in ipairs(list) do
-			for _, op in ipairs(st.ops) do
-				if op.fid == old then
-					op.fid = new
-				end
-			end
-		end
-	end
+	replaceIn(opsByFeature, "fid", old, new)
 end
 
 -- The ID still belongs to a unit of this type (IDs are reused by the engine)
@@ -697,13 +700,11 @@ local function undo()
 	if current == st then
 		current = nil
 	end
-	inflight = st
 	suppress = suppress + 1
 	for i = #st.ops, 1, -1 do
 		revert(st.ops[i])
 	end
 	suppress = suppress - 1
-	inflight = nil
 	redoStack[#redoStack + 1] = st
 	return true
 end
@@ -714,13 +715,11 @@ local function redo()
 	if not st then
 		return nil
 	end
-	inflight = st
 	suppress = suppress + 1
 	for i = 1, #st.ops do
 		apply(st.ops[i])
 	end
 	suppress = suppress - 1
-	inflight = nil
 	history[#history + 1] = st
 	return true
 end
