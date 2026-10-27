@@ -128,9 +128,13 @@ local function place(name, team, x, z, facing, playerID, y)
 	return id
 end
 
+-- The unit nearest to (x, z) within radius (only the units in that circle are looked at, not all of the map)
 local function nearest(x, z, radius)
+	if not (x and z) then
+		return nil
+	end
 	local best, bd = nil, radius * radius
-	for _, id in ipairs(Spring.GetAllUnits()) do
+	for _, id in ipairs(Spring.GetUnitsInCylinder(x, z, radius)) do
 		local ux, _, uz = Spring.GetUnitPosition(id)
 		local d = (ux - x) ^ 2 + (uz - z) ^ 2
 		if d <= bd then
@@ -865,7 +869,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if not remove(dx, dz, dr) then
 			local best, bd
 			if dx and dz then
-				for _, fid in ipairs(Spring.GetAllFeatures()) do
+				for _, fid in ipairs(Spring.GetFeaturesInCylinder(dx, dz, dr or 64)) do
 					local fx, _, fz = Spring.GetFeaturePosition(fid)
 					local d = (fx - dx) ^ 2 + (fz - dz) ^ 2
 					if d <= (dr or 64) ^ 2 and (not bd or d < bd) then
