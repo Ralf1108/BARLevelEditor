@@ -2429,7 +2429,7 @@ function widget:GetConfigData()
 	end
 	return {
 		side = side, autoBuild = autoBuild, queueOrder = queueOrder, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
-		map = Game and Game.mapName, plans = saved,
+		map = Game and Game.mapName, game = Game and Game.gameID, plans = saved,
 	}
 end
 
@@ -2453,8 +2453,8 @@ function widget:SetConfigData(data)
 	end
 	rot = tonumber(data.rot) or 0
 	panelMover:load(data.panel)
-	-- only take over remembered plans on the same map
-	if type(data.plans) == "table" and data.map and Game and data.map == Game.mapName then
+	-- only take over remembered plans of the same match (a reload of the widget or a rejoin), not of an earlier match on the same map
+	if type(data.plans) == "table" and data.game and Game and data.game == Game.gameID and data.map == Game.mapName then
 		batchCounter = batchCounter + 1
 		for _, p in ipairs(data.plans) do
 			local ud = UnitDefNames[p[1]]

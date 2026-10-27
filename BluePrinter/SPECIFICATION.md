@@ -133,7 +133,7 @@ Steps: one blueprint or one single building = one step (`batch`).
 - Several builders share the work.
 
 ### 5.6 Persistence
-- Settings and queued plans are saved through the widget configuration of BAR (`GetConfigData`/`SetConfigData`): side, auto-build, radius, commander, menu visible, rotation, open plans (name, position, facing) **only for the same map**.
+- Settings and queued plans are saved through the widget configuration of BAR (`GetConfigData`/`SetConfigData`): side, auto-build, radius, commander, menu visible, rotation, open plans (name, position, facing) **only for the same match** (`Game.gameID` and map: a reload of the widget or a rejoin keeps them, a new match on the same map starts empty).
 
 ## 6. Commands (chat)
 

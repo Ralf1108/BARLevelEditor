@@ -52,7 +52,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - Only builders that are idle and can build the building take part (e.g. no T2 buildings with a T1 builder).
   If a builder has several plans nearby, it gets up to four in a row. When all plans are taken,
   it helps with one in progress.
-- Queued plans are kept when you quit the game, on the same map.
+- Queued plans are kept for the same match (a `/luaui reload` or a rejoin); a new match starts without plans.
 
 ## Area attack (experimental)
 Spreads the bombs and shots of all selected units evenly over an area. Select bombers, artillery, rocket launchers or nukes and press one of the buttons next to the menu: **XL** (a line), **XR** (a rectangle) or **XC** (a circle; drag from the center outwards). Then drag the shape on the map. Each unit gets its own target inside the shape: the bombers first form up side by side (for the line: beside it, facing it) and, once all are in position, attack at the same moment as a front; artillery and rockets fire at their target. Right click cancels. Also Ctrl+Alt+K (= XL) or `/bp_carpet [line|rect|circle]`.
