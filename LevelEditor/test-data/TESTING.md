@@ -1,16 +1,15 @@
 # Testing notes: what got in the way
 
-Collected while testing the game modes over LAN Play (2026-10-27). Read this before the next test run. How to run: [README](README.md).
+Collected while testing the game modes over LAN Play (2026-10-27). Read this before the next test run. How to run: [README](README.md). Notes on patching files are in `CLAUDE.md` at the top of the repository.
 
 ## Before a run
 
-- **Update the installation first.** Run `scripts\install_editor.ps1` (the full run, not `-Quick`: only it installs the LAN lobby widget and the junction for the scenarios) when the installed state is older than the repository. The installed `LevelEditorScenarios.sdz` was from before Reclaim the Fame and had no `rtf_game.lua`. The test tool builds its own copy of that game from the repository, but the game files and engine come from the installation. The installed game must not be running (`tasklist`); kill only the own test processes, never `spring.exe` of the user.
-- **Memory.** Two instances of the game need about 8 GB each. Claude Code stops background jobs when the machine runs low on memory (a run was killed once). Ask the user to close the browser, check the free memory, run the modes one after the other, never in parallel.
-- **Sandbox rules** (own write dir, framed window, nothing in the user's data folder): see the memory note "Test runs in a window". The tool does it; the work folder is rebuilt at every start.
+- **Update the installation first.** Run `scripts\install_editor.ps1` (the full run installs the junction for the scenarios; the quick run of `start_level_editor.bat` updates the extra games and LAN Play) when the installed state is older than the repository. The test tool builds its own copy of the extra game of the scenarios from the repository (`Write-ScenarioGame`), but the game files and engine come from the installation. The installed game must not be running (`tasklist`); kill only the own test processes, never `spring.exe` of the user.
+- **Memory.** Two instances of the game need about 8 GB each; a run with too little free memory was killed once. Check the free memory and run the modes one after the other, never in parallel.
+- **Sandbox rules:** an own write dir, a framed window, nothing in the user's data folder. The tools do it; the work folder is rebuilt at every start.
 
 ## During a run
 
-- **Run the tool in the background** (`run_in_background`) and wait for the notice. A foreground command is moved to the background after 120 s; `sleep` chains are blocked.
 - **The log tail is lost when a process is killed.** Let the game end itself (the widget calls `quitforce` at `-QuitFrame`) and keep `LogFlushLevel = 0` in the springsettings of the sandbox (the tool sets it). A log that stops after "frame 0" looked like a hang, but the game had run on to frame 9000.
 - **A widget that fails once is removed for good.** `Error in GameFrame()` in `infolog.txt` means the test widget is gone and nothing more is logged. Pitfalls found: `tostring(Spring.GetGameRulesParam(x))` fails when the parameter is not set yet (use a helper that checks `nil`), `table.concat` fails with the boolean values of `Spring.GetPlayerInfo` (wrap in `tostring((...))`).
 - **A game widget cannot read files from the write dir** with `VFS.LoadFile(name, VFS.RAW)` (the mode silently fell back to the default). Take values from the game options (`Spring.GetModOptions()`: `ctfconfig`, `rtfconfig`, `tdconfig`).
@@ -29,7 +28,7 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 ## Writing the tools (Windows)
 
 - Python gets Windows paths (`C:/...`) from Git Bash scripts, not `/c/...`.
-- Do not patch PowerShell files with Python strings that contain `\t`, `\b`, `\n`: the backslash sequences turn into tab / backspace characters (`$sp\bundle_` became `$spundle_`). Use `chr(92)` or write the file as a whole, then run `[scriptblock]::Create((Get-Content -Raw file))` as a syntax check and grep for control characters.
+- Patching files with backslashes: see `CLAUDE.md`.
 - Write start scripts without BOM (PowerShell 5.1 `Set-Content -Encoding UTF8` adds one and the engine does not start the game).
 - Junctions in the sandbox are removed with `cmd /c rmdir` before the folder is deleted, otherwise `Remove-Item -Recurse` deletes the real folders behind them.
 
@@ -46,14 +45,13 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 - **The one menu toggle that does not close:** `G` stays open when pressed again (leave with `P`); every other side button closes its page on a second click.
 - **Two bugs found:** the Place button (`P`) did not close the I, O and AI pages (the same click on `G` did it by accident), and Esc did not close the help board. Both fixed; test them again after changes to the button handling (`kind == "top"` in `widget:MousePress`).
 - **A window for pictures:** `XResolutionWindowed = 3000` with a 1500-high window gives readable screenshots; the tooltip of a row shows only while the mouse pointer (`Spring.WarpMouse`) lies on it at the time of the screenshot.
-- **Lua limit:** at most 200 local variables per function; `lvl_level_editor.lua` has about 185 at top level. A new top-level `local` can break the load of the whole widget (see above), so count the `^local` lines before adding more and put new constants into an existing table.
+- **Lua limit:** at most 200 local variables per function; `lvl_level_editor.lua` has about 195 at top level. A new top-level `local` can break the load of the whole widget (see above), so count the `^local` lines before adding more and put new constants into an existing table.
 - **Per-team AI (button AI):** check the generated start script, not only the menu. `Write-StartScript 'Hooked 1.1' $false '<AI>'` from `choose_map.ps1` (load the function text with `Invoke-Expression`, from `function Write-StartScript` up to `function Set-Autoload`) must give `[ai0] { shortname=...; version=stable|0.1 ... }` for BARb, CircuitAI, `CircuitAI easy` (`[Options] { profile=easy; }`) and NullAI, and `LuaAI=<name>;` in `[team1]` without `[ai0]` for the Lua AIs. Then start a sandbox game with the line and look for `Skirmish AI <Circuit-stable>` in `infolog.txt` (the engine accepted it). Whether Raptors really send waves was not checked.
 
 ## BluePrinter in a test
 
 - After a change of `shared\editor_common.lua` or `BluePrinter\bluePrinter.lua` the installed BluePrinter is old until `install_blueprinter.bat`, `start_blueprinter.bat`, `start_blueprinter_test.bat` copied the files (a start of the editor does not); the game that is running keeps the old ones (`/luaui reload`). "I do not see the new feature in the BluePrinter" is almost always this.
 - In a sandbox game the BluePrinter does not run next to the editor (it ends when `leveleditor=1` or the editor widget is there); use `leveleditor=0` in the modoptions and expect both panels on top of each other.
-- A path with `\b` written by a Python patch into a PowerShell file became a backspace character (`LuaUI\WidgetsluePrinter.lua`); look for control characters after every patch (`[c for c in set(text) if ord(c) < 32]`).
 
 ## BluePrinter plan tests in a sandbox game
 
@@ -64,9 +62,3 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 - **Auto-build eats the test plans:** with auto-build on a commander finishes small buildings within seconds and they disappear from the queue; switch it off (`DebugSetAuto(false)`) for selection tests, and put plans on spots where `Spring.TestBuildOrder` says free (otherwise they are blocked and never claimed).
 - **Chat commands are asynchronous:** `Spring.SendCommands("bp_undo")` acts a frame later; check the result in a later step.
 - **A leftover after Undo was found only by looking at units, not at plans:** the builder had received its orders already and started building after the plan was gone. Test "Undo" by counting the own unfinished buildings (`Spring.GetUnitIsBeingBuilt`) some seconds later, once with the building not yet started and once already started.
-
-## Writing files from Claude Code on Windows (more pitfalls)
-
-- A patch that meant a backslash followed by `n` inside a Lua string came out as a real line break and broke the widget (the Bash tool turned `\n` in the heredoc into a line break). Build such a string with `chr(92)` in Python, and look at the result with `sed -n LINEp file | cat -A`.
-- `sed -i '{N;s/\n/.../}'` did not join lines here; use a short Python script with an `assert` on the number of matches (it stops when the text is not there exactly once). Put long texts into a file (heredoc with a quoted delimiter) and read it from Python; a triple-quoted text that itself contains triple quotes ends the string early.
-- The git warning "LF will be replaced by CRLF" on `lvl_level_editor.lua` and the other files is harmless here.
