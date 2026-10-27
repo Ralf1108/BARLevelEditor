@@ -32,58 +32,19 @@ $pkg = if ($ScenarioDir) { $ScenarioDir } else { $here }   # the folder of the s
 . (Join-Path $here 'player_mapping.ps1')
 . (Join-Path $here 'lobby.ps1')
 
+# the shared search of BAR, the engine and the game version (shared\bar_common.ps1): next to this script in a package, in the editor in ..\..\..\shared
+$common = Join-Path $here 'bar_common.ps1'
+if (-not (Test-Path $common)) { $common = Join-Path (Split-Path (Split-Path (Split-Path $here -Parent) -Parent) -Parent) 'shared\bar_common.ps1' }
+if (-not (Test-Path $common)) { Write-Host "ERROR: bar_common.ps1 is missing (it belongs next to start_scenario.ps1)." -ForegroundColor Red; Read-Host 'Press Enter to exit'; exit 1 }
+. $common
 function Fail($t) { Write-Host ""; Write-Host "ERROR: $t" -ForegroundColor Red; Read-Host 'Press Enter to exit'; exit 1 }
 
-# ---------------------------------------------------------------- Find BAR
-# (the same search as Find-Bar, Get-Engine and Get-GameVersion in shared\bar_common.ps1; this script runs alone on the recipient's computer, so it
-# carries its own copy: change both together)
+# ---------------------------------------------------------------- Find BAR, the engine and the installed game version
 $memo = if ($Bundle) { Join-Path $env:LOCALAPPDATA 'BAR-Scenario\bar_path.txt' } else { Join-Path $pkg 'bar_path.txt' }   # (a bundle in the cache holds data only)
-$candidates = @()
-if ($BarPath) { $candidates += $BarPath }
-if (Test-Path $memo) { $candidates += ([IO.File]::ReadAllText($memo)).Trim() }
-$candidates += (Join-Path $env:LOCALAPPDATA 'Programs\Beyond-All-Reason')
-foreach ($drive in [IO.DriveInfo]::GetDrives()) {
-    if ($drive.DriveType -ne 'Fixed' -or -not $drive.IsReady) { continue }
-    foreach ($par in @('Games', 'Spiele', 'Program Files', 'Program Files (x86)', 'Programme', '')) {
-        foreach ($n in @('Beyond-All-Reason', 'Beyond All Reason', 'BeyondAllReason')) {
-            $candidates += (Join-Path (Join-Path $drive.RootDirectory.FullName $par) $n)
-        }
-    }
-}
-$bar = $null
-foreach ($c in $candidates) { if ($c -and (Test-Path (Join-Path $c 'data\engine'))) { $bar = $c; break } }
-while (-not $bar) {
-    $in = Read-Host 'Beyond All Reason not found. Enter the installation folder (Beyond-All-Reason.exe is in it)'
-    if (-not $in) { Fail 'Aborted.' }
-    if (Test-Path (Join-Path $in 'data\engine')) { $bar = $in } else { Write-Host 'There is no data\engine folder there.' }
-}
-New-Item -ItemType Directory -Force (Split-Path $memo) | Out-Null
-[IO.File]::WriteAllText($memo, $bar)
+$bar = Find-Bar @($BarPath) $memo
 $data = Join-Path $bar 'data'
-
-# ---------------------------------------------------------------- Engine
-$engineDir = Get-ChildItem (Join-Path $data 'engine') -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'spring.exe') } | Sort-Object Name | Select-Object -Last 1
-if (-not $engineDir) { Fail 'No engine found in data\engine. Please start BAR once so the launcher installs it.' }
-
-# ---------------------------------------------------------------- installed game version
-$versionsFile = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
-if (-not (Test-Path $versionsFile)) { Fail 'No game data found. Please start BAR once and let a game load.' }
-$fs = [IO.File]::OpenRead($versionsFile)
-$gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
-$sr = New-Object IO.StreamReader($gz)
-$text = $sr.ReadToEnd(); $sr.Close(); $fs.Close()
-$game = $null; $fallback = $null
-foreach ($tag in @('byar:test', 'byar:stable')) {
-    foreach ($line in ($text -split "`n")) {
-        if ($line.StartsWith($tag + ',')) {
-            $f = $line.Trim().Split(',')
-            if (-not $fallback) { $fallback = $f[3] }
-            if (-not $game -and (Test-Path (Join-Path $data ("packages\" + $f[1] + '.sdp')))) { $game = $f[3] }
-        }
-    }
-}
-if (-not $game) { $game = $fallback }
-if (-not $game) { Fail 'Game version not found.' }
+$engineDir = Get-Engine $data
+$game = Get-GameVersion $data
 
 # ---------------------------------------------------------------- Fill the start script
 $script = ''   # (a joiner with -Bundle gets the scenario through the lobby, see below)

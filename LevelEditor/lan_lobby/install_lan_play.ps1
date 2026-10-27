@@ -7,17 +7,9 @@
 # overwrite the change. -Uninstall removes the widget and sets loadLocalWidgets = false again.
 param([string]$BarPath = $null, [switch]$Uninstall)
 $ErrorActionPreference = 'Stop'
-function Fail($m) { Write-Host $m -ForegroundColor Red; exit 1 }
+. (Join-Path (Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'shared') 'bar_common.ps1')   # Fail, Find-Bar
 
-if (-not $BarPath) {
-    foreach ($d in (Get-PSDrive -PSProvider FileSystem | ForEach-Object { $_.Root })) {
-        foreach ($p in 'Games\Beyond-All-Reason', 'Program Files\Beyond-All-Reason', 'Beyond-All-Reason') {
-            if (Test-Path (Join-Path $d "$p\data")) { $BarPath = Join-Path $d $p; break }
-        }
-        if ($BarPath) { break }
-    }
-}
-if (-not $BarPath -or -not (Test-Path (Join-Path $BarPath 'data'))) { Fail 'Beyond All Reason was not found. Give its folder with -BarPath.' }
+$BarPath = Find-Bar @($BarPath)
 $data = Join-Path $BarPath 'data'
 $running = @(Get-Process -Name 'spring' -ErrorAction SilentlyContinue)
 if ($running.Count -gt 0) { Fail ("The game is running (spring.exe, process $($running[0].Id)). Close the game first: the lobby writes its settings file when it ends and would overwrite the change.") }

@@ -1,12 +1,15 @@
-# Shared helpers of the setup scripts (Level Editor and BluePrinter): find BAR, the engine and the installed game
-# version, create junctions. Dot-source it: . (Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\bar_common.ps1')
+# Shared helpers of the setup scripts (Level Editor, BluePrinter, LAN Play) and of the scenario starter: find BAR, the engine and the installed
+# game version, create junctions. Dot-source it: . (Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\bar_common.ps1')
+# The scenario builder copies this file into every scenario package, so start_scenario.ps1 finds it next to itself on another computer too.
 
-# (scenario\template\start_scenario.ps1 runs alone on another computer and carries its own copy of the three search functions: change both together)
+# (a script may define its own Fail after dot-sourcing this file, e.g. one that waits for a key)
 function Fail($t) { Write-Host "ERROR: $t" -ForegroundColor Red; exit 1 }
 
-# Installation folder of Beyond All Reason (the folder with data\engine); asks if it is not found
-function Find-Bar {
-    $candidates = @()
+# Installation folder of Beyond All Reason (the folder with data\engine); asks if it is not found.
+# $preferred: folders to try first (e.g. a -BarPath); $memo: a file that remembers the folder found last (read first, written at the end)
+function Find-Bar([string[]]$preferred = @(), [string]$memo = $null) {
+    $candidates = @($preferred | Where-Object { $_ })
+    if ($memo -and (Test-Path $memo)) { $candidates += ([IO.File]::ReadAllText($memo)).Trim() }
     $candidates += (Join-Path $env:LOCALAPPDATA 'Programs\Beyond-All-Reason')
     $parents = @('Games', 'Spiele', 'Program Files', 'Program Files (x86)', 'Programme', '')
     $names = @('Beyond-All-Reason', 'Beyond All Reason', 'BeyondAllReason')
@@ -18,20 +21,26 @@ function Find-Bar {
             }
         }
     }
+    $bar = $null
     foreach ($c in $candidates) {
-        if (Test-Path (Join-Path $c 'data\engine')) { return $c }
+        if ($c -and (Test-Path (Join-Path $c 'data\engine'))) { $bar = $c; break }
     }
-    while ($true) {
+    while (-not $bar) {
         $in = Read-Host 'BAR not found. Please enter the installation folder (Beyond-All-Reason.exe is in it)'
         if (-not $in) { Fail 'Aborted.' }
-        if (Test-Path (Join-Path $in 'data\engine')) { return $in }
-        Write-Host 'There is no data\engine folder there.'
+        if (Test-Path (Join-Path $in 'data\engine')) { $bar = $in } else { Write-Host 'There is no data\engine folder there.' }
     }
+    if ($memo) {
+        New-Item -ItemType Directory -Force (Split-Path $memo) | Out-Null
+        [IO.File]::WriteAllText($memo, $bar)
+    }
+    return $bar
 }
 
-# Newest engine folder with spring.exe
+# Newest engine folder with spring.exe (sorted by the numbers in the name, so 105.1.1 comes before 2025.04.10 and 99 before 105)
 function Get-Engine($data) {
-    $engineDir = Get-ChildItem (Join-Path $data 'engine') -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'spring.exe') } | Sort-Object Name | Select-Object -Last 1
+    $byVersion = { [regex]::Replace($_.Name, '\d+', [Text.RegularExpressions.MatchEvaluator] { param($m) $m.Value.PadLeft(10, '0') }) }
+    $engineDir = Get-ChildItem (Join-Path $data 'engine') -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'spring.exe') } | Sort-Object $byVersion | Select-Object -Last 1
     if (-not $engineDir) { Fail 'No engine found in data\engine. Please start BAR once so the launcher installs it.' }
     return $engineDir
 }

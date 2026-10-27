@@ -776,6 +776,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     if (-not $BundleDir) {
         Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
+        Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_common.ps1') $folder   # the search of BAR, engine and game version
         Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
         Copy-Item (Join-Path $TEMPLATE 'lobby.ps1') $folder
         Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder

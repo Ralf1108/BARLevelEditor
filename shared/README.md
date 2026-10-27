@@ -13,7 +13,7 @@
 
 `bar_rules.lua` holds the rules about unit definitions that gadgets and widgets need in the same way (`techLevel`, `buildClass`, `hitsGround`, `decode64`); `editor_common.lua`, the two gadgets of the Level Editor and the Tower Defense scenario load it (`VFS.Include("luaui/Include/bar_rules.lua")`), so both installers and the scenario starter pack it as well.
 
-`bar_common.ps1` holds the shared parts of the setup scripts of both widgets: finding BAR, the engine and the game version, creating and removing junctions.
+`bar_common.ps1` holds the shared parts of the setup scripts (Level Editor, BluePrinter, LAN Play) and of the scenario starter: finding BAR, the engine and the game version, creating and removing junctions. The scenario builder copies it into every scenario package.
 
 A change here affects both widgets (and the gadgets for `bar_rules.lua`). The Level Editor updates its extra game by itself at the next start with `start_level_editor.bat`; for the BluePrinter in a normal game run `BluePrinter\install_blueprinter.bat` (the file is copied to `data\LuaUI\Include`).
 
