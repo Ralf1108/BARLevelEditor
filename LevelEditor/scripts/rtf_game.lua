@@ -38,12 +38,17 @@ end
 
 if not gadgetHandler:IsSyncedCode() then
 	-- ---------------------------------------------------------------- unsynced: rings on the ground, minimap and the score
+	-- the nodes of the game rules text "x,z,size,factor/..."; it changes only at the start, so the list is kept (drawn every frame)
+	local lastText, lastList = nil, {}
 	local function list(text)
-		local out = {}
-		for x, z, s, f in tostring(text or ""):gmatch("(-?[%d%.]+),(-?[%d%.]+),(%d),(%d+)") do
-			out[#out + 1] = { tonumber(x), tonumber(z), tonumber(s), tonumber(f) }
+		text = tostring(text or "")
+		if text ~= lastText then
+			lastText, lastList = text, {}
+			for x, z, s, f in text:gmatch("(-?[%d%.]+),(-?[%d%.]+),(%d),(%d+)") do
+				lastList[#lastList + 1] = { tonumber(x), tonumber(z), tonumber(s), tonumber(f) }
+			end
 		end
-		return out
+		return lastList
 	end
 
 	-- gold ring of the area from which a construction unit reaches the node

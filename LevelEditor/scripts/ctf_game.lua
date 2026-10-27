@@ -35,11 +35,22 @@ local HOME_UNIT = "lootboxnano_t1_var1" -- marks a collection point
 
 if not gadgetHandler:IsSyncedCode() then
 	-- ---------------------------------------------------------------- unsynced: rings on the ground and the score
+	-- the points of a game rules text "team,x,z/..."; the texts change only at the start, so the lists are kept (drawn every frame)
+	local parsed, nParsed = {}, 0
 	local function list(text)
-		local out = {}
-		for t, x, z in tostring(text or ""):gmatch("(-?%d+),(-?[%d%.]+),(-?[%d%.]+)") do
+		text = tostring(text or "")
+		local out = parsed[text]
+		if out then
+			return out
+		end
+		out = {}
+		for t, x, z in text:gmatch("(-?%d+),(-?[%d%.]+),(-?[%d%.]+)") do
 			out[#out + 1] = { tonumber(t), tonumber(x), tonumber(z) }
 		end
+		if nParsed > 16 then
+			parsed, nParsed = {}, 0
+		end
+		parsed[text], nParsed = out, nParsed + 1
 		return out
 	end
 
