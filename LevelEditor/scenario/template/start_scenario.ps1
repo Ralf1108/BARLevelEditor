@@ -204,8 +204,7 @@ if (-not $have) {
     Write-Host ''
     Write-Host "This scenario needs the map '$map'. It is not installed on this computer yet." -ForegroundColor Yellow
     Write-Host 'It has to be downloaded from the internet (the official BAR map service, can take a few minutes).'
-    $ans = Read-Host 'Download the map now and start the scenario? (y/n)'
-    if ($ans.Trim().ToLower() -notin @('y', 'yes', 'j', 'ja')) { Fail 'Aborted. The scenario cannot start without the map.' }
+    if (-not (Read-Yes 'Download the map now and start the scenario? (y/n)')) { Fail 'Aborted. The scenario cannot start without the map.' }
     Write-Host 'Downloading the map ...'
     $dl = Join-Path $engineDir.FullName 'pr-downloader.exe'
     if (-not (Test-Path $dl)) { Fail 'The map downloader (pr-downloader.exe) was not found. Please start BAR once and install the map there.' }

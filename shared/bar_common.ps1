@@ -5,6 +5,15 @@
 # (a script may define its own Fail after dot-sourcing this file, e.g. one that waits for a key)
 function Fail($t) { Write-Host "ERROR: $t" -ForegroundColor Red; exit 1 }
 
+# A heading of a step of a setup
+function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
+
+# True if the answer to the question is yes (y, yes, j, ja; any case)
+function Read-Yes([string]$question) {
+    $a = Read-Host $question
+    return ([string]$a).Trim().ToLower() -in @('y', 'yes', 'j', 'ja')
+}
+
 # Installation folder of Beyond All Reason (the folder with data\engine); asks if it is not found.
 # $preferred: folders to try first (e.g. a -BarPath); $memo: a file that remembers the folder found last (read first, written at the end)
 function Find-Bar([string[]]$preferred = @(), [string]$memo = $null) {

@@ -11,7 +11,6 @@ $here = $PSScriptRoot                    # scripts
 $root = Split-Path $here -Parent        # LevelEditor
 $repo = Split-Path $root -Parent        # repository
 
-function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
 $common = Join-Path (Join-Path $repo 'shared') 'bar_common.ps1'
 if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to the folder LevelEditor)." -ForegroundColor Red; exit 1 }
 . $common

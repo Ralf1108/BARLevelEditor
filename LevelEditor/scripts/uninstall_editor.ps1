@@ -9,7 +9,6 @@ $root = Split-Path $here -Parent        # LevelEditor
 $repo = Split-Path $root -Parent        # repository
 $userDir = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor'   # last map and cache of the map list
 
-function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
 $common = Join-Path (Join-Path $repo 'shared') 'bar_common.ps1'
 if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to the folder LevelEditor)." -ForegroundColor Red; exit 1 }
 . $common
@@ -64,8 +63,7 @@ Write-Host '  - the setting loadLocalWidgets of the lobby (LAN Play) is switched
 Write-Host ''
 Write-Host "Kept: levels ($(Join-Path $root 'levels')), blueprints ($(Join-Path $root 'blueprints')), the scenarios and maps received from other players (%LOCALAPPDATA%\BAR-Scenario; key 8 of the start menu cleans them), this folder and the official game."
 if (-not $Yes) {
-    $a = Read-Host 'Remove now? (y/n)'
-    if ($a.Trim().ToLower() -notin @('y', 'yes', 'j', 'ja')) { Write-Host 'Aborted, nothing changed.'; exit 0 }
+    if (-not (Read-Yes 'Remove now? (y/n)')) { Write-Host 'Aborted, nothing changed.'; exit 0 }
 }
 
 # ---------------------------------------------------------------- Remove

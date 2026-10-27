@@ -34,8 +34,7 @@ Write-Host ''
 Write-Host "Kept: blueprints ($(Join-Path $here 'blueprints')), this folder and the official game."
 Write-Host 'Queued plans and switches are stored by BAR in its widget configuration and stay there (harmless).'
 if (-not $Yes) {
-    $a = Read-Host 'Remove now? (y/n)'
-    if ($a.Trim().ToLower() -notin @('y', 'yes', 'j', 'ja')) { Write-Host 'Aborted, nothing changed.'; exit 0 }
+    if (-not (Read-Yes 'Remove now? (y/n)')) { Write-Host 'Aborted, nothing changed.'; exit 0 }
 }
 
 foreach ($i in $found) {
