@@ -10,17 +10,18 @@ $bar = Find-Bar
 $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
 
+# Shared code of the Level Editor and the BluePrinter (folder shared next to BluePrinter): checked before anything is copied
+$sharedSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'editor_common.lua'
+if (-not (Test-Path $sharedSrc)) { Fail 'File editor_common.lua missing (copy the shared folder next to BluePrinter as well).' }
+$rulesSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_rules.lua'
+if (-not (Test-Path $rulesSrc)) { Fail 'File bar_rules.lua missing (copy the shared folder next to BluePrinter as well).' }
+
 # Copy the widget
 $wdir = Join-Path $data 'LuaUI\Widgets'
 New-Item -ItemType Directory -Force $wdir | Out-Null
 Copy-Item (Join-Path $here 'bluePrinter.lua') (Join-Path $wdir 'bluePrinter.lua') -Force
 Write-Host "Widget copied to $wdir"
 
-# Shared code of the Level Editor and the BluePrinter (folder shared next to BluePrinter)
-$sharedSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'editor_common.lua'
-if (-not (Test-Path $sharedSrc)) { Fail 'File editor_common.lua missing (copy the shared folder next to BluePrinter as well).' }
-$rulesSrc = Join-Path (Join-Path (Split-Path $here -Parent) 'shared') 'bar_rules.lua'
-if (-not (Test-Path $rulesSrc)) { Fail 'File bar_rules.lua missing (copy the shared folder next to BluePrinter as well).' }
 $idir = Join-Path $data 'LuaUI\Include'
 New-Item -ItemType Directory -Force $idir | Out-Null
 Copy-Item $sharedSrc (Join-Path $idir 'editor_common.lua') -Force
