@@ -3,7 +3,9 @@
 -- Configuration: from the Level Editor with the message "rst|start|<payload>" (stop: "rst|stop"), or from the game option
 -- restrictions (same payload as base64url) for a finished scenario. Payload: "name,name,..." or "-": the units that cannot be built
 -- The block goes through the build blocking of BAR (GG.BuildBlocking.AddBlockedUnit: the units are greyed out in the build menu) when it
--- exists, and always through AllowCommand (build orders of builders and factories).
+-- exists, and always through AllowCommand (build orders of builders and factories, also inserted ones). It holds for every team, the
+-- computer players too (they do not know the list and may try again and again: their refused orders stay silent; a human team gets a
+-- message, at most one per unit type every few seconds).
 function gadget:GetInfo()
 	return {
 		name = "Level restrictions",
@@ -97,10 +99,46 @@ local function start(payload)
 	say(count .. " units cannot be built in this level.")
 end
 
-function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
-	if blocked and cmdID < 0 and blocked[-cmdID] then
-		local ud = UnitDefs[-cmdID]
-		say("Not allowed in this level: " .. ((ud and (ud.translatedHumanName or ud.name)) or "?"))
+local MESSAGE_GAP = 5 * 30 -- frames between two messages of the same unit type to the same team
+local lastMessage = {} -- team -> unitDefID -> frame of the last message
+
+-- The unit a build order builds (also an order inserted into the queue: CMD.INSERT { position, command, options, ... }); nil for other orders
+local function builtDef(cmdID, cmdParams)
+	if cmdID < 0 then
+		return -cmdID
+	end
+	if cmdID == CMD.INSERT and cmdParams and (tonumber(cmdParams[2]) or 0) < 0 then
+		return -cmdParams[2]
+	end
+	return nil
+end
+
+-- "Not allowed" only to a human team (an AI would get it again and again), at most once per unit type every few seconds
+local function refuse(teamID, defID)
+	local isAI = select(4, Spring.GetTeamInfo(teamID, false))
+	if isAI or teamID == Spring.GetGaiaTeamID() then
+		return
+	end
+	local n = Spring.GetGameFrame()
+	local seen = lastMessage[teamID] or {}
+	lastMessage[teamID] = seen
+	if seen[defID] and n - seen[defID] < MESSAGE_GAP then
+		return
+	end
+	seen[defID] = n
+	local ud = UnitDefs[defID]
+	local text = "[Level restrictions] Not allowed in this level: " .. ((ud and (ud.translatedHumanName or ud.name)) or "?")
+	if Spring.SendMessageToTeam then
+		Spring.SendMessageToTeam(teamID, text)
+	else
+		Spring.Echo(text)
+	end
+end
+
+function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
+	local defID = blocked and builtDef(cmdID, cmdParams)
+	if defID and blocked[defID] then
+		refuse(teamID, defID)
 		return false
 	end
 	return true
