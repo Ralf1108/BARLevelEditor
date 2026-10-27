@@ -53,24 +53,33 @@ $installedMaps = @($maps | Sort-Object Display -Unique)
 if (-not $MapsDir) { $MapsDir = Join-Path $Data 'maps' }
 
 # ---------------------------------------------------------------- all BAR maps (online) together with the installed ones
+# The list of all maps comes from the map service of BAR. With a cached list the menu starts at once from the cache and a hidden background process
+# fetches the new list for the next start (it writes the cache through a temporary file); only without a cache the list is fetched here (10 s at most).
 $onlineOk = $false
 $onlineMaps = @()
 $jsonCache = Join-Path $userDir 'Online Maps Cache.json'
-try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $ProgressPreference = 'SilentlyContinue'
-    $resp = Invoke-WebRequest -Uri 'https://maps-metadata.beyondallreason.dev/latest/live_maps.validated.json' -UseBasicParsing -TimeoutSec 10
-    $content = $resp.Content
-    if ($content -is [byte[]]) { $content = [Text.Encoding]::UTF8.GetString($content) }
-    $parsed = ConvertFrom-Json -InputObject $content
-    $onlineMaps = @($parsed | ForEach-Object { $_ })
-    New-Item -ItemType Directory -Force $userDir | Out-Null
-    [IO.File]::WriteAllText($jsonCache, $content, (New-Object Text.UTF8Encoding($false)))
-    $onlineOk = $true
-} catch {
-    if (Test-Path $jsonCache) {
-        try { $parsed = ConvertFrom-Json -InputObject ([IO.File]::ReadAllText($jsonCache)); $onlineMaps = @($parsed | ForEach-Object { $_ }); $onlineOk = $true } catch { }
-    }
+$mapListUrl = 'https://maps-metadata.beyondallreason.dev/latest/live_maps.validated.json'
+if (Test-Path $jsonCache) {
+    try { $parsed = ConvertFrom-Json -InputObject ([IO.File]::ReadAllText($jsonCache)); $onlineMaps = @($parsed | ForEach-Object { $_ }); $onlineOk = $true } catch { }
+}
+if ($onlineOk) {
+    $refresh = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " +
+               "try { `$c = (Invoke-WebRequest -Uri '$mapListUrl' -UseBasicParsing -TimeoutSec 30).Content; if (`$c -is [byte[]]) { `$c = [Text.Encoding]::UTF8.GetString(`$c) }; " +
+               "[void](ConvertFrom-Json -InputObject `$c); `$tmp = '$jsonCache.tmp'; [IO.File]::WriteAllText(`$tmp, `$c, (New-Object Text.UTF8Encoding(`$false))); Move-Item `$tmp '$jsonCache' -Force } catch { }"
+    try { Start-Process powershell -WindowStyle Hidden -ArgumentList @('-NoProfile', '-Command', $refresh) | Out-Null } catch { }
+} else {
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $ProgressPreference = 'SilentlyContinue'
+        $resp = Invoke-WebRequest -Uri $mapListUrl -UseBasicParsing -TimeoutSec 10
+        $content = $resp.Content
+        if ($content -is [byte[]]) { $content = [Text.Encoding]::UTF8.GetString($content) }
+        $parsed = ConvertFrom-Json -InputObject $content
+        $onlineMaps = @($parsed | ForEach-Object { $_ })
+        New-Item -ItemType Directory -Force $userDir | Out-Null
+        [IO.File]::WriteAllText($jsonCache, $content, (New-Object Text.UTF8Encoding($false)))
+        $onlineOk = $true
+    } catch { }
 }
 
 $byName = @{}
