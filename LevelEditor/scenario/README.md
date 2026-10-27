@@ -50,7 +50,7 @@ The package holds a copy of everything it needs (starter, lobby, gadgets, briefi
 | `Host Game.bat`, `Join Game.bat` | the same starter for several players in the same network (host / join) |
 | `lobby.ps1` | the lobby of the host and of the joiners (TCP port 8453), READY / GO before the game |
 | `player_mapping.ps1` | the dialog "who plays which team" and its memory (used by the starter and by the Split screen entry of the editor) |
-| `bar_common.ps1` | the search of BAR, the engine and the game version (the same file as `sharedar_common.ps1` of the editor) |
+| `bar_common.ps1` | the search of BAR, the engine and the game version (the same file as `shared\bar_common.ps1` of the editor) |
 | `start_scenario.ps1` | finds BAR and the engine, puts the game version and player name into the start script, downloads the map, starts `spring.exe` |
 | `scenario.txt` | start script: teams, allies and enemies, AIs, game options and `scenariooptions` |
 | `shared_start.lua` | game widget that starts a game in which several humans play one team (Copilot) |
