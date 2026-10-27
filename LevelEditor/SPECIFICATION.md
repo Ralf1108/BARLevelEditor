@@ -42,7 +42,7 @@ At the start always a menu in the console. Controls: arrow up/down (Home/End) ch
 
 ### 2.3 At the start of the game
 - Shortly after the start (frame 6) `widget:Update` sends `cheat 1` and `godmode 3` once, so units of every team can be selected and commanded (3.1).
-- At the start only the commander stands there. All mobile **builders of every faction** are created by the user when needed with Ctrl+D at the mouse pointer (markers ARMADA, CORTEX, LEGION), grouped by kind, on **reachable spots** (check by grid and `TestMoveOrder`; no water, no cut-off mountains). Do not use: `Spring.RequestPath` (leads to a crash).
+- At the start only the commander stands there. All mobile **builders of every faction** are created by the user when needed with Ctrl+D at the mouse pointer, grouped by kind, on **reachable spots** (check by grid and `TestMoveOrder`; no water, no cut-off mountains). Do not use: `Spring.RequestPath` (leads to a crash).
 - The menu is visible at the start, with the Units tab first.
 
 ## 3. Controls in the game

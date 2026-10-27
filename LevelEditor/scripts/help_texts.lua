@@ -172,7 +172,7 @@ local topics = {
 	{
 		names = { "build", "builder" },
 		lines = {
-			"BUILDING: at the start only the commander stands there. With Ctrl+D you create all mobile builders of every faction at the cursor (markers ARMADA, CORTEX, LEGION), grouped by kind.",
+			"BUILDING: at the start only the commander stands there. With Ctrl+D you create all mobile builders of every faction at the cursor, grouped by kind.",
 			"With them you build factories and buildings as in the normal game: free and finished instantly. The builders stand on passable spots. They are only tools and are not saved in the level.",
 		},
 	},

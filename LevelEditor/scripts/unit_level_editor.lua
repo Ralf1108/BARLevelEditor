@@ -12,16 +12,6 @@ function gadget:GetInfo()
 end
 
 if not gadgetHandler:IsSyncedCode() then
-	function gadget:Initialize()
-		gadgetHandler:AddSyncAction("led_marker", function(_, x, y, z, text)
-			Spring.MarkerAddPoint(x, y, z, text, true)
-		end)
-	end
-
-	function gadget:Shutdown()
-		gadgetHandler:RemoveSyncAction("led_marker")
-	end
-
 	return
 end
 
@@ -1091,9 +1081,9 @@ if EDITOR_MODE then
 		end
 	end
 
-	-- At the start, all mobile builders of every faction in groups next to the commander of team 0:
+	-- Ctrl+D: all mobile builders of every faction in groups around the mouse pointer:
 	-- one block per faction, in it one row per kind (bot, vehicle, hover, air), T1 left, T2 right.
-	local FACTION_PREFIX = { { "arm", "ARMADA" }, { "cor", "CORTEX" }, { "leg", "LEGION" } }
+	local FACTION_PREFIX = { "arm", "cor", "leg" }
 	local KINDS = { "bot", "vehicle", "hover", "air" }
 
 	local function builderKind(ud)
@@ -1152,22 +1142,8 @@ if EDITOR_MODE then
 		return cells
 	end
 
-	-- ox/oz set (Ctrl+Alt+B): builders of all factions around this point for team teamArg, otherwise at the start next to the commander
-	local function spawnBuilders(ox, oz, teamArg)
-		local cx, cz
-		if ox then
-			cx, cz = ox, oz
-		else
-			local com
-			for _, id in ipairs(Spring.GetTeamUnits(0)) do
-				com = com or id
-			end
-			if not com then
-				return
-			end
-			local _
-			cx, _, cz = Spring.GetUnitPosition(com)
-		end
+	-- Builders of all factions around (cx, cz) for team teamArg
+	local function spawnBuilders(cx, cz, teamArg)
 		teamArg = teamArg or 0
 		local total, missing = 0, 0
 		local placed = {} -- positions already taken, so units do not overlap
@@ -1193,8 +1169,7 @@ if EDITOR_MODE then
 			return true
 		end
 
-		for fi, f in ipairs(FACTION_PREFIX) do
-			local prefix, label = f[1], f[2]
+		for fi, prefix in ipairs(FACTION_PREFIX) do
 			local rows = { bot = {}, vehicle = {}, hover = {}, air = {} }
 			for name, ud in pairs(UnitDefNames) do
 				local cp = ud.customParams or {}
@@ -1209,8 +1184,7 @@ if EDITOR_MODE then
 				end
 			end
 			local anchorX, anchorZ = cx + 220, cz + (fi - 2) * 420
-			local sumX, sumZ, n = 0, 0, 0
-			for ki, kind in ipairs(KINDS) do
+				for ki, kind in ipairs(KINDS) do
 				local list = rows[kind]
 				table.sort(list, function(a, b)
 					if a.tech ~= b.tech then
@@ -1246,17 +1220,12 @@ if EDITOR_MODE then
 						if bid then
 							Spring.SetUnitRulesParam(bid, "ledbuilder", 1, { public = true })
 							placed[#placed + 1] = { spot[1], spot[2] }
-							sumX, sumZ, n = sumX + spot[1], sumZ + spot[2], n + 1
 							total = total + 1
 						end
 					else
 						missing = missing + 1
 					end
 				end
-			end
-			if n > 0 and not ox then
-				local mx, mz = sumX / n, sumZ / n
-				SendToUnsynced("led_marker", mx, Spring.GetGroundHeight(mx, mz), mz, label)
 			end
 		end
 		Spring.Echo("[Level Editor] " .. total .. " builders placed (reachable spots)" .. (missing > 0 and (", " .. missing .. " without a reachable spot") or ""))
