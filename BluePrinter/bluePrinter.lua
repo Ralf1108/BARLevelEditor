@@ -35,6 +35,7 @@ end
 local menuOpen = true
 local side = "right" -- "left" | "right"
 local autoBuild = true
+local autoBuildStopped = false -- an error in the build routine switched auto-build off for this game only (the saved setting stays on)
 local radius = 1000 -- builders react to plans within this radius (Elmo)
 local useCommander = true -- commanders should build too
 local rot = 0 -- 0 south, 1 east, 2 north, 3 west
@@ -1058,6 +1059,7 @@ end
 local function pressButton(id)
 	if id == "auto" then
 		autoBuild = not autoBuild
+		autoBuildStopped = false
 	elseif id == "undo" then
 		undoLast()
 	elseif id == "clear" then
@@ -2195,7 +2197,8 @@ function widget:GameFrame(n)
 	end
 	local ok, err = pcall(workPass, n)
 	if not ok then
-		say("Error in the build routine: " .. tostring(err))
+		say("Error in the build routine: " .. tostring(err) .. " - auto-build is off for this game (button A switches it on again)")
+		autoBuildStopped = autoBuildStopped or autoBuild
 		autoBuild = false
 	end
 end
@@ -2428,7 +2431,7 @@ function widget:GetConfigData()
 		end
 	end
 	return {
-		side = side, autoBuild = autoBuild, queueOrder = queueOrder, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
+		side = side, autoBuild = autoBuild or autoBuildStopped, queueOrder = queueOrder, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
 		map = Game and Game.mapName, game = Game and Game.gameID, plans = saved,
 	}
 end

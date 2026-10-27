@@ -115,7 +115,7 @@ Steps: one blueprint or one single building = one step (`batch`).
 - Duplicate plans (the same building at the same place, deviation < 4) are not created.
 
 ### 5.3 Rhythm
-- Every 30 game frames a pass `workPass` (not as a spectator; on an error auto-build is switched off and a message is shown). Every 60 game frames the builder abilities are refreshed.
+- Every 30 game frames a pass `workPass` (not as a spectator; on an error auto-build is switched off for this game and a message is shown; the saved setting stays on, `autoBuildStopped`, and button A switches it on again). Every 60 game frames the builder abilities are refreshed.
 - In every pass:
   1. Detect finished buildings (at most 30 plans per pass, in turn): an own building of the same kind within 24 Elmo, no longer under construction → `done` (counts in "done", is struck from the list).
   2. Clean up claims: a plan loses its builder when the builder is invalid or dead or has stood without an order for at least 90 game frames.
