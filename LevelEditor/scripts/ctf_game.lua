@@ -324,6 +324,9 @@ end
 
 -- The level is won: every team that is not on the winner's side loses (its units blow up, also when nobody had lost all flags)
 local function finish(team, lastStanding)
+	if g.state ~= "running" then
+		return -- already decided (a delivery can end the level twice: the last team standing and the number of flags)
+	end
 	g.state = "won by team " .. team
 	local winners, gaia = allyOf(team), Spring.GetGaiaTeamID()
 	for _, t in ipairs(Spring.GetTeamList()) do
