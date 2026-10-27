@@ -46,10 +46,6 @@ local td = nil -- running game: nil = none
 local alive = {} -- unitID -> { reward factor }
 local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
 local pendingCfg = nil -- configuration waiting for the start
-local fixedList = nil -- { { name, x, z } ... } units that stay indestructible
-GG.Indestructible = GG.Indestructible or {}
-local fixedIds = GG.Indestructible -- unitID -> true: nothing damages, reclaims, captures or self-destructs these units (the editor gadget fills the same table)
-local applyFixed -- (defined below)
 
 local function say(text)
 	if Spring.SendMessage then
@@ -264,9 +260,6 @@ function gadget:GameFrame(n)
 		pendingCfg = nil
 		start(cfg)
 	end
-	if fixedList and (n == 5 or n == 30 or n == 90) then
-		applyFixed()
-	end
 	if not td or td.state ~= "running" then
 		return
 	end
@@ -310,7 +303,6 @@ end
 
 -- Payment: the cost of the unit in metal and energy goes to the player
 function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
-	fixedIds[unitID] = nil
 	if td and alive[unitID] then
 		alive[unitID] = nil
 		if td.state == "running" then
@@ -324,15 +316,9 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 end
 
 -- Build orders of the player that are not allowed are refused while the game runs: the restriction to towers (and economy; the units
--- that are forbidden in the level are refused by unit_restrictions.lua). Units from factories are not restricted.
+-- that are forbidden in the level are refused by unit_restrictions.lua, the indestructible buildings are protected by unit_indestructible.lua).
+-- Units from factories are not restricted.
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
-	-- indestructible units can also not be taken apart (reclaim, capture, self destruction); area reclaim: see AllowUnitBuildStep
-	if (cmdID == CMD.RECLAIM or cmdID == CMD.CAPTURE) and cmdParams and #cmdParams == 1 and cmdParams[1] < Game.maxUnits and fixedIds[cmdParams[1]] then
-		return false
-	end
-	if cmdID == CMD.SELFD and fixedIds[unitID] then
-		return false
-	end
 	if not (td and cmdID < 0 and teamID == td.cfg.player) then
 		return true
 	end
@@ -380,8 +366,8 @@ function gadget:Initialize()
 	Spring.SetGameRulesParam("tdState", "")
 end
 
--- Finished scenario: the settings come in the game options tdconfig (the payload as base64url) and tdfixed (indestructible units
--- as base64url text "name:x,z,x,z|name:..."); the waves start a moment after the game start, when the units of the scenario exist
+-- Finished scenario: the settings come in the game option tdconfig (the payload as base64url); the waves start a moment after the game
+-- start, when the units of the scenario exist
 local decode64 = Rules.decode64
 
 function gadget:GamePreload()
@@ -389,42 +375,4 @@ function gadget:GamePreload()
 	if mo.tdconfig and mo.tdconfig ~= "" then
 		pendingCfg = parse(decode64(mo.tdconfig))
 	end
-	if mo.tdfixed and mo.tdfixed ~= "" then
-		fixedList = {}
-		for _, group in ipairs(split(decode64(mo.tdfixed), "|")) do
-			local name, coords = group:match("^([^:]+):(.*)$")
-			if name then
-				local nums = split(coords, ",")
-				for i = 1, #nums - 1, 2 do
-					fixedList[#fixedList + 1] = { name, tonumber(nums[i]), tonumber(nums[i + 1]) }
-				end
-			end
-		end
-	end
-end
-
--- The units of the list that stand at their place get the protection (repeated for a while, the scenario creates its units at the start)
-applyFixed = function()
-	for _, f in ipairs(fixedList) do
-		for _, id in ipairs(Spring.GetUnitsInCylinder(f[2], f[3], 10)) do
-			local defID = Spring.GetUnitDefID(id)
-			if defID and UnitDefs[defID].name == f[1] then
-				fixedIds[id] = true
-				Spring.SetUnitRulesParam(id, "indestructible", 1, { public = true })
-			end
-		end
-	end
-end
-
-function gadget:UnitPreDamaged(unitID)
-	if fixedIds[unitID] then
-		return 0, 0
-	end
-end
-
-function gadget:AllowUnitBuildStep(builderID, builderTeamID, unitID, unitDefID, part)
-	if part < 0 and fixedIds[unitID] then
-		return false -- reclaiming
-	end
-	return true
 end

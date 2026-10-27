@@ -88,6 +88,7 @@ $ctfPage = Get-Content (Join-Path $here 'led_ctf.lua') -Raw
 $gadgetRtf = Get-Content (Join-Path $here 'rtf_game.lua') -Raw
 $rtfPage = Get-Content (Join-Path $here 'led_rtf.lua') -Raw
 $gadgetRst = Get-Content (Join-Path $here 'unit_restrictions.lua') -Raw
+$gadgetFix = Get-Content (Join-Path $here 'unit_indestructible.lua') -Raw
 $rstData = Get-Content (Join-Path $here 'led_restrictions.lua') -Raw
 $helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
 $lootStub = Get-Content (Join-Path $here 'pve_supply_drops_stub.lua') -Raw # replaces the lootbox gadget of the game (it let enemies capture the flags and collection points)
@@ -101,6 +102,7 @@ Write-GameZip $zipPath @(
     @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
     @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
     @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
+    @('luarules/gadgets/unit_indestructible.lua', $gadgetFix),
     @('luaui/widgets/lvl_level_editor.lua', $widget),
     @('luaui/Include/editor_common.lua', $shared),
     @('luaui/Include/bar_rules.lua', $rules),
@@ -133,6 +135,7 @@ Write-GameZip $zipPath2 @(
     @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
     @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
     @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
+    @('luarules/gadgets/unit_indestructible.lua', $gadgetFix),
     @('luaui/Include/bar_rules.lua', $rules),
     @('modinfo.lua', $modinfo2)) $fixedTime
 Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $here $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date

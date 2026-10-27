@@ -404,7 +404,7 @@ local function clearFeatures()
 end
 
 -- Data of a unit with which it can be set up again
-GG.Indestructible = GG.Indestructible or {} -- unitID -> true: walls of the tower defense corridors; td_waves.lua protects them (damage, reclaim, capture, self destruction)
+GG.Indestructible = GG.Indestructible or {} -- unitID -> true: buildings marked with FX and the walls of the tower defense corridors; unit_indestructible.lua protects them (damage, reclaim, capture, self destruction)
 local indestructible = GG.Indestructible
 local function setIndestructible(id)
 	indestructible[id] = true

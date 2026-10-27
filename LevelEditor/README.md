@@ -66,7 +66,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - **Copy and paste:** **Ctrl+C** copies the selected units/buildings (without a selection the unit at the mouse pointer), **Ctrl+X** cuts, **Ctrl+V** pastes them centered at the mouse pointer, with team, rotation and height, any number of times; the clipboard lasts until you quit the editor.
 - **Moving:** **Alt + drag** on a selected unit moves the selection; the **arrow keys** move it by one grid step (up = north). **[** and **]** rotate a stamp; **L / R / S** rotate and mirror a selection.
 - **Undo / redo:** **Ctrl+Z** / **Ctrl+Y** for placing, deleting, moving, rotating, generating, team changes, features and Tower Defense route changes.
-- **Indestructible buildings:** **FX / FD** (drag a rectangle) mark buildings as indestructible or destructible again; the flag is saved in levels, blueprints and the clipboard.
+- **Indestructible buildings:** **FX / FD** (drag a rectangle) mark buildings as indestructible or destructible again (only buildings; in every scenario, whatever the game mode); the flag is saved in levels, blueprints and the clipboard.
 - The shortcuts only work in the Level Editor; in the chat input and in the search fields of the menu they do not apply.
 
 ## Levels and settings

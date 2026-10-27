@@ -34,7 +34,7 @@
 # folders (the editor: scripts, scenario\template, shared; the unpacked package of a scenario: one folder). The hash is made of the names and the texts
 # (without carriage returns, so the line endings of git do not matter); the date (UTC) is the newest change of these files and only says who is
 # probably newer: the hash decides whether two computers are the same. Returns Hash (hex), Date (yyyyMMddHHmmss), Count and Short (for the screen).
-$script:PlayVersionFiles = @('bar_rules.lua', 'ctf_game.lua', 'lobby.ps1', 'player_mapping.ps1', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario_briefing.lua', 'shared_start.lua', 'start_scenario.ps1', 'td_waves.lua', 'unit_restrictions.lua')
+$script:PlayVersionFiles = @('bar_rules.lua', 'ctf_game.lua', 'lobby.ps1', 'player_mapping.ps1', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario_briefing.lua', 'shared_start.lua', 'start_scenario.ps1', 'td_waves.lua', 'unit_indestructible.lua', 'unit_restrictions.lua')
 function Get-PlayVersion([string[]]$dirs) {
     $bytes = New-Object System.Collections.Generic.List[byte]
     $newest = [DateTime]::MinValue; $count = 0
@@ -67,7 +67,7 @@ function Format-PlayDate([string]$d) {
 # ---------------------------------------------------------------- Bundle: the scenario as data
 # What a bundle may hold (names only, in this order for the hash). Lua files only run inside the game engine; nothing that runs on the computer itself
 # (no .ps1, .bat) is ever taken from another computer.
-$script:BundleFiles = @('bar_rules.lua', 'ctf_game.lua', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario.txt', 'td_waves.lua', 'unit_restrictions.lua')
+$script:BundleFiles = @('bar_rules.lua', 'ctf_game.lua', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario.txt', 'td_waves.lua', 'unit_indestructible.lua', 'unit_restrictions.lua')
 $script:BundleMaxBytes = 64MB   # per bundle (zip and unpacked)
 
 function Get-BundleCacheRoot { return (Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Cache') }

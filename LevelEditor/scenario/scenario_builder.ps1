@@ -733,12 +733,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $waves = ($td.waves | ForEach-Object { '{0},{1},{2},{3},{4},{5}' -f $_.fac, $_.kind, $_.tech, $_.count, $_.gap, $_.hp }) -join '/'
         $plain = (@($enemyNew, 0, $td.spawn[0], $td.spawn[1], $td.goal[0], $td.goal[1], $td.leaks, $path, $waves, $(if ($td.economy) { 'economy' } else { 'towers' }), $(if ($td.fog) { '1' } else { '0' })) -join ';')
         $mods['tdconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-        # indestructible units (corridor walls, buildings marked with FX): name:x,z,x,z|name:...
-        $fixed = @($level.units | Where-Object { $_.fixed })
-        if ($fixed.Count -gt 0) {
-            $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
-            $mods['tdfixed'] = [Convert]::ToBase64String($utf8.GetBytes(($groups -join '|'))).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-        }
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Tower Defense (the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
     }
     if ($ctf) {
@@ -754,6 +748,12 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), ($(if ($rtf.statics) { '1' } else { '0' }) + $(if ($rtf.ground) { '1' } else { '0' }) + $(if ($rtf.ships) { '1' } else { '0' }) + $(if ($rtf.air) { '1' } else { '0' }))) -join ';')
         $mods['rtfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
         if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Reclaim the Fame (the points decide: the first team that reaches $($rtf.score) points wins; 0 = no end)." -ForegroundColor Yellow }
+    }
+    # indestructible buildings (buildings marked with FX, corridor walls), in every game mode: gadget unit_indestructible.lua, name:x,z,x,z|name:...
+    $fixed = @($level.units | Where-Object { $_.fixed })
+    if ($fixed.Count -gt 0) {
+        $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
+        $mods['fixedunits'] = [Convert]::ToBase64String($utf8.GetBytes(($groups -join '|'))).Replace('+', '-').Replace('/', '_').TrimEnd('=')
     }
     if ($rst) {
         # settings for the gadget unit_restrictions.lua (the names of the units)
@@ -782,7 +782,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         Copy-Item (Join-Path $TEMPLATE 'shared_start.lua') $folder
     }
     if ($rst) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
-    if ($td -or $ctf -or $rst -or $rtf) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
+    if ($fixed.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_indestructible.lua') (Join-Path $folder 'unit_indestructible.lua') } # the protection of the buildings marked with FX
+    if ($td -or $ctf -or $rst -or $rtf -or $fixed.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'pve_supply_drops_stub.lua') (Join-Path $folder 'pve_supply_drops_stub.lua') } # the stub that replaces the lootbox gadget of the game (it let enemies capture the flags)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)

@@ -11,7 +11,7 @@ S = REPO + 'LevelEditor/scripts/'
 rd = lambda p: open(p, encoding='utf-8', newline='').read()
 entries = [('luarules/gadgets/td_waves.lua', rd(S + 'td_waves.lua')), ('luarules/gadgets/ctf_game.lua', rd(S + 'ctf_game.lua')),
            ('luarules/gadgets/rtf_game.lua', rd(S + 'rtf_game.lua')), ('luarules/gadgets/pve_supply_drops.lua', rd(S + 'pve_supply_drops_stub.lua')),
-           ('luarules/gadgets/unit_restrictions.lua', rd(S + 'unit_restrictions.lua')), ('luaui/Include/bar_rules.lua', rd(REPO + 'shared/bar_rules.lua')), ('modinfo.lua', modinfo)]
+           ('luarules/gadgets/unit_restrictions.lua', rd(S + 'unit_restrictions.lua')), ('luarules/gadgets/unit_indestructible.lua', rd(S + 'unit_indestructible.lua')), ('luaui/Include/bar_rules.lua', rd(REPO + 'shared/bar_rules.lua')), ('modinfo.lua', modinfo)]
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
     for n, t in entries:
         zi = zipfile.ZipInfo(n, (2000, 1, 1, 0, 0, 0)); zi.compress_type = zipfile.ZIP_DEFLATED

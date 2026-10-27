@@ -194,13 +194,15 @@ $tdNeeded = Test-Path (Join-Path $pkg 'td_waves.lua')
 $ctfNeeded = Test-Path (Join-Path $pkg 'ctf_game.lua')
 $rtfNeeded = Test-Path (Join-Path $pkg 'rtf_game.lua')
 $rstNeeded = Test-Path (Join-Path $pkg 'unit_restrictions.lua')
+$fixNeeded = Test-Path (Join-Path $pkg 'unit_indestructible.lua')   # buildings marked with FX (any game mode)
 $gadgetDir = if ($EditorDir) { Join-Path $EditorDir 'scripts' } else { $pkg }
 $tdGadget = Join-Path $gadgetDir 'td_waves.lua'
 $ctfGadget = Join-Path $gadgetDir 'ctf_game.lua'
 $rtfGadget = Join-Path $gadgetDir 'rtf_game.lua'
 $rstGadget = Join-Path $gadgetDir 'unit_restrictions.lua'
+$fixGadget = Join-Path $gadgetDir 'unit_indestructible.lua'
 $lootStub = Join-Path $gadgetDir 'pve_supply_drops_stub.lua'   # Capture the Flag: replaces the lootbox gadget of the game (it let enemies capture the flags)
-if ($tdNeeded -or $ctfNeeded -or $rstNeeded -or $rtfNeeded) {
+if ($tdNeeded -or $ctfNeeded -or $rstNeeded -or $rtfNeeded -or $fixNeeded) {
     $gamesDir = Join-Path $data 'games'
     New-Item -ItemType Directory -Force $gamesDir | Out-Null
     $zipPath = Join-Path $gamesDir 'TowerDefenseScenario.sdz'
@@ -226,6 +228,7 @@ return {
     if ($rtfNeeded) { $files += , @('luarules/gadgets/rtf_game.lua', [IO.File]::ReadAllText($rtfGadget)) }
     if ($ctfNeeded -and (Test-Path $lootStub)) { $files += , @('luarules/gadgets/pve_supply_drops.lua', [IO.File]::ReadAllText($lootStub)) }
     if ($rstNeeded) { $files += , @('luarules/gadgets/unit_restrictions.lua', [IO.File]::ReadAllText($rstGadget)) }
+    if ($fixNeeded) { $files += , @('luarules/gadgets/unit_indestructible.lua', [IO.File]::ReadAllText($fixGadget)) }
     $rulesFile = if ($EditorDir) { Join-Path (Join-Path (Split-Path $EditorDir -Parent) 'shared') 'bar_rules.lua' } else { Join-Path $pkg 'bar_rules.lua' } # shared rules (packages made before this file existed carry a gadget that does not need it)
     if (Test-Path $rulesFile) { $files += , @('luaui/Include/bar_rules.lua', [IO.File]::ReadAllText($rulesFile)) }
     if ($build) {
