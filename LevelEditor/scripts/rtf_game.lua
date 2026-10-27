@@ -299,6 +299,9 @@ local function start(cfg)
 		Spring.DestroyFeature(c.id)
 		local id = Spring.CreateFeature(c.name, x, y, z, heading) or nil
 		if id then
+			if GG.LevelEditor and GG.LevelEditor.replaceFid then
+				GG.LevelEditor.replaceFid(c.id, id) -- in the editor: undo and redo find the crystal under its new ID
+			end
 			Spring.SetFeatureResources(id, 0, 0, rt, 1)
 			g.saved[id] = { rm, re, rt }
 			nodeSet[id] = cfg.factor[c.size]

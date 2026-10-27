@@ -1069,6 +1069,7 @@ end
 function gadget:Initialize()
 	GG.LevelEditor = {
 		place = place, remove = remove, undo = undo, clear = clearAll, load = loadUnit, boom = boom, assign = assignTeam, removeIds = removeIds, generate = generate, feature = placeFeature, clearFeatures = clearFeatures,
+		replaceFid = replaceFid, -- a feature made again by another gadget (rtf_game.lua): the steps of the history follow it
 		recv = function(msg, playerID) return gadget:RecvLuaMsg(msg, playerID) end, -- for tests
 	}
 end
