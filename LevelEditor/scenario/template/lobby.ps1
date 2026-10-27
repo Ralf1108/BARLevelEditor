@@ -90,6 +90,7 @@ function New-BundleZip([string]$dir, [string]$zipPath) {
 }
 
 # unpacks a zip from another computer into an empty folder: only the names of $script:BundleFiles, nothing else, no paths, at most BundleMaxBytes
+# (counted while unpacking, so a zip that hides its real size cannot fill the disk)
 function Expand-BundleZip([string]$zipPath, [string]$destDir) {
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -99,10 +100,16 @@ function Expand-BundleZip([string]$zipPath, [string]$destDir) {
         foreach ($e in $zip.Entries) {
             $name = $script:BundleFiles | Where-Object { $_ -eq $e.FullName } | Select-Object -First 1
             if (-not $name) { throw "The scenario holds a file that is not allowed: $($e.FullName)" }
-            $total += $e.Length
-            if ($total -gt $script:BundleMaxBytes) { throw 'The scenario is too big.' }
+            # the bytes really unpacked count (the length in the zip is only what the other computer wrote there)
             $in = $e.Open(); $out = [IO.File]::Create((Join-Path $destDir $name))
-            try { $in.CopyTo($out) } finally { $out.Close(); $in.Close() }
+            try {
+                $buf = New-Object byte[] 65536
+                while (($n = $in.Read($buf, 0, $buf.Length)) -gt 0) {
+                    $total += $n
+                    if ($total -gt $script:BundleMaxBytes) { throw 'The scenario is too big.' }
+                    $out.Write($buf, 0, $n)
+                }
+            } finally { $out.Close(); $in.Close() }
         }
     } finally { $zip.Dispose() }
 }
