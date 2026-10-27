@@ -4,6 +4,15 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 
 ![Level Editor: Place menu with units](docs/level-editor-place-units.jpg)
 
+**Contents**
+
+- [Level Editor](#level-editor)
+- [Game modes](#game-modes)
+- [BluePrinter](#blueprinter)
+- [Installation (Windows)](#installation-windows)
+- [Documentation](#documentation)
+- [Other useful links](#other-useful-links)
+
 ## Level Editor
 
 **Build**
@@ -69,3 +78,7 @@ A small widget for the **official** game that brings blueprints to normal matche
 - Specifications: [Level Editor](LevelEditor/SPECIFICATION.md), [BluePrinter](BluePrinter/SPECIFICATION.md), [shared code](shared/SPECIFICATION.md)
 
 Windows only for now. Not an official Beyond All Reason project. Created with the help of [Claude Code](https://claude.com/claude-code); please report anything that does not work as described.
+
+## Other useful links
+
+- [Map Generator](https://eclipseforeverbeyond.com/)
