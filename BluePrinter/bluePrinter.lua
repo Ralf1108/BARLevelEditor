@@ -54,7 +54,7 @@ local HELP_SECTIONS = {
 		{ "Search field", "In the building catalog and above the blueprint tiles: type words of the description or the code, the list filters at once. A scrollbar sits at the right edge of the lists. Enter = done, Esc = clear the search (sorting is off while searching)." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename." },
 		{ "V  /  O  /  ?", "Buttons next to the menu: collapse the menu / set columns and rows / this help." },
-		{ "A  /  C", "Auto-build on or off / commander helps build yes or no (light blue = on)." },
+		{ "A  /  Q  /  C", "Auto-build on or off / Queue order (builders take the lowest number first) / commander helps build yes or no (light blue = on)." },
 	} },
 	{ "Building", {
 		{ "Auto-build (A)", "Idle builders work through the queued plans on their own (even without a selection)." },
@@ -66,7 +66,7 @@ local HELP_SECTIONS = {
 		{ "Line Remaining", "Metal, energy and estimated build time of all open plans." },
 		{ "Select plans", "Click a plan: selects the whole blueprint copy it belongs to (a single building: just it). Ctrl+click: only that building. Shift+click: add or remove. Ctrl+drag: a rectangle. A click on the ground clears the selection." },
 		{ "Selected plans", "Del removes them from the queue, [ and ] rotate them (not the ones being built), Page up / Page down move them one place in the queue, Home / End to the front / back. Undo takes each of these back." },
-		{ "Queue order (title row)", "Off: idle builders take the nearest plan. On: they take the open plan with the lowest number first." },
+		{ "Queue order (Q)", "Off: idle builders take the nearest plan. On: they take the open plan with the lowest number first." },
 	} },
 	{ "Queueing (mouse on the map)", {
 		{ "[  ]  or Alt+Mouse wheel", "Rotate (south, east, north, west)." },
@@ -233,11 +233,41 @@ local function siteExists(def, x, z)
 	return false
 end
 
+-- Footprints: half sizes of a building with its facing
+local function footHalf(def, f)
+	local ud = UnitDefs[def]
+	local hx, hz = (ud.xsize or 4) * 4, (ud.zsize or 4) * 4
+	if f % 2 == 1 then
+		hx, hz = hz, hx
+	end
+	return hx, hz
+end
+
+-- does the footprint lie on another open plan (footprints that only touch do not count)
+local function planOverlap(def, x, z, f)
+	local hx, hz = footHalf(def, f)
+	for _, s in ipairs(sites) do
+		if not s.done then
+			local ox, oz = footHalf(s.def, s.f)
+			if math.abs(s.x - x) < hx + ox - 2 and math.abs(s.z - z) < hz + oz - 2 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Can a plan be queued here? Not on another plan, and not where the game says no (a building stands there, the ground is too steep)
+local function placeable(ud, x, y, z, f)
+	return not planOverlap(ud.id, x, z, f) and testBuild(ud, x, y, z, f) ~= 0
+end
+
 -- Queue a blueprint (units) with center (cx, cz) and k quarter turns; returns the number of new plans
 local function addPlan(units, cx, cz, k)
 	batchCounter = batchCounter + 1
 	groupCounter = groupCounter + 1
-	local n, skipped = 0, 0
+	local n, skipped, blocked = 0, 0, 0
+	local list = {}
 	for _, u in ipairs(units) do
 		local ud = UnitDefNames[u.name]
 		if ud and (ud.isBuilding or not ud.canMove) then
@@ -246,13 +276,21 @@ local function addPlan(units, cx, cz, k)
 			local x, y, z = buildPos(ud, cx + dx, cz + dz, f)
 			if siteExists(ud.id, x, z) then
 				skipped = skipped + 1
+			elseif not placeable(ud, x, y, z, f) then
+				blocked = blocked + 1
 			else
-				sites[#sites + 1] = { def = ud.id, name = ud.name, x = x, y = y, z = z, f = f, batch = batchCounter, tries = 0, grp = groupCounter }
-				n = n + 1
+				list[#list + 1] = { def = ud.id, name = ud.name, x = x, y = y, z = z, f = f, batch = batchCounter, tries = 0, grp = groupCounter }
 			end
 		end
 	end
-	return n, skipped
+	if blocked > 0 then
+		return 0, skipped, blocked -- a blueprint is placed whole or not at all
+	end
+	for _, s in ipairs(list) do
+		sites[#sites + 1] = s
+		n = n + 1
+	end
+	return n, skipped, 0
 end
 
 local function pendingCount()
@@ -641,7 +679,10 @@ end
 local function addSingle(ud, x, z, f, batch)
 	local bx, by, bz = buildPos(ud, x, z, f)
 	if siteExists(ud.id, bx, bz) then
-		return false
+		return false, "exists"
+	end
+	if not placeable(ud, bx, by, bz, f) then
+		return false, "blocked"
 	end
 	if not batch then
 		batchCounter = batchCounter + 1
@@ -653,15 +694,19 @@ end
 -- Queue several buildings (row/rectangle) as ONE step; returns the number of new plans
 local function addMany(ud, list, f)
 	batchCounter = batchCounter + 1
-	local n = 0
+	local n, blocked = 0, 0
 	for _, p in ipairs(list) do
 		local bx, by, bz = buildPos(ud, p.x, p.z, f)
 		if not siteExists(ud.id, bx, bz) then
-			sites[#sites + 1] = { def = ud.id, name = ud.name, x = bx, y = by, z = bz, f = f, batch = batchCounter, tries = 0 }
-			n = n + 1
+			if placeable(ud, bx, by, bz, f) then
+				sites[#sites + 1] = { def = ud.id, name = ud.name, x = bx, y = by, z = bz, f = f, batch = batchCounter, tries = 0 }
+				n = n + 1
+			else
+				blocked = blocked + 1
+			end
 		end
 	end
-	return n
+	return n, blocked
 end
 
 local function setSpacing(v)
@@ -741,7 +786,7 @@ local function basePanelRect()
 		ch = ch + bpFilterHeight()
 		minBottom = vsy * 0.20 -- below the panel are name and cost of the blueprint
 	end
-	local pw = math.min(math.max(math.floor(660 * S), cw), vsx * 0.6) -- wide enough for the status lines
+	local pw = math.min(math.max(math.floor(600 * S), cw), vsx * 0.6) -- wide enough for the status lines
 	local x1 = (side == "right") and (vsx - colW - pw) or colW
 	local top = vsy * 0.90
 	local bottom = math.max(minBottom, top - headHeight() - ch)
@@ -779,7 +824,7 @@ local function inPanel(mx, my)
 	local m = Shared.m
 	local colW = m.HB + 2 * m.PAD
 	local cx1 = columnX(x1, x2)
-	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 9 * (m.HB + 3) - m.PAD
+	return mx >= cx1 and mx <= cx1 + colW and my <= y1 and my >= y1 - 10 * (m.HB + 3) - m.PAD
 end
 
 -- Radius input field: typing digits, Enter accepts, Esc cancels, a click elsewhere accepts
@@ -798,7 +843,7 @@ local function radiusEnd(accept)
 end
 
 local TIPS = {
-	queue = "Queue order: off = idle builders take the nearest plan (as before).\nOn = they take the open plan with the lowest number first.\Change the order of selected plans with Page up, Page down, Home and End.",	collapse = "V: collapse or expand the menu",
+	queue = "Queue order (Q): off = idle builders take the nearest plan (as before).\nOn = they take the open plan with the lowest number first.\Change the order of selected plans with Page up, Page down, Home and End.",	collapse = "V: collapse or expand the menu",
 	gear = "O: settings, columns and rows",
 	help = "?: show the keys and controls on the screen",
 	modebp = "Blueprints: saved groups of buildings",
@@ -850,16 +895,14 @@ local function layout()
 	if collapsed then
 		return { btns = btns, info = y, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	end
-	-- Queue order: toggle left of Create
-	btns[#btns + 1] = { id = "queue", label = "Queue order", x1 = x2 - 2 * pad - 260 * S - 170 * S, x2 = x2 - 2 * pad - 260 * S, y0 = y1 - pad - 46 * S, y1 = y1 - pad,
-		on = queueOrder, active = queueOrder, tip = TIPS.queue .. "\nNow: " .. (queueOrder and "ON" or "OFF") }
 	colBtn(2, "gear", "O", optionsOpen)
 	colBtn(3, "help", "?", helpOpen)
 	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
-	colBtn(7, "areal", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
-	colBtn(8, "arear", "XR", area:armed() and area:mode() == "rect")
-	colBtn(9, "areac", "XC", area:armed() and area:mode() == "circle")
-	colBtn(5, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
+	colBtn(8, "areal", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
+	colBtn(9, "arear", "XR", area:armed() and area:mode() == "rect")
+	colBtn(10, "areac", "XC", area:armed() and area:mode() == "circle")
+	colBtn(5, "queue", "Q", queueOrder, TIPS.queue .. "\nNow: " .. (queueOrder and "ON" or "OFF"))
+	colBtn(6, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
 		local w = (x2 - x1 - 2 * pad - 4 * S) / 2
 		local top = y
@@ -1441,8 +1484,9 @@ function widget:MousePress(mx, my, button)
 					local hx, hz = halfSize(ud, f)
 					local gap = spacing * 16
 					paint = { ud = ud, f = f, batch = batchCounter, x = gx, z = gz, sx = math.max(16, hx * 2 + gap), sz = math.max(16, hz * 2 + gap) }
-					if not addSingle(ud, gx, gz, f, paint.batch) then
-						say("There is already a plan there")
+					local added, why = addSingle(ud, gx, gz, f, paint.batch)
+					if not added then
+						say(why == "blocked" and "Not queued: another plan, a building or the ground is in the way" or "There is already a plan there")
 					end
 				end
 			end
@@ -1462,8 +1506,12 @@ function widget:MousePress(mx, my, button)
 			if bp and gx and shift then
 				stampDrag = { x = snap16(gx), z = snap16(gz), bp = true } -- Row/rectangle of blueprints
 			elseif bp and gx then
-				local n, skipped = addPlan(bp.units, snap16(gx), snap16(gz), rot)
-				say(string.format("%d plans queued%s", n, skipped > 0 and (" (" .. skipped .. " already present)") or ""))
+				local n, skipped, blocked = addPlan(bp.units, snap16(gx), snap16(gz), rot)
+				if blocked > 0 then
+					say(string.format("Not placed: %d of its buildings would lie on another plan, on a building or on bad ground", blocked))
+				else
+					say(string.format("%d plans queued%s", n, skipped > 0 and (" (" .. skipped .. " already present)") or ""))
+				end
 			end
 			return true
 		end
@@ -1516,12 +1564,16 @@ function widget:MouseRelease(mx, my, button)
 		local gx, gz = mouseGround()
 		local bp = stampDrag.bp and LIST[bpGrid.selected]
 		if bp and gx then
-			local total, copies = 0, 0
+			local total, copies, refused = 0, 0, 0
 			batchCounter = batchCounter + 1
 			local keep = batchCounter
 			for _, c in ipairs(bpStampList(bp, gx, gz)) do
-				local n = addPlan(bp.units, c.x, c.z, rot)
-				total, copies = total + n, copies + 1
+				local n, _, blocked = addPlan(bp.units, c.x, c.z, rot)
+				if blocked > 0 then
+					refused = refused + 1
+				else
+					total, copies = total + n, copies + 1
+				end
 			end
 			-- all copies as one step for undo
 			for _, s in ipairs(sites) do
@@ -1530,10 +1582,10 @@ function widget:MouseRelease(mx, my, button)
 				end
 			end
 			batchCounter = keep
-			say(string.format("%d plans queued (%d x blueprint)", total, copies))
+			say(string.format("%d plans queued (%d x blueprint)%s", total, copies, refused > 0 and (", " .. refused .. " copies not placed: something is in the way") or ""))
 		elseif ud and gx and not stampDrag.bp then
-			local n = addMany(ud, stampList(ud, gx, gz), rot % 4)
-			say(string.format("%d plans queued", n))
+			local n, blocked = addMany(ud, stampList(ud, gx, gz), rot % 4)
+			say(string.format("%d plans queued%s", n, blocked > 0 and (", " .. blocked .. " skipped: something is in the way") or ""))
 		end
 		stampDrag = nil
 	end
@@ -1851,11 +1903,54 @@ local function drawSiteNumbers()
 	gl.Color(1, 1, 1, 1)
 end
 
+-- Preview of an armed blueprint: the order in which its buildings will be built, 1 to n for every copy (placed, they get the next numbers of the queue)
+local function drawPreviewNumbers()
+	local bp = bpGrid.armed and LIST[bpGrid.selected] or nil
+	if not bp then
+		return
+	end
+	local mx, my = Spring.GetMouseState()
+	if inPanel(mx, my) then
+		return
+	end
+	local _, pos = Spring.TraceScreenRay(mx, my, true)
+	if not pos then
+		return
+	end
+	local centers = { { x = snap16(pos[1]), z = snap16(pos[3]) } }
+	if stampDrag and stampDrag.bp then
+		centers = bpStampList(bp, pos[1], pos[3])
+	end
+	local budget = 500
+	gl.Color(1, 1, 0.55, 1)
+	for _, ctr in ipairs(centers) do
+		local n = 0
+		for _, u in ipairs(bp.units) do
+			local ud = UnitDefNames[u.name]
+			if ud and (ud.isBuilding or not ud.canMove) then
+				n = n + 1
+				if budget > 0 then
+					budget = budget - 1
+					local dx, dz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, rot)
+					local f = (headingToFacing(u.rot) + rot) % 4
+					local x, y, z = buildPos(ud, ctr.x + dx, ctr.z + dz, f)
+					local sx, sy = Spring.WorldToScreenCoords(x, y + 20, z)
+					if sx and sy then
+						gl.Text(tostring(n), sx, sy, 16 * S, "co")
+					end
+				end
+			end
+		end
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
 local function drawScreenBody()
 	rescale()
 	if #sites > 0 then
 		pcall(drawSiteNumbers)
 	end
+	pcall(drawPreviewNumbers)
 	if not menuOpen then
 		return
 	end
@@ -2183,6 +2278,11 @@ function widget:DebugAddBlueprint(units, x, z)
 	return addPlan(units, x, z, 0)
 end
 
+function widget:DebugMode(mode)
+	menuMode = mode
+	bpGrid.scroll, uGrid.scroll = 0, 0
+end
+
 function widget:DebugSetAuto(on)
 	autoBuild = on and true or false
 end
@@ -2193,7 +2293,8 @@ end
 
 -- for tests in the game: the plans in queue order
 function widget:DebugState()
-	local out = { queueOrder = queueOrder, selected = selCount(), ops = #opStack, plans = {} }
+	local mi, ei = Shared.stableIncome()
+	local out = { queueOrder = queueOrder, selected = selCount(), ops = #opStack, plans = {}, metalIncome = mi, energyIncome = ei }
 	for _, s in ipairs(sites) do
 		if not s.done then
 			out.plans[#out.plans + 1] = { name = s.name, x = s.x, z = s.z, f = s.f, sel = selected[s] == true, grp = s.grp, claim = s.claim, blocked = (s.blocked or 0) > passNo }

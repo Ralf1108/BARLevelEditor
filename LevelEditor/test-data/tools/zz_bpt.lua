@@ -4,7 +4,8 @@ local function chk(ok, msg) log((ok and "PASS " or "FAIL ") .. msg) end
 local function W() return WG.BluePrinterWidget end
 local function st() return W():DebugState() end
 local cx, cz, cy, cid, rotBefore, delN
-local function gi() return #st().plans - 2 end
+local gs = 3
+local function gi() return #st().plans - gs + 1 end
 local function names(s)
 	local o = {}
 	for i, p in ipairs(s.plans) do o[#o + 1] = i .. (p.sel and "*" or "") .. ":" .. p.name:sub(4, 9) .. "@" .. math.floor(p.x) .. "," .. math.floor(p.z) .. "f" .. p.f end
@@ -57,11 +58,19 @@ at(50, function()
 	W():DebugAdd("armsolar", fx, fz, 0)
 	for i = 0, 3 do local nx, nz = spot("armwin", cx + 150 + i * 150, cz + 250) W():DebugAdd("armwin", nx, nz, 0) end
 	local bx, bz = spot("armsolar", cx + 300, cz - 350)
-	local x2, z2 = spot("armsolar", bx + 110, bz)
-	local x3, z3 = spot("armsolar", bx + 220, bz)
-	W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 }, { name = "armsolar", dx = x2 - bx, dz = z2 - bz, rot = 0 }, { name = "armsolar", dx = x3 - bx, dz = z3 - bz, rot = 0 } }, bx, bz)
+	local pts = { { bx, bz } }
+	for k = 1, 2 do
+		local nx, nz = spot("armsolar", bx + k * 110, bz)
+		local fresh = true
+		for _, p in ipairs(pts) do if math.abs(p[1] - nx) < 70 and math.abs(p[2] - nz) < 70 then fresh = false end end
+		if fresh then pts[#pts + 1] = { nx, nz } end
+	end
+	local units = {}
+	for _, p in ipairs(pts) do units[#units + 1] = { name = "armsolar", dx = p[1] - bx, dz = p[2] - bz, rot = 0 } end
+	gs = #units
+	W():DebugAddBlueprint(units, bx, bz)
 	local s = st()
-	chk(#s.plans == 8, "8 plans queued: " .. #s.plans .. " " .. names(s))
+	chk(#s.plans == 5 + gs, "5 + group queued: " .. #s.plans .. " " .. names(s))
 end)
 -- auto-build is on and the commander is idle: it takes a plan; stop it before the selection tests
 at(52, function() Spring.GiveOrderToUnit(cid, CMD.STOP, {}, {}) end)
@@ -70,7 +79,7 @@ at(70, function()
 	-- the bp group at the end: click the plan 6
 	clickNow()
 	local s = st()
-	chk(s.selected == 3, "click on a blueprint plan selects its whole group (3): " .. s.selected)
+	chk(s.selected == gs, "click on a blueprint plan selects its whole group (" .. gs .. "): " .. s.selected)
 	chk(firstSel(s) == gi(), "selected are the last three")
 end)
 at(80, function()
@@ -123,7 +132,7 @@ end)
 at(120, function()
 	local n0 = #st().plans
 	W():KeyPress(127) -- Del
-	chk(#st().plans == n0 - 3, "Del removes the 3 selected plans: " .. #st().plans)
+	chk(#st().plans == n0 - gs, "Del removes the selected group: " .. #st().plans)
 	delN = n0
 	Spring.SendCommands("bp_undo")
 end)
@@ -158,6 +167,12 @@ at(129, function()
 	end
 	local mine = 0
 	for _, p in ipairs(st().plans) do if p.claim == cid then mine = mine + 1 end end
+	local q = Spring.GetUnitCommands(cid, 10) or {}
+	local names = {}
+	for _, c in ipairs(q) do names[#names + 1] = tostring(c.id) .. "@" .. tostring(c.params and c.params[1] and math.floor(c.params[1])) end
+	local gp = {}
+	for _, p in ipairs(st().plans) do if p.grp then gp[#gp + 1] = math.floor(p.x) .. "," .. math.floor(p.z) .. (p.claim and "c" or "") end end
+	log("queue: " .. table.concat(names, " ") .. " | group plans " .. table.concat(gp, " "))
 	chk(n == want and mine == want and want >= 1, "right click on a blueprint plan: the commander got the whole copy (orders and claims = buildable plans of the copy " .. want .. "): " .. tostring(n) .. " / " .. mine)
 	Spring.GiveOrderToUnit(cid, CMD.STOP, {}, {})
 end)
