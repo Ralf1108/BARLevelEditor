@@ -22,7 +22,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 
 **Share it**
 - Scenario builder: a level becomes a ZIP with briefing, AI opponents and win condition that others start with their own BAR
-- LAN Play: host and join games in the same network, with Copilot (two people play one player)
+- [LAN Play](docs/lan-play.md): host and join games in the same network, with Copilot (two people play one player)
 
 | Blueprints | Generate: units | Generate: maze |
 |---|---|---|
