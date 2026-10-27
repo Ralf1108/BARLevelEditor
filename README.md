@@ -35,7 +35,7 @@ After a BAR update or a change of the code nothing has to be done: the start scr
 `install_editor.bat` starts the PowerShell script `scripts\install_editor.ps1` with `-ExecutionPolicy Bypass` (only for this script, your system setting stays untouched). It builds the extra game `LevelEditorMod.sdz` in your BAR `data\games` folder, creates folder junctions in the BAR data folder (`LevelEditor` and `LevelEditorBlueprints`, pointing to the `levels` and `blueprints` folders of this repository), writes `start_level_editor.bat` and puts a shortcut on your desktop. The official game files are not modified. Read the scripts first if you want to be sure; `uninstall_editor.bat` undoes everything.
 </details>
 
-**BluePrinter (optional, for normal games):** run `BluePrinter\install_blueprinter.bat`, then enable *Allow user widgets* in the game settings and switch **BluePrinter** on in the widget list (F11). `BluePrinter\uninstall_blueprinter.bat` removes it again (your blueprints stay).
+**BluePrinter (optional, for normal games):** run `BluePrinter\install_blueprinter.bat`, then enable *Allow user widgets* in the game settings and switch **BluePrinter** on in the widget list (F11). It is active in every normal game from then on. `BluePrinterstart_blueprinter.bat` checks that the newest version is installed and starts BAR; `start_blueprinter_test.bat` starts a small test game instead. `BluePrinter\uninstall_blueprinter.bat` removes it again (your blueprints stay).
 
 ## Quick start
 
