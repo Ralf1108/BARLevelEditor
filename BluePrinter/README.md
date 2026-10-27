@@ -22,7 +22,7 @@ After a change to `bluePrinter.lua` run the installation again.
 **Removing:** run `uninstall_blueprinter.bat` (it asks first). It removes the widget, the shared code in `data\LuaUI\Include` and the two junctions; the blueprints stay. With `-WithSettings` the settings file `LuaUI\Config\BluePrinterUI.lua` is deleted too, with `-Yes` the confirmation is skipped.
 
 ## Trying it out
-`start_blueprinter.bat` installs the widget when it is not up to date (compares the files with the installed ones) and starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change. Start it from a command line with a map name to choose the map: `start_blueprinter.bat "Map Name"`.
+**`start_blueprinter.bat`** makes sure the newest BluePrinter is installed (it compares the files with the installed ones and runs the setup when they differ) and then starts the normal Beyond All Reason. The BluePrinter is a widget: once it is installed and switched on (see above) it is active in every normal game, you can also start BAR in the usual way, but then nobody checks that the installed version is the newest. **`start_blueprinter_test.bat`** does the same check and then starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change. Start it from a command line with a map name to choose the map: `start_blueprinter_test.bat "Map Name"`.
 
 ## Blueprints
 Files `<name>.lua` are read from `data\LuaUI\Config\BluePrinter` (that is from `BluePrinter\blueprints`) and from
@@ -67,7 +67,7 @@ Automatic building may count as automation in some ranked or tournament games. I
 At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders; only factions your builders can build for are shown) and the tech tier,
 click a building, then every left click on the map queues one (hold the button and move to paint more, right click ends, `[` and `]` rotate). Buildings that
 your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
-An installed BluePrinter is updated by itself every time `LevelEditor\start_level_editor.bat` runs (and by `BluePrinter\start_blueprinter.bat`, which then starts a small test game); otherwise run `install_blueprinter.bat` again after a change. A game that is already running keeps the old files until a new start or `/luaui reload`.
+An installed BluePrinter is updated by itself every time `LevelEditor\start_level_editor.bat` runs (and by `BluePrinter\start_blueprinter.bat` and `start_blueprinter_test.bat`); otherwise run `install_blueprinter.bat` again after a change. A game that is already running keeps the old files until a new start or `/luaui reload`.
 
 You set the display (columns/rows) with the **O** button. Under the 3D preview the info of the building under the mouse pointer is shown (name and code, description, metal and energy with the **Eco time**, damage per second, explosion), the same as in the Level Editor. **Eco time** is how long your current income needs to produce the metal and energy of the building (or of a whole blueprint); it counts the worst case, the stock in your store is not counted, and it shows `-` without income.
 

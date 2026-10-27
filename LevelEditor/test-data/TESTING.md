@@ -51,7 +51,7 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 
 ## BluePrinter in a test
 
-- After a change of `shared\editor_common.lua` or `BluePrinter\bluePrinter.lua` the installed BluePrinter is old until `install_blueprinter.bat`, `start_blueprinter.bat` or a start of the editor (`ensure_installed.ps1`) copied the files; the game that is running keeps the old ones (`/luaui reload`). "I do not see the new feature in the BluePrinter" is almost always this.
+- After a change of `shared\editor_common.lua` or `BluePrinter\bluePrinter.lua` the installed BluePrinter is old until `install_blueprinter.bat`, `start_blueprinter.bat`, `start_blueprinter_test.bat` or a start of the editor (`ensure_installed.ps1`) copied the files; the game that is running keeps the old ones (`/luaui reload`). "I do not see the new feature in the BluePrinter" is almost always this.
 - In a sandbox game the BluePrinter does not run next to the editor (it ends when `leveleditor=1` or the editor widget is there); use `leveleditor=0` in the modoptions and expect both panels on top of each other.
 - A path with `\b` written by a Python patch into a PowerShell file became a backspace character (`LuaUI\WidgetsluePrinter.lua`); look for control characters after every patch (`[c for c in set(text) if ord(c) < 32]`).
 
