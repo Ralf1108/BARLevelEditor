@@ -1,6 +1,5 @@
 -- Rules about BAR unit definitions that the Level Editor, the BluePrinter, the Tower Defense gadget and the scenario need in the
 -- same way. Small and free of game state, so gadgets (synced) and widgets can load it with VFS.Include("luaui/Include/bar_rules.lua").
--- (scenario/template/scenario_briefing.lua runs alone in a foreign BAR and keeps its own copy of techLevel: change both together.)
 local R = {}
 
 -- BAR files some Epic units under a lower tech level (Epic Grunt: T1, Epic Skater: T2): every Epic unit counts as T3

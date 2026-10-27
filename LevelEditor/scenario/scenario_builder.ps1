@@ -755,6 +755,11 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
         $mods['fixedunits'] = [Convert]::ToBase64String($utf8.GetBytes(($groups -join '|'))).Replace('+', '-').Replace('/', '_').TrimEnd('=')
     }
+    if ($tierOut.Count -gt 0) {
+        # the tech levels per team for the gadget unit_restrictions.lua (team:digits/team:digits, the new team numbers)
+        $plainT = (@($tierOut.Keys | ForEach-Object { '{0}:{1}' -f $_, $tierOut[$_] }) -join '/')
+        $mods['techtiers'] = [Convert]::ToBase64String($utf8.GetBytes($plainT)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+    }
     if ($rst) {
         # settings for the gadget unit_restrictions.lua (the names of the units)
         $plainR = ($rst.banned -join ',')
@@ -782,9 +787,9 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
         Copy-Item (Join-Path $TEMPLATE 'shared_start.lua') $folder
     }
-    if ($rst) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
+    if ($rst -or $tierOut.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
     if ($fixed.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_indestructible.lua') (Join-Path $folder 'unit_indestructible.lua') } # the protection of the buildings marked with FX
-    if ($td -or $ctf -or $rst -or $rtf -or $fixed.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
+    if ($td -or $ctf -or $rst -or $rtf -or $fixed.Count -gt 0 -or $tierOut.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
     if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'pve_supply_drops_stub.lua') (Join-Path $folder 'pve_supply_drops_stub.lua') } # the stub that replaces the lootbox gadget of the game (it let enemies capture the flags)
     if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
