@@ -23,6 +23,8 @@ try { [void](Remove-OldCache) } catch { }   # old scenarios and maps from hosts,
 $playVersion = Get-PlayVersion @($here, (Join-Path $root 'scenario\template'), (Join-Path (Split-Path $root -Parent) 'shared'))
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
 $lastFile = Join-Path $userDir 'Last Map.txt'
+$scavFile = Join-Path $userDir 'Scav Units.txt'   # 1 = the editor loads the Scavenger and Raptor units (game option forceallunits; the start takes about 10 s longer)
+function Get-ScavSetting { return ((Test-Path $scavFile) -and (([IO.File]::ReadAllText($scavFile)).Trim() -eq '1')) }
 
 # ---------------------------------------------------------------- installed maps from the archive cache
 $cache = Get-ChildItem (Join-Path $Data 'cache') -Filter 'ArchiveCache*.lua' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
@@ -169,12 +171,13 @@ function Read-Level($f, [string]$displayName) {
     $mapItem = $maps | Where-Object { $_.Spring -ieq $mapName } | Select-Object -First 1
     $installed = [bool]($mapItem -and $mapItem.Installed)
     $loadable = [bool]($mapItem -and -not $mapItem.Installed -and $mapItem.Url)
+    $forceAll = [bool]([regex]::IsMatch($t, 'requiredmodoptions\s*=\s*\{[^}]*forceallunits'))   # the level holds Scavenger or Raptor units
     $name = [IO.Path]::GetFileNameWithoutExtension($f.Name)
     if (-not $displayName) { $displayName = $name }
     $featText = if ($featCount -gt 0) { ", $featCount Features" } else { '' }
     $label = '{0}   Map: {1}   {2} units{3}   {4}' -f $displayName, ($mapName -replace '_', ' '), $count, $featText, $f.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
     if (-not $installed) { if ($loadable) { $label += '   (map is downloaded after you choose it)' } else { $label += '   (map not available!)' } }
-    return [pscustomobject]@{ Name = $name; Map = $mapName; Count = $count; Installed = $installed; Loadable = $loadable; MapItem = $mapItem; Time = $f.LastWriteTime; Label = $label; Search = ($displayName + ' ' + $mapName).ToLower() -replace '_', ' ' }
+    return [pscustomobject]@{ ForceAll = $forceAll; Name = $name; Map = $mapName; Count = $count; Installed = $installed; Loadable = $loadable; MapItem = $mapItem; Time = $f.LastWriteTime; Label = $label; Search = ($displayName + ' ' + $mapName).ToLower() -replace '_', ' ' }
 }
 
 function Get-Levels {
@@ -485,8 +488,9 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
 }
 
 # ---------------------------------------------------------------- write the start script
-function Write-StartScript([string]$mapSpring) {
+function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false) {
     $game = 'Level Editor 1'
+    $fa = if ($forceAll) { ' forceallunits=1;' } else { '' }
     $script = @"
 [game]
 {
@@ -496,7 +500,7 @@ function Write-StartScript([string]$mapSpring) {
 	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
 	[ai0] { shortname=NullAI; team=1; host=0; name=Null1; }
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1; }
+	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1;$fa }
 	ishost=1;
 	hostip=127.0.0.1;
 	myplayername=Player;
@@ -546,6 +550,7 @@ while ($true) {
         @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) },
         @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' },
         @{ Key = '7'; Mode = 8; On = ($cacheInfo.Bytes -gt 0); Text = $(if ($cacheInfo.Bytes -gt 0) { 'Clean the cache (scenarios and maps from hosts: {0} MB, {1} maps)' -f [Math]::Round($cacheInfo.Bytes / 1MB), $cacheInfo.Maps } else { 'Clean the cache (empty)' }) }
+        @{ Key = '8'; Mode = 9; On = $true; Text = $(if (Get-ScavSetting) { 'Scavenger and Raptor units in the Place menu: ON (the start takes about 10 s longer; Enter = switch off)' } else { 'Scavenger and Raptor units in the Place menu: off (Enter = switch on; the start takes about 10 s longer)' }) }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -554,7 +559,7 @@ while ($true) {
     Write-Host ('   version {0} of {1} UTC (the same on every computer that plays together)' -f $playVersion.Short, (Format-PlayDate $playVersion.Date)) -ForegroundColor DarkGray
     Write-Host ''
     $menuTop = [Console]::CursorTop
-    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
+    Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''; Write-Host ''
     Write-Host ''
     Write-Host 'Arrow up/down + Enter or digit key, Esc = cancel' -ForegroundColor DarkGray
     $mode = 0
@@ -630,6 +635,13 @@ while ($true) {
         }
         & powershell -NoProfile -ExecutionPolicy Bypass -File $starter -BarPath (Split-Path $Data -Parent) -ScenarioDir $chosen.Path -EditorDir $root $how.Args
         continue # the game ended (or could not start): back to the menu, the next one can be tried at once
+    }
+
+    if ($mode -eq 9) {
+        # the switch for the Scavenger and Raptor units: remembered for the next starts
+        New-Item -ItemType Directory -Force $userDir | Out-Null
+        [IO.File]::WriteAllText($scavFile, $(if (Get-ScavSetting) { '0' } else { '1' }))
+        continue
     }
 
     if ($mode -eq 8) {
@@ -762,7 +774,7 @@ while ($true) {
         }
         New-Item -ItemType Directory -Force $userDir | Out-Null
         Set-Content -Path $lastFile -Value $chosen.Spring -Encoding ASCII
-        Write-StartScript $chosen.Spring
+        Write-StartScript $chosen.Spring (Get-ScavSetting)
         if (Test-Path $autoloadFile) { Remove-Item $autoloadFile -Force }
         Clear-Host
         Write-Host ("Starting on: {0}" -f $chosen.Label) -ForegroundColor Green
@@ -786,7 +798,7 @@ while ($true) {
             continue
         }
     }
-    Write-StartScript $chosen.Map
+    Write-StartScript $chosen.Map ((Get-ScavSetting) -or $chosen.ForceAll)
     Set-Autoload $chosen.Name
     Clear-Host
     Write-Host ("Starting level '{0}' on {1} ({2} units are being loaded)" -f $chosen.Name, ($chosen.Map -replace '_', ' '), $chosen.Count) -ForegroundColor Green

@@ -176,8 +176,11 @@ if not defined ENGINE (
 	echo No engine found.
 	pause & exit /b 1
 )
+echo [1/3] Checking the installation ...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\ensure_installed.ps1" -Data "%DATA%"
+echo [2/3] Checking the links ...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\check_links.ps1" -Data "%DATA%"
+echo [3/3] Loading the map list and the levels ...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\choose_map.ps1" -Data "%DATA%"
 if errorlevel 1 exit /b 1
 "%ENGINE%\spring.exe" --write-dir "%DATA%" "%L%editor_script_installed.txt"
