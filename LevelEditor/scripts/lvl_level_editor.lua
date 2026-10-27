@@ -2227,7 +2227,10 @@ local function applyHeader0(r)
 	if r.kind == "top" then
 		local tdWas = td.open or ctf.open or rtf.open
 		td.open, ctf.open, rtf.open = false, false, false
-		if tdWas and r.value == "place" then
+		local pageWas = scenarioOpen or optionsOpen
+		scenarioFinish(true)
+		scenarioOpen, optionsOpen = false, false -- the scenario, AI and settings pages give way to Place and Generate
+		if (tdWas or pageWas) and r.value == "place" then
 			return
 		end
 		if (r.value == "gen") ~= gen.open then
@@ -5016,6 +5019,10 @@ local ctrlEdit -- Ctrl+C/V/X/Z/Y (defined below)
 local ARROW_STEP = { [273] = { 0, -1 }, [274] = { 0, 1 }, [275] = { 1, 0 }, [276] = { -1, 0 } } -- up, down, right, left
 
 function widget:KeyPress(key, mods, isRepeat)
+	if helpOpen and key == 27 then
+		helpOpen = false -- Esc closes the help board
+		return true
+	end
 	if gen.edit then
 		if key == 13 or key == 271 then
 			genFinish(true)
