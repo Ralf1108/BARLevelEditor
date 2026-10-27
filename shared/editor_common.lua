@@ -1382,6 +1382,8 @@ local function unitGroup(ud)
 		return "ships"
 	elseif ud.canFly then
 		return "air"
+	elseif ud.name:sub(1, 7) == "raptor_" then
+		return "bot" -- the raptors walk, although their movement classes are called ...HOVER
 	elseif mc.hover then
 		return "hover"
 	elseif mc.bot then
@@ -1548,7 +1550,12 @@ function M.buildUnitCache()
 			local water = (group == "buildings" and (minW > 0 or (ud.floatOnWater and minW >= 0)))
 				or (group == "air" and (tonumber(ud.maxWaterDepth) or 0) > 0) -- water buildings or seaplanes
 			water = water and true or false
-			list[#list + 1] = { name = name, id = id, filler = filler, rank = (filler and 1000 or 0) + (water and 100 or 0) + unitRank(ud, group, cp) }
+			-- the Scavengers hold the units of all three factions: first all of Armada, then Cortex, then Legion (and the units of their own), each in the order of the other factions
+			local sub = key == "scv" and ({ arm = 1, cor = 2, leg = 3 })[base:sub(1, 3)] or 0
+			if key == "scv" and sub == 0 then
+				sub = 4
+			end
+			list[#list + 1] = { name = name, id = id, filler = filler, rank = sub * 10000 + (filler and 1000 or 0) + (water and 100 or 0) + unitRank(ud, group, cp) }
 		end
 	end
 	for _, fac in pairs(cache) do
