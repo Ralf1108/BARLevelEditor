@@ -557,7 +557,7 @@ while ($true) {
         @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} available)' -f $scenarios.Count } else { 'Start a scenario (none available yet: key 3)' }) },
         @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) },
         @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' },
-        @{ Key = '7'; Mode = 9; On = $true; Text = $(if (Get-ScavSetting) { 'Scavenger and Raptor units in the Place menu: ON (Enter = switch off; the game start takes about 10 seconds longer)' } else { 'Scavenger and Raptor units in the Place menu: off (Enter = switch on; the game start then takes about 10 seconds longer)' }) }
+        @{ Key = '7'; Mode = 9; On = $true; Text = $(if (Get-ScavSetting) { 'Scavenger and Raptor units in the Place menu: ON, loading takes about 10 seconds longer (Enter = switch off)' } else { 'Scavenger and Raptor units in the Place menu: off, when ON loading takes about 10 seconds longer (Enter = switch on)' }) }
         @{ Key = '8'; Mode = 8; On = ($cacheInfo.Bytes -gt 0); Text = $(if ($cacheInfo.Bytes -gt 0) { 'Clean the cache (scenarios, maps and updates that came from other players: {0} MB, {1} maps; kept in %LOCALAPPDATA%\BAR-Scenario)' -f [Math]::Round($cacheInfo.Bytes / 1MB), $cacheInfo.Maps } else { 'Clean the cache (scenarios, maps and updates that came from other players: empty)' }) }
     )
     $sel = 0
