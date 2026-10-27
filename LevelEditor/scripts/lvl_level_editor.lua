@@ -970,11 +970,24 @@ local AI_TXT = { BARb = "BARb (expands, attacks)", NullAI = "NullAI (does nothin
 local TeamAi = { count = 11, -- teams 0 to 10; one table, because a Lua function may hold only 200 local variables (this file is close to it)
 	list = { "default", "NullAI", "BARb", "CircuitAI", "CircuitAI easy", "SimpleAI", "SimpleDefenderAI", "SimpleConstructorAI", "ScavengersAI", "RaptorsAI" },
 	txt = {
-		default = "Default (as the scenario says)", NullAI = "NullAI (does nothing)", BARb = "BARb (expands, attacks)", CircuitAI = "CircuitAI",
+		default = "Default", NullAI = "NullAI (does nothing)", BARb = "BARb (expands, attacks)", CircuitAI = "CircuitAI",
 		["CircuitAI easy"] = "CircuitAI easy", SimpleAI = "SimpleAI (easy)", SimpleDefenderAI = "SimpleDefenderAI (easy, defends)",
 		SimpleConstructorAI = "SimpleConstructorAI (easy, builds)", ScavengersAI = "Scavengers (infinite game)", RaptorsAI = "Raptors (defence)",
 	},
 	next = {},
+}
+TeamAi.tip = {
+	"Default: this team gets the AI of the scenario",
+	"(page I, 'AI behavior': BARb or NullAI; the player team",
+	"gets none; Tower Defense, Capture the Flag and",
+	"Reclaim the Fame always NullAI).",
+	"Any other choice applies to this team only.",
+}
+TeamAi.tipTeam1 = {
+	"Default: in the scenario the AI of 'AI behavior' (page I);",
+	"when the editor starts the level: NullAI, it does nothing.",
+	"The editor knows only teams 0 and 1, so at the editor",
+	"start only the entry of team 1 counts.",
 }
 for i, k in ipairs(TeamAi.list) do TeamAi.next[k] = TeamAi.list[i % #TeamAi.list + 1] end
 local WIN_NEXT = { com = "killall", killall = "neverend", neverend = "com" }
@@ -1828,6 +1841,25 @@ local function drawScenario(rect, mx, my)
 	if scenarioPage == "ai" then
 		gl.Text("Click a team: the next AI. Saved with the level (Save).", rect.x1 + m.PAD, last.y0 - 22 * S, 17 * S, "o")
 		gl.Text("Applies at the next start of the scenario or the editor (team 1).", rect.x1 + m.PAD, last.y0 - 42 * S, 17 * S, "o")
+		-- Tooltip left of the panel for the row under the mouse pointer
+		for _, r in ipairs(rects) do
+			if r.row and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				local lines = r.row.team == 1 and TeamAi.tipTeam1 or TeamAi.tip
+				local fsT, lh = 18 * S, 22 * S
+				local w = 0
+				for _, l in ipairs(lines) do
+					w = math.max(w, (tonumber(gl.GetTextWidth(l)) or 0) * fsT)
+				end
+				local bx2 = rect.x1 - 6 * S
+				local by1 = r.y1
+				gl.Color(0, 0, 0, 0.88)
+				gl.Rect(bx2 - w - 16 * S, by1 - #lines * lh - 10 * S, bx2, by1)
+				gl.Color(1, 1, 1, 1)
+				for i, l in ipairs(lines) do
+					gl.Text(l, bx2 - w - 8 * S, by1 - 6 * S - i * lh + 4 * S, fsT, "o")
+				end
+			end
+		end
 	else
 		gl.Text("Click a field to type: Enter done, Esc cancel,", rect.x1 + m.PAD, last.y0 - 22 * S, 17 * S, "o")
 		gl.Text("Shift+Enter = new line in the briefing. Scenario package: start menu key 3.", rect.x1 + m.PAD, last.y0 - 42 * S, 17 * S, "o")
