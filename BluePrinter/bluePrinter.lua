@@ -245,25 +245,6 @@ local function footHalf(def, f)
 	return hx, hz
 end
 
--- does the footprint lie on another open plan (footprints that only touch do not count)
-local function planOverlap(def, x, z, f)
-	local hx, hz = footHalf(def, f)
-	for _, s in ipairs(sites) do
-		if not s.done then
-			local ox, oz = footHalf(s.def, s.f)
-			if math.abs(s.x - x) < hx + ox - 2 and math.abs(s.z - z) < hz + oz - 2 then
-				return true
-			end
-		end
-	end
-	return false
-end
-
--- Can a plan be queued here? Not on another plan, and not where the game says no (a building stands there, the ground is too steep)
-local function placeable(ud, x, y, z, f)
-	return not planOverlap(ud.id, x, z, f) and testBuild(ud, x, y, z, f) ~= 0
-end
-
 -- A plan goes away (Undo, remove, Clear all): the builder that had it drops its build order (the rest of its queue stays), and a building that
 -- was already started is reclaimed (otherwise it stays as a half-built building without a plan)
 local function dropPlan(s)
@@ -307,6 +288,25 @@ local function plansUnder(def, x, z, f)
 	return out
 end
 
+-- A new plan of the step "batch" lies on open plans: they leave the queue (their builders stop); Undo of the step brings them back. Returns how many.
+local function replaceBelow(def, x, z, f, batch)
+	local n = 0
+	for _, s in ipairs(plansUnder(def, x, z, f)) do
+		for idx, o in ipairs(sites) do
+			if o == s then
+				table.remove(sites, idx)
+				batchReplaced[batch] = batchReplaced[batch] or {}
+				table.insert(batchReplaced[batch], { site = s, index = idx })
+				dropPlan(s)
+				selected[s] = nil
+				n = n + 1
+				break
+			end
+		end
+	end
+	return n
+end
+
 -- Queue a blueprint copy as ONE step. A building of the blueprint that would lie on a real building or on bad ground is left out (counted as blocked),
 -- the others are placed. Plans that lie below its buildings are replaced: they leave the queue (their builders stop) and the new ones come on top;
 -- Undo brings them back. Returns new, skipped, blocked (left out), replaced.
@@ -333,18 +333,17 @@ local function addPlan(units, cx, cz, k)
 			end
 		end
 	end
-	local removed, keep = {}, {}
-	for idx, s in ipairs(sites) do
+	local removed = {}
+	for idx = #sites, 1, -1 do -- downwards, so that every index is valid when it is taken out; Undo puts them back in the opposite order
+		local s = sites[idx]
 		if under[s] then
 			removed[#removed + 1] = { site = s, index = idx }
+			table.remove(sites, idx)
 			dropPlan(s)
 			selected[s] = nil
-		else
-			keep[#keep + 1] = s
 		end
 	end
 	if #removed > 0 then
-		sites = keep
 		batchReplaced[batchCounter] = removed
 	end
 	for _, s in ipairs(list) do
@@ -446,7 +445,8 @@ local function undoLast()
 	local back = batchReplaced[last]
 	if back then
 		batchReplaced[last] = nil
-		for _, it in ipairs(back) do
+		for i = #back, 1, -1 do
+			local it = back[i]
 			table.insert(sites, math.min(it.index, #sites + 1), it.site)
 		end
 		say(removed .. " plans undone, " .. #back .. " plans below are back in the queue")
@@ -724,12 +724,13 @@ local function addSingle(ud, x, z, f, batch)
 	if siteExists(ud.id, bx, bz) then
 		return false, "exists"
 	end
-	if not placeable(ud, bx, by, bz, f) then
+	if testBuild(ud, bx, by, bz, f) == 0 then
 		return false, "blocked"
 	end
 	if not batch then
 		batchCounter = batchCounter + 1
 	end
+	replaceBelow(ud.id, bx, bz, f, batch or batchCounter)
 	sites[#sites + 1] = { def = ud.id, name = ud.name, x = bx, y = by, z = bz, f = f, batch = batch or batchCounter, tries = 0 }
 	return true
 end
@@ -741,7 +742,8 @@ local function addMany(ud, list, f)
 	for _, p in ipairs(list) do
 		local bx, by, bz = buildPos(ud, p.x, p.z, f)
 		if not siteExists(ud.id, bx, bz) then
-			if placeable(ud, bx, by, bz, f) then
+			if testBuild(ud, bx, by, bz, f) ~= 0 then
+				replaceBelow(ud.id, bx, bz, f, batchCounter)
 				sites[#sites + 1] = { def = ud.id, name = ud.name, x = bx, y = by, z = bz, f = f, batch = batchCounter, tries = 0 }
 				n = n + 1
 			else
@@ -1538,7 +1540,7 @@ function widget:MousePress(mx, my, button)
 					paint = { ud = ud, f = f, batch = batchCounter, x = gx, z = gz, sx = math.max(16, hx * 2 + gap), sz = math.max(16, hz * 2 + gap) }
 					local added, why = addSingle(ud, gx, gz, f, paint.batch)
 					if not added then
-						say(why == "blocked" and "Not queued: another plan, a building or the ground is in the way" or "There is already a plan there")
+						say(why == "blocked" and "Not queued: a building or the ground is in the way" or "There is already a plan there")
 					end
 				end
 			end
@@ -1646,7 +1648,7 @@ function widget:MouseRelease(mx, my, button)
 				replacedAll > 0 and (", " .. replacedAll .. " plans below replaced") or ""))
 		elseif ud and gx and not stampDrag.bp then
 			local n, blocked = addMany(ud, stampList(ud, gx, gz), rot % 4)
-			say(string.format("%d plans queued%s", n, blocked > 0 and (", " .. blocked .. " skipped: something is in the way") or ""))
+			say(string.format("%d plans queued%s", n, blocked > 0 and (", " .. blocked .. " skipped: a building or bad ground in the way") or ""))
 		end
 		stampDrag = nil
 	end
