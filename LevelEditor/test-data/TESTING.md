@@ -36,3 +36,21 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 ## What the first runs found
 
 - Over LAN Play every human of a scenario was put in team 0 and the opponent stayed an AI: Capture the Flag and Reclaim the Fame (human against human) could not be played. Fixed in `lan_lobby.lua` (the joiner gets the other ally team once; the AI of the opponent team is removed). The room gave the joiner the host's ally number by default, so the fix needed the first-status correction too.
+
+## Testing the menu of the editor in a sandbox game (found 2026-10-27, AI page and menu bug)
+
+- **Method:** a small test widget (`tools/zz_menu.lua`, goes to `LuaUI/Widgets` of a sandbox game that has the editor built from the repository files) works the buttons through `WG.LevelEditorWidget`: `DebugLayout()` returns the rectangles (side buttons have `side = true`, `kind`, `value` and `active`), `MousePress` / `MouseRelease` click them, `KeyPress(27, {}, false)` presses Esc, a screenshot (`screenshot png`) shows the result. `zz_menu.lua` clicks every side button after every other one (56 pairs) and checks that exactly the chosen one is `active`; it ends with `quitforce`. Result 2026-10-27: 56 pairs, 0 mismatches.
+- **Look into `infolog.txt` first when `WG.LevelEditorWidget` is nil** in the test ("attempt to index a nil value"): the editor widget did not load. The line `Failed to load: lvl_level_editor.lua (...:LINE: ...)` names the line (here an unfinished string). The game itself shows no message for it.
+- **A test widget may run out of memory** ("memory limit exceeded"): `DebugLayout()` builds many tables, so a loop with hundreds of calls in one frame dies. Do one action per frame (take one entry off a queue in `widget:Update`) and call `collectgarbage()` between them.
+- **A test must always end with `quitforce`**, outside `pcall`; an error before it leaves the sandbox game open until the runner times out (300 s).
+- **The one menu toggle that does not close:** `G` stays open when pressed again (leave with `P`); every other side button closes its page on a second click.
+- **Two bugs found:** the Place button (`P`) did not close the I, O and AI pages (the same click on `G` did it by accident), and Esc did not close the help board. Both fixed; test them again after changes to the button handling (`kind == "top"` in `widget:MousePress`).
+- **A window for pictures:** `XResolutionWindowed = 3000` with a 1500-high window gives readable screenshots; the tooltip of a row shows only while the mouse pointer (`Spring.WarpMouse`) lies on it at the time of the screenshot.
+- **Lua limit:** at most 200 local variables per function; `lvl_level_editor.lua` has about 185 at top level. A new top-level `local` can break the load of the whole widget (see above), so count the `^local` lines before adding more and put new constants into an existing table.
+- **Per-team AI (button AI):** check the generated start script, not only the menu. `Write-StartScript 'Hooked 1.1' $false '<AI>'` from `choose_map.ps1` (load the function text with `Invoke-Expression`, from `function Write-StartScript` up to `function Set-Autoload`) must give `[ai0] { shortname=...; version=stable|0.1 ... }` for BARb, CircuitAI, `CircuitAI easy` (`[Options] { profile=easy; }`) and NullAI, and `LuaAI=<name>;` in `[team1]` without `[ai0]` for the Lua AIs. Then start a sandbox game with the line and look for `Skirmish AI <Circuit-stable>` in `infolog.txt` (the engine accepted it). Whether Raptors really send waves was not checked.
+
+## Writing files from Claude Code on Windows (more pitfalls)
+
+- A patch that meant a backslash followed by `n` inside a Lua string came out as a real line break and broke the widget (the Bash tool turned `\n` in the heredoc into a line break). Build such a string with `chr(92)` in Python, and look at the result with `sed -n LINEp file | cat -A`.
+- `sed -i '{N;s/\n/.../}'` did not join lines here; use a short Python script with an `assert` on the number of matches (it stops when the text is not there exactly once). Put long texts into a file (heredoc with a quoted delimiter) and read it from Python; a triple-quoted text that itself contains triple quotes ends the string early.
+- The git warning "LF will be replaced by CRLF" on `lvl_level_editor.lua` and the other files is harmless here.
