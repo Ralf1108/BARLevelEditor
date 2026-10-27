@@ -158,7 +158,7 @@ Sort key `rank = (faction block 10000) + (filler 1000) + (water 100) + kind`, th
   1. name (code), font 29·S; behind it "- forbidden" if the unit is forbidden by the restrictions,
   2. the description (`tooltip`), one line, shortened with "~" if too long, font 24·S,
   3. `Metal <n>   Energy <n>` (what it costs to build), font 26·S,
-  4. only for **armed** units: `<shots per second> shots/s   <damage> damage/shot (<damage per second> damage/s)`, for anti-air with the suffix "air" (details in 9.5; damage per second = damage per shot × shots per second, the value the game shows); font 26·S, smaller if the line would not fit into the menu,
+  4. only for **armed** units: `<shots per second> shots/s x <damage> damage = <damage per second> DPS`, for anti-air with the suffix "(air)" (details in 9.5; DPS = shots per second × damage per shot, the value the game shows, e.g. `0.26 shots/s x 157 damage = 41 DPS`); font 26·S, smaller if the line would not fit into the menu,
   5. only for **buildings**: `Explosion <damage> damage, radius <Elmo>` (death explosion, `deathExplosion`), and if different, `|  Self-destruct <damage>, radius <Elmo>` (`selfDExplosion`), font 22·S. Damage in the default armor class, radius = effect radius of the explosion in Elmo (`M.explosionInfo`). Examples: solar collector 89 / 90, fusion reactor 2650 / 240 (self-destruct 8300 / 384), advanced fusion 10600 / 640.
 - The **hint text** ("Click a unit …" / "Left click places …") no longer stands below the info lines but **above the menu** and is drawn by the host (24·S, special line for row/rectangle in 20·S above it). The parameter `hint` of `draw` remains for hosts that want it below the info lines (then 190·S below the lower edge).
 - The chosen unit (stamp mode) has a blue frame, the one under the mouse a light frame.
@@ -178,10 +178,10 @@ Sort key `rank = (faction block 10000) + (filler 1000) + (water 100) + kind`, th
 
 ### 9.5 Damage and time per shot (`M.shotInfo`)
 - For every weapon of the unit: damage per projectile = damage in the default armor class (`default`). **Anti-air weapons** carry only 1 (or a fraction) there in BAR and the actual damage in the armor class `vtol`; if the `vtol` damage is higher, it counts, the weapon is anti-air and the display gets the suffix "air" (e.g. `(0.9 s/shot - 125 damage air)`). If a unit has ground and air weapons, the ground weapons take priority. Projectiles per second = `projectiles × salvoSize / reload` (as with the DPS figure).
-- Shown are the **shots per second** (`projectiles × salvoSize / reload`), the damage per shot and, in brackets, the **damage per second** (their product). (Until 2026-10-27 the reciprocal, seconds per shot, stood in the name line.)
+- Shown are the **shots per second** (`projectiles × salvoSize / reload`) times the damage per shot, equal to the **damage per second** (DPS). (Until 2026-10-27 the reciprocal, seconds per shot, stood in the name line.)
 - The weapon with the highest damage per projectile counts; its shot rate is shown. Units without weapons show no line 4.
 - Rounding: from 10 seconds a whole number, from 1 second one decimal place, below that two, each without superfluous zeros.
-- Examples (as seconds per shot, damage): Armada fighter 0.9 s − 125 damage air, Peewee 0.1 s − 9, Hammer 1.7 s − 104, Bulldog 1.1 s − 270, Vulcan 0.6 s − 1625, Banth laser 7.5 s − 6000; Rocketeer: 0.26 shots/s, 157 damage/shot (41 damage/s).
+- Examples (as seconds per shot, damage): Armada fighter 0.9 s − 125 damage air, Peewee 0.1 s − 9, Hammer 1.7 s − 104, Bulldog 1.1 s − 270, Vulcan 0.6 s − 1625, Banth laser 7.5 s − 6000; Rocketeer: 0.26 shots/s x 157 damage = 41 DPS.
 
 ### 9.6 Search, features, recent items, tooltips
 - `Units:textInput/key/setFocus`: search field as the top filter row (`searchOn`, can be switched off with `search = false`); `Units:list()` returns the hits across all factions/groups/tech tiers when `query` is not empty (all words must appear in `M.unitSearchText(name)` = code, human name and description); `override` replaces the list (recent items). `filterRowCount()` counts the search row. A host with its own search field (the Level Editor) sets `query` directly and drops the grid's search rects.

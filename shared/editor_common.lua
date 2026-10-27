@@ -1986,11 +1986,11 @@ function M.newUnits(o)
 				desc = desc:sub(1, perLine - 1) .. "~"
 			end
 			gl.Text(desc, cx, rect.y0 - 78 * S, size, "co")
-			-- Line 3: what it costs to build; line 4, for a unit that shoots: shots per second, damage per shot and (in brackets) damage per second
+			-- Line 3: what it costs to build; line 4, for a unit that shoots: shots per second x damage per shot = damage per second (DPS)
 			gl.Text(string.format("Metal %d   Energy %d", ud.metalCost or 0, ud.energyCost or 0), cx, rect.y0 - 116 * S, 26 * S, "co")
 			local lastY = 116
 			if shot > 0 then
-				local weapon = string.format("%s shots/s   %d damage/shot (%s damage/s)%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   air" or "")
+				local weapon = string.format("%s shots/s x %d damage = %s DPS%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   (air)" or "")
 				local wsize = 26 * S
 				local wmax = (rect.x2 - rect.x1) / (#weapon * 0.5) -- a long line gets a smaller font so that it fits into the menu
 				if wsize > wmax then
