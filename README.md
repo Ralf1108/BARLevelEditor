@@ -62,7 +62,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 
 ## Features
 
-- **Place** units of all factions (Armada, Cortex, Legion), features (trees, rocks, wrecks) and blueprints, with a 3D preview at the mouse.
+- **Place** units of all factions (Armada, Cortex, Legion, and the **Scavengers** and **Raptors**, whose units nobody steers: no AI), features (trees, rocks, wrecks) and blueprints, with a 3D preview at the mouse. The Scavenger and Raptor units are switched on in the start menu (key **7**; they make the start about 10 seconds longer).
 - **One search** over recent items, units, features and blueprints.
 - **Painting, rows and rectangles** with the mouse; **W** decides whether placing overwrites what is in the way.
 - **Blueprints:** save selected units as a tile with a preview and place the layout again anywhere; drag tiles to sort them.
@@ -123,7 +123,7 @@ The entry **LAN Play** is in the menu on the left; **Host a LAN game** opens the
 
 The buttons **Custom Scenario** (choose a scenario you built) and **Copilot** sit in the middle of the room under *Map Ready* and follow the size of the window. **Copilot** opens a list of the humans of the room: the host clicks a player to give him the next number of his team (the tooltip says so), and humans with the same number play one player together (Ben and Ralf are both **player 1** in the picture). The other players see the same list, read only (without the button Custom Scenario).
 
-`LevelEditor\install_editor.bat` installs it together with the editor (the game must be closed; it only needs TCP ports 8453 and 8452 between the computers). It is a prototype, so far tested with two lobbies on one computer.
+`LevelEditor\install_editor.bat` installs it together with the editor (the game must be closed; it only needs TCP ports 8453 and 8452 between the computers). It is a prototype, so far tested with two lobbies on one computer: Capture the Flag and Reclaim the Fame (human against human: the ally teams of the room decide), Tower Defense, a Copilot team and the console lobby of the scenario packages all ran through with two instances of the game (the test levels and tools are in `LevelEditor/test-data`).
 
 Details, the protocol and what is still open: [LAN Play readme](LevelEditor/lan_lobby/README.md).
 
@@ -161,6 +161,7 @@ Select the units, press a button and drag the shape on the map. A preview shows 
 - Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
 - [Scenario builder](LevelEditor/scenario/README.md)
 - [LAN Play](LevelEditor/lan_lobby/README.md)
+- [Test data](LevelEditor/test-data/README.md) (test levels and the LAN test tools) and [what got in the way while testing](LevelEditor/test-data/TESTING.md)
 - [BluePrinter](BluePrinter/README.md) and its [specification](BluePrinter/SPECIFICATION.md)
 - [Shared code](shared/README.md) and its [specification](shared/SPECIFICATION.md)
 
