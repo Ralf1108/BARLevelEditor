@@ -27,7 +27,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 2. Run `LevelEditor\install_editor.bat`. It finds your BAR installation, builds the extra game and creates a desktop shortcut **BAR Level Editor**.
 3. Start the shortcut. The start menu offers: `1` new level (choose a map), `2` load a level, `0` continue where you left off, `3` build a scenario package, `4` start a scenario you built, `5` rebuild a scenario package from its level, `6` play a level at once (single player, host, join or split screen, without building a package), `7` switch the Scavenger and Raptor units of the Place menu on or off (on: the start takes about 10 seconds longer), `8` clean the cache of scenarios and maps that came from other players.
 
-After a BAR update or a change of the code nothing has to be done: the start script updates the extra game by itself. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay). The editor needs the repository folder to stay where it is.
+After a BAR update or a change of the code nothing has to be done: the start script updates the extra game by itself. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay). An already installed **BluePrinter** is brought up to date at the same time (it shares code with the editor). The editor needs the repository folder to stay where it is.
 
 <details>
 <summary>What the setup does exactly</summary>

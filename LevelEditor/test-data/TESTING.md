@@ -49,6 +49,12 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 - **Lua limit:** at most 200 local variables per function; `lvl_level_editor.lua` has about 185 at top level. A new top-level `local` can break the load of the whole widget (see above), so count the `^local` lines before adding more and put new constants into an existing table.
 - **Per-team AI (button AI):** check the generated start script, not only the menu. `Write-StartScript 'Hooked 1.1' $false '<AI>'` from `choose_map.ps1` (load the function text with `Invoke-Expression`, from `function Write-StartScript` up to `function Set-Autoload`) must give `[ai0] { shortname=...; version=stable|0.1 ... }` for BARb, CircuitAI, `CircuitAI easy` (`[Options] { profile=easy; }`) and NullAI, and `LuaAI=<name>;` in `[team1]` without `[ai0]` for the Lua AIs. Then start a sandbox game with the line and look for `Skirmish AI <Circuit-stable>` in `infolog.txt` (the engine accepted it). Whether Raptors really send waves was not checked.
 
+## BluePrinter in a test
+
+- After a change of `shared\editor_common.lua` or `BluePrinter\bluePrinter.lua` the installed BluePrinter is old until `install_blueprinter.bat`, `start_blueprinter.bat` or a start of the editor (`ensure_installed.ps1`) copied the files; the game that is running keeps the old ones (`/luaui reload`). "I do not see the new feature in the BluePrinter" is almost always this.
+- In a sandbox game the BluePrinter does not run next to the editor (it ends when `leveleditor=1` or the editor widget is there); use `leveleditor=0` in the modoptions and expect both panels on top of each other.
+- A path with `\b` written by a Python patch into a PowerShell file became a backspace character (`LuaUI\WidgetsluePrinter.lua`); look for control characters after every patch (`[c for c in set(text) if ord(c) < 32]`).
+
 ## Writing files from Claude Code on Windows (more pitfalls)
 
 - A patch that meant a backslash followed by `n` inside a Lua string came out as a real line break and broke the widget (the Bash tool turned `\n` in the heredoc into a line break). Build such a string with `chr(92)` in Python, and look at the result with `sed -n LINEp file | cat -A`.
