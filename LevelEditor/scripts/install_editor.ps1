@@ -100,7 +100,7 @@ Write-Host "Created: $zipPath"
 # menu cleans them. The files of the older names (one fixed version) are removed.
 $prev = Join-Path $gamesDir $ScenarioGamePointer
 $prevFile = if (Test-Path $prev) { @(Get-Content $prev)[0] } else { $null }
-$scGame = Write-ScenarioGame $data $game @($here, (Join-Path $repo 'shared'))
+$scGame = Write-ScenarioGame $data $game @($here, (Join-Path $repo 'shared'), (Join-Path $root 'scenario\template'))
 Set-Content -Path $prev -Value @($scGame.File, $scGame.Name) -Encoding ASCII
 Write-Host "Created: $($scGame.Path)"
 if ($prevFile -and $prevFile -ne $scGame.File -and $prevFile -match '^LevelEditorScenarios_[0-9a-f]{8}\.sdz$') { Remove-Item (Join-Path $gamesDir $prevFile) -Force -ErrorAction SilentlyContinue }   # the editor's own older version

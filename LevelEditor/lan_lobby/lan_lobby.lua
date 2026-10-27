@@ -545,6 +545,7 @@ buildScript = function(myName)
 		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=", startPos, ";\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" }
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
 	for k, v in pairs(S.battle.modoptions) do t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end
+	t[#t + 1] = "\t\tlanplay=1;\n" -- the game widget shared_start.lua acts only in LAN Play games and scenarios
 	t[#t + 1] = string.format("\t\tdate_year=%s;\n\t\tdate_month=%s;\n\t\tdate_day=%s;\n\t\tdate_hour=%s;\n\t}\n", os.date("%Y"), os.date("%m"), os.date("%d"), os.date("%H"))
 	for _, p in ipairs(players) do
 		t[#t + 1] = string.format("\t[PLAYER%d]\n\t{\n\t\tName=%s;\n\t\tPassword=%s;\n\t\tTeam=%d;\n\t\trank=0;\n%s\t}\n", p.index, p.name, p.password or "", p.team or 0, p.spec and "\t\tSpectator=1;\n" or "")

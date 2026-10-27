@@ -126,7 +126,7 @@ function Write-GameZip([string]$path, $entries, $fixedTime = $null) {
 
 # ---------------------------------------------------------------- The extra game of the scenarios: "Level Editor Scenarios <version>"
 # One game for every scenario (Tower Defense, Capture the Flag, Reclaim the Fame, restrictions, indestructible buildings, the briefing): the gadgets
-# switch themselves on only by the game options of a scenario. The version is made of the texts of its files and of the BAR version it builds on
+# and widgets switch themselves on only by the game options of a scenario. The version is made of the texts of its files and of the BAR version it builds on
 # (the first 8 hex digits of a SHA-256), the file is games\LevelEditorScenarios_<version>.sdz: different files give a different game, so a game that
 # came from somewhere else (a LAN host, an older package) never replaces another one, and equal files give the same game on every computer.
 # Files: source name -> name in the archive, in this order (the order of the version hash too).
@@ -137,7 +137,9 @@ $ScenarioGameFiles = @(
     @('unit_restrictions.lua', 'luarules/gadgets/unit_restrictions.lua'),
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
     @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
-    @('bar_rules.lua', 'luaui/Include/bar_rules.lua'))
+    @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
+    @('scenario_briefing.lua', 'luaui/widgets/scenario_briefing.lua'),   # the briefing window (a game widget: no "Allow user widgets" needed)
+    @('shared_start.lua', 'luaui/widgets/shared_start.lua'))             # starts a game in which several humans play one team (Copilot)
 $ScenarioGamePointer = 'LevelEditorScenarios.txt'   # in data\games: file name and game name of the one the editor setup built (read by LAN Play)
 
 # Builds the game from the files found in $dirs (for every file the first folder that has it; missing files are left out) unless it exists already.

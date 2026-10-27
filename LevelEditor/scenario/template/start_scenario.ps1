@@ -149,7 +149,7 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
 # restrictions and the indestructible buildings, built on the installed official game (nothing of the official game is changed). Its files: the
 # current ones of the editor (-EditorDir: scripts\ and ..\shared, so a scenario built earlier never runs outdated code) or the ones of the package.
 # The version comes from the files: the editor's setup has built the same game already, so normally nothing is built here.
-$gameDirs = if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path (Split-Path $EditorDir -Parent) 'shared')) } else { @($pkg) }
+$gameDirs = if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path (Split-Path $EditorDir -Parent) 'shared'), $here) } else { @($pkg) }
 $scGame = Write-ScenarioGame $data $game $gameDirs
 $gametype = $scGame.Name
 $script = $script.Replace('__GAMETYPE__', $gametype)
@@ -226,20 +226,12 @@ if (-not $have) {
     & $dl --filesystem-writepath $data --download-map $map
 }
 
-# Briefing window: small user widget (the mission display of the game only knows scenarios in the game archive)
-$wsrc = Join-Path $here 'scenario_briefing.lua'
-if (Test-Path $wsrc) {
-    $wdir = Join-Path $data 'LuaUI\Widgets'
-    New-Item -ItemType Directory -Force $wdir | Out-Null
-    Copy-Item $wsrc (Join-Path $wdir 'scenario_briefing.lua') -Force
-}
-# Start of a game in which two humans control one team (the engine does not start such a game by itself; only the host's copy acts)
-$ssrc = Join-Path $here 'shared_start.lua'
-if (Test-Path $ssrc) {
-    $wdir = Join-Path $data 'LuaUI\Widgets'
-    New-Item -ItemType Directory -Force $wdir | Out-Null
-    Copy-Item $ssrc (Join-Path $wdir 'shared_start.lua') -Force
-}
+# The briefing window and the start of a Copilot game are game widgets of the extra game now. Older starters copied them into the user widgets of
+# BAR (data\LuaUI\Widgets), where they were loaded in every game: those copies go. shared_start.lua stays where LAN Play is installed (its setup
+# puts it there for the Copilot games on official maps).
+$wdir = Join-Path $data 'LuaUI\Widgets'
+Remove-Item (Join-Path $wdir 'scenario_briefing.lua') -Force -ErrorAction SilentlyContinue
+if (-not (Test-Path (Join-Path $data 'LuaMenu\Widgets\lan_lobby.lua'))) { Remove-Item (Join-Path $wdir 'shared_start.lua') -Force -ErrorAction SilentlyContinue }
 
 $spring = Join-Path $engineDir.FullName 'spring.exe'
 # maps that a host sent are in an extra data folder of the cache (the engine reads maps\ of every folder of SPRING_DATADIR; the folder of the player stays as it is)

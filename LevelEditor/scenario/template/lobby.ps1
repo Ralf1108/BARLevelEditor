@@ -67,7 +67,7 @@ function Format-PlayDate([string]$d) {
 # ---------------------------------------------------------------- Bundle: the scenario as data
 # What a bundle may hold (names only, in this order for the hash). Lua files only run inside the game engine; nothing that runs on the computer itself
 # (no .ps1, .bat) is ever taken from another computer.
-$script:BundleFiles = @('bar_rules.lua', 'ctf_game.lua', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario.txt', 'td_waves.lua', 'unit_indestructible.lua', 'unit_restrictions.lua')
+$script:BundleFiles = @('bar_rules.lua', 'ctf_game.lua', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario.txt', 'scenario_briefing.lua', 'shared_start.lua', 'td_waves.lua', 'unit_indestructible.lua', 'unit_restrictions.lua')
 $script:BundleMaxBytes = 64MB   # per bundle (zip and unpacked)
 
 function Get-BundleCacheRoot { return (Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Cache') }

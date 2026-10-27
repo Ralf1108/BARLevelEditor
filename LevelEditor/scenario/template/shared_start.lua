@@ -17,6 +17,15 @@ end
 local GRACE = 3 -- seconds after the moment when everybody is active, before the start is forced
 local DEBUG = false
 
+-- Only in a game of the Level Editor: a scenario (game option scenariooptions) or a LAN Play game (lanplay, set by the LAN Play lobby). The widget is
+-- also a user widget where LAN Play is installed (for the Copilot games on official maps), so it must stay quiet in every other game.
+function widget:Initialize()
+	local mo = Spring.GetModOptions() or {}
+	if mo.lanplay ~= "1" and (mo.scenariooptions or "") == "" then
+		widgetHandler:RemoveWidget(widget)
+	end
+end
+
 local t0, allSince, sent, lastLog = nil, nil, false, 0
 
 -- true if some team has two or more human (non-spectating) players

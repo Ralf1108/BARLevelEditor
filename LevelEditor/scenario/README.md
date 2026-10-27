@@ -53,7 +53,8 @@ The package holds a copy of everything it needs (starter, lobby, gadgets, briefi
 | `bar_common.ps1` | the search of BAR, the engine and the game version (the same file as `sharedar_common.ps1` of the editor) |
 | `start_scenario.ps1` | finds BAR and the engine, puts the game version and player name into the start script, downloads the map, starts `spring.exe` |
 | `scenario.txt` | start script: teams, allies and enemies, AIs, game options and `scenariooptions` |
-| `scenario_briefing.lua` | user widget with the briefing window (the starter puts it into `data\LuaUI\Widgets`; the mission display of the game otherwise only shows "No additional briefing data found") |
+| `shared_start.lua` | game widget that starts a game in which several humans play one team (Copilot) |
+| `scenario_briefing.lua` | game widget with the briefing window (the starter packs it into the extra game "Level Editor Scenarios"; the mission display of the game otherwise only shows "No additional briefing data found") |
 | `README.txt` | briefing and instructions |
 | `ctf_game.lua` | only in a Capture the Flag scenario: the gadget that runs flags, collection points and the income |
 | `rtf_game.lua` | only in a Reclaim the Fame scenario: the gadget that scores the crystals |
@@ -70,7 +71,7 @@ The official game knows scenarios: the game option `scenariooptions` contains th
 - Game options that the level needs (Legion, extra pack, release candidates) are taken from the level file into the game options of the scenario.
 - The unit limit (`maxunits`) is taken from the level (`unitlimit`, set in the editor settings, default 32000) so levels with very many units are set up completely.
 - The faction picker is switched off (`disablefactionpicker`), the side of a team follows its units.
-- Briefing and title are in `README.txt` and in `scenariooptions`. The mission display in the game only shows scenarios from the game archive; that is why `scenario_briefing.lua` shows the briefing at the start and through the "Mission" button (`/briefing` opens it again). It needs user widgets to be allowed.
+- Briefing and title are in `README.txt` and in `scenariooptions`. The mission display in the game only shows scenarios from the game archive; that is why `scenario_briefing.lua` shows the briefing at the start and through the "Mission" button (`/briefing` opens it again). It is a game widget of the extra game, so "Allow user widgets" is not needed.
 
 - **Grace period** (the game's no-rush): the script defines a start area for every side (frame around its units plus 300 units margin, as a fraction of the map; with 30 or more units the outer 3 % of each edge do not count; overlapping or too close areas are separated, the one of the player side stays whole and between the sides a strip of 500 units without area remains), sets `norushtimer` and the start mode "choose in the game" (`startpostype=2`; the start areas only work this way). Until it ends no side can leave its area and each is safe from damage there. The choice of the start position that the game then demands is done by the briefing widget itself (middle of the own area, then "ready"); the player does not have to click anything. The map size is stored in the level (`mapsize`); without it the script stops with a message (save the level again in the editor).
 - **Tech restriction** per team (T1/T2/T3 individually on/off, default all on; button I in the editor or question in the script): e.g. enemy only T1. Locked units and buildings cannot be built by the team (not in factories either); existing ones stay. The briefing widget sets the locks at the start of the game and names them in the briefing. Tier 1.5 (hover, amphibious, seaplane factories) counts as T2.
