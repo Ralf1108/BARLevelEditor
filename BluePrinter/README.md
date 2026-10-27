@@ -64,7 +64,7 @@ Spreads the bombs and shots of all selected units evenly over an area. Select bo
 Automatic building may count as automation in some ranked or tournament games. If in doubt, switch auto-build off (button **A**).
 
 ## Queueing single buildings
-At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders) and the tech tier,
+At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders; only factions your builders can build for are shown) and the tech tier,
 click a building, then every left click on the map queues one (hold the button and move to paint more, right click ends, `[` and `]` rotate). Buildings that
 your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
 You set the display (columns/rows) with the **O** button. Below the menu the info lines of the building under the mouse pointer are shown (name and code, seconds per shot and damage, description, metal and energy, explosion), the same as in the Level Editor.

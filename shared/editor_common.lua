@@ -1573,12 +1573,22 @@ function M.buildUnitCache()
 	return cache
 end
 
--- o: { cfg, groups = { "buildings", ... } (offer only these groups; default all), faction = "arm", canUse = fn(unitDefID) -> bool }
+-- o: { cfg, groups = { "buildings", ... } (offer only these groups; default all), factions = { "arm", "cor", "leg" } (offer only these; default all), factionUsable = fn(factionId) -> bool (a faction for which it says false gets no button), faction = "arm", canUse = fn(unitDefID) -> bool }
 function M.newUnits(o)
 	local u = {
-		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse, restrict = o.restrict,
+		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse, restrict = o.restrict, factionUsable = o.factionUsable,
 		query = "", focus = false, ownText = o.ownText, searchOn = (o.search ~= false), searchLabel = o.searchLabel or "Search ...",
 	}
+	u.factions = {}
+	for _, f in ipairs(M.FACTIONS) do
+		local keep = not o.factions
+		for _, name in ipairs(o.factions or {}) do
+			keep = keep or name == f[1]
+		end
+		if keep then
+			u.factions[#u.factions + 1] = f
+		end
+	end
 	u.groups = {}
 	for _, g in ipairs(M.GROUPS) do
 		local keep = not o.groups
@@ -1602,7 +1612,7 @@ function M.newUnits(o)
 		end
 		local q = self.query:lower()
 		local out = {}
-		for _, f in ipairs(M.FACTIONS) do
+		for _, f in ipairs(self.factions) do
 			for _, g in ipairs(self.groups) do
 				for t = 1, 3 do
 					for _, e in ipairs(self.cache[f[1]][g[1]][t]) do
@@ -1694,7 +1704,7 @@ function M.newUnits(o)
 				add(self.cache[self.faction][value][t])
 			end
 		elseif kind == "tech" then
-			for _, f in ipairs(M.FACTIONS) do
+			for _, f in ipairs(self.factions) do
 				for _, g in ipairs(self.groups) do
 					add(self.cache[f[1]][g[1]][value])
 				end
@@ -1783,7 +1793,23 @@ function M.newUnits(o)
 				tip = "Clear search" }
 			r = r + 1
 		end
-		row(r, M.FACTIONS, "faction", self.faction)
+		local shown = {}
+		for _, f in ipairs(self.factions) do
+			if not self.factionUsable or self.factionUsable(f[1]) then
+				shown[#shown + 1] = f
+			end
+		end
+		if #shown == 0 then
+			shown = self.factions
+		end
+		local isShown = false
+		for _, f in ipairs(shown) do
+			isShown = isShown or f[1] == self.faction
+		end
+		if not isShown then
+			self.faction = shown[1][1]
+		end
+		row(r, shown, "faction", self.faction)
 		r = r + 1
 		if #self.groups > 1 then
 			row(r, self.groups, "group", self.group)

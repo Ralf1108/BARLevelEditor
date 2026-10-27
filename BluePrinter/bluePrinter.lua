@@ -144,7 +144,23 @@ area = Shared.newAreaAttack({
 local function canBuildNow(id)
 	return buildable == nil or buildable[id] == true
 end
-local uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, canUse = canBuildNow, searchLabel = "Search Buildings",
+-- A faction gets a button only if the own builders can build a building of it (before any builder exists all three are offered)
+local uGrid
+local function factionBuildable(f)
+	if buildable == nil or not uGrid or not uGrid.cache then
+		return true
+	end
+	for tl = 1, 3 do
+		for _, e in ipairs(uGrid.cache[f].buildings[tl]) do
+			if buildable[e.id] then
+				return true
+			end
+		end
+	end
+	return false
+end
+uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, factions = { "arm", "cor", "leg" }, -- no Scavengers or Raptors: their units exist only with forceallunits
+	factionUsable = factionBuildable, canUse = canBuildNow, searchLabel = "Search Buildings",
 	ownText = function(on)
 		if on then
 			widgetHandler:OwnText()
