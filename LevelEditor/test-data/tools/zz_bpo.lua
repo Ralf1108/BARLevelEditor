@@ -27,20 +27,30 @@ at(30, function()
 	Spring.SetCameraState({ name = "spring", px = cx + 400, py = cy, pz = cz, dist = 1500, rx = 2.5, ry = 0, rz = 0, fov = 45 })
 	bx, bz = spot("armsolar", cx + 300, cz + 100)
 	chk(W():DebugAdd("armsolar", bx, bz, 0) == true, "a solar collector is queued")
-	chk(W():DebugAdd("armsolar", bx + 24, bz + 8, 0) == false, "a second one on top of it is refused")
-	chk(W():DebugAdd("armsolar", bx + 400, bz, 0) == true or true, "a free spot elsewhere (info)")
-	local n, skipped, blocked = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 }, { name = "armsolar", dx = 90, dz = 0, rot = 0 } }, bx + 40, bz)
-	chk(n == 0 and blocked >= 1, "a blueprint on top of a plan is refused as a whole: n=" .. tostring(n) .. " blocked=" .. tostring(blocked))
-	local before = #W():DebugState().plans
-	local n2, b2 = 0, 0
+	chk(W():DebugAdd("armsolar", bx + 24, bz + 8, 0) == false, "a single building on top of a plan is refused")
+	local n, skipped, blocked, replaced = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 }, { name = "armsolar", dx = 90, dz = 0, rot = 0 } }, bx + 40, bz)
+	chk(n >= 1 and replaced == 1, "a blueprint on top of a plan replaces it: new=" .. tostring(n) .. " left out=" .. tostring(blocked) .. " replaced=" .. tostring(replaced))
+	chk(not oldPlanThere(), "the old plan is gone from the queue")
+	Spring.SendCommands("bp_undo")
+end)
+at(40, function()
+	local dd = {}
+	for _, p in ipairs(W():DebugState().plans) do dd[#dd + 1] = math.floor(p.x) .. "," .. math.floor(p.z) .. (p.grp and "g" or "") end
+	log("plans now: " .. table.concat(dd, " ") .. " old at " .. bx .. "," .. bz)
+	chk(oldPlanThere() and #W():DebugState().plans == 1, "Undo takes the blueprint away and brings the replaced plan back: plans " .. #W():DebugState().plans)
+	-- a blueprint over a real building: that building is left out, the rest is placed
+	local id = UnitDefNames.armsolar.id
+	local ok = W():DebugAdd("armmex", bx + 400, bz, 0)
+	local n = 0
 	for k = 1, 12 do
 		local mx, mz = spot("armsolar", bx - 150 - k * 70, bz + k * 20)
-		local nn, _, bb = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, mx, mz)
-		if nn == 1 then n2, b2 = 1, 0 break end
+		local nn = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, mx, mz)
+		if nn == 1 then n = 1 break end
 	end
-	chk(n2 == 1 and b2 == 0, "a blueprint on free ground is placed (one of 12 tries): n=" .. n2)
-	-- the own commander is a mobile unit: allowed (the builder just walks around)
-	log("plans " .. #W():DebugState().plans .. " (before " .. before .. ")")
+	chk(n == 1, "a blueprint on free ground is placed")
+	-- the commander stands somewhere: a blueprint on top of him is allowed (mobile units do not block)
+	local nu, _, bl = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, cx + 4, cz + 4)
+	log("on top of the commander: new=" .. tostring(nu) .. " left out=" .. tostring(bl) .. " (info)")
 end)
 at(60, function() Spring.SendCommands("screenshot png") end)
 at(70, function() Spring.SendCommands("quitforce") end)

@@ -64,7 +64,7 @@ local HELP_SECTIONS = {
 		{ "Plans in the world", "Frame, 3D ghost and number per plan. Blue open, yellow in progress, red blocked." },
 		{ "Right click on a plan", "With builders selected: they build exactly this plan now (a plan of a blueprint: the whole blueprint copy). Shift = add it to their queue." },
 		{ "Line Remaining", "Metal, energy and estimated build time of all open plans." },
-		{ "Select plans", "Click a plan: selects the whole blueprint copy it belongs to (a single building: just it). Ctrl+click: only that building. Shift+click: add or remove. Ctrl+drag: a rectangle. A click on the ground clears the selection." },
+		{ "Select plans", "Click a plan: selects that building. Double click: the whole blueprint copy it belongs to (so you can remove it together). Shift+click: add or remove. Ctrl+drag: a rectangle. A click on the ground clears the selection." },
 		{ "Selected plans", "Del removes them from the queue, [ and ] rotate them (not the ones being built), Page up / Page down move them one place in the queue, Home / End to the front / back. Undo takes each of these back." },
 		{ "Queue order (Q)", "Off: idle builders take the nearest plan. On: they take the open plan with the lowest number first." },
 	} },
@@ -96,6 +96,7 @@ local batchReplaced = {} -- [batch] = { { site, index } }: plans that a blueprin
 local groupCounter = 0 -- every queued blueprint (one copy) gets its own group number: a click on a plan selects the whole group
 local queueOrder = false -- Queue order (button in the title row): builders take the open plan with the lowest number instead of the nearest
 local selected = {} -- [site] = true: the selected plans (click, Ctrl + drag)
+local lastClick = nil -- { site, t }: the last click on a plan (a second click on it within 0.4 s is a double click)
 local selBox = nil -- { x, z, hit, shift }: start point while a selection rectangle is dragged with Ctrl
 local opStack = {} -- steps that Undo takes back besides queueing: remove, rotate, order (each with the highest open batch at that time)
 local doneCount = 0
@@ -1384,7 +1385,16 @@ local function selectPress(mx, my)
 		return true
 	end
 	if hit then
-		selectPlan(hit, false, shift)
+		-- one click: this building; a double click: the whole blueprint copy it belongs to
+		local now = os.clock()
+		local dbl = lastClick and lastClick.site == hit and now - lastClick.t < 0.4
+		lastClick = { site = hit, t = now }
+		if dbl and hit.grp then
+			lastClick = nil
+			selectPlan(hit, false, shift, true)
+		else
+			selectPlan(hit, true, shift)
+		end
 		return true
 	end
 	if not shift then
