@@ -1,16 +1,51 @@
 # Tower Defense
 
-[Back to the Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11a) · [Scenario builder](../scenario/README.md) · [Main page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11a) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
 
 ![Tower Defense page](../../docs/level-editor-tower-defense.jpg)
 
-The button **TD** (in the button column at the right, below **P** and **G**) opens the tower defense page. Waves of enemy land units walk from a spawn point through waypoints to a goal; the player builds towers next to the route.
+Waves of enemy land units walk from a spawn point along a route to a goal. The player builds towers next to the route.
 
-- Tick **Tower Defense** to mark the level; with it ticked (or the TD page open) the title of the menu reads "Level Editor - Tower Defense". All settings are saved with the level (Ctrl+S, autosave) in an own section `towerdefense` of the level file.
-- **Walls**: choose the material (**Teeth** or **Walls**); the button **Single** places single wall pieces: every click on the map places one, hold the mouse button and move it to place a piece in every grid cell. **Corridor (walls on both sides)**: **Line** = click the points on the map, then **right click** builds the walls on both sides; **Free** = hold the left mouse button and draw any line, the walls appear when you let go. The mode stays on after every corridor, so you can draw the next one at once; **right click** ends it. Ctrl+Z undoes a corridor, so a wrong one costs nothing. The wall pieces are **indestructible**: nothing damages them and builders cannot reclaim them (higher tech enemies would shoot a way through otherwise; they are marked `indestructible = true` in the level file; you can still delete them with Del). **Corridor width**: 32, 64, 128 (default), 160 or 192 Elmo, the same widths as for the maze of the Generate page. Bends are closed: an arc of wall pieces fills the outside of every corner.
-- **Route**: **Spawn** (green circle) and **Goal** (red circle) are set by a click on the map, the **X** buttons next to them delete them. In between you can place **waypoints** (button **Waypoint**: every click adds one, right click ends): the enemies walk from the spawn point through the waypoints in their order to the goal; the pathfinding does the rest. A waypoint you click onto the drawn (yellow) line goes in between the two points of that line, otherwise behind the nearest point of the route. **Alt + hold the left mouse button** over a waypoint, the spawn point or the goal moves it, like Alt + drag moves units (placing and moving spawn point, goal and waypoints can be undone with Ctrl+Z and redone with Ctrl+Y like everything else), **Del** over a waypoint removes it, the X next to the button removes all.
-- **Enemies allowed through**, then **Waves** (number: buttons, or click the number and type) and one row per wave: the wave number (fixed), factions (three toggle buttons with the faction symbols, several possible), tech T1-T3 (toggles), type **V** vehicles / **B** bots / **H** hovercraft (toggles; ships are not used), count, **gap** in seconds after the previous wave (wave 1: after the start, so it is the grace period) and **HP %** (strength, 100 = normal). In every group at least one choice stays on; the units are picked at random among all that match (pure anti-air units are left out, they cannot hit the ground). The mouse wheel scrolls long tables.
-- With **Tower Defense** ticked the checkbox and the **TD** button in the button column turn green (also on the Place and Generate pages). Long tooltips wrap into several lines.
-- **Start test** (green button at the very bottom of the TD page) runs the waves in the editor. Without spawn point and goal it only shows a red message above the button. The state before is saved as `_beforeplay` first. The player's metal and energy are set to the **start metal and energy of the level** (page I, default 1000 each; storage the same, at least 1000) for the test, so it is realistic; after Stop the editor's huge amounts are back. **Stop** (the button's name while it runs, **Reset** when the level is won or lost) ends the waves and brings that state back, so towers that got destroyed are there again. The units appear one after the other, walk the path, a kill pays the unit's metal and energy, an enemy that reaches the goal counts as through; too many through = lost, all waves beaten = won; the status shows at the top of the screen. Wave units are not saved with the level.
-- **Restrictions** (above the tower list): choose a faction and a tech level, the towers (armed buildings on land) are shown with picture, 3D model and cost like in the unit list. A **red X** in the upper right corner of a tile forbids the tower: it gets a big red X, and while the game runs (Start test, later in the scenario) the player cannot build it; click the X again to allow it. The editor itself can always place every tower. The forbidden towers are the restrictions of the whole level (see the Place menu, Units tab): the same list. Towers can always be built. Two toggle buttons, both on by default: **Economy** (on = the player can also build metal extractors, solar, wind and other power plants, storage; they appear in the list too, so you can forbid single ones; off = towers only) and **Fog of war** (on = the player can build radars, shown in the list; off = no radars and the whole map is visible; the editor always shows the whole map). Below the faction buttons a row of categories (**Towers**, with Economy on also **Economy**, with fog also **Radars**) sorts the list; only tech levels that have entries are shown. A click on a tile of the list arms placing it like on the Place tab (Ctrl, Alt, Shift work as there); the list scrolls with the mouse wheel. A red X on a tech button (T1, T2, T3) forbids every unit of that level in all factions (the same X as in the Place menu). At the start of the test the commander of the player is removed (the builders are placed by the level; Stop brings everything back).
-- The waves run in the gadget `td_waves.lua`. **In a scenario package** (start menu key 3, see the [scenario builder readme](../scenario/README.md)) a level with Tower Defense switched on is packed with everything: waves, route, forbidden units, restrictions, fog of war and the indestructible walls. The recipient's `Start Scenario.bat` builds a small extra game "Tower Defense Scenario" next to the official game (it only adds the gadget, see `scenario\README.md`).
+## In short
+
+- **Menu:** click the button **TD** in the button column at the right edge of the editor (below **P** and **G**)
+- Tick **Tower Defense** to mark the level (the button turns green)
+- Draw the corridor, set spawn and goal, define the waves
+- **Start test** runs it in the editor, a scenario package lets others play it
+- Demo level: `demo_td_serpentine` (zigzag corridor, 10 waves)
+
+![Demo level Serpentine](../../docs/demo-tower-defense.jpg)
+
+## Build the level
+
+**Walls**
+- Material: **Teeth** or **Walls**
+- **Single**: click or hold and move
+- **Corridor**: **Line** (click points, right click builds both sides) or **Free** (draw with the mouse)
+- Width: 32, 64, 128 (default), 160 or 192 Elmo
+- Corners are closed automatically, **Ctrl+Z** undoes a corridor
+- Wall pieces are indestructible and cannot be reclaimed
+
+**Route**
+- **Spawn** (green) and **Goal** (red): click on the map
+- **Waypoint**: every click adds one, right click ends
+- **Alt + drag** moves a point, **Del** removes a waypoint
+
+**Waves**
+- Per wave: factions, tech T1–T3, type (**V** vehicles, **B** bots, **H** hover), count, gap in seconds, **HP %**
+- Units are picked at random among all that match
+- **Enemies allowed through**: more leaks = lost
+
+**Restrictions**
+- Red **X** on a tower forbids it for the player
+- **Economy** on: extractors, power plants and storage are allowed
+- **Fog of war** on: radars are allowed, the map is hidden
+- The list is the same as in the Place menu
+
+## Test and play
+
+- **Start test**: runs the waves; the commander is removed, resources come from the level
+- **Stop** / **Reset**: brings the level back as before
+- Kills pay the unit's cost; all waves beaten = won
+- Scenario package (start menu key `3`): waves, route, restrictions and walls are packed
+- The waves run in the gadget `td_waves.lua`

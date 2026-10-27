@@ -1,18 +1,52 @@
 # Capture the Flag
 
-[Back to the Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11b) · [Scenario builder](../scenario/README.md) · [Main page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11b) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
 
 ![Capture the Flag page](../../docs/level-editor-capture-the-flag.jpg)
 
-The button **CF** (in the button column at the right, below **TD**) opens the Capture the Flag page. Flags (the silver pods of the scavengers) lie at flag points on the map; units pick them up by getting close, carry them to the collection point of their team and earn metal for it. It is meant for human against human (computer opponents do not play it).
+Flags lie on the map. Units pick them up, carry them to their collection point and earn metal. For human against human, computer opponents do not play it.
 
-- Tick **Capture the Flag** to mark the level; with it ticked the button **CF** turns green. Tower Defense and Capture the Flag exclude each other: ticking one switches the other off (both can be off). All settings are saved with the level in an own section `capture` of the level file.
-- **Flags belong to the team chosen in the strip when you place the flag point:** the other teams take such a flag, the team itself only brings it back when it was dropped. With **G** (Gaia) chosen in the strip the flag is **neutral**: every team may take it. So there is no switch for the kind of flags: it is set per flag point.
-- **Flags always visible on the map** (box, on by default): the flags are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees. On the minimap every flag is a small square in the color of its team (light grey = neutral) and every collection point has a ring in its team color.
-- **Income (metal per second):** every flag that lies at the collection point of a team pays that team the amount every second (click the field, type a number, Enter). A flag that is carried or was stolen pays nothing, there is no one-time reward and no experience. A delivered flag stays at the collection point; units of other teams can steal it from there, it does not jump back to its flag point.
-- **Flags a team must hold at once to win** (0 = the level never ends), **capture radius** in Elmo (pick up, deliver and bring back) and the time after which a **dropped flag** goes back to its flag point (0 = the default: it stays where the carrier was destroyed until a unit takes it). **The unit that carries a flag cannot shoot** (its weapons are switched off until it delivers or dies) and is **slowed down to the top speed of the carrier** (field, default 50 Elmo per second, 0 = no limit; a faster unit such as a scout is capped, a slower one keeps its speed; the speed is back after the delivery).
-- **Places on the map:** choose the team in the strip at the left, then **Collection point** (click the places on the map; as many as you like per team, a flag counts when it lies at any of them) and **Flag point** (every click adds one; it belongs to the chosen team, or is neutral with G in the strip: place the flags of a team in its own area and neutral flags in the middle). Right click ends the mode, **Del** over a point removes it, **Alt + drag** moves a point (the point under the mouse gets a second ring), **Ctrl+Z / Ctrl+Y** undo and redo every change of the points, the **X** buttons delete the collection points or the flag points of the chosen team (G: the neutral flag points). The rings show the radius: thick = collection point, thin = flag point, in the color of the team (white = neutral).
-- **The win:** when a team holds the wanted number of flags (or is the last one standing) the level is won and **all units of the other teams blow up** (flags and collection points stay).
-- A team's own units can bring a dropped flag of their team back by touching it. **Lost team:** a team with flags whose flags all stay at the collection points of the others has lost: all its units blow up (and what it builds later), the last team standing wins. A unit carries one flag at a time; air units and units in a transporter can carry a flag too; if the carrier is destroyed (own or enemy) the flag is dropped there and lies there until somebody takes it (or the return time is over).
-- **Start test** (green button at the bottom of the page) runs the game in the editor, **Stop** brings the level back to the state before (saved as `_beforeplay` first). The score of every team is shown at the top of the screen. The flags and the collection points are neutral, indestructible units of the game (the editor does not save them).
-- The game runs in the gadget `ctf_game.lua`. **In a scenario package** (start menu key 3) a level with Capture the Flag switched on is packed with its settings (see the [scenario builder readme](../scenario/README.md)).
+## In short
+
+- **Menu:** click the button **CF** in the button column at the right edge of the editor (below **TD**)
+- Tick **Capture the Flag** to mark the level (the button turns green)
+- Place collection points and flag points per team
+- Excludes Tower Defense and Reclaim the Fame in the same level
+- **Start test** runs it in the editor
+- Demo level: `demo_ctf_crossroads` (two bases, three neutral flags, hold 4 to win)
+
+![Demo level Crossroads](../../docs/demo-capture-the-flag.jpg)
+
+## Build the level
+
+**Places on the map**
+- Choose the team in the strip at the left
+- **Collection point**: click on the map, as many as you like per team
+- **Flag point**: belongs to the chosen team, **neutral** with **G** in the strip
+- Own flags in a team's area, neutral flags in the middle
+- Right click ends, **Del** removes, **Alt + drag** moves, **Ctrl+Z / Y** undo and redo
+- Rings show the radius: thick = collection point, thin = flag point, white = neutral
+
+**Rules**
+- **Income**: every flag at your collection point pays metal per second
+- **Flags to win**: how many a team must hold at once (0 = never ends)
+- **Capture radius**: pick up, deliver and bring back
+- **Return time**: a dropped flag goes back after this time (0 = stays)
+- **Carrier speed**: default 50 Elmo per second
+- **Flags always visible** on the map and minimap (on by default)
+
+## How it plays
+
+- Other teams take your flag; you only bring it back when it was dropped
+- The carrier **cannot shoot** and is slowed down
+- A destroyed carrier drops the flag where it died
+- A delivered flag stays at the collection point and can be stolen
+- Holding enough flags wins: all units of the other teams blow up
+- A team whose flags are all in other bases has lost
+
+## Test and play
+
+- **Start test** / **Stop**: runs the game, the level comes back as before
+- The score of every team is shown at the top
+- Scenario package (start menu key `3`): settings are packed
+- The game runs in the gadget `ctf_game.lua`

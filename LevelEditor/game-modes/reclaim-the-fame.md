@@ -1,16 +1,56 @@
 # Reclaim the Fame
 
-[Back to the Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11d) · [Scenario builder](../scenario/README.md) · [Main page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11d) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
 
 ![Reclaim the Fame page](../../docs/level-editor-reclaim-the-fame.jpg)
 
-The button **RF** (in the button column at the right, below **CF**) opens the Reclaim the Fame page. **Crystals** stand on the map; **construction units earn points for their alliance by reclaiming them**: 1 point per second for every 100 build power (a 300 build power unit reclaiming for 10 seconds = 30 points). The crystal is never used up and gives no resources, it only pays points. The first alliance that reaches the **score limit** wins. It is a game about **defending your builders** and **hunting the enemy's**: farm the crystals in the middle of the map, scout where the other side farms (radar, jammers, spies), raid the builders, defend yours. Idea and discussion: [issue 2](https://github.com/Ralf1108/BARLevelEditor/issues/2).
+Crystals stand on the map. Construction units earn **points** for their team by reclaiming them. The first team at the score limit wins. For human against human, computer opponents do not play it. Idea and discussion: [issue 2](https://github.com/Ralf1108/BARLevelEditor/issues/2).
 
-- Tick **Reclaim the Fame** to mark the level; with it ticked the button **RF** turns green. Tower Defense, Capture the Flag and Reclaim the Fame exclude each other: ticking one switches the others off (all can be off). All settings are saved with the level in an own section `reclaim` of the level file.
-- **The crystals are features:** place them with the **tiles at the bottom of the RF page** (click a tile, then click the map; right click ends, Del deletes the one under the mouse, Alt + drag moves it) or with the Place menu, tab **Features**, kind **Crystals**. There are small, medium and large crystals in eleven colors; the color only changes the look. The buttons **All / Small / Medium / Large** above the tiles filter them (**All** is ordered by size: first all small ones, then the medium and the large ones). The line "On the map: ..." shows what is placed; every crystal on the map counts, also those the map brings itself. **Use an odd number** (the page warns about an even number): with two nodes both sides farm their own in peace, with three one side has to fight for the middle. The idea is to scatter them around the **middle third of the map**.
-- **Points factor** (small / medium / large, in percent, default 100 / 200 / 400): the larger the crystal, the more points per second. **Rate** (100 % = 1 point per second for every 100 build power) scales everything. Both are linear: ten builders earn ten times as much as one.
-- **Score limit of a team** (default 100000; 0 = the level never ends). Points count for the **alliance**: a team with allies adds up their points.
-- **Who scores:** only a unit that is actively reclaiming a crystal, and only the kinds you allow under **Builders that score**: **Buildings** (nano turrets; off by default: a ring of cheap nano turrets would farm a crystal without any builder to hunt), **Ground** (bots, vehicles, hovercraft, amphibious; on), **Ships** (on) and **Air** (builder aircraft and seaplanes; **off by default**: they reach a crystal from anywhere and ignore the space around it). How many builders fit is simply a question of space around the crystal.
-- **Crystals always visible on the map** (box, on by default): the crystals are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees or a radar shows (scouting).
-- **Start test** (green button) runs the game in the editor, **Stop** brings the level back to the state before (saved as `_beforeplay` first). During the test a gold ring shows the area from which a builder reaches each crystal, a number over each crystal its factor ("x4" = 4 points per second for every 100 build power), the minimap shows gold diamonds, and the top of the screen shows the score of every team and its points per second now.
-- The game runs in the gadget `rtf_game.lua`. **In a scenario package** (start menu key 3) a level with Reclaim the Fame switched on (and at least one crystal) is packed with its settings (see the [scenario builder readme](../scenario/README.md)). For human against human; computer opponents do not play it.
+## In short
+
+- **Menu:** click the button **RF** in the button column at the right edge of the editor (below **CF**)
+- Tick **Reclaim the Fame** to mark the level (the button turns green)
+- Place crystals with the tiles at the bottom of the page
+- Excludes Tower Defense and Capture the Flag in the same level
+- **Start test** runs it in the editor
+- Demo level: `demo_rtf_crystal_fields` (large crystal in the middle, first to 3000 points)
+
+![Demo level Crystal Fields](../../docs/demo-reclaim-the-fame.jpg)
+
+## Build the level
+
+**Crystals**
+- Click a tile, then the map; right click ends, **Del** deletes, **Alt + drag** moves
+- Also in the Place menu: tab **Features**, kind **Crystals**
+- Small, medium and large, in eleven colors (the color is only the look)
+- Filter: **All / Small / Medium / Large**
+- Use an **odd number**, scattered around the middle third of the map
+
+**Points**
+- 1 point per second for every 100 build power of a reclaiming unit
+- **Factor** per size: small / medium / large, default 100 / 200 / 400 %
+- **Rate**: scales everything, 100 % = basic rate
+- **Score limit**: default 100000, 0 = never ends; allies add up
+
+**Who scores**
+- Only units that are actively reclaiming
+- **Ground** and **Ships**: on
+- **Buildings** (nano turrets) and **Air**: off by default
+- Crystals are never used up and give no resources
+
+**Visibility**
+- **Crystals always visible** on the map and minimap (on by default)
+- Off: only what a unit or a radar sees (scouting)
+
+## How it plays
+
+- Farm the crystals in the middle, defend your builders, hunt the enemy's
+- Scout with radar, jammers and spies
+
+## Test and play
+
+- **Start test** / **Stop**: runs the game, the level comes back as before
+- Gold rings show the reach of a builder, numbers show the factor ("x4")
+- The score of every team and its points per second are shown at the top
+- Scenario package (start menu key `3`): settings are packed (at least one crystal needed)
+- The game runs in the gadget `rtf_game.lua`
