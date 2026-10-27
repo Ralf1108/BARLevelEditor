@@ -5282,7 +5282,7 @@ function widget:DrawScreen()
 	td.hud(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 	gl.Text(
-		string.format("Level Editor  |  %s  |  Team %d  |  Raster %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
+		string.format("Level Editor  |  %s  |  Team %d  |  Grid %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
 		vsx * 0.5, vsy - 24 * S, 14 * S, "co"
 	)
 	local bp = bpCurrent()
