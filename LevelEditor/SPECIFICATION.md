@@ -284,6 +284,7 @@ Crystals stand on the map. A **construction unit of an allowed kind (ground and 
 | `scripts\choose_map.ps1` | start menu and map selection |
 | `scripts\map_preview.ps1` | map picture next to the lists of the start menu |
 | `install_editor.bat`, `scripts\install_editor.ps1` | setup (`-Quick`: only the extra game and the stamp) |
+| `scripts\led_gadgets.lua` | what the gadgets of the editor and of the scenarios share (`luaui/Include/led_gadgets.lua` in both extra games): `EDITOR_MODE`, `Rules` (bar_rules), `sayer`, `split`, `fields`, `allyOf`, `builtDef` (also `CMD.INSERT`), `teamMessenger` (a message only to a human team, at most once per unit type every 5 s), `handleMessage` (the messages `<tag>|<command>|<payload>` of the widget, only with cheats or in the editor) and `option` (a base64url game option of a scenario) |
 | `scripts\ensure_installed.ps1`, `scripts\editor_manifest.ps1` | the list of the files of the setup (`editor_manifest.ps1`); called by `start_level_editor.bat` before every start: compare the stamp of the files and the game version with the one of the last setup and run `install_editor.ps1 -Quick` when they differ (2.1, section 1) |
 | `uninstall_editor.bat`, `scripts\uninstall_editor.ps1` | removal (levels and blueprints stay) |
 | `start_level_editor.bat` | start (created by the setup) |

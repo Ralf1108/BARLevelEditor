@@ -30,9 +30,9 @@ local suppress = 0 -- > 0: actions are not recorded (undo, redo, loading a level
 local capture -- list into which the wrecks that appear during a blow-up are entered
 local record, destroyRecorded -- defined below
 
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
 -- Editor mode (game option leveleditor=1, set by start_level_editor.bat): then no /cheat is needed
-local opt = Spring.GetModOptions().leveleditor
-local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
+local EDITOR_MODE = G.EDITOR_MODE
 
 -- Units that stockpile missiles (nuclear silos and the like) start loaded in the editor. The stockpile is not part
 -- of the level file, so a scenario built from the level starts with empty silos.
@@ -57,8 +57,7 @@ local function fillPendingStockpiles()
 end
 
 -- rules about unit definitions: shared with the editor and the waves (shared/bar_rules.lua)
-local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
-assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
+local Rules = G.Rules
 local techLevel = Rules.techLevel
 
 local function tell(playerID, text)

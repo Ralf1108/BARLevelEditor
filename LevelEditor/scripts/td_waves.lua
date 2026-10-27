@@ -37,41 +37,22 @@ local STUCK_FRAMES = 30 * 30 -- a unit that has moved less than STUCK_DISTANCE i
 local STUCK_DISTANCE = 64
 local STUCK_TRIES = 2 -- after this many new routes without moving it is removed (it counts neither as got through nor as killed)
 
-local opt = Spring.GetModOptions().leveleditor
-local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
-
--- rules about unit definitions: shared with the editor (shared/bar_rules.lua)
-local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
-assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
-local techLevel, buildClass, hitsGround = Rules.techLevel, Rules.buildClass, Rules.hitsGround
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
+local EDITOR_MODE = G.EDITOR_MODE
+local techLevel, buildClass, hitsGround = G.Rules.techLevel, G.Rules.buildClass, G.Rules.hitsGround
 
 local td = nil -- running game: nil = none
 local alive = {} -- unitID -> { x, z, frame: where it stood at the last check for being stuck, tries: new routes given }
 local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
 local pendingCfg = nil -- configuration waiting for the start
 
-local function say(text)
-	if Spring.SendMessage then
-		Spring.SendMessage("[Tower Defense] " .. text)
-	else
-		Spring.Echo("[Tower Defense] " .. text)
-	end
-end
-
-local function split(text, sep)
-	local out = {}
-	for p in tostring(text):gmatch("[^" .. sep .. "]+") do
-		out[#out + 1] = p
-	end
-	return out
-end
+local say = G.sayer("Tower Defense")
+local split = G.split
+local refuse = G.teamMessenger("Tower Defense")
 
 -- Payload -> configuration table (nil when unusable)
 local function parse(payload)
-	local f = {}
-	for p in (tostring(payload) .. ";"):gmatch("([^;]*);") do
-		f[#f + 1] = p
-	end
+	local f = G.fields(payload)
 	local cfg = {
 		enemy = tonumber(f[1]), player = tonumber(f[2]),
 		spawn = { tonumber(f[3]), tonumber(f[4]) }, goal = { tonumber(f[5]), tonumber(f[6]) },
@@ -143,16 +124,6 @@ local function playerTeams(cfg)
 	return set
 end
 
--- The unit a build order builds (also an order inserted into the queue: CMD.INSERT { position, command, options, ... }); nil for other orders
-local function builtDef(cmdID, cmdParams)
-	if cmdID < 0 then
-		return -cmdID
-	end
-	if cmdID == CMD.INSERT and cmdParams and (tonumber(cmdParams[2]) or 0) < 0 then
-		return -cmdParams[2]
-	end
-	return nil
-end
 
 local function publish()
 	if not td then
@@ -381,14 +352,11 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 	end
 end
 
-local MESSAGE_GAP = 5 * FPS -- frames between two messages of the same unit type to the same team
-local lastMessage = {} -- team -> unitDefID -> frame of the last message
-
 -- Build orders of the players that are not allowed are refused while the game runs: the restriction to towers (and economy; the units
 -- that are forbidden in the level are refused by unit_restrictions.lua, the indestructible buildings are protected by unit_indestructible.lua).
 -- Units from factories are not restricted. The message goes only to the team of the order, at most once per unit type every few seconds.
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
-	local defID = td and td.state == "running" and td.teams[teamID] and builtDef(cmdID, cmdParams)
+	local defID = td and td.state == "running" and td.teams[teamID] and G.builtDef(cmdID, cmdParams)
 	if not defID then
 		return true
 	end
@@ -401,37 +369,26 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 		end
 	end
 	if why then
-		local n, seen = Spring.GetGameFrame(), lastMessage[teamID] or {}
-		lastMessage[teamID] = seen
-		if not seen[defID] or n - seen[defID] >= MESSAGE_GAP then
-			seen[defID] = n
-			local text = "[Tower Defense] Not allowed in this level: " .. (ud.translatedHumanName or ud.name) .. " (" .. why .. ")"
-			if Spring.SendMessageToTeam then Spring.SendMessageToTeam(teamID, text) else Spring.Echo(text) end
-		end
+		refuse(teamID, defID, "Not allowed in this level: " .. (ud.translatedHumanName or ud.name) .. " (" .. why .. ")")
 		return false
 	end
 	return true
 end
 
-function gadget:RecvLuaMsg(msg, playerID)
-	if msg:sub(1, 4) ~= "tdw|" then
-		return
-	end
-	if not (Spring.IsCheatingEnabled() or EDITOR_MODE) then
-		return true
-	end
-	local cmd, payload = msg:match("^tdw|(%a+)|?(.*)$")
-	if cmd == "start" then
+local messages = {
+	start = function(payload)
 		local cfg = parse(payload)
 		if cfg then
 			start(cfg)
 		else
 			say("Cannot start: set spawn point, goal and at least one wave first.")
 		end
-	elseif cmd == "stop" then
-		stop()
-	end
-	return true
+	end,
+	stop = function() stop() end,
+}
+
+function gadget:RecvLuaMsg(msg, playerID)
+	return G.handleMessage("tdw", messages, msg, playerID)
 end
 
 -- Finished scenario: the configuration is in the game option tdconfig and the waves start with the game
@@ -444,11 +401,9 @@ end
 
 -- Finished scenario: the settings come in the game option tdconfig (the payload as base64url); the waves start a moment after the game
 -- start, when the units of the scenario exist
-local decode64 = Rules.decode64
-
 function gadget:GamePreload()
-	local mo = Spring.GetModOptions()
-	if mo.tdconfig and mo.tdconfig ~= "" then
-		pendingCfg = parse(decode64(mo.tdconfig))
+	local text = G.option("tdconfig")
+	if text then
+		pendingCfg = parse(text)
 	end
 end

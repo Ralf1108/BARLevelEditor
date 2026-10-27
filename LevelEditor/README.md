@@ -82,6 +82,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `scripts\rtf_game.lua` - gadget of Reclaim the Fame (crystals, points, score limit; also used by scenarios)
 - `scripts\led_rtf.lua` - the Reclaim the Fame page of the widget (loaded by the widget)
+- `scripts\led_gadgets.lua` - what the gadgets share (editor mode, rules, messages to a team, the messages of the widget, the game options of a scenario)
 - `scripts\pve_supply_drops_stub.lua` - replaces the lootbox gadget of the game inside the extra game (otherwise enemies next to the flags and collection points would capture them)
 - `scripts\help_texts.lua` - texts of the help board (?) and of `/led_help`
 - `scripts\choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; the last chosen map (`Last Map.txt`) and the cached map list (`Online Maps Cache.json`) are kept in `%LOCALAPPDATA%\BAR-Level-Editor`; `scripts\map_preview.ps1` draws the picture of the highlighted map next to the list with its size, number of players and terrain below it (and gives the data to the filters) (thumbnails of the game's lobby package, read directly, nothing is stored)

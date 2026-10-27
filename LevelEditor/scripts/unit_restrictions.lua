@@ -28,12 +28,7 @@ local REASON = "level_restrictions" -- reason key at the build blocking of BAR
 local TECH_REASON = "scenario_tech" -- the same for the tech levels of a team
 local START_FRAME = 5 -- finished scenario: the restrictions start this frame (after the build blocking of BAR has started)
 
-local opt = Spring.GetModOptions().leveleditor
-local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
-
-local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
-assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
-local decode64 = Rules.decode64
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
 
 local blocked = nil -- running restrictions: unitDefID -> true; nil = none
 local blockedTeams = {} -- teams the build blocking of BAR was told about
@@ -41,23 +36,9 @@ local pendingPayload = nil
 local teamTech = {} -- team -> { unitDefID -> true }: what the tech levels of the team do not allow (finished scenario)
 local pendingTiers = nil
 
-local function say(text)
-	if Spring.SendMessage then
-		Spring.SendMessage("[Level restrictions] " .. text)
-	else
-		Spring.Echo("[Level restrictions] " .. text)
-	end
-end
-
-local function split(text, sep)
-	local out = {}
-	for part in (tostring(text) .. sep):gmatch("(.-)" .. sep:gsub("%p", "%%%0")) do
-		if part ~= "" and part ~= "-" then
-			out[#out + 1] = part
-		end
-	end
-	return out
-end
+local say = G.sayer("Level restrictions")
+local split = G.split
+local message = G.teamMessenger("Level restrictions")
 
 -- The unitDefIDs of the names in the payload
 local function parse(payload)
@@ -104,44 +85,14 @@ local function start(payload)
 	say(count .. " units cannot be built in this level.")
 end
 
-local MESSAGE_GAP = 5 * 30 -- frames between two messages of the same unit type to the same team
-local lastMessage = {} -- team -> unitDefID -> frame of the last message
-
--- The unit a build order builds (also an order inserted into the queue: CMD.INSERT { position, command, options, ... }); nil for other orders
-local function builtDef(cmdID, cmdParams)
-	if cmdID < 0 then
-		return -cmdID
-	end
-	if cmdID == CMD.INSERT and cmdParams and (tonumber(cmdParams[2]) or 0) < 0 then
-		return -cmdParams[2]
-	end
-	return nil
-end
-
--- "Not allowed" only to a human team (an AI would get it again and again), at most once per unit type every few seconds
+-- "Not allowed" only to a human team, at most once per unit type every few seconds (G.teamMessenger)
 local function refuse(teamID, defID)
-	local isAI = select(4, Spring.GetTeamInfo(teamID, false))
-	if isAI or teamID == Spring.GetGaiaTeamID() then
-		return
-	end
-	local n = Spring.GetGameFrame()
-	local seen = lastMessage[teamID] or {}
-	lastMessage[teamID] = seen
-	if seen[defID] and n - seen[defID] < MESSAGE_GAP then
-		return
-	end
-	seen[defID] = n
 	local ud = UnitDefs[defID]
-	local text = "[Level restrictions] Not allowed in this level: " .. ((ud and (ud.translatedHumanName or ud.name)) or "?")
-	if Spring.SendMessageToTeam then
-		Spring.SendMessageToTeam(teamID, text)
-	else
-		Spring.Echo(text)
-	end
+	message(teamID, defID, "Not allowed in this level: " .. ((ud and (ud.translatedHumanName or ud.name)) or "?"))
 end
 
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
-	local defID = builtDef(cmdID, cmdParams)
+	local defID = G.builtDef(cmdID, cmdParams)
 	if defID and ((blocked and blocked[defID]) or (teamTech[teamID] and teamTech[teamID][defID])) then
 		refuse(teamID, defID)
 		return false
@@ -151,7 +102,7 @@ end
 
 -- "1", "2" or "3": the tech level of a unit as the scenario counts it
 local function tierOf(ud)
-	local t = Rules.techLevel(ud)
+	local t = G.Rules.techLevel(ud)
 	if t >= 3 then
 		return "3"
 	elseif t > 1 then
@@ -181,20 +132,10 @@ local function startTiers(text)
 	end
 end
 
+local messages = { start = function(payload) start(payload) end, stop = function() release() end }
+
 function gadget:RecvLuaMsg(msg, playerID)
-	if msg:sub(1, 4) ~= "rst|" then
-		return
-	end
-	if not (Spring.IsCheatingEnabled() or EDITOR_MODE) then
-		return true
-	end
-	local cmd, payload = msg:match("^rst|(%a+)|?(.*)$")
-	if cmd == "start" then
-		start(payload)
-	elseif cmd == "stop" then
-		release()
-	end
-	return true
+	return G.handleMessage("rst", messages, msg, playerID)
 end
 
 function gadget:Initialize()
@@ -205,13 +146,8 @@ end
 
 -- Finished scenario: the restrictions come in the game option restrictions (the payload as base64url)
 function gadget:GamePreload()
-	local mo = Spring.GetModOptions()
-	if mo.restrictions and mo.restrictions ~= "" then
-		pendingPayload = decode64(mo.restrictions)
-	end
-	if mo.techtiers and mo.techtiers ~= "" then
-		pendingTiers = decode64(mo.techtiers)
-	end
+	pendingPayload = G.option("restrictions")
+	pendingTiers = G.option("techtiers")
 end
 
 function gadget:GameFrame(n)

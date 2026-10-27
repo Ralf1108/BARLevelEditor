@@ -138,6 +138,7 @@ $ScenarioGameFiles = @(
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
     @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
+    @('led_gadgets.lua', 'luaui/Include/led_gadgets.lua'),   # what the gadgets share (editor mode, messages, game options)
     @('scenario_briefing.lua', 'luaui/widgets/scenario_briefing.lua'),   # the briefing window (a game widget: no "Allow user widgets" needed)
     @('shared_start.lua', 'luaui/widgets/shared_start.lua'))             # starts a game in which several humans play one team (Copilot)
 $ScenarioGamePointer = 'LevelEditorScenarios.txt'   # in data\games: file name and game name of the one the editor setup built (read by LAN Play)

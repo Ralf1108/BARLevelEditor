@@ -171,12 +171,8 @@ local FPS = 30
 local LEAD = 1 -- frames of the carrier's speed the flag is put ahead of it (measured: 1 frame halves the lag against the carrier, more makes it worse)
 local CHECK_EVERY = 5 -- frames between two checks for pick up and delivery
 
-local opt = Spring.GetModOptions().leveleditor
-local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
-
-local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
-assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
-local decode64 = Rules.decode64
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
+local EDITOR_MODE = G.EDITOR_MODE
 
 local g = nil -- running game: nil = none
 local pendingCfg = nil -- configuration waiting for the start (finished scenario)
@@ -184,13 +180,7 @@ local START_FRAME = 30 -- finished scenario: starts this frame (the units of the
 local protected = {} -- unitID -> true: flags and collection points
 local carrying = {} -- carrier unitID -> flag
 
-local function say(text)
-	if Spring.SendMessage then
-		Spring.SendMessage("[Capture the Flag] " .. text)
-	else
-		Spring.Echo("[Capture the Flag] " .. text)
-	end
-end
+local say = G.sayer("Capture the Flag")
 
 local function points(text)
 	local out = {}
@@ -201,10 +191,7 @@ local function points(text)
 end
 
 local function parse(payload)
-	local f = {}
-	for p in (tostring(payload) .. ";"):gmatch("([^;]*);") do
-		f[#f + 1] = p
-	end
+	local f = G.fields(payload)
 	local cfg = {
 		amount = tonumber(f[1]) or 0, radius = math.max(10, tonumber(f[2]) or 100),
 		score = math.max(0, tonumber(f[3]) or 0), returnTime = math.max(0, tonumber(f[4]) or 0), speed = math.max(0, tonumber(f[5]) or 0),
@@ -220,9 +207,7 @@ local function parse(payload)
 	return cfg
 end
 
-local function allyOf(team)
-	return (select(6, Spring.GetTeamInfo(team, false)))
-end
+local allyOf = G.allyOf
 
 local function publish()
 	if not g then
@@ -682,25 +667,20 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	return true
 end
 
-function gadget:RecvLuaMsg(msg, playerID)
-	if msg:sub(1, 4) ~= "ctf|" then
-		return
-	end
-	if not (Spring.IsCheatingEnabled() or EDITOR_MODE) then
-		return true
-	end
-	local cmd, payload = msg:match("^ctf|(%a+)|?(.*)$")
-	if cmd == "start" then
+local messages = {
+	start = function(payload)
 		local cfg = parse(payload)
 		if cfg then
 			start(cfg)
 		else
 			say("Cannot start: place at least one collection point and one flag point first.")
 		end
-	elseif cmd == "stop" then
-		stop()
-	end
-	return true
+	end,
+	stop = function() stop() end,
+}
+
+function gadget:RecvLuaMsg(msg, playerID)
+	return G.handleMessage("ctf", messages, msg, playerID)
 end
 
 function gadget:Initialize()
@@ -712,8 +692,8 @@ end
 
 -- Finished scenario: the settings come in the game option ctfconfig (the payload as base64url)
 function gadget:GamePreload()
-	local mo = Spring.GetModOptions()
-	if mo.ctfconfig and mo.ctfconfig ~= "" then
-		pendingCfg = parse(decode64(mo.ctfconfig))
+	local text = G.option("ctfconfig")
+	if text then
+		pendingCfg = parse(text)
 	end
 end

@@ -18,21 +18,14 @@ if not gadgetHandler:IsSyncedCode() then
 	return
 end
 
-local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
-assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
 
 GG.Indestructible = GG.Indestructible or {}
 local fixedIds = GG.Indestructible -- unitID -> true: nothing damages, reclaims, captures or self-destructs these units
 local fixedList = nil -- { { name, x, z } ... } from the game option, nil = none
 local APPLY_FRAMES = { [5] = true, [30] = true, [90] = true } -- the scenario creates its units at the start: looked for several times
 
-local function split(text, sep)
-	local out = {}
-	for p in tostring(text):gmatch("[^" .. sep .. "]+") do
-		out[#out + 1] = p
-	end
-	return out
-end
+local split = G.split
 
 -- The units of the list that stand at their place get the protection
 local function applyFixed()
@@ -48,13 +41,12 @@ local function applyFixed()
 end
 
 function gadget:GamePreload()
-	local mo = Spring.GetModOptions()
-	local opt = (mo.fixedunits and mo.fixedunits ~= "" and mo.fixedunits) or (mo.tdfixed ~= "" and mo.tdfixed) or nil
-	if not opt then
+	local text = G.option("fixedunits") or G.option("tdfixed")
+	if not text then
 		return
 	end
 	fixedList = {}
-	for _, group in ipairs(split(Rules.decode64(opt), "|")) do
+	for _, group in ipairs(split(text, "|")) do
 		local name, coords = group:match("^([^:]+):(.*)$")
 		if name then
 			local nums = split(coords, ",")

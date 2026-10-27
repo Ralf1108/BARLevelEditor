@@ -159,12 +159,8 @@ end
 local FPS = 30
 local ACTIVE_FRAMES = 3 -- a builder counts as reclaiming for this many frames after the last reclaim step the engine reported
 
-local opt = Spring.GetModOptions().leveleditor
-local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
-
-local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
-assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
-local decode64 = Rules.decode64
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
+local EDITOR_MODE = G.EDITOR_MODE
 
 local g = nil -- running game: nil = none
 local pendingCfg = nil -- configuration waiting for the start (finished scenario)
@@ -172,19 +168,10 @@ local START_FRAME = 30 -- finished scenario: starts this frame (the features of 
 local nodeSet = {} -- featureID -> factor (1 = basic rate): the nodes
 local reclaiming = {} -- builder unitID -> { frame of its last reclaim step on a node, factor of that node }
 
-local function say(text)
-	if Spring.SendMessage then
-		Spring.SendMessage("[Reclaim the Fame] " .. text)
-	else
-		Spring.Echo("[Reclaim the Fame] " .. text)
-	end
-end
+local say = G.sayer("Reclaim the Fame")
 
 local function parse(payload)
-	local f = {}
-	for p in (tostring(payload) .. ";"):gmatch("([^;]*);") do
-		f[#f + 1] = p
-	end
+	local f = G.fields(payload)
 	local function pct(v, default)
 		return math.max(0, math.min(100000, tonumber(v) or default)) / 100
 	end
@@ -199,9 +186,7 @@ local function parse(payload)
 	return cfg
 end
 
-local function allyOf(team)
-	return (select(6, Spring.GetTeamInfo(team, false)))
-end
+local allyOf = G.allyOf
 
 local function publish()
 	if not g then
@@ -431,20 +416,10 @@ function gadget:FeatureDestroyed(featureID)
 	nodeSet[featureID] = nil
 end
 
+local messages = { start = function(payload) start(parse(payload)) end, stop = function() stop() end }
+
 function gadget:RecvLuaMsg(msg, playerID)
-	if msg:sub(1, 4) ~= "rtf|" then
-		return
-	end
-	if not (Spring.IsCheatingEnabled() or EDITOR_MODE) then
-		return true
-	end
-	local cmd, payload = msg:match("^rtf|(%a+)|?(.*)$")
-	if cmd == "start" then
-		start(parse(payload))
-	elseif cmd == "stop" then
-		stop()
-	end
-	return true
+	return G.handleMessage("rtf", messages, msg, playerID)
 end
 
 function gadget:Initialize()
@@ -453,8 +428,8 @@ end
 
 -- Finished scenario: the settings come in the game option rtfconfig (the payload as base64url)
 function gadget:GamePreload()
-	local mo = Spring.GetModOptions()
-	if mo.rtfconfig and mo.rtfconfig ~= "" then
-		pendingCfg = parse(decode64(mo.rtfconfig))
+	local text = G.option("rtfconfig")
+	if text then
+		pendingCfg = parse(text)
 	end
 end
