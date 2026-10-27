@@ -412,15 +412,11 @@ end
 local loadQueue = {}
 local LOAD_PER_UPDATE = 50
 
--- Reads the text of a level file and returns the table (or nil, error text)
+-- Reads the text of a level file and returns the table (or nil, error text); the file runs in an empty environment (Shared.loadData)
 function widget:ParseLevel(text)
-	local chunk, err = (loadstring or load)(text)
-	if not chunk then
-		return nil, err
-	end
-	local ok, data = pcall(chunk)
-	if not ok or type(data) ~= "table" or type(data.unitloadout) ~= "table" then
-		return nil, "not a valid level file"
+	local data, err = Shared.loadData(text)
+	if type(data) ~= "table" or type(data.unitloadout) ~= "table" then
+		return nil, err or "not a valid level file"
 	end
 	return data
 end
@@ -551,15 +547,7 @@ end
 
 -- Reads the text of a blueprint file (testable without the game)
 function widget:ParseBlueprint(text)
-	local chunk, err = (loadstring or load)(text)
-	if not chunk then
-		return nil, err
-	end
-	local ok, data = pcall(chunk)
-	if not ok or type(data) ~= "table" or type(data.blueprint) ~= "table" then
-		return nil, "not a valid blueprint file"
-	end
-	return data.blueprint
+	return Shared.parseBlueprint(text)
 end
 
 ---------------------------------------------------------------- Blueprint management: list, selection, tile menu

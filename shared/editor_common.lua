@@ -83,15 +83,31 @@ function M.writeFile(path, text)
 	return true
 end
 
--- Reads the text of a blueprint file (returns the unit list or nil, error text)
-function M.parseBlueprint(text)
+-- Runs the text of a data file (level, blueprint, settings: "return { ... }") in an empty environment, so a file from somewhere else cannot
+-- call anything (no io, os, Spring ...): only tables, strings and numbers come out. Returns the value or nil, error text.
+function M.loadData(text)
+	if type(text) ~= "string" then
+		return nil, "no text"
+	end
 	local chunk, err = (loadstring or load)(text)
 	if not chunk then
 		return nil, err
 	end
+	if setfenv then
+		setfenv(chunk, {})
+	end
 	local ok, data = pcall(chunk)
-	if not ok or type(data) ~= "table" or type(data.blueprint) ~= "table" then
-		return nil, "not a valid blueprint file"
+	if not ok then
+		return nil, data
+	end
+	return data
+end
+
+-- Reads the text of a blueprint file (returns the unit list or nil, error text)
+function M.parseBlueprint(text)
+	local data, err = M.loadData(text)
+	if type(data) ~= "table" or type(data.blueprint) ~= "table" then
+		return nil, err or "not a valid blueprint file"
 	end
 	return data.blueprint
 end
@@ -137,12 +153,8 @@ function M.newConfig(file, header, defaults, limits)
 	function c:load()
 		local text = M.fileText(self.file)
 		if text then
-			local chunk = (loadstring or load)(text)
-			local ok, data = false, nil
-			if chunk then
-				ok, data = pcall(chunk)
-			end
-			if ok and type(data) == "table" then
+			local data = M.loadData(text)
+			if type(data) == "table" then
 				for _, k in ipairs(self.keys) do
 					if tonumber(data[k]) then
 						self.v[k] = tonumber(data[k])
@@ -2689,12 +2701,8 @@ function M.newRecent(file, maxN)
 
 	function r:load()
 		local text = M.fileText(self.file)
-		local chunk = text and (loadstring or load)(text)
-		local ok, data = false, nil
-		if chunk then
-			ok, data = pcall(chunk)
-		end
-		if ok and type(data) == "table" then
+		local data = text and M.loadData(text)
+		if type(data) == "table" then
 			for _, kind in ipairs({ "bp", "unit", "feature" }) do
 				self.data[kind] = {}
 				for _, n in ipairs(type(data[kind]) == "table" and data[kind] or {}) do
