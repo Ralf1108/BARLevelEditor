@@ -6,8 +6,8 @@ local M = {}
 
 ---------------------------------------------------------------- Dimensions (ui_scale)
 M.S = 1
-M.m = { TILE = 190, LABEL = 108, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
-local BASE = { TILE = 190, LABEL = 108, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+M.m = { TILE = 190, LABEL = 138, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+local BASE = { TILE = 190, LABEL = 138, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
 
 -- Recompute all dimensions from the base value (cheap, can be called on every draw/click). The base values are designed for 4K
 -- (height 2160); the factor is ui_scale times screen height / 2160, so the menu grows and shrinks with the
@@ -1058,6 +1058,7 @@ function M.newGrid(o)
 			label = label:sub(1, 12) .. "~"
 		end
 		local cx = tx + TILE / 2
+		local k = math.min(1, TILE / m.TILE) -- narrower tiles (more columns): smaller text
 		if self.editing and self.editing.idx == i and not ghost then
 			gl.Color(1, 1, 0.3, 1)
 			local t = self.editing.text .. "_"
@@ -1073,14 +1074,17 @@ function M.newGrid(o)
 			gl.Color(1, 1, 1, 1)
 			gl.Text("(trash)", cx, ty - 68 * S, 24 * S, "co")
 		else
-			gl.Text(label, cx, ty - 32 * S, 32 * S, "co")
-			gl.Text(bp.count .. " " .. self.unitWord, cx, ty - 68 * S, 24 * S, "co")
+			gl.Text(label, cx, ty - 32 * S, 32 * S * k, "co")
+			gl.Text(bp.count .. " " .. self.unitWord, cx, ty - 68 * S, 24 * S * k, "co")
 			-- total cost of the whole blueprint: metal left, energy right
 			local cost = M.blueprintCost(bp.units)
 			gl.Color(0.75, 0.88, 1, 1)
-			gl.Text("M " .. M.shortNumber(cost.metal), tx + TILE * 0.27, ty - 98 * S, 22 * S, "co")
+			gl.Text("M " .. M.shortNumber(cost.metal), tx + TILE * 0.27, ty - 98 * S, 22 * S * k, "co")
 			gl.Color(1, 0.95, 0.5, 1)
-			gl.Text("E " .. M.shortNumber(cost.energy), tx + TILE * 0.73, ty - 98 * S, 22 * S, "co")
+			gl.Text("E " .. M.shortNumber(cost.energy), tx + TILE * 0.73, ty - 98 * S, 22 * S * k, "co")
+			-- fourth line: how long the stable income needs for the whole blueprint (Eco time)
+			gl.Color(0.72, 1, 0.72, 1)
+			gl.Text("Eco " .. M.ecoTime(cost.metal, cost.energy), cx, ty - 128 * S, 22 * S * k, "co")
 			gl.Color(1, 1, 1, 1)
 		end
 	end
@@ -2251,8 +2255,25 @@ M.PREVIEW_SIZE = 400
 
 -- Time until the current income has produced the given metal and energy ("Eco time"): worst case, the stock is not counted. The larger of
 -- the two times counts; no income of a needed resource gives "-". Under a minute in seconds, then m:ss, from an hour h:mm:ss.
+-- What the own units produce right now: the sum of metalMake / energyMake of all own units (metal extractors, converters, generators, the commander ...).
+-- It does not contain what only comes in once (reclaim, gifts), so the numbers do not jump. Recomputed once a second.
+local stable = { at = -10, metal = 0, energy = 0 }
+function M.stableIncome()
+	local now = os.clock()
+	if now - stable.at > 1 then
+		stable.at = now
+		local m, e = 0, 0
+		for _, id in ipairs(Spring.GetTeamUnits(Spring.GetMyTeamID()) or {}) do
+			local mm, _, em = Spring.GetUnitResources(id)
+			m, e = m + (mm or 0), e + (em or 0)
+		end
+		stable.metal, stable.energy = m, e
+	end
+	return stable.metal, stable.energy
+end
+
 function M.ecoTime(metal, energy)
-	local team = Spring.GetMyTeamID()
+	local mi, ei = M.stableIncome()
 	local secs = 0
 	for _, r in ipairs({ { "metal", metal or 0 }, { "energy", energy or 0 } }) do
 		if r[2] > 0 then
