@@ -18,6 +18,10 @@ powershell -File scenario\scenario_builder.ps1 -Level ctf_test -LevelDir ..\test
 
 The LAN Play test (two instances of the game, host and joiner, real lobby) takes the `scenario.txt` of such a bundle as the scenario of the host.
 
+## Demo levels (`tools\make_demo_levels.py`)
+
+`python tools\make_demo_levels.py [folder]` writes the three playable demo levels `demo_td_serpentine.lua`, `demo_ctf_crossroads.lua` and `demo_rtf_crystal_fields.lua` into `LevelEditor\levels` (they are the only files of that folder that git keeps, `.gitignore`). Base map: *Full Metal Plate 1.7* (flat metal map). Positions, waves and settings are at the top of each function in the script: change them there and run it again. Checked 2026-10-27 in a sandbox game: all three load in the editor, the Tower Defense waves walk the whole corridor to the goal, the flags and crystals appear when the test is started, and the scenario builder packs all three.
+
 ## LAN Play test (`tools`)
 
 `tools\lan_test.ps1 -Mode ctf|rtf|td|cp` starts two instances of the game (host "Ralf", joiner "Ben") with the real lobby on this computer, in two small framed windows, plays the test level as a LAN scenario (`cp` = Copilot on an official map) and quits by itself. Everything is built in a work folder (default `%TEMP%\lan_test`, own write dir per instance, junctions to the installed engine and game): the installed game is not changed, but it must not be running. The widget `zz_lantest.lua` logs `[zzlan]` lines (teams, units, scores, commander positions) into `infolog.txt` of both instances (`<work>\sbx_H\data`, `<work>\sbx_J\data`); both logs must show the same state. Results of 2026-10-27: CTF (Ralf and Ben as opponents, flags taken and held, score equal on both), Reclaim the Fame (both teams earn points, equal on both), Tower Defense (both humans in one team, waves, state "won"), Copilot (both humans in team 0, one commander, orders of both arrive).

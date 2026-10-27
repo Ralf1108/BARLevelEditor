@@ -45,6 +45,10 @@ Three modes, one per level, each with its own page, a test run and export as a s
 |---|---|---|
 | [![Tower Defense page](docs/level-editor-tower-defense.jpg)](LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)](LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)](LevelEditor/game-modes/reclaim-the-fame.md) |
 | Waves walk along a route you build; the player builds towers | Carry flags to your collection point and earn metal | Reclaim crystals for points; first at the score limit wins |
+| ![Demo level Serpentine](docs/demo-tower-defense.jpg) | ![Demo level Crossroads](docs/demo-capture-the-flag.jpg) | ![Demo level Crystal Fields](docs/demo-reclaim-the-fame.jpg) |
+| Demo level *Serpentine* | Demo level *Crossroads* | Demo level *Crystal Fields* |
+
+One demo level per mode comes with the editor (`LevelEditor\levels\demo_*.lua`, flat metal map Full Metal Plate): load it with start menu key `2`.
 
 ## BluePrinter
 

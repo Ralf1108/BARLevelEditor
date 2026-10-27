@@ -5,6 +5,7 @@ LevelEditor/scenario/scenarios/
 # your own work
 LevelEditor/levels/*
 !LevelEditor/levels/.gitkeep
+!LevelEditor/levels/demo_*.lua
 LevelEditor/blueprints/*
 !LevelEditor/blueprints/.gitkeep
 BluePrinter/blueprints/*
