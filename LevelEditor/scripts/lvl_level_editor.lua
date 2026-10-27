@@ -595,6 +595,10 @@ local gen = {
 	tech = { [1] = true, [2] = false, [3] = false },
 	count = 100,
 }
+-- The faction of the maze: the one of the Generate page, Armada for the Scavengers and Raptors (no walls of their own)
+function gen.mazeFaction()
+	return (gen.faction == "cor" or gen.faction == "leg") and gen.faction or "arm"
+end
 local GEN_KINDS = { { "units", "Units" }, { "buildings", "Buildings" }, { "turrets", "Turrets" }, { "air", "Air" }, { "ships", "Ships" } }
 local delMode = false -- Delete: false or the shape "rect" | "circle" | "line" (buttons DR, DC, DL, key D = rectangle)
 local delDrag = nil -- { x, z }: start point of the delete shape
@@ -1164,12 +1168,16 @@ local function genLayout(rect)
 		end
 		y = y - m.HB - 12 * S
 	end
-	local function factionRow()
-		row("Faction", {
-			{ value = "arm", label = "Armada", active = gen.faction == "arm", icon = Shared.FACTION_ICONS["arm"] },
-			{ value = "cor", label = "Cortex", active = gen.faction == "cor", icon = Shared.FACTION_ICONS["cor"] },
-			{ value = "leg", label = "Legion", active = gen.faction == "leg", icon = Shared.FACTION_ICONS["leg"] },
-		}, "genfac")
+	-- all five factions for units; the maze only for the three that have dragon teeth and walls of their own
+	local function factionRow(maze)
+		local items = {}
+		local chosen = maze and gen.mazeFaction() or gen.faction
+		for _, f in ipairs(Shared.FACTIONS) do
+			if not maze or f[1] == "arm" or f[1] == "cor" or f[1] == "leg" then
+				items[#items + 1] = { value = f[1], label = f[2], active = chosen == f[1], icon = Shared.FACTION_ICONS[f[1]] }
+			end
+		end
+		row("Faction", items, "genfac")
 	end
 	-- Bottom of both sub-tabs: Area (rectangle / circle: pressing one starts the generating, there is no extra button)
 	local function bottom()
@@ -1181,7 +1189,7 @@ local function genLayout(rect)
 		return rects, labels, rect.top - y
 	end
 	if gen.sub == "maze" then
-		factionRow()
+		factionRow(true)
 		row("Maze material", {
 			{ value = 1, label = "Dragon teeth", active = gen.mazeSel == 1 },
 			{ value = 2, label = "Walls", active = gen.mazeSel == 2 },
@@ -2362,7 +2370,7 @@ local MAZE_KINDS = {
 local mazeDrag = nil -- { x, z }: start point of the rectangle
 
 local function mazeUnitName(kind)
-	local fac = gen.faction -- same faction as on the Generate page (each faction has its own dragon teeth and walls)
+	local fac = gen.mazeFaction() -- same faction as on the Generate page (each faction has its own dragon teeth and walls)
 	local name = fac .. (kind.suffix == "fort" and (fac == "leg" and "forti" or "fort") or "drag")
 	return UnitDefNames[name] and name or nil
 end

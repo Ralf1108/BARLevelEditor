@@ -149,7 +149,7 @@ local function remove(x, z, radius)
 end
 
 -- Create a random group: count pieces within radius around (x, z). techs = set of tech levels (nil = all),
--- faction = "arm" / "cor" / "leg" (nil = faction of the team). kind:
+-- faction = "arm" / "cor" / "leg" / "scv" (Scavengers) / "rap" (Raptors) (nil = faction of the team). kind:
 --   "units"     mobile land combat units
 --   "buildings" buildings without weapons (economy, factories, radar, walls ...)
 --   "turrets"   buildings with weapons (turrets, flak, rocket launchers ...)
@@ -168,12 +168,23 @@ local function factionOfTeam(team)
 	return "arm"
 end
 
+-- The faction of a unit name: "arm", "cor", "leg", "scv" (the *_scav copies; base = the name without _scav) or "rap" (raptor_*)
+local function factionOf(name)
+	if name:sub(-5) == "_scav" then
+		return "scv", name:sub(1, -6)
+	elseif name:sub(1, 7) == "raptor_" then
+		return "rap", name
+	end
+	return name:sub(1, 3), name
+end
+
 local function generatePool(faction, techs, kind)
 	local pool = {}
 	for name, ud in pairs(UnitDefNames) do
 		local cp = ud.customParams or {}
-		if name:sub(1, 3) == faction and not name:find("scav") and not name:find("decom") and not name:find("dummy")
-			and not name:find("drone") and not cp.iscommander and not cp.isdrone then
+		local fac, base = factionOf(name)
+		if fac == faction and not base:find("scav") and not base:find("decom") and not base:find("dummy")
+			and not base:find("drone") and not cp.iscommander and not cp.isdrone then
 			local mc = ud.modCategories or {}
 			local armed = #ud.weapons > 0
 			local ok = false
@@ -216,7 +227,8 @@ local function generate(team, x, z, count, radius, techs, faction, kind, playerI
 	faction = faction or factionOfTeam(team)
 	local pool = generatePool(faction, techs, kind)
 	if #pool == 0 then
-		tell(playerID, "no matching units (" .. kind .. ", faction " .. faction .. ")")
+		tell(playerID, "no matching units (" .. kind .. ", faction " .. faction .. ")"
+			.. ((faction == "scv" or faction == "rap") and ": Scavenger and Raptor units need the switch 7 of the start menu" or ""))
 		return 0
 	end
 	local buckets, made, tries = {}, 0, 0
