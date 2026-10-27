@@ -42,10 +42,6 @@ function M.rotateOffset(dx, dz, k)
 	return dx, dz
 end
 
-function M.headingToFacing(h)
-	return math.floor(((tonumber(h) or 0) + 8192) / 16384) % 4
-end
-
 function M.fileText(path)
 	local f = io.open(path, "r")
 	if not f then
@@ -76,6 +72,7 @@ assert(Rules, "bar_rules.lua missing (run the installer again)")
 local techLevel = Rules.techLevel
 M.techLevel = techLevel
 M.buildClass = Rules.buildClass
+M.headingToFacing = Rules.headingToFacing
 
 local function isBuildingDef(ud)
 	return ud and (ud.isBuilding or not ud.canMove)

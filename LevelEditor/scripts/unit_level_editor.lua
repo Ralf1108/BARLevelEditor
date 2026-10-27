@@ -444,20 +444,8 @@ local function snapshot(id)
 	}
 end
 
--- Convert the heading to the four directions, as the scenario gadget does too
-local function headingToFacing(rot)
-	rot = tonumber(rot) or 0
-	if rot < 8192 and rot > -8192 then
-		return 0
-	end
-	if rot > 8192 and rot < 24576 then
-		return 1
-	end
-	if rot < -8192 and rot > -24576 then
-		return 3
-	end
-	return 2
-end
+-- Convert the heading to the four directions (shared/bar_rules.lua)
+local headingToFacing = Rules.headingToFacing
 
 -- Remove all units, except the builder rows placed at the start
 local function clearAll()

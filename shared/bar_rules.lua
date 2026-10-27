@@ -45,6 +45,11 @@ function R.hitsGround(ud)
 	return false
 end
 
+-- Spring heading (-32768 to 32767) -> facing 0 to 3 (south, east, north, west): the nearest of the four directions
+function R.headingToFacing(h)
+	return math.floor(((tonumber(h) or 0) + 8192) / 16384) % 4
+end
+
 -- Text from base64url (the form the scenario builder puts into game options: "-" and "_" instead of "+" and "/", no "=")
 local ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local B64 = {}
