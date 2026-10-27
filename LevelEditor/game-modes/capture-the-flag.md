@@ -39,6 +39,7 @@ Flags lie on the map. Units pick them up, carry them to their collection point a
 
 - Other teams take your flag; you only bring it back when it was dropped
 - The carrier **cannot shoot** and is slowed down
+- A transport may carry a flag carrier, but then it is as slow as a carrier; the flags and collection points themselves cannot be loaded
 - A destroyed carrier drops the flag where it died
 - A delivered flag stays at the collection point and can be stolen
 - Holding enough flags wins: all units of the other teams blow up

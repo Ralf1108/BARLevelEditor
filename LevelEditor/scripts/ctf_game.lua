@@ -249,17 +249,48 @@ local function body(name, team, x, z, visible)
 	return id
 end
 
+-- The top speed of a unit in Elmo per second: SetUnitCOBValue(MAX_SPEED) takes the speed * 65536 / 30 (checked: 50 gives 50 Elmo/s, a higher
+-- value changes nothing); an aircraft (a carrier or an air transport) through its air move type, in Elmo per frame (not checked in the game)
+local function setTopSpeed(unitID, speed)
+	local ud = UnitDefs[Spring.GetUnitDefID(unitID) or -1]
+	if ud and ud.canFly and Spring.MoveCtrl and Spring.MoveCtrl.SetAirMoveTypeData then
+		pcall(Spring.MoveCtrl.SetAirMoveTypeData, unitID, "maxSpeed", speed / FPS)
+	else
+		Spring.SetUnitCOBValue(unitID, COB.MAX_SPEED, speed * 65536 / FPS)
+	end
+end
+
+-- A transport that holds a flag carrier is slowed down to the speed of the carriers as well (a fast transport would fetch the flags in no time)
+local slowed = {} -- transportID -> its own top speed
+local function slowTransport(transportID)
+	local cap = g and g.cfg.speed or 0
+	local tud = transportID and UnitDefs[Spring.GetUnitDefID(transportID) or -1]
+	if cap > 0 and tud and not slowed[transportID] and (tud.speed or 0) > cap then
+		slowed[transportID] = tud.speed
+		setTopSpeed(transportID, cap)
+	end
+end
+local function unslowTransport(transportID)
+	local own = transportID and slowed[transportID]
+	if own then
+		slowed[transportID] = nil
+		if Spring.ValidUnitID(transportID) then
+			setTopSpeed(transportID, own)
+		end
+	end
+end
+
 -- The unit that carries a flag cannot shoot: its weapons get the range 0 (saved in the flag record) until it delivers or the flag is lost;
--- it is also slowed down to the top speed of the carrier (a scout would fetch the flags in no time); SetUnitCOBValue(MAX_SPEED) takes the
--- speed in Elmo per second * 65536 / 30 (checked: 50 gives 50 Elmo/s, a higher value changes nothing)
+-- it is also slowed down to the top speed of the carrier (a scout would fetch the flags in no time), and so is a transport that holds it
 local function disarm(f, unitID)
 	f.ranges = {}
 	local ud = UnitDefs[Spring.GetUnitDefID(unitID)]
 	local cap = g and g.cfg.speed or 0
 	if cap > 0 and ud and (ud.speed or 0) > cap then
 		f.topSpeed = ud.speed
-		Spring.SetUnitCOBValue(unitID, COB.MAX_SPEED, cap * 65536 / 30)
+		setTopSpeed(unitID, cap)
 	end
+	slowTransport(Spring.GetUnitTransporter(unitID)) -- (a unit in a transport can take a flag on the way)
 	for w = 1, ud and #ud.weapons or 0 do
 		f.ranges[w] = Spring.GetUnitWeaponState(unitID, w, "range")
 		Spring.SetUnitWeaponState(unitID, w, "range", 0)
@@ -268,7 +299,10 @@ end
 
 local function rearm(f, unitID)
 	if f.topSpeed and unitID and Spring.ValidUnitID(unitID) then
-		Spring.SetUnitCOBValue(unitID, COB.MAX_SPEED, f.topSpeed * 65536 / 30) -- its own speed again
+		setTopSpeed(unitID, f.topSpeed) -- its own speed again
+	end
+	if unitID and Spring.ValidUnitID(unitID) then
+		unslowTransport(Spring.GetUnitTransporter(unitID))
 	end
 	f.topSpeed = nil
 	if f.ranges and unitID and Spring.ValidUnitID(unitID) then
@@ -296,6 +330,9 @@ local function clear()
 				Spring.DestroyUnit(id, false, true)
 			end
 		end
+	end
+	for id in pairs(slowed) do
+		unslowTransport(id)
 	end
 	g, carrying = nil, {}
 end
@@ -574,9 +611,11 @@ end
 
 function gadget:UnitDestroyed(unitID)
 	protected[unitID] = nil
+	slowed[unitID] = nil
 	local f = carrying[unitID]
 	if f then
 		carrying[unitID] = nil
+		unslowTransport(Spring.GetUnitTransporter(unitID)) -- (the carrier died inside a transport)
 		f.carrier, f.ranges = nil, nil
 		f.dropped = Spring.GetGameFrame() -- the flag lies where the carrier died (until a unit takes it, or the return time is over)
 		say("A flag was dropped.")
@@ -599,6 +638,22 @@ function gadget:UnitPreDamaged(unitID)
 	end
 end
 
+-- Transports: the flags and collection points themselves cannot be loaded (a flag is taken by coming close); a flag carrier can, and the
+-- transport then moves at the speed of the carriers until it unloads it or the flag is delivered or lost
+function gadget:AllowUnitTransport(transporterID, transporterUnitDefID, transporterTeam, transporteeID)
+	return not protected[transporteeID]
+end
+
+function gadget:UnitLoaded(unitID, unitDefID, unitTeam, transportID)
+	if carrying[unitID] then
+		slowTransport(transportID)
+	end
+end
+
+function gadget:UnitUnloaded(unitID, unitDefID, unitTeam, transportID)
+	unslowTransport(transportID)
+end
+
 function gadget:AllowUnitBuildStep(builderID, builderTeamID, unitID, unitDefID, part)
 	if part < 0 and protected[unitID] then
 		return false -- reclaiming
@@ -607,7 +662,7 @@ function gadget:AllowUnitBuildStep(builderID, builderTeamID, unitID, unitDefID, 
 end
 
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
-	if (cmdID == CMD.RECLAIM or cmdID == CMD.CAPTURE) and cmdParams and #cmdParams == 1 and cmdParams[1] < Game.maxUnits and protected[cmdParams[1]] then
+	if (cmdID == CMD.RECLAIM or cmdID == CMD.CAPTURE or cmdID == CMD.LOAD_UNITS) and cmdParams and #cmdParams == 1 and cmdParams[1] < Game.maxUnits and protected[cmdParams[1]] then
 		return false
 	end
 	if cmdID == CMD.SELFD and protected[unitID] then
