@@ -106,13 +106,13 @@ See `..\shared\SPECIFICATION.md` section 8 (tiles with unit pictures as thumbnai
 - The list reads the folder `LevelEditorBlueprints/` (junction to `blueprints`).
 
 ### 4.3 Units view
-See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sorting, info lines with name, code, seconds per shot and damage, description, metal and energy cost). Specific to the editor:
+See `..\shared\SPECIFICATION.md` section 9 (faction, group, tech, pictures, sorting, info lines with name, code, description, metal and energy cost, shots per second, damage per shot and per second). Specific to the editor:
 - Click a unit → stamp mode for this unit; left click on the map places it (gadget message `led|place|<name>|<team>|<x>|<z>|<facing>`), right click ends. The team is the one chosen on the left, the grid comes from the settings (`cfg.v.grid`).
 - Preview: blue outline (footprint, swapped for odd rotations) and the 3D model at the mouse pointer.
 - All groups are available (buildings, bots, vehicles, hover, air, ships).
 - **Restriction marks:** the grid is created with the option `restrict` (the functions of `rst`, section 11c): a small X on every symbol and on the faction, group and tech buttons forbids units for the player in the game; `shared` section 9.4b describes the drawing and the derived state of the buttons. A click on such an X does not arm a unit.
 - The hint text is **above the menu** (24·S): "Click a unit, then place it on the map" or in stamp mode "Left click places, right click ends, [ and ] rotate", above it in smaller font (20·S) "Shift = row, Shift+Alt = rectangle, Shift+Mouse wheel = spacing (N)".
-- Info lines below the menu (see `shared`, section 9.4): name (code) with `(<s> s/shot - <n> damage)` (for anti-air with the suffix "air"), description, metal and energy, for buildings additionally the explosion with damage and radius.
+- Info lines below the menu (see `shared`, section 9.4): name (code), description, metal and energy, for armed units a line with the shots per second, the damage per shot and (in brackets) the damage per second (for anti-air with the suffix "air"), for buildings additionally the explosion with damage and radius. Empty faction, group and tech buttons are slightly red.
 
 ### 4.4 Settings (button **O**)
 - Columns and rows for the blueprint view (`bpCols`, `bpRows`) and the units view (`uCols`, `uRows`), default 3 and 4, limits 1–6 and 1–8, stored in `LuaUI\Config\LevelEditorUI.lua` (game folder), immediately on every change.

@@ -152,12 +152,14 @@ Sort key `rank = (faction block 10000) + (filler 1000) + (water 100) + kind`, th
 ### 9.4 Grid and display
 - Symbol size `UICON = 270·S`, cell size `UCELL = 284·S`, margin `UPAD = 7·S`. Default 3 columns and 4 rows (setting `uCols`, `uRows`), width `uCols·UCELL + 2·UPAD + 4`, height `uRows·UCELL + 2·UPAD`.
 - At most 4 rows visible at the same time (adjustable); below that there is room for the info lines. The mouse wheel scrolls by 234·S per notch.
+- **Empty buttons are slightly red** (`u:emptyButton`): a faction button when there is no unit of it in any group and tech level, a group button when the chosen faction has none in the group, a tech button when the chosen faction has none in the chosen group (chosen button: light red, others: dark red; forbidden by the restrictions is stronger red and wins). So after a click on a faction or group you see at once which tabs are empty.
 - Filter buttons (faction, possibly group, tech; no tooltips) above the grid; the **faction buttons carry the faction symbol on the left** (`sidepics/armada.png`, `cortex.png`, `Legion.png` from the game, 72 % of the button height), the name stands centered in the remaining area; the group row is omitted if only one group is offered.
-- When hovering, up to four lines stand **below the panel** (distances 40·S, 78·S, 116·S, 152·S below the lower edge of the panel):
-  1. name (code) and, for armed units, in an additional bracket `(<seconds> s/shot - <damage> damage)` (details in 9.5), font 29·S,
+- When hovering, up to four lines stand **below the panel** (distances 40·S, 78·S, 116·S, 152·S below the lower edge of the panel; a fifth for the explosion of a building that shoots, 188·S):
+  1. name (code), font 29·S; behind it "- forbidden" if the unit is forbidden by the restrictions,
   2. the description (`tooltip`), one line, shortened with "~" if too long, font 24·S,
-  3. `Metal <n>   Energy <n>`, font 26·S,
-  4. only for **buildings**: `Explosion <damage> damage, radius <Elmo>` (death explosion, `deathExplosion`), and if different, `|  Self-destruct <damage>, radius <Elmo>` (`selfDExplosion`), font 22·S. Damage in the default armor class, radius = effect radius of the explosion in Elmo (`M.explosionInfo`). Examples: solar collector 89 / 90, fusion reactor 2650 / 240 (self-destruct 8300 / 384), advanced fusion 10600 / 640.
+  3. `Metal <n>   Energy <n>` (what it costs to build), font 26·S,
+  4. only for **armed** units: `<shots per second> shots/s   <damage> damage/shot (<damage per second> damage/s)`, for anti-air with the suffix "air" (details in 9.5; damage per second = damage per shot × shots per second, the value the game shows); font 26·S, smaller if the line would not fit into the menu,
+  5. only for **buildings**: `Explosion <damage> damage, radius <Elmo>` (death explosion, `deathExplosion`), and if different, `|  Self-destruct <damage>, radius <Elmo>` (`selfDExplosion`), font 22·S. Damage in the default armor class, radius = effect radius of the explosion in Elmo (`M.explosionInfo`). Examples: solar collector 89 / 90, fusion reactor 2650 / 240 (self-destruct 8300 / 384), advanced fusion 10600 / 640.
 - The **hint text** ("Click a unit …" / "Left click places …") no longer stands below the info lines but **above the menu** and is drawn by the host (24·S, special line for row/rectangle in 20·S above it). The parameter `hint` of `draw` remains for hosts that want it below the info lines (then 190·S below the lower edge).
 - The chosen unit (stamp mode) has a blue frame, the one under the mouse a light frame.
 - Unusable units (`canUse` false) are drawn at 30 % opacity.
@@ -176,10 +178,10 @@ Sort key `rank = (faction block 10000) + (filler 1000) + (water 100) + kind`, th
 
 ### 9.5 Damage and time per shot (`M.shotInfo`)
 - For every weapon of the unit: damage per projectile = damage in the default armor class (`default`). **Anti-air weapons** carry only 1 (or a fraction) there in BAR and the actual damage in the armor class `vtol`; if the `vtol` damage is higher, it counts, the weapon is anti-air and the display gets the suffix "air" (e.g. `(0.9 s/shot - 125 damage air)`). If a unit has ground and air weapons, the ground weapons take priority. Projectiles per second = `projectiles × salvoSize / reload` (as with the DPS figure).
-- The **reciprocal** is shown, that is the **seconds per shot** (`reload / (projectiles × salvoSize)`), because then you do not have to convert in your head and the numbers get larger and smoother.
-- The weapon with the highest damage per projectile counts; its time per shot is shown. Units without weapons show no bracket.
+- Shown are the **shots per second** (`projectiles × salvoSize / reload`), the damage per shot and, in brackets, the **damage per second** (their product). (Until 2026-10-27 the reciprocal, seconds per shot, stood in the name line.)
+- The weapon with the highest damage per projectile counts; its shot rate is shown. Units without weapons show no line 4.
 - Rounding: from 10 seconds a whole number, from 1 second one decimal place, below that two, each without superfluous zeros.
-- Examples: Armada fighter 0.9 s − 125 damage air, Peewee 0.1 s/shot − 9 damage, Hammer 1.7 s − 104, Bulldog 1.1 s − 270, Vulcan 0.6 s − 1625, Banth laser 7.5 s − 6000.
+- Examples (as seconds per shot, damage): Armada fighter 0.9 s − 125 damage air, Peewee 0.1 s − 9, Hammer 1.7 s − 104, Bulldog 1.1 s − 270, Vulcan 0.6 s − 1625, Banth laser 7.5 s − 6000; Rocketeer: 0.26 shots/s, 157 damage/shot (41 damage/s).
 
 ### 9.6 Search, features, recent items, tooltips
 - `Units:textInput/key/setFocus`: search field as the top filter row (`searchOn`, can be switched off with `search = false`); `Units:list()` returns the hits across all factions/groups/tech tiers when `query` is not empty (all words must appear in `M.unitSearchText(name)` = code, human name and description); `override` replaces the list (recent items). `filterRowCount()` counts the search row. A host with its own search field (the Level Editor) sets `query` directly and drops the grid's search rects.

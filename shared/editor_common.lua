@@ -1703,6 +1703,38 @@ function M.newUnits(o)
 		return out
 	end
 
+	-- Is there no unit at all behind a filter button? faction: in none of the groups and tech levels; group: in none of the tech levels (of the chosen faction);
+	-- tech: none in the chosen group (of the chosen faction)
+	function u:emptyButton(kind, value)
+		if not self.cache then
+			self.cache = M.buildUnitCache()
+		end
+		local function count(fac, grp, tl)
+			local list = self.cache[fac] and self.cache[fac][grp] and self.cache[fac][grp][tl]
+			return list and #list or 0
+		end
+		if kind == "faction" then
+			for _, g in ipairs(self.groups) do
+				for tl = 1, 3 do
+					if count(value, g[1], tl) > 0 then
+						return false
+					end
+				end
+			end
+			return true
+		elseif kind == "group" then
+			for tl = 1, 3 do
+				if count(self.faction, value, tl) > 0 then
+					return false
+				end
+			end
+			return true
+		elseif kind == "tech" then
+			return count(self.faction, self.group, value) == 0
+		end
+		return false
+	end
+
 	-- Buttons for faction/group/tech; top = top edge of the first row, hb = height of the buttons
 	function u:filterRects(x1, x2, top, hb)
 		local rects = {}
@@ -1718,8 +1750,13 @@ function M.newUnits(o)
 				if rs then
 					banned = rs.allBanned(self:namesOf(kind, it[1]))
 				end
+				local tint = banned and { 0.45, 0.12, 0.12 } or nil
+				if not tint and self:emptyButton(kind, it[1]) then
+					-- nothing behind this button: slightly red (lighter when it is the chosen one)
+					tint = (it[1] == active) and { 0.8, 0.55, 0.55 } or { 0.38, 0.17, 0.17 }
+				end
 				rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = t - hb, y1 = t, kind = kind, value = it[1], label = it[2], active = (it[1] == active),
-					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil, tint = banned and { 0.45, 0.12, 0.12 } or nil,
+					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil, tint = tint,
 					reserve = rs and (hb * 0.62 + 6) or nil }
 				if rs then
 					-- X in the right end of the button: forbids everything of it (the player cannot build it in the game)
@@ -1927,6 +1964,7 @@ function M.newUnits(o)
 		end
 		-- Line 1: name (code), line 2: description, line 3: metal and energy cost
 		local e = hoverIdx and list[hoverIdx]
+		local bottomY = 152 -- lowest info line (the hint stays below it)
 		if e then
 			local size = M.PREVIEW_SIZE * S
 			local _, uy = self:geom(rect, hoverIdx)
@@ -1940,11 +1978,6 @@ function M.newUnits(o)
 			if self.restrict and self.restrict.isBanned(e.name) then
 				title = title .. "  - forbidden"
 			end
-			if shot > 0 then
-				-- Seconds per shot and damage per projectile: meaningful even for slowly reloading, strong weapons
-				local secs = (sps > 0) and (1 / sps) or 0
-				title = title .. string.format(" (%s s/shot - %d damage%s)", fmtRate(secs), shot, isAA and " air" or "")
-			end
 			gl.Text(title, cx, rect.y0 - 40 * S, 29 * S, "co")
 			local desc = tostring(ud.translatedTooltip or ud.tooltip or "")
 			local size = 24 * S
@@ -1953,7 +1986,19 @@ function M.newUnits(o)
 				desc = desc:sub(1, perLine - 1) .. "~"
 			end
 			gl.Text(desc, cx, rect.y0 - 78 * S, size, "co")
+			-- Line 3: what it costs to build; line 4, for a unit that shoots: shots per second, damage per shot and (in brackets) damage per second
 			gl.Text(string.format("Metal %d   Energy %d", ud.metalCost or 0, ud.energyCost or 0), cx, rect.y0 - 116 * S, 26 * S, "co")
+			local lastY = 116
+			if shot > 0 then
+				local weapon = string.format("%s shots/s   %d damage/shot (%s damage/s)%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   air" or "")
+				local wsize = 26 * S
+				local wmax = (rect.x2 - rect.x1) / (#weapon * 0.5) -- a long line gets a smaller font so that it fits into the menu
+				if wsize > wmax then
+					wsize = wmax
+				end
+				gl.Text(weapon, cx, rect.y0 - 152 * S, wsize, "co")
+				lastY = 152
+			end
 			if isBuildingDef(ud) then
 				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
 				local bd, br, sd, sr = M.explosionInfo(e.id)
@@ -1962,12 +2007,14 @@ function M.newUnits(o)
 					if sd > 0 and (sd ~= bd or sr ~= br) then
 						t = t .. string.format("  |  Self-destruct %d, radius %d", sd, sr)
 					end
-					gl.Text(t, cx, rect.y0 - 152 * S, 22 * S, "co")
+					lastY = lastY + 36
+					bottomY = lastY
+					gl.Text(t, cx, rect.y0 - lastY * S, 22 * S, "co")
 				end
 			end
 		end
 		if hint then
-			gl.Text(hint, cx, rect.y0 - 190 * S, 25 * S, "co")
+			gl.Text(hint, cx, rect.y0 - (bottomY + 38) * S, 25 * S, "co")
 		end
 	end
 
