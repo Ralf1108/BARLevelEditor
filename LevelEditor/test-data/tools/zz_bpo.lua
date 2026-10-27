@@ -4,7 +4,11 @@ local function chk(ok, msg) log((ok and "PASS " or "FAIL ") .. msg) end
 local function W() return WG.BluePrinterWidget end
 local steps, done = {}, {}
 local function at(f, fn) steps[#steps + 1] = { f = f, fn = fn } end
-local cx, cy, cz, bx, bz
+local cx, cy, cz, bx, bz, sx2, sz2
+local function giveAt(x, z)
+	local sx, sy = Spring.WorldToScreenCoords(x, Spring.GetGroundHeight(x, z), z)
+	Spring.WarpMouse(sx, sy)
+end
 local function spot(name, x, z)
 	local id = UnitDefNames[name].id
 	for r = 0, 600, 48 do for a = 0, 7 do
@@ -56,8 +60,28 @@ at(40, function()
 	local nu, _, bl = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, cx + 4, cz + 4)
 	log("on top of the commander: new=" .. tostring(nu) .. " left out=" .. tostring(bl) .. " (info)")
 end)
-at(60, function() Spring.SendCommands("screenshot png") end)
-at(70, function() Spring.SendCommands("quitforce") end)
+at(45, function()
+	-- the commander builds a windmill on the spot of the old plan and on a second spot that a blueprint was placed on
+	local x2, z2 = spot("armsolar", bx - 150, bz + 120)
+	W():DebugAdd("armsolar", x2, z2, 0)
+	W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, x2, z2)
+	sx2, sz2 = x2, z2
+	local c = Spring.GetTeamUnits(Spring.GetMyTeamID())[1]
+	local w = UnitDefNames.armwin.id
+	Spring.GiveOrderToUnit(c, -w, { bx, Spring.GetGroundHeight(bx, bz), bz, 0 }, {})
+	Spring.GiveOrderToUnit(c, -w, { x2, Spring.GetGroundHeight(x2, z2), z2, 0 }, { "shift" })
+end)
+at(500, function()
+	chk(not oldPlanThere(), "a plan with a building built on top of it is removed from the queue")
+	Spring.SendCommands("bp_undo")
+end)
+at(520, function()
+	local n = 0
+	for _, p in ipairs(W():DebugState().plans) do if math.abs(p.x - sx2) < 20 and math.abs(p.z - sz2) < 20 then n = n + 1 end end
+	chk(n == 0, "Undo does not bring back a plan with a building on it: plans left on the second spot " .. n)
+	Spring.SendCommands("screenshot png")
+end)
+at(540, function() Spring.SendCommands("quitforce") end)
 function widget:Update()
 	local f0 = Spring.GetGameFrame()
 	for i, s in ipairs(steps) do

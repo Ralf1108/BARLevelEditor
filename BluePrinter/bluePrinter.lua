@@ -245,6 +245,26 @@ local function footHalf(def, f)
 	return hx, hz
 end
 
+-- Does another building (not the one this plan is for) stand on the spot of the plan? Then the plan makes no sense any more.
+local function buildingOn(s)
+	if s.done or testBuild(UnitDefs[s.def], s.x, s.y, s.z, s.f) ~= 0 then
+		return false
+	end
+	local hx, hz = footHalf(s.def, s.f)
+	for _, uid in ipairs(Spring.GetUnitsInCylinder(s.x, s.z, math.max(hx, hz) + 24) or {}) do
+		local ud = UnitDefs[Spring.GetUnitDefID(uid)]
+		if ud and (ud.isBuilding or not ud.canMove) then
+			local ux, _, uz = Spring.GetUnitPosition(uid)
+			local ox, oz = footHalf(ud.id, 0)
+			local own = ud.id == s.def and math.abs(ux - s.x) < 24 and math.abs(uz - s.z) < 24
+			if not own and math.abs(ux - s.x) < hx + ox - 2 and math.abs(uz - s.z) < hz + oz - 2 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 -- A plan goes away (Undo, remove, Clear all): the builder that had it drops its build order (the rest of its queue stays), and a building that
 -- was already started is reclaimed (otherwise it stays as a half-built building without a plan)
 local function dropPlan(s)
@@ -444,12 +464,17 @@ local function undoLast()
 	sites = out
 	local back = batchReplaced[last]
 	if back then
+		local gone = 0
 		batchReplaced[last] = nil
 		for i = #back, 1, -1 do
 			local it = back[i]
-			table.insert(sites, math.min(it.index, #sites + 1), it.site)
+			if buildingOn(it.site) then
+				gone = gone + 1 -- a building was built there in the meantime
+			else
+				table.insert(sites, math.min(it.index, #sites + 1), it.site)
+			end
 		end
-		say(removed .. " plans undone, " .. #back .. " plans below are back in the queue")
+		say(removed .. " plans undone, " .. (#back - gone) .. " plans below are back in the queue" .. (gone > 0 and (", " .. gone .. " dropped: a building stands there") or ""))
 		return
 	end
 	say(removed .. " plans undone")
@@ -511,13 +536,17 @@ local function checkDone(maxChecks)
 	if n == 0 then
 		return
 	end
+	local gone
 	for _ = 1, math.min(maxChecks, n) do
 		if checkCursor > n then
 			checkCursor = 1
 		end
 		local s = sites[checkCursor]
 		checkCursor = checkCursor + 1
-		if s and not s.done then
+		if s and not s.done and not s.claim and buildingOn(s) then
+			gone = gone or {}
+			gone[s] = true
+		elseif s and not s.done then
 			local ids = Spring.GetUnitsInCylinder(s.x, s.z, 24, team) or {}
 			for _, uid in ipairs(ids) do
 				if Spring.GetUnitDefID(uid) == s.def then
@@ -533,6 +562,19 @@ local function checkDone(maxChecks)
 				end
 			end
 		end
+	end
+	if gone then
+		local keep, k = {}, 0
+		for _, s in ipairs(sites) do
+			if gone[s] then
+				selected[s] = nil
+				k = k + 1
+			else
+				keep[#keep + 1] = s
+			end
+		end
+		sites = keep
+		say(k .. " plans removed: a building stands there")
 	end
 end
 
