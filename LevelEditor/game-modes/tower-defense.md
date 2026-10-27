@@ -41,6 +41,7 @@ Waves of enemy land units walk from a spawn point along a route to a goal. The p
 - **Economy** on: extractors, power plants and storage are allowed
 - **Fog of war** on: radars are allowed, the map is hidden
 - The list is the same as in the Place menu
+- The rule (towers, economy, radars) holds for every human team of the player's alliance, e.g. all players of a LAN game
 
 ## Test and play
 

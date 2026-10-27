@@ -127,6 +127,30 @@ local function pool(facs, kinds, techs)
 	return out
 end
 
+-- The teams the build rule holds for: every human team of the player's ally team (several humans of a LAN game, Copilots included)
+local function playerTeams(cfg)
+	local set = {}
+	local ally = select(6, Spring.GetTeamInfo(cfg.player, false))
+	for _, team in ipairs(Spring.GetTeamList(ally) or {}) do
+		local isAI = select(4, Spring.GetTeamInfo(team, false))
+		if not isAI or team == cfg.player then
+			set[team] = true
+		end
+	end
+	return set
+end
+
+-- The unit a build order builds (also an order inserted into the queue: CMD.INSERT { position, command, options, ... }); nil for other orders
+local function builtDef(cmdID, cmdParams)
+	if cmdID < 0 then
+		return -cmdID
+	end
+	if cmdID == CMD.INSERT and cmdParams and (tonumber(cmdParams[2]) or 0) < 0 then
+		return -cmdParams[2]
+	end
+	return nil
+end
+
 local function publish()
 	if not td then
 		Spring.SetGameRulesParam("tdState", "")
@@ -177,7 +201,8 @@ local function start(cfg)
 		Spring.SetGlobalLos(ally, not cfg.fog)
 	end
 	local now = Spring.GetGameFrame()
-	td = { resFrame = (EDITOR_MODE and cfg.metal and cfg.energy) and now + 3 or nil, cfg = cfg, state = "running", wave = 0, leaked = 0, killed = 0, queue = {}, nextWave = now + cfg.waves[1].gap * FPS, nextSpawn = 0 }
+	td = { resFrame = (EDITOR_MODE and cfg.metal and cfg.energy) and now + 3 or nil, cfg = cfg, state = "running", wave = 0, leaked = 0, killed = 0, queue = {}, nextWave = now + cfg.waves[1].gap * FPS, nextSpawn = 0,
+		teams = playerTeams(cfg) }
 	publish()
 	say(string.format("Started: %d waves, the first one in %d s, %d enemies may get through.", #cfg.waves, cfg.waves[1].gap, cfg.leaks))
 end
@@ -315,23 +340,33 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 	end
 end
 
--- Build orders of the player that are not allowed are refused while the game runs: the restriction to towers (and economy; the units
+local MESSAGE_GAP = 5 * FPS -- frames between two messages of the same unit type to the same team
+local lastMessage = {} -- team -> unitDefID -> frame of the last message
+
+-- Build orders of the players that are not allowed are refused while the game runs: the restriction to towers (and economy; the units
 -- that are forbidden in the level are refused by unit_restrictions.lua, the indestructible buildings are protected by unit_indestructible.lua).
--- Units from factories are not restricted.
+-- Units from factories are not restricted. The message goes only to the team of the order, at most once per unit type every few seconds.
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
-	if not (td and cmdID < 0 and teamID == td.cfg.player) then
+	local defID = td and td.state == "running" and td.teams[teamID] and builtDef(cmdID, cmdParams)
+	if not defID then
 		return true
 	end
-	local cfg, ud = td.cfg, UnitDefs[-cmdID]
+	local cfg, ud = td.cfg, UnitDefs[defID]
 	local why
-	if not ud.canMove then
+	if ud and not ud.canMove then
 		local cls = buildClass(ud)
 		if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy") or (cls == "radar" and cfg.fog)) then
 			why = cls == "radar" and "no radars without fog of war" or (cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built")
 		end
 	end
 	if why then
-		say("Not allowed in this level: " .. (ud.translatedHumanName or ud.name) .. " (" .. why .. ")")
+		local n, seen = Spring.GetGameFrame(), lastMessage[teamID] or {}
+		lastMessage[teamID] = seen
+		if not seen[defID] or n - seen[defID] >= MESSAGE_GAP then
+			seen[defID] = n
+			local text = "[Tower Defense] Not allowed in this level: " .. (ud.translatedHumanName or ud.name) .. " (" .. why .. ")"
+			if Spring.SendMessageToTeam then Spring.SendMessageToTeam(teamID, text) else Spring.Echo(text) end
+		end
 		return false
 	end
 	return true
