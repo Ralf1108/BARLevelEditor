@@ -1,4 +1,4 @@
-function widget:GetInfo() return { name = "zz bpo", desc = "temporary: overlap", layer = 1000001, enabled = true } end
+function widget:GetInfo() return { name = "zz bpo", desc = "temporary: plans on plans and buildings", layer = 1000001, enabled = true } end
 local function log(t) Spring.Echo("zz: " .. t) end
 local function chk(ok, msg) log((ok and "PASS " or "FAIL ") .. msg) end
 local function W() return WG.BluePrinterWidget end
@@ -13,6 +13,12 @@ local function spot(name, x, z)
 		if px > 80 and pz > 80 and Spring.TestBuildOrder(id, px, Spring.GetGroundHeight(px, pz), pz, 0) == 2 then return px, pz end
 	end end
 	return x, z
+end
+local function oldPlanThere()
+	for _, p in ipairs(W():DebugState().plans) do
+		if math.abs(p.x - bx) < 20 and math.abs(p.z - bz) < 20 and not p.grp then return true end
+	end
+	return false
 end
 at(30, function()
 	local c = Spring.GetTeamUnits(Spring.GetMyTeamID())[1]

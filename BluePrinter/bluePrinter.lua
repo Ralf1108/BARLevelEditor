@@ -92,6 +92,7 @@ local buildable = nil -- { [unitDefID] = true }: what the own builders can build
 local factionAuto = true -- Choose the faction by the own builders until you click one yourself
 local sites = {} -- { def, name, x, y, z, f, batch, done, blocked, claim, claimFrame, tries }
 local batchCounter = 0
+local batchReplaced = {} -- [batch] = { { site, index } }: plans that a blueprint was placed on top of; they left the queue and Undo brings them back
 local groupCounter = 0 -- every queued blueprint (one copy) gets its own group number: a click on a plan selects the whole group
 local queueOrder = false -- Queue order (button in the title row): builders take the open plan with the lowest number instead of the nearest
 local selected = {} -- [site] = true: the selected plans (click, Ctrl + drag)
@@ -262,47 +263,6 @@ local function placeable(ud, x, y, z, f)
 	return not planOverlap(ud.id, x, z, f) and testBuild(ud, x, y, z, f) ~= 0
 end
 
--- Queue a blueprint (units) with center (cx, cz) and k quarter turns; returns the number of new plans
-local function addPlan(units, cx, cz, k)
-	batchCounter = batchCounter + 1
-	groupCounter = groupCounter + 1
-	local n, skipped, blocked = 0, 0, 0
-	local list = {}
-	for _, u in ipairs(units) do
-		local ud = UnitDefNames[u.name]
-		if ud and (ud.isBuilding or not ud.canMove) then
-			local dx, dz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
-			local f = (headingToFacing(u.rot) + k) % 4
-			local x, y, z = buildPos(ud, cx + dx, cz + dz, f)
-			if siteExists(ud.id, x, z) then
-				skipped = skipped + 1
-			elseif not placeable(ud, x, y, z, f) then
-				blocked = blocked + 1
-			else
-				list[#list + 1] = { def = ud.id, name = ud.name, x = x, y = y, z = z, f = f, batch = batchCounter, tries = 0, grp = groupCounter }
-			end
-		end
-	end
-	if blocked > 0 then
-		return 0, skipped, blocked -- a blueprint is placed whole or not at all
-	end
-	for _, s in ipairs(list) do
-		sites[#sites + 1] = s
-		n = n + 1
-	end
-	return n, skipped, 0
-end
-
-local function pendingCount()
-	local n = 0
-	for _, s in ipairs(sites) do
-		if not s.done then
-			n = n + 1
-		end
-	end
-	return n
-end
-
 -- A plan goes away (Undo, remove, Clear all): the builder that had it drops its build order (the rest of its queue stays), and a building that
 -- was already started is reclaimed (otherwise it stays as a half-built building without a plan)
 local function dropPlan(s)
@@ -328,6 +288,79 @@ local function dropPlan(s)
 		end
 	end
 	s.claim = nil
+end
+
+-- Queue a blueprint (units) with center (cx, cz) and k quarter turns; returns the number of new plans
+-- Open plans whose footprint lies under the given one
+local function plansUnder(def, x, z, f)
+	local out = {}
+	local hx, hz = footHalf(def, f)
+	for _, s in ipairs(sites) do
+		if not s.done then
+			local ox, oz = footHalf(s.def, s.f)
+			if math.abs(s.x - x) < hx + ox - 2 and math.abs(s.z - z) < hz + oz - 2 then
+				out[#out + 1] = s
+			end
+		end
+	end
+	return out
+end
+
+-- Queue a blueprint copy as ONE step. A building of the blueprint that would lie on a real building or on bad ground is left out (counted as blocked),
+-- the others are placed. Plans that lie below its buildings are replaced: they leave the queue (their builders stop) and the new ones come on top;
+-- Undo brings them back. Returns new, skipped, blocked (left out), replaced.
+local function addPlan(units, cx, cz, k)
+	batchCounter = batchCounter + 1
+	groupCounter = groupCounter + 1
+	local n, skipped, blocked = 0, 0, 0
+	local list, under = {}, {}
+	for _, u in ipairs(units) do
+		local ud = UnitDefNames[u.name]
+		if ud and (ud.isBuilding or not ud.canMove) then
+			local dx, dz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
+			local f = (headingToFacing(u.rot) + k) % 4
+			local x, y, z = buildPos(ud, cx + dx, cz + dz, f)
+			if siteExists(ud.id, x, z) then
+				skipped = skipped + 1 -- the same building is planned there already
+			elseif testBuild(ud, x, y, z, f) == 0 then
+				blocked = blocked + 1
+			else
+				list[#list + 1] = { def = ud.id, name = ud.name, x = x, y = y, z = z, f = f, batch = batchCounter, tries = 0, grp = groupCounter }
+				for _, s in ipairs(plansUnder(ud.id, x, z, f)) do
+					under[s] = true
+				end
+			end
+		end
+	end
+	local removed, keep = {}, {}
+	for idx, s in ipairs(sites) do
+		if under[s] then
+			removed[#removed + 1] = { site = s, index = idx }
+			dropPlan(s)
+			selected[s] = nil
+		else
+			keep[#keep + 1] = s
+		end
+	end
+	if #removed > 0 then
+		sites = keep
+		batchReplaced[batchCounter] = removed
+	end
+	for _, s in ipairs(list) do
+		sites[#sites + 1] = s
+		n = n + 1
+	end
+	return n, skipped, blocked, #removed
+end
+
+local function pendingCount()
+	local n = 0
+	for _, s in ipairs(sites) do
+		if not s.done then
+			n = n + 1
+		end
+	end
+	return n
 end
 
 -- highest batch number of the open plans (0 = none): marks when an operation happened, so that Undo takes back the newest step first
@@ -409,6 +442,15 @@ local function undoLast()
 		end
 	end
 	sites = out
+	local back = batchReplaced[last]
+	if back then
+		batchReplaced[last] = nil
+		for _, it in ipairs(back) do
+			table.insert(sites, math.min(it.index, #sites + 1), it.site)
+		end
+		say(removed .. " plans undone, " .. #back .. " plans below are back in the queue")
+		return
+	end
 	say(removed .. " plans undone")
 end
 
@@ -420,7 +462,7 @@ local function clearPlans()
 		end
 	end
 	sites = {}
-	selected, opStack = {}, {}
+	selected, opStack, batchReplaced = {}, {}, {}
 	checkCursor = 1
 	say(n .. " plans deleted")
 end
@@ -1144,8 +1186,8 @@ local function selCount()
 	return n
 end
 
--- Click on a plan: the whole blueprint copy it belongs to (a single building: just it); single = only this building; add = Shift (toggles)
-local function selectPlan(s, single, add)
+-- single = only this building, otherwise the whole blueprint copy it belongs to; add = Shift (toggles; force = select, do not toggle off)
+local function selectPlan(s, single, add, force)
 	local group = { s }
 	if not single and s.grp then
 		group = {}
@@ -1163,7 +1205,7 @@ local function selectPlan(s, single, add)
 		allIn = allIn and selected[o] == true
 	end
 	for _, o in ipairs(group) do
-		selected[o] = (not (add and allIn)) or nil
+		selected[o] = (force or not (add and allIn)) or nil
 	end
 	say(selCount() .. " plans selected (Del = remove, [ ] = rotate, Page up/down, Home/End = order)")
 end
@@ -1506,12 +1548,10 @@ function widget:MousePress(mx, my, button)
 			if bp and gx and shift then
 				stampDrag = { x = snap16(gx), z = snap16(gz), bp = true } -- Row/rectangle of blueprints
 			elseif bp and gx then
-				local n, skipped, blocked = addPlan(bp.units, snap16(gx), snap16(gz), rot)
-				if blocked > 0 then
-					say(string.format("Not placed: %d of its buildings would lie on another plan, on a building or on bad ground", blocked))
-				else
-					say(string.format("%d plans queued%s", n, skipped > 0 and (" (" .. skipped .. " already present)") or ""))
-				end
+				local n, skipped, blocked, replaced = addPlan(bp.units, snap16(gx), snap16(gz), rot)
+				say(string.format("%d plans queued%s%s%s", n, skipped > 0 and (" (" .. skipped .. " already present)") or "",
+					blocked > 0 and (", " .. blocked .. " left out: a building or bad ground in the way") or "",
+					replaced > 0 and (", " .. replaced .. " plans below replaced (Undo brings them back)") or ""))
 			end
 			return true
 		end
@@ -1564,16 +1604,12 @@ function widget:MouseRelease(mx, my, button)
 		local gx, gz = mouseGround()
 		local bp = stampDrag.bp and LIST[bpGrid.selected]
 		if bp and gx then
-			local total, copies, refused = 0, 0, 0
+			local total, copies, leftOut, replacedAll = 0, 0, 0, 0
 			batchCounter = batchCounter + 1
 			local keep = batchCounter
 			for _, c in ipairs(bpStampList(bp, gx, gz)) do
-				local n, _, blocked = addPlan(bp.units, c.x, c.z, rot)
-				if blocked > 0 then
-					refused = refused + 1
-				else
-					total, copies = total + n, copies + 1
-				end
+				local n, _, blocked, replaced = addPlan(bp.units, c.x, c.z, rot)
+				total, copies, replacedAll, leftOut = total + n, copies + 1, replacedAll + replaced, leftOut + blocked
 			end
 			-- all copies as one step for undo
 			for _, s in ipairs(sites) do
@@ -1581,8 +1617,23 @@ function widget:MouseRelease(mx, my, button)
 					s.batch = keep
 				end
 			end
+			-- the plans replaced by any copy come back together with the whole step
+			local later = {}
+			for b in pairs(batchReplaced) do
+				if b > keep then
+					later[#later + 1] = b
+				end
+			end
+			for _, b in ipairs(later) do
+				batchReplaced[keep] = batchReplaced[keep] or {}
+				for _, it in ipairs(batchReplaced[b]) do
+					table.insert(batchReplaced[keep], it)
+				end
+				batchReplaced[b] = nil
+			end
 			batchCounter = keep
-			say(string.format("%d plans queued (%d x blueprint)%s", total, copies, refused > 0 and (", " .. refused .. " copies not placed: something is in the way") or ""))
+			say(string.format("%d plans queued (%d x blueprint)%s%s", total, copies, leftOut > 0 and (", " .. leftOut .. " left out: a building or bad ground in the way") or "",
+				replacedAll > 0 and (", " .. replacedAll .. " plans below replaced") or ""))
 		elseif ud and gx and not stampDrag.bp then
 			local n, blocked = addMany(ud, stampList(ud, gx, gz), rot % 4)
 			say(string.format("%d plans queued%s", n, blocked > 0 and (", " .. blocked .. " skipped: something is in the way") or ""))
