@@ -560,7 +560,9 @@ function M.newLibrary(o)
 		return true
 	end
 
-	-- Blueprint lines from selected units (positions relative to the center). opts: onlyBuildings, withTeam
+	-- Blueprint lines from selected units (positions relative to the center). opts: onlyBuildings, withTeam (team and neutral flag of the unit),
+	-- withFlags (indestructible = true for a unit marked with FX in the Level Editor) (team and neutral flag of the unit),
+	-- withFlags (indestructible = true for a unit marked with FX in the Level Editor)
 	function lib.linesFromUnits(ids, opts)
 		opts = opts or {}
 		local list, minX, maxX, minZ, maxZ = {}, nil, nil, nil, nil
@@ -580,12 +582,13 @@ function M.newLibrary(o)
 		local lines = {}
 		for _, u in ipairs(list) do
 			lines[#lines + 1] = string.format(
-				"\t\t{ name = '%s', dx = %d, dz = %d, h = %d, rot = %d, team = %d, neutral = %s },",
+				"\t\t{ name = '%s', dx = %d, dz = %d, h = %d, rot = %d, team = %d, neutral = %s%s },",
 				u.name, math.floor(u.x - cx + 0.5), math.floor(u.z - cz + 0.5),
 				math.floor(u.y - Spring.GetGroundHeight(u.x, u.z) + 0.5),
 				Spring.GetUnitHeading(u.id) or 0,
 				opts.withTeam and (Spring.GetUnitTeam(u.id) or 0) or 0,
-				opts.withTeam and tostring(Spring.GetUnitNeutral(u.id)) or "false"
+				opts.withTeam and tostring(Spring.GetUnitNeutral(u.id)) or "false",
+				(opts.withFlags and Spring.GetUnitRulesParam(u.id, "indestructible") == 1) and ", indestructible = true" or ""
 			)
 		end
 		table.sort(lines)

@@ -69,7 +69,7 @@ local function selectedUnits()
 	return Spring.GetSelectedUnits()
 end
 local isBpArmed = function() return false end -- set below, as soon as 'bpGrid.armed' is known
-local FACING_NAME = { [0] = "South", [1] = "East", [2] = "North", [3] = "West" }
+local FACING_NAME = Shared.FACING_NAME
 local OUTDIR = "LevelEditor/"
 
 local function say(s)
@@ -502,44 +502,6 @@ end
 -- clicking a tile places it again centered at the mouse pointer. Files: LevelEditorBlueprints/<name>.lua
 local BPDIR = "LevelEditorBlueprints/"
 
-local function blueprintSave(name)
-	local sel = selectedUnits()
-	if #sel == 0 then
-		say("No unit selected. Select units first, then press Create in the blueprint menu")
-		return
-	end
-	local minX, maxX, minZ, maxZ
-	local list = {}
-	for _, id in ipairs(sel) do
-		local x, y, z = Spring.GetUnitPosition(id)
-		local udef = UnitDefs[Spring.GetUnitDefID(id)]
-		if x and udef then
-			list[#list + 1] = { id = id, x = x, y = y, z = z, name = udef.name }
-			minX, maxX = math.min(minX or x, x), math.max(maxX or x, x)
-			minZ, maxZ = math.min(minZ or z, z), math.max(maxZ or z, z)
-		end
-	end
-	local cx, cz = (minX + maxX) / 2, (minZ + maxZ) / 2
-	local lines = {}
-	for _, u in ipairs(list) do
-		lines[#lines + 1] = string.format(
-			"\t\t{ name = '%s', dx = %d, dz = %d, h = %d, rot = %d, team = %d, neutral = %s%s },",
-			u.name, math.floor(u.x - cx + 0.5), math.floor(u.z - cz + 0.5), math.floor(u.y - Spring.GetGroundHeight(u.x, u.z) + 0.5),
-			Spring.GetUnitHeading(u.id), Spring.GetUnitTeam(u.id), tostring(Spring.GetUnitNeutral(u.id)),
-			Spring.GetUnitRulesParam(u.id, "indestructible") == 1 and ", indestructible = true" or ""
-		)
-	end
-	table.sort(lines)
-	local ok, err = Shared.writeFile(BPDIR .. name .. ".lua", "-- Level Editor Blueprint: positions relative to the center of the selection (dx, dz), h = height above ground\n"
-		.. "return {\n\tblueprint = {\n" .. table.concat(lines, "\n") .. "\n\t},\n}\n")
-	if not ok then
-		say("Saving failed: " .. tostring(err) .. " (folder LevelEditorBlueprints missing? run install_editor.bat again)")
-		return
-	end
-	say(string.format("Blueprint '%s' saved: %d units (%s%s.lua)", name, #lines, BPDIR, name))
-	widget:BlueprintSaved(name)
-end
-
 -- Reads the text of a blueprint file (testable without the game)
 function widget:ParseBlueprint(text)
 	return Shared.parseBlueprint(text)
@@ -554,6 +516,21 @@ cfg.steps.grid = { 1, 4, 8, 16, 32, 64 } -- grid size in Elmo (1 = free)
 cfg.steps.unitLimit = { 500, 1000, 2000, 4000, 8000, 16000, 32000 } -- unit limit written into the level for the scenario
 cfg.transient.unitLimit = true -- it belongs to the level (saved in the level file), not to the settings: a new level starts with 32000
 local lib = Shared.newLibrary({ dirs = { BPDIR }, say = say, writeIndex = true })
+-- Create: the selected units as a new blueprint, with team, neutral flag and the indestructible flag (lib.linesFromUnits and lib:write of the shared library)
+local function blueprintSave(name)
+	local lines = lib.linesFromUnits(selectedUnits(), { withTeam = true, withFlags = true })
+	if not lines then
+		say("No unit selected. Select units first, then press Create in the blueprint menu")
+		return
+	end
+	local ok, err = lib:write(name, lines, "Level Editor Blueprint: positions relative to the center of the selection (dx, dz), h = height above ground")
+	if not ok then
+		say("Saving failed: " .. tostring(err) .. " (folder LevelEditorBlueprints missing? run install_editor.bat again)")
+		return
+	end
+	say(string.format("Blueprint '%s' saved: %d units (%s%s.lua)", name, #lines, BPDIR, name))
+	widget:BlueprintSaved(name)
+end
 local BP_LIST = lib.list -- { name, units, count, thumb, dir }
 local ghost = Shared.newGhost({ owner = "Level Editor", say = say, wg = function() return WG end })
 local menuOpen = false

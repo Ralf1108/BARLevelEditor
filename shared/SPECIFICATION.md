@@ -87,7 +87,7 @@ Options: `dirs` (list of folders with `/` at the end), `say`, `buildingsOnly`, `
 - `move(from, to)`: moves in the list and saves the order.
 - `nextName()`: next free name `bp_001`, `bp_002` … in the first folder.
 - `write(name, lines, header)`: writes the file into the first folder (creates the folder), with a comment header.
-- `linesFromUnits(ids, opts)`: creates the lines from selected units, position relative to the center of the selection, sorted. Options `onlyBuildings`, `withTeam` (team and neutral from the unit, otherwise `team = 0, neutral = false`).
+- `linesFromUnits(ids, opts)`: creates the lines from selected units, position relative to the center of the selection, sorted. Options `onlyBuildings`, `withTeam` (team and neutral from the unit, otherwise `team = 0, neutral = false`), `withFlags` (`indestructible = true` for a unit marked with FX). The Level Editor's Create uses it with `withTeam` and `withFlags` together with `lib:write` (no own copy any more), the BluePrinter with `onlyBuildings`.
 
 ### 7.4 Preview picture (thumbnail)
 - Per blueprint, points with a relative position (0 to 1), size and unit ID are computed; size = half the footprint of the building (at least 10), otherwise radius.
