@@ -14,7 +14,7 @@
 - `1` new level, `2` load, `0` continue
 - `3` build a scenario package, `4` start a scenario, `5` rebuild a package
 - `6` play a level at once (single player, host, join, split screen)
-- `7` Scavenger/Raptor units on or off, `8` clean the cache
+- `7` Scavenger/Raptor units on or off, `8` clean up (own levels and scenarios into a trash folder, what came from other players)
 
 ## Controls
 

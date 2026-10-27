@@ -540,6 +540,113 @@ function Set-Autoload([string]$name) {
     [IO.File]::WriteAllText($autoloadFile, $name, (New-Object Text.UTF8Encoding($false)))
 }
 
+# ---------------------------------------------------------------- Clean up (key 8)
+# What can be removed: own levels and own built scenarios (they go into a _trash folder next to them, nothing is deleted for good), and what came from
+# other players or was made for them (scenarios and maps in the cache %LOCALAPPDATA%\BAR-Scenario, versions of the extra game "Level Editor Scenarios"
+# that are not the editor's own one): those are deleted, they are fetched again when needed. The maps of BAR itself (data\maps) are never offered.
+function Get-CleanItems {
+    $items = @()
+    function Add-Item([string]$kind, [string]$label, [string[]]$paths, [bool]$trash, $time) {
+        $size = [long]0
+        foreach ($p in $paths) { if (Test-Path $p) { $it = Get-Item $p -Force; $size += $(if ($it.PSIsContainer) { Get-DirSize $p } else { $it.Length }) } }
+        $script:cleanItems += [pscustomobject]@{ Kind = $kind; Label = $label; Paths = $paths; Trash = $trash; Size = $size; Time = $time; Marked = $false }
+    }
+    $script:cleanItems = @()
+    if (Test-Path $levelsDir) {
+        foreach ($f in @(Get-ChildItem $levelsDir -Filter '*.lua' -File | Where-Object { -not $_.Name.StartsWith('_') } | Sort-Object Name)) {
+            Add-Item 'Level' $f.BaseName @($f.FullName) $true $f.LastWriteTime
+        }
+    }
+    $scDir = Join-Path $root 'scenario\scenarios'
+    if (Test-Path $scDir) {
+        foreach ($d in @(Get-ChildItem $scDir -Directory | Where-Object { -not $_.Name.StartsWith('_') } | Sort-Object Name)) {
+            Add-Item 'Scenario' $d.Name @($d.FullName, (Join-Path $scDir ($d.Name + '.zip'))) $true $d.LastWriteTime
+        }
+    }
+    $cacheRoot = Get-BundleCacheRoot
+    foreach ($d in @(Get-ChildItem $cacheRoot -Directory -ErrorAction SilentlyContinue | Where-Object { Test-BundleId $_.Name } | Sort-Object LastWriteTime -Descending)) {
+        $txt = Join-Path $d.FullName 'scenario.txt'
+        $map = if (Test-Path $txt) { [regex]::Match([IO.File]::ReadAllText($txt), '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim() } else { '?' }
+        Add-Item 'From a host' ('scenario on {0} ({1})' -f $map, $d.Name.Substring(0, 8)) @($d.FullName) $false $d.LastWriteTime
+    }
+    foreach ($m in @(Get-ChildItem (Join-Path (Get-MapExtraRoot) 'maps') -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -eq '.sd7' -or $_.Extension -eq '.sdz' } | Sort-Object Name)) {
+        Add-Item 'From a host' ('map ' + $m.Name) @($m.FullName, ($m.FullName + '.mapinfo')) $false $m.LastWriteTime
+    }
+    $ptr = Join-Path $Data 'games\LevelEditorScenarios.txt'
+    $own = if (Test-Path $ptr) { @(Get-Content $ptr)[0] } else { '' }
+    foreach ($g in @(Get-ChildItem (Join-Path $Data 'games') -Filter 'LevelEditorScenarios_*.sdz' -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne $own })) {
+        Add-Item 'Other version' ('extra game ' + $g.Name + ' (from a host or an older editor)') @($g.FullName) $false $g.LastWriteTime
+    }
+    return $script:cleanItems
+}
+
+# Removes one item: own files into the _trash folder next to them (with the time in the name when the name is taken), the rest is deleted
+function Remove-CleanItem($item) {
+    foreach ($p in $item.Paths) {
+        if (-not (Test-Path $p)) { continue }
+        if ($item.Trash) {
+            $trash = Join-Path (Split-Path $p -Parent) '_trash'
+            New-Item -ItemType Directory -Force $trash | Out-Null
+            $dest = Join-Path $trash (Split-Path $p -Leaf)
+            if (Test-Path $dest) { $dest = Join-Path $trash ((Get-Date -Format 'yyyyMMdd_HHmmss') + '_' + (Split-Path $p -Leaf)) }
+            Move-Item $p $dest -Force
+        } else {
+            Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# The list of key 8: arrow keys move, Space marks, A marks all of the kind under the cursor, Enter removes the marked ones (or the one under the cursor)
+# after a question, Esc goes back
+function Invoke-CleanMenu {
+    $items = @(Get-CleanItems)
+    $cur = 0; $msg = ''
+    while ($true) {
+        Clear-Host
+        Write-Host 'Clean up' -ForegroundColor Cyan
+        Write-Host 'Own levels and scenarios go into a _trash folder next to them; what came from other players is deleted (it is fetched again when needed).' -ForegroundColor DarkGray
+        Write-Host 'Up/Down move, Space marks, A marks all of this kind, Enter removes the marked ones (or the one under the cursor), Esc back' -ForegroundColor DarkGray
+        Write-Host ''
+        if ($items.Count -eq 0) { Write-Host 'Nothing to clean up.'; Write-Host ''; Write-Host 'Continue with any key.'; [void][Console]::ReadKey($true); return }
+        $h = [Math]::Max(5, [Console]::WindowHeight - 9)
+        $top = [Math]::Max(0, [Math]::Min($cur - [int]($h / 2), $items.Count - $h))
+        for ($i = $top; $i -lt [Math]::Min($items.Count, $top + $h); $i++) {
+            $it = $items[$i]
+            $line = '{0} [{1}] {2,-14} {3}   {4} MB   {5}' -f $(if ($i -eq $cur) { '>' } else { ' ' }), $(if ($it.Marked) { 'x' } else { ' ' }), $it.Kind, $it.Label, [Math]::Round($it.Size / 1MB, 1), $it.Time.ToString('yyyy-MM-dd')
+            $w = [Console]::WindowWidth - 1
+            if ($line.Length -gt $w) { $line = $line.Substring(0, $w) }
+            if ($i -eq $cur) { Write-Host $line -ForegroundColor Black -BackgroundColor Gray } else { Write-Host $line }
+        }
+        Write-Host ''
+        $marked = @($items | Where-Object { $_.Marked })
+        Write-Host ('{0} of {1} marked, {2} MB' -f $marked.Count, $items.Count, [Math]::Round((($marked | Measure-Object -Property Size -Sum).Sum) / 1MB, 1)) -ForegroundColor DarkGray
+        if ($msg) { Write-Host $msg -ForegroundColor Green; $msg = '' }
+        $k = [Console]::ReadKey($true)
+        switch ($k.Key) {
+            'UpArrow'   { if ($cur -gt 0) { $cur-- } }
+            'DownArrow' { if ($cur -lt $items.Count - 1) { $cur++ } }
+            'PageUp'    { $cur = [Math]::Max(0, $cur - $h) }
+            'PageDown'  { $cur = [Math]::Min($items.Count - 1, $cur + $h) }
+            'Spacebar'  { $items[$cur].Marked = -not $items[$cur].Marked; if ($cur -lt $items.Count - 1) { $cur++ } }
+            'A'         { $kind = $items[$cur].Kind; $all = @($items | Where-Object { $_.Kind -eq $kind -and -not $_.Marked }).Count -gt 0; foreach ($it in $items) { if ($it.Kind -eq $kind) { $it.Marked = $all } } }
+            'Escape'    { return }
+            'Enter' {
+                $todo = @($items | Where-Object { $_.Marked })
+                if ($todo.Count -eq 0) { $todo = @($items[$cur]) }
+                Write-Host ''
+                Write-Host ('Remove {0} item(s)? Own levels and scenarios go into _trash, the rest is deleted. (y/n)' -f $todo.Count) -ForegroundColor Yellow
+                $a = [Console]::ReadKey($true)
+                if ($a.KeyChar -eq 'y' -or $a.KeyChar -eq 'j') {
+                    foreach ($it in $todo) { Remove-CleanItem $it }
+                    $msg = '{0} item(s) removed.' -f $todo.Count
+                    $items = @(Get-CleanItems)
+                    $cur = [Math]::Min($cur, [Math]::Max(0, $items.Count - 1))
+                }
+            }
+        }
+    }
+}
+
 # ---------------------------------------------------------------- main menu
 while ($true) {
     $global:LASTEXITCODE = 0
@@ -560,7 +667,7 @@ while ($true) {
         @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) },
         @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' },
         @{ Key = '7'; Mode = 9; On = $true; Text = $(if (Get-ScavSetting) { 'Scavenger and Raptor units in the Place menu: ON, loading takes about 10 seconds longer (Enter = switch off)' } else { 'Scavenger and Raptor units in the Place menu: off, when ON loading takes about 10 seconds longer (Enter = switch on)' }) }
-        @{ Key = '8'; Mode = 8; On = ($cacheInfo.Bytes -gt 0); Text = $(if ($cacheInfo.Bytes -gt 0) { 'Clean the cache (scenarios, maps and updates that came from other players: {0} MB, {1} maps; kept in %LOCALAPPDATA%\BAR-Scenario)' -f [Math]::Round($cacheInfo.Bytes / 1MB), $cacheInfo.Maps } else { 'Clean the cache (scenarios, maps and updates that came from other players: empty)' }) }
+        @{ Key = '8'; Mode = 8; On = $true; Text = ('Clean up: own levels and scenarios (into _trash), scenarios and maps from other players ({0} MB in %LOCALAPPDATA%\BAR-Scenario)' -f [Math]::Round($cacheInfo.Bytes / 1MB)) }
     )
     $sel = 0
     while (-not $menu[$sel].On) { $sel++ }
@@ -655,19 +762,8 @@ while ($true) {
     }
 
     if ($mode -eq 8) {
-        # Clean the cache: what hosts gave (scenarios, maps) and unpacked updates; nothing of the game or of the editor, no levels, no backups of updates
-        Clear-Host
-        Write-Host ('The cache holds {0} MB: {1} scenarios and {2} maps that came from other computers (or were made for them).' -f [Math]::Round($cacheInfo.Bytes / 1MB), $cacheInfo.Bundles, $cacheInfo.Maps)
-        Write-Host 'Old things go by themselves (scenarios after 30 days, maps after 60 days or beyond 3 GB). Whatever is needed again is fetched again from the host.'
-        Write-Host 'The folder: ' (Get-BundleCacheRoot)
-        Write-Host ''
-        Write-Host 'Clean it now? (y/n)'
-        $k = [Console]::ReadKey($true)
-        if ($k.KeyChar -eq 'y' -or $k.KeyChar -eq 'j') {
-            $freed = Clear-BundleCache
-            Write-Host ('Done: {0} MB freed.' -f [Math]::Round($freed / 1MB)) -ForegroundColor Green
-            Write-Host 'Continue with any key.'; [void][Console]::ReadKey($true)
-        }
+        # Clean up: a list of own levels and scenarios (into _trash) and of what other players gave (deleted); nothing of the game itself
+        Invoke-CleanMenu
         continue
     }
 

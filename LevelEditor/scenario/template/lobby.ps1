@@ -194,13 +194,6 @@ function Remove-OldCache {
     return $script:dropped
 }
 
-# the menu's "clean the cache": everything that came from hosts goes (the scenarios are made again from the levels or fetched again, the maps fetched again)
-function Clear-BundleCache {
-    $freed = (Get-CacheInfo).Bytes
-    foreach ($d in @((Get-BundleCacheRoot), (Get-UpdateCacheRoot))) { if (Test-Path $d) { Get-ChildItem $d -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue } }
-    return $freed
-}
-
 # ---------------------------------------------------------------- The map from the host
 $script:MapMaxBytes = 1GB
 # an extra data folder of the engine (SPRING_DATADIR; the maps are in maps inside): maps from hosts stay there and the data folder of the player is not touched
