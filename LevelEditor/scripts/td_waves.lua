@@ -33,6 +33,9 @@ local FPS = 30
 local SPAWN_INTERVAL = 12 -- frames between two units of a wave (they walk off one after the other)
 local GOAL_RADIUS = 120 -- a unit this close to the goal got through
 local MAX_UNITS = 600 -- of all waves at the same time
+local STUCK_FRAMES = 30 * 30 -- a unit that has moved less than STUCK_DISTANCE in this time is stuck: it gets its route again
+local STUCK_DISTANCE = 64
+local STUCK_TRIES = 2 -- after this many new routes without moving it is removed (it counts neither as got through nor as killed)
 
 local opt = Spring.GetModOptions().leveleditor
 local EDITOR_MODE = (opt == "1" or opt == 1 or opt == true)
@@ -43,7 +46,7 @@ assert(Rules, "bar_rules.lua missing (run install_editor.bat again)")
 local techLevel, buildClass, hitsGround = Rules.techLevel, Rules.buildClass, Rules.hitsGround
 
 local td = nil -- running game: nil = none
-local alive = {} -- unitID -> { reward factor }
+local alive = {} -- unitID -> { x, z, frame: where it stood at the last check for being stuck, tries: new routes given }
 local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
 local pendingCfg = nil -- configuration waiting for the start
 
@@ -239,6 +242,20 @@ local function launchWave(n)
 	publish()
 end
 
+-- The orders of a wave unit: along the waypoints from number `from` on to the goal; they march on and shoot on the way
+local function giveRoute(id, from)
+	local c = td.cfg
+	local first = true
+	local function go(px, pz)
+		Spring.GiveOrderToUnit(id, CMD.MOVE, { px, Spring.GetGroundHeight(px, pz), pz }, first and 0 or { "shift" })
+		first = false
+	end
+	for i = from, #c.path do
+		go(c.path[i][1], c.path[i][2])
+	end
+	go(c.goal[1], c.goal[2])
+end
+
 local function spawnOne(entry)
 	local c = td.cfg
 	local ang = math.random() * 2 * math.pi
@@ -254,18 +271,41 @@ local function spawnOne(entry)
 			Spring.SetUnitHealth(id, maxHp * entry.hp)
 		end
 	end
-	-- along the waypoints of the path to the goal; they march on and shoot on the way
-	local first = true
-	local function go(px, pz)
-		Spring.GiveOrderToUnit(id, CMD.MOVE, { px, Spring.GetGroundHeight(px, pz), pz }, first and 0 or { "shift" })
-		first = false
-	end
-	for _, p in ipairs(c.path) do
-		go(p[1], p[2])
-	end
-	go(c.goal[1], c.goal[2])
+	giveRoute(id, 1)
 	Spring.SetUnitRulesParam(id, "tdwave", 1, { public = true }) -- the editor does not save these units
-	alive[id] = true
+	alive[id] = { x = x, z = z, frame = Spring.GetGameFrame(), tries = 0 }
+end
+
+-- A unit that has not moved for a while gets its route again (from the nearest waypoint on); after STUCK_TRIES it is removed
+local function checkStuck(n)
+	for id, a in pairs(alive) do
+		if n - a.frame >= STUCK_FRAMES then
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x then
+				if (x - a.x) ^ 2 + (z - a.z) ^ 2 >= STUCK_DISTANCE ^ 2 then
+					a.tries = 0
+				elseif a.tries < STUCK_TRIES then
+					a.tries = a.tries + 1
+					local best, bd = #td.cfg.path + 1, (x - td.cfg.goal[1]) ^ 2 + (z - td.cfg.goal[2]) ^ 2
+					for i, p in ipairs(td.cfg.path) do
+						local d = (x - p[1]) ^ 2 + (z - p[2]) ^ 2
+						if d < bd then
+							best, bd = i, d
+						end
+					end
+					giveRoute(id, best)
+				else
+					alive[id] = nil
+					Spring.DestroyUnit(id, false, true)
+					say("An enemy was stuck and has been removed (it counts neither as got through nor as killed).")
+					publish()
+				end
+				if alive[id] then
+					a.x, a.z, a.frame = x, z, n
+				end
+			end
+		end
+	end
 end
 
 function gadget:GameFrame(n)
@@ -321,6 +361,7 @@ function gadget:GameFrame(n)
 		finish(false)
 		return
 	end
+	checkStuck(n)
 	if not td.nextWave and #td.queue == 0 and next(alive) == nil then
 		finish(true)
 	end

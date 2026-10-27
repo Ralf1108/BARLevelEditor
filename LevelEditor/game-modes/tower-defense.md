@@ -48,5 +48,6 @@ Waves of enemy land units walk from a spawn point along a route to a goal. The p
 - **Start test**: runs the waves; the commander is removed, resources come from the level
 - **Stop** / **Reset**: brings the level back as before
 - Kills pay the unit's cost; all waves beaten = won
+- An enemy that is stuck for 30 seconds gets its route again; after two tries it is removed (it counts neither as through nor as killed), so the level always ends
 - Scenario package (start menu key `3`): waves, route, restrictions and walls are packed
 - The waves run in the gadget `td_waves.lua`
