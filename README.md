@@ -25,7 +25,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 
 1. [Download the repository as a ZIP](https://github.com/Ralf1108/BARLevelEditor/archive/refs/heads/main.zip) and unpack it, or clone it. Keep the folders `LevelEditor` and `shared` next to each other.
 2. Run `LevelEditor\install_editor.bat`. It finds your BAR installation, builds the extra game and creates a desktop shortcut **BAR Level Editor**.
-3. Start the shortcut. The start menu offers: `1` new level (choose a map), `2` load a level, `0` continue where you left off, `3` build a scenario package, `4` start a scenario you built.
+3. Start the shortcut. The start menu offers: `1` new level (choose a map), `2` load a level, `0` continue where you left off, `3` build a scenario package, `4` start a scenario you built, `5` rebuild a scenario package from its level, `6` play a level at once (single player, host, join or split screen, without building a package), `7` switch the Scavenger and Raptor units of the Place menu on or off (on: the start takes about 10 seconds longer), `8` clean the cache of scenarios and maps that came from other players.
 
 After a BAR update or a change of the code nothing has to be done: the start script updates the extra game by itself. `LevelEditor\uninstall_editor.bat` removes everything it installed (your levels and blueprints stay). The editor needs the repository folder to stay where it is.
 
@@ -39,7 +39,7 @@ After a BAR update or a change of the code nothing has to be done: the start scr
 
 ## Quick start
 
-All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD ...) and in the **strip left of the menu** (W, DL, DR, DC, L, R, S, N and the teams). The **?** button shows all keys and controls on screen; every button has a tooltip.
+All buttons are in the **button column at the right edge** (V, O, I, AI, ?, P, G, TD ...) and in the **strip left of the menu** (W, DL, DR, DC, L, R, S, N and the teams). The **?** button shows all keys and controls on screen; every button has a tooltip.
 
 | | |
 |---|---|
@@ -59,10 +59,11 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 | Save a layout | Select units, **P → Blueprints → Create**. |
 | Save the level | **Ctrl+S** (the editor also autosaves when you leave). **O** lists and loads saved levels. |
 | Make a scenario | **I** (information) opens the scenario info; then start menu key **3**. See [Scenario builder](#scenario-builder). |
+| Choose the AI of a team | **AI** shows the teams 0 to 10: a click on a team steps through NullAI, BARb, CircuitAI, the Simple AIs, Scavengers and Raptors. It is saved with the level and applies at the **next start**; a running game cannot change an AI. |
 
 ## Features
 
-- **Place** units of all factions (Armada, Cortex, Legion, and the **Scavengers** and **Raptors**, whose units nobody steers: no AI), features (trees, rocks, wrecks) and blueprints, with a 3D preview at the mouse. The Scavenger and Raptor units are switched on in the start menu (key **7**; they make the start about 10 seconds longer).
+- **Place** units of all factions (Armada, Cortex, Legion, and the **Scavengers** and **Raptors**, whose units nobody steers, unless you give a team the Scavengers or Raptors AI with the **AI** button), features (trees, rocks, wrecks) and blueprints, with a 3D preview at the mouse. The Scavenger and Raptor units are switched on in the start menu (key **7**; they make the start about 10 seconds longer).
 - **One search** over recent items, units, features and blueprints.
 - **Painting, rows and rectangles** with the mouse; **W** decides whether placing overwrites what is in the way.
 - **Blueprints:** save selected units as a tile with a preview and place the layout again anywhere; drag tiles to sort them.
@@ -73,6 +74,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 - **Select and command units of every team:** the editor switches on the cheat and god mode for all teams, so enemies are selected like your own, the game's command menu appears and the right click gives orders.
 - **Restrictions:** one list of what the player may not build, set with small X marks in the Place menu (on units, factions, groups, tech levels), shared with the Tower Defense page, enforced in every mode.
 - **Save and load** levels with Ctrl+S, autosave when you leave.
+- **AI per team:** the button **AI** gives every team its own AI (NullAI, BARb, CircuitAI, CircuitAI easy, SimpleAI, SimpleDefenderAI, SimpleConstructorAI, Scavengers, Raptors). The scenario package and the editor start (team 1) use it; with *Default* a team gets the AI of the scenario.
 - **Scenario builder:** turns a level into a ZIP with a start script, briefing, AI opponents and win condition that others play with their own BAR.
 - **Tower Defense:** walls that guide waves of enemies along a route, rules for what the player may build, a test run in the editor, and export as a scenario.
 - **Capture the Flag:** flag points, collection points for every team and an income in metal, for human against human. It excludes Tower Defense in the same level.
@@ -88,7 +90,7 @@ All buttons are in the **button column at the right edge** (V, O, I, ?, P, G, TD
 A level you built can become a **scenario** that others play with their own, unmodified Beyond All Reason:
 
 1. Build the level (units, buildings, trees, wrecks, a maze ...) and save it with **Ctrl+S**. For a Tower Defense or Capture the Flag scenario set up the **TD**, **CF** or **RF** page first (a level has one of them, not two). Forbidden units (the X marks of the Place menu) are packed too.
-2. Click **I** (information) and fill in the scenario info: title, author, summary, briefing, the role of every team (player, allied AI, enemy AI), the allowed tech levels per team, AI behavior, win condition, start metal and energy, an optional grace period and an ID. It is stored in the level with the next Ctrl+S.
+2. Click **I** (information) and fill in the scenario info: title, author, summary, briefing, the role of every team (player, allied AI, enemy AI), the allowed tech levels per team, AI behavior (for all AI teams; the **AI** button sets it per team), win condition, start metal and energy, an optional grace period and an ID. It is stored in the level with the next Ctrl+S.
 3. Start **BAR Level Editor** again and press **3** (*create a scenario package*), then choose the level. The script then:
    - lists the **values stored in the level**,
    - asks for the **title** (Enter keeps it) and the **name** of the scenario (its ID: Enter takes it, or type another; an existing scenario of that name is only overwritten after a question),
@@ -96,6 +98,10 @@ A level you built can become a **scenario** that others play with their own, unm
 4. Pass the zip on. The other person unpacks it, double-clicks `Start Scenario.bat` and plays with their own BAR (it asks before it downloads a missing map). For several players in the same network the same folder has `Host Game.bat` (one player: a lobby with a box per team in which he distributes the players who join) and `Join Game.bat` (the others only enter the address); the start menu key **4** of the Level Editor also offers a split screen with all games on one computer. Key **4** in the start menu starts a scenario you built yourself.
 
 ![Level Editor, scenario info (button I)](docs/level-editor-scenario.jpg)
+
+The button **AI** (between I and ?) sets the AI per team; the tooltip of a row explains *Default*:
+
+![Level Editor, AI per team (button AI)](docs/level-editor-ai.jpg)
 
 Details are in the [scenario builder readme](LevelEditor/scenario/README.md).
 
