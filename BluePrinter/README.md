@@ -17,7 +17,7 @@ cost and build time apply as usual.
    `shared/editor_common.lua` and `shared/bar_rules.lua` to `data\LuaUI\Include` and creates the junctions `data\LuaUI\Config\BluePrinter` -> `blueprints` and `data\LuaUI\Config\LevelEditorBlueprints` -> blueprints of the Level Editor (BAR only allows user widgets to write under `LuaUI\Config` and to read under `LuaUI`). 
    The folder `shared` must lie next to `BluePrinter`.
 3. In the game switch on "Allow user widgets" in the settings, then switch BluePrinter on in the widget list (F11).
-After a change to `bluePrinter.lua` run the installation again.
+After a change to `bluePrinter.lua` or `shared\editor_common.lua`: the BluePrinter is installed and kept up to date only by its own scripts: `start_blueprinter.bat` and `start_blueprinter_test.bat` update it before every start (the Level Editor does not touch it); otherwise run `install_blueprinter.bat` again after a change. A game that is already running keeps the old files until a new start or `/luaui reload`.
 
 **Removing:** run `uninstall_blueprinter.bat` (it asks first). It removes the widget, the shared code in `data\LuaUI\Include` and the two junctions; the blueprints stay. With `-WithSettings` the settings file `LuaUI\Config\BluePrinterUI.lua` is deleted too, with `-Yes` the confirmation is skipped.
 
@@ -53,6 +53,21 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
   If a builder has several plans nearby, it gets up to four in a row. When all plans are taken,
   it helps with one in progress.
 - Queued plans are kept for the same match (a `/luaui reload` or a rejoin); a new match starts without plans.
+- You set the display (columns/rows) with the **O** button; the menu keeps the width it has with 3 columns, so with **more columns** the pictures get smaller (3 columns = the size as before). Under the 3D preview the info of the building under the mouse pointer is shown (name and code, description, metal and energy with the **Eco time**, damage per second, explosion), the same as in the Level Editor. **Eco time** is how long your **stable** income (metal extractors, converters, generators, builders, the commander; not reclaim or gifts) needs to produce the metal and energy of the building (or of a whole blueprint); it counts the worst case, the stock in your store is not counted, and it shows `-` without income. Every blueprint tile shows it as its fourth line (`Eco 1:25`).
+
+## Queueing single buildings
+At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders; only factions your builders can build for are shown) and the tech tier,
+click a building, then every left click on the map queues one (hold the button and move to paint more, right click ends, `[` and `]` rotate). Buildings that
+your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
+
+## Managing the queued plans
+A left click on a plan in the world selects that building, a **double click** selects the whole blueprint it belongs to (so you can remove it together); **Shift+click** adds or removes, **Ctrl+drag** draws a rectangle. Then **Del** removes the plans from the queue, **[** and **]** rotate them (not the ones already being built), **Page up / Page down** move them one place forward or back in the queue (the numbers in the world change), **Home / End** to the very front or back. **Undo** takes every one of these steps back. A removed plan also stops the builder that had it, and a building that was already started is reclaimed.
+
+A plan that has another building on its spot (also a half-built one) is removed from the queue by itself, and Undo does not bring back such plans.
+
+Whatever you place (**blueprint, single building, row, rectangle or painted stroke**) **on top of other plans replaces them**: the plans below leave the queue and the new blueprint comes on top (Undo brings the old ones back). A building of the blueprint that would lie on a real building (or on bad ground) is simply left out, the rest is placed. Before the blueprint is placed, numbers at its buildings show the order in which it builds.
+
+The button **Q** (Queue order, in the column next to the menu between A and C) decides who builds what first: off (default) = idle builders take the nearest plan, on = they take the plan with the lowest number first. Only with it on the reordering matters. Without auto-build (button **A**) you can select builders and **right click on a plan**: they go there and build it, a plan of a blueprint sends them to build the whole blueprint copy. The commander helps with plans too (button **C**), but stops building and fights when an enemy comes near.
 
 ## Area attack (experimental)
 Spreads the bombs and shots of all selected units evenly over an area. Select bombers, artillery, rocket launchers or nukes and press one of the buttons next to the menu: **XL** (a line), **XR** (a rectangle) or **XC** (a circle; drag from the center outwards). Then drag the shape on the map. Each unit gets its own target inside the shape: the bombers first form up side by side (for the line: beside it, facing it) and, once all are in position, attack at the same moment as a front; artillery and rockets fire at their target. Right click cancels. Also Ctrl+Alt+K (= XL) or `/bp_carpet [line|rect|circle]`.
@@ -62,22 +77,6 @@ Spreads the bombs and shots of all selected units evenly over an area. Select bo
 
 ## Note
 Automatic building may count as automation in some ranked or tournament games. If in doubt, switch auto-build off (button **A**).
-
-## Queueing single buildings
-At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders; only factions your builders can build for are shown) and the tech tier,
-click a building, then every left click on the map queues one (hold the button and move to paint more, right click ends, `[` and `]` rotate). Buildings that
-your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
-The BluePrinter is installed and kept up to date only by its own scripts: `start_blueprinter.bat` and `start_blueprinter_test.bat` update it before every start (the Level Editor does not touch it); otherwise run `install_blueprinter.bat` again after a change. A game that is already running keeps the old files until a new start or `/luaui reload`.
-
-**Managing the queued plans:** a left click on a plan in the world selects that building, a **double click** selects the whole blueprint it belongs to (so you can remove it together); **Shift+click** adds or removes, **Ctrl+drag** draws a rectangle. Then **Del** removes the plans from the queue, **[** and **]** rotate them (not the ones already being built), **Page up / Page down** move them one place forward or back in the queue (the numbers in the world change), **Home / End** to the very front or back. **Undo** takes every one of these steps back. A removed plan also stops the builder that had it, and a building that was already started is reclaimed.
-
-A plan that has another building on its spot (also a half-built one) is removed from the queue by itself, and Undo does not bring back such plans.
-
-Whatever you place (**blueprint, single building, row, rectangle or painted stroke**) **on top of other plans replaces them**: the plans below leave the queue and the new blueprint comes on top (Undo brings the old ones back). A building of the blueprint that would lie on a real building (or on bad ground) is simply left out, the rest is placed. Before the blueprint is placed, numbers at its buildings show the order in which it builds.
-
-The button **Q** (Queue order, in the column next to the menu between A and C) decides who builds what first: off (default) = idle builders take the nearest plan, on = they take the plan with the lowest number first. Only with it on the reordering matters. Without auto-build (button **A**) you can select builders and **right click on a plan**: they go there and build it, a plan of a blueprint sends them to build the whole blueprint copy. The commander helps with plans too (button **C**), but stops building and fights when an enemy comes near.
-
-You set the display (columns/rows) with the **O** button; the menu keeps the width it has with 3 columns, so with **more columns** the pictures get smaller (3 columns = the size as before). Under the 3D preview the info of the building under the mouse pointer is shown (name and code, description, metal and energy with the **Eco time**, damage per second, explosion), the same as in the Level Editor. **Eco time** is how long your **stable** income (metal extractors, converters, generators, builders, the commander; not reclaim or gifts) needs to produce the metal and energy of the building (or of a whole blueprint); it counts the worst case, the stock in your store is not counted, and it shows `-` without income. Every blueprint tile shows it as its fourth line (`Eco 1:25`).
 
 ## Shared code
 The blueprint view (grid, dragging, renaming, trash, settings, 3D preview) comes from `shared/editor_common.lua`
