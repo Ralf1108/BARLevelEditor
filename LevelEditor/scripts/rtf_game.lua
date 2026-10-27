@@ -13,7 +13,7 @@
 --   cats    = four digits 0 | 1 for the kinds of builder that earn points: buildings (nano turrets), ground (bots, vehicles, hovercraft, amphibious),
 --             ships (surface ships and submarines), air (builder aircraft, seaplanes); default "0110": ground and ships
 -- Every feature of the map whose name is pilha_crystal[_color]<1|2|3> is a node (those placed by the editor, but also those of the map).
--- State for the display: game rules parameters rtfState ("", "running", "won by team N"), rtfScore<ally>, rtfRate<ally> (points per second now),
+-- State for the display: game rules parameters rtfState ("", "running", "won by alliance N"), rtfScore<ally>, rtfRate<ally> (points per second now),
 -- rtfTarget, rtfTeams (ally team ids), rtfOut (lost), rtfNodes ("x,z,size,factor in percent/..."), rtfVisible (1/0).
 function gadget:GetInfo()
 	return {
@@ -136,7 +136,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local parts = {}
 		for a in tostring(Spring.GetGameRulesParam("rtfTeams") or ""):gmatch("%d+") do
 			local lost = (("," .. tostring(Spring.GetGameRulesParam("rtfOut") or "") .. ","):find("," .. a .. ",", 1, true)) and " (lost)" or ""
-			parts[#parts + 1] = string.format("Team %s: %d%s (+%.1f/s)%s", a, Spring.GetGameRulesParam("rtfScore" .. a) or 0, target > 0 and ("/" .. target) or "",
+			parts[#parts + 1] = string.format("Alliance %s: %d%s (+%.1f/s)%s", a, Spring.GetGameRulesParam("rtfScore" .. a) or 0, target > 0 and ("/" .. target) or "",
 				Spring.GetGameRulesParam("rtfRate" .. a) or 0, lost)
 		end
 		local text = "Reclaim the Fame   " .. table.concat(parts, "   ")
@@ -252,7 +252,7 @@ end
 
 -- The level is won: every ally team that is not the winner loses (its units blow up)
 local function finish(ally)
-	g.state = "won by team " .. ally
+	g.state = "won by alliance " .. ally
 	for _, a in ipairs(g.teams) do
 		if a ~= ally and not g.out[a] then
 			g.out[a] = true
@@ -260,7 +260,7 @@ local function finish(ally)
 		end
 	end
 	publish()
-	say("Team " .. ally .. " has " .. g.cfg.score .. " points: level won!")
+	say("Alliance " .. ally .. " has " .. g.cfg.score .. " points: level won!")
 	if not EDITOR_MODE then
 		Spring.GameOver({ ally })
 	end

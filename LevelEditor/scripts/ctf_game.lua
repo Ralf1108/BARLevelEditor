@@ -1,6 +1,7 @@
 -- Capture the Flag (synchronized part): flags lie at flag points on the map, units pick them up by getting close, carry them to the
 -- collection point of their team and are paid for it (income per second for every flag that lies at the collection point; a carried or stolen flag pays nothing). The
--- level ends when a team holds the wanted number of flags at the same time. The flags (silver pod of the scavengers) and the collection points (small nano tower) are real,
+-- level ends when an alliance (ally team: the teams that play together) holds the wanted number of flags at the same time. Everything is counted per alliance:
+-- a flag counts at any collection point of the alliance, allied teams do not take each other's flags, and an alliance loses or wins as a whole. The flags (silver pod of the scavengers) and the collection points (small nano tower) are real,
 -- indestructible, neutral units; rings on the ground and the score are drawn by the unsynced part, so a finished scenario needs no widget.
 -- Configuration: from the Level Editor with the message "ctf|start|<payload>" (stop: "ctf|stop"), or from the game option
 -- ctfconfig (same payload as base64url) for a finished scenario. Payload, fields separated by ";":
@@ -12,10 +13,10 @@
 --            (the unit that carries a flag cannot shoot)
 --   speed = top speed of a unit that carries a flag in Elmo per second (a faster unit is slowed down to it until it delivers or loses the flag); 0 = no limit
 --   visible = 1 (default) | 0: the flags are drawn on the whole map and the minimap, also without radar or a unit in sight
--- Own flags: a team whose flags all stay at the collection points of the others has lost, its units blow up (the last team
--- standing wins). A win by the number of flags ends the level the same way: every team that is not on the winner's side loses, its units blow up.
+-- Own flags: an alliance whose flags all stay at the collection points of the others has lost, its units blow up (the last alliance
+-- standing wins). A win by the number of flags ends the level the same way: every alliance that is not the winner loses, its units blow up.
 --   homes  = "team,x,z/team,x,z/..." collection points (several per team: a flag counts at any of them), flags = "team,x,z/..." flag points (team -1: neutral)
--- State for the display: game rules parameters ctfState, ctfScore<team>, ctfTarget, ctfTeams, ctfOut (lost teams), ctfRadius, ctfHomes, ctfSpots,
+-- State for the display: game rules parameters ctfState, ctfScore<ally>, ctfTarget, ctfTeams (the ally teams), ctfOut (lost ally teams), ctfRadius, ctfHomes, ctfSpots,
 -- ctfFlagIds ("unitID:owner,..."; owner -1 = neutral), ctfVisible (1/0).
 function gadget:GetInfo()
 	return {
@@ -141,7 +142,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local parts = {}
 		for t in tostring(Spring.GetGameRulesParam("ctfTeams") or ""):gmatch("%d+") do
 			local lost = (("," .. tostring(Spring.GetGameRulesParam("ctfOut") or "") .. ","):find("," .. t .. ",", 1, true)) and " (lost)" or ""
-			parts[#parts + 1] = string.format("Team %s: %d%s%s", t, Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "", lost)
+			parts[#parts + 1] = string.format("Alliance %s: %d%s%s", t, Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "", lost)
 		end
 		local text = "Capture the Flag   " .. table.concat(parts, "   ")
 		if state ~= "running" then
@@ -196,16 +197,10 @@ local function parse(payload)
 	local cfg = {
 		amount = tonumber(f[1]) or 0, radius = math.max(10, tonumber(f[2]) or 100),
 		score = math.max(0, tonumber(f[3]) or 0), returnTime = math.max(0, tonumber(f[4]) or 0), speed = math.max(0, tonumber(f[5]) or 0),
-		homes = {}, flags = points(f[7]), visible = f[8] ~= "0",
+		flags = points(f[7]), visible = f[8] ~= "0",
 	}
 	cfg.homeList = points(f[6])
-	cfg.teams = {}
 	for _, h in ipairs(cfg.homeList) do
-		if not cfg.homes[h.team] then
-			cfg.homes[h.team] = {} -- the collection points of the team (as many as you like)
-			cfg.teams[#cfg.teams + 1] = h.team
-		end
-		table.insert(cfg.homes[h.team], h)
 		h.count = 0 -- flags lying at this collection point
 	end
 	if #cfg.homeList == 0 or #cfg.flags == 0 then
@@ -224,9 +219,9 @@ local function publish()
 		return
 	end
 	local teams, spots = {}, {}
-	for _, team in ipairs(g.cfg.teams) do
-		teams[#teams + 1] = team
-		Spring.SetGameRulesParam("ctfScore" .. team, g.score[team] or 0)
+	for _, ally in ipairs(g.allies) do
+		teams[#teams + 1] = ally
+		Spring.SetGameRulesParam("ctfScore" .. ally, g.score[ally] or 0)
 	end
 	Spring.SetGameRulesParam("ctfState", g.state)
 	Spring.SetGameRulesParam("ctfTarget", g.cfg.score)
@@ -313,38 +308,40 @@ local function stop()
 	end
 end
 
--- The units of a team blow up (flags and collection points stay)
-local function blowUp(team)
-	for _, id in ipairs(Spring.GetTeamUnits(team)) do
-		if not protected[id] then
-			Spring.DestroyUnit(id, true, false)
+-- The units of an alliance blow up (flags and collection points stay)
+local function blowUp(ally)
+	for _, team in ipairs(Spring.GetTeamList(ally) or {}) do
+		for _, id in ipairs(Spring.GetTeamUnits(team)) do
+			if not protected[id] then
+				Spring.DestroyUnit(id, true, false)
+			end
 		end
 	end
 end
 
--- The level is won: every team that is not on the winner's side loses (its units blow up, also when nobody had lost all flags)
-local function finish(team, lastStanding)
+-- The level is won: every alliance that is not the winner loses (its units blow up, also when nobody had lost all flags)
+local function finish(ally, lastStanding)
 	if g.state ~= "running" then
-		return -- already decided (a delivery can end the level twice: the last team standing and the number of flags)
+		return -- already decided (a delivery can end the level twice: the last alliance standing and the number of flags)
 	end
-	g.state = "won by team " .. team
-	local winners, gaia = allyOf(team), Spring.GetGaiaTeamID()
-	for _, t in ipairs(Spring.GetTeamList()) do
-		if t ~= gaia and allyOf(t) ~= winners and not g.out[t] then
-			g.out[t] = true
-			blowUp(t)
+	g.state = "won by alliance " .. ally
+	local gaiaAlly = allyOf(Spring.GetGaiaTeamID())
+	for _, a in ipairs(Spring.GetAllyTeamList()) do
+		if a ~= ally and a ~= gaiaAlly and not g.out[a] then
+			g.out[a] = true
+			blowUp(a)
 		end
 	end
 	publish()
-	say(lastStanding and ("Team " .. team .. " is the last one standing: level won!") or ("Team " .. team .. " has " .. g.cfg.score .. " flags: level won!"))
+	say(lastStanding and ("Alliance " .. ally .. " is the last one standing: level won!") or ("Alliance " .. ally .. " has " .. g.cfg.score .. " flags: level won!"))
 	if not EDITOR_MODE then
-		Spring.GameOver({ allyOf(team) })
+		Spring.GameOver({ ally })
 	end
 end
 
 local function start(cfg)
 	clear()
-	g = { cfg = cfg, state = "running", flags = {}, markers = {}, score = {}, parked = {}, out = {} }
+	g = { cfg = cfg, state = "running", flags = {}, markers = {}, score = {}, parked = {}, out = {}, allies = {}, homes = {} }
 	local gaia = Spring.GetGaiaTeamID()
 	local spots = {}
 	for _, h in ipairs(cfg.homeList) do
@@ -352,9 +349,18 @@ local function start(cfg)
 		if id then
 			g.markers[#g.markers + 1] = id
 		end
-		g.score[h.team] = 0
-		g.parked[h.team] = 0
+		local ally = allyOf(h.team)
+		if ally and not g.homes[ally] then
+			g.homes[ally] = {} -- the collection points of the alliance (as many as you like, of any of its teams)
+			g.allies[#g.allies + 1] = ally
+			g.score[ally] = 0
+			g.parked[ally] = 0
+		end
+		if ally then
+			table.insert(g.homes[ally], h)
+		end
 	end
+	table.sort(g.allies)
 	for _, p in ipairs(cfg.flags) do
 		local owner = p.team >= 0 and p.team or -1
 		local id = body(FLAG_UNIT, owner >= 0 and owner or gaia, p.x, p.z, cfg.visible)
@@ -386,51 +392,52 @@ local function toHome(f)
 	Spring.SetUnitPosition(f.id, f.hx, f.hz)
 end
 
--- A team that lost all its flags: see eliminate
-local function eliminate(team)
-	g.out[team] = true
-	say("Team " .. team .. " has lost all its flags: its units blow up.")
-	blowUp(team)
+-- An alliance that lost all its flags: its units blow up; the last alliance standing wins
+local function eliminate(ally)
+	g.out[ally] = true
+	say("Alliance " .. ally .. " has lost all its flags: its units blow up.")
+	blowUp(ally)
 	publish()
 	local left, last = 0, nil
-	for _, t in ipairs(g.cfg.teams) do
-		if not g.out[t] then
-			left, last = left + 1, t
+	for _, a in ipairs(g.allies) do
+		if not g.out[a] then
+			left, last = left + 1, a
 		end
 	end
-	if left == 1 and #g.cfg.teams >= 2 then
+	if left == 1 and #g.allies >= 2 then
 		finish(last, true)
 	end
 end
 
-local function deliver(f, team, home)
+local function deliver(f, ally, home)
 	local cfg = g.cfg
 	local carrier = f.carrier
 	carrying[carrier] = nil
 	rearm(f, carrier)
 	f.carrier = nil
-	-- the flag stays at the collection point (it does not jump back to its flag point); units of other teams can take it from there
-	f.parked, f.home = team, home
-	g.parked[team] = g.parked[team] + 1
+	-- the flag stays at the collection point (it does not jump back to its flag point); units of other alliances can take it from there
+	f.parked, f.home = ally, home
+	g.parked[ally] = g.parked[ally] + 1
 	home.count = home.count + 1
 	local a = home.count * 2.4
 	Spring.SetUnitPosition(f.id, home.x + math.cos(a) * 60, home.z + math.sin(a) * 60)
-	g.score[team] = g.parked[team] -- the score is the number of flags held at the collection point
-	say(string.format("Team %d holds a flag (%d): +%d metal per second each.", team, g.parked[team], cfg.amount))
-	if f.owner >= 0 and not g.out[f.owner] then
+	g.score[ally] = g.parked[ally] -- the score is the number of flags held at the collection points of the alliance
+	say(string.format("Alliance %d holds a flag (%d): +%d metal per second each.", ally, g.parked[ally], cfg.amount))
+	local ownerAlly = f.owner >= 0 and allyOf(f.owner)
+	if ownerAlly and not g.out[ownerAlly] then
 		local left = 0
 		for _, o in ipairs(g.flags) do
-			if o.owner == f.owner and not o.parked then
+			if o.owner >= 0 and allyOf(o.owner) == ownerAlly and not o.parked then
 				left = left + 1
 			end
 		end
 		if left == 0 then
-			eliminate(f.owner)
+			eliminate(ownerAlly)
 		end
 	end
 	publish()
-	if cfg.score > 0 and g.score[team] >= cfg.score then
-		finish(team)
+	if cfg.score > 0 and g.score[ally] >= cfg.score then
+		finish(ally)
 	end
 end
 
@@ -461,7 +468,7 @@ local function check(n)
 			if x then
 				for _, u in ipairs(Spring.GetUnitsInCylinder(x, z, cfg.radius)) do
 					local team = Spring.GetUnitTeam(u)
-					if team and allyOf(team) ~= allyOf(f.parked) and canCarry(u, team) then
+					if team and allyOf(team) ~= f.parked and canCarry(u, team) then
 						local from = f.parked
 						if f.owner >= 0 and allyOf(team) == allyOf(f.owner) then
 							unpark(f)
@@ -472,7 +479,7 @@ local function check(n)
 							f.carrier, f.dropped = u, nil
 							carrying[u] = f
 							disarm(f, u)
-							say("Team " .. team .. " took a flag from the collection point of team " .. from .. ".")
+							say("Team " .. team .. " took a flag from the collection point of alliance " .. from .. ".")
 						end
 						break
 					end
@@ -480,12 +487,13 @@ local function check(n)
 			end
 		else
 			if f.carrier then
-				-- delivery: the carrier is within the radius of the collection point of its team
+				-- delivery: the carrier is within the radius of a collection point of its alliance
 				local team = Spring.GetUnitTeam(f.carrier)
+				local ally = team and allyOf(team)
 				local x, _, z = Spring.GetUnitPosition(f.carrier)
-				for _, h in ipairs(team and cfg.homes[team] or {}) do
+				for _, h in ipairs(ally and g.homes[ally] or {}) do
 					if x and (x - h.x) ^ 2 + (z - h.z) ^ 2 <= r2 then
-						deliver(f, team, h)
+						deliver(f, ally, h)
 						break
 					end
 				end
@@ -550,14 +558,15 @@ function gadget:GameFrame(n)
 		check(n)
 	end
 	if n % FPS == 0 then
-		for team in pairs(g.out) do
-			blowUp(team) -- what a lost team builds afterwards blows up too
+		for ally in pairs(g.out) do
+			blowUp(ally) -- what a lost alliance builds afterwards blows up too
 		end
 	end
 	if n % FPS == 0 and g.cfg.amount > 0 then
-		for team, count in pairs(g.parked) do
-			if count > 0 then
-				Spring.AddTeamResource(team, "metal", g.cfg.amount * count)
+		-- the income of the flags at a collection point goes to the team that owns that collection point
+		for _, h in ipairs(g.cfg.homeList) do
+			if h.count > 0 then
+				Spring.AddTeamResource(h.team, "metal", g.cfg.amount * h.count)
 			end
 		end
 	end

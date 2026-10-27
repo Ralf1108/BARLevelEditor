@@ -29,7 +29,7 @@ Flags lie on the map. Units pick them up, carry them to their collection point a
 
 **Rules**
 - **Income**: every flag at your collection point pays metal per second
-- **Flags to win**: how many a team must hold at once (0 = never ends)
+- **Flags to win**: how many an alliance (the teams that play together) must hold at once (0 = never ends); allied teams count together and deliver at each other's collection points
 - **Capture radius**: pick up, deliver and bring back
 - **Return time**: a dropped flag goes back after this time (0 = stays)
 - **Carrier speed**: default 50 Elmo per second
