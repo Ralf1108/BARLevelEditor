@@ -42,7 +42,7 @@ All buttons are in the column at the right edge and in the strip left of the men
 - **Ctrl+S** saves the level (autosave when you leave), **O** loads
 - Select units → **P → Blueprints → Create** saves a layout
 
-**Team settings**
+**Restrictions and AI**
 - **X** on a unit, faction, group or tech button: forbids it for the player in the game
 - **AI**: pick an AI for each team 0–10, applies at the next start
 
@@ -84,3 +84,4 @@ One playable level per game mode comes with the editor (start menu key `2`, then
 
 - [Level Editor readme](../LevelEditor/README.md), [specification](../LevelEditor/SPECIFICATION.md)
 - [Test data](../LevelEditor/test-data/README.md)
+- [Notes on the screenshots](screenshots.md) (what each picture shows, to take them again)

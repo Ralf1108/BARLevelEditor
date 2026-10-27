@@ -1,6 +1,6 @@
 # Specification: Shared code (`editor_common.lua`)
 
-Status: 2026-10-22 (the restriction marks of the unit list, the reserve of a button, the last-on-top rule of the tooltips, with the area attack module, the cost line on the blueprint tiles, the search helpers, the scrollbar, the filtered blueprint grid, the maze generator and the English interface).
+Status: 2026-10-27 (writeFile, loadData in an empty environment, transient settings, bar_common.ps1 with the extra game of the scenarios; before: the restriction marks of the unit list, the reserve of a button, the last-on-top rule of the tooltips, with the area attack module, the cost line on the blueprint tiles, the search helpers, the scrollbar, the filtered blueprint grid, the maze generator and the English interface).
 
 Status of the specification: everything that has been defined so far for the Level Editor and the BluePrinter and is implemented in `editor_common.lua`.
 Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECIFICATION.md`.

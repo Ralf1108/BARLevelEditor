@@ -15,7 +15,7 @@ Play with computers in the same network, no server in the cloud.
 ## Copilot
 
 - Two or more people of a team play **one** player: one fights, one builds
-- Host: button **Copilot**, click a player to give the next number of his team (console lobby: key **N**)
+- Host: button **Copilot**, click a player to give the next number of their team (console lobby: key **N**)
 - The same number means the same player; the other players see the list read only
 
 <img src="lanCopilot.png" alt="LAN room of the host with Custom Scenario, Copilot and the Copilot list" width="740">

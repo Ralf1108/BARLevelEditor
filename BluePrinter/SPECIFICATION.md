@@ -1,6 +1,6 @@
 # Specification: BluePrinter
 
-Status: 2026-10-22 (with painting of buildings, the button column V, O, ?, A, C and the experimental area attacks XL, XR, XC, the status row and the radius field, the 3D ghosts of the queued plans, the right click on a plan, row and rectangle stamps, the search field and scrollbars in the lists, the cost on the blueprint tiles; all texts are English).
+Status: 2026-10-27 (plans only for the same match, auto-build off after an error only for that game; before: with painting of buildings, the button column V, O, ?, A, C and the experimental area attacks XL, XR, XC, the status row and the radius field, the 3D ghosts of the queued plans, the right click on a plan, row and rectangle stamps, the search field and scrollbars in the lists, the cost on the blueprint tiles; all texts are English).
 
 Widget for the **official** Beyond All Reason: blueprint templates and single buildings are **queued** on the map as build plans, idle own builders nearby start **on their own** to carry them out.
 Shared code: `..\shared\editor_common.lua` (see `..\shared\SPECIFICATION.md`; the area attacks XL, XR, XC live there as `Shared.newAreaAttack` and are also used by the Level Editor). Sister project: `..\LevelEditor\SPECIFICATION.md`.
