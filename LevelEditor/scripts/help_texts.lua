@@ -5,7 +5,7 @@
 local sections = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, ? this help, P / G / TD / CF pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, AI the AI per team, ? this help, P / G / TD / CF / RF pages, XL / XR / XC area attacks (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Title row", "Drag the title \"Level Editor\" with the left mouse button: the whole menu (with the strip at the left and the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Red X (Place menu)", "A small X on a unit picture, on a faction, a group or a tech button forbids it for the player in the game (Start test, scenario): all units in it, or all units of a tech level. The X is on when all of them are forbidden and goes off when you allow one. Click again to allow. You can always place everything in the editor. The Tower Defense page shows the same list." },

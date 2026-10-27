@@ -11,7 +11,7 @@
 - Area attack (line, rectangle, circle with bombers, artillery, rockets and nukes; the experimental buttons XL, XR, XC of both widgets)
 - Helper functions (rotating, team color, scaling), the help board and the maze generator
 
-`bar_rules.lua` holds the rules about unit definitions that gadgets and widgets need in the same way (`techLevel`, `buildClass`, `hitsGround`, `decode64`); `editor_common.lua`, the two gadgets of the Level Editor and the Tower Defense scenario load it (`VFS.Include("luaui/Include/bar_rules.lua")`), so both installers and the scenario starter pack it as well.
+`bar_rules.lua` holds the rules about unit definitions that gadgets and widgets need in the same way (`techLevel`, `buildClass`, `hitsGround`, `decode64`); `editor_common.lua`, all gadgets of the Level Editor and of its scenarios load it (through `led_gadgets.lua`) (`VFS.Include("luaui/Include/bar_rules.lua")`), so both installers and the scenario starter pack it as well.
 
 `bar_common.ps1` holds the shared parts of the setup scripts (Level Editor, BluePrinter, LAN Play) and of the scenario starter: finding BAR, the engine and the game version, creating and removing junctions. The scenario builder copies it into every scenario package.
 

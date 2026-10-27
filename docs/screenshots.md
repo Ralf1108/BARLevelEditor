@@ -3,7 +3,7 @@
 Notes on what each picture shows, so they can be retaken after a change of the layout.
 
 **Rules for all Level Editor pictures**
-- They show the **whole widget**: the strip at the left of the menu (W, DL, DR, DC, L, R, S, N, teams, G), the menu, the button column at the right (V, O, I, ?, P, G, TD, XL, XR, XC, FX, FD) and, where the mouse pointer rests on a tile, the **3D preview** left of the strip with the **info lines** below the menu.
+- They show the **whole widget**: the strip at the left of the menu (W, DL, DR, DC, L, R, S, N, teams, G), the menu, the button column at the right (V, O, I, AI, ?, P, G, TD, CF, RF, XL, XR, XC, FX, FD) and, where the mouse pointer rests on a tile, the **3D preview** left of the strip with the **info lines** below the menu.
 - Where it matters the picture also shows a part of the map with the result of the action (generated units, a maze, a corridor with route and towers, ...).
 - Taken in a window of 3000 x 1500 pixels (isolated test instance, see below), cut to x 940 ... 3000, y 0 ... 1260 (the chat lines at the top left are part of the cut on purpose) and scaled to 1600 pixels width, JPEG quality 88.
 - Map "Hooked 1.1", Armada, team 0 (the Capture the Flag picture uses the flat map "Full Metal Plate 1.7").
