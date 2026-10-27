@@ -55,6 +55,14 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 - In a sandbox game the BluePrinter does not run next to the editor (it ends when `leveleditor=1` or the editor widget is there); use `leveleditor=0` in the modoptions and expect both panels on top of each other.
 - A path with `\b` written by a Python patch into a PowerShell file became a backspace character (`LuaUI\WidgetsluePrinter.lua`); look for control characters after every patch (`[c for c in set(text) if ord(c) < 32]`).
 
+## BluePrinter plan tests in a sandbox game
+
+- `tools/zz_bpt.lua` tests selecting, ordering, rotating, removing, Undo, Queue order, right click on a blueprint copy and the commander next to an enemy through the test hooks of the widget (`WG.BluePrinterWidget:DebugState()` and others, see `BluePrinter/SPECIFICATION.md` 4.10); `tools/zz_bpg.lua` plus a screenshot checks that nothing is left after Undo. They run in a game of the **normal BAR** (not the editor game: the BluePrinter does not run next to the editor) with the BluePrinter files copied to `LuaUI/Widgets` and `LuaUI/Include` of the sandbox. Result 2026-10-27: all checks passed; two of the checks depend on terrain (a copy of three buildings had only two buildable spots).
+- **The pointer moves one frame later:** after `Spring.WarpMouse` the next `Spring.GetMouseState()` still returns the old position; click in a later frame. `TraceScreenRay(mx, my)` returns nil when the point is outside the map (commander start at the left edge): look top-down at plans that lie inside the map (`rx = 2.5`).
+- **Auto-build eats the test plans:** with auto-build on a commander finishes small buildings within seconds and they disappear from the queue; switch it off (`DebugSetAuto(false)`) for selection tests, and put plans on spots where `Spring.TestBuildOrder` says free (otherwise they are blocked and never claimed).
+- **Chat commands are asynchronous:** `Spring.SendCommands("bp_undo")` acts a frame later; check the result in a later step.
+- **A leftover after Undo was found only by looking at units, not at plans:** the builder had received its orders already and started building after the plan was gone. Test "Undo" by counting the own unfinished buildings (`Spring.GetUnitIsBeingBuilt`) some seconds later, once with the building not yet started and once already started.
+
 ## Writing files from Claude Code on Windows (more pitfalls)
 
 - A patch that meant a backslash followed by `n` inside a Lua string came out as a real line break and broke the widget (the Bash tool turned `\n` in the heredoc into a line break). Build such a string with `chr(92)` in Python, and look at the result with `sed -n LINEp file | cat -A`.

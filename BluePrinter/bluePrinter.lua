@@ -59,11 +59,14 @@ local HELP_SECTIONS = {
 	{ "Building", {
 		{ "Auto-build (A)", "Idle builders work through the queued plans on their own (even without a selection)." },
 		{ "Radius - number +", "How far builders look for plans (200 to 6000). Click the number to type one." },
-		{ "Commander (C)", "On = the commander helps build, off = only other builders." },
+		{ "Commander (C)", "On = the commander helps build, off = only other builders. With an enemy near the commander stops building and fights." },
 		{ "Undo / Clear all", "Undo the last step / remove all plans." },
 		{ "Plans in the world", "Frame, 3D ghost and number per plan. Blue open, yellow in progress, red blocked." },
-		{ "Right click on a plan", "With builders selected: they build exactly this plan now. Shift = add it to their queue." },
+		{ "Right click on a plan", "With builders selected: they build exactly this plan now (a plan of a blueprint: the whole blueprint copy). Shift = add it to their queue." },
 		{ "Line Remaining", "Metal, energy and estimated build time of all open plans." },
+		{ "Select plans", "Click a plan: selects the whole blueprint copy it belongs to (a single building: just it). Ctrl+click: only that building. Shift+click: add or remove. Ctrl+drag: a rectangle. A click on the ground clears the selection." },
+		{ "Selected plans", "Del removes them from the queue, [ and ] rotate them (not the ones being built), Page up / Page down move them one place in the queue, Home / End to the front / back. Undo takes each of these back." },
+		{ "Queue order (title row)", "Off: idle builders take the nearest plan. On: they take the open plan with the lowest number first." },
 	} },
 	{ "Queueing (mouse on the map)", {
 		{ "[  ]  or Alt+Mouse wheel", "Rotate (south, east, north, west)." },
@@ -89,6 +92,11 @@ local buildable = nil -- { [unitDefID] = true }: what the own builders can build
 local factionAuto = true -- Choose the faction by the own builders until you click one yourself
 local sites = {} -- { def, name, x, y, z, f, batch, done, blocked, claim, claimFrame, tries }
 local batchCounter = 0
+local groupCounter = 0 -- every queued blueprint (one copy) gets its own group number: a click on a plan selects the whole group
+local queueOrder = false -- Queue order (button in the title row): builders take the open plan with the lowest number instead of the nearest
+local selected = {} -- [site] = true: the selected plans (click, Ctrl + drag)
+local selBox = nil -- { x, z, hit, shift }: start point while a selection rectangle is dragged with Ctrl
+local opStack = {} -- steps that Undo takes back besides queueing: remove, rotate, order (each with the highest open batch at that time)
 local doneCount = 0
 local passNo = 0
 local checkCursor = 1
@@ -228,6 +236,7 @@ end
 -- Queue a blueprint (units) with center (cx, cz) and k quarter turns; returns the number of new plans
 local function addPlan(units, cx, cz, k)
 	batchCounter = batchCounter + 1
+	groupCounter = groupCounter + 1
 	local n, skipped = 0, 0
 	for _, u in ipairs(units) do
 		local ud = UnitDefNames[u.name]
@@ -238,7 +247,7 @@ local function addPlan(units, cx, cz, k)
 			if siteExists(ud.id, x, z) then
 				skipped = skipped + 1
 			else
-				sites[#sites + 1] = { def = ud.id, name = ud.name, x = x, y = y, z = z, f = f, batch = batchCounter, tries = 0 }
+				sites[#sites + 1] = { def = ud.id, name = ud.name, x = x, y = y, z = z, f = f, batch = batchCounter, tries = 0, grp = groupCounter }
 				n = n + 1
 			end
 		end
@@ -256,17 +265,99 @@ local function pendingCount()
 	return n
 end
 
-local function undoLast()
-	if batchCounter <= 0 then
-		return
+-- A plan goes away (Undo, remove, Clear all): the builder that had it drops its build order (the rest of its queue stays), and a building that
+-- was already started is reclaimed (otherwise it stays as a half-built building without a plan)
+local function dropPlan(s)
+	local bid = s.claim
+	if bid and Spring.ValidUnitID(bid) then
+		local ok, cmds = pcall(Spring.GetUnitCommands, bid, 40)
+		if ok and type(cmds) == "table" then
+			for _, c in ipairs(cmds) do
+				local pr = c.params or {}
+				if c.id == -s.def and pr[1] and pr[3] and math.abs(pr[1] - s.x) < 8 and math.abs(pr[3] - s.z) < 8 then
+					Spring.GiveOrderToUnit(bid, CMD.REMOVE, { c.tag }, {})
+					break
+				end
+			end
+		end
 	end
-	local last
+	for _, uid in ipairs(Spring.GetUnitsInCylinder(s.x, s.z, 24, Spring.GetMyTeamID()) or {}) do
+		if Spring.GetUnitDefID(uid) == s.def and Spring.GetUnitIsBeingBuilt(uid) then
+			if bid and Spring.ValidUnitID(bid) then
+				Spring.GiveOrderToUnit(bid, CMD.RECLAIM, { uid }, {}) -- its other orders are dropped; unclaimed plans are handed out again
+			end
+			break
+		end
+	end
+	s.claim = nil
+end
+
+-- highest batch number of the open plans (0 = none): marks when an operation happened, so that Undo takes back the newest step first
+local function highestOpenBatch()
+	local last = 0
 	for _, s in ipairs(sites) do
-		if not s.done and (not last or s.batch > last) then
+		if not s.done and s.batch > last then
 			last = s.batch
 		end
 	end
-	if not last then
+	return last
+end
+
+local function pushOp(op)
+	op.mark = highestOpenBatch()
+	opStack[#opStack + 1] = op
+	if #opStack > 60 then
+		table.remove(opStack, 1)
+	end
+end
+
+-- queue order as it was: the plans of `before` that still exist in that order, new ones at the end
+local function restoreOrder(before)
+	local now, placed, out = {}, {}, {}
+	for _, s in ipairs(sites) do
+		now[s] = true
+	end
+	for _, s in ipairs(before) do
+		if now[s] then
+			out[#out + 1] = s
+			placed[s] = true
+		end
+	end
+	for _, s in ipairs(sites) do
+		if not placed[s] then
+			out[#out + 1] = s
+		end
+	end
+	sites = out
+end
+
+local function undoOp(op)
+	if op.kind == "remove" then
+		for _, it in ipairs(op.items) do
+			table.insert(sites, math.min(it.index, #sites + 1), it.site)
+		end
+		say(#op.items .. " plans are back in the queue")
+	elseif op.kind == "rotate" then
+		for _, it in ipairs(op.items) do
+			local s = it.site
+			s.x, s.y, s.z, s.f, s.blocked = it.x, it.y, it.z, it.f, nil
+		end
+		say("Rotation undone")
+	elseif op.kind == "order" then
+		restoreOrder(op.before)
+		say("Order undone")
+	end
+end
+
+local function undoLast()
+	local last = highestOpenBatch()
+	local top = opStack[#opStack]
+	if top and top.mark >= last then
+		opStack[#opStack] = nil
+		undoOp(top)
+		return
+	end
+	if last == 0 then
 		say("Nothing to undo")
 		return
 	end
@@ -274,6 +365,7 @@ local function undoLast()
 	for _, s in ipairs(sites) do
 		if s.batch == last and not s.done then
 			removed = removed + 1
+			dropPlan(s)
 		else
 			out[#out + 1] = s
 		end
@@ -284,7 +376,13 @@ end
 
 local function clearPlans()
 	local n = pendingCount()
+	for _, s in ipairs(sites) do
+		if not s.done then
+			dropPlan(s)
+		end
+	end
 	sites = {}
+	selected, opStack = {}, {}
 	checkCursor = 1
 	say(n .. " plans deleted")
 end
@@ -400,6 +498,17 @@ local function fmtTime(sec)
 	return string.format("%d:%02d min", math.floor(sec / 60), sec % 60)
 end
 
+-- An enemy unit that we can see near the commander: it fights instead of building (its weapons only fire at what is within reach)
+local ENEMY_NEAR = 750
+local function enemyNear(bid)
+	local x, _, z = Spring.GetUnitPosition(bid)
+	if not x then
+		return false
+	end
+	local list = Spring.GetUnitsInCylinder(x, z, ENEMY_NEAR, Spring.ENEMY_UNITS)
+	return list ~= nil and #list > 0
+end
+
 local function giveBuild(bid, s, queued)
 	Spring.GiveOrderToUnit(bid, -s.def, { s.x, s.y, s.z, s.f }, queued and { "shift" } or {})
 end
@@ -417,17 +526,33 @@ local function workPass(frame)
 			end
 		end
 	end
+	local team = Spring.GetMyTeamID()
+	-- the commander stops building when an enemy comes near: it fights, and other builders take over its plans
+	for _, bid in ipairs(Spring.GetTeamUnits(team) or {}) do
+		local info = builderInfo(Spring.GetUnitDefID(bid))
+		if info and info.commander and commandCount(bid) > 0 and enemyNear(bid) then
+			local mine = false
+			for _, s in ipairs(sites) do
+				if s.claim == bid and not s.done then
+					s.claim = nil
+					mine = true
+				end
+			end
+			if mine then
+				Spring.GiveOrderToUnit(bid, CMD.STOP, {}, {})
+			end
+		end
+	end
 	if not autoBuild or pendingCount() == 0 then
 		return
 	end
-	local team = Spring.GetMyTeamID()
 	local assigned = 0
 	for _, bid in ipairs(Spring.GetTeamUnits(team) or {}) do
 		if assigned >= 12 then
 			break
 		end
 		local info = builderInfo(Spring.GetUnitDefID(bid))
-		if info and (useCommander or not info.commander) and commandCount(bid) == 0 and not Spring.GetUnitIsBeingBuilt(bid) then
+		if info and (useCommander or not info.commander) and commandCount(bid) == 0 and not Spring.GetUnitIsBeingBuilt(bid) and not (info.commander and enemyNear(bid)) then
 			local bx, _, bz = Spring.GetUnitPosition(bid)
 			if bx then
 				local r2 = radius * radius
@@ -438,7 +563,11 @@ local function workPass(frame)
 						local d = dist2(bx, bz, s.x, s.z)
 						if d <= r2 then
 							if not s.claim then
-								if not bestD or d < bestD then
+								if queueOrder then
+									if not best then
+										best, bestD = s, d -- the first free plan of the queue
+									end
+								elseif not bestD or d < bestD then
 									best, bestD = s, d
 								end
 							elseif not assistD or d < assistD then
@@ -462,9 +591,15 @@ local function workPass(frame)
 									end
 								end
 								if not inChain then
-									local d = dist2(last.x, last.z, s.x, s.z)
-									if d <= 300 * 300 and (not nd or d < nd) then
-										nxt, nd = s, d
+									if queueOrder then
+										if not nxt and dist2(bx, bz, s.x, s.z) <= r2 then
+											nxt = s -- the next free plan of the queue
+										end
+									else
+										local d = dist2(last.x, last.z, s.x, s.z)
+										if d <= 300 * 300 and (not nd or d < nd) then
+											nxt, nd = s, d
+										end
 									end
 								end
 							end
@@ -606,7 +741,7 @@ local function basePanelRect()
 		ch = ch + bpFilterHeight()
 		minBottom = vsy * 0.20 -- below the panel are name and cost of the blueprint
 	end
-	local pw = math.min(math.max(math.floor(600 * S), cw), vsx * 0.6) -- wide enough for the status lines
+	local pw = math.min(math.max(math.floor(660 * S), cw), vsx * 0.6) -- wide enough for the status lines
 	local x1 = (side == "right") and (vsx - colW - pw) or colW
 	local top = vsy * 0.90
 	local bottom = math.max(minBottom, top - headHeight() - ch)
@@ -663,7 +798,7 @@ local function radiusEnd(accept)
 end
 
 local TIPS = {
-	collapse = "V: collapse or expand the menu",
+	queue = "Queue order: off = idle builders take the nearest plan (as before).\nOn = they take the open plan with the lowest number first.\Change the order of selected plans with Page up, Page down, Home and End.",	collapse = "V: collapse or expand the menu",
 	gear = "O: settings, columns and rows",
 	help = "?: show the keys and controls on the screen",
 	modebp = "Blueprints: saved groups of buildings",
@@ -715,6 +850,9 @@ local function layout()
 	if collapsed then
 		return { btns = btns, info = y, rect = { x1 = x1, y0 = y0, x2 = x2, top = y } }
 	end
+	-- Queue order: toggle left of Create
+	btns[#btns + 1] = { id = "queue", label = "Queue order", x1 = x2 - 2 * pad - 260 * S - 170 * S, x2 = x2 - 2 * pad - 260 * S, y0 = y1 - pad - 46 * S, y1 = y1 - pad,
+		on = queueOrder, active = queueOrder, tip = TIPS.queue .. "\nNow: " .. (queueOrder and "ON" or "OFF") }
 	colBtn(2, "gear", "O", optionsOpen)
 	colBtn(3, "help", "?", helpOpen)
 	colBtn(4, "auto", "A", autoBuild, TIPS.auto .. "\nNow: " .. (autoBuild and "ON" or "OFF"))
@@ -806,6 +944,9 @@ local function pressButton(id)
 		widgetHandler:OwnText()
 	elseif id == "com" then
 		useCommander = not useCommander
+	elseif id == "queue" then
+		queueOrder = not queueOrder
+		say("Queue order " .. (queueOrder and "on: builders take the open plan with the lowest number" or "off: builders take the nearest plan"))
 	elseif id == "help" then
 		helpOpen = true
 	elseif id == "areal" then
@@ -893,17 +1034,278 @@ local function assignToPlan(mx, my)
 		end
 		return false -- no builder selected: the click keeps its normal meaning
 	end
-	if testBuild(UnitDefs[plan.def], plan.x, plan.y, plan.z, plan.f) == 0 then
+	-- a plan of a blueprint copy: the builders build the whole copy, one after the other (a single building: just it)
+	local targets = { plan }
+	if plan.grp then
+		targets = {}
+		for _, o in ipairs(sites) do
+			if o.grp == plan.grp and not o.done then
+				targets[#targets + 1] = o
+			end
+		end
+	elseif testBuild(UnitDefs[plan.def], plan.x, plan.y, plan.z, plan.f) == 0 then
 		say("The spot of this plan is blocked right now")
 		return true
 	end
 	local _, _, _, shift = Spring.GetModKeyState()
-	for _, id in ipairs(builders) do
-		giveBuild(id, plan, shift)
+	local frame = Spring.GetGameFrame()
+	local sent = 0
+	for n, id in ipairs(builders) do
+		local info = builderInfo(Spring.GetUnitDefID(id))
+		local first = not shift
+		for _, o in ipairs(targets) do
+			if info.can[o.def] and (not plan.grp or testBuild(UnitDefs[o.def], o.x, o.y, o.z, o.f) ~= 0) then
+				giveBuild(id, o, not first)
+				first = false
+				if n == 1 then
+					sent = sent + 1
+					o.claim, o.claimFrame, o.blocked = id, frame, nil
+				end
+			end
+		end
 	end
-	plan.claim, plan.claimFrame, plan.blocked = builders[1], Spring.GetGameFrame(), nil
-	say(string.format("%d builder%s build %s%s", #builders, #builders == 1 and "" or "s", plan.name, shift and " (queued)" or ""))
+	if sent == 0 then
+		say("Nothing of it can be built right now")
+		return true
+	end
+	say(string.format("%d builder%s build %s%s", #builders, #builders == 1 and "" or "s", plan.grp and (sent .. " plans of this blueprint") or plan.name, shift and " (queued)" or ""))
 	return true
+end
+
+---------------------------------------------------------------- Selecting plans
+-- the open plan under the ground point (footprint plus a little), the nearest center first
+local function planAt(gx, gz)
+	local plan, planD
+	for _, s in ipairs(sites) do
+		local ud = not s.done and UnitDefs[s.def]
+		if ud then
+			local hx, hz = halfSize(ud, s.f)
+			if math.abs(gx - s.x) <= hx + 8 and math.abs(gz - s.z) <= hz + 8 then
+				local d = dist2(gx, gz, s.x, s.z)
+				if not planD or d < planD then
+					plan, planD = s, d
+				end
+			end
+		end
+	end
+	return plan
+end
+
+local function selCount()
+	local n = 0
+	for _, s in ipairs(sites) do
+		if selected[s] and not s.done then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+-- Click on a plan: the whole blueprint copy it belongs to (a single building: just it); single = only this building; add = Shift (toggles)
+local function selectPlan(s, single, add)
+	local group = { s }
+	if not single and s.grp then
+		group = {}
+		for _, o in ipairs(sites) do
+			if o.grp == s.grp and not o.done then
+				group[#group + 1] = o
+			end
+		end
+	end
+	if not add then
+		selected = {}
+	end
+	local allIn = true
+	for _, o in ipairs(group) do
+		allIn = allIn and selected[o] == true
+	end
+	for _, o in ipairs(group) do
+		selected[o] = (not (add and allIn)) or nil
+	end
+	say(selCount() .. " plans selected (Del = remove, [ ] = rotate, Page up/down, Home/End = order)")
+end
+
+local function selectRect(x0, z0, x1, z1, add)
+	if not add then
+		selected = {}
+	end
+	local lx, hx, lz, hz = math.min(x0, x1), math.max(x0, x1), math.min(z0, z1), math.max(z0, z1)
+	for _, s in ipairs(sites) do
+		if not s.done and s.x >= lx and s.x <= hx and s.z >= lz and s.z <= hz then
+			selected[s] = true
+		end
+	end
+	say(selCount() .. " plans selected")
+end
+
+local function removeSelected()
+	local items, keep = {}, {}
+	for i, s in ipairs(sites) do
+		if selected[s] and not s.done then
+			items[#items + 1] = { site = s, index = i }
+		else
+			keep[#keep + 1] = s
+		end
+	end
+	if #items == 0 then
+		return false
+	end
+	for _, it in ipairs(items) do
+		dropPlan(it.site)
+	end
+	pushOp({ kind = "remove", items = items })
+	sites = keep
+	selected = {}
+	say(#items .. " plans removed from the queue (Undo brings them back)")
+	return true
+end
+
+-- k quarter turns around the center of the selection; only plans that are not being built
+local function rotateSelected(k)
+	local list = {}
+	local lx, hx, lz, hz
+	for _, s in ipairs(sites) do
+		if selected[s] and not s.done then
+			list[#list + 1] = s
+			lx, hx = math.min(lx or s.x, s.x), math.max(hx or s.x, s.x)
+			lz, hz = math.min(lz or s.z, s.z), math.max(hz or s.z, s.z)
+		end
+	end
+	if #list == 0 then
+		return false
+	end
+	local cx, cz = (lx + hx) / 2, (lz + hz) / 2
+	local items = {}
+	for _, s in ipairs(list) do
+		if not s.claim then
+			items[#items + 1] = { site = s, x = s.x, y = s.y, z = s.z, f = s.f }
+		end
+	end
+	if #items == 0 then
+		say("Plans that are being built cannot be rotated")
+		return true
+	end
+	pushOp({ kind = "rotate", items = items })
+	for _, it in ipairs(items) do
+		local s = it.site
+		local dx, dz = rotateOffset(s.x - cx, s.z - cz, k % 4)
+		local f = (s.f + k) % 4
+		local x, y, z = buildPos(UnitDefs[s.def], cx + dx, cz + dz, f)
+		s.x, s.y, s.z, s.f, s.blocked, s.tries = x, y, z, f, nil, 0
+	end
+	say(#items .. " plans rotated" .. (#items < #list and (" (" .. (#list - #items) .. " being built: not rotated)") or ""))
+	return true
+end
+
+-- mode: "up" / "down" one place, "front" / "back" to the start / end of the queue (the numbers in the world follow)
+local function orderSelected(mode)
+	local open, done, before = {}, {}, {}
+	for i, s in ipairs(sites) do
+		before[i] = s
+		if s.done then
+			done[#done + 1] = s
+		else
+			open[#open + 1] = s
+		end
+	end
+	local any = false
+	for _, s in ipairs(open) do
+		any = any or selected[s] == true
+	end
+	if not any then
+		return false
+	end
+	local n = #open
+	if mode == "front" or mode == "back" then
+		local sel, rest = {}, {}
+		for _, s in ipairs(open) do
+			if selected[s] then
+				sel[#sel + 1] = s
+			else
+				rest[#rest + 1] = s
+			end
+		end
+		open = {}
+		for _, s in ipairs(mode == "front" and sel or rest) do
+			open[#open + 1] = s
+		end
+		for _, s in ipairs(mode == "front" and rest or sel) do
+			open[#open + 1] = s
+		end
+	elseif mode == "up" then
+		for i = 2, n do
+			if selected[open[i]] and not selected[open[i - 1]] then
+				open[i], open[i - 1] = open[i - 1], open[i]
+			end
+		end
+	else
+		for i = n - 1, 1, -1 do
+			if selected[open[i]] and not selected[open[i + 1]] then
+				open[i], open[i + 1] = open[i + 1], open[i]
+			end
+		end
+	end
+	local out = {}
+	for _, s in ipairs(done) do
+		out[#out + 1] = s
+	end
+	for _, s in ipairs(open) do
+		out[#out + 1] = s
+	end
+	local changed = false
+	for i, s in ipairs(out) do
+		changed = changed or before[i] ~= s
+	end
+	if changed then
+		pushOp({ kind = "order", before = before })
+		sites = out
+		local first = #done
+		for i, s in ipairs(out) do
+			if selected[s] and not s.done then
+				first = i - #done
+				break
+			end
+		end
+		say("Queue order changed: the selection now starts at number " .. first)
+	end
+	return true
+end
+
+-- Left click with nothing armed: on a plan = select it (Ctrl: only that building; Shift: add); Ctrl + drag = rectangle. Returns true if used.
+local function selectPress(mx, my)
+	local anyOpen = false
+	for _, s in ipairs(sites) do
+		if not s.done then
+			anyOpen = true
+			break
+		end
+	end
+	if not anyOpen then
+		selected = {}
+		return false
+	end
+	local what = Spring.TraceScreenRay(mx, my)
+	if what == "unit" then
+		return false -- a click on a unit stays the game's
+	end
+	local gx, gz = mouseGround()
+	if not gx then
+		return false
+	end
+	local _, ctrl, _, shift = Spring.GetModKeyState()
+	local hit = planAt(gx, gz)
+	if ctrl then
+		selBox = { x = gx, z = gz, hit = hit, shift = shift }
+		return true
+	end
+	if hit then
+		selectPlan(hit, false, shift)
+		return true
+	end
+	if not shift then
+		selected = {}
+	end
+	return false
 end
 
 function widget:IsAbove(mx, my)
@@ -1013,6 +1415,9 @@ function widget:MousePress(mx, my, button)
 	if button == 3 and not area:armed() and not armedUnit and not bpGrid.armed and assignToPlan(mx, my) then
 		return true
 	end
+	if button == 1 and not area:armed() and not armedUnit and not bpGrid.armed and selectPress(mx, my) then
+		return true
+	end
 	if area:press(button) then
 		return true
 	end
@@ -1083,6 +1488,23 @@ function widget:MouseRelease(mx, my, button)
 	if panelMover:release() then
 		return
 	end
+	if selBox then
+		local b = selBox
+		selBox = nil
+		local gx, gz = mouseGround()
+		if gx then
+			if math.abs(gx - b.x) < 24 and math.abs(gz - b.z) < 24 then
+				if b.hit then
+					selectPlan(b.hit, true, b.shift)
+				elseif not b.shift then
+					selected = {}
+				end
+			else
+				selectRect(b.x, b.z, gx, gz, b.shift)
+			end
+		end
+		return
+	end
 	if Shared.scrollbarRelease() then
 		return
 	end
@@ -1138,6 +1560,22 @@ function widget:KeyPress(key)
 			radiusEdit.text = radiusEdit.text:sub(1, -2)
 		end
 		return true
+	end
+	if not (uGrid.focus or bpGrid.focus or bpGrid.editing) and selCount() > 0 then
+		-- selected plans: Del removes, [ ] rotate, Page up / Page down / Home / End change the queue order
+		if key == 127 then
+			return removeSelected()
+		elseif (key == 91 or key == 93) and not armedUnit and not bpGrid.armed then
+			return rotateSelected(key == 93 and 1 or 3)
+		elseif key == 280 then
+			return orderSelected("up")
+		elseif key == 281 then
+			return orderSelected("down")
+		elseif key == 278 then
+			return orderSelected("front")
+		elseif key == 279 then
+			return orderSelected("back")
+		end
 	end
 	if uGrid.focus then
 		return uGrid:key(key)
@@ -1236,10 +1674,22 @@ local function drawWorldInner()
 					else
 						outline(s, hx, hz, y, 0.3, 0.6, 1, 0.95)
 					end
+					if selected[s] then
+						gl.LineWidth(4)
+						outline(s, hx + 5, hz + 5, y + 1, 1, 1, 1, 1)
+						gl.LineWidth(2)
+					end
 				end
 			end
 		end
 		drawPlanGhosts()
+		if selBox then
+			local gx, gz = mouseGround()
+			if gx then
+				local cx, cz = (selBox.x + gx) / 2, (selBox.z + gz) / 2
+				outline({ x = cx, z = cz }, math.abs(gx - selBox.x) / 2, math.abs(gz - selBox.z) / 2, Spring.GetGroundHeight(cx, cz) + 8, 1, 1, 1, 0.9)
+			end
+		end
 		-- single building at the mouse pointer: green/red frame and the 3D model
 		local ud1 = armedUnit and UnitDefNames[armedUnit]
 		if ud1 and stampDrag then
@@ -1385,7 +1835,9 @@ local function drawSiteNumbers()
 			local sx, sy = Spring.WorldToScreenCoords(s.x, s.y + 20, s.z)
 			if sx and sy then
 				local st = siteStatus(s)
-				if st == "blocked" then
+				if selected[s] then
+					gl.Color(1, 1, 1, 1)
+				elseif st == "blocked" then
 					gl.Color(1, 0.4, 0.4, 1)
 				elseif st == "claimed" then
 					gl.Color(1, 0.9, 0.3, 1)
@@ -1720,6 +2172,36 @@ function widget:Initialize()
 	say(#LIST .. " blueprints. Chat: /bp_menu shows or hides the menu")
 end
 
+-- for tests in the game: queue plans without the mouse (a building, or the units of a blueprint { name, dx, dz, rot } as one group)
+function widget:DebugAdd(name, x, z, f)
+	local ud = UnitDefNames[name]
+	return ud and addSingle(ud, x, z, f or 0) or false
+end
+
+function widget:DebugAddBlueprint(units, x, z)
+	batchCounter = batchCounter + 1
+	return addPlan(units, x, z, 0)
+end
+
+function widget:DebugSetAuto(on)
+	autoBuild = on and true or false
+end
+
+function widget:DebugSetQueue(on)
+	queueOrder = on and true or false
+end
+
+-- for tests in the game: the plans in queue order
+function widget:DebugState()
+	local out = { queueOrder = queueOrder, selected = selCount(), ops = #opStack, plans = {} }
+	for _, s in ipairs(sites) do
+		if not s.done then
+			out.plans[#out.plans + 1] = { name = s.name, x = s.x, z = s.z, f = s.f, sel = selected[s] == true, grp = s.grp, claim = s.claim, blocked = (s.blocked or 0) > passNo }
+		end
+	end
+	return out
+end
+
 function widget:Shutdown()
 	WG.BluePrinterWidget = nil
 	widgetHandler:RemoveAction("buildfacing")
@@ -1740,7 +2222,7 @@ function widget:GetConfigData()
 		end
 	end
 	return {
-		side = side, autoBuild = autoBuild, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
+		side = side, autoBuild = autoBuild, queueOrder = queueOrder, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
 		map = Game and Game.mapName, plans = saved,
 	}
 end
@@ -1754,6 +2236,9 @@ function widget:SetConfigData(data)
 		autoBuild = data.autoBuild and true or false
 	end
 	radius = math.max(RADIUS_MIN, math.min(RADIUS_MAX, tonumber(data.radius) or radius))
+	if data.queueOrder ~= nil then
+		queueOrder = data.queueOrder and true or false
+	end
 	if data.useCommander ~= nil then
 		useCommander = data.useCommander and true or false
 	end
