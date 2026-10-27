@@ -398,13 +398,6 @@ local function saveLevel(name, quiet)
 	return count
 end
 
-local function save(_, _, args)
-	local name = (args and args[1]) or "level"
-	name = name:gsub("[^%w_%-]", "_")
-	saveLevel(name, false)
-	return true
-end
-
 -- Load: reads LevelEditor/<name>.lua, clears the map (except the builder rows) and places the saved units
 -- in small packets per update, so nothing overflows with large levels.
 local loadQueue = {}

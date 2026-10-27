@@ -64,7 +64,7 @@ local sections = {
 -- Layered help: /led_help shows the short version and the topics, /led_help <topic> the details
 local topics = {
 	{
-		names = { "start", "start" },
+		names = { "start" },
 		lines = {
 			"START: desktop shortcut 'BAR Level Editor'. Key 0 = continue the last state, key 1 = new level (search a map), key 2 = load a saved level, key 3 = build a scenario package (ZIP) from a level. You change the scenario info in the game with the I button.",
 			"No /cheat is needed in the game. Placing, building, saving and loading work right away. Everything is free and finished instantly.",
@@ -72,7 +72,7 @@ local topics = {
 		},
 	},
 	{
-		names = { "keys", "keys" },
+		names = { "keys" },
 		lines = {
 			"KEYS (point the mouse at the map):",
 			"[ and ] rotate the chosen unit or blueprint (south, east, north, west). You save a selection as a blueprint with Create in the blueprint menu, rename it with a double click.",

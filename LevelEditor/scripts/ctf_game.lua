@@ -214,7 +214,7 @@ local function publish()
 		Spring.SetGameRulesParam("ctfState", "")
 		return
 	end
-	local teams, spots = {}, {}
+	local teams = {}
 	for _, ally in ipairs(g.allies) do
 		teams[#teams + 1] = ally
 		Spring.SetGameRulesParam("ctfScore" .. ally, g.score[ally] or 0)
