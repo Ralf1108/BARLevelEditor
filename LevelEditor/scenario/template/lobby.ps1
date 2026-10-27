@@ -201,6 +201,25 @@ $script:MapMaxBytes = 1GB
 function Get-MapExtraRoot { return (Join-Path (Get-BundleCacheRoot) 'Maps') }
 
 # $true if the address is on this computer or in a subnet of one of its network cards (the same local network); $addr: an address or a name
+# The networks of this computer: address and mask of every IPv4 network card (link-local ones left out), read once. A VPN card counts as well; the
+# usual VPN ranges count as a whole even when the card shows a small prefix: 100.64.0.0/10 (Tailscale, carrier-grade NAT) and 25.0.0.0/8 (Hamachi).
+function Get-LocalNets {
+    if ($script:LocalNets) { return $script:LocalNets }
+    $nets = @()
+    foreach ($a in @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue)) {
+        if ($a.IPAddress -like '169.254.*' -or $a.IPAddress -like '127.*' -or $a.PrefixLength -lt 8) { continue }
+        $l = [BitConverter]::ToUInt32(([Net.IPAddress]::Parse($a.IPAddress)).GetAddressBytes()[3..0], 0)
+        $prefix = [int]$a.PrefixLength
+        if ($a.IPAddress -match '^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.') { $prefix = [Math]::Min($prefix, 10) }
+        elseif ($a.IPAddress -like '25.*') { $prefix = [Math]::Min($prefix, 8) }
+        $m = [uint32](([uint64]4294967295 -shl (32 - $prefix)) -band 4294967295)
+        $nets += , @(($l -band $m), $m)
+    }
+    $script:LocalNets = $nets
+    return $nets
+}
+
+# True if the address is this computer (localhost) or lies in a network of one of its network cards (LAN, also a VPN)
 function Test-SameLan([string]$addr) {
     try {
         $ip = $null
@@ -209,12 +228,7 @@ function Test-SameLan([string]$addr) {
         if ($ip.IsIPv4MappedToIPv6) { $ip = $ip.MapToIPv4() }
         if ([Net.IPAddress]::IsLoopback($ip) -or $ip.AddressFamily -ne 'InterNetwork') { return [Net.IPAddress]::IsLoopback($ip) }
         $o = [BitConverter]::ToUInt32($ip.GetAddressBytes()[3..0], 0)
-        foreach ($a in @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue)) {
-            if ($a.IPAddress -like '169.254.*' -or $a.PrefixLength -lt 8) { continue }
-            $m = [uint32](([uint64]4294967295 -shl (32 - $a.PrefixLength)) -band 4294967295)
-            $l = [BitConverter]::ToUInt32(([Net.IPAddress]::Parse($a.IPAddress)).GetAddressBytes()[3..0], 0)
-            if (($o -band $m) -eq ($l -band $m)) { return $true }
-        }
+        foreach ($n in @(Get-LocalNets)) { if (($o -band $n[1]) -eq $n[0]) { return $true } }
     } catch { }
     return $false
 }
@@ -627,6 +641,9 @@ function Update-LobbyTransfers($st) {
 function Update-LobbyNet($st, $listener) {
     while ($listener.Pending()) {
         $c = $listener.AcceptTcpClient()
+        # only this computer and the local network (a VPN included) may join: a connection from outside is closed at once
+        $from = [string]$c.Client.RemoteEndPoint.Address
+        if (-not (Test-SameLan $from)) { try { $c.Close() } catch { }; $st.Info = "A connection from $from (outside the local network) was refused."; $st.Dirty = $true; continue }
         [void]$st.Pending.Add([pscustomobject]@{ Client = $c; Buf = (New-Object Text.StringBuilder); Closed = $false; Name = $null; T = (Get-Date); Proto = $null })
     }
     foreach ($q in @($st.Pending)) {

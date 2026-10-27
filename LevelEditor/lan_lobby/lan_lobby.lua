@@ -49,6 +49,15 @@ local hookedConnect
 local function Config() return WG.Chobby and WG.Chobby.Configuration end
 local function lobby() return WG.LibLobby and WG.LibLobby.lobby end
 local function setStatus(s) status = s; log("status:", s); if ui.status then ui.status:SetText(s) end end
+-- An address of this computer or of a local network: 127.x, the private networks 10.x, 172.16-31.x, 192.168.x, link-local 169.254.x and the usual
+-- VPN ranges 100.64-127.x (Tailscale) and 25.x (Hamachi). The lobby in the game cannot list the network cards, so these ranges stand for the LAN.
+local function localAddress(ip)
+	local a, b = tostring(ip or ""):match("^(%d+)%.(%d+)%.%d+%.%d+$")
+	a, b = tonumber(a), tonumber(b)
+	if not a then return false end
+	return a == 127 or a == 10 or a == 25 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168) or (a == 169 and b == 254) or (a == 100 and b >= 64 and b <= 127)
+end
+
 local function cleanName(n) return ((n or ""):gsub("[^%w_%-%[%]]", ""):sub(1, 20)) end
 
 -- the player name in a LAN game: what is typed on the LAN Play page; else the name the lobby logs in with (Configuration.userName, saved in the lobby settings; the
@@ -427,10 +436,17 @@ local function updateServer()
 	local new = S.srv:accept()
 	while new do
 		new:settimeout(0)
-		S.nextId = S.nextId + 1
-		local c = { sock = new, buf = "", id = S.nextId, t = os.clock() }
-		S.conns[#S.conns + 1] = c
-		sendLine(c, "TASSERVER 0.38 " .. ((Spring.Utilities and Spring.Utilities.GetEngineVersion and Spring.Utilities.GetEngineVersion()) or "2026.07.04") .. " " .. PORT .. " 0")
+		local from = new:getpeername()
+		if not localAddress(from) then
+			-- only this computer and the local network (a VPN included) may join
+			log("connection refused (not a local network address):", tostring(from))
+			pcall(function() new:close() end)
+		else
+			S.nextId = S.nextId + 1
+			local c = { sock = new, buf = "", id = S.nextId, t = os.clock() }
+			S.conns[#S.conns + 1] = c
+			sendLine(c, "TASSERVER 0.38 " .. ((Spring.Utilities and Spring.Utilities.GetEngineVersion and Spring.Utilities.GetEngineVersion()) or "2026.07.04") .. " " .. PORT .. " 0")
+		end
 		new = S.srv:accept()
 	end
 	for i = #S.conns, 1, -1 do
