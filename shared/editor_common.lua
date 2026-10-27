@@ -1922,7 +1922,7 @@ function M.newUnits(o)
 				gl.Text("No units in this selection", cx, rect.top - 30 * S, 12 * S, "co")
 			else
 				gl.Text("These units are not loaded.", cx, rect.top - 30 * S, 12 * S, "co")
-				gl.Text("Start menu key 8: Scavenger and Raptor units ON, then start again.", cx, rect.top - 30 * S - 16 * S, 11 * S, "co")
+				gl.Text("Start menu key 7: Scavenger and Raptor units ON, then start again.", cx, rect.top - 30 * S - 16 * S, 11 * S, "co")
 			end
 		end
 		-- Line 1: name (code), line 2: description, line 3: metal and energy cost
