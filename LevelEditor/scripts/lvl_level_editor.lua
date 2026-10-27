@@ -10,7 +10,8 @@ function widget:GetInfo()
 	}
 end
 
--- Stage 1: place, delete, undo and save units. Needs /cheat and the gadget unit_level_editor.
+-- The Level Editor: place, generate, delete, undo and save units and features, the pages of the game modes; works in the editor game
+-- (game option leveleditor=1, no /cheat needed) together with the gadget unit_level_editor.lua.
 -- Saved to LevelEditor/<name>.lua in the game's write folder (a junction to the levels folder lives there).
 
 local Echo = Spring.Echo
@@ -42,8 +43,8 @@ end
 local function ledStep()
 	led("led|step")
 end
--- BAR only lets you select your own units. With Ctrl + left click (or dragging a rectangle) the editor selects
--- units of EVERY team in a selection of its own; delete, blow up, assign team, copy and blueprints use it.
+-- BAR only lets you select your own units; the editor switches on the god mode (godmode 3), so the normal selection of the game takes
+-- units of EVERY team; delete, blow up, assign team, copy and blueprints use it.
 local armedFeature = false -- Stamp mode for a feature (tree, rock, wreck)
 local moveDrag = nil -- { x, z }: start point while the selection is moved with Alt + drag
 local pendingNew = false -- an edit (rotate, mirror, move) is under way, the new IDs are expected

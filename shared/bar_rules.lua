@@ -1,4 +1,4 @@
--- Rules about BAR unit definitions that the Level Editor, the BluePrinter, the Tower Defense gadget and the scenario need in the
+-- Rules about BAR unit definitions that the Level Editor, the BluePrinter and the gadgets of the editor and its scenarios need in the
 -- same way. Small and free of game state, so gadgets (synced) and widgets can load it with VFS.Include("luaui/Include/bar_rules.lua").
 local R = {}
 

@@ -1,4 +1,5 @@
--- Level Editor (stage 1), synchronized part: places, deletes and undoes. Only with /cheat.
+-- Level Editor, synchronized part: places, generates, deletes, moves and undoes; orders for units of other teams. Only in the editor
+-- game (game option leveleditor=1) or with /cheat.
 function gadget:GetInfo()
 	return {
 		name = "Level Editor",

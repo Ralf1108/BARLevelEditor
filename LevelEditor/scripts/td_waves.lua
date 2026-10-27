@@ -1,15 +1,14 @@
 -- Tower Defense waves (synchronized part): spawns waves of land units at the spawn point, sends them along the path
 -- to the goal, pays metal and energy for every kill and ends the level (won: all waves beaten, lost: too many got through).
 -- Configuration: from the Level Editor with the message "tdw|start|<payload>" (stop: "tdw|stop"), or from the game option
--- tdconfig (same payload) for a finished scenario. Payload, fields separated by ";":
+-- tdconfig (the same payload as base64url) for a finished scenario. Payload, fields separated by ";":
 --   enemyTeam;playerTeam;spawnX;spawnZ;goalX;goalZ;allowedLeaks;path;waves;restrict;fog;metal;energy
---   path  = "x,z/x,z/..." (waypoints between spawn and goal) or "-"
+--   path  = "x,z/x,z/..." (the waypoints between spawn and goal, in the order the units walk them) or "-"
 --   waves = "factions,types,techs,count,gap,hp/..." factions e.g. armcor (arm, cor, leg), types e.g. vb (v = vehicles, h = hovercraft,
 --           b = bots), techs e.g. 12 (1-3), count of units, gap = seconds after the previous wave (first wave: after
 --           the start), hp = health in percent. The units are chosen at random among all that match.
 --   restrict = "towers" | "economy": the player may build only towers ("towers") or towers and economy structures ("economy"); fog = 1 | 0: fog of war
 --           (radars may be built; in a finished scenario the whole map is visible without fog)
---   path = the waypoints between spawn and goal, already in the order the units walk them
 --   metal, energy (optional): start resources of the player; only the editor uses them (it sets them at the start of the test, a finished
 --           scenario gets them from its game options)
 -- State for the display: game rules parameters tdState, tdWave, tdWaves, tdLeaks, tdMaxLeaks, tdKilled, tdAlive.
