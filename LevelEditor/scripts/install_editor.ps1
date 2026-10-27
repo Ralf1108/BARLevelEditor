@@ -22,6 +22,26 @@ Step 'Find Beyond All Reason'
 $bar = Find-Bar
 $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
+if (Get-Process spring -ErrorAction SilentlyContinue) { Fail 'The game is running: close it first (it holds the extra game files).' }
+
+# Writes a zip with the entries @(name, text) to $path: first into a temporary file that then replaces the old one, so a failure in between
+# leaves the old extra game in place. $fixedTime: optional time for all entries (equal archives on every computer).
+function Write-GameZip([string]$path, $entries, $fixedTime = $null) {
+    $tmp = $path + '.tmp'
+    if (Test-Path $tmp) { Remove-Item $tmp -Force }
+    $utf8 = New-Object Text.UTF8Encoding($false)
+    $zip = [IO.Compression.ZipFile]::Open($tmp, 'Create')
+    try {
+        foreach ($e in $entries) {
+            $entry = $zip.CreateEntry($e[0])
+            if ($fixedTime) { $entry.LastWriteTime = $fixedTime }
+            $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
+            try { $w.Write($e[1]) } finally { $w.Close() }
+        }
+    } finally { $zip.Dispose() }
+    Move-Item $tmp $path -Force
+    Write-Host "Created: $path"
+}
 
 # ---------------------------------------------------------------- 2. Engine
 Step 'Find the engine'
@@ -46,7 +66,6 @@ if (-not (Test-Path $rulesFile)) { Fail "File missing: bar_rules.lua (copy the s
 $gamesDir = Join-Path $data 'games'
 New-Item -ItemType Directory -Force $gamesDir | Out-Null
 $zipPath = Join-Path $gamesDir 'LevelEditorMod.sdz'
-if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 $modinfo = @"
 return {
 	name = "Level Editor",
@@ -74,9 +93,7 @@ $helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
 $lootStub = Get-Content (Join-Path $here 'pve_supply_drops_stub.lua') -Raw # replaces the lootbox gadget of the game (it let enemies capture the flags and collection points)
 $shared = Get-Content $sharedFile -Raw
 $rules = Get-Content $rulesFile -Raw
-$zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
-$utf8 = New-Object Text.UTF8Encoding($false)
-foreach ($e in @(
+Write-GameZip $zipPath @(
     @('modinfo.lua', $modinfo),
     @('luarules/gadgets/unit_level_editor.lua', $gadget),
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
@@ -90,19 +107,12 @@ foreach ($e in @(
     @('luaui/Include/led_ctf.lua', $ctfPage),
     @('luaui/Include/led_rtf.lua', $rtfPage),
     @('luaui/Include/led_restrictions.lua', $rstData),
-    @('luaui/Include/led_help_texts.lua', $helpTexts))) {
-    $entry = $zip.CreateEntry($e[0])
-    $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
-    $w.Write($e[1]); $w.Close()
-}
-$zip.Dispose()
-Write-Host "Created: $zipPath"
+    @('luaui/Include/led_help_texts.lua', $helpTexts))
 
 # The extra game for finished scenarios ("Level Editor Scenarios", used by LAN Play: the lobby starts a scenario with it): the gadgets of the scenarios, all
 # in one game. Each one switches itself on only when the game options of the scenario ask for it (tdconfig, ctfconfig, rtfconfig, restrictions), so it is the same game
 # for every scenario and every computer with this version of the editor. The zip entries get a fixed time so that the archives of two computers are equal.
 $zipPath2 = Join-Path $gamesDir 'LevelEditorScenarios.sdz'
-if (Test-Path $zipPath2) { Remove-Item $zipPath2 -Force }
 $modinfo2 = @"
 return {
 	name = "Level Editor Scenarios",
@@ -117,22 +127,14 @@ return {
 }
 "@
 $fixedTime = New-Object DateTimeOffset (2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
-$zip2 = [IO.Compression.ZipFile]::Open($zipPath2, 'Create')
-foreach ($e in @(
+Write-GameZip $zipPath2 @(
     @('luarules/gadgets/td_waves.lua', $gadgetTd),
     @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
     @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
     @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
     @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
     @('luaui/Include/bar_rules.lua', $rules),
-    @('modinfo.lua', $modinfo2))) {
-    $entry = $zip2.CreateEntry($e[0])
-    $entry.LastWriteTime = $fixedTime
-    $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
-    $w.Write($e[1]); $w.Close()
-}
-$zip2.Dispose()
-Write-Host "Created: $zipPath2"
+    @('modinfo.lua', $modinfo2)) $fixedTime
 Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $here $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
 
 if ($Quick) { exit 0 }
