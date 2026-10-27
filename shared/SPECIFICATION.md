@@ -41,6 +41,7 @@ Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECI
 - `M.rotateOffset(dx, dz, k)`: rotates an offset by `k` quarter turns. Order south → east → north → west, formula `(dx, dz) → (dz, -dx)`.
 - `M.headingToFacing(h)` (= `headingToFacing` of `bar_rules.lua`, also used by the gadget of the editor): Spring heading (−32768 to 32767) → facing 0 to 3 (`floor((h + 8192) / 16384) % 4`).
 - `M.parseBlueprint(text)`: reads the text of a blueprint file. A Lua table `{ blueprint = { ... } }` is valid.
+- `M.writeFile(path, text)`: writes a whole file safely (first `<path>.tmp`, then it replaces the old file; an error never leaves a half written file). Used for levels, blueprints, the order and index files, the settings and the recent list.
 - `M.fileText(path)`, `M.teamColor(t)`, `M.isBuildingDef(ud)` (building = `isBuilding` or not mobile).
 - `M.FACING_NAME = South, East, North, West`.
 

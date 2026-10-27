@@ -52,6 +52,37 @@ function M.fileText(path)
 	return t
 end
 
+-- Writes a whole file safely: first <path>.tmp, then it replaces the old file, so an error or a crash in between never leaves a
+-- half written file (the old one stays). Returns true, or nil and the error text.
+function M.writeFile(path, text)
+	local tmp = path .. ".tmp"
+	local f, err = io.open(tmp, "w")
+	if not f then
+		return nil, err
+	end
+	local ok, werr = f:write(text)
+	f:close()
+	if not ok then
+		pcall(os.remove, tmp)
+		return nil, werr
+	end
+	if os.rename then
+		pcall(os.remove, path) -- (Windows does not rename onto an existing file)
+		if os.rename(tmp, path) then
+			return true
+		end
+	end
+	-- no rename: write the file itself (the text is complete already)
+	f, err = io.open(path, "w")
+	if not f then
+		return nil, err
+	end
+	f:write(text)
+	f:close()
+	pcall(os.remove, tmp)
+	return true
+end
+
 -- Reads the text of a blueprint file (returns the unit list or nil, error text)
 function M.parseBlueprint(text)
 	local chunk, err = (loadstring or load)(text)
@@ -96,15 +127,11 @@ function M.newConfig(file, header, defaults, limits)
 	end
 
 	function c:save()
-		local f = io.open(self.file, "w")
-		if f then
-			local parts = {}
-			for _, k in ipairs(self.keys) do
-				parts[#parts + 1] = string.format("%s = %d", k, self.v[k])
-			end
-			f:write("-- " .. self.header .. "\nreturn { " .. table.concat(parts, ", ") .. " }\n")
-			f:close()
+		local parts = {}
+		for _, k in ipairs(self.keys) do
+			parts[#parts + 1] = string.format("%s = %d", k, self.v[k])
 		end
+		M.writeFile(self.file, "-- " .. self.header .. "\nreturn { " .. table.concat(parts, ", ") .. " }\n")
 	end
 
 	function c:load()
@@ -394,17 +421,10 @@ function M.newLibrary(o)
 		for _, bp in ipairs(self.list) do
 			names[#names + 1] = bp.name
 		end
-		local f = io.open(d1 .. "_order.txt", "w")
-		if f then
-			f:write(table.concat(names, "\n") .. (#names > 0 and "\n" or ""))
-			f:close()
-		end
+		local text = table.concat(names, "\n") .. (#names > 0 and "\n" or "")
+		M.writeFile(d1 .. "_order.txt", text)
 		if self.writeIndex then
-			local fi = io.open(d1 .. "_index.txt", "w")
-			if fi then
-				fi:write(table.concat(names, "\n") .. (#names > 0 and "\n" or ""))
-				fi:close()
-			end
+			M.writeFile(d1 .. "_index.txt", text)
 		end
 	end
 
@@ -474,13 +494,10 @@ function M.newLibrary(o)
 			self.say("Blueprint not found: " .. old)
 			return false
 		end
-		local f = io.open(bp.dir .. new .. ".lua", "w")
-		if not f then
+		if not M.writeFile(bp.dir .. new .. ".lua", text) then
 			self.say("Rename failed (file not writable)")
 			return false
 		end
-		f:write(text)
-		f:close()
 		if not self:trashFile(bp) then
 			return false
 		end
@@ -519,13 +536,10 @@ function M.newLibrary(o)
 		if Spring.CreateDir then
 			pcall(Spring.CreateDir, d1)
 		end
-		local f, err = io.open(d1 .. name .. ".lua", "w")
-		if not f then
+		local ok, err = M.writeFile(d1 .. name .. ".lua", "-- " .. header .. "\nreturn {\n\tblueprint = {\n" .. table.concat(lines, "\n") .. "\n\t},\n}\n")
+		if not ok then
 			return false, err
 		end
-		f:write("-- " .. header .. "\n")
-		f:write("return {\n\tblueprint = {\n" .. table.concat(lines, "\n") .. "\n\t},\n}\n")
-		f:close()
 		return true
 	end
 
@@ -2662,10 +2676,6 @@ function M.newRecent(file, maxN)
 	end
 
 	function r:save()
-		local f = io.open(self.file, "w")
-		if not f then
-			return
-		end
 		local parts = {}
 		for _, kind in ipairs({ "bp", "unit", "feature" }) do
 			local names = {}
@@ -2674,8 +2684,7 @@ function M.newRecent(file, maxN)
 			end
 			parts[#parts + 1] = kind .. " = { " .. table.concat(names, ", ") .. " }"
 		end
-		f:write("-- recently used blueprints, units and features (newest first)\nreturn { " .. table.concat(parts, ", ") .. " }\n")
-		f:close()
+		M.writeFile(self.file, "-- recently used blueprints, units and features (newest first)\nreturn { " .. table.concat(parts, ", ") .. " }\n")
 	end
 
 	function r:load()

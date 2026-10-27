@@ -333,14 +333,12 @@ local function saveLevel(name, quiet)
 			end
 		end
 	end
-	local f, err = io.open(OUTDIR .. name .. ".lua", "w")
-	if not f then
-		if not quiet then
-			say("Saving failed: " .. tostring(err))
-		end
-		return nil
+	-- the whole text is built first and written in one go (Shared.writeFile: a temporary file that replaces the old one), so an error
+	-- on the way never leaves a half written level
+	local out = { "-- Level Editor: saved for scenariooptions.unitloadout and featureloadout\n" }
+	local function w(s)
+		out[#out + 1] = s
 	end
-	f:write("-- Level Editor: saved for scenariooptions.unitloadout and featureloadout\n")
 	-- Game options that must be on in the main game so the placed units exist there
 	local needed = {}
 	local mo = Spring.GetModOptions()
@@ -358,32 +356,38 @@ local function saveLevel(name, quiet)
 			break
 		end
 	end
-	f:write("return {\n\tmap = \"" .. Game.mapName .. "\",\n")
+	w(string.format("return {\n\tmap = %q,\n", Game.mapName))
 	-- Map size in Elmo: the scenario builder needs it for the grace period (start boxes as a fraction of the map)
-	f:write(string.format("\tmapsize = { %d, %d },\n", Game.mapSizeX or 0, Game.mapSizeZ or 0))
-	f:write(string.format("\tunitlimit = %d,\n", cfg.v.unitLimit))
+	w(string.format("\tmapsize = { %d, %d },\n", Game.mapSizeX or 0, Game.mapSizeZ or 0))
+	w(string.format("\tunitlimit = %d,\n", cfg.v.unitLimit))
 	if block then
-		f:write(block .. "\n")
+		w(block .. "\n")
 	end
 	if td.data then
-		f:write("\ttowerdefense = " .. td.lua(td.data, "\t") .. ",\n")
+		w("\ttowerdefense = " .. td.lua(td.data, "\t") .. ",\n")
 	end
 	if ctf.data then
-		f:write("\tcapture = " .. ctf.lua() .. ",\n")
+		w("\tcapture = " .. ctf.lua() .. ",\n")
 	end
 	if rtf.data then
-		f:write("\treclaim = " .. rtf.lua() .. ",\n")
+		w("\treclaim = " .. rtf.lua() .. ",\n")
 	end
 	if not rst.empty() then
-		f:write("\trestrictions = " .. rst.lua() .. ",\n")
+		w("\trestrictions = " .. rst.lua() .. ",\n")
 	end
-	f:write("\t-- to be enabled in the main game (game options), otherwise some units are missing:\n")
-	f:write("\trequiredmodoptions = { " .. table.concat(needed, ", ") .. " },\n\tunitloadout = {\n")
-	f:write(table.concat(lines, "\n"))
-	f:write("\n\t},\n\tfeatureloadout = {\n")
-	f:write(table.concat(flines, "\n"))
-	f:write("\n\t},\n}\n")
-	f:close()
+	w("\t-- to be enabled in the main game (game options), otherwise some units are missing:\n")
+	w("\trequiredmodoptions = { " .. table.concat(needed, ", ") .. " },\n\tunitloadout = {\n")
+	w(table.concat(lines, "\n"))
+	w("\n\t},\n\tfeatureloadout = {\n")
+	w(table.concat(flines, "\n"))
+	w("\n\t},\n}\n")
+	local ok, err = Shared.writeFile(OUTDIR .. name .. ".lua", table.concat(out))
+	if not ok then
+		if not quiet then
+			say("Saving failed: " .. tostring(err))
+		end
+		return nil
+	end
 	if not quiet then
 		say(string.format("%d units and %d features saved in %s%s.lua", count, #flines, OUTDIR, name))
 		if name:sub(1, 1) ~= "_" then
@@ -535,14 +539,12 @@ local function blueprintSave(name)
 		)
 	end
 	table.sort(lines)
-	local f, err = io.open(BPDIR .. name .. ".lua", "w")
-	if not f then
+	local ok, err = Shared.writeFile(BPDIR .. name .. ".lua", "-- Level Editor Blueprint: positions relative to the center of the selection (dx, dz), h = height above ground\n"
+		.. "return {\n\tblueprint = {\n" .. table.concat(lines, "\n") .. "\n\t},\n}\n")
+	if not ok then
 		say("Saving failed: " .. tostring(err) .. " (folder LevelEditorBlueprints missing? run install_editor.bat again)")
 		return
 	end
-	f:write("-- Level Editor Blueprint: positions relative to the center of the selection (dx, dz), h = height above ground\n")
-	f:write("return {\n\tblueprint = {\n" .. table.concat(lines, "\n") .. "\n\t},\n}\n")
-	f:close()
 	say(string.format("Blueprint '%s' saved: %d units (%s%s.lua)", name, #lines, BPDIR, name))
 	widget:BlueprintSaved(name)
 end
