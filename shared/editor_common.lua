@@ -142,10 +142,15 @@ function M.newConfig(file, header, defaults, limits)
 		end
 	end
 
+	-- c.transient[key] = true: the value is not written into the file and not read from it (it belongs to something else, e.g. the unit limit of a level)
+	c.transient = {}
+
 	function c:save()
 		local parts = {}
 		for _, k in ipairs(self.keys) do
-			parts[#parts + 1] = string.format("%s = %d", k, self.v[k])
+			if not self.transient[k] then
+				parts[#parts + 1] = string.format("%s = %d", k, self.v[k])
+			end
 		end
 		M.writeFile(self.file, "-- " .. self.header .. "\nreturn { " .. table.concat(parts, ", ") .. " }\n")
 	end
@@ -156,7 +161,7 @@ function M.newConfig(file, header, defaults, limits)
 			local data = M.loadData(text)
 			if type(data) == "table" then
 				for _, k in ipairs(self.keys) do
-					if tonumber(data[k]) then
+					if tonumber(data[k]) and not self.transient[k] then
 						self.v[k] = tonumber(data[k])
 					end
 				end

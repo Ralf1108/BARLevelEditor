@@ -54,6 +54,7 @@ Related specifications: `..\LevelEditor\SPECIFICATION.md`, `..\BluePrinter\SPECI
 - Default: 3 columns and 4 rows for both. Limits: columns 1 to 6, rows 1 to 8. Values are limited on every change and saved at once.
 - Level Editor: `LuaUI/Config/LevelEditorUI.lua`; BluePrinter: `LuaUI/Config/BluePrinterUI.lua`.
 - Unknown keys in the file are ignored, missing ones stay at the default.
+- `cfg.transient[key] = true` (optional): the key is neither written into the file nor read from it (the Level Editor: `unitLimit`, which belongs to the level).
 - `cfg.steps[key] = { v1, v2, ... }` (optional, set by the widget): `change(key, delta)` then moves along this list instead of adding the delta (used by the Level Editor for the grid size and the unit limit, keys `grid` and `unitLimit`).
 
 ## 6. Settings page (`M.newOptions`)

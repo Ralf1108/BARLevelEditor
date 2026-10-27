@@ -467,11 +467,8 @@ local function load_level(_, _, args)
 	rtf.data = knownFields(data.reclaim, rtf.new())
 	rst.load(data.restrictions)
 	td.scroll = 0
-	if tonumber(data.unitlimit) then
-		cfg.v.unitLimit = tonumber(data.unitlimit) -- the unit limit belongs to the level (used by the scenario builder)
-		cfg:sync()
-		cfg:save()
-	end
+	cfg.v.unitLimit = tonumber(data.unitlimit) or 32000 -- the unit limit belongs to the level (used by the scenario builder); not written into the settings
+	cfg:sync()
 	if data.map and data.map ~= Game.mapName then
 		say("Warning: the level was saved on map " .. tostring(data.map) .. " but the current map is " .. Game.mapName)
 	end
@@ -557,6 +554,7 @@ cfg = Shared.newConfig("LuaUI/Config/LevelEditorUI.lua", "Level Editor: display 
 	{ bpCols = { 1, 6 }, bpRows = { 1, 8 }, uCols = { 1, 6 }, uRows = { 1, 8 }, grid = { 1, 64 }, unitLimit = { 500, 32000 } })
 cfg.steps.grid = { 1, 4, 8, 16, 32, 64 } -- grid size in Elmo (1 = free)
 cfg.steps.unitLimit = { 500, 1000, 2000, 4000, 8000, 16000, 32000 } -- unit limit written into the level for the scenario
+cfg.transient.unitLimit = true -- it belongs to the level (saved in the level file), not to the settings: a new level starts with 32000
 local lib = Shared.newLibrary({ dirs = { BPDIR }, say = say, writeIndex = true })
 local BP_LIST = lib.list -- { name, units, count, thumb, dir }
 local ghost = Shared.newGhost({ owner = "Level Editor", say = say, wg = function() return WG end })
