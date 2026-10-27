@@ -17,7 +17,7 @@ end
 -- as chat: !map, !bSet, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, name=, map=, players=, ip=, showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
 
 local PORT, GAMEPORT = 8453, 8452
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
@@ -207,6 +207,20 @@ forcedStatus = function(c)
 	local sc = S.battle.scenario
 	local l = lobby()
 	if not (sc and c.battleStatus and l) then return c.battleStatus end
+	if sc.versus then
+		-- Capture the Flag / Reclaim the Fame: human against human, the ally teams of the room decide. Only the first status of a joiner is corrected: he starts in
+		-- the other ally team than the host (the room gives him the host's); afterwards he may choose (the lobby sends the status again after every change)
+		local host = S.hostConn
+		if c ~= host and not c.versusSet and host and host.battleStatus then
+			c.versusSet = true
+			local bs, hs = l:ParseBattleStatus(c.battleStatus), l:ParseBattleStatus(host.battleStatus)
+			if not bs.isSpectator and bs.allyNumber == hs.allyNumber then
+				bs.allyNumber = (hs.allyNumber + 1) % 2
+				return encodeStatus(bs)
+			end
+		end
+		return c.battleStatus
+	end
 	local bs = l:ParseBattleStatus(c.battleStatus)
 	if bs.isSpectator or bs.allyNumber == sc.ally then return c.battleStatus end
 	bs.allyNumber = sc.ally
@@ -238,6 +252,13 @@ selectScenario = function(name)
 	local ally = team and low:match("%[team" .. team .. "%]%s*{.-allyteam%s*=%s*(%d+)")
 	if not (map and team and ally) then say("Scenario '" .. name .. "' has no player team (map " .. tostring(map) .. ")."); return end
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
+	for _, c in ipairs(S.conns) do c.versusSet = nil end
+	-- Capture the Flag and Reclaim the Fame are played human against human (a computer opponent does not play them): the opponent team of the scenario
+	-- (the team of its AI) is taken by the humans who chose another ally team in the room than the host
+	if low:find("ctfconfig%s*=") or low:find("rtfconfig%s*=") then
+		local opp = low:match("%[ai%d+%]%s*{.-team%s*=%s*(%d+)")
+		if opp then S.battle.scenario.versus = true; S.battle.scenario.oppTeam = tonumber(opp) end
+	end
 	-- the extra game: every computer needs the same file; the clients compare hash and size and fetch it from the host when theirs differs or is missing
 	local data = VFS.LoadFile(SCENARIO_FILE, VFS.RAW)
 	S.gameFile = nil
@@ -250,7 +271,11 @@ selectScenario = function(name)
 	S.battle.map = map; updateBattleInfo()
 	toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=" .. name)
 	applyScenarioToUsers()
-	say("Scenario: " .. name .. " (map " .. map .. "). The teams are the scenario's; the players join the team of the first player.")
+	if S.battle.scenario.versus then
+		say("Scenario: " .. name .. " (map " .. map .. "). Human against human: the players in the ally team of the host play the first team, the others the second team.")
+	else
+		say("Scenario: " .. name .. " (map " .. map .. "). The teams are the scenario's; the players join the team of the first player.")
+	end
 	log("scenario selected:", name, map, "player team", team, "ally team", ally)
 end
 
@@ -432,14 +457,27 @@ local function buildScenarioScript(myName)
 	local origUsers = tonumber(text:match("numusers%s*=%s*(%d+)")) or origPlayers
 	local l = lobby()
 	local extra = {}
+	local hostAlly = 0
+	for _, c in ipairs(battleUsers()) do
+		if c.name == myName and c.battleStatus then hostAlly = l:ParseBattleStatus(c.battleStatus).allyNumber or 0 end
+	end
+	local oppLeader   -- versus: the first human of the opponent team (its leader); his team replaces the AI of the scenario
 	for i, c in ipairs(players) do
 		local bs = c.battleStatus and l:ParseBattleStatus(c.battleStatus)
 		local spec = (not bs) or bs.isSpectator
-		extra[#extra + 1] = string.format("\t[player%d]\n\t{\n\t\tName=%s;\n\t\tPassword=%s;\n\t\tTeam=%d;\n\t\tspectator=%d;\n\t\trank=0;\n\t}\n", i, c.name, c.scriptPassword or "", sc.team, spec and 1 or 0)
+		local team = sc.team
+		if sc.versus and not spec and bs.allyNumber ~= hostAlly then team = sc.oppTeam; oppLeader = oppLeader or i end
+		extra[#extra + 1] = string.format("\t[player%d]\n\t{\n\t\tName=%s;\n\t\tPassword=%s;\n\t\tTeam=%d;\n\t\tspectator=%d;\n\t\trank=0;\n\t}\n", i, c.name, c.scriptPassword or "", team, spec and 1 or 0)
+	end
+	local removedAi = 0
+	if oppLeader then
+		-- the AI of the opponent team goes away, the first human of that team leads it
+		text, removedAi = text:gsub("\t%[ai%d+%]%s*{[^}]*[Tt]eam%s*=%s*" .. sc.oppTeam .. "%s*;[^}]*}\n", "")
+		text = text:gsub("(%[team" .. sc.oppTeam .. "%]%s*{[^}]-TeamLeader%s*=%s*)%d+", "%1" .. oppLeader, 1)
 	end
 	text = text:gsub("__GAMETYPE__", SCENARIO_GAME):gsub("__PLAYERNAME__", myName)
 	text = text:gsub("hostip%s*=%s*[%d%.]+;", "hostip=0.0.0.0;"):gsub("hostport%s*=%s*%d+;", "hostport=" .. GAMEPORT .. ";")
-	text = text:gsub("numplayers%s*=%s*%d+;", "numplayers=" .. (1 + #players) .. ";"):gsub("numusers%s*=%s*%d+;", "numusers=" .. (1 + #players + (origUsers - origPlayers)) .. ";")
+	text = text:gsub("numplayers%s*=%s*%d+;", "numplayers=" .. (1 + #players) .. ";"):gsub("numusers%s*=%s*%d+;", "numusers=" .. (1 + #players + (origUsers - origPlayers) - removedAi) .. ";")
 	local at = text:find("[modoptions]", 1, true) or text:find("[MODOPTIONS]", 1, true)
 	if at and #extra > 0 then
 		local before = text:sub(1, at - 1)
@@ -1211,7 +1249,7 @@ function widget:Update()
 	if cfg.auto == "join" and autoStarted and not lan and not scan and #found > 0 then joinHost(found[1].ip) end
 	if cfg.auto == "host" and lan and lan.step == "in" and S and not S.battle.running then
 		if #battleUsers() >= (tonumber(cfg.players) or 2) then
-			S.autoAt = S.autoAt or (os.clock() + 4)
+			S.autoAt = S.autoAt or (os.clock() + (tonumber(cfg.startDelay) or 4))
 			if os.clock() > S.autoAt then
 				if cfg.map and S.battle.map ~= cfg.map then l:SelectMap(cfg.map) end
 				log("auto: pressing Start (lobby:StartBattle, the call of the Start button)")

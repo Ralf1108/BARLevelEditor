@@ -295,7 +295,8 @@ Crystals stand on the map. A **construction unit of an allowed kind (ground and 
 - Headless runs of the real engine with test gadgets: placing factories, air unit height, handover (`assign`), builders, unit catalog, classification of the feature and unit definitions.
 - Important: the mock does **not** detect Lua 5.1 engine limits (for example a function may reference at most 60 upvalues; the Generate state therefore lives in one table `gen`). After every change start the real game once and check that the widget loads.
 - At least before every hand-over: run both installers, start the editor, check the log for errors.
-- The test scripts are not part of the repository.
+- Test levels for the game modes (Capture the Flag, Reclaim the Fame, Tower Defense) and the LAN Play test tool (two instances of the game, real lobby) are in `test-data\`; pitfalls of the test environment are in `test-data\TESTING.md` (read it before a test run).
+- The other test scripts are not part of the repository.
 
 ## 14. Scenario builder (`scenario\`, start menu key 3)
 

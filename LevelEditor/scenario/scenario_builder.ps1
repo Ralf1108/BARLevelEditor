@@ -15,9 +15,10 @@
 #   -Auto         no questions, take the saved info or the defaults (tests)
 #   -Edit         change the saved info in the level
 #   -AskName      (start menu) show the target name (the ID) and ask whether to take it, change it or - if the scenario exists - overwrite it
+#   -LevelDir d   take the levels from the folder d instead of ..\levels (the test levels in test-data\levels)
 #   -BundleDir d  (start menu key 6, "Play a level") only the data a game needs (scenario.txt and the gadgets it uses) go into the folder d (made new): no
 #                 package (no starters, bats, readme, zip) and nothing is written into the level; implies -Auto
-param([string]$Level = $null, [switch]$Auto, [switch]$Edit, [switch]$AskName, [string]$BundleDir = $null)
+param([string]$Level = $null, [switch]$Auto, [switch]$Edit, [switch]$AskName, [string]$BundleDir = $null, [string]$LevelDir = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -26,6 +27,7 @@ try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
 
 $HERE = $PSScriptRoot
 $LEVELS = Join-Path (Split-Path $HERE -Parent) 'levels'
+if ($LevelDir) { $LEVELS = (Resolve-Path $LevelDir).Path }
 $TEMPLATE = Join-Path $HERE 'template'
 $OUT = Join-Path $HERE 'scenarios'
 $utf8 = New-Object Text.UTF8Encoding($false)
