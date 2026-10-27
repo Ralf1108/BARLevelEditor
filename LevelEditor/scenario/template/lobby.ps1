@@ -23,7 +23,7 @@
 # Player numbers: a box is one player of the game (one team of the scenario) and the boxes of one ally team are its players 1, 2, 3 ...; every human who
 # joins gets a box of his own if one is free. N on a human puts him into the next player of his ally team (after the last one the first again), so the humans with the
 # same number play ONE player together (all of them can give orders to its units, they share its resources). Marked in the lobby: "player 2" after
-# the name, "Copilot with Ben" when a box holds more than one human. The game of such a team does not start by itself (the engine waits for a
+# the name, "Copilot with PlayerB" when a box holds more than one human. The game of such a team does not start by itself (the engine waits for a
 # second "ready" that never comes): the little widget shared_start.lua starts it from the host's game (see there).
 
 # The version of the lobby protocol: host and joiners must speak the same one (the game itself comes from the host, see the bundle below). Raise it

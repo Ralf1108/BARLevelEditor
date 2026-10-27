@@ -40,13 +40,13 @@ function widget:GameFrame(f)
 				"score0", gp("rtfScore0"), "score1", gp("rtfScore1"), "rate0", gp("rtfRate0"), "rate1", gp("rtfRate1"))
 		end
 	end
-	-- orders: Ralf (team 0) and Ben (team 1) each steer their own team
-	if (me == "Ralf" or me == "Ben") and not ordered and f >= 120 then
+	-- orders: PlayerA (team 0) and PlayerB (team 1) each steer their own team
+	if (me == "PlayerA" or me == "PlayerB") and not ordered and f >= 120 then
 		ordered = true
 		local team = Spring.GetMyTeamID()
 		local sent = 0
 		local fast, builder, homeX = "armflash", "armck", 4800
-		if me == "Ben" then fast, builder, homeX = "corgator", "corck", 7488 end
+		if me == "PlayerB" then fast, builder, homeX = "corgator", "corck", 7488 end
 		for _, u in ipairs(Spring.GetTeamUnits(team)) do
 			local def = UnitDefs[Spring.GetUnitDefID(u)].name
 			if mode == "ctf" and def == fast and sent < 3 then
@@ -74,8 +74,8 @@ function widget:GameFrame(f)
 		local com
 		for _, u in ipairs(Spring.GetTeamUnits(team)) do if UnitDefs[Spring.GetUnitDefID(u)].customParams.iscommander then com = u end end
 		if com and f % 150 == 0 then local x, _, z = Spring.GetUnitPosition(com); log("  commander of team", tostring(team), "at", string.format("%.0f,%.0f", x, z), "seen by", tostring(me)) end
-		if com and me == "Ralf" and f == 150 then Spring.GiveOrderToUnit(com, CMD.MOVE, { 5200, 449, 6144 }, {}); log("Ralf orders east") end
-		if com and me == "Ben" and f == 900 then Spring.GiveOrderToUnit(com, CMD.MOVE, { 3600, 449, 6144 }, {}); log("Ben orders west") end
+		if com and me == "PlayerA" and f == 150 then Spring.GiveOrderToUnit(com, CMD.MOVE, { 5200, 449, 6144 }, {}); log("PlayerA orders east") end
+		if com and me == "PlayerB" and f == 900 then Spring.GiveOrderToUnit(com, CMD.MOVE, { 3600, 449, 6144 }, {}); log("PlayerB orders west") end
 	end
 	if f >= QUIT then log("quit at frame", f); Spring.SendCommands("quitforce") end
 end

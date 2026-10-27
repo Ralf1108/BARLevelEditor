@@ -27,9 +27,9 @@ foreach ($who in 'H', 'J') {
 }
 $common = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$repo\LevelEditor\scenario\template\start_scenario.ps1", '-Lobby', '-HostIp', '127.0.0.1', '-ScenarioDir', $bundle, '-EditorDir', "$repo\LevelEditor")
 $procs = @{}
-$procs.H = Start-Process powershell -ArgumentList ($common + @('-BarPath', "$Work\barH", '-HostGame', '-Players', '2', '-LobbyAutoStart', '2', '-Name', 'Ralf', '-WindowRect', $rects.H)) -WindowStyle Minimized -PassThru
+$procs.H = Start-Process powershell -ArgumentList ($common + @('-BarPath', "$Work\barH", '-HostGame', '-Players', '2', '-LobbyAutoStart', '2', '-Name', 'PlayerA', '-WindowRect', $rects.H)) -WindowStyle Minimized -PassThru
 Start-Sleep 5
-$procs.J = Start-Process powershell -ArgumentList ($common + @('-BarPath', "$Work\barJ", '-Join', '-JoinIp', '127.0.0.1', '-WaitForHost', '-Name', 'Ben', '-WindowRect', $rects.J)) -WindowStyle Minimized -PassThru
+$procs.J = Start-Process powershell -ArgumentList ($common + @('-BarPath', "$Work\barJ", '-Join', '-JoinIp', '127.0.0.1', '-WaitForHost', '-Name', 'PlayerB', '-WindowRect', $rects.J)) -WindowStyle Minimized -PassThru
 $start = Get-Date
 while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and (-not $procs.H.HasExited -or -not $procs.J.HasExited)) { Start-Sleep 3 }
 foreach ($who in 'H', 'J') {

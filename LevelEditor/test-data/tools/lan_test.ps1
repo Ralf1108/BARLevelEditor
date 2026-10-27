@@ -1,4 +1,4 @@
-# LAN Play test with two instances of the game (host Ralf, joiner Ben) and the real lobby on this computer, in two small windows.
+# LAN Play test with two instances of the game (host PlayerA, joiner PlayerB) and the real lobby on this computer, in two small windows.
 #   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
@@ -43,8 +43,8 @@ foreach ($who in 'H', 'J') {
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
-        $auto = if ($Mode -eq 'cp') { "auto=host`nname=Ralf`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=Ben`nstartDelay=14" } else { "auto=host`nname=Ralf`nplayers=2`nscenario=$scn" }
-    } else { $auto = "auto=join`nname=Ben`nip=127.0.0.1`nautoAccept=1" }
+        $auto = if ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=2`nscenario=$scn" }
+    } else { $auto = "auto=join`nname=PlayerB`nip=127.0.0.1`nautoAccept=1" }
     [IO.File]::WriteAllText("$d\lanlobby_cfg.txt", $auto)
     $r = $rects[$who]
     [IO.File]::WriteAllLines("$sbx\springsettings.cfg", @('Fullscreen = 0', 'WindowBorderless = 0', "XResolution = $($r[2])", "YResolution = $($r[3])", "XResolutionWindowed = $($r[2])", "YResolutionWindowed = $($r[3])", "WindowPosX = $($r[0])", "WindowPosY = $($r[1])", 'LogFlushLevel = 0', 'InitialNetworkTimeout = 600', 'NetworkTimeout = 600', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev'))

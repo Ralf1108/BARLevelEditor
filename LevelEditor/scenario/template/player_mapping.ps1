@@ -22,7 +22,7 @@ function Save-Mapping($entries) {
     Set-Content -Path $script:MappingFile -Value @($entries | ForEach-Object { '{0}={1}' -f $_.Name, $_.Team }) -Encoding ASCII
 }
 
-# "Ralf=0,Player2=1" (the form of the parameter -Mapping) -> entries
+# "PlayerA=0,Player2=1" (the form of the parameter -Mapping) -> entries
 function ConvertFrom-MappingText([string]$text) {
     $res = @()
     foreach ($p in $text.Split(',', [StringSplitOptions]::RemoveEmptyEntries)) {

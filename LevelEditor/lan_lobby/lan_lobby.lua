@@ -1241,7 +1241,7 @@ function widget:Update()
 		local own = ownGame() or {}
 		log("test: scenario.txt read:", txt and #txt or "FAILED", "bytes; game archive '" .. tostring(own.name) .. "' present:", tostring(own.name and VFS.HasArchive(own.name)))
 		if txt then
-			local script = txt:gsub("__GAMETYPE__", cfg.scenarioGame or own.name or "Level Editor Scenarios"):gsub("__PLAYERNAME__", cfg.name or "Hanna")
+			local script = txt:gsub("__GAMETYPE__", cfg.scenarioGame or own.name or "Level Editor Scenarios"):gsub("__PLAYERNAME__", cfg.name or "PlayerC")
 			log("test: starting the scenario with Spring.Reload")
 			Spring.Reload(script)
 		end
