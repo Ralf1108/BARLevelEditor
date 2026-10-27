@@ -453,6 +453,16 @@ function Save-Block([string]$path, $answers) {
     [IO.File]::WriteAllText($path, $text, $utf8)
 }
 
+# AI of a team from its entry in the level (button AI of the editor): 'default' or no entry = the AI behavior of the scenario
+$LUA_AIS = @('SimpleAI', 'SimpleDefenderAI', 'SimpleConstructorAI', 'ScavengersAI', 'RaptorsAI')
+function Get-AiSpec([string]$name) {
+    $spec = @{ Short = $name; Version = '0.1'; Lua = $null; Options = '' }
+    if ($name -eq 'CircuitAI easy') { $spec.Short = 'CircuitAI'; $spec.Options = "`t`t[Options]`n`t`t{`n`t`t`tprofile=easy;`n`t`t}`n" }
+    if ($spec.Short -in 'BARb', 'CircuitAI') { $spec.Version = 'stable' }
+    if ($name -in $LUA_AIS) { $spec.Lua = $name }
+    return $spec
+}
+
 function Get-TeamSide($units, [int]$team) {
     $cnt = [ordered]@{}
     foreach ($u in $units) {
@@ -600,10 +610,18 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     if ($grace -gt 0 -and $mapX -le 0) { throw 'The map size is missing in the level (needed for the grace period). Save the level again in the Level Editor.' }
     # Tower Defense: the enemy team only gets the waves (no AI of its own that takes them over) and the gadget decides about winning and losing
     $aiRun = if ($td -or $ctf -or $rtf) { 'NullAI' } else { $ai }
+    # AI per team (button AI of the editor); with Tower Defense, Capture the Flag and Reclaim the Fame the gadget alone steers the enemy
+    $teamAi = Get-Val $saved 'teamai' ([ordered]@{})
+    $aiOf = @{}
+    foreach ($t in $teamsFound) {
+        $n = if ($td -or $ctf -or $rtf -or -not $teamAi.Contains([string]$t)) { $aiRun } else { [string]$teamAi[[string]$t] }
+        $aiOf[[int]$t] = Get-AiSpec $n
+    }
     $winRun = if ($td -or $ctf -or $rtf) { 'neverend' } else { $win }
     $answers = [ordered]@{}
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['roles'] = $roles; $answers['tiers'] = $tiers; $answers['ai'] = $ai; $answers['win'] = $win; $answers['metal'] = $metal; $answers['energy'] = $energy; $answers['grace'] = $grace; $answers['sid'] = $sid
+    if ($teamAi.Count -gt 0) { $answers['teamai'] = $teamAi }
     if (-not $BundleDir) { Save-Block $path $answers }   # (the temporary scenario of "Play a level" leaves the level as it is)
     # Tower Defense: no grace period (the no-rush rules of the game keep every unit inside its start area while it runs, so the wave
     # units could not leave the spawn point); the saved answer stays in the level
@@ -692,14 +710,16 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $i = $newid[[int]$t]
         $side = Get-TeamSide $level.units $t
         $color = $COLORS[$i % $COLORS.Count]
-        [void]$lines.Add("`t[team$i]`n`t{`n`t`tAllyTeam=$($ally[[int]$t]);`n`t`tTeamLeader=0;`n`t`tSide=$side;`n`t`tHandicap=0;`n`t`tRgbColor=$color;`n`t}")
+        $luaAi = if ($roles[[string]$t] -ne 's' -and $aiOf[[int]$t].Lua) { "`t`tLuaAI=$($aiOf[[int]$t].Lua);`n" } else { '' }
+        [void]$lines.Add("`t[team$i]`n`t{`n`t`tAllyTeam=$($ally[[int]$t]);`n`t`tTeamLeader=0;`n`t`tSide=$side;`n`t`tHandicap=0;`n`t`tRgbColor=$color;`n$luaAi`t}")
     }
     $k = 0
     foreach ($t in $order) {
         $i = $newid[[int]$t]
         if ($roles[[string]$t] -eq 's') { continue }
-        $ver = if ($aiRun -eq 'BARb') { 'stable' } else { '0.1' }
-        [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$aiRun;`n`t`tName=${aiRun}_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$ver;`n`t}")
+        $spec = $aiOf[[int]$t]
+        if ($spec.Lua) { continue }   # a Lua AI is named in the team ([team] LuaAI=), it has no [ai] section
+        [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$($spec.Short);`n`t`tName=$($spec.Short)_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$($spec.Version);`n$($spec.Options)`t}")
         $k++
     }
     [void]$lines.Add("`t[player0]`n`t{`n`t`tName=__PLAYERNAME__;`n`t`tTeam=0;`n`t`tspectator=0;`n`t`trank=0;`n`t}")

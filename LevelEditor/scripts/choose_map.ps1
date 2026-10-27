@@ -172,12 +172,13 @@ function Read-Level($f, [string]$displayName) {
     $installed = [bool]($mapItem -and $mapItem.Installed)
     $loadable = [bool]($mapItem -and -not $mapItem.Installed -and $mapItem.Url)
     $forceAll = [bool]([regex]::IsMatch($t, 'requiredmodoptions\s*=\s*\{[^}]*forceallunits'))   # the level holds Scavenger or Raptor units
+    $ai1 = [regex]::Match($t, '"teamai"\s*:\s*\{[^}]*"1"\s*:\s*"([^"]+)"')   # AI of team 1 from the AI page of the editor
     $name = [IO.Path]::GetFileNameWithoutExtension($f.Name)
     if (-not $displayName) { $displayName = $name }
     $featText = if ($featCount -gt 0) { ", $featCount Features" } else { '' }
     $label = '{0}   Map: {1}   {2} units{3}   {4}' -f $displayName, ($mapName -replace '_', ' '), $count, $featText, $f.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
     if (-not $installed) { if ($loadable) { $label += '   (map is downloaded after you choose it)' } else { $label += '   (map not available!)' } }
-    return [pscustomobject]@{ ForceAll = $forceAll; Name = $name; Map = $mapName; Count = $count; Installed = $installed; Loadable = $loadable; MapItem = $mapItem; Time = $f.LastWriteTime; Label = $label; Search = ($displayName + ' ' + $mapName).ToLower() -replace '_', ' ' }
+    return [pscustomobject]@{ Ai1 = $(if ($ai1.Success) { $ai1.Groups[1].Value } else { '' }); ForceAll = $forceAll; Name = $name; Map = $mapName; Count = $count; Installed = $installed; Loadable = $loadable; MapItem = $mapItem; Time = $f.LastWriteTime; Label = $label; Search = ($displayName + ' ' + $mapName).ToLower() -replace '_', ' ' }
 }
 
 function Get-Levels {
@@ -488,8 +489,15 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
 }
 
 # ---------------------------------------------------------------- write the start script
-function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false) {
+function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false, [string]$ai1 = '') {
     $game = 'Level Editor 1'
+    # AI of team 1 (default and unknown names: NullAI, it does nothing); the Lua AIs are named in the team, the others get an [ai] section
+    $luaAis = @('SimpleAI', 'SimpleDefenderAI', 'SimpleConstructorAI', 'ScavengersAI', 'RaptorsAI')
+    $aiShort = if ($ai1 -in 'BARb', 'CircuitAI', 'CircuitAI easy', 'NullAI') { $ai1 -replace ' easy$', '' } else { 'NullAI' }
+    $aiVer = if ($aiShort -eq 'NullAI') { '0.1' } else { 'stable' }
+    $aiOpt = if ($ai1 -eq 'CircuitAI easy') { ' [Options] { profile=easy; }' } else { '' }
+    $team1Lua = if ($ai1 -in $luaAis) { " LuaAI=$ai1;" } else { '' }
+    $ai0 = if ($ai1 -in $luaAis) { '' } else { "[ai0] { shortname=$aiShort; version=$aiVer; team=1; host=0; name=${aiShort}1;$aiOpt }" }
     $fa = if ($forceAll) { ' forceallunits=1;' } else { '' }
     $script = @"
 [game]
@@ -497,8 +505,8 @@ function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false) {
 	[allyteam0] { numallies=0; }
 	[allyteam1] { numallies=0; }
 	[team0] { allyteam=0; teamleader=0; side=Armada; handicap=0; }
-	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
-	[ai0] { shortname=NullAI; team=1; host=0; name=Null1; }
+	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0;$team1Lua }
+	$ai0
 	[player0] { name=Player; spectator=0; team=0; }
 	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1;$fa }
 	ishost=1;
@@ -798,7 +806,7 @@ while ($true) {
             continue
         }
     }
-    Write-StartScript $chosen.Map ((Get-ScavSetting) -or $chosen.ForceAll)
+    Write-StartScript $chosen.Map ((Get-ScavSetting) -or $chosen.ForceAll) $chosen.Ai1
     Set-Autoload $chosen.Name
     Clear-Host
     Write-Host ("Starting level '{0}' on {1} ({2} units are being loaded)" -f $chosen.Name, ($chosen.Map -replace '_', ' '), $chosen.Count) -ForegroundColor Green
