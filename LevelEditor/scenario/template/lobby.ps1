@@ -34,7 +34,13 @@ $script:LobbyProtocol = '2'
 # What a bundle may hold (names only, in this order for the hash): scenario.txt and the Lua files of the extra game of the scenarios (gadgets, game
 # widgets, bar_rules.lua). Lua files only run inside the game engine; nothing that runs on the computer itself (no .ps1, .bat) is ever taken from
 # another computer.
-$script:BundleFiles = @('bar_rules.lua', 'ctf_game.lua', 'pve_supply_drops_stub.lua', 'rtf_game.lua', 'scenario.txt', 'scenario_briefing.lua', 'shared_start.lua', 'td_waves.lua', 'unit_indestructible.lua', 'unit_restrictions.lua')
+if (-not (Get-Variable ScenarioGameFiles -Scope Script -ErrorAction SilentlyContinue)) {
+    # (the list lives in bar_common.ps1: next to this file in a package, in the editor in ..\..\..\shared)
+    $bc = Join-Path $PSScriptRoot 'bar_common.ps1'
+    if (-not (Test-Path $bc)) { $bc = Join-Path (Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent) 'shared\bar_common.ps1' }
+    . $bc
+}
+$script:BundleFiles = @('scenario.txt') + @($ScenarioGameFiles | ForEach-Object { $_[0] })
 $script:BundleMaxBytes = 64MB   # per bundle (zip and unpacked)
 
 function Get-BundleCacheRoot { return (Join-Path $env:LOCALAPPDATA 'BAR-Scenario\Cache') }

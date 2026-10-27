@@ -4,11 +4,11 @@ param([Parameter(Mandatory)][string]$Data)
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent   # repository
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
-. (Join-Path $here 'editor_stamp.ps1')
+. (Join-Path $here 'editor_manifest.ps1')
 $game = Get-GameVersion $Data
 $sdz = Join-Path $Data 'games\LevelEditorMod.sdz'
 $stampFile = Join-Path $Data 'games\LevelEditorMod.stamp'
-$want = Get-EditorStamp $here $game
+$want = Get-EditorStamp $game
 $have = if (Test-Path $stampFile) { ([string](Get-Content $stampFile -Raw)).Trim() } else { '' }   # (an empty file gives $null)
 if ((Test-Path $sdz) -and $want -and $have -eq $want) { exit 0 }
 if (Get-Process spring -ErrorAction SilentlyContinue) {

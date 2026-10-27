@@ -30,6 +30,8 @@ $LEVELS = Join-Path (Split-Path $HERE -Parent) 'levels'
 if ($LevelDir) { $LEVELS = (Resolve-Path $LevelDir).Path }
 $TEMPLATE = Join-Path $HERE 'template'
 $OUT = Join-Path $HERE 'scenarios'
+$SHARED = Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared'
+. (Join-Path $SHARED 'bar_common.ps1')   # $ScenarioGameFiles: the Lua files of the extra game of the scenarios (one list)
 $utf8 = New-Object Text.UTF8Encoding($false)
 # Block in the level file: scenario = [==[ json ]==],  (the Level Editor copies it back unchanged when saving)
 $BLOCK_RX = [regex]::new("\n\tscenario = \[==\[(.*?)\]==\],[ \t\r]*(?=\n)", 'Singleline')
@@ -781,19 +783,17 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     [IO.File]::WriteAllText((Join-Path $folder 'scenario.txt'), $script, $utf8)
     if (-not $BundleDir) {
         Copy-Item (Join-Path $TEMPLATE 'start_scenario.ps1') $folder
-        Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_common.ps1') $folder   # the search of BAR, engine and game version
+        Copy-Item (Join-Path $SHARED 'bar_common.ps1') $folder   # the search of BAR, engine and game version, the extra game of the scenarios
         Copy-Item (Join-Path $TEMPLATE 'player_mapping.ps1') $folder
         Copy-Item (Join-Path $TEMPLATE 'lobby.ps1') $folder
-        Copy-Item (Join-Path $TEMPLATE 'scenario_briefing.lua') $folder
-        Copy-Item (Join-Path $TEMPLATE 'shared_start.lua') $folder
     }
-    if ($rst -or $tierOut.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_restrictions.lua') (Join-Path $folder 'unit_restrictions.lua') } # the restrictions run in this gadget (the starter builds the extra game from it)
-    if ($fixed.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'unit_indestructible.lua') (Join-Path $folder 'unit_indestructible.lua') } # the protection of the buildings marked with FX
-    if ($td -or $ctf -or $rst -or $rtf -or $fixed.Count -gt 0 -or $tierOut.Count -gt 0) { Copy-Item (Join-Path (Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared') 'bar_rules.lua') (Join-Path $folder 'bar_rules.lua') } # rules the gadgets share with the editor
-    if ($td) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'td_waves.lua') (Join-Path $folder 'td_waves.lua') } # the waves run in this gadget (the starter builds a small extra game from it)
-    if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'pve_supply_drops_stub.lua') (Join-Path $folder 'pve_supply_drops_stub.lua') } # the stub that replaces the lootbox gadget of the game (it let enemies capture the flags)
-    if ($ctf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'ctf_game.lua') (Join-Path $folder 'ctf_game.lua') } # the flags run in this gadget (the starter builds a small extra game from it)
-    if ($rtf) { Copy-Item (Join-Path (Join-Path (Split-Path $HERE -Parent) 'scripts') 'rtf_game.lua') (Join-Path $folder 'rtf_game.lua') } # the crystals are scored in this gadget (the starter builds a small extra game from it)
+    # every Lua file of the extra game of the scenarios (gadgets, game widgets, bar_rules.lua): each one switches itself on only by the game options of
+    # the scenario, so the starter builds the same game as the editor's setup
+    foreach ($f in $ScenarioGameFiles) {
+        foreach ($d in @((Join-Path (Split-Path $HERE -Parent) 'scripts'), $SHARED, $TEMPLATE)) {
+            if (Test-Path (Join-Path $d $f[0])) { Copy-Item (Join-Path $d $f[0]) (Join-Path $folder $f[0]); break }
+        }
+    }
     if ($BundleDir) {
         Write-Host ("Temporary scenario: {0} units, {1} features, {2} KB start script." -f $units.Count, $level.features.Count, [int][math]::Floor($script.Length / 1024))
         return

@@ -7,6 +7,7 @@ param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [strin
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
+. (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1')   # Write-ScenarioGame and its files
 New-Item -ItemType Directory -Force $sp | Out-Null
 if (Get-Process spring -ErrorAction SilentlyContinue) { 'A game is running: aborted'; return }
 Add-Type @'
@@ -39,7 +40,9 @@ foreach ($who in 'H', 'J') {
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
         Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse
-        python "$tools\build_sdz.py" "$d\games\LevelEditorScenarios.sdz" ($real -replace "\\", "/")
+        # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
+        $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
+        Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $auto = if ($Mode -eq 'cp') { "auto=host`nname=Ralf`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=Ben`nstartDelay=14" } else { "auto=host`nname=Ralf`nplayers=2`nscenario=$scn" }
     } else { $auto = "auto=join`nname=Ben`nip=127.0.0.1`nautoAccept=1" }
     [IO.File]::WriteAllText("$d\lanlobby_cfg.txt", $auto)

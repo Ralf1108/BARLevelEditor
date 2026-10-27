@@ -214,7 +214,7 @@ function Get-Scenarios {
         $title = $d.Name
         $readme = Join-Path $d.FullName 'README.txt'
         if (Test-Path $readme) { $first = (Get-Content $readme -TotalCount 1 -Encoding UTF8); if ($first) { $title = $first.Trim([char]0xFEFF).Trim() } }
-        $td = if (Test-Path (Join-Path $d.FullName 'td_waves.lua')) { '   Tower Defense' } else { '' }
+        $td = if ((Get-Content (Join-Path $d.FullName 'scenario.txt') -Raw -ErrorAction SilentlyContinue) -match 'tdconfig=') { '   Tower Defense' } else { '' }
         $label = '{0}   "{1}"   Map: {2}{3}   {4}' -f $d.Name, $title, ($map -replace '_', ' '), $td, $d.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
         $res += [pscustomobject]@{ Name = $d.Name; Path = $d.FullName; Time = $d.LastWriteTime; Label = $label; Search = ($d.Name + ' ' + $title + ' ' + $map).ToLower() -replace '_', ' ' }
     }

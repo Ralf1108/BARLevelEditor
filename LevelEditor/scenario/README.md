@@ -56,10 +56,7 @@ The package holds a copy of everything it needs (starter, lobby, gadgets, briefi
 | `shared_start.lua` | game widget that starts a game in which several humans play one team (Copilot) |
 | `scenario_briefing.lua` | game widget with the briefing window (the starter packs it into the extra game "Level Editor Scenarios"; the mission display of the game otherwise only shows "No additional briefing data found") |
 | `README.txt` | briefing and instructions |
-| `ctf_game.lua` | only in a Capture the Flag scenario: the gadget that runs flags, collection points and the income |
-| `rtf_game.lua` | only in a Reclaim the Fame scenario: the gadget that scores the crystals |
-| `td_waves.lua` | only in a Tower Defense scenario: the gadget that runs the waves and the restriction to towers (see below) |
-| `unit_restrictions.lua` | only if the level has restrictions (units the player cannot build, set with the X marks of the Place menu): the gadget that refuses them (game option `restrictions`) |
+| `ctf_game.lua`, `rtf_game.lua`, `td_waves.lua`, `unit_restrictions.lua`, `unit_indestructible.lua`, `pve_supply_drops_stub.lua`, `bar_rules.lua` | the gadgets of the extra game "Level Editor Scenarios" (in every package; each switches itself on only by the game options of the scenario): Capture the Flag, Reclaim the Fame, the Tower Defense waves and the restriction to towers, the units and tech levels the player cannot build, the indestructible buildings, the stub that keeps the lootbox gadget of the game away, and the rules they share |
 
 ## How it works
 The official game knows scenarios: the game option `scenariooptions` contains the unit list (`unitloadout`) and the feature list (`featureloadout`). The game sets them up at the start and then places no start commanders. The option is in the start script as `base64url(zlib(json))`. The level files of the editor have exactly this format.

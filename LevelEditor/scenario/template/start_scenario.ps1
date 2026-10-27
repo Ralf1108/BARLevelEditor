@@ -9,7 +9,7 @@
 # the host listen on this computer only; -NoBuild has no effect any more (the extra game is only built when it is missing); -WaitForHost
 # waits (up to 2 minutes) until a host listens on the port before the game is started.
 # From the start menu of the Level Editor this script runs from the editor's own folder (scenario\template) with -ScenarioDir <folder of the scenario:
-# scenario.txt, which gadgets it needs> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, rtf_game, unit_restrictions in scripts\, bar_rules in
+# scenario.txt> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, rtf_game, unit_restrictions ... in scripts\, bar_rules in
 # ..\shared), the starter, the lobby and the briefing are always the current ones of the editor, so a scenario built earlier is never out of date. Started
 # from the unpacked package of a scenario (Start Scenario.bat) both are empty: everything comes from the package folder.
 # -Bundle (start menu key 6, "Play a level"): the scenario is a bundle in the cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>: scenario.txt and the gadgets, made from a
@@ -27,7 +27,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $here = $PSScriptRoot
-$pkg = if ($ScenarioDir) { $ScenarioDir } else { $here }   # the folder of the scenario (scenario.txt, which gadgets are needed)
+$pkg = if ($ScenarioDir) { $ScenarioDir } else { $here }   # the folder of the scenario (scenario.txt; in a package also the Lua files of the extra game)
 . (Join-Path $here 'player_mapping.ps1')
 . (Join-Path $here 'lobby.ps1')
 

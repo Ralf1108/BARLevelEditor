@@ -15,7 +15,7 @@ function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
 $common = Join-Path (Join-Path $repo 'shared') 'bar_common.ps1'
 if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder shared must lie next to the folder LevelEditor)." -ForegroundColor Red; exit 1 }
 . $common
-. (Join-Path $here 'editor_stamp.ps1')
+. (Join-Path $here 'editor_manifest.ps1')   # which files go where (one list)
 
 # ---------------------------------------------------------------- 1. Find BAR
 Step 'Find Beyond All Reason'
@@ -36,14 +36,9 @@ Write-Host "Game: $game"
 
 # ---------------------------------------------------------------- 4. Build the extra game (zip)
 Step 'Build the extra game "Level Editor"'
-foreach ($f in $EditorFiles) {
-    if (-not (Test-Path (Join-Path $here $f))) { Fail "File missing: $f (the folder scripts copied completely?)" }
+foreach ($p in (Get-EditorSourceFiles)) {
+    if (-not (Test-Path $p)) { Fail "File missing: $p (the folders LevelEditor and shared copied completely, next to each other?)" }
 }
-# shared code of the Level Editor and the BluePrinter (folder shared next to LevelEditor)
-$sharedFile = Join-Path (Join-Path $repo 'shared') 'editor_common.lua'
-if (-not (Test-Path $sharedFile)) { Fail "File missing: editor_common.lua (copy the shared folder next to LevelEditor as well)" }
-$rulesFile = Join-Path (Join-Path $repo 'shared') 'bar_rules.lua'
-if (-not (Test-Path $rulesFile)) { Fail "File missing: bar_rules.lua (copy the shared folder next to LevelEditor as well)" }
 $gamesDir = Join-Path $data 'games'
 New-Item -ItemType Directory -Force $gamesDir | Out-Null
 $zipPath = Join-Path $gamesDir 'LevelEditorMod.sdz'
@@ -60,37 +55,15 @@ return {
 	depend = { "$game" },
 }
 "@
-# switch the widget on in the mod: only the first 'enabled = false,' (GetInfo); the same text appears in the code as data
-$widget = ([regex]'enabled = false,').Replace((Get-Content (Join-Path $here 'lvl_level_editor.lua') -Raw), 'enabled = true,', 1)
-$gadget = Get-Content (Join-Path $here 'unit_level_editor.lua') -Raw
-$gadgetTd = Get-Content (Join-Path $here 'td_waves.lua') -Raw
-$gadgetCtf = Get-Content (Join-Path $here 'ctf_game.lua') -Raw
-$ctfPage = Get-Content (Join-Path $here 'led_ctf.lua') -Raw
-$gadgetRtf = Get-Content (Join-Path $here 'rtf_game.lua') -Raw
-$rtfPage = Get-Content (Join-Path $here 'led_rtf.lua') -Raw
-$gadgetRst = Get-Content (Join-Path $here 'unit_restrictions.lua') -Raw
-$gadgetFix = Get-Content (Join-Path $here 'unit_indestructible.lua') -Raw
-$rstData = Get-Content (Join-Path $here 'led_restrictions.lua') -Raw
-$helpTexts = Get-Content (Join-Path $here 'help_texts.lua') -Raw
-$lootStub = Get-Content (Join-Path $here 'pve_supply_drops_stub.lua') -Raw # replaces the lootbox gadget of the game (it let enemies capture the flags and collection points)
-$shared = Get-Content $sharedFile -Raw
-$rules = Get-Content $rulesFile -Raw
-Write-GameZip $zipPath @(
-    @('modinfo.lua', $modinfo),
-    @('luarules/gadgets/unit_level_editor.lua', $gadget),
-    @('luarules/gadgets/td_waves.lua', $gadgetTd),
-    @('luarules/gadgets/ctf_game.lua', $gadgetCtf),
-    @('luarules/gadgets/rtf_game.lua', $gadgetRtf),
-    @('luarules/gadgets/pve_supply_drops.lua', $lootStub),
-    @('luarules/gadgets/unit_restrictions.lua', $gadgetRst),
-    @('luarules/gadgets/unit_indestructible.lua', $gadgetFix),
-    @('luaui/widgets/lvl_level_editor.lua', $widget),
-    @('luaui/Include/editor_common.lua', $shared),
-    @('luaui/Include/bar_rules.lua', $rules),
-    @('luaui/Include/led_ctf.lua', $ctfPage),
-    @('luaui/Include/led_rtf.lua', $rtfPage),
-    @('luaui/Include/led_restrictions.lua', $rstData),
-    @('luaui/Include/led_help_texts.lua', $helpTexts))
+# the files of the list (editor_manifest.ps1); the widget is switched on in the mod: only the first 'enabled = false,' (GetInfo), the same text
+# appears in the code as data
+$entries = @(, @('modinfo.lua', $modinfo))
+foreach ($e in (Get-EditorGameEntries)) {
+    $text = Get-Content $e[1] -Raw
+    if ($e[0] -eq 'luaui/widgets/lvl_level_editor.lua') { $text = ([regex]'enabled = false,').Replace($text, 'enabled = true,', 1) }
+    $entries += , @($e[0], $text)
+}
+Write-GameZip $zipPath $entries
 
 Write-Host "Created: $zipPath"
 
@@ -100,14 +73,18 @@ Write-Host "Created: $zipPath"
 # menu cleans them. The files of the older names (one fixed version) are removed.
 $prev = Join-Path $gamesDir $ScenarioGamePointer
 $prevFile = if (Test-Path $prev) { @(Get-Content $prev)[0] } else { $null }
-$scGame = Write-ScenarioGame $data $game @($here, (Join-Path $repo 'shared'), (Join-Path $root 'scenario\template'))
+$scGame = Write-ScenarioGame $data $game (Get-ScenarioGameDirs)
 Set-Content -Path $prev -Value @($scGame.File, $scGame.Name) -Encoding ASCII
 Write-Host "Created: $($scGame.Path)"
 if ($prevFile -and $prevFile -ne $scGame.File -and $prevFile -match '^LevelEditorScenarios_[0-9a-f]{8}\.sdz$') { Remove-Item (Join-Path $gamesDir $prevFile) -Force -ErrorAction SilentlyContinue }   # the editor's own older version
 foreach ($old in 'LevelEditorScenarios.sdz', 'TowerDefenseScenario.sdz') { Remove-Item (Join-Path $gamesDir $old) -Force -ErrorAction SilentlyContinue }
-Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $here $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
+Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
 
-if ($Quick) { exit 0 }
+if ($Quick) {
+    # the quick setup brings LAN Play up to date as well (it copies only what differs)
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'lan_lobby\install_lan_play.ps1') -BarPath $bar | Out-Null
+    exit 0
+}
 
 # ---------------------------------------------------------------- 5. Folder for saved levels
 Step 'Folder for saved levels'

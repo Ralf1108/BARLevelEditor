@@ -86,7 +86,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\help_texts.lua` - texts of the help board (?) and of `/led_help`
 - `scripts\choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`; the last chosen map (`Last Map.txt`) and the cached map list (`Online Maps Cache.json`) are kept in `%LOCALAPPDATA%\BAR-Level-Editor`; `scripts\map_preview.ps1` draws the picture of the highlighted map next to the list with its size, number of players and terrain below it (and gives the data to the filters) (thumbnails of the game's lobby package, read directly, nothing is stored)
 - `install_editor.bat` / `scripts\install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
-- `scripts\ensure_installed.ps1`, `scripts\editor_stamp.ps1` - called by `start_level_editor.bat`: fingerprint of the packed files and the game version, runs the setup when it changed
+- `scripts\editor_manifest.ps1` - the one list of the files the setup installs and where they go; `scripts\ensure_installed.ps1` - called by `start_level_editor.bat`: fingerprint of these files and the game version, runs the setup when it changed
 - `uninstall_editor.bat` / `scripts\uninstall_editor.ps1` - removal (levels and blueprints stay)
 - `start_level_editor.bat` - start (created by the setup)
 - `scripts\check_links.ps1` - called by `start_level_editor.bat` before every start: points the two junctions to the `levels` and `blueprints` folders again if the project folder was moved
