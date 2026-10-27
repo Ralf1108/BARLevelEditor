@@ -176,7 +176,9 @@ setlocal
 set "L=%~dp0"
 set "DATA=$data"
 set "ENGINE="
-for /d %%D in ("%DATA%\engine\*") do if exist "%%D\spring.exe" set "ENGINE=%%D"
+rem the newest engine (Get-Engine of shared\bar_common.ps1: sorted by version, not by name)
+for /f "delims=" %%E in ('powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%L%..\shared\bar_common.ps1'; (Get-Engine '%DATA%').FullName"') do set "ENGINE=%%E"
+if defined ENGINE if not exist "%ENGINE%\spring.exe" set "ENGINE="
 if not defined ENGINE (
 	echo No engine found.
 	pause & exit /b 1

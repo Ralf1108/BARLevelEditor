@@ -83,11 +83,12 @@ function Set-Junction($path, $target) {
             return
         }
         $old = @($item.Target)[0]
-        if ($old -eq $target) { return }
+        if ($old -and ([IO.Path]::GetFullPath($old).TrimEnd('\') -eq [IO.Path]::GetFullPath($target).TrimEnd('\'))) { return }
         cmd /c rmdir "$path" | Out-Null
         Write-Host "Stale junction removed: $path -> $old"
     }
     cmd /c mklink /J "$path" "$target" | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $path)) { Write-Host "WARNING: the junction $path -> $target could not be created." -ForegroundColor Yellow; return }
     Write-Host "Junction: $path -> $target"
 }
 
