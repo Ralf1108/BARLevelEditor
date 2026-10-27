@@ -83,10 +83,12 @@ if ($onlineOk) {
 }
 
 $byName = @{}
+$installedNames = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)   # (one lookup per online map instead of a search through all installed ones)
+foreach ($m in $installedMaps) { [void]$installedNames.Add([string]$m.Spring) }
 foreach ($o in $onlineMaps) {
     if (-not $o.springName) { continue }
     $stem = [IO.Path]::GetFileNameWithoutExtension($o.fileName)
-    $inst = [bool]($installedMaps | Where-Object { $_.Spring -ieq $o.springName })
+    $inst = $installedNames.Contains([string]$o.springName)
     $byName[$o.springName.ToLower()] = [pscustomobject]@{
         Display = ($o.springName -replace '_', ' '); Code = $stem; Spring = $o.springName; Installed = $inst
         Url = $o.downloadURL; FileName = $o.fileName; Md5 = $o.md5
