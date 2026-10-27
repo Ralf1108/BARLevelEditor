@@ -79,6 +79,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\td_waves.lua` - gadget of the Tower Defense waves and the restriction to towers (also used by Tower Defense scenarios)
 - `scripts\unit_restrictions.lua`, `scripts\led_restrictions.lua` - gadget and list of the restrictions of the level (what the player may not build)
 - `scripts\ctf_game.lua` - gadget of Capture the Flag (flags, collection points, income; also used by scenarios)
+- `scripts\led_td.lua` - the Tower Defense page of the widget (loaded by the widget)
 - `scripts\led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `scripts\rtf_game.lua` - gadget of Reclaim the Fame (crystals, points, score limit; also used by scenarios)
 - `scripts\led_rtf.lua` - the Reclaim the Fame page of the widget (loaded by the widget)
