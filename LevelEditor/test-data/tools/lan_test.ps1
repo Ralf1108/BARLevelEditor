@@ -1,12 +1,13 @@
 # LAN Play test with two instances of the game (host PlayerA, joiner PlayerB) and the real lobby on this computer, in two small windows.
 #   -Sync same | missing | other   the extra game of the joiners: the host's version, none (default), or another version of their own
 #   -Lobby same | other   the lobby widget of the joiners: the same file as the host's, or with one more comment line (another version)
+#   -NoMap   the joiners have an empty maps folder (not the junction to the installed maps): the map comes from the host over LAN Play
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
 #   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data')
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data')
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -34,7 +35,10 @@ foreach ($who in $who2) {
     if (Test-Path $d) { foreach ($j in Get-ChildItem $d -Directory | ? { $_.Attributes -band 'ReparsePoint' }) { cmd /c rmdir "$($j.FullName)" } }
     if (Test-Path $sbx) { Remove-Item $sbx -Recurse -Force }
     New-Item -ItemType Directory "$d\cache", "$d\LuaMenu\Config", "$d\LuaMenu\Widgets", "$d\games", "$d\LuaUI\Widgets", "$d\LevelEditor" -Force | Out-Null
-    foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$real\$j" | Out-Null }
+    foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') {
+        if ($j -eq 'maps' -and $NoMap -and $who -ne 'H') { New-Item -ItemType Directory "$d\maps" -Force | Out-Null; continue }
+        New-Item -ItemType Junction -Path "$d\$j" -Target "$real\$j" | Out-Null
+    }
     Copy-Item (Get-ChildItem "$real\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
     Copy-Item "$repo\LevelEditor\lan_lobby\lan_lobby.lua" "$d\LuaMenu\Widgets\"
     if ($who -ne 'H' -and $Lobby -eq 'other') { Add-Content "$d\LuaMenu\Widgets\lan_lobby.lua" "`n-- another version for the version test" -Encoding ASCII }
@@ -52,7 +56,7 @@ foreach ($who in $who2) {
         $sg0 = $sg; $hostData = $d
         $auto = if ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
-        $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1"
+        $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap) { "`nnoOnline=1" })"
         if ($Sync -eq 'same') { Copy-Item (Join-Path $hostData "games\$($sg0.File)") "$d\games\"; Set-Content "$d\games\$ScenarioGamePointer" @($sg0.File, $sg0.Name) -Encoding ASCII }
         elseif ($Sync -eq 'other') {
             $alt = Join-Path $sp 'alt_src'; New-Item -ItemType Directory -Force $alt | Out-Null

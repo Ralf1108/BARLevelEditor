@@ -17,12 +17,12 @@ end
 -- as chat: !map, !bSet, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
 
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 1, stamp = "2026-10-28 08:20" }
+local LAN_VERSION = { number = 2, stamp = "2026-10-28 08:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -40,7 +40,7 @@ local function log(...)
 end
 
 local ui = {}
-local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, ownGame, gameOfTag, fileTag, versionTag
+local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, ownGame, gameOfTag, fileTag, versionTag, mapBusyFn, runPendingFn
 local status = ""
 local returnAt
 local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
@@ -381,10 +381,76 @@ local function removeConn(c)
 	end
 end
 
+-- ---- maps: a joiner who has not got the map of the room gets the file from the host (asked with MAPINFO, fetched with FETCHMAP on short connections like
+-- FETCHGAME). Only the map of the room is served, only a .sd7 / .sdz file of the maps folder, at most MAP_MAX bytes.
+local MAP_MAX = 300 * 1024 * 1024
+
+local function mapFileOf(name)
+	if type(name) ~= "string" or name == "" then return nil end
+	local ok, path = pcall(VFS.GetArchivePath, name)
+	if not ok or type(path) ~= "string" then return nil end
+	local file = path:gsub("\\", "/"):match("/maps/([^/]+)$")
+	if not file or not file:lower():match("%.sd[7z]$") or file:find("..", 1, true) then return nil end
+	return file
+end
+
+-- size and md5 (base64, as VFS.CalculateHash gives it) of the map file, worked out once
+local function readWhole(path)
+	local fh = io.open(path, "rb")
+	if not fh then return nil end
+	local parts = {}
+	while true do
+		local chunk = fh:read(65536)
+		if not chunk then break end
+		parts[#parts + 1] = chunk
+	end
+	fh:close()
+	return table.concat(parts)
+end
+
+local function mapInfoOf(name)
+	S.mapInfo = S.mapInfo or {}
+	if S.mapInfo[name] then return S.mapInfo[name] end
+	local file = mapFileOf(name)
+	local data = file and readWhole("maps/" .. file)
+	if not data or #data == 0 or #data > MAP_MAX then return nil end
+	S.mapInfo[name] = { file = file, size = #data, hash = VFS.CalculateHash(data, 0) }
+	return S.mapInfo[name]
+end
+
+-- md5 as the usual 32 hex digits (the file servers show it that way)
+local function b64hex(b64)
+	local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	local bits = {}
+	for ch in b64:gsub("=", ""):gmatch(".") do
+		local v = (alphabet:find(ch, 1, true) or 1) - 1
+		for i = 5, 0, -1 do bits[#bits + 1] = math.floor(v / 2 ^ i) % 2 end
+	end
+	local out = {}
+	for i = 1, #bits - 7, 8 do
+		local byte = 0
+		for j = 0, 7 do byte = byte * 2 + bits[i + j] end
+		out[#out + 1] = string.format("%02x", byte)
+	end
+	return table.concat(out)
+end
+
 local function serverLine(c, line)
 	line = line:gsub("^#%d+%s+", "")
 	local cmd, args = line:match("^(%S+)%s*(.*)$")
 	if not cmd then return end
+	if cmd == "MAPINFO" and not c.name then
+		local m = (args == S.battle.map) and mapInfoOf(args) or nil
+		sendLine(c, "MAPINFO " .. (m and (m.size .. "|" .. m.hash .. "|" .. m.file) or "none")); c.close = true
+		return
+	end
+	if cmd == "FETCHMAP" and not c.name then
+		local m = (args == S.battle.map) and mapInfoOf(args) or nil
+		local fh = m and io.open("maps/" .. m.file, "rb")
+		if fh then c.mapServe = { fh = fh, header = "SIZE " .. m.size .. "\n" }; log("serving the map", args, "to", tostring(c.sock:getpeername()))
+		else c.close = true end
+		return
+	end
 	if cmd == "FETCHGAME" and not c.name then
 		local g = S.gameFile
 		if g and args == g.hash then c.serve = { pos = 1, header = "SIZE " .. g.size .. "\n" }; log("serving the extra game to", tostring(c.sock:getpeername()))
@@ -509,7 +575,27 @@ local function updateServer()
 				if sv.pos > S.gameFile.size then c.close = true; log("extra game served") end
 			end
 		end
-		if err == "closed" or c.close or (not c.name and not c.serve and os.clock() - c.t > 6) then removeConn(c) end
+		if c.mapServe then
+			local sv = c.mapServe
+			if sv.header then
+				if c.sock:send(sv.header) then sv.header = nil end
+			else
+				if not sv.pending then
+					sv.pending = sv.fh:read(65536); sv.ppos = 1
+					if not sv.pending then c.close = true; log("map served") end
+				end
+				if sv.pending then
+					local last, _, partial = c.sock:send(sv.pending, sv.ppos)
+					local sent = last or partial
+					if sent then sv.ppos = sent + 1 end
+					if sv.ppos > #sv.pending then sv.pending = nil end
+				end
+			end
+		end
+		if err == "closed" or c.close or (not c.name and not c.serve and not c.mapServe and os.clock() - c.t > 6) then
+			if c.mapServe then pcall(function() c.mapServe.fh:close() end) end
+			removeConn(c)
+		end
 	end
 end
 
@@ -625,6 +711,11 @@ local function hookConnect()
 			log("Spring.Reload (host) with start script:\n" .. script)
 			return Spring.Reload(script)
 		end
+		if lan and lan.role == "client" and mapBusyFn and mapBusyFn() then
+			lan.pendingConnect = { orig = original, args = { ... } }
+			log("start postponed until the map is loaded")
+			return
+		end
 		if lan and lan.role == "client" and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" then
 			local want = gameOfTag((self.modoptions.lansync or ""):match("^(%x+)|"))
 			if not want then
@@ -731,11 +822,7 @@ local function finishFetch(f, ok, reason)
 	if ok then
 		lan.syncPending = false
 		setStatus("The scenario game is up to date.")
-		if lan.pendingConnect then
-			local a = lan.pendingConnect; lan.pendingConnect = nil
-			local l = lobby()
-			if l then a.orig(l, unpack(a.args)) end
-		end
+		if runPendingFn then runPendingFn() end
 	else
 		lan.syncFailed = f.game and f.game.ver; lan.syncPending = false; lan.pendingConnect = nil
 		setStatus("Could not load the scenario game from the host: " .. tostring(reason))
@@ -824,6 +911,177 @@ local function updateSync()
 	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
 end
 
+-- ---- a map the joiner has not got: ask the host (MAPINFO), ask the player (the checksum is the host's own word), fetch it (FETCHMAP) into maps/<file>.part,
+-- check size and md5, then rename it and let the game scan its folders. The start of the game waits for it (see hookConnect).
+mapBusyFn = function() return lan and (lan.mapAsk or lan.mapFetch or lan.mapPrompt) end
+
+runPendingFn = function()
+	if lan and lan.pendingConnect and not lan.fetch and not lan.syncPending and not mapBusyFn() then
+		local a = lan.pendingConnect; lan.pendingConnect = nil
+		local l = lobby()
+		if l then a.orig(l, unpack(a.args)) end
+	end
+end
+
+local function finishMap(ok, reason)
+	local m = lan.mapFetch or {}
+	if m.sock then pcall(function() m.sock:close() end) end
+	if m.fh then pcall(function() m.fh:close() end) end
+	if m.part and not ok then os.remove(m.part) end
+	lan.mapFetch = nil
+	if ok then
+		setStatus("The map '" .. m.name .. "' was loaded from the host.")
+		runPendingFn()
+	else
+		lan.mapFailed = m.name; lan.pendingConnect = nil
+		local msg = "The map '" .. tostring(m.name) .. "' could not be loaded from the host: " .. tostring(reason)
+		setStatus(msg); bigPopup(msg)
+	end
+end
+
+-- the lobby starts the online download of a missing map by itself: it is in the queue of the download handler while it runs
+local function onlineLoading(name)
+	local dh = WG.DownloadHandler
+	local queue = dh and dh.GetDownloadQueue and dh.GetDownloadQueue()
+	for _, item in pairs(queue or {}) do
+		if type(item) == "table" and item.name == name then return true end
+	end
+	return false
+end
+
+local function startMapFetch(name, info)
+	if WG.DownloadHandler and WG.DownloadHandler.CancelDownload then pcall(WG.DownloadHandler.CancelDownload, name, "map") end
+	local s = socket.tcp(); s:settimeout(3)
+	local ok, e = s:connect(lan.ip, PORT)
+	if not ok then lan.mapFetch = { sock = s, name = name }; finishMap(false, "no connection (" .. tostring(e) .. ")"); return end
+	s:settimeout(0)
+	s:send("FETCHMAP " .. name .. "\n")
+	local part = "maps/" .. info.file .. ".part"
+	local fh = io.open(part, "wb")
+	lan.mapFetch = { sock = s, name = name, info = info, buf = "", got = 0, part = part, fh = fh, t = os.clock() }
+	if not fh then finishMap(false, "cannot write " .. part); return end
+	setStatus("Loading the map '" .. name .. "' from the host ...")
+	log("loading the map", name, info.size, "bytes")
+end
+
+local function updateMapFetch()
+	local f = lan.mapFetch
+	for _ = 1, 8 do
+		local data, err, partial = f.sock:receive(65536)
+		data = data or partial
+		if data and #data > 0 then
+			f.t = os.clock()
+			if not f.total then
+				f.buf = f.buf .. data
+				-- the server greets every connection first (TASSERVER ...); then comes "SIZE <n>" and the bytes
+				while not f.total do
+					local nl = f.buf:find("\n", 1, true)
+					if not nl then break end
+					local line = f.buf:sub(1, nl - 1)
+					f.buf = f.buf:sub(nl + 1)
+					local n = line:match("^SIZE (%d+)$")
+					if n then
+						f.total = tonumber(n)
+						if f.total ~= f.info.size then finishMap(false, "the host sends another size than he announced"); return end
+						data = f.buf; f.buf = ""
+					elseif not line:find("^TASSERVER") then
+						finishMap(false, "the host answered something else"); return
+					end
+				end
+				if not f.total then data = nil end
+			end
+			if data and #data > 0 then
+				local take = math.min(#data, f.total - f.got)   -- never more than the announced size
+				if take > 0 then f.fh:write(data:sub(1, take)); f.got = f.got + take end
+			end
+		end
+		if f.total and f.got >= f.total then
+			f.fh:close(); f.fh = nil
+			local all = readWhole(f.part)
+			if not all or #all ~= f.info.size then finishMap(false, "the file has not the announced size"); return end
+			if VFS.CalculateHash(all, 0) ~= f.info.hash then finishMap(false, "the file is not the one that was announced (md5)"); return end
+			all = nil
+			local final = "maps/" .. f.info.file
+			os.remove(final)
+			if not os.rename(f.part, final) then finishMap(false, "cannot write " .. final); return end
+			pcall(VFS.ScanAllDirs)
+			log("the map was loaded from the host:", f.total, "bytes, md5", b64hex(f.info.hash), "; archive present:", tostring(VFS.HasArchive(f.name)))
+			finishMap(true)
+			return
+		end
+		if err == "closed" then finishMap(false, "the host closed the connection"); return end
+		if not data then break end
+	end
+	if os.clock() - f.t > 30 then finishMap(false, "timeout") end
+end
+
+local function askMapQuestion(name, info)
+	local mb = math.max(1, math.floor(info.size / 1048576 + 0.5))
+	local function yes() lan.mapPrompt = nil; startMapFetch(name, info) end
+	-- "online": the normal download of the lobby (pr-downloader checks the file against the official checksum); the lua of a widget cannot ask for a checksum itself
+	local function online()
+		lan.mapPrompt = nil; lan.mapFailed = name; lan.pendingConnect = nil
+		if WG.DownloadHandler and WG.DownloadHandler.MaybeDownloadArchive then
+			WG.DownloadHandler.MaybeDownloadArchive(name, "map", 1)
+			setStatus("The lobby downloads the map '" .. name .. "' online. Start the game when it is there.")
+		else
+			setStatus("You did not load the map: the game cannot start for you.")
+		end
+	end
+	if cfg.autoAccept then yes(); return end
+	lan.mapPrompt = true
+	local q = "The host plays the map '" .. name .. "' (" .. mb .. " MB), which you have not got.\n\nFrom the host: over the LAN, without internet. The checksum (md5 " .. b64hex(info.hash) ..
+		") is only the host's word: it cannot be compared with the official one from here. Only accept from a host you trust.\n\nOnline: the lobby downloads the official map and checks it itself."
+	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 600, 360, "From the host", "Online", online) else yes() end
+end
+
+local function updateMapSync()
+	if not lan or lan.role ~= "client" or lan.step ~= "in" then return end
+	if lan.mapFetch then updateMapFetch(); return end
+	local a = lan.mapAsk
+	if a then
+		local reply
+		if not a.sent then
+			local _, w = socket.select(nil, { a.sock }, 0)
+			if w and #w > 0 and a.sock:send("MAPINFO " .. a.name .. "\n") then a.sent = true end
+		else
+			local data, _, partial = a.sock:receive(2048)
+			data = data or partial
+			if data and #data > 0 then a.buf = a.buf .. data end
+			reply = a.buf:match("MAPINFO ([^\r\n]*)")
+		end
+		if not reply and os.clock() - a.t < 5 then return end
+		pcall(function() a.sock:close() end)
+		lan.mapAsk = nil
+		local size, hash, file = (reply or ""):match("^(%d+)|([^|]+)|([^|]+)$")
+		if not size then
+			lan.mapFailed = a.name
+			log("map check: the host cannot send the map", a.name, "(" .. tostring(reply) .. ")")
+			setStatus("You have not got the map '" .. a.name .. "' and the host cannot send it: load it with the lobby (online).")
+			lan.pendingConnect = nil
+			return
+		end
+		askMapQuestion(a.name, { size = tonumber(size), hash = hash, file = file })
+		return
+	end
+	if lan.mapPrompt then return end
+	local l = lobby()
+	local b = l and l.battles and l.battles[1]
+	local name = b and b.mapName
+	if not name or name == "" or VFS.HasArchive(name) or lan.mapFailed == name then lan.mapSeen = nil; return end
+	lan.mapSeen = lan.mapSeen or os.clock()
+	local waited = os.clock() - lan.mapSeen
+	if cfg.noOnline and WG.DownloadHandler and WG.DownloadHandler.CancelDownload then pcall(WG.DownloadHandler.CancelDownload, name, "map"); waited = 99 end   -- test: no internet
+	if waited < 6 or (waited < 25 and onlineLoading(name)) then
+		if onlineLoading(name) then setStatus("The lobby loads the map '" .. name .. "' online ...") end
+		return
+	end
+	local sock = socket.tcp(); sock:settimeout(0)
+	sock:connect(lan.ip, PORT)
+	lan.mapAsk = { sock = sock, name = name, buf = "", sent = false, t = os.clock() }
+	log("map check: the map", name, "is missing: asking the host")
+end
+
 -- one warning per join when the lobby widget or the game widget of the host is not the one of this computer
 local function updateVersionCheck()
 	if not lan or lan.role ~= "client" or lan.step ~= "in" or lan.verChecked then return end
@@ -877,7 +1135,12 @@ local function updateVersionCheck()
 end
 
 local function updateLan()
+	if cfg.noOnline and not cfg.noOnlineDone and WG.DownloadHandler then
+		cfg.noOnlineDone = true   -- test: the lobby cannot download anything (no internet)
+		WG.DownloadHandler.QueueDownload = function() end
+	end
 	updateSync()
+	updateMapSync()
 	updateVersionCheck()
 	if not lan then return end
 	local l = lobby()
