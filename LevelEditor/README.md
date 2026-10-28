@@ -85,6 +85,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `scripts\rtf_game.lua` - gadget of Reclaim the Fame (crystals, points, score limit; also used by scenarios)
 - `scripts\led_rtf.lua` - the Reclaim the Fame page of the widget (loaded by the widget)
+- `scripts\led_arena.lua` - the Arena page of the widget (loaded by the widget); manual: `tools\arena.md`
 - `scripts\led_gadgets.lua` - what the gadgets share (editor mode, rules, messages to a team, the messages of the widget, the game options of a scenario)
 - `scripts\pve_supply_drops_stub.lua` - replaces the lootbox gadget of the game inside the extra game (otherwise enemies next to the flags and collection points would capture them)
 - `scripts\help_texts.lua` - texts of the help board (?) and of `/led_help`

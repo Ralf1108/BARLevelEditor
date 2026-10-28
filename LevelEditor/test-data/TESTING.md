@@ -54,6 +54,14 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 - **Lua limit:** at most 200 local variables per function; `lvl_level_editor.lua` has about 195 at top level. A new top-level `local` can break the load of the whole widget (see above), so count the `^local` lines before adding more and put new constants into an existing table.
 - **Per-team AI (button AI):** check the generated start script, not only the menu. `Write-StartScript 'Hooked 1.1' $false '<AI>'` from `choose_map.ps1` (load the function text with `Invoke-Expression`, from `function Write-StartScript` up to `function Set-Autoload`) must give `[ai0] { shortname=...; version=stable|0.1 ... }` for BARb, CircuitAI, `CircuitAI easy` (`[Options] { profile=easy; }`) and NullAI, and `LuaAI=<name>;` in `[team1]` without `[ai0]` for the Lua AIs. Then start a sandbox game with the line and look for `Skirmish AI <Circuit-stable>` in `infolog.txt` (the engine accepted it). Whether Raptors really send waves was not checked.
 
+## Arena test (`tools\arena_test.ps1`, `tools\zz_arena.lua`, 2026-10-28)
+
+- **Method:** one sandbox game (no installed file is changed): the extra game "Level Editor" is built from the repository files into the sandbox (`Write-GameZip` with `Get-EditorGameEntries`, as the setup does), four teams without AI on a flat map, the widget `zz_arena.lua` plays the page through `WG.LevelEditorWidget:DebugArena()` and logs `[zzar]` lines (settings, Generate, moveSetup, undo and redo with `led|undo|1` / `led|redo|1`, Start, Stop, Clear) and takes screenshots after the page and the unit window were drawn (not in the frame they were opened in). One instance needs about 8 GB.
+- **A helper that is declared after its first use** (`hasTeam` below `ar.poll`) broke the whole widget: `Error in Update(): ... attempt to call global 'hasTeam'`, the widget was removed and the test log showed only `nil` errors. Look for `Error in` in `infolog.txt` first.
+- **The commander counts for the budget** (the remaining budget is the budget minus all units of the team): a test budget of 2000 gave "nothing fits into the budget".
+- **The Gaia team is a team of the game** (here team 4): the table must not show it as a row.
+- **Screenshots in the same frame show the old picture:** open the window, take the screenshot some frames later.
+
 ## BluePrinter in a test
 
 - After a change of `shared\editor_common.lua` or `BluePrinter\bluePrinter.lua` the installed BluePrinter is old until `install_blueprinter.bat`, `start_blueprinter.bat`, `start_blueprinter_test.bat` copied the files (a start of the editor does not); the game that is running keeps the old ones (`/luaui reload`). "I do not see the new feature in the BluePrinter" is almost always this.

@@ -71,6 +71,10 @@ One per level; each has its own page, a test run (**Start test**) and export as 
 | [![Tower Defense page](level-editor-tower-defense.jpg)](../LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](level-editor-capture-the-flag.jpg)](../LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](level-editor-reclaim-the-fame.jpg)](../LevelEditor/game-modes/reclaim-the-fame.md) |
 | **TD**: walls, spawn, waypoints, goal, waves | **CF**: collection and flag points, income | **RF**: crystals, points, score limit |
 
+## Arena
+
+- Button **A** (between **G** and **TD**): armies of several teams fight each other. See the [Arena manual](../LevelEditor/tools/arena.md)
+
 ## Demo levels
 
 One playable level per game mode comes with the editor (start menu key `2`, then `demo_...`). All three are on the flat metal map *Full Metal Plate 1.7*.

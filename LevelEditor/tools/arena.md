@@ -4,8 +4,6 @@
 
 Let armies of different teams fight each other and watch: 100 Behemoths against 100 Juggernauts, long range against plasma cannons, anything. A tool like **G**, not a game mode: nothing is won or lost.
 
-*Not implemented yet. This page describes what Arena will do.*
-
 ## In short
 
 - **Menu:** the button **A** in the button column at the right edge of the editor (between **G** and **TD**)
@@ -17,7 +15,7 @@ Let armies of different teams fight each other and watch: 100 Behemoths against 
 
 - **Radius:** how far every army stands from the Arena Point (default 5000 Elmo)
 - **Table:** one row per team (same numbers as the team buttons at the left). The first two rows are on. A row that is off is not generated and does not fight
-- **Units:** the button is green and shows how many unit types are allowed. A new army allows nothing. Click it and the Place menu opens next to the page: a **green check** at a unit allows it for this army. The checks at faction, group and tech allow all of them at once. **1 .. 10** copies the list of another player, **Clear list** empties it
+- **Units:** the button is green and shows how many unit types are allowed. A new army allows nothing. Click it and the Place menu opens next to the page: a click on a unit (its **green check** at the upper right) allows it for this army. The checks at faction, group and tech allow all of them at once. **1 .. 10** copies the list of another player, **Clear list** empties it
 - **Count:** how many units each **Generate** adds. **Budget:** Metal and Energy, each can be left empty (unlimited). The first limit that is reached ends the army. The last column shows what is left of the budget (it counts all units of the team, also the ones you placed by hand, and it can be negative)
 - **Copy to table:** one budget for everybody, then adjust single rows
 - Units are drawn at random from the allowed ones. Only units that move and turrets are offered, no factories or other buildings
