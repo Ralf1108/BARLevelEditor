@@ -9,6 +9,7 @@
 return function(host)
 	local Shared = host.Shared
 	local ar = { open = false, edit = nil, pick = nil, data = nil, notice = nil, spent = {}, spentAt = -10 }
+	local pollState -- below
 	local ROWS = 10 -- one row per team 0 .. 9
 	local MAX_UNITS = 3000 -- units of one army (and of one team on the map)
 	local LIMITS = { radius = { 100, 30000 }, count = { 1, MAX_UNITS }, metal = { 0, 99999999 }, energy = { 0, 99999999 } }
@@ -67,8 +68,183 @@ return function(host)
 		ar.pick = nil
 	end
 
+	local POINT_R = 64 -- the red circle of the Arena Point and the distance within which Alt grabs it (Elmo)
+
+	-- State of the Arena Point and the armies as text for the undo history: "x,z;team,nx,nz,ax,az,hw,hh/..." ("-" for none)
+	function ar.state()
+		local c = ar.cfg()
+		local p = c.point and string.format("%d,%d", c.point.x, c.point.z) or "-"
+		local out = {}
+		for _, a in ipairs(c.armies) do
+			out[#out + 1] = string.format("%d,%d,%d,%d,%d,%d,%d", a.team, a.nx, a.nz, a.ax, a.az, a.hw, a.hh)
+		end
+		return p .. ";" .. (#out > 0 and table.concat(out, "/") or "-")
+	end
+
+	function ar.applyState(state)
+		local c = ar.cfg(true)
+		local p, a = tostring(state):match("^([^;]*);(.*)$")
+		local x, z = tostring(p):match("^(-?%d+),(-?%d+)$")
+		c.point = x and { x = tonumber(x), z = tonumber(z) } or nil
+		c.armies = {}
+		for t, nx, nz, ax, az, hw, hh in tostring(a):gmatch("(-?%d+),(-?%d+),(-?%d+),(-?%d+),(-?%d+),(-?%d+),(-?%d+)") do
+			c.armies[#c.armies + 1] = { team = tonumber(t), nx = tonumber(nx), nz = tonumber(nz), ax = tonumber(ax), az = tonumber(az), hw = tonumber(hw), hh = tonumber(hh) }
+		end
+	end
+
+	-- Notes a change of the point or the armies as a step of the undo history (before = ar.state() from before the change)
+	function ar.commit(before)
+		local after = ar.state()
+		if after ~= before then
+			host.step()
+			host.led("led|arenastate|" .. before .. "|" .. after)
+		end
+	end
+
+	-- Undo / redo from the gadget: take over the new state (called every frame)
+	pollState = function()
+		local n = Spring.GetGameRulesParam("led_arenastate_n")
+		if ar.seen == nil then
+			ar.seen = n or 0
+		elseif n and n ~= ar.seen then
+			ar.seen = n
+			ar.applyState(Spring.GetGameRulesParam("led_arenastate") or "-;-")
+		end
+	end
+
+	local function ground(mx, my)
+		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		return pos
+	end
+
+	-- Is the Arena Point within POINT_R of the mouse pointer?
+	function ar.pointAt()
+		local c = ar.cfg()
+		if not c.point then
+			return false
+		end
+		local mx, my = Spring.GetMouseState()
+		local pos = ground(mx, my)
+		return pos ~= nil and (c.point.x - pos[1]) ^ 2 + (c.point.z - pos[3]) ^ 2 <= POINT_R ^ 2
+	end
+
+	-- Arms a click on the map: "point" (sets or moves the Arena Point) or "gen" (Generate); the same button again ends it
+	function ar.startPick(kind)
+		ar.finish(true)
+		local same = ar.pick == kind
+		host.disarm()
+		ar.endPick()
+		if same then
+			host.say("Arena: mode ended")
+			return
+		end
+		ar.pick = kind
+		host.say(kind == "point" and "Click on the map: that is the Arena Point (right click ends)." or "Click on the map: the Arena Point is set there and the armies stand around it (right click ends).")
+	end
+
+	function ar.cancel()
+		ar.endPick()
+		host.say("Arena: mode ended")
+	end
+
+	-- Left click on the map in the pick mode
+	function ar.click(x, z)
+		x, z = math.floor(x), math.floor(z)
+		if ar.pick == "point" then
+			local before = ar.state()
+			ar.cfg(true).point = { x = x, z = z }
+			ar.commit(before)
+			ar.endPick()
+			host.say(string.format("Arena Point at %d, %d (Alt + drag moves it, Del removes it).", x, z))
+		end
+	end
+
+	function ar.deletePoint()
+		if not host.canEdit() then
+			return
+		end
+		local before = ar.state()
+		if not ar.cfg().point then
+			host.say("There is no Arena Point.")
+			return
+		end
+		ar.cfg(true).point = nil
+		ar.commit(before)
+		host.say("Arena Point removed (Ctrl+Z brings it back).")
+	end
+
+	-- Del: removes the Arena Point when the mouse pointer is over it; true if it did
+	function ar.deleteAt()
+		if not ar.open or not host.canEdit() or not ar.pointAt() then
+			return false
+		end
+		ar.deletePoint()
+		return true
+	end
+
+	-- Alt + left button over the point: it follows the mouse pointer (ar.sample) until the button is released (ar.endDrag); true if it was grabbed.
+	-- With Shift as well the whole setup moves (not yet).
+	function ar.grab(shift)
+		if shift or not host.canEdit() or not ar.pointAt() then
+			return false
+		end
+		ar.drag = { before = ar.state() }
+		return true
+	end
+
+	function ar.sample()
+		if not ar.drag then
+			return
+		end
+		local mx, my = Spring.GetMouseState()
+		local pos = ground(mx, my)
+		if pos then
+			local p = ar.cfg(true).point
+			p.x, p.z = math.floor(pos[1]), math.floor(pos[3])
+		end
+	end
+
+	function ar.endDrag()
+		if ar.drag then
+			ar.commit(ar.drag.before)
+			ar.drag = nil
+		end
+	end
+
+	-- Markers in the world (also with the page closed): the Arena Point as a thick red circle, and with the page open a thin ring of the radius
+	function ar.drawWorld()
+		local c = ar.cfg()
+		local p = c.point
+		if not p then
+			return
+		end
+		gl.DepthTest(false)
+		local function circle(r, width, alpha)
+			gl.LineWidth(width)
+			gl.Color(1, 0.1, 0.1, alpha)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for i = 0, 63 do
+					local a = i / 64 * 2 * math.pi
+					local x, z = p.x + math.cos(a) * r, p.z + math.sin(a) * r
+					gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
+				end
+			end)
+		end
+		circle(POINT_R, 7, 1)
+		circle(POINT_R * 0.45, 7, 1)
+		if ar.pointAt() then
+			circle(POINT_R + 14, 2, 1)
+		end
+		if ar.open then
+			circle(c.radius, 2, 0.55)
+		end
+		gl.LineWidth(1)
+		gl.Color(1, 1, 1, 1)
+	end
+
 	-- Cost of all units of every team on the map (for the remaining budget): worked out twice a second, not in every layout
 	function ar.poll()
+		pollState()
 		local now = os.clock()
 		if now - ar.spentAt < 0.5 then
 			return
@@ -325,7 +501,11 @@ return function(host)
 			for i = 1, ROWS do
 				c.rows[i].metal, c.rows[i].energy = c.budget.metal, c.budget.energy
 			end
-		elseif k == "arunits" or k == "arpoint" or k == "arpointx" or k == "argen" or k == "arclear" or k == "arplay" then
+		elseif k == "arpoint" then
+			ar.startPick("point")
+		elseif k == "arpointx" then
+			ar.deletePoint()
+		elseif k == "arunits" or k == "argen" or k == "arclear" or k == "arplay" then
 			host.say("Arena: this button does not work yet.")
 		end
 		return true

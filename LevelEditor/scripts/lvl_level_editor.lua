@@ -2494,6 +2494,7 @@ function gen.disarmAll()
 	area:disarm()
 	td.endPick()
 	ctf.endPick()
+	ar.endPick()
 end
 
 -- Restrictions of the level (LevelEditor/scripts/led_restrictions.lua)
@@ -2517,6 +2518,7 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 		bpGrid:setArmed(false)
 		area:disarm()
 		td.endPick()
+		ar.endPick()
 	end,
 	disarmAll = function() gen.disarmAll() end,
 	restrictStart = function() rst.start() end,
@@ -2684,7 +2686,7 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 -- Alt + drag move); without an active mode a right click clears the selection; returns true if it did something (a field of gen: the file is close to the limit of 200 locals)
 function gen.cancelModes()
 	local was = armedUnit or armedFeature or bpGrid.armed or gen.armed or gen.drag or delMode or delDrag
-		or mazeKind or mazeDrag or stampDrag or moveDrag or area:armed() or td.pick or ctf.pick
+		or mazeKind or mazeDrag or stampDrag or moveDrag or area:armed() or td.pick or ctf.pick or ar.pick
 	if not was then
 		return false -- the right click is the order of the game for the selected units (a left click on the ground clears the selection)
 	end
@@ -2698,6 +2700,9 @@ function gen.cancelModes()
 	end
 	if ctf.pick then
 		ctf.endPick()
+	end
+	if ar.pick then
+		ar.endPick()
 	end
 	stampDrag, moveDrag = nil, nil
 	area:disarm()
@@ -2942,7 +2947,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick then
+	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick and not ar.pick then
 		local alt, ctrl, _, shift = Spring.GetModKeyState()
 		local i = alt and not ctrl and not shift and td.dragAt()
 		if i and canEdit() then
@@ -2950,10 +2955,13 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick then
+	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick and not ar.pick then
 		local alt, ctrl, _, shift = Spring.GetModKeyState()
 		if alt and not ctrl and not shift and ctf.grab() then
 			return true -- the point follows the mouse while the button is held (ctf.sample)
+		end
+		if alt and not ctrl and ar.grab(shift) then
+			return true -- the Arena Point follows the mouse while the button is held (ar.sample)
 		end
 	end
 	if td.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
@@ -2983,6 +2991,18 @@ function widget:MousePress(mx, my, button)
 			return true
 		elseif button == 3 then
 			ctf.cancel()
+			return true
+		end
+	end
+	if ar.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		if button == 1 then
+			local _, pos = Spring.TraceScreenRay(mx, my, true)
+			if pos and canEdit() then
+				ar.click(pos[1], pos[3])
+			end
+			return true
+		elseif button == 3 then
+			ar.cancel()
 			return true
 		end
 	end
@@ -3163,6 +3183,7 @@ function widget:MouseRelease(mx, my, button)
 	area:release()
 	td.endWpDrag()
 	ctf.endDrag()
+	ar.endDrag()
 	td.sdrag = nil
 	paint = nil
 	if td.stroke then
@@ -3723,6 +3744,7 @@ function widget:DrawWorld()
 	end
 	td.drawWorld()
 	ctf.drawWorld()
+	ar.drawWorld()
 end
 
 -- Autosave: every 2 minutes and when leaving, as "_last" (to continue at the next start)
@@ -3762,8 +3784,12 @@ function widget:Update()
 	if ctf.pick and (not ctf.open or armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
 		ctf.endPick()
 	end
+	if ar.pick and (not ar.open or armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
+		ar.endPick()
+	end
 	td.sample()
 	ctf.sample()
+	ar.sample()
 	paintSample()
 	td.pollRoute()
 	ctf.poll()
@@ -3886,7 +3912,7 @@ function widget:KeyPress(key, mods, isRepeat)
 	if ar.edit then
 		return ar.key(key)
 	end
-	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt()) then
+	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt() or ar.deleteAt()) then
 		return true
 	end
 	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and (key == 13 or key == 271) then

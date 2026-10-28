@@ -434,6 +434,14 @@ local function publishCtfPoints(state)
 	Spring.SetGameRulesParam("led_ctfpts_n", ctfPtsN)
 end
 
+-- Arena Point and armies of the widget: the same way (op "arena", game rules parameters led_arenastate / led_arenastate_n)
+local arenaN = 0
+local function publishArena(state)
+	arenaN = arenaN + 1
+	Spring.SetGameRulesParam("led_arenastate", state)
+	Spring.SetGameRulesParam("led_arenastate_n", arenaN)
+end
+
 local function clearIndestructible(id)
 	indestructible[id] = nil
 	Spring.SetUnitRulesParam(id, "indestructible", nil)
@@ -619,6 +627,8 @@ local function revert(op)
 		publishRoute(op.before)
 	elseif k == "ctfpts" then
 		publishCtfPoints(op.before)
+	elseif k == "arena" then
+		publishArena(op.before)
 	elseif k == "fix" then
 		if unitIs(op.id, op.name) then
 			if op.old then setIndestructible(op.id) else clearIndestructible(op.id) end
@@ -673,6 +683,8 @@ local function apply(op)
 		publishRoute(op.after)
 	elseif k == "ctfpts" then
 		publishCtfPoints(op.after)
+	elseif k == "arena" then
+		publishArena(op.after)
 	elseif k == "fix" then
 		if unitIs(op.id, op.name) then
 			if op.new then setIndestructible(op.id) else clearIndestructible(op.id) end
@@ -1010,6 +1022,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 	elseif cmd == "ctfpts" then
 		-- led|ctfpts|before|after: the widget changed collection points or flag points (state texts, see led_ctf.lua)
 		record({ k = "ctfpts", before = parts[3] or "-;-", after = parts[4] or "-;-" })
+	elseif cmd == "arenastate" then
+		-- led|arenastate|before|after: the widget changed the Arena Point or the armies (state texts, see led_arena.lua)
+		record({ k = "arena", before = parts[3] or "-;-", after = parts[4] or "-;-" })
 	elseif cmd == "step" then
 		-- new action of the user: everything up to the next "step" belongs to one step (undo takes it back as a whole)
 		current = nil
