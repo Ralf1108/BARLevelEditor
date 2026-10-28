@@ -64,7 +64,7 @@ Details: [scenario builder](../LevelEditor/scenario/README.md)
 
 ## Game modes
 
-One per level; each has its own page, a test run (**Start test**) and export as a scenario.
+One per level; each has its own page, a test run (**Start**) and export as a scenario.
 
 | [Tower Defense](../LevelEditor/game-modes/tower-defense.md) | [Capture the Flag](../LevelEditor/game-modes/capture-the-flag.md) | [Reclaim the Fame](../LevelEditor/game-modes/reclaim-the-fame.md) |
 |---|---|---|

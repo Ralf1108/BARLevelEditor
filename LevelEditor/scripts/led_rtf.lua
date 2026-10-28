@@ -159,9 +159,9 @@ return function(host)
 			note(rtf.notice.text, { 1, 0.4, 0.35 })
 		end
 		y = y - 8 * S
-		line({ { kind = "rtfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start test"), active = running, fs = 26 * S,
+		line({ { kind = "rtfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start"), active = running, fs = 26 * S,
 			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
-			tip = "Start test: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
+			tip = "Start: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 		-- very bottom: the crystals to place (like the tower list of the Tower Defense page)
 		y = y - 4 * S
 		head("Crystals: click a tile, then click the map to place")

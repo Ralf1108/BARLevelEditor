@@ -203,9 +203,9 @@ return function(host)
 			note(ctf.notice.text, { 1, 0.4, 0.35 })
 		end
 		y = y - 8 * S
-		line({ { kind = "ctfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start test"), active = running, fs = 26 * S,
+		line({ { kind = "ctfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start"), active = running, fs = 26 * S,
 			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
-			tip = "Start test: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
+			tip = "Start: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 		y = y - m.PAD
 		return rects, labels, rect.top - y
 	end

@@ -12,7 +12,7 @@ Crystals stand on the map. Construction units earn **points** for their team by 
 - Tick **Reclaim the Fame** to mark the level (the button turns green)
 - Place crystals with the tiles at the bottom of the page
 - Excludes Tower Defense and Capture the Flag in the same level
-- **Start test** runs it in the editor
+- **Start** runs it in the editor
 - Demo level: `demo_rtf_crystal_fields` (large crystal in the middle, first to 3000 points)
 
 ![Demo level Crystal Fields](../../docs/demo-reclaim-the-fame.jpg)
@@ -49,7 +49,7 @@ Crystals stand on the map. Construction units earn **points** for their team by 
 
 ## Test and play
 
-- **Start test** / **Stop**: runs the game, the level comes back as before
+- **Start** / **Stop**: runs the game, the level comes back as before
 - Gold rings show the reach of a builder, numbers show the factor ("x4")
 - The score of every team and its points per second are shown at the top
 - Scenario package (start menu key `3`): settings are packed (at least one crystal needed)

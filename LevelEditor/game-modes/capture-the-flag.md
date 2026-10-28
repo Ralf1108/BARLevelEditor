@@ -12,7 +12,7 @@ Flags lie on the map. Units pick them up, carry them to their collection point a
 - Tick **Capture the Flag** to mark the level (the button turns green)
 - Place collection points and flag points per team
 - Excludes Tower Defense and Reclaim the Fame in the same level
-- **Start test** runs it in the editor
+- **Start** runs it in the editor
 - Demo level: `demo_ctf_crossroads` (two bases, three neutral flags, hold 4 to win)
 
 ![Demo level Crossroads](../../docs/demo-capture-the-flag.jpg)
@@ -47,7 +47,7 @@ Flags lie on the map. Units pick them up, carry them to their collection point a
 
 ## Test and play
 
-- **Start test** / **Stop**: runs the game, the level comes back as before
+- **Start** / **Stop**: runs the game, the level comes back as before
 - The score of every team is shown at the top
 - Scenario package (start menu key `3`): settings are packed
 - The game runs in the gadget `ctf_game.lua`

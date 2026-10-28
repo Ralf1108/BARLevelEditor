@@ -552,9 +552,9 @@ return function(td, H)
 			labels[#labels + 1] = { text = td.notice.text, x = x1, y = y - 20 * H.S(), size = 19 * H.S(), color = { 1, 0.4, 0.35 } }
 		end
 		y = y - 26 * H.S()
-		line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start test"), active = running, fs = 26 * H.S(),
+		line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start"), active = running, fs = 26 * H.S(),
 			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 }, -- red while running, green otherwise
-			tip = "Start test: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
+			tip = "Start: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 		y = y - m.PAD
 		return rects, labels, rect.top - y
 	end

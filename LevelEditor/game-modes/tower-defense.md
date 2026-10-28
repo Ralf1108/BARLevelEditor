@@ -11,7 +11,7 @@ Waves of enemy land units walk from a spawn point along a route to a goal. The p
 - **Menu:** click the button **TD** in the button column at the right edge of the editor (below **P** and **G**)
 - Tick **Tower Defense** to mark the level (the button turns green)
 - Draw the corridor, set spawn and goal, define the waves
-- **Start test** runs it in the editor, a scenario package lets others play it
+- **Start** runs it in the editor, a scenario package lets others play it
 - Demo level: `demo_td_serpentine` (zigzag corridor, 10 waves)
 
 ![Demo level Serpentine](../../docs/demo-tower-defense.jpg)
@@ -45,7 +45,7 @@ Waves of enemy land units walk from a spawn point along a route to a goal. The p
 
 ## Test and play
 
-- **Start test**: runs the waves; the commander is removed, resources come from the level
+- **Start**: runs the waves; the commander is removed, resources come from the level
 - **Stop** / **Reset**: brings the level back as before
 - Kills pay the unit's cost; all waves beaten = won
 - An enemy that is stuck for 30 seconds gets its route again; after two tries it is removed (it counts neither as through nor as killed), so the level always ends
