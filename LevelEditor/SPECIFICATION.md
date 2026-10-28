@@ -43,6 +43,7 @@ At the start always a menu in the console. Controls: arrow up/down (Home/End) ch
 ### 2.3 At the start of the game
 - Shortly after the start (frame 6) `widget:Update` sends `cheat 1` and `godmode 3` once, so units of every team can be selected and commanded (3.1).
 - At the start only the commander stands there. All mobile **builders of every faction** are created by the user when needed with Ctrl+D at the mouse pointer, grouped by kind, on **reachable spots** (check by grid and `TestMoveOrder`; no water, no cut-off mountains). Do not use: `Spring.RequestPath` (leads to a crash).
+- The start script has **ten teams** (0 to 9), each in its own ally team; only teams 0 and 1 keep their start commander (the gadget removes the others in the first frames), so the other teams are empty until something is placed (11f). Per team 3150 units at most (`maxunits` 32000 is shared by the teams).
 - The menu is visible at the start, with the Units tab first.
 
 ## 3. Controls in the game
