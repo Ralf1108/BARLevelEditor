@@ -19,12 +19,13 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 
 **Build**
 - Place units of all factions (Armada, Cortex, Legion, Scavengers, Raptors), trees, rocks and wrecks, with a 3D preview and a search
-- Paint, rows and rectangles; copy, cut, paste, move, rotate, mirror; undo and redo for everything
+- Paint, rows and rectangles; copy, cut, paste, move (units and trees, rocks, wrecks), rotate, mirror; undo and redo for everything
 - Delete along a line, in a rectangle or in a circle; make buildings indestructible
 - Generate random armies, turrets, air or ships, or a random maze of walls and dragon teeth
 - **Arena**: armies of up to ten teams (units, count or budget) stand around a point and fight each other
 - Blueprints: save a selection as a tile and place the layout again anywhere
-- Up to 32,000 units, 11 teams plus neutral, a live unit count per team
+- Ten teams plus neutral (3150 units per team, 32,000 in all), a live unit count per team
+- **Teams**: alliances (a colored frame around the team button), human or AI per team, start resources
 
 **Play it**
 - Select and command units of every team, with the cheat and god mode switched on for you
