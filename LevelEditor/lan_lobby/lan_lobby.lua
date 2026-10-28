@@ -20,6 +20,9 @@ end
 -- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
 
 local PORT, GAMEPORT = 8453, 8452
+-- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
+-- the hashes below still tell a changed file whose number was not raised
+local LAN_VERSION = { number = 1, stamp = "2026-10-28 08:20" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -54,7 +57,7 @@ local function setStatus(s) status = s; log("status:", s); if ui.status then ui.
 local function bigPopup(msg)
 	local ok = pcall(function()
 		if ui.popup then pcall(function() ui.popup:Dispose() end) end
-		local w, h = 640, 320
+		local w, h = 640, 360
 		local font = WG.Chobby.Configuration:GetFont(2)
 		ui.popup = Window:New { parent = screen0, x = math.floor((screen0.width - w) / 2), y = math.floor((screen0.height - h) / 2), width = w, height = h,
 			resizable = false, draggable = false, classname = "main_window" }
@@ -226,7 +229,7 @@ ownGame = function()
 end
 
 -- Versions of the Lua files of this computer that every player of a LAN game needs in the same version: the lobby widget (lan_lobby.lua) and the game
--- widget shared_start.lua (starts the Copilot games on official maps). The host announces both as the game option lanver "<lobby>|<shared>" (first 8 characters of VFS.CalculateHash each,
+-- widget shared_start.lua (starts the Copilot games on official maps). The host answers the command LANVER (before the login, like COPILOT; a game option would be shown as a text line in the room) with "<lobby>|<shared>" (first 8 characters of VFS.CalculateHash each,
 -- hash of the text without carriage returns; "-" when the file is not there); a joiner compares with his own and shows ONE warning on a difference.
 fileTag = function(path)
 	local text = VFS.LoadFile(path, VFS.RAW)
@@ -235,7 +238,7 @@ fileTag = function(path)
 end
 
 versionTag = function()
-	return fileTag("LuaMenu/Widgets/lan_lobby.lua") .. "|" .. fileTag("LuaUI/Widgets/shared_start.lua")
+	return fileTag("LuaMenu/Widgets/lan_lobby.lua") .. "|" .. fileTag("LuaUI/Widgets/shared_start.lua") .. "|" .. LAN_VERSION.number .. "|" .. LAN_VERSION.stamp
 end
 
 scenarioList = function()
@@ -388,6 +391,10 @@ local function serverLine(c, line)
 		else c.close = true end
 		return
 	end
+	if cmd == "LANVER" and not c.name then
+		sendLine(c, "LANVER " .. versionTag()); c.close = true
+		return
+	end
 	if cmd == "COPILOT" and not c.name then
 		sendLine(c, "COPILOT " .. copilotTag()); c.close = true
 		return
@@ -423,7 +430,6 @@ local function serverLine(c, line)
 			if o ~= c and o.battleStatus then sendLine(c, "CLIENTBATTLESTATUS " .. o.name .. " " .. o.battleStatus .. " " .. (o.teamColor or "0")) end
 		end
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
-		sendLine(c, "SETSCRIPTTAGS game/modoptions/lanver=" .. versionTag())
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
@@ -821,12 +827,28 @@ end
 -- one warning per join when the lobby widget or the game widget of the host is not the one of this computer
 local function updateVersionCheck()
 	if not lan or lan.role ~= "client" or lan.step ~= "in" or lan.verChecked then return end
-	local l = lobby()
-	local tag = l and l.modoptions and l.modoptions.lanver
-	if not tag or tag == "" then
-		lan.verWait = lan.verWait or os.clock()
-		if os.clock() - lan.verWait < 4 then return end   -- the host sends it right after the join
+	-- asked on a short connection (like COPILOT): a game option would be shown as a text line in the room and push its buttons away
+	local q = lan.verQuery
+	if not q then
+		local sock = socket.tcp(); sock:settimeout(0)
+		sock:connect(lan.ip, PORT)
+		lan.verQuery = { sock = sock, buf = "", sent = false, t = os.clock() }
+		return
 	end
+	local tag
+	if not q.sent then
+		local _, w = socket.select(nil, { q.sock }, 0)
+		if w and #w > 0 then
+			if q.sock:send("LANVER\n") then q.sent = true end
+		end
+	else
+		local data, _, partial = q.sock:receive(2048)
+		data = data or partial
+		if data and #data > 0 then q.buf = q.buf .. data end
+		tag = q.buf:match("LANVER ([^\r\n]*)")
+	end
+	if not tag and os.clock() - q.t < 4 then return end
+	pcall(function() q.sock:close() end)
 	lan.verChecked = true
 	local mine = versionTag()
 	if tag == mine then
@@ -834,18 +856,23 @@ local function updateVersionCheck()
 		return
 	end
 	local msg
+	local own = "version " .. LAN_VERSION.number .. " (" .. LAN_VERSION.stamp .. ")"
 	if not tag or tag == "" then
-		msg = "The host does not announce the version of its LAN Play: it is another version than yours. Update the Level Editor on all computers to the same version."
+		msg = "Host:  no version announced (older than yours)" .. "\nYours: " .. own .. "\n\nUpdate the Level Editor on all computers to the same version: either git clone the repository on the other computers and git pull on all of them, or copy the whole Level Editor folder to the other computers and run install_editor.bat there. Then everybody has the same version. Otherwise the game may not start or behave differently."
 	else
-		local hl, hs = tag:match("^([^|]*)|([^|]*)$")
-		local ml, ms = mine:match("^([^|]*)|([^|]*)$")
+		local hl, hs, hn, hd = tag:match("^([^|]*)|([^|]*)|([^|]*)|(.*)$")
+		local host = "version " .. tostring(hn) .. " (" .. tostring(hd) .. ")"
+		local rel
+		if tonumber(hn) and tonumber(hn) > LAN_VERSION.number then rel = "The host is newer than you."
+		elseif tonumber(hn) and tonumber(hn) < LAN_VERSION.number then rel = "You are newer than the host."
+		else rel = "Both have the same version number, but the files differ." end
 		local what = {}
-		if hl ~= ml then what[#what + 1] = "the lobby widget (host " .. tostring(hl) .. ", yours " .. tostring(ml) .. ")" end
-		if hs ~= ms then what[#what + 1] = "the game widget of the Copilot games (host " .. tostring(hs) .. ", yours " .. tostring(ms) .. ")" end
-		msg = "Your LAN Play is not the version of the host: " .. table.concat(what, " and ") .. " differs. Update the Level Editor on all computers to the same version, otherwise the game may not start or behave differently."
+		if hl ~= fileTag("LuaMenu/Widgets/lan_lobby.lua") then what[#what + 1] = "lobby widget" end
+		if hs ~= fileTag("LuaUI/Widgets/shared_start.lua") then what[#what + 1] = "game widget of the Copilot games" end
+		msg = "Host:  " .. host .. "\nYours: " .. own .. "\n\n" .. rel .. " (differs: " .. table.concat(what, ", ") .. ")\n\nUpdate the Level Editor on all computers to the same version: either git clone the repository on the other computers and git pull on all of them, or copy the whole Level Editor folder to the other computers and run install_editor.bat there. Then everybody has the same version. Otherwise the game may not start or behave differently."
 	end
 	log("version check: DIFFERENT, host " .. tostring(tag) .. ", own " .. mine)
-	setStatus(msg)
+	setStatus((msg:gsub("\n", " ")))
 	bigPopup(msg)
 end
 
