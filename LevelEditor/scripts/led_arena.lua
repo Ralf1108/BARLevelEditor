@@ -243,6 +243,210 @@ return function(host)
 	end
 
 	-- Cost of all units of every team on the map (for the remaining budget): worked out twice a second, not in every layout
+	-- ---------------------------------------------------------------- the allow list of an army and its window
+	-- The names an army may use are the list rows[i].allowed; a set of them is built once per list (a new list from a load rebuilds it)
+	local sets = {}
+	local function setOf(i)
+		local list = ar.cfg().rows[i].allowed
+		local s = sets[i]
+		if not s or s.list ~= list then
+			s = { list = list, set = {} }
+			for _, n in ipairs(list) do
+				s.set[n] = true
+			end
+			sets[i] = s
+		end
+		return s.set
+	end
+
+	function ar.isAllowed(i, name)
+		return setOf(i)[name] == true
+	end
+
+	-- Allow or remove a list of unit names in army i
+	function ar.setAllowed(i, names, on)
+		local c = ar.cfg(true)
+		local s = setOf(i)
+		local list = c.rows[i].allowed
+		for _, n in ipairs(names) do
+			if on and not s[n] then
+				s[n] = true
+				list[#list + 1] = n
+			elseif not on then
+				s[n] = nil
+			end
+		end
+		if not on then
+			local out = {}
+			for _, n in ipairs(list) do
+				if s[n] then
+					out[#out + 1] = n
+				end
+			end
+			c.rows[i].allowed = out
+			sets[i] = { list = out, set = s }
+		end
+	end
+
+	-- The list of units next to the page (the Place menu: only the Units tab with its filters and search; check boxes instead of the red X)
+	local function allBanned(names)
+		if #names == 0 then
+			return false
+		end
+		for _, n in ipairs(names) do
+			if not ar.isAllowed(ar.winRow, n) then
+				return false
+			end
+		end
+		return true
+	end
+	ar.units = Shared.newUnits({
+		cfg = host.cfg,
+		ownText = host.ownText,
+		noPreview = true,
+		-- only what moves, and turrets (armed buildings): no factories, no economy, no walls
+		filter = function(ud)
+			return ud.canMove or (ud.weapons ~= nil and #ud.weapons > 0)
+		end,
+		restrict = {
+			style = "allow", -- isBanned = allowed here: the box is a check box
+			isBanned = function(name) return ar.isAllowed(ar.winRow, name) end,
+			setBanned = function(names, on) ar.setAllowed(ar.winRow, names, on) end,
+			allBanned = allBanned,
+		},
+	})
+	ar.units.group = "bot"
+
+	-- The unit window sits left of the team strip, from the top of the menu down
+	function ar.winRect()
+		if not ar.open or not ar.winRow then
+			return nil
+		end
+		local S = host.S()
+		local px1, _, _, py1 = host.panelRect()
+		local vsx, vsy = Spring.GetViewGeometry()
+		local right = px1 - Shared.m.HB - 8 * S - 70 * S -- the team strip and the numbers of units left of it
+		local w = math.floor(560 * S)
+		return { x1 = math.max(8 * S, right - w), x2 = right, top = py1, y0 = vsy * 0.06 }
+	end
+
+	function ar.winAt(mx, my)
+		local w = ar.winRect()
+		return w ~= nil and mx >= w.x1 and mx <= w.x2 and my >= w.y0 and my <= w.top
+	end
+
+	-- Buttons of the window, its list area and its labels
+	local function winLayout()
+		local w = ar.winRect()
+		local S, m = host.S(), Shared.m
+		local rects, labels = {}, {}
+		local gap = 3 * S
+		local x1, x2 = w.x1 + m.PAD, w.x2 - m.PAD
+		local y = w.top - 44 * S
+		labels[#labels + 1] = { text = "Copy the list of player:", x = x1, y = y - 18 * S, size = 19 * S }
+		y = y - 24 * S
+		local bw = (x2 - x1 - gap * (ROWS - 1)) / ROWS
+		for j = 1, ROWS do
+			local cr, cg, cb = Spring.GetTeamColor(j - 1)
+			local bx = x1 + (j - 1) * (bw + gap)
+			rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = y - m.HB, y1 = y, kind = "arcopyfrom", value = j, label = tostring(j), fs = 18 * S,
+				tint = { (cr or 0.5) * 0.7, (cg or 0.5) * 0.7, (cb or 0.5) * 0.7 }, tip = "Copy the allowed units of player " .. j .. " into this army (they replace what is allowed here)" }
+		end
+		y = y - m.HB - 6 * S
+		local half = (x2 - x1 - gap) / 2
+		rects[#rects + 1] = { x1 = x1, x2 = x1 + half, y0 = y - m.HB, y1 = y, kind = "arclearlist", label = "Clear list", fs = 20 * S, tip = "Nothing is allowed in this army any more" }
+		rects[#rects + 1] = { x1 = x1 + half + gap, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arclose", label = "Close", fs = 20 * S, tip = "Close this list" }
+		y = y - m.HB - 6 * S
+		for _, r in ipairs(ar.units:filterRects(w.x1, w.x2, y, m.HB)) do
+			rects[#rects + 1] = r
+		end
+		y = y - ar.units:filterRowCount() * (m.HB + 3) - 4 * S
+		return rects, { x1 = w.x1, x2 = w.x2, top = y, y0 = w.y0 }, labels
+	end
+
+	function ar.drawWindow()
+		local w = ar.winRect()
+		if not w then
+			return
+		end
+		local S = host.S()
+		gl.Color(0.07, 0.07, 0.09, 0.94)
+		gl.Rect(w.x1, w.y0, w.x2, w.top)
+		local rects, listRect, labels = winLayout()
+		local t = ar.winRow - 1
+		local cr, cg, cb = Spring.GetTeamColor(t)
+		gl.Color(cr or 1, cg or 1, cb or 1, 1)
+		gl.Text("Army of team " .. t .. ": allowed units", w.x1 + 10 * S, w.top - 34 * S, 26 * S, "o")
+		gl.Color(0.5, 0.8, 1, 1)
+		for _, l in ipairs(labels) do
+			gl.Text(l.text, l.x, l.y, l.size, "o")
+		end
+		Shared.drawButtons(rects, 20 * S, Shared.m.HB)
+		local mx, my = Spring.GetMouseState()
+		ar.units:draw(listRect, mx, my, nil, nil, ar.winAt(mx, my))
+		-- the picture and the text under it are off in this window: a tooltip with name and cost instead
+		local i = ar.winAt(mx, my) and ar.units:at(listRect, mx, my)
+		local e = i and ar.units:list()[i]
+		if e then
+			local ud = UnitDefs[e.id]
+			local text = string.format("%s (%s)\nMetal %d, Energy %d", tostring(ud.translatedHumanName or ud.humanName or e.name), e.name, ud.metalCost or 0, ud.energyCost or 0)
+			Shared.tooltipBox(text, mx, my)
+		else
+			Shared.drawTip(rects, mx, my)
+		end
+		gl.Color(1, 1, 1, 1)
+	end
+
+	function ar.winWheel(up)
+		local _, listRect = winLayout()
+		ar.units:wheel(listRect, up)
+	end
+
+	function ar.winPress(mx, my, button)
+		local rects, listRect = winLayout()
+		if button ~= 1 then
+			return true
+		end
+		local hit
+		for _, r in ipairs(rects) do
+			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				hit = r
+			end
+		end
+		if hit then
+			local k = hit.kind
+			if k == "arcopyfrom" then
+				local c = ar.cfg(true)
+				local from = c.rows[hit.value].allowed
+				ar.setAllowed(ar.winRow, c.rows[ar.winRow].allowed, false)
+				local names = {}
+				for _, n in ipairs(from) do
+					names[#names + 1] = n
+				end
+				ar.setAllowed(ar.winRow, names, true)
+				ar.units:setFocus(false)
+			elseif k == "arclearlist" then
+				ar.setAllowed(ar.winRow, ar.cfg(true).rows[ar.winRow].allowed, false)
+				ar.units:setFocus(false)
+			elseif k == "arclose" then
+				ar.units:setFocus(false)
+				ar.winRow = nil
+			else
+				ar.units:applyFilter(hit) -- search field, faction, group, tech and their check boxes
+			end
+			return true
+		end
+		ar.units:setFocus(false)
+		if mx >= listRect.x1 and mx <= listRect.x2 and my >= listRect.y0 and my <= listRect.top then
+			local i = ar.units:at(listRect, mx, my)
+			local e = i and ar.units:list()[i]
+			if e then
+				ar.setAllowed(ar.winRow, { e.name }, not ar.isAllowed(ar.winRow, e.name)) -- a click on the tile (also on its check box) allows or removes it
+			end
+		end
+		return true
+	end
+
 	function ar.poll()
 		pollState()
 		local now = os.clock()
@@ -436,7 +640,11 @@ return function(host)
 		end
 		gl.Color(1, 1, 1, 1)
 		local mx, my = Spring.GetMouseState()
+		if ar.winRect() and ar.winAt(mx, my) then
+			mx, my = -1, -1 -- the mouse is over the unit window: no tooltip of the page below it
+		end
 		Shared.drawTip(rects, mx, my)
+		ar.drawWindow()
 	end
 
 	-- Ends the entry in a number field (accept: take the value; empty = no limit, except the radius)
@@ -505,7 +713,10 @@ return function(host)
 			ar.startPick("point")
 		elseif k == "arpointx" then
 			ar.deletePoint()
-		elseif k == "arunits" or k == "argen" or k == "arclear" or k == "arplay" then
+		elseif k == "arunits" then
+			ar.winRow = (ar.winRow ~= hit.row) and hit.row or nil -- the same Units button again closes the window
+			ar.units:setFocus(false)
+		elseif k == "argen" or k == "arclear" or k == "arplay" then
 			host.say("Arena: this button does not work yet.")
 		end
 		return true

@@ -1437,6 +1437,9 @@ local function inPanel(mx, my)
 	if not menuOpen then
 		return false
 	end
+	if ar and ar.winAt(mx, my) then
+		return true -- the unit window of the Arena page counts as part of the menu: no click goes through it to the map
+	end
 	local x1, y0, x2, y1 = panelRect()
 	return mx >= x1 and mx <= x2 and my >= y0 and my <= y1
 end
@@ -2592,6 +2595,8 @@ rtf = VFS.Include("luaui/Include/led_rtf.lua", nil, VFS.ZIP_FIRST)({
 ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	Shared = Shared,
 	cfg = cfg,
+	ownText = ownText,
+	panelRect = function() return panelRect() end,
 	S = function() return S end,
 	say = function(text) say(text) end,
 	canEdit = function() return canEdit() end,
@@ -3095,6 +3100,9 @@ function widget:MousePress(mx, my, button)
 			end
 		end
 	end
+	if ar.winAt(mx, my) then
+		return ar.winPress(mx, my, button)
+	end
 	if inPanel(mx, my) then
 		return panelPress(mx, my, button)
 	end
@@ -3358,7 +3366,7 @@ function widget:TextInput(utf8char)
 	if scEdit then
 		return scenarioText(utf8char)
 	end
-	return bpGrid:textInput(utf8char) or uGrid:textInput(utf8char) or fGrid:textInput(utf8char)
+	return bpGrid:textInput(utf8char) or uGrid:textInput(utf8char) or fGrid:textInput(utf8char) or ar.units:textInput(utf8char)
 end
 
 function widget:MouseWheel(up, value)
@@ -3375,6 +3383,10 @@ function widget:MouseWheel(up, value)
 		return false
 	end
 	local mx, my = Spring.GetMouseState()
+	if ar.winAt(mx, my) then
+		ar.winWheel(up)
+		return true
+	end
 	if not inPanel(mx, my) then
 		return false
 	end
@@ -3935,6 +3947,9 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if bpGrid.editing or bpGrid.focus then
 		return bpGrid:key(key)
+	end
+	if ar.units.focus then
+		return ar.units:key(key)
 	end
 	if uGrid.focus then
 		return uGrid:key(key)

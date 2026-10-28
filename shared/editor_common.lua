@@ -1624,7 +1624,7 @@ end
 -- o: { cfg, groups = { "buildings", ... } (offer only these groups; default all), factions = { "arm", "cor", "leg" } (offer only these; default all), factionUsable = fn(factionId) -> bool (a faction for which it says false gets no button), faction = "arm", canUse = fn(unitDefID) -> bool }
 function M.newUnits(o)
 	local u = {
-		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse, restrict = o.restrict, factionUsable = o.factionUsable,
+		cfg = o.cfg, faction = o.faction or "arm", group = "buildings", tech = 1, scroll = 0, cache = nil, canUse = o.canUse, restrict = o.restrict, factionUsable = o.factionUsable, filter = o.filter, noPreview = o.noPreview,
 		query = "", focus = false, ownText = o.ownText, searchOn = (o.search ~= false), searchLabel = o.searchLabel or "Search ...",
 	}
 	u.factions = {}
@@ -1653,6 +1653,28 @@ function M.newUnits(o)
 	end
 	u.group = u.groups[1][1]
 
+	-- The cache of this list: o.filter(unitDef, name) -> boolean keeps only the units it accepts (every list builds its own cache)
+	function u:buildCache()
+		local cache = M.buildUnitCache()
+		local keep = o.filter
+		if keep then
+			for _, fac in pairs(cache) do
+				for _, g in pairs(fac) do
+					for t = 1, 3 do
+						local out = {}
+						for _, e in ipairs(g[t]) do
+							if keep(UnitDefs[e.id], e.name) then
+								out[#out + 1] = e
+							end
+						end
+						g[t] = out
+					end
+				end
+			end
+		end
+		return cache
+	end
+
 	-- Search across all factions, groups and tech levels: code, name or words of the description
 	function u:searchList()
 		if self.searchFor == self.query and self.searchResult then
@@ -1680,7 +1702,7 @@ function M.newUnits(o)
 			return self.override -- e.g. favorites view: fixed list
 		end
 		if not self.cache then
-			self.cache = M.buildUnitCache()
+			self.cache = self:buildCache()
 		end
 		if self.query ~= "" then
 			return self:searchList()
@@ -1733,7 +1755,7 @@ function M.newUnits(o)
 	-- group: all tech levels of that group of the chosen faction, tech level: all factions and groups)
 	function u:namesOf(kind, value)
 		if not self.cache then
-			self.cache = M.buildUnitCache()
+			self.cache = self:buildCache()
 		end
 		local out = {}
 		local function add(list)
@@ -1765,7 +1787,7 @@ function M.newUnits(o)
 	-- tech: none in the chosen group (of the chosen faction)
 	function u:emptyButton(kind, value)
 		if not self.cache then
-			self.cache = M.buildUnitCache()
+			self.cache = self:buildCache()
 		end
 		local function count(fac, grp, tl)
 			local list = self.cache[fac] and self.cache[fac][grp] and self.cache[fac][grp][tl]
@@ -1805,10 +1827,11 @@ function M.newUnits(o)
 			for i, it in ipairs(items) do
 				local bx = x1 + pad + (i - 1) * (bw + 3)
 				local banned = false
+				local allow = rs and rs.style == "allow"
 				if rs then
 					banned = rs.allBanned(self:namesOf(kind, it[1]))
 				end
-				local tint = banned and { 0.45, 0.12, 0.12 } or nil
+				local tint = banned and (allow and { 0.12, 0.4, 0.15 } or { 0.45, 0.12, 0.12 }) or nil
 				if not tint and self:emptyButton(kind, it[1]) then
 					-- nothing behind this button: slightly red (lighter when it is the chosen one)
 					tint = (it[1] == active) and { 0.8, 0.55, 0.55 } or { 0.38, 0.17, 0.17 }
@@ -1821,8 +1844,11 @@ function M.newUnits(o)
 					local xs = hb * 0.62
 					local what = (kind == "faction" and "this faction") or (kind == "group" and "this group of the chosen faction") or "this tech level (all factions and groups)"
 					rects[#rects + 1] = { x1 = bx + bw - xs - 3, x2 = bx + bw - 3, y0 = t - hb / 2 - xs / 2, y1 = t - hb / 2 + xs / 2, kind = kind .. "x", value = it[1],
-						label = "X", fs = xs * 0.8, tint = banned and { 0.85, 0.1, 0.1 } or { 0.1, 0.1, 0.1 },
-						tip = banned and ("Forbidden: the player cannot build anything of " .. what .. " in the game. Click to allow it again.") or
+						label = allow and "" or "X", tick = allow or nil, fs = xs * 0.8,
+						tint = banned and (allow and { 0.1, 0.6, 0.15 } or { 0.85, 0.1, 0.1 }) or { 0.1, 0.1, 0.1 },
+						tip = allow and (banned and ("Allowed: every unit of " .. what .. " is in this army. Click to remove them again.") or
+								("Click: allow every unit of " .. what .. " in this army.")) or
+							banned and ("Forbidden: the player cannot build anything of " .. what .. " in the game. Click to allow it again.") or
 							("Click: the player cannot build anything of " .. what .. " in the game (you can always place it in the editor).") }
 				end
 			end
@@ -1990,12 +2016,13 @@ function M.newUnits(o)
 				end
 				local rs = self.restrict
 				local banned = rs and rs.isBanned(e.name) or false
-				gl.Color(1, 1, 1, (usable and not banned) and 1 or 0.3)
+				local allow = rs and rs.style == "allow"
+				gl.Color(1, 1, 1, (usable and (allow or not banned)) and 1 or 0.3)
 				gl.Texture("#" .. e.id)
 				gl.TexRect(ix, iy, ix + self:icon(), iy + self:icon())
 				gl.Texture(false)
 				if rs then
-					if banned then
+					if banned and not allow then
 						gl.Color(1, 0.1, 0.1, 1)
 						gl.LineWidth(5 * S)
 						gl.BeginEnd(GL.LINES, function()
@@ -2008,7 +2035,11 @@ function M.newUnits(o)
 					end
 					local bx1, by0, bx2, by1 = self:xBox(ix, iy)
 					if rs.isBanned(e.name) then
-						gl.Color(0.8, 0.1, 0.1, 0.95)
+						if allow then
+							gl.Color(0.1, 0.55, 0.15, 0.95)
+						else
+							gl.Color(0.8, 0.1, 0.1, 0.95)
+						end
 					else
 						gl.Color(0, 0, 0, 0.75)
 					end
@@ -2016,12 +2047,21 @@ function M.newUnits(o)
 					gl.Color(1, 0.15, 0.15, 1)
 					gl.LineWidth(3 * S)
 					local g = (bx2 - bx1) * 0.22
-					gl.BeginEnd(GL.LINES, function()
-						gl.Vertex(bx1 + g, by0 + g)
-						gl.Vertex(bx2 - g, by1 - g)
-						gl.Vertex(bx1 + g, by1 - g)
-						gl.Vertex(bx2 - g, by0 + g)
-					end)
+					if allow then
+						gl.Color(1, 1, 1, rs.isBanned(e.name) and 1 or 0.3) -- a check mark: allowed (bright) or not yet (faint)
+						gl.BeginEnd(GL.LINE_STRIP, function()
+							gl.Vertex(bx1 + g, by0 + (by1 - by0) * 0.5)
+							gl.Vertex(bx1 + (bx2 - bx1) * 0.42, by0 + g)
+							gl.Vertex(bx2 - g, by1 - g)
+						end)
+					else
+						gl.BeginEnd(GL.LINES, function()
+							gl.Vertex(bx1 + g, by0 + g)
+							gl.Vertex(bx2 - g, by1 - g)
+							gl.Vertex(bx1 + g, by1 - g)
+							gl.Vertex(bx2 - g, by0 + g)
+						end)
+					end
 					gl.LineWidth(1)
 				end
 			end
@@ -2047,7 +2087,7 @@ function M.newUnits(o)
 			end
 		end
 		-- Under the 3D preview: name (code), description, cost with Eco time, for a unit that shoots shots per second x damage = DPS, explosion
-		local e = hoverIdx and list[hoverIdx]
+		local e = (not self.noPreview) and hoverIdx and list[hoverIdx]
 		if e then
 			local size = M.PREVIEW_SIZE * S
 			local ud = UnitDefs[e.id]
@@ -2055,7 +2095,7 @@ function M.newUnits(o)
 			local shot, sps, isAA = M.shotInfo(e.id)
 			local title = string.format("%s (%s)", human, e.name)
 			if self.restrict and self.restrict.isBanned(e.name) then
-				title = title .. "  - forbidden"
+				title = title .. ((self.restrict.style == "allow") and "  - allowed" or "  - forbidden")
 			end
 			local items = {
 				{ text = title, fs = 26 },
@@ -2877,6 +2917,17 @@ function M.drawButtons(rects, fontSize, hb)
 			gl.Color(0.2, 0.2, 0.2, 0.9)
 		end
 		gl.Rect(r.x1, r.y0, r.x2, r.y1)
+		if r.tick then
+			local w, h = r.x2 - r.x1, r.y1 - r.y0
+			gl.Color(1, 1, 1, r.tint and r.tint[2] > 0.5 and 1 or 0.35) -- bright when set (green), faint when not
+			gl.LineWidth(3 * S)
+			gl.BeginEnd(GL.LINE_STRIP, function()
+				gl.Vertex(r.x1 + w * 0.2, r.y0 + h * 0.5)
+				gl.Vertex(r.x1 + w * 0.42, r.y0 + h * 0.25)
+				gl.Vertex(r.x1 + w * 0.8, r.y0 + h * 0.75)
+			end)
+			gl.LineWidth(1)
+		end
 		local tx1 = r.x1
 		if r.icon then
 			-- Symbol left in the button, the text stays centered in the remaining area
