@@ -873,9 +873,12 @@ end
 -- whole army is shifted so that its center ends at a place on the line to the Arena Point (a front, not a heap).
 --  Phase 1: all units walk at the speed of the slowest unit of all armies (the data of the move type: the command alone did not limit the speed) until
 --           the center of the army is at 25 % of its first distance from the point.
---  Phase 2: full speed (the cap is taken away) to 300 Elmo from the point, then an area attack (CMD.ATTACK with a radius) over the whole radius of
---           the page: the units attack every enemy within it.
-local arenaRun = nil -- { x, z, radius, armies = { { ids, d0, phase } } } while it runs
+--  Phase 2: full speed (the cap is taken away) to 300 Elmo from the point, then an area attack (CMD.ATTACK with a radius of ARENA_ATTACK_RADIUS)
+--           around the Arena Point: the units attack every enemy within it.
+-- Without the formation attack (button of the page) there is no cap and no phase 1: every unit runs as fast as it can, in its rectangle, to 300 Elmo from
+-- the point and gets the area attack.
+local ARENA_ATTACK_RADIUS = 600
+local arenaRun = nil -- { x, z, armies = { { ids, d0, phase } } } while it runs
 
 -- top speed of a unit: the data of its move type (ground, hover and ships; gunships; planes), in Elmo per second
 local function capSpeed(id, v)
@@ -915,7 +918,7 @@ local function marchTo(ids, dx, dz)
 	end
 end
 
-local function startArena(x, z, teamList, radius)
+local function startArena(x, z, teamList, formation)
 	local slowest, armies, count = nil, {}, 0
 	for tm in teamList:gmatch("%d+") do
 		local ids = {}
@@ -933,13 +936,25 @@ local function startArena(x, z, teamList, radius)
 	end
 	for _, a in ipairs(armies) do
 		local cx, cz = armyCenter(a.ids)
-		for _, id in ipairs(a.ids) do
-			capSpeed(id, slowest)
+		if formation then
+			for _, id in ipairs(a.ids) do
+				capSpeed(id, slowest)
+			end
+			marchTo(a.ids, (x - cx) * 0.75, (z - cz) * 0.75) -- 25 % of the distance stay
+		else
+			a.phase = 2 -- no phase 1: straight on at full speed, then the area attack
+			local d = a.d0
+			local f = d > 300 and (d - 300) / d or 0
+			marchTo(a.ids, (x - cx) * f, (z - cz) * f)
+			for _, id in ipairs(a.ids) do
+				if Spring.ValidUnitID(id) then
+					Spring.GiveOrderToUnit(id, CMD.ATTACK, { x, Spring.GetGroundHeight(x, z), z, ARENA_ATTACK_RADIUS }, CMD.OPT_SHIFT)
+				end
+			end
 		end
-		marchTo(a.ids, (x - cx) * 0.75, (z - cz) * 0.75) -- 25 % of the distance stay
 		count = count + #a.ids
 	end
-	arenaRun = { x = x, z = z, radius = radius, armies = armies }
+	arenaRun = { x = x, z = z, armies = armies }
 	Spring.SetGameRulesParam("arenaState", "running")
 	return count
 end
@@ -969,7 +984,7 @@ local function arenaStep(n)
 					marchTo(a.ids, (r.x - cx) * f, (r.z - cz) * f)
 					for _, id in ipairs(a.ids) do
 						if Spring.ValidUnitID(id) then
-							Spring.GiveOrderToUnit(id, CMD.ATTACK, { r.x, Spring.GetGroundHeight(r.x, r.z), r.z, math.max(r.radius, 64) }, CMD.OPT_SHIFT)
+							Spring.GiveOrderToUnit(id, CMD.ATTACK, { r.x, Spring.GetGroundHeight(r.x, r.z), r.z, ARENA_ATTACK_RADIUS }, CMD.OPT_SHIFT)
 						end
 					end
 				end
@@ -1151,10 +1166,10 @@ function gadget:RecvLuaMsg(msg, playerID)
 		-- led|ctfpts|before|after: the widget changed collection points or flag points (state texts, see led_ctf.lua)
 		record({ k = "ctfpts", before = parts[3] or "-;-", after = parts[4] or "-;-" })
 	elseif cmd == "arenastart" then
-		-- led|arenastart|x|z|t1,t2|radius: the fight begins (see startArena); the widget has saved the state as _beforeplay before and loads it again on Stop
+		-- led|arenastart|x|z|t1,t2|formation: the fight begins (see startArena); the widget has saved the state as _beforeplay before and loads it again on Stop
 		local x, z = tonumber(parts[3]), tonumber(parts[4])
 		if x and z then
-			local n = startArena(x, z, parts[5] or "", math.max(0, tonumber(parts[6]) or 0))
+			local n = startArena(x, z, parts[5] or "", parts[6] == "1")
 			tell(playerID, n .. " units march to the Arena Point")
 		end
 	elseif cmd == "teams" then

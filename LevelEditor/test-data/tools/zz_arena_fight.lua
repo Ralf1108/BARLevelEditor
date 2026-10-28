@@ -8,7 +8,8 @@ local function log(...)
 end
 local function W() return WG.LevelEditorWidget end
 local ar
-local RADIUS = 2000 -- set by the test (a copy of this file with another number is the test of another radius)
+local RADIUS = 1500 -- set by the test (a copy of this file with another number is the test of another radius)
+local FORMATION = true -- the button Formation attack (a copy with false is the test without it)
 local MX, MZ = Game.mapSizeX / 2, Game.mapSizeZ / 2
 local function arenaUnits()
 	local out = {}
@@ -42,6 +43,7 @@ steps[40] = function()
 	end
 	local c = ar.cfg(true)
 	c.radius = RADIUS
+	c.formation = FORMATION
 	for i = 1, 10 do c.rows[i].allowed, c.rows[i].count, c.rows[i].on = {}, 20, i <= 2 end
 	ar.setAllowed(1, { "armpw", "armham" }, true)
 	ar.setAllowed(2, { "corak", "corthud" }, true)

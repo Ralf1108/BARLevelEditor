@@ -24,7 +24,7 @@ return function(host)
 		for i = 1, ROWS do
 			rows[i] = { on = i <= 2, allowed = {}, count = 50 } -- the first two players are on; metal and energy empty = no limit
 		end
-		return { radius = 1000, budget = {}, rows = rows, armies = {} }
+		return { radius = 1000, formation = true, budget = {}, rows = rows, armies = {} }
 	end
 	ar.DEFAULT = ar.new()
 
@@ -536,7 +536,7 @@ return function(host)
 		ar.endPick()
 		host.disarmAll() -- no editor mode may stay armed: it would swallow the clicks of the game
 		host.beforePlay()
-		Spring.SendLuaRulesMsg(string.format("led|arenastart|%d|%d|%s|%d", c.point.x, c.point.z, table.concat(teams, ","), c.radius))
+		Spring.SendLuaRulesMsg(string.format("led|arenastart|%d|%d|%s|%d", c.point.x, c.point.z, table.concat(teams, ","), c.formation and 1 or 0))
 		host.say("Started: the state before is saved as _beforeplay; Stop brings it back.")
 	end
 
@@ -993,8 +993,10 @@ return function(host)
 			{ kind = "arpointx", label = "X", w = 1, tip = "Delete the Arena Point" },
 			{ kind = "arclear", label = "Clear", w = 3, tip = "Removes the units that Generate placed, and the Arena Point. Units you placed yourself stay. Ctrl+Z undoes it" },
 		})
-		line({ { kind = "arplay", label = running and "Stop" or "Start", active = running, fs = 26 * S, tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
-			tip = "Start: all units of the rows that are on fight their way to the Arena Point. The state before is saved as _beforeplay. Stop brings it back." } })
+		line({ { kind = "arformation", label = "Formation attack", w = 3, fs = 22 * S, tint = c.formation and { 0.15, 0.6, 0.2 } or nil,
+				tip = "On (green): every army keeps its rectangle and all units walk at the speed of the slowest one until a quarter of the way is left, then at full speed (the armies meet at the same time). Off: every unit runs as fast as it can. Both end with an area attack around the Arena Point." },
+			{ kind = "arplay", label = running and "Stop" or "Start", w = 7, active = running, fs = 26 * S, tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
+				tip = "Start: all units of the rows that are on march to the Arena Point and attack there. The state before is saved as _beforeplay. Stop brings it back." } })
 		y = y - m.PAD
 		return rects, labels, rect.top - y
 	end
@@ -1184,6 +1186,9 @@ return function(host)
 			ar.startPick("gen")
 		elseif k == "arclear" then
 			ar.clear()
+		elseif k == "arformation" then
+			local c = ar.cfg(true)
+			c.formation = not c.formation
 		elseif k == "arplay" then
 			ar.toggle()
 		end
