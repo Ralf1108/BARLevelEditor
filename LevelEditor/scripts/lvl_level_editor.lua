@@ -1618,9 +1618,37 @@ local function levelPress(rect, mx, my)
 end
 
 -- Rows and button of the scenario page (button I)
+-- A test of a game mode (Tower Defense, Capture the Flag, Reclaim the Fame) or the Arena fight is running (Start was pressed). With stop = true
+-- the Stop button is pressed for it (the state before comes back, with all its consequences); returns whether something was running.
+-- Leaving the level (load, save, quit) must not take the state of the test with it.
+local function runningModes(stop)
+	local any = false
+	for _, p in ipairs({ { "tdState", td }, { "ctfState", ctf }, { "rtfState", rtf } }) do
+		local s = Spring.GetGameRulesParam(p[1])
+		if s and s ~= "" then
+			any = true
+			if stop then
+				p[2].toggle()
+			end
+		end
+	end
+	if Spring.GetGameRulesParam("arenaState") == "running" then
+		any = true
+		if stop then
+			ar.toggle()
+		end
+	end
+	return any
+end
+
 local function scenarioRects(rect)
 	local m = Shared.m
 	local rh = scenarioRowH()
+			if (r.kind == "new" or (levelConfirm and levelConfirm.kind == r.kind and levelConfirm.name == r.name and r.kind ~= "load")) and runningModes(true) then
+				levelConfirm = nil
+				say("The test was running: it is stopped and the state before is back. Press Save again.")
+				return true
+			end
 	local gap = 5 * S
 	local rects = {}
 	local y = rect.top - 40 * S
@@ -1635,6 +1663,7 @@ end
 local function dropLastChar(t)
 	return (t:gsub("[%z\1-\127\194-\244][\128-\191]*$", "", 1))
 end
+					runningModes(true) -- Stop first, then the other level replaces everything
 
 local function dropFirstChar(t)
 	return (t:gsub("^[%z\1-\127\194-\244][\128-\191]*", "", 1))
@@ -1757,6 +1786,10 @@ local function scenarioPress(rect, mx, my)
 					scEdit = { row = row, buf = scenarioValue(row) }
 					widgetHandler:OwnText()
 				end
+	if runningModes(true) then
+		say("The test was running: it is stopped and the state before is back. Press Ctrl+S again.")
+		return true
+	end
 			end
 			return true
 		end
@@ -4123,6 +4156,16 @@ function widget:DrawScreen()
 	gl.Color(1, 1, 1, 1)
 	gl.Text(
 		string.format("Level Editor  |  %s  |  Team %d  |  Grid %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
+	if runningModes(false) then
+		-- a test is running (the editor is closed meanwhile): the autosave is the state before the test (_beforeplay), not the state of the test
+		local f = io.open(OUTDIR .. "_beforeplay.lua", "r")
+		if f then
+			local text = f:read("*a")
+			f:close()
+			Shared.writeFile(OUTDIR .. "_last.lua", text)
+		end
+		return
+	end
 		vsx * 0.5, vsy - 24 * S, 14 * S, "co"
 	)
 	local bp = bpCurrent()
