@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 4, stamp = "2026-10-28 09:11" }
+local LAN_VERSION = { number = 5, stamp = "2026-10-28 09:24" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -445,10 +445,17 @@ local function serverLine(c, line)
 		return
 	end
 	if cmd == "FETCHMAP" and not c.name then
-		local m = (args == S.battle.map) and mapInfoOf(args) or nil
+		local first, count, mapName = args:match("^(%d+)%s+(%d+)%s+(.+)$")
+		local m = (mapName == S.battle.map) and mapInfoOf(mapName) or nil
+		first, count = tonumber(first), tonumber(count)
 		local fh = m and io.open("maps/" .. m.file, "rb")
-		if fh then c.mapServe = { fh = fh, header = "SIZE " .. m.size .. "\n" }; log("serving the map", args, "to", tostring(c.sock:getpeername()))
-		else c.close = true end
+		if fh and count > 0 and first * 65536 < m.size and fh:seek("set", first * 65536) then
+			c.mapServe = { fh = fh, header = "BLOCKS " .. first .. " " .. count .. "\n", left = count }
+			log("serving the blocks", first, "+", count, "of the map", mapName, "to", tostring(c.sock:getpeername()))
+		else
+			if fh then fh:close() end
+			c.close = true
+		end
 		return
 	end
 	if cmd == "FETCHGAME" and not c.name then
@@ -582,13 +589,14 @@ local function updateServer()
 			else
 				for _ = 1, 64 do   -- up to 4 MB a frame; the loop ends when the socket is full
 					if not sv.pending then
+						if sv.left <= 0 then c.close = true; log("blocks served"); break end
 						sv.pending = sv.fh:read(65536); sv.ppos = 1
-						if not sv.pending then c.close = true; log("map served"); break end
+						if not sv.pending then c.close = true; log("blocks served"); break end
 					end
 					local last, _, partial = c.sock:send(sv.pending, sv.ppos)
 					local sent = last or partial
 					if sent then sv.ppos = sent + 1 end
-					if sv.ppos > #sv.pending then sv.pending = nil else break end
+					if sv.ppos > #sv.pending then sv.pending = nil; sv.left = sv.left - 1 else break end
 				end
 			end
 		end
@@ -925,7 +933,7 @@ end
 
 local function finishMap(ok, reason)
 	local m = lan.mapFetch or {}
-	if m.sock then pcall(function() m.sock:close() end) end
+	for _, s in ipairs(m.streams or {}) do pcall(function() s.sock:close() end) end
 	if m.fh then pcall(function() m.fh:close() end) end
 	if m.part and not ok then os.remove(m.part) end
 	lan.mapFetch = nil
@@ -977,71 +985,99 @@ releaseHeld = function(name)
 	if h then lan.held[name] = nil; origQueue(name, h.ft, unpack(h.args)) end
 end
 
+-- The file is cut into blocks of 64 KB and fetched on MAP_STREAMS connections at once, every connection a run of blocks (FETCHMAP <first> <count> <name>):
+-- a Lua widget moves about one buffer (64 KB) per connection and frame, so the connections multiply the speed (8 are about 100 Mbit at 25 fps).
+-- The announced size is in blocks too (the length of a file as the lobby's Lua counts it is 3 bytes off for the test map).
+local MAP_STREAMS = 8
+local MAP_BLOCK = 65536
+
 local function startMapFetch(name, info)
 	local dh = WG.DownloadHandler
 	lan.mapLan = name
 	if lan.held then lan.held[name] = nil end
 	if dh and dh.CancelDownload then pcall(dh.CancelDownload, name, "map") end   -- one that was already running
-	local s = socket.tcp(); s:settimeout(3)
-	local ok, e = s:connect(lan.ip, PORT)
-	if not ok then lan.mapFetch = { sock = s, name = name }; finishMap(false, "no connection (" .. tostring(e) .. ")"); return end
-	s:settimeout(0)
-	s:send("FETCHMAP " .. name .. "\n")
+	local blocks = math.ceil(info.size / MAP_BLOCK)
+	local n = math.max(1, math.min(MAP_STREAMS, blocks))
+	local per = math.ceil(blocks / n)
 	local part = "maps/" .. info.file .. ".part"
 	local fh = io.open(part, "wb")
-	lan.mapFetch = { sock = s, name = name, info = info, buf = "", got = 0, part = part, fh = fh, t = os.clock() }
+	lan.mapFetch = { name = name, info = info, part = part, fh = fh, streams = {}, t = os.clock() }
 	if not fh then finishMap(false, "cannot write " .. part); return end
+	for k = 0, n - 1 do
+		local first = k * per
+		local count = math.min(per, blocks - first)
+		if count > 0 then
+			local s = socket.tcp(); s:settimeout(3)
+			local ok, e = s:connect(lan.ip, PORT)
+			if not ok then pcall(function() s:close() end); finishMap(false, "no connection (" .. tostring(e) .. ")"); return end
+			s:settimeout(0)
+			s:send("FETCHMAP " .. first .. " " .. count .. " " .. name .. "\n")
+			local list = lan.mapFetch.streams
+			list[#list + 1] = { sock = s, buf = "", off = first * MAP_BLOCK, expect = count * MAP_BLOCK, got = 0, last = (first + count >= blocks) }
+		end
+	end
 	setStatus("Loading the map '" .. name .. "' from the host ...")
-	log("loading the map", name, info.size, "bytes")
+	log("loading the map", name, info.size, "bytes on", #lan.mapFetch.streams, "connections")
 end
 
 local function updateMapFetch()
 	local f = lan.mapFetch
-	for _ = 1, 64 do
-		local data, err, partial = f.sock:receive(65536)
-		data = data or partial
-		if data and #data > 0 then
-			f.t = os.clock()
-			if not f.total then
-				f.buf = f.buf .. data
-				-- the server greets every connection first (TASSERVER ...); then comes "SIZE <n>" and the bytes
-				while not f.total do
-					local nl = f.buf:find("\n", 1, true)
-					if not nl then break end
-					local line = f.buf:sub(1, nl - 1)
-					f.buf = f.buf:sub(nl + 1)
-					local n = line:match("^SIZE (%d+)$")
-					if n then
-						f.total = tonumber(n)
-						if f.total ~= f.info.size then finishMap(false, "the host sends another size than he announced"); return end
-						data = f.buf; f.buf = ""
-					elseif not line:find("^TASSERVER") then
-						finishMap(false, "the host answered something else"); return
+	local open = 0
+	for _, s in ipairs(f.streams) do
+		if not s.done then
+			open = open + 1
+			for _ = 1, 16 do
+				local chunk, err, partial = s.sock:receive(MAP_BLOCK)
+				chunk = chunk or partial
+				local had = chunk and #chunk > 0
+				if had then
+					f.t = os.clock()
+					local data = chunk
+					if not s.hdr then
+						-- the server greets every connection first (TASSERVER ...); then comes "BLOCKS <first> <count>" and the bytes
+						s.buf = s.buf .. chunk
+						data = nil
+						while not s.hdr do
+							local nl = s.buf:find("\n", 1, true)
+							if not nl then break end
+							local line = s.buf:sub(1, nl - 1)
+							s.buf = s.buf:sub(nl + 1)
+							if line:find("^BLOCKS ") then s.hdr = true
+							elseif not line:find("^TASSERVER") then finishMap(false, "the host answered something else"); return end
+						end
+						if s.hdr then data = s.buf; s.buf = "" end
+					end
+					if data and #data > 0 then
+						local take = math.min(#data, s.expect - s.got)   -- never more than the blocks asked for
+						if take > 0 then
+							f.fh:seek("set", s.off + s.got)
+							f.fh:write(data:sub(1, take))
+							s.got = s.got + take
+						end
 					end
 				end
-				if not f.total then data = nil end
-			end
-			if data and #data > 0 then
-				local take = math.min(#data, f.total - f.got)   -- never more than the announced size
-				if take > 0 then f.fh:write(data:sub(1, take)); f.got = f.got + take end
+				if err == "closed" then
+					s.done = true; open = open - 1
+					if s.got < s.expect and not s.last then finishMap(false, "the host closed a connection too early"); return end
+					break
+				end
+				if not had then break end
 			end
 		end
-		if f.total and f.got >= f.total then
-			f.fh:close(); f.fh = nil
-			local all = readWhole(f.part)
-			if not all or #all ~= f.info.size then finishMap(false, "the file has not the announced size"); return end
-			if VFS.CalculateHash(all, 0) ~= f.info.hash then finishMap(false, "the file is not the one that was announced (md5)"); return end
-			all = nil
-			local final = "maps/" .. f.info.file
-			os.remove(final)
-			if not os.rename(f.part, final) then finishMap(false, "cannot write " .. final); return end
-			pcall(VFS.ScanAllDirs)
-			log("the map was loaded from the host:", f.total, "bytes, md5", b64hex(f.info.hash), "; archive present:", tostring(VFS.HasArchive(f.name)))
-			finishMap(true)
-			return
-		end
-		if err == "closed" then finishMap(false, "the host closed the connection"); return end
-		if not data then break end
+	end
+	if open == 0 then
+		f.fh:close(); f.fh = nil
+		local all = readWhole(f.part)
+		if not all or #all ~= f.info.size then finishMap(false, "the file has not the announced size"); return end
+		if VFS.CalculateHash(all, 0) ~= f.info.hash then finishMap(false, "the file is not the one that was announced (md5)"); return end
+		all = nil
+		local final = "maps/" .. f.info.file
+		os.remove(final)
+		if not os.rename(f.part, final) then finishMap(false, "cannot write " .. final); return end
+		pcall(VFS.ScanAllDirs)
+		log("the map was loaded from the host:", f.info.size, "bytes, md5", b64hex(f.info.hash), "; archive present:", tostring(VFS.HasArchive(f.name)))
+		finishMap(true)
+		return
 	end
 	if os.clock() - f.t > 30 then finishMap(false, "timeout") end
 end
