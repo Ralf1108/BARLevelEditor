@@ -434,6 +434,12 @@ local function publishCtfPoints(state)
 	Spring.SetGameRulesParam("led_ctfpts_n", ctfPtsN)
 end
 
+-- Units placed by the Arena page (Generate) carry the public unit rules parameter "arena" (the widget writes it into the level file and
+-- Clear deletes exactly these units); it survives undo and redo through the snapshot
+local function setArena(id)
+	Spring.SetUnitRulesParam(id, "arena", 1, { public = true })
+end
+
 -- Arena Point and armies of the widget: the same way (op "arena", game rules parameters led_arenastate / led_arenastate_n)
 local arenaN = 0
 local function publishArena(state)
@@ -456,6 +462,7 @@ local function snapshot(id)
 	return {
 		name = UnitDefs[defID].name, team = Spring.GetUnitTeam(id), x = x, y = y, z = z,
 		heading = Spring.GetUnitHeading(id), neutral = Spring.GetUnitNeutral(id), indestructible = indestructible[id],
+		arena = Spring.GetUnitRulesParam(id, "arena") == 1,
 	}
 end
 
@@ -557,6 +564,9 @@ local function respawn(snap)
 	end
 	if id and snap.indestructible then
 		setIndestructible(id)
+	end
+	if id and snap.arena then
+		setArena(id)
 	end
 	return id
 end
@@ -816,7 +826,7 @@ local function transformUnits(ids, mode, dx, dz)
 end
 
 -- rec = true: note in the history (blueprint, paste); otherwise (loading a level) not
-local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fixed)
+local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fixed, arena)
 	if not rec then
 		suppress = suppress + 1
 	end
@@ -829,6 +839,9 @@ local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fi
 	end
 	if id and fixed then
 		setIndestructible(id)
+	end
+	if id and arena then
+		setArena(id)
 	end
 	return id
 end
@@ -873,6 +886,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		if id and parts[9] == "1" then
 			setIndestructible(id)
+		end
+		if id and parts[10] == "1" then
+			setArena(id)
 		end
 	elseif cmd == "delete" then
 		-- first the nearest unit; if there is none, the nearest wreck or feature in range
@@ -973,7 +989,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 	elseif cmd == "clear" then
 		clearAll()
 	elseif cmd == "load" then
-		loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1")
+		loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1", parts[12] == "1")
 	elseif cmd == "deleteids" then
 		removeIds(parts[3] or "", false)
 	elseif cmd == "boomids" then

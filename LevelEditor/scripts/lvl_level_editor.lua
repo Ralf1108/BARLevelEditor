@@ -293,10 +293,11 @@ local function saveLevel(name, quiet)
 			scavOrRaptor = scavOrRaptor or ud.name:sub(-5) == "_scav" or ud.name:sub(1, 7) == "raptor_"
 			-- Gaia units additionally carry gaia = true (the Gaia number depends on the team count)
 			lines[#lines + 1] = string.format(
-				"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s%s },",
+				"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s%s%s },",
 				ud.name, x, y, z, Spring.GetUnitHeading(id), t, tostring(Spring.GetUnitNeutral(id)),
 				t == gaia and ", gaia = true" or "",
-				Spring.GetUnitRulesParam(id, "indestructible") == 1 and ", indestructible = true" or ""
+				Spring.GetUnitRulesParam(id, "indestructible") == 1 and ", indestructible = true" or "",
+				Spring.GetUnitRulesParam(id, "arena") == 1 and ", arena = true" or ""
 			)
 			count = count + 1
 		end
@@ -2615,6 +2616,7 @@ ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	disarmAll = function() gen.disarmAll() end,
 	step = function() ledStep() end,
 	led = function(msg) led(msg) end,
+	queue = function(msg) placeQueue[#placeQueue + 1] = msg end, -- many messages: sent in packets, in order
 	beforePlay = function() saveLevel("_beforeplay", true) end,
 	afterPlay = function()
 		local current = currentLevel
@@ -3845,7 +3847,7 @@ function widget:Update()
 		Spring.SendLuaRulesMsg(string.format("led|load|%s|%d|%d|%d|%d|%s|%d%s",
 			tostring(u.name), u.gaia and Spring.GetGaiaTeamID() or tonumber(u.team) or 0, tonumber(u.x) or 0, tonumber(u.z) or 0, tonumber(u.rot) or 0,
 			(u.neutral == true or u.neutral == "true") and "1" or "0", tonumber(u.y) or -1,
-			u.indestructible == true and "|0|1" or ""))
+			(u.indestructible == true or u.arena == true) and string.format("|0|%d|%d", u.indestructible == true and 1 or 0, u.arena == true and 1 or 0) or ""))
 		end
 		if #loadQueue == 0 then
 			say("Loading done.")

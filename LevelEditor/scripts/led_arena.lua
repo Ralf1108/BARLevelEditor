@@ -101,6 +101,14 @@ return function(host)
 		end
 	end
 
+	-- The same without a new step: for the actions that opened their step before their units (Generate, Clear, moving the setup)
+	function ar.noteState(before)
+		local after = ar.state()
+		if after ~= before then
+			host.led("led|arenastate|" .. before .. "|" .. after)
+		end
+	end
+
 	-- Undo / redo from the gadget: take over the new state (called every frame)
 	pollState = function()
 		local n = Spring.GetGameRulesParam("led_arenastate_n")
@@ -156,6 +164,8 @@ return function(host)
 			ar.commit(before)
 			ar.endPick()
 			host.say(string.format("Arena Point at %d, %d (Alt + drag moves it, Del removes it).", x, z))
+		elseif ar.pick == "gen" then
+			ar.generate(x, z) -- the mode stays: every click generates again
 		end
 	end
 
@@ -183,12 +193,13 @@ return function(host)
 	end
 
 	-- Alt + left button over the point: it follows the mouse pointer (ar.sample) until the button is released (ar.endDrag); true if it was grabbed.
-	-- With Shift as well the whole setup moves (not yet).
+	-- With Shift as well the whole setup moves with it (the armies when the button is released, see ar.moveSetup).
 	function ar.grab(shift)
-		if shift or not host.canEdit() or not ar.pointAt() then
+		if not host.canEdit() or not ar.pointAt() then
 			return false
 		end
-		ar.drag = { before = ar.state() }
+		local p = ar.cfg().point
+		ar.drag = { before = ar.state(), whole = shift or nil, x0 = p.x, z0 = p.z }
 		return true
 	end
 
@@ -205,10 +216,311 @@ return function(host)
 	end
 
 	function ar.endDrag()
-		if ar.drag then
-			ar.commit(ar.drag.before)
+		local d = ar.drag
+		if d then
 			ar.drag = nil
+			if d.whole then
+				ar.moveSetup(d)
+			else
+				ar.commit(d.before)
+			end
 		end
+	end
+
+	-- ---------------------------------------------------------------- Generate, Clear, moving the setup
+	local MARGIN = 100 -- an army stays this far from the edge of the map (Elmo)
+
+	-- The center of an army block for a wanted center (nx, nz) pushed onto the map: the block (half sizes hw, hh) keeps MARGIN to the edge
+	local function clampArmy(nx, nz, hw, hh)
+		local function one(v, half, size)
+			local lo, hi = MARGIN + half, size - MARGIN - half
+			if lo > hi then
+				return size / 2 -- the block is wider than the map allows: in the middle
+			end
+			return math.max(lo, math.min(hi, v))
+		end
+		return one(nx, hw, Game.mapSizeX), one(nz, hh, Game.mapSizeZ)
+	end
+
+	-- Facing (0 south, 1 east, 2 north, 3 west) of a unit that looks along (dx, dz)
+	local function facingToward(dx, dz)
+		if math.abs(dx) > math.abs(dz) then
+			return dx > 0 and 1 or 3
+		end
+		return dz > 0 and 0 or 2
+	end
+
+	-- Can this unit stand there? Air units anywhere; turrets by the build test; the others by their move definition (terrain only)
+	local function canStand(ud, x, z, facing)
+		if x < 8 or z < 8 or x > Game.mapSizeX - 8 or z > Game.mapSizeZ - 8 then
+			return false
+		end
+		if ud.canFly then
+			return true
+		end
+		local y = Spring.GetGroundHeight(x, z)
+		if not ud.canMove then
+			local r = Spring.TestBuildOrder(ud.id, x, y, z, facing)
+			return r ~= nil and r >= 1 -- 0 = blocked by the terrain or a building; units and features in the way do not count
+		end
+		if Spring.TestMoveOrder then
+			local ok, res = pcall(Spring.TestMoveOrder, ud.id, x, y, z, 0, 0, 0)
+			if ok and res ~= nil then
+				return res and true or false
+			end
+		end
+		local md = ud.moveDef
+		local depth = y < 0 and -y or 0
+		if md and (depth > (tonumber(md.maxWaterDepth) or 1e9) or depth < (tonumber(md.minWaterDepth) or 0)) then
+			return false
+		end
+		return true
+	end
+
+	-- Metal and energy cost of all units of a team on the map
+	local function teamSpent(team)
+		local m, e = 0, 0
+		for _, u in ipairs(Spring.GetTeamUnits(team) or {}) do
+			local ud = UnitDefs[Spring.GetUnitDefID(u)]
+			if ud then
+				m, e = m + (ud.metalCost or 0), e + (ud.energyCost or 0)
+			end
+		end
+		return m, e
+	end
+
+	-- The unit types of one army: drawn at random from the allowed ones that still fit into its budget, until the count is reached or none fits
+	-- (returns the list of unit definitions, or nil and the reason)
+	local function chooseUnits(row, team)
+		local pool = {}
+		for _, name in ipairs(row.allowed) do
+			if UnitDefNames[name] then
+				pool[#pool + 1] = UnitDefNames[name]
+			end
+		end
+		if #pool == 0 then
+			return nil, "no unit is allowed"
+		end
+		if not row.count and not row.metal and not row.energy then
+			return nil, "enter a count or a budget"
+		end
+		local cap = math.min(MAX_UNITS, Spring.GetTeamMaxUnits and (Spring.GetTeamMaxUnits(team) or MAX_UNITS) or MAX_UNITS)
+		local room = cap - (Spring.GetTeamUnitCount(team) or 0)
+		if room <= 0 then
+			return nil, "the team has " .. (Spring.GetTeamUnitCount(team) or 0) .. " units already (limit " .. cap .. ")"
+		end
+		local limit = math.min(row.count or room, room)
+		local sm, se = teamSpent(team)
+		local remM = row.metal and (row.metal - sm) or nil
+		local remE = row.energy and (row.energy - se) or nil
+		local chosen, n = {}, #pool
+		while #chosen < limit and n > 0 do
+			local k = math.random(n)
+			local ud = pool[k]
+			local cm, ce = ud.metalCost or 0, ud.energyCost or 0
+			if (remM == nil or cm <= remM) and (remE == nil or ce <= remE) then
+				chosen[#chosen + 1] = ud
+				remM = remM and (remM - cm) or nil
+				remE = remE and (remE - ce) or nil
+			else
+				pool[k] = pool[n] -- it does not fit any more (the budget only gets smaller)
+				pool[n] = nil
+				n = n - 1
+			end
+		end
+		if #chosen == 0 then
+			return nil, "nothing fits into the budget"
+		end
+		table.sort(chosen, function(a, b) return a.name < b.name end) -- the same types stand together
+		return chosen
+	end
+
+	-- Places the army of one team around its spot: a rectangle of cells facing the point; a unit that does not fit its cell goes to the nearest
+	-- free ground. Returns the messages and the number placed.
+	local function layoutArmy(chosen, team, army, fx, fz, facing)
+		local cell = 32
+		for _, ud in ipairs(chosen) do
+			cell = math.max(cell, 2 * (ud.radius or 16) + 16)
+		end
+		local n = #chosen
+		local w = math.max(1, math.min(n, math.ceil(math.sqrt(2 * n))))
+		local d = math.ceil(n / w)
+		local tx, tz = -fz, fx -- across the facing
+		local used, msgs, noGround = {}, {}, {}
+		local function key(x, z)
+			return math.floor(x / cell + 0.5) .. ":" .. math.floor(z / cell + 0.5)
+		end
+		local function put(ud, x, z)
+			used[key(x, z)] = true
+			msgs[#msgs + 1] = string.format("led|place|%s|%d|%d|%d|%d|0|0|1", ud.name, team, math.floor(x + 0.5), math.floor(z + 0.5), facing)
+		end
+		for i, ud in ipairs(chosen) do
+			local col, row = (i - 1) % w, math.floor((i - 1) / w)
+			local u = (col - (w - 1) / 2) * cell
+			local v = ((d - 1) / 2 - row) * cell
+			local x, z = army.ax + tx * u + fx * v, army.az + tz * u + fz * v
+			if canStand(ud, x, z, facing) and not used[key(x, z)] then
+				put(ud, x, z)
+			else
+				-- nearest free ground: rings around the wanted spot
+				local done = noGround[ud.name] -- a unit type that found no ground at all before does not search again
+				for ring = 1, done and 0 or 14 do
+					for dx = -ring, ring do
+						for dz = -ring, ring do
+							if not done and math.max(math.abs(dx), math.abs(dz)) == ring then
+								local px, pz = x + dx * cell, z + dz * cell
+								if not used[key(px, pz)] and canStand(ud, px, pz, facing) then
+									put(ud, px, pz)
+									done = true
+								end
+							end
+						end
+					end
+					if done then
+						break
+					end
+				end
+				if not done then
+					noGround[ud.name] = true
+				end
+			end
+		end
+		return msgs, #msgs
+	end
+
+	-- Generate: the Arena Point is set at (cx, cz), every army of a row that is on stands around it
+	function ar.generate(cx, cz)
+		if not host.canEdit() then
+			return
+		end
+		local c = ar.cfg(true)
+		local active = {}
+		for i = 1, ROWS do
+			if c.rows[i].on and Spring.GetTeamInfo(i - 1) then
+				active[#active + 1] = i
+			end
+		end
+		if #active == 0 then
+			host.say("No row is on: switch on the players that get an army.")
+			ar.notice = { text = "No row is on.", untilT = os.clock() + 6 }
+			return
+		end
+		local before = ar.state()
+		host.step()
+		c.point = { x = cx, z = cz }
+		local lines, total = {}, 0
+		local byTeam = {}
+		for _, a in ipairs(c.armies) do
+			byTeam[a.team] = a
+		end
+		for k, i in ipairs(active) do
+			local team = i - 1
+			local chosen, why = chooseUnits(c.rows[i], team)
+			if not chosen then
+				lines[#lines + 1] = string.format("Army %d: %s", i, why)
+			else
+				local a = -math.pi / 2 + 2 * math.pi * (k - 1) / #active -- equal angles, the first army in the north
+				local nx, nz = cx + c.radius * math.cos(a), cz + c.radius * math.sin(a)
+				local dx, dz = cx - nx, cz - nz
+				local len = math.sqrt(dx * dx + dz * dz)
+				local fx, fz = len > 0 and dx / len or 0, len > 0 and dz / len or 1
+				-- size of the block: the cell is the largest unit plus a gap, about 1.4 times as wide as deep
+				local cell = 32
+				for _, ud in ipairs(chosen) do
+					cell = math.max(cell, 2 * (ud.radius or 16) + 16)
+				end
+				local n = #chosen
+				local w = math.max(1, math.min(n, math.ceil(math.sqrt(2 * n))))
+				local d = math.ceil(n / w)
+				local hw0, hh0 = w * cell / 2, d * cell / 2
+				local tx, tz = -fz, fx
+				local hw = math.abs(tx) * hw0 + math.abs(fx) * hh0
+				local hh = math.abs(tz) * hw0 + math.abs(fz) * hh0
+				local ax, az = clampArmy(nx, nz, hw, hh)
+				local army = { team = team, nx = math.floor(nx), nz = math.floor(nz), ax = math.floor(ax), az = math.floor(az), hw = math.floor(hw), hh = math.floor(hh) }
+				local msgs, placed = layoutArmy(chosen, team, army, fx, fz, facingToward(fx, fz))
+				for _, m in ipairs(msgs) do
+					host.queue(m)
+				end
+				byTeam[team] = army
+				total = total + placed
+				lines[#lines + 1] = string.format("Army %d: %d of %d placed%s", i, placed, #chosen, placed < #chosen and " (no fitting ground for the rest)" or "")
+			end
+		end
+		c.armies = {}
+		for t = 0, ROWS - 1 do
+			if byTeam[t] then
+				c.armies[#c.armies + 1] = byTeam[t]
+			end
+		end
+		ar.noteState(before)
+		host.say(string.format("Arena: %d units. %s (Ctrl+Z undoes it)", total, table.concat(lines, "; ")))
+	end
+
+	-- Clear: deletes the units that Generate placed (all of them) and the Arena Point; one undo step
+	function ar.clear()
+		if not host.canEdit() then
+			return
+		end
+		local ids = {}
+		for _, id in ipairs(Spring.GetAllUnits()) do
+			if Spring.GetUnitRulesParam(id, "arena") == 1 then
+				ids[#ids + 1] = "u" .. id
+			end
+		end
+		local c = ar.cfg()
+		if #ids == 0 and not c.point and #c.armies == 0 then
+			host.say("Nothing to clear.")
+			return
+		end
+		local before = ar.state()
+		host.step()
+		for i = 1, #ids, 100 do
+			host.led("led|clearids|" .. table.concat(ids, ",", i, math.min(#ids, i + 99)))
+		end
+		local d = ar.cfg(true)
+		d.point, d.armies = nil, {}
+		ar.noteState(before)
+		host.say(string.format("Arena cleared: %d units and the Arena Point (Ctrl+Z brings them back).", #ids))
+	end
+
+	-- Shift + Alt + drag of the Arena Point, on release: the point has moved by (dx, dz); every army's natural spot moves by that, its real spot
+	-- is the natural spot pushed onto the map, and its units move with the real spot
+	function ar.moveSetup(d)
+		local c = ar.cfg(true)
+		local p = c.point
+		if not p then
+			return
+		end
+		local dx, dz = p.x - d.x0, p.z - d.z0
+		if dx == 0 and dz == 0 or #c.armies == 0 then
+			ar.commit(d.before)
+			return
+		end
+		local byTeam = {}
+		for _, id in ipairs(Spring.GetAllUnits()) do
+			if Spring.GetUnitRulesParam(id, "arena") == 1 then
+				local t = Spring.GetUnitTeam(id)
+				byTeam[t] = byTeam[t] or {}
+				byTeam[t][#byTeam[t] + 1] = id
+			end
+		end
+		host.step()
+		for _, a in ipairs(c.armies) do
+			a.nx, a.nz = a.nx + dx, a.nz + dz
+			local ax, az = clampArmy(a.nx, a.nz, a.hw, a.hh)
+			ax, az = math.floor(ax), math.floor(az)
+			local mx, mz = ax - a.ax, az - a.az
+			a.ax, a.az = ax, az
+			local ids = byTeam[a.team]
+			if ids and (mx ~= 0 or mz ~= 0) then
+				for i = 1, #ids, 500 do
+					host.led(string.format("led|move|%d|%d|%s", mx, mz, table.concat(ids, ",", i, math.min(#ids, i + 499))))
+				end
+			end
+		end
+		ar.noteState(d.before)
+		host.say("Arena moved (Ctrl+Z undoes it).")
 	end
 
 	-- Markers in the world (also with the page closed): the Arena Point as a thick red circle, and with the page open a thin ring of the radius
@@ -716,7 +1028,11 @@ return function(host)
 		elseif k == "arunits" then
 			ar.winRow = (ar.winRow ~= hit.row) and hit.row or nil -- the same Units button again closes the window
 			ar.units:setFocus(false)
-		elseif k == "argen" or k == "arclear" or k == "arplay" then
+		elseif k == "argen" then
+			ar.startPick("gen")
+		elseif k == "arclear" then
+			ar.clear()
+		elseif k == "arplay" then
 			host.say("Arena: this button does not work yet.")
 		end
 		return true
