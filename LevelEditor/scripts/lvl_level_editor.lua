@@ -2972,6 +2972,19 @@ function widget:MousePress(mx, my, button)
 						return true
 					end
 				end
+				-- no selected unit there: a feature (tree, rock, wreck) under the pointer is moved
+				local best, bd
+				for _, fid in ipairs(Spring.GetFeaturesInCylinder(pos[1], pos[3], 48) or {}) do
+					local fx, _, fz = Spring.GetFeaturePosition(fid)
+					local d = fx and (fx - pos[1]) ^ 2 + (fz - pos[3]) ^ 2
+					if d and (not bd or d < bd) then
+						best, bd = fid, d
+					end
+				end
+				if best then
+					moveDrag = { x = pos[1], z = pos[3], feature = best }
+					return true
+				end
 			end
 		end
 	end
@@ -3082,7 +3095,13 @@ function widget:MouseRelease(mx, my, button)
 			local dx = math.floor((pos[1] - d.x) / grid + 0.5) * grid
 			local dz = math.floor((pos[3] - d.z) / grid + 0.5) * grid
 			local sel = selectedUnits()
-			if (dx ~= 0 or dz ~= 0) and #sel > 0 then
+			if d.feature then
+				if (dx ~= 0 or dz ~= 0) and Spring.ValidFeatureID(d.feature) then
+					pendingNew = true
+					ledStep()
+					led(string.format("led|movefeatures|%d|%d|%d", dx, dz, d.feature))
+				end
+			elseif (dx ~= 0 or dz ~= 0) and #sel > 0 then
 				local ids = {}
 				for i = 1, math.min(#sel, 2000) do
 					ids[i] = sel[i]
@@ -3613,7 +3632,20 @@ function widget:DrawWorld()
 			gl.LineWidth(2.5)
 			gl.DepthTest(false)
 			gl.Color(0.3, 1, 0.4, 1)
-			for _, id in ipairs(selectedUnits()) do
+			local moved = moveDrag.feature and {} or selectedUnits()
+			if moveDrag.feature and Spring.ValidFeatureID(moveDrag.feature) then
+				local fx, _, fz = Spring.GetFeaturePosition(moveDrag.feature)
+				local r = math.max(Spring.GetFeatureRadius(moveDrag.feature) or 12, 12)
+				local nx, nz = fx + dx, fz + dz
+				local y = Spring.GetGroundHeight(nx, nz) + 6
+				gl.BeginEnd(GL.LINE_LOOP, function()
+					gl.Vertex(nx - r, y, nz - r)
+					gl.Vertex(nx + r, y, nz - r)
+					gl.Vertex(nx + r, y, nz + r)
+					gl.Vertex(nx - r, y, nz + r)
+				end)
+			end
+			for _, id in ipairs(moved) do
 				local x, _, z = Spring.GetUnitPosition(id)
 				local ud = UnitDefs[Spring.GetUnitDefID(id)]
 				if x and ud then

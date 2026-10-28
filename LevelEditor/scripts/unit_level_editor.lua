@@ -1139,6 +1139,22 @@ function gadget:RecvLuaMsg(msg, playerID)
 	elseif cmd == "move" then
 		-- led|move|dx|dz|ids
 		transformUnits(parseIds(parts[5] or ""), "move", tonumber(parts[3]) or 0, tonumber(parts[4]) or 0)
+	elseif cmd == "movefeatures" then
+		-- led|movefeatures|dx|dz|fids: moves features (trees, rocks, wrecks): the feature is deleted and made again at the new place (the
+		-- rotation stays); both are steps of the history, so undo and redo bring it back
+		local dx, dz = tonumber(parts[3]) or 0, tonumber(parts[4]) or 0
+		local n = 0
+		for idStr in tostring(parts[5] or ""):gmatch("%d+") do
+			local fid = tonumber(idStr)
+			local snap = Spring.ValidFeatureID(fid) and featureSnapshot(fid)
+			if snap then
+				Spring.DestroyFeature(fid)
+				record({ k = "fdel", fid = fid, name = snap.name, snap = snap })
+				placeFeature(snap.name, snap.x + dx, snap.z + dz, snap.heading, playerID)
+				n = n + 1
+			end
+		end
+		tell(playerID, n .. " features moved")
 	elseif cmd == "xform" then
 		-- led|xform|l|r|m|ids
 		local mode = parts[3]

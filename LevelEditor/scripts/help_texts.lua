@@ -41,7 +41,7 @@ local sections = {
 	} },
 	{ "Editing the selection", {
 		{ "Click / rectangle", "Select units of any team, enemies too (god mode is on in the editor); the command menu and the orders work for them." },
-		{ "Alt + drag", "On a selected unit: move the selection (grid steps)." },
+		{ "Alt + drag", "On a selected unit: move the selection (grid steps). On a feature (tree, rock, wreck) that is not a selected unit: move that feature. Ctrl+Z undoes it." },
 		{ "Arrow keys", "Move the selection by one grid step (up = north). Without a selection they move the camera." },
 		{ "Del", "Delete (the selection, otherwise the unit, wreck or feature under the cursor)." },
 		{ "Ctrl+B", "Blow up, wrecks remain." },
