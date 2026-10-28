@@ -84,8 +84,15 @@ A small widget for the **official** game that brings blueprints to normal matche
 - Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
 - Specifications: [Level Editor](LevelEditor/SPECIFICATION.md), [BluePrinter](BluePrinter/SPECIFICATION.md), [shared code](shared/SPECIFICATION.md)
 
-Windows only for now. Not an official Beyond All Reason project. Created with the help of [Claude Code](https://claude.com/claude-code); please report anything that does not work as described.
+Windows only for now. Not an official Beyond All Reason project. Please report anything that does not work as described.
 
 ## Other useful links
 
 - [Map Generator](https://eclipseforeverbeyond.com/)
+
+## AI assistance
+
+- Most of the code and the documents in this repository were written with [Claude Code](https://claude.com/claude-code) (Anthropic)
+- The maintainer designs the features, tests them in the game and decides what goes in
+- Commits written with Claude carry a `Co-Authored-By: Claude` line. The working rules for the agent are in [CLAUDE.md](CLAUDE.md)
+- If you send changes to the Beyond All Reason project itself, follow its AI policy (disclosure and testing by a human)
