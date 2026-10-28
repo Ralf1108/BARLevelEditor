@@ -37,7 +37,7 @@ local function log(...)
 end
 
 local ui = {}
-local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, ownGame, gameOfTag
+local buildUi, updateFoundUi, scenarioList, forcedStatus, selectScenario, buildScript, ownGame, gameOfTag, fileTag, versionTag
 local status = ""
 local returnAt
 local uiTried, autoStarted, tabCheckAt, tabAdded, tabReported, tabDumped, tabAddCount, nextScanAt, lastFoundCount, rowAt
@@ -49,6 +49,21 @@ local hookedConnect
 local function Config() return WG.Chobby and WG.Chobby.Configuration end
 local function lobby() return WG.LibLobby and WG.LibLobby.lobby end
 local function setStatus(s) status = s; log("status:", s); if ui.status then ui.status:SetText(s) end end
+
+-- a message window big enough for a longer text (the lobby's InformationPopup is a small box); falls back to it when the window cannot be built
+local function bigPopup(msg)
+	local ok = pcall(function()
+		if ui.popup then pcall(function() ui.popup:Dispose() end) end
+		local w, h = 640, 320
+		local font = WG.Chobby.Configuration:GetFont(2)
+		ui.popup = Window:New { parent = screen0, x = math.floor((screen0.width - w) / 2), y = math.floor((screen0.height - h) / 2), width = w, height = h,
+			resizable = false, draggable = false, classname = "main_window" }
+		TextBox:New { parent = ui.popup, x = 16, y = 16, right = 16, bottom = 70, text = msg, objectOverrideFont = font }
+		Button:New { parent = ui.popup, x = "35%", right = "35%", bottom = 12, height = 40, caption = "OK", objectOverrideFont = font, classname = "action_button",
+			OnClick = { function() ui.popup:Dispose(); ui.popup = nil end } }
+	end)
+	if not ok and WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
+end
 -- An address of this computer or of a local network: 127.x, the private networks 10.x, 172.16-31.x, 192.168.x, link-local 169.254.x and the usual
 -- VPN ranges 100.64-127.x (Tailscale) and 25.x (Hamachi). The lobby in the game cannot list the network cards, so these ranges stand for the LAN.
 local function localAddress(ip)
@@ -208,6 +223,19 @@ ownGame = function()
 	local text = VFS.LoadFile(SCENARIO_POINTER, VFS.RAW) or ""
 	local ver = text:match("LevelEditorScenarios_(%x+)%.sdz")
 	return gameOfTag(ver)
+end
+
+-- Versions of the Lua files of this computer that every player of a LAN game needs in the same version: the lobby widget (lan_lobby.lua) and the game
+-- widget shared_start.lua (starts the Copilot games on official maps). The host announces both as the game option lanver "<lobby>|<shared>" (first 8 characters of VFS.CalculateHash each,
+-- hash of the text without carriage returns; "-" when the file is not there); a joiner compares with his own and shows ONE warning on a difference.
+fileTag = function(path)
+	local text = VFS.LoadFile(path, VFS.RAW)
+	if not text then return "-" end
+	return VFS.CalculateHash((text:gsub("\r", "")), 0):sub(1, 8)
+end
+
+versionTag = function()
+	return fileTag("LuaMenu/Widgets/lan_lobby.lua") .. "|" .. fileTag("LuaUI/Widgets/shared_start.lua")
 end
 
 scenarioList = function()
@@ -395,6 +423,7 @@ local function serverLine(c, line)
 			if o ~= c and o.battleStatus then sendLine(c, "CLIENTBATTLESTATUS " .. o.name .. " " .. o.battleStatus .. " " .. (o.teamColor or "0")) end
 		end
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
+		sendLine(c, "SETSCRIPTTAGS game/modoptions/lanver=" .. versionTag())
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
@@ -595,7 +624,7 @@ local function hookConnect()
 			if not want then
 				local msg = "The host plays the scenario '" .. self.modoptions.lanscenario .. "' with another version of the Level Editor (no game version announced): please update the Level Editor manually."
 				log("cannot join the scenario:", msg)
-				if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
+				bigPopup(msg)
 				return
 			end
 			if lan.fetch or lan.syncPending or (not VFS.HasArchive(want.name) and lan.syncFailed ~= want.ver) then
@@ -606,7 +635,7 @@ local function hookConnect()
 			end
 			if not VFS.HasArchive(want.name) then
 				local msg = "The scenario game of the host (" .. want.name .. ") was not loaded: the scenario cannot start for you."
-				log(msg); if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup(msg) end
+				log(msg); bigPopup(msg)
 				return
 			end
 		end
@@ -704,7 +733,7 @@ local function finishFetch(f, ok, reason)
 	else
 		lan.syncFailed = f.game and f.game.ver; lan.syncPending = false; lan.pendingConnect = nil
 		setStatus("Could not load the scenario game from the host: " .. tostring(reason))
-		if WG.Chobby and WG.Chobby.InformationPopup then WG.Chobby.InformationPopup("Could not load the scenario game from the host: " .. tostring(reason)) end
+		bigPopup("Could not load the scenario game from the host: " .. tostring(reason))
 	end
 end
 
@@ -772,8 +801,16 @@ local function updateSync()
 	if not (mo and mo.lanscenario and mo.lanscenario ~= "" and tag and tag ~= "") then return end
 	local ver, hash, size = tag:match("^(%x+)|(.-)|(%d+)$")
 	local want = gameOfTag(ver)
-	if not want or lan.syncAsked == ver or VFS.HasArchive(want.name) then return end
+	if not want or lan.syncAsked == ver then return end
+	if VFS.HasArchive(want.name) then
+		lan.syncAsked = ver
+		local own = ownGame()
+		log("scenario game check: same version as the host (" .. ver .. "), own version " .. tostring(own and own.ver) .. ", no transfer needed")
+		setStatus("Same scenario game as the host (" .. ver .. ").")
+		return
+	end
 	lan.syncAsked = ver
+	log("scenario game check: the host has version " .. ver .. ", own version " .. tostring((ownGame() or {}).ver) .. ": different")
 	local function yes() lan.syncGame = want; startFetch(hash, tonumber(size)) end
 	local function no() lan.syncFailed = ver; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
 	if cfg.autoAccept then yes(); return end
@@ -781,8 +818,40 @@ local function updateSync()
 	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
 end
 
+-- one warning per join when the lobby widget or the game widget of the host is not the one of this computer
+local function updateVersionCheck()
+	if not lan or lan.role ~= "client" or lan.step ~= "in" or lan.verChecked then return end
+	local l = lobby()
+	local tag = l and l.modoptions and l.modoptions.lanver
+	if not tag or tag == "" then
+		lan.verWait = lan.verWait or os.clock()
+		if os.clock() - lan.verWait < 4 then return end   -- the host sends it right after the join
+	end
+	lan.verChecked = true
+	local mine = versionTag()
+	if tag == mine then
+		log("version check: same lobby and game widget as the host (" .. mine .. ")")
+		return
+	end
+	local msg
+	if not tag or tag == "" then
+		msg = "The host does not announce the version of its LAN Play: it is another version than yours. Update the Level Editor on all computers to the same version."
+	else
+		local hl, hs = tag:match("^([^|]*)|([^|]*)$")
+		local ml, ms = mine:match("^([^|]*)|([^|]*)$")
+		local what = {}
+		if hl ~= ml then what[#what + 1] = "the lobby widget (host " .. tostring(hl) .. ", yours " .. tostring(ml) .. ")" end
+		if hs ~= ms then what[#what + 1] = "the game widget of the Copilot games (host " .. tostring(hs) .. ", yours " .. tostring(ms) .. ")" end
+		msg = "Your LAN Play is not the version of the host: " .. table.concat(what, " and ") .. " differs. Update the Level Editor on all computers to the same version, otherwise the game may not start or behave differently."
+	end
+	log("version check: DIFFERENT, host " .. tostring(tag) .. ", own " .. mine)
+	setStatus(msg)
+	bigPopup(msg)
+end
+
 local function updateLan()
 	updateSync()
+	updateVersionCheck()
 	if not lan then return end
 	local l = lobby()
 	if not l then return end
