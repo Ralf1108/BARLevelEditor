@@ -84,7 +84,7 @@ steps[60] = function()
 	c.rows[1].on, c.rows[2].on, c.rows[3].on, c.rows[4].on = true, true, true, false
 	ar.setAllowed(1, { "armpw" }, true); c.rows[1].count = 30
 	ar.setAllowed(2, { "corak", "corthud" }, true); c.rows[2].count = 30
-	ar.setAllowed(3, { "armflash", "armstump" }, true); c.rows[3].metal = 12000
+	ar.setAllowed(3, { "armflash", "armstump" }, true); c.rows[3].metal = 12000; c.rows[3].count = nil
 	ar.setAllowed(4, { "armpw" }, true)
 	log("rows set", #c.rows[1].allowed, #c.rows[2].allowed, #c.rows[3].allowed, "isAllowed armpw/corak", ar.isAllowed(1, "armpw"), ar.isAllowed(1, "corak"))
 	-- the text of the buttons
@@ -212,7 +212,7 @@ steps[1650] = function()
 	report("after Clear")
 	log("cleared:", #arenaUnits() == 0 and ar.cfg().point == nil and "OK" or "WRONG")
 	-- a button that must not fail: copy to table, switch a row, a field
-	click(pageRect("arcopy"))
+	click(pageRect("arcol"))
 	click(pageRect("aron", nil, 4))
 	log("copy / on buttons clicked, row 4 on:", ar.cfg().rows[4].on)
 	log("END")

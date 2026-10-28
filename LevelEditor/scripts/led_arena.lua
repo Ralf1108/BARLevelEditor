@@ -22,9 +22,9 @@ return function(host)
 	function ar.new()
 		local rows = {}
 		for i = 1, ROWS do
-			rows[i] = { on = i <= 2, allowed = {} } -- the first two players are on; count, metal and energy empty = no limit
+			rows[i] = { on = i <= 2, allowed = {}, count = 50 } -- the first two players are on; metal and energy empty = no limit
 		end
-		return { radius = 5000, budget = {}, rows = rows, armies = {} }
+		return { radius = 1000, budget = {}, rows = rows, armies = {} }
 	end
 	ar.DEFAULT = ar.new()
 
@@ -57,7 +57,7 @@ return function(host)
 		end
 		for i = 1, ROWS do
 			if type(c.rows[i]) ~= "table" then
-				c.rows[i] = { on = i <= 2, allowed = {} }
+				c.rows[i] = { on = i <= 2, allowed = {}, count = 50 }
 			end
 			if type(c.rows[i].allowed) ~= "table" then
 				c.rows[i].allowed = {}
@@ -152,7 +152,7 @@ return function(host)
 			return
 		end
 		ar.pick = kind
-		host.say(kind == "point" and "Click on the map: that is the Arena Point (right click ends)." or "Click on the map: the Arena Point is set there and the armies stand around it (right click ends).")
+		host.say(kind == "point" and "Click on the map: that is the Arena Point (right click ends)." or "Click on the map: the Arena Point is set there and the armies stand around it (once; right click ends).")
 	end
 
 	function ar.cancel()
@@ -170,7 +170,8 @@ return function(host)
 			ar.endPick()
 			host.say(string.format("Arena Point at %d, %d (Alt + drag moves it, Del removes it).", x, z))
 		elseif ar.pick == "gen" then
-			ar.generate(x, z) -- the mode stays: every click generates again
+			ar.endPick() -- one click, one Generate: the button is off again
+			ar.generate(x, z)
 		end
 	end
 
@@ -661,7 +662,6 @@ return function(host)
 	ar.units = Shared.newUnits({
 		cfg = host.cfg,
 		ownText = host.ownText,
-		noPreview = true,
 		-- only what moves, and turrets (armed buildings): no factories, no economy, no walls
 		filter = function(ud)
 			return ud.canMove or (ud.weapons ~= nil and #ud.weapons > 0)
@@ -702,25 +702,43 @@ return function(host)
 		local gap = 3 * S
 		local x1, x2 = w.x1 + m.PAD, w.x2 - m.PAD
 		local y = w.top - 44 * S
-		labels[#labels + 1] = { text = "Copy the list of player:", x = x1, y = y - 18 * S, size = 19 * S }
-		y = y - 24 * S
-		local bw = (x2 - x1 - gap * (ROWS - 1)) / ROWS
+		-- Copy list from player: a combo box (the team) and the button Copy from
+		local others = {}
 		for j = 1, ROWS do
-			local cr, cg, cb = Spring.GetTeamColor(j - 1)
-			local bx = x1 + (j - 1) * (bw + gap)
-			rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = y - m.HB, y1 = y, kind = "arcopyfrom", value = j, label = tostring(j), fs = 18 * S,
-				tint = { (cr or 0.5) * 0.7, (cg or 0.5) * 0.7, (cb or 0.5) * 0.7 }, tip = "Copy the allowed units of player " .. j .. " into this army (they replace what is allowed here)" }
+			if j ~= ar.winRow and hasTeam(j - 1) then
+				others[#others + 1] = j
+			end
+		end
+		if not ar.copyFrom or ar.copyFrom == ar.winRow or not hasTeam(ar.copyFrom - 1) then
+			ar.copyFrom = others[1]
+		end
+		local lw, cw = (x2 - x1) * 0.4, (x2 - x1) * 0.3
+		labels[#labels + 1] = { text = "Copy list from player", x = x1, y = y - m.HB + 8 * S, size = 20 * S }
+		local cr, cg, cb = Spring.GetTeamColor((ar.copyFrom or 1) - 1)
+		local combo = { x1 = x1 + lw, x2 = x1 + lw + cw - gap, y0 = y - m.HB, y1 = y, kind = "arcombo", fs = 20 * S, label = "Team " .. ((ar.copyFrom or 1) - 1) .. "  v",
+			tint = { (cr or 0.5) * 0.7, (cg or 0.5) * 0.7, (cb or 0.5) * 0.7 }, tip = "Choose the player whose allowed units are copied" }
+		rects[#rects + 1] = combo
+		rects[#rects + 1] = { x1 = x1 + lw + cw, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arcopyfrom", label = "Copy from", fs = 20 * S,
+			tip = "Copy the allowed units of the chosen player into this army (they replace what is allowed here)" }
+		local popup
+		if ar.combo and #others > 0 then
+			popup = {}
+			for k, j in ipairs(others) do
+				local pr, pg, pb = Spring.GetTeamColor(j - 1)
+				popup[k] = { x1 = combo.x1, x2 = combo.x2, y0 = combo.y0 - k * m.HB, y1 = combo.y0 - (k - 1) * m.HB, kind = "arcombopick", value = j, label = "Team " .. (j - 1), fs = 20 * S,
+					tint = { (pr or 0.5) * 0.7, (pg or 0.5) * 0.7, (pb or 0.5) * 0.7 } }
+			end
 		end
 		y = y - m.HB - 6 * S
 		local half = (x2 - x1 - gap) / 2
-		rects[#rects + 1] = { x1 = x1, x2 = x1 + half, y0 = y - m.HB, y1 = y, kind = "arclearlist", label = "Clear list", fs = 20 * S, tip = "Nothing is allowed in this army any more" }
+		rects[#rects + 1] = { x1 = x1, x2 = x1 + half, y0 = y - m.HB, y1 = y, kind = "arclearlist", label = "Clear Allowed Units", fs = 20 * S, tip = "Nothing is allowed in this army any more" }
 		rects[#rects + 1] = { x1 = x1 + half + gap, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arclose", label = "Close", fs = 20 * S, tip = "Close this list" }
 		y = y - m.HB - 6 * S
 		for _, r in ipairs(ar.units:filterRects(w.x1, w.x2, y, m.HB)) do
 			rects[#rects + 1] = r
 		end
 		y = y - ar.units:filterRowCount() * (m.HB + 3) - 4 * S
-		return rects, { x1 = w.x1, x2 = w.x2, top = y, y0 = w.y0 }, labels
+		return rects, { x1 = w.x1, x2 = w.x2, top = y, y0 = w.y0 }, labels, popup
 	end
 
 	function ar.drawWindow()
@@ -743,13 +761,13 @@ return function(host)
 		Shared.drawButtons(rects, 20 * S, Shared.m.HB)
 		local mx, my = Spring.GetMouseState()
 		ar.units:draw(listRect, mx, my, nil, nil, ar.winAt(mx, my))
-		-- the picture and the text under it are off in this window: a tooltip with name and cost instead
-		local i = ar.winAt(mx, my) and ar.units:at(listRect, mx, my)
-		local e = i and ar.units:list()[i]
-		if e then
-			local ud = UnitDefs[e.id]
-			local text = string.format("%s (%s)\nMetal %d, Energy %d", tostring(ud.translatedHumanName or ud.humanName or e.name), e.name, ud.metalCost or 0, ud.energyCost or 0)
-			Shared.tooltipBox(text, mx, my)
+		-- the 3D preview and the text under it come from the unit list, as in the Place menu
+		local _, _, _, popup = winLayout()
+		if popup then
+			local last = popup[#popup]
+			gl.Color(0.07, 0.07, 0.09, 1)
+			gl.Rect(popup[1].x1 - 2 * S, last.y0 - 2 * S, popup[1].x2 + 2 * S, popup[1].y1 + 2 * S)
+			Shared.drawButtons(popup, 20 * S, Shared.m.HB)
 		else
 			Shared.drawTip(rects, mx, my)
 		end
@@ -762,8 +780,17 @@ return function(host)
 	end
 
 	function ar.winPress(mx, my, button)
-		local rects, listRect = winLayout()
+		local rects, listRect, _, popup = winLayout()
 		if button ~= 1 then
+			return true
+		end
+		if popup then
+			ar.combo = false -- every click closes the list; a click on a team chooses it
+			for _, r in ipairs(popup) do
+				if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+					ar.copyFrom = r.value
+				end
+			end
 			return true
 		end
 		local hit
@@ -774,9 +801,12 @@ return function(host)
 		end
 		if hit then
 			local k = hit.kind
-			if k == "arcopyfrom" then
+			if k == "arcombo" then
+				ar.combo = true
+				ar.units:setFocus(false)
+			elseif k == "arcopyfrom" then
 				local c = ar.cfg(true)
-				local from = c.rows[hit.value].allowed
+				local from = c.rows[ar.copyFrom or 1].allowed
 				ar.setAllowed(ar.winRow, c.rows[ar.winRow].allowed, false)
 				local names = {}
 				for _, n in ipairs(from) do
@@ -790,6 +820,7 @@ return function(host)
 			elseif k == "arclose" then
 				ar.units:setFocus(false)
 				ar.winRow = nil
+				ar.combo = false
 			else
 				ar.units:applyFilter(hit) -- search field, faction, group, tech and their check boxes
 			end
@@ -902,20 +933,18 @@ return function(host)
 			labels[#labels + 1] = { text = text, x = x1, y = y - 18 * S, size = 19 * S, color = color }
 			y = y - 24 * S
 		end
-		local function field(name, row, tip)
+		local function field(name, row, tip, prefix)
 			local e = ar.edit
 			local editing = e ~= nil and e.field == name and e.row == row
 			local v = getValue(c, name, row)
-			return { kind = "arfield", field = name, row = row, label = editing and (e.buf .. "_") or (v ~= nil and tostring(v) or "-"), active = editing, tip = tip }
+			return { kind = "arfield", field = name, row = row, label = (prefix or "") .. (editing and (e.buf .. "_") or (v ~= nil and tostring(v) or "-")), active = editing, tip = tip }
 		end
 		head("Radius (Elmo): distance of every army from the Arena Point")
-		line({ field("radius", nil, "Distance of every army from the Arena Point (a radius, not a diameter). Click, type a number, Enter accepts"),
-			{ kind = "arhdr", label = "", w = 2 } })
+		line({ field("radius", nil, "Distance of every army from the Arena Point (a radius, not a diameter). Click, type a number, Enter accepts") })
 		head("Budget for all rows (empty = no limit)")
 		line({
-			field("bmetal", nil, "Metal budget for all rows. Empty = no limit. Click, type a number, Enter accepts; 'Copy to table' writes it into every row"),
-			field("benergy", nil, "Energy budget for all rows. Empty = no limit. Click, type a number, Enter accepts; 'Copy to table' writes it into every row"),
-			{ kind = "arcopy", label = "Copy to table", w = 1.4, tip = "Writes Metal and Energy of this line into every row (also the rows that are off); the values of a row stay editable" },
+			field("bmetal", nil, "Metal budget for all rows. Empty = no limit. Click, type a number, Enter accepts; the button C in the table (column Metal) writes it into every row", "M "),
+			field("benergy", nil, "Energy budget for all rows. Empty = no limit. Click, type a number, Enter accepts; the button C in the table (column Energy) writes it into every row", "E "),
 		})
 		y = y - 4 * S
 		-- table: team, on / off, units, count, metal, energy, remaining budget
@@ -931,6 +960,14 @@ return function(host)
 			{ kind = "arhdr", label = "Units", tint = hdr, fs = 18 * S }, { kind = "arhdr", label = "Count", tint = hdr, fs = 18 * S },
 			{ kind = "arhdr", label = "Metal", tint = hdr, fs = 18 * S }, { kind = "arhdr", label = "Energy", tint = hdr, fs = 18 * S },
 			{ kind = "arhdr", label = "Left (metal / energy)", tint = hdr, fs = 18 * S } }, 3 * S)
+		-- one button per column: the value of the column goes to all other rows
+		local function col(name, what)
+			return { kind = "arcol", value = name, label = "C", tint = { 0.2, 0.3, 0.5 }, fs = 18 * S,
+				tip = "Takes " .. what .. " over for all other players" }
+		end
+		local none = { kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } }
+		tline({ none, col("on", "On / Off of the first team"), col("units", "the allowed units of the first team"), col("count", "the Count of the first team"),
+			col("metal", "the Metal budget field at the top (Budget for all rows)"), col("energy", "the Energy budget field at the top (Budget for all rows)"), none }, 3 * S)
 		for i = 1, ROWS do
 			local t = i - 1
 			local r = c.rows[i]
@@ -967,11 +1004,11 @@ return function(host)
 		local state = Spring.GetGameRulesParam("arenaState") or ""
 		local running = state == "running"
 		line({
+			{ kind = "argen", label = "Generate", w = 3, active = ar.pick == "gen",
+				tip = "Generate: then click on the map, once. The Arena Point is set there and every army of a row that is on stands around it. Ctrl+Z undoes it" },
 			{ kind = "arpoint", label = "Arena Point", w = 4, active = ar.pick == "point",
 				tip = "Arena Point: click, then click the map. The point where all armies meet. Alt + drag moves it, Shift + Alt + drag moves the whole setup, Del over it removes it" },
 			{ kind = "arpointx", label = "X", w = 1, tip = "Delete the Arena Point" },
-			{ kind = "argen", label = "Generate", w = 3, active = ar.pick == "gen",
-				tip = "Generate: click on the map. The Arena Point is set there and every army of a row that is on stands around it. Ctrl+Z undoes it" },
 			{ kind = "arclear", label = "Clear", w = 3, tip = "Removes the units that Generate placed, and the Arena Point. Units you placed yourself stay. Ctrl+Z undoes it" },
 		})
 		line({ { kind = "arplay", label = running and "Stop" or "Start", active = running, fs = 26 * S, tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
@@ -1063,10 +1100,29 @@ return function(host)
 		elseif k == "aron" then
 			local r = ar.cfg(true).rows[hit.row]
 			r.on = not r.on
-		elseif k == "arcopy" then
+		elseif k == "arcol" then
 			local c = ar.cfg(true)
+			local src
 			for i = 1, ROWS do
-				c.rows[i].metal, c.rows[i].energy = c.budget.metal, c.budget.energy
+				if hasTeam(i - 1) then
+					src = i
+					break
+				end
+			end
+			for i = 1, ROWS do
+				local r = c.rows[i]
+				if hit.value == "metal" or hit.value == "energy" then
+					r[hit.value] = c.budget[hit.value]
+				elseif src and i ~= src then
+					if hit.value == "units" then
+						r.allowed = {}
+						for _, n in ipairs(c.rows[src].allowed) do
+							r.allowed[#r.allowed + 1] = n
+						end
+					else
+						r[hit.value] = c.rows[src][hit.value]
+					end
+				end
 			end
 		elseif k == "arpoint" then
 			ar.startPick("point")
