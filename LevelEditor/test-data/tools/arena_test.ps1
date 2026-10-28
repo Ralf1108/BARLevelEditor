@@ -21,6 +21,7 @@ New-Item -ItemType Directory "$d\cache", "$d\games", "$d\LuaUI\Widgets", "$d\Lev
 foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$Data\$j" | Out-Null }
 Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
 Copy-Item ("$tools\" + $(if ($Widget) { $Widget } elseif ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
+Copy-Item "$tools\..\levels\*.lua" "$d\LevelEditor\"   # the test levels (td_test, ctf_test, rtf_test) for the widgets that load them
 
 # the extra game "Level Editor" from the files of the repository (as install_editor.ps1 builds it)
 $game = Get-GameVersion $Data

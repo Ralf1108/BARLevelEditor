@@ -62,6 +62,14 @@ Collected while testing the game modes over LAN Play (2026-10-27). Read this bef
 - **The Gaia team is a team of the game** (here team 4): the table must not show it as a row.
 - **Screenshots in the same frame show the old picture:** open the window, take the screenshot some frames later.
 
+## Teams and alliances test (`tools\zz_teams.lua`, `tools\zz_modes.lua`, 2026-10-28)
+
+- **Method:** `arena_test.ps1 -Widget <file>` (the Arena sandbox: ten teams like the editor game, the extra game built from the repository files). The widgets use `WG.LevelEditorWidget:DebugTeams()` (the module `tm`, `saveLevel`, `load_level`, the Tower Defense page) and `DebugLayout()` for the buttons; clicks are `MousePress` / `MouseRelease` at the middle of a rectangle.
+- **A widget cannot read the saved level** (`io.open` of `LevelEditor/...` is refused: "outside the read paths for user widgets"): save and load the level and compare the values instead.
+- **The alliance is a state of the engine:** `Spring.AreTeamsAllied(a, b)` shows what `Spring.SetAlly` in the gadget did (both directions are needed). A few frames pass between the message and the change.
+- **Ten teams:** the editor game gives each team 3150 units (`maxunits` 32000 is shared), Gaia 500; the start commanders of teams 2 to 9 are removed by the gadget in the first frames.
+- **The test levels are copied into the sandbox** (`$d\LevelEditor\*.lua`): the widgets load them by name.
+
 ## BluePrinter in a test
 
 - After a change of `shared\editor_common.lua` or `BluePrinter\bluePrinter.lua` the installed BluePrinter is old until `install_blueprinter.bat`, `start_blueprinter.bat`, `start_blueprinter_test.bat` copied the files (a start of the editor does not); the game that is running keeps the old ones (`/luaui reload`). "I do not see the new feature in the BluePrinter" is almost always this.

@@ -141,7 +141,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local parts = {}
 		for a in tostring(Spring.GetGameRulesParam("rtfTeams") or ""):gmatch("%d+") do
 			local lost = (("," .. tostring(Spring.GetGameRulesParam("rtfOut") or "") .. ","):find("," .. a .. ",", 1, true)) and " (lost)" or ""
-			parts[#parts + 1] = string.format("Alliance %s: %d%s (+%.1f/s)%s", a, Spring.GetGameRulesParam("rtfScore" .. a) or 0, target > 0 and ("/" .. target) or "",
+			parts[#parts + 1] = string.format("Alliance %s: %d%s (+%.1f/s)%s", (tonumber(a) >= 100 and ("group " .. (tonumber(a) - 100)) or a), Spring.GetGameRulesParam("rtfScore" .. a) or 0, target > 0 and ("/" .. target) or "",
 				Spring.GetGameRulesParam("rtfRate" .. a) or 0, lost)
 		end
 		local text = "Reclaim the Fame   " .. table.concat(parts, "   ")
@@ -250,7 +250,7 @@ local function finish(ally)
 		end
 	end
 	publish()
-	say("Alliance " .. ally .. " has " .. g.cfg.score .. " points: level won!")
+	say("Alliance " .. G.allianceName(ally) .. " has " .. g.cfg.score .. " points: level won!")
 	if not EDITOR_MODE then
 		Spring.GameOver({ ally })
 	end

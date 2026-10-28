@@ -153,7 +153,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local parts = {}
 		for t in tostring(Spring.GetGameRulesParam("ctfTeams") or ""):gmatch("%d+") do
 			local lost = (("," .. tostring(Spring.GetGameRulesParam("ctfOut") or "") .. ","):find("," .. t .. ",", 1, true)) and " (lost)" or ""
-			parts[#parts + 1] = string.format("Alliance %s: %d%s%s", t, Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "", lost)
+			parts[#parts + 1] = string.format("Alliance %s: %d%s%s", (tonumber(t) >= 100 and ("group " .. (tonumber(t) - 100)) or t), Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "", lost)
 		end
 		local text = "Capture the Flag   " .. table.concat(parts, "   ")
 		if state ~= "running" then
@@ -366,7 +366,7 @@ local function finish(ally, lastStanding)
 		end
 	end
 	publish()
-	say(lastStanding and ("Alliance " .. ally .. " is the last one standing: level won!") or ("Alliance " .. ally .. " has " .. g.cfg.score .. " flags: level won!"))
+	say(lastStanding and ("Alliance " .. G.allianceName(ally) .. " is the last one standing: level won!") or ("Alliance " .. G.allianceName(ally) .. " has " .. g.cfg.score .. " flags: level won!"))
 	if not EDITOR_MODE then
 		Spring.GameOver({ ally })
 	end
@@ -428,7 +428,7 @@ end
 -- An alliance that lost all its flags: its units blow up; the last alliance standing wins
 local function eliminate(ally)
 	g.out[ally] = true
-	say("Alliance " .. ally .. " has lost all its flags: its units blow up.")
+	say("Alliance " .. G.allianceName(ally) .. " has lost all its flags: its units blow up.")
 	blowUp(ally)
 	publish()
 	local left, last = 0, nil
@@ -455,7 +455,7 @@ local function deliver(f, ally, home)
 	local a = home.count * 2.4
 	Spring.SetUnitPosition(f.id, home.x + math.cos(a) * 60, home.z + math.sin(a) * 60)
 	g.score[ally] = g.parked[ally] -- the score is the number of flags held at the collection points of the alliance
-	say(string.format("Alliance %d holds a flag (%d): +%d metal per second each.", ally, g.parked[ally], cfg.amount))
+	say(string.format("Alliance %s holds a flag (%d): +%d metal per second each.", G.allianceName(ally), g.parked[ally], cfg.amount))
 	local ownerAlly = f.owner >= 0 and allyOf(f.owner)
 	if ownerAlly and not g.out[ownerAlly] then
 		local left = 0

@@ -49,6 +49,12 @@ function G.allyOf(team)
 	return (select(6, Spring.GetTeamInfo(team, false)))
 end
 
+-- How an alliance is called in a message: "group 3" for an alliance of the editor (page T), the number of the ally team otherwise
+function G.allianceName(alliance)
+	alliance = tonumber(alliance) or 0
+	return alliance >= 100 and ("group " .. (alliance - 100)) or tostring(alliance)
+end
+
 -- The teams of an alliance (the value of G.allyOf)
 function G.teamsOfAlliance(alliance)
 	local out = {}

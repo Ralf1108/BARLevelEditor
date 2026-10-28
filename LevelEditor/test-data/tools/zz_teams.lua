@@ -110,6 +110,20 @@ end
 steps[400] = function()
 	log("loaded: groups", tm.group(0), tm.group(1), ok(tm.group(0) == 3 and tm.group(1) == 3), "metal", tm.row(0).metal, ok(tm.row(0).metal == 5000), "team 3 AI", tm.row(3).ai, ok(tm.row(3).ai == "BARb"), "team 2 human", ok(tm.row(2).ai == ""))
 	log("allied 0/1 after the load:", ok(allied(0, 1) == true))
+	-- the picture of the README: two alliances of two teams, a human in each, AIs, other start resources
+	for t = 0, 9 do tm.setGroup(t, 0) end
+	tm.setGroup(0, 2); tm.setGroup(1, 2); tm.setGroup(2, 1); tm.setGroup(3, 1); tm.setGroup(4, 4)
+	local d = tm.data
+	d[1].ai, d[2].ai, d[3].ai, d[4].ai, d[5].ai = "", "", "BARb", "CircuitAI", "NullAI"
+	d[1].metal, d[1].energy, d[3].metal = 2000, 3000, 500
+end
+
+steps[440] = function()
+	Spring.SendCommands("screenshot png")
+	log("screenshot teams")
+end
+
+steps[480] = function()
 	log("END")
 	Spring.SendCommands("quitforce")
 end

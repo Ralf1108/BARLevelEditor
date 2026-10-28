@@ -7,9 +7,8 @@ Builds a finished scenario from a saved level of the Level Editor that anyone ca
 2. In the start menu of the Level Editor press key 3 and choose the level (at the end it lists the values stored in the level, asks for the title (Enter keeps it) and then shows the target name = the ID of the scenario (a new title proposes a new name): Enter takes it, another name changes it and is stored in the level; an existing scenario of that name is only overwritten after a question; then it builds without more questions from the info in the level; or by hand `powershell -File scenario_builder.ps1`, which asks everything in the window, Enter takes the default):
    - which level (list with numbers; `_last` is the automatically backed up state)
    - title, author, summary, briefing (several lines, an empty line ends)
-   - role of every team in the level: **Player** (exactly one), **Allied AI**, **Enemy (AI)**
-   - behavior of the AI: BARb (expands and attacks) or NullAI (does nothing)
-   - win condition (commander / all units / no end), start metal, start energy, **grace period** (as minutes:seconds, e.g. 2:30, or minutes like 2.5; 0 = none), **tech per team** (T1/T2/T3 allowed individually, e.g. enemy only T1), ID
+   - (human or AI per team, alliances and start resources are not asked: they come from the page **T** of the editor, saved in the level: a team without AI is a human, teams of the same alliance are allies; only teams with units take part, and in Tower Defense the first AI team)
+   - win condition (commander / all units / no end), **grace period** (as minutes:seconds, e.g. 2:30, or minutes like 2.5; 0 = none), ID
    All answers are then stored **in the level itself** (block `scenario` at the start of the level file). On the next run with the same level they are the defaults, Enter takes them. The Level Editor leaves the block unchanged when saving (it reads it before overwriting and writes it back; with "save under" a new name it takes the block of the level loaded last). The ID belongs to the level and stays the same; a new run replaces `scenarios\<id>\`.
 3. The result is in `scenarios\<id>\` and as `scenarios\<id>.zip`. You pass the zip file on.
 

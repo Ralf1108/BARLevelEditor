@@ -51,14 +51,14 @@ All buttons are in the column at the right edge and in the strip left of the men
 Turns a level into a ZIP that others play with their own BAR.
 
 1. Build the level and save it (**Ctrl+S**)
-2. **I**: fill in title, briefing, team roles, tech levels, win condition, start resources
+2. **I**: fill in title, briefing, win condition. **T**: human or AI, alliance and start resources of the teams
 3. Start menu key **3**, choose the level, confirm title and name
 4. Pass on `LevelEditor\scenario\scenarios\<name>.zip`
 5. The other person unpacks it and starts `Start Scenario.bat`
 6. Same network: `Host Game.bat` and `Join Game.bat`
 
 ![Scenario info (button I)](level-editor-scenario.jpg)
-![AI per team (button AI)](level-editor-ai.jpg)
+![Teams (button T)](level-editor-teams.jpg)
 
 Details: [scenario builder](../LevelEditor/scenario/README.md)
 
