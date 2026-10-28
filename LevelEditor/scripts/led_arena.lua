@@ -484,6 +484,47 @@ return function(host)
 		host.say(string.format("Arena cleared: %d units and the Arena Point (Ctrl+Z brings them back).", #ids))
 	end
 
+	-- Start / Stop like the test of Tower Defense: Start saves the state as _beforeplay and the gadget gives the fight order; Stop brings the state back
+	function ar.toggle()
+		if Spring.GetGameRulesParam("arenaState") == "running" then
+			Spring.SendLuaRulesMsg("led|arenastop")
+			host.afterPlay()
+			host.say("Stopped: the state before the start is back.")
+			return
+		end
+		local function refuse(text)
+			host.say(text)
+			ar.notice = { text = text, untilT = os.clock() + 6 }
+		end
+		local c = ar.cfg()
+		if not c.point then
+			refuse("Set the Arena Point first.")
+			return
+		end
+		for _, name in ipairs({ "tdState", "ctfState", "rtfState" }) do
+			local s = Spring.GetGameRulesParam(name)
+			if s and s ~= "" then
+				refuse("A test of another page is running (Tower Defense, Capture the Flag or Reclaim the Fame): stop it first.")
+				return
+			end
+		end
+		local teams = {}
+		for i = 1, ROWS do
+			if c.rows[i].on and Spring.GetTeamInfo(i - 1) then
+				teams[#teams + 1] = tostring(i - 1)
+			end
+		end
+		if #teams == 0 then
+			refuse("No row is on.")
+			return
+		end
+		ar.endPick()
+		host.disarmAll() -- no editor mode may stay armed: it would swallow the clicks of the game
+		host.beforePlay()
+		Spring.SendLuaRulesMsg(string.format("led|arenastart|%d|%d|%s", c.point.x, c.point.z, table.concat(teams, ",")))
+		host.say("Started: the state before is saved as _beforeplay; Stop brings it back.")
+	end
+
 	-- Shift + Alt + drag of the Arena Point, on release: the point has moved by (dx, dz); every army's natural spot moves by that, its real spot
 	-- is the natural spot pushed onto the map, and its units move with the real spot
 	function ar.moveSetup(d)
@@ -1033,7 +1074,7 @@ return function(host)
 		elseif k == "arclear" then
 			ar.clear()
 		elseif k == "arplay" then
-			host.say("Arena: this button does not work yet.")
+			ar.toggle()
 		end
 		return true
 	end

@@ -1038,6 +1038,27 @@ function gadget:RecvLuaMsg(msg, playerID)
 	elseif cmd == "ctfpts" then
 		-- led|ctfpts|before|after: the widget changed collection points or flag points (state texts, see led_ctf.lua)
 		record({ k = "ctfpts", before = parts[3] or "-;-", after = parts[4] or "-;-" })
+	elseif cmd == "arenastart" then
+		-- led|arenastart|x|z|t1,t2: the fight begins: every unit of these teams that can move gets the fight order to the Arena Point (they
+		-- attack on the way); the widget has saved the state as _beforeplay before and loads it again on Stop
+		local x, z = tonumber(parts[3]), tonumber(parts[4])
+		if x and z then
+			local y = Spring.GetGroundHeight(x, z)
+			local n = 0
+			for tm in tostring(parts[5] or ""):gmatch("%d+") do
+				for _, id in ipairs(Spring.GetTeamUnits(tonumber(tm)) or {}) do
+					local ud = UnitDefs[Spring.GetUnitDefID(id)]
+					if ud and ud.canMove and (ud.speed or 0) > 0 then
+						Spring.GiveOrderToUnit(id, CMD.FIGHT, { x, y, z }, 0)
+						n = n + 1
+					end
+				end
+			end
+			Spring.SetGameRulesParam("arenaState", "running")
+			tell(playerID, n .. " units fight their way to the Arena Point")
+		end
+	elseif cmd == "arenastop" then
+		Spring.SetGameRulesParam("arenaState", "")
 	elseif cmd == "arenastate" then
 		-- led|arenastate|before|after: the widget changed the Arena Point or the armies (state texts, see led_arena.lua)
 		record({ k = "arena", before = parts[3] or "-;-", after = parts[4] or "-;-" })
