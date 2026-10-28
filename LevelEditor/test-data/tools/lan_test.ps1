@@ -2,12 +2,13 @@
 #   -Sync same | missing | other   the extra game of the joiners: the host's version, none (default), or another version of their own
 #   -Lobby same | other   the lobby widget of the joiners: the same file as the host's, or with one more comment line (another version)
 #   -NoMap   the joiners have an empty maps folder (not the junction to the installed maps): the map comes from the host over LAN Play
+#   -MapList none | official | wrong   the list of official map md5 of the joiners: none, the real one (fetched online), or one with a wrong md5
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
 #   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data')
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [string]$MapList = 'none', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data')
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -57,6 +58,8 @@ foreach ($who in $who2) {
         $auto = if ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap) { "`nnoOnline=1" })"
+        if ($MapList -eq 'official') { Update-MapHashes $d }
+        elseif ($MapList -eq 'wrong') { Set-Content "$d\games\$MapHashesFile" @('# etag=x', 'Full Metal Plate 1.7|00000000000000000000000000000000') -Encoding ASCII }
         if ($Sync -eq 'same') { Copy-Item (Join-Path $hostData "games\$($sg0.File)") "$d\games\"; Set-Content "$d\games\$ScenarioGamePointer" @($sg0.File, $sg0.Name) -Encoding ASCII }
         elseif ($Sync -eq 'other') {
             $alt = Join-Path $sp 'alt_src'; New-Item -ItemType Directory -Force $alt | Out-Null

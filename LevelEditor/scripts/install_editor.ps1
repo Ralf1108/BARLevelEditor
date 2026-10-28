@@ -109,6 +109,10 @@ try {
     if ($LASTEXITCODE -ne 0) { Write-Host 'LAN Play was not installed (the reason is printed above). The rest of the setup is done; run this setup again to install LAN Play.' -ForegroundColor Yellow }
 } catch { Write-Host "LAN Play was not installed: $($_.Exception.Message)" -ForegroundColor Yellow }
 
+# ---------------------------------------------------------------- 5c. List of the official maps with their md5 (LAN Play checks a map from a host with it)
+Step 'List of the official maps (md5)'
+Update-MapHashes $data
+
 # ---------------------------------------------------------------- 6. Start file (with map selection)
 Step 'Write the start file'
 $bat = @"

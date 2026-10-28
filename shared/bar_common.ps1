@@ -152,6 +152,39 @@ $ScenarioGameFiles = @(
     @('shared_start.lua', 'luaui/widgets/shared_start.lua'))             # starts a game in which several humans play one team (Copilot)
 $ScenarioGamePointer = 'LevelEditorScenarios.txt'   # in data\games: file name and game name of the one the editor setup built (read by LAN Play)
 
+# The official list of the maps with their md5 (maps-metadata of Beyond All Reason: about 60 KB), saved as data\games\LevelEditorMapHashes.txt:
+# "# etag=...", "# fetched=...", then one line "<spring name>|<md5>" per map. LAN Play reads it to check a map that a host sends (a lobby widget cannot make
+# an HTTPS call). Only changed when the server has a newer list (If-None-Match); offline or on any error the old list stays and nothing is thrown.
+$MapHashesFile = 'LevelEditorMapHashes.txt'
+function Update-MapHashes([string]$data) {
+    $path = Join-Path (Join-Path $data 'games') $MapHashesFile
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        $headers = @{}
+        if (Test-Path $path) {
+            $first = Get-Content $path -TotalCount 1
+            if ($first -match '^# etag=(.+)$') { $headers['If-None-Match'] = $Matches[1] }
+        }
+        try {
+            $r = Invoke-WebRequest -Uri 'https://maps-metadata.beyondallreason.dev/latest/live_maps.validated.json' -Headers $headers -UseBasicParsing -TimeoutSec 15
+        } catch {
+            if ($_.Exception.Response -and [int]$_.Exception.Response.StatusCode -eq 304) { Write-Host 'Map list (md5) is up to date.'; return }
+            throw
+        }
+        $lines = @("# etag=$($r.Headers['ETag'])", "# fetched=$(Get-Date -Format 'yyyy-MM-dd HH:mm')")
+        foreach ($m in ($r.Content | ConvertFrom-Json)) {
+            if ($m.springName -and $m.springName -notmatch '[|\r\n]' -and $m.md5 -match '^[0-9a-fA-F]{32}$') { $lines += "$($m.springName)|$($m.md5.ToLower())" }
+        }
+        if ($lines.Count -lt 20) { throw 'the list has too few maps' }
+        New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null
+        [IO.File]::WriteAllLines($path, $lines, (New-Object Text.UTF8Encoding $false))
+        Write-Host "Map list (md5) saved: $($lines.Count - 2) maps."
+    } catch {
+        $have = if (Test-Path $path) { 'the old list stays' } else { 'there is no list: LAN Play asks before it takes a map from a host' }
+        Write-Host "Map list (md5) not loaded ($($_.Exception.Message)); $have." -ForegroundColor Yellow
+    }
+}
+
 # Builds the game from the files found in $dirs (for every file the first folder that has it; missing files are left out) unless it exists already.
 # Returns Name (the game name for the start script), Version, Path and File (the file name).
 function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {

@@ -26,6 +26,7 @@ $items = @(
     @{ Path = (Join-Path $data 'games\LevelEditorMod.sdz'); Text = 'Extra game "Level Editor" (data\games\LevelEditorMod.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'games\LevelEditorMod.stamp'); Text = 'Stamp of the extra game (data\games\LevelEditorMod.stamp)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'games\LevelEditorScenarios.txt'); Text = 'Name of the extra game "Level Editor Scenarios" (data\games\LevelEditorScenarios.txt)'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'games\LevelEditorMapHashes.txt'); Text = 'List of the official maps with their md5 (data\games\LevelEditorMapHashes.txt)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'games\LevelEditorScenarios.sdz'); Text = 'Extra game "Level Editor Scenarios" of an older setup (data\games\LevelEditorScenarios.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'games\TowerDefenseScenario.sdz'); Text = 'Extra game "Tower Defense Scenario" of an older starter (data\games\TowerDefenseScenario.sdz)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LevelEditor'); Text = 'Junction data\LevelEditor (the levels themselves stay in levels)'; Kind = 'junction' },

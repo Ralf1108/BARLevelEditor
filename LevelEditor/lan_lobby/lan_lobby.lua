@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 2, stamp = "2026-10-28 08:40" }
+local LAN_VERSION = { number = 3, stamp = "2026-10-28 08:58" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1015,6 +1015,19 @@ local function updateMapFetch()
 	if os.clock() - f.t > 30 then finishMap(false, "timeout") end
 end
 
+-- the official md5 of a map from the list the Level Editor setup saved (games/LevelEditorMapHashes.txt, "<spring name>|<md5>"); nil when there is no list or no entry
+local function officialMd5(name)
+	if not lan.mapList then
+		lan.mapList = {}
+		local text = VFS.LoadFile("games/LevelEditorMapHashes.txt", VFS.RAW) or ""
+		for line in text:gmatch("[^\r\n]+") do
+			local n, h = line:match("^([^#|][^|]*)|(%x+)$")
+			if n then lan.mapList[n] = h:lower() end
+		end
+	end
+	return lan.mapList[name]
+end
+
 local function askMapQuestion(name, info)
 	local mb = math.max(1, math.floor(info.size / 1048576 + 0.5))
 	local function yes() lan.mapPrompt = nil; startMapFetch(name, info) end
@@ -1028,11 +1041,24 @@ local function askMapQuestion(name, info)
 			setStatus("You did not load the map: the game cannot start for you.")
 		end
 	end
+	-- the official list (saved by the Level Editor setup): the md5 of the host equals it = the file is checked by the file itself, no question needed
+	local hostMd5, official = b64hex(info.hash), officialMd5(name)
+	if official == hostMd5 then
+		log("map check: the md5 of the host is the official one (" .. hostMd5 .. "): no question")
+		yes(); return
+	end
+	log("map check: md5 of the host " .. hostMd5 .. ", official " .. tostring(official))
 	if cfg.autoAccept then yes(); return end
 	lan.mapPrompt = true
-	local q = "The host plays the map '" .. name .. "' (" .. mb .. " MB), which you have not got.\n\nFrom the host: over the LAN, without internet. The checksum (md5 " .. b64hex(info.hash) ..
-		") is only the host's word: it cannot be compared with the official one from here. Only accept from a host you trust.\n\nOnline: the lobby downloads the official map and checks it itself."
-	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 600, 360, "From the host", "Online", online) else yes() end
+	local why
+	if official then
+		why = "The host's map is NOT the official one (its md5 " .. hostMd5 .. ", official " .. official .. "): the host or your list is out of date (run install_editor.bat to get the newest list), or it is a changed map."
+	else
+		why = "The map is not in your list of official maps (or you have no list): its md5 " .. hostMd5 .. " is only the host's word and cannot be checked from here."
+	end
+	local q = "The host plays the map '" .. name .. "' (" .. mb .. " MB), which you have not got.\n\nFrom the host: over the LAN, without internet. " .. why ..
+		" Only accept from a host you trust.\n\nOnline: the lobby downloads the official map and checks it itself."
+	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 620, 400, "From the host", "Online", online) else yes() end
 end
 
 local function updateMapSync()
