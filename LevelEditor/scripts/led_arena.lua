@@ -536,7 +536,7 @@ return function(host)
 		ar.endPick()
 		host.disarmAll() -- no editor mode may stay armed: it would swallow the clicks of the game
 		host.beforePlay()
-		Spring.SendLuaRulesMsg(string.format("led|arenastart|%d|%d|%s", c.point.x, c.point.z, table.concat(teams, ",")))
+		Spring.SendLuaRulesMsg(string.format("led|arenastart|%d|%d|%s|%d", c.point.x, c.point.z, table.concat(teams, ","), c.radius))
 		host.say("Started: the state before is saved as _beforeplay; Stop brings it back.")
 	end
 
@@ -966,7 +966,7 @@ return function(host)
 				local le = r.energy and (r.energy - spent[2]) or nil
 				local left = (lm or le) and (short(lm) .. " / " .. short(le)) or "-"
 				tline({
-					{ kind = "arteam", row = i, label = tostring(t), tint = { cr or 0.5, cg or 0.5, cb or 0.5 }, tip = (exists and ("Team " .. t .. " (the number of the team button at the left)") or ("The game has no team " .. t .. " (the Level Editor game starts with teams 0 and 1): you can set the row, but Generate and Start skip it")) .. ". Click: copy the settings of this row to another team" },
+					{ kind = "arteam", row = i, label = tostring(t), tint = { cr or 0.5, cg or 0.5, cb or 0.5 }, tip = (exists and ("Team " .. t .. " (the number of the team button at the left)") or ("The game has no team " .. t .. ": you can set the row, but Generate and Start skip it")) .. ". Click: copy the settings of this row to another team" },
 					{ kind = "aron", row = i, label = r.on and "On" or "Off", tint = r.on and { 0.15, 0.6, 0.2 } or nil,
 						tip = "On: this team gets an army when you press Generate, and its units fight at Start. Off: nothing is generated and its units stand still" },
 					{ kind = "arunits", row = i, label = "Units " .. n, tint = n > 0 and { 0.15, 0.6, 0.2 } or nil,

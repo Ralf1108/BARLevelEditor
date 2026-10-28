@@ -511,13 +511,14 @@ function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false, [string
     $team1Lua = if ($ai1 -in $luaAis) { " LuaAI=$ai1;" } else { '' }
     $ai0 = if ($ai1 -in $luaAis) { '' } else { "[ai0] { shortname=$aiShort; version=$aiVer; team=1; host=0; name=${aiShort}1;$aiOpt }" }
     $fa = if ($forceAll) { ' forceallunits=1;' } else { '' }
+    # ten teams, each in its own ally team (Arena needs them; teams 2 to 9 stay empty: the gadget removes their start commanders)
+    $allies = (0..9 | ForEach-Object { "`t[allyteam$_] { numallies=0; }" }) -join "`n"
+    $teams = (0..9 | ForEach-Object { $side = if ($_ % 2 -eq 0) { 'Armada' } else { 'Cortex' }; $extra = if ($_ -eq 1) { $team1Lua } else { '' }; "`t[team$_] { allyteam=$_; teamleader=0; side=$side; handicap=0;$extra }" }) -join "`n"
     $script = @"
 [game]
 {
-	[allyteam0] { numallies=0; }
-	[allyteam1] { numallies=0; }
-	[team0] { allyteam=0; teamleader=0; side=Armada; handicap=0; }
-	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0;$team1Lua }
+$allies
+$teams
 	$ai0
 	[player0] { name=Player; spectator=0; team=0; }
 	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1;$fa }

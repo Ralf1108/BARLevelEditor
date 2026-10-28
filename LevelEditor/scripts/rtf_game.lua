@@ -263,7 +263,7 @@ local function start(cfg)
 	local seen = {}
 	for _, t in ipairs(Spring.GetTeamList()) do
 		local a = allyOf(t)
-		if t ~= gaia and not seen[a] then
+		if t ~= gaia and not seen[a] and #(Spring.GetTeamUnits(t) or {}) > 0 then -- an alliance without units takes no part (the editor game has ten teams)
 			seen[a] = true
 			g.teams[#g.teams + 1] = a
 			g.score[a] = 0

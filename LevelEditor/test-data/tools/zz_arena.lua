@@ -77,6 +77,14 @@ steps[40] = function()
 	log("page open", ar.open)
 end
 
+steps[50] = function()
+	-- the editor game has ten teams; only teams 0 and 1 keep their start commander
+	local out = {}
+	for t = 0, 9 do out[#out + 1] = t .. ":" .. #Spring.GetTeamUnits(t) end
+	log("units per team at the start", table.concat(out, " "))
+	log("max units of team 0 / 1 / Gaia:", Spring.GetTeamMaxUnits(0), Spring.GetTeamMaxUnits(1), Spring.GetTeamMaxUnits(Spring.GetGaiaTeamID()))
+end
+
 steps[60] = function()
 	local c = ar.cfg(true)
 	c.radius = 3000
@@ -188,10 +196,15 @@ steps[790] = function()
 	for _, id in ipairs(ids) do
 		local cmds = Spring.GetUnitCommands(id, 3) or {}
 		local f = false
-		for _, c in ipairs(cmds) do if c.id == CMD.FIGHT then f = true end end
+		local atk = false
+		for _, c in ipairs(cmds) do
+			if c.id == CMD.FIGHT then f = true end
+			if c.id == CMD.ATTACK then atk = true end
+		end
 		if f then fight = fight + 1 else other = other + 1 end
+		if f and atk then before.attackQueued = (before.attackQueued or 0) + 1 end
 	end
-	log("units with the fight order:", fight, "without:", other)
+	log("units with the fight order:", fight, "without:", other, "with the area attack queued:", before.attackQueued or 0)
 	before.march = {}
 	for t = 0, 2 do before.march[t] = { stats(t) } end
 	shot("running")

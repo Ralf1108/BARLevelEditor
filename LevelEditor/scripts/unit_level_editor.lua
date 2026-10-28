@@ -1045,6 +1045,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 		-- led|arenastart|x|z|t1,t2: the fight begins: every unit of these teams that can move gets the fight order to the Arena Point (they
 		-- attack on the way); the widget has saved the state as _beforeplay before and loads it again on Stop
 		local x, z = tonumber(parts[3]), tonumber(parts[4])
+		local radius = math.max(0, tonumber(parts[6]) or 0)
 		if x and z then
 			-- Every army keeps its rectangle: each unit walks straight ahead, the whole army is shifted so that its center ends on the point
 			-- (a front, not a heap). Every unit gets the top speed of the slowest unit of all armies (SET_WANTED_MAX_SPEED), so the armies meet together.
@@ -1075,7 +1076,11 @@ function gadget:RecvLuaMsg(msg, playerID)
 					end
 				end
 				if #units > 0 then
-					armies[#armies + 1] = { units = units, dx = x - sx / #units, dz = z - sz / #units }
+					-- the army stops 20% of the radius short of the point; there the area attack takes over
+					local dx, dz = x - sx / #units, z - sz / #units
+					local d = math.sqrt(dx * dx + dz * dz)
+					local f = d > 0.2 * radius and (d - 0.2 * radius) / d or 0
+					armies[#armies + 1] = { units = units, dx = dx * f, dz = dz * f }
 				end
 			end
 			local maxX, maxZ = Game.mapSizeX - 16, Game.mapSizeZ - 16
@@ -1085,6 +1090,8 @@ function gadget:RecvLuaMsg(msg, playerID)
 					capSpeed(u.id, slowest)
 					Spring.GiveOrderToUnit(u.id, CMD.SET_WANTED_MAX_SPEED or 70, { slowest }, 0)
 					Spring.GiveOrderToUnit(u.id, CMD.FIGHT, { tx, Spring.GetGroundHeight(tx, tz), tz }, CMD.OPT_SHIFT)
+					-- then attack everything within the radius around the Arena Point
+					Spring.GiveOrderToUnit(u.id, CMD.ATTACK, { x, Spring.GetGroundHeight(x, z), z, math.max(radius, 64) }, CMD.OPT_SHIFT)
 					n = n + 1
 				end
 			end
@@ -1172,8 +1179,15 @@ end
 if EDITOR_MODE then
 	local BIG = 1e6
 
+	-- The editor game has ten teams (Arena uses them); only teams 0 and 1 start with a commander: the start commanders of teams 2 to 9
+	-- are removed in the first frames (silently, no wreck), so these teams are empty until something is placed for them
+	local startCommanders = {}
+
 	function gadget:UnitCreated(unitID, unitDefID, teamID, builderID)
 		local ud = UnitDefs[unitDefID]
+		if teamID >= 2 and Spring.GetGameFrame() < 150 and teamID ~= Spring.GetGaiaTeamID() and ud and ud.customParams and ud.customParams.iscommander then
+			startCommanders[#startCommanders + 1] = unitID
+		end
 		if ud and ud.buildSpeed and ud.buildSpeed > 0 then
 			Spring.SetUnitBuildSpeed(unitID, BIG, BIG, BIG, BIG)
 		end
@@ -1336,6 +1350,14 @@ if EDITOR_MODE then
 	GG.LevelEditorSpawnBuilders = spawnBuilders
 
 	function gadget:GameFrame(n)
+		if #startCommanders > 0 then
+			for _, id in ipairs(startCommanders) do
+				if Spring.ValidUnitID(id) then
+					Spring.DestroyUnit(id, false, true)
+				end
+			end
+			startCommanders = {}
+		end
 		if #pendingStockpile > 0 then
 			fillPendingStockpiles()
 		end

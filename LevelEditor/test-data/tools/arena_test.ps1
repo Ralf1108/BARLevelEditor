@@ -33,18 +33,14 @@ foreach ($e in (Get-EditorGameEntries)) {
 }
 Write-GameZip "$d\games\LevelEditorMod.sdz" $entries
 
-# four teams, one human: every team belongs to its own ally team
+# ten teams like the editor game (choose_map.ps1), one human: every team belongs to its own ally team
+$allies = (0..9 | ForEach-Object { "`t[allyteam$_] { numallies=0; }" }) -join "`n"
+$teams = (0..9 | ForEach-Object { $side = if ($_ % 2 -eq 0) { 'Armada' } else { 'Cortex' }; "`t[team$_] { allyteam=$_; teamleader=0; side=$side; handicap=0; }" }) -join "`n"
 $script = @"
 [game]
 {
-	[allyteam0] { numallies=0; }
-	[allyteam1] { numallies=0; }
-	[allyteam2] { numallies=0; }
-	[allyteam3] { numallies=0; }
-	[team0] { allyteam=0; teamleader=0; side=Armada; handicap=0; }
-	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
-	[team2] { allyteam=2; teamleader=0; side=Armada; handicap=0; }
-	[team3] { allyteam=3; teamleader=0; side=Cortex; handicap=0; }
+$allies
+$teams
 	[player0] { name=Player; spectator=0; team=0; }
 	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1; }
 	ishost=1;
