@@ -8,6 +8,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 
 - [Level Editor](#level-editor)
 - [Game modes](#game-modes)
+- [Sandbox](#sandbox)
 - [BluePrinter](#blueprinter)
 - [Installation (Windows)](#installation-windows)
 - [Documentation](#documentation)
@@ -52,6 +53,17 @@ Three modes, one per level, each with its own page, a test run and export as a s
 
 One demo level per mode comes with the editor (`LevelEditor\levels\demo_*.lua`, flat metal map Full Metal Plate): load it with start menu key `2`.
 
+## Sandbox
+
+Tools to try things out, not a game with a winner:
+
+| [Arena](LevelEditor/sandbox/arena.md) |
+|---|
+| [![Arena page](docs/level-editor-arena.jpg)](LevelEditor/sandbox/arena.md) |
+| Armies of up to ten teams stand around a point and fight each other: choose units, count or budget, press Generate and Start |
+| ![Arena: three armies](docs/arena-lineup.jpg) |
+| Three armies after Generate |
+
 ## BluePrinter
 
 A small widget for the **official** game that brings blueprints to normal matches (buildings only):
@@ -84,7 +96,7 @@ A small widget for the **official** game that brings blueprints to normal matche
 - **[LAN Play](docs/lan-play.md)** and Copilot
 - [Level Editor](LevelEditor/README.md), [Scenario builder](LevelEditor/scenario/README.md), [LAN Play](LevelEditor/lan_lobby/README.md), [BluePrinter](BluePrinter/README.md)
 - Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
-- Tools: [Arena](LevelEditor/tools/arena.md)
+- Sandbox: [Arena](LevelEditor/sandbox/arena.md)
 - Specifications: [Level Editor](LevelEditor/SPECIFICATION.md), [BluePrinter](BluePrinter/SPECIFICATION.md), [shared code](shared/SPECIFICATION.md)
 
 Windows only for now. Not an official Beyond All Reason project. Please report anything that does not work as described.

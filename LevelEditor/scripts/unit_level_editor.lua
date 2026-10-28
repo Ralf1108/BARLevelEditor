@@ -1046,15 +1046,46 @@ function gadget:RecvLuaMsg(msg, playerID)
 		-- attack on the way); the widget has saved the state as _beforeplay before and loads it again on Stop
 		local x, z = tonumber(parts[3]), tonumber(parts[4])
 		if x and z then
-			local y = Spring.GetGroundHeight(x, z)
-			local n = 0
+			-- Every army keeps its rectangle: each unit walks straight ahead, the whole army is shifted so that its center ends on the point
+			-- (a front, not a heap). Every unit gets the top speed of the slowest unit of all armies (SET_WANTED_MAX_SPEED), so the armies meet together.
+			local n, slowest = 0, nil
+			local armies = {}
+			-- top speed of a unit: the data of its move type (ground, hover and ships; gunships; planes), in Elmo per second
+			local function capSpeed(id, v)
+				local ud = UnitDefs[Spring.GetUnitDefID(id)]
+				local mc = Spring.MoveCtrl
+				if not (ud and mc) then
+					return
+				end
+				local set = ud.canFly and (ud.hoverAttack and mc.SetGunshipMoveTypeData or mc.SetAirMoveTypeData) or mc.SetGroundMoveTypeData
+				if set then
+					pcall(set, id, "maxSpeed", v)
+					pcall(set, id, "maxWantedSpeed", v)
+				end
+			end
 			for tm in tostring(parts[5] or ""):gmatch("%d+") do
+				local units, sx, sz = {}, 0, 0
 				for _, id in ipairs(Spring.GetTeamUnits(tonumber(tm)) or {}) do
 					local ud = UnitDefs[Spring.GetUnitDefID(id)]
 					if ud and ud.canMove and (ud.speed or 0) > 0 then
-						Spring.GiveOrderToUnit(id, CMD.FIGHT, { x, y, z }, 0)
-						n = n + 1
+						local ux, _, uz = Spring.GetUnitPosition(id)
+						units[#units + 1] = { id = id, x = ux, z = uz }
+						sx, sz = sx + ux, sz + uz
+						slowest = math.min(slowest or ud.speed, ud.speed)
 					end
+				end
+				if #units > 0 then
+					armies[#armies + 1] = { units = units, dx = x - sx / #units, dz = z - sz / #units }
+				end
+			end
+			local maxX, maxZ = Game.mapSizeX - 16, Game.mapSizeZ - 16
+			for _, a in ipairs(armies) do
+				for _, u in ipairs(a.units) do
+					local tx, tz = math.max(16, math.min(maxX, u.x + a.dx)), math.max(16, math.min(maxZ, u.z + a.dz))
+					capSpeed(u.id, slowest)
+					Spring.GiveOrderToUnit(u.id, CMD.SET_WANTED_MAX_SPEED or 70, { slowest }, 0)
+					Spring.GiveOrderToUnit(u.id, CMD.FIGHT, { tx, Spring.GetGroundHeight(tx, tz), tz }, CMD.OPT_SHIFT)
+					n = n + 1
 				end
 			end
 			Spring.SetGameRulesParam("arenaState", "running")

@@ -1832,6 +1832,9 @@ function M.newUnits(o)
 					banned = rs.allBanned(self:namesOf(kind, it[1]))
 				end
 				local tint = banned and (allow and { 0.12, 0.4, 0.15 } or { 0.45, 0.12, 0.12 }) or nil
+				if not tint and allow and rs.anyBanned and rs.anyBanned(self:namesOf(kind, it[1])) then
+					tint = { 0.09, 0.26, 0.11 } -- only some of it is allowed: a light green shade
+				end
 				if not tint and self:emptyButton(kind, it[1]) then
 					-- nothing behind this button: slightly red (lighter when it is the chosen one)
 					tint = (it[1] == active) and { 0.8, 0.55, 0.55 } or { 0.38, 0.17, 0.17 }

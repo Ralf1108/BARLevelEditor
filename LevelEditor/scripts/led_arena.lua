@@ -1,5 +1,5 @@
 -- Arena page of the Level Editor (button A): armies of several teams around an Arena Point, they fight there. A tool, not a game mode:
--- nothing is won or lost, nothing of it is played in a scenario. Specification: SPECIFICATION.md section 11e, user page tools/arena.md.
+-- nothing is won or lost, nothing of it is played in a scenario. Specification: SPECIFICATION.md section 11e, user page sandbox/arena.md.
 -- Loaded by lvl_level_editor.lua (VFS.Include("luaui/Include/led_arena.lua")) as a function that gets the host (the services of the widget) and
 -- returns the page; a file of its own because the widget is close to the limit of 200 local variables. The settings (ar.data) are saved in
 -- their own section arena of the level file.
@@ -406,6 +406,15 @@ return function(host)
 				active[#active + 1] = i
 			end
 		end
+		local missing = {}
+		for i = 1, ROWS do
+			if c.rows[i].on and not hasTeam(i - 1) then
+				missing[#missing + 1] = tostring(i - 1)
+			end
+		end
+		if #missing > 0 then
+			host.say("Arena: the game has no team " .. table.concat(missing, ", ") .. ": skipped.")
+		end
 		if #active == 0 then
 			host.say("No row is on: switch on the players that get an army.")
 			ar.notice = { text = "No row is on.", untilT = os.clock() + 6 }
@@ -574,20 +583,42 @@ return function(host)
 	function ar.drawWorld()
 		local c = ar.cfg()
 		local p = c.point
-		if not p then
+		-- while Generate or Arena Point waits for the click: the marker of the point hangs at the mouse pointer (half transparent)
+		local ghost
+		if ar.pick then
+			local mx, my = Spring.GetMouseState()
+			local pos = (not ar.winAt(mx, my)) and ground(mx, my) or nil
+			if pos then
+				ghost = { x = pos[1], z = pos[3] }
+			end
+		end
+		if not p and not ghost then
 			return
 		end
 		gl.DepthTest(false)
-		local function circle(r, width, alpha)
+		local function circle(r, width, alpha, at)
+			at = at or p
 			gl.LineWidth(width)
 			gl.Color(1, 0.1, 0.1, alpha)
 			gl.BeginEnd(GL.LINE_LOOP, function()
 				for i = 0, 63 do
 					local a = i / 64 * 2 * math.pi
-					local x, z = p.x + math.cos(a) * r, p.z + math.sin(a) * r
+					local x, z = at.x + math.cos(a) * r, at.z + math.sin(a) * r
 					gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
 				end
 			end)
+		end
+		if ghost then
+			circle(POINT_R, 7, 0.5, ghost)
+			circle(POINT_R * 0.45, 7, 0.5, ghost)
+			if ar.open then
+				circle(c.radius, 2, 0.35, ghost)
+			end
+		end
+		if not p then
+			gl.LineWidth(1)
+			gl.Color(1, 1, 1, 1)
+			return
 		end
 		circle(POINT_R, 7, 1)
 		circle(POINT_R * 0.45, 7, 1)
@@ -659,6 +690,14 @@ return function(host)
 		end
 		return true
 	end
+	local function anyAllowed(names)
+		for _, n in ipairs(names) do
+			if ar.isAllowed(ar.winRow, n) then
+				return true
+			end
+		end
+		return false
+	end
 	ar.units = Shared.newUnits({
 		cfg = host.cfg,
 		ownText = host.ownText,
@@ -671,6 +710,7 @@ return function(host)
 			isBanned = function(name) return ar.isAllowed(ar.winRow, name) end,
 			setBanned = function(names, on) ar.setAllowed(ar.winRow, names, on) end,
 			allBanned = allBanned,
+			anyBanned = anyAllowed, -- faction, group and tech buttons get a light green shade when something of them is allowed
 		},
 	})
 	ar.units.group = "bot"
@@ -701,44 +741,22 @@ return function(host)
 		local rects, labels = {}, {}
 		local gap = 3 * S
 		local x1, x2 = w.x1 + m.PAD, w.x2 - m.PAD
-		local y = w.top - 44 * S
-		-- Copy list from player: a combo box (the team) and the button Copy from
-		local others = {}
-		for j = 1, ROWS do
-			if j ~= ar.winRow and hasTeam(j - 1) then
-				others[#others + 1] = j
-			end
-		end
-		if not ar.copyFrom or ar.copyFrom == ar.winRow or not hasTeam(ar.copyFrom - 1) then
-			ar.copyFrom = others[1]
-		end
-		local lw, cw = (x2 - x1) * 0.4, (x2 - x1) * 0.3
-		labels[#labels + 1] = { text = "Copy list from player", x = x1, y = y - m.HB + 8 * S, size = 20 * S }
-		local cr, cg, cb = Spring.GetTeamColor((ar.copyFrom or 1) - 1)
-		local combo = { x1 = x1 + lw, x2 = x1 + lw + cw - gap, y0 = y - m.HB, y1 = y, kind = "arcombo", fs = 20 * S, label = "Team " .. ((ar.copyFrom or 1) - 1) .. "  v",
-			tint = { (cr or 0.5) * 0.7, (cg or 0.5) * 0.7, (cb or 0.5) * 0.7 }, tip = "Choose the player whose allowed units are copied" }
-		rects[#rects + 1] = combo
-		rects[#rects + 1] = { x1 = x1 + lw + cw, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arcopyfrom", label = "Copy from", fs = 20 * S,
-			tip = "Copy the allowed units of the chosen player into this army (they replace what is allowed here)" }
-		local popup
-		if ar.combo and #others > 0 then
-			popup = {}
-			for k, j in ipairs(others) do
-				local pr, pg, pb = Spring.GetTeamColor(j - 1)
-				popup[k] = { x1 = combo.x1, x2 = combo.x2, y0 = combo.y0 - k * m.HB, y1 = combo.y0 - (k - 1) * m.HB, kind = "arcombopick", value = j, label = "Team " .. (j - 1), fs = 20 * S,
-					tint = { (pr or 0.5) * 0.7, (pg or 0.5) * 0.7, (pb or 0.5) * 0.7 } }
-			end
-		end
+		local y = w.top - m.PAD
+		-- first row: which team this list belongs to, in the color of the team
+		local tm = ar.winRow - 1
+		local cr, cg, cb = Spring.GetTeamColor(tm)
+		rects[#rects + 1] = { x1 = x1, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arhdr", label = "Team " .. tm .. ": allowed units", fs = 24 * S,
+			tint = { (cr or 0.5) * 0.8, (cg or 0.5) * 0.8, (cb or 0.5) * 0.8 }, tip = "The units of this list belong to the army of team " .. tm }
 		y = y - m.HB - 6 * S
 		local half = (x2 - x1 - gap) / 2
 		rects[#rects + 1] = { x1 = x1, x2 = x1 + half, y0 = y - m.HB, y1 = y, kind = "arclearlist", label = "Clear Allowed Units", fs = 20 * S, tip = "Nothing is allowed in this army any more" }
-		rects[#rects + 1] = { x1 = x1 + half + gap, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arclose", label = "Close", fs = 20 * S, tip = "Close this list" }
+		rects[#rects + 1] = { x1 = x1 + half + gap, x2 = x2, y0 = y - m.HB, y1 = y, kind = "arclose", label = "Close", fs = 20 * S, tint = { 0.5, 0.15, 0.15 }, tip = "Close this list" }
 		y = y - m.HB - 6 * S
 		for _, r in ipairs(ar.units:filterRects(w.x1, w.x2, y, m.HB)) do
 			rects[#rects + 1] = r
 		end
 		y = y - ar.units:filterRowCount() * (m.HB + 3) - 4 * S
-		return rects, { x1 = w.x1, x2 = w.x2, top = y, y0 = w.y0 }, labels, popup
+		return rects, { x1 = w.x1, x2 = w.x2, top = y, y0 = w.y0 }, labels
 	end
 
 	function ar.drawWindow()
@@ -750,10 +768,6 @@ return function(host)
 		gl.Color(0.07, 0.07, 0.09, 0.94)
 		gl.Rect(w.x1, w.y0, w.x2, w.top)
 		local rects, listRect, labels = winLayout()
-		local t = ar.winRow - 1
-		local cr, cg, cb = Spring.GetTeamColor(t)
-		gl.Color(cr or 1, cg or 1, cb or 1, 1)
-		gl.Text("Army of team " .. t .. ": allowed units", w.x1 + 10 * S, w.top - 34 * S, 26 * S, "o")
 		gl.Color(0.5, 0.8, 1, 1)
 		for _, l in ipairs(labels) do
 			gl.Text(l.text, l.x, l.y, l.size, "o")
@@ -762,15 +776,7 @@ return function(host)
 		local mx, my = Spring.GetMouseState()
 		ar.units:draw(listRect, mx, my, nil, nil, ar.winAt(mx, my))
 		-- the 3D preview and the text under it come from the unit list, as in the Place menu
-		local _, _, _, popup = winLayout()
-		if popup then
-			local last = popup[#popup]
-			gl.Color(0.07, 0.07, 0.09, 1)
-			gl.Rect(popup[1].x1 - 2 * S, last.y0 - 2 * S, popup[1].x2 + 2 * S, popup[1].y1 + 2 * S)
-			Shared.drawButtons(popup, 20 * S, Shared.m.HB)
-		else
-			Shared.drawTip(rects, mx, my)
-		end
+		Shared.drawTip(rects, mx, my)
 		gl.Color(1, 1, 1, 1)
 	end
 
@@ -780,17 +786,8 @@ return function(host)
 	end
 
 	function ar.winPress(mx, my, button)
-		local rects, listRect, _, popup = winLayout()
+		local rects, listRect = winLayout()
 		if button ~= 1 then
-			return true
-		end
-		if popup then
-			ar.combo = false -- every click closes the list; a click on a team chooses it
-			for _, r in ipairs(popup) do
-				if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-					ar.copyFrom = r.value
-				end
-			end
 			return true
 		end
 		local hit
@@ -801,26 +798,12 @@ return function(host)
 		end
 		if hit then
 			local k = hit.kind
-			if k == "arcombo" then
-				ar.combo = true
-				ar.units:setFocus(false)
-			elseif k == "arcopyfrom" then
-				local c = ar.cfg(true)
-				local from = c.rows[ar.copyFrom or 1].allowed
-				ar.setAllowed(ar.winRow, c.rows[ar.winRow].allowed, false)
-				local names = {}
-				for _, n in ipairs(from) do
-					names[#names + 1] = n
-				end
-				ar.setAllowed(ar.winRow, names, true)
-				ar.units:setFocus(false)
-			elseif k == "arclearlist" then
+			if k == "arclearlist" then
 				ar.setAllowed(ar.winRow, ar.cfg(true).rows[ar.winRow].allowed, false)
 				ar.units:setFocus(false)
 			elseif k == "arclose" then
 				ar.units:setFocus(false)
 				ar.winRow = nil
-				ar.combo = false
 			else
 				ar.units:applyFilter(hit) -- search field, faction, group, tech and their check boxes
 			end
@@ -965,21 +948,25 @@ return function(host)
 			return { kind = "arcol", value = name, label = "C", tint = { 0.2, 0.3, 0.5 }, fs = 18 * S,
 				tip = "Takes " .. what .. " over for all other players" }
 		end
-		local none = { kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } }
-		tline({ none, col("on", "On / Off of the first team"), col("units", "the allowed units of the first team"), col("count", "the Count of the first team"),
-			col("metal", "the Metal budget field at the top (Budget for all rows)"), col("energy", "the Energy budget field at the top (Budget for all rows)"), none }, 3 * S)
+		local function none() return { kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } } end -- one table per cell: tline sets its width
+		tline({ none(), col("on", "On / Off of the first team"), col("units", "the allowed units of the first team"), col("count", "the Count of the first team"),
+			col("metal", "the Metal budget field at the top (Budget for all rows)"), col("energy", "the Energy budget field at the top (Budget for all rows)"), none() }, 3 * S)
 		for i = 1, ROWS do
 			local t = i - 1
 			local r = c.rows[i]
-			if hasTeam(t) then
+			do
+				local exists = hasTeam(t)
 				local cr, cg, cb = Spring.GetTeamColor(t)
+				if not exists then
+					cr, cg, cb = 0.3, 0.3, 0.3
+				end
 				local n = #r.allowed
 				local spent = ar.spent[i] or { 0, 0 }
 				local lm = r.metal and (r.metal - spent[1]) or nil
 				local le = r.energy and (r.energy - spent[2]) or nil
 				local left = (lm or le) and (short(lm) .. " / " .. short(le)) or "-"
 				tline({
-					{ kind = "arhdr", label = tostring(t), tint = { cr or 0.5, cg or 0.5, cb or 0.5 }, tip = "Team " .. t .. " (the number of the team button at the left)" },
+					{ kind = "arteam", row = i, label = tostring(t), tint = { cr or 0.5, cg or 0.5, cb or 0.5 }, tip = (exists and ("Team " .. t .. " (the number of the team button at the left)") or ("The game has no team " .. t .. " (the Level Editor game starts with teams 0 and 1): you can set the row, but Generate and Start skip it")) .. ". Click: copy the settings of this row to another team" },
 					{ kind = "aron", row = i, label = r.on and "On" or "Off", tint = r.on and { 0.15, 0.6, 0.2 } or nil,
 						tip = "On: this team gets an army when you press Generate, and its units fight at Start. Off: nothing is generated and its units stand still" },
 					{ kind = "arunits", row = i, label = "Units " .. n, tint = n > 0 and { 0.15, 0.6, 0.2 } or nil,
@@ -989,11 +976,6 @@ return function(host)
 					field("energy", i, "Energy budget of this army (empty = no limit). Click, type a number, Enter accepts"),
 					{ kind = "arhdr", label = left, tip = "What is left of the budget: budget minus the cost of all units of this team on the map (also the ones placed by hand), it can be negative" },
 				}, 3 * S)
-			else
-				tline({ { kind = "arhdr", label = tostring(t), tint = { 0.1, 0.1, 0.1 }, tip = "The game has no team " .. t }, { kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } },
-					{ kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } }, { kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } },
-					{ kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } }, { kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } },
-					{ kind = "arhdr", label = "-", tint = { 0.1, 0.1, 0.1 } } }, 3 * S)
 			end
 		end
 		y = y - 6 * S
@@ -1017,6 +999,53 @@ return function(host)
 		return rects, labels, rect.top - y
 	end
 
+	-- The menu "Copy to": opens at the team number that was clicked (ar.copyMenu = row); one button per other team
+	function ar.copyPopup(rects)
+		if not ar.copyMenu then
+			return nil
+		end
+		local S, m = host.S(), Shared.m
+		local cell
+		for _, r in ipairs(rects) do
+			if r.kind == "arteam" and r.row == ar.copyMenu then
+				cell = r
+			end
+		end
+		if not cell then
+			return nil
+		end
+		local w = math.max(cell.x2 - cell.x1, 130 * S)
+		local items = { { kind = "arcopyhead", label = "Copy to:" } }
+		for j = 1, ROWS do
+			if j ~= ar.copyMenu then
+				local cr, cg, cb = Spring.GetTeamColor(j - 1)
+				items[#items + 1] = { kind = "arcopyto", value = j, label = "Team " .. (j - 1), tint = { (cr or 0.5) * 0.7, (cg or 0.5) * 0.7, (cb or 0.5) * 0.7 } }
+			end
+		end
+		local top = cell.y0
+		local _, vsy = Spring.GetViewGeometry()
+		local h = #items * m.HB
+		if top - h < 4 * S then
+			top = cell.y1 + h -- not enough room below: the menu goes up
+		end
+		for k, it in ipairs(items) do
+			it.x1, it.x2, it.y1, it.y0, it.fs = cell.x1, cell.x1 + w, top - (k - 1) * m.HB, top - k * m.HB, 20 * S
+		end
+		return items
+	end
+
+	-- Copies the settings of row a (on, count, budget, allowed units) into row b
+	function ar.copyRow(a, b)
+		local c = ar.cfg(true)
+		local s, d = c.rows[a], c.rows[b]
+		d.on, d.count, d.metal, d.energy = s.on, s.count, s.metal, s.energy
+		d.allowed = {}
+		for _, n in ipairs(s.allowed) do
+			d.allowed[#d.allowed + 1] = n
+		end
+		host.say("Arena: the settings of team " .. (a - 1) .. " are copied to team " .. (b - 1) .. ".")
+	end
+
 	function ar.height()
 		local _, _, h = ar.layout({ x1 = 0, x2 = math.floor(780 * host.S()), top = 0 })
 		return h
@@ -1026,6 +1055,12 @@ return function(host)
 		local S = host.S()
 		local rects, labels = ar.layout(rect)
 		Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+		local pop = ar.copyPopup(rects)
+		if pop then
+			gl.Color(0.07, 0.07, 0.09, 1)
+			gl.Rect(pop[1].x1 - 2 * S, pop[#pop].y0 - 2 * S, pop[1].x2 + 2 * S, pop[1].y1 + 2 * S)
+			Shared.drawButtons(pop, 20 * S, Shared.m.HB)
+		end
 		for _, l in ipairs(labels) do
 			if l.color then
 				gl.Color(l.color[1], l.color[2], l.color[3], 1)
@@ -1084,7 +1119,19 @@ return function(host)
 
 	function ar.press(rect, mx, my)
 		local hit
-		for _, r in ipairs((ar.layout(rect))) do
+		local rects0 = ar.layout(rect)
+		local pop = ar.copyPopup(rects0)
+		if pop then
+			local src = ar.copyMenu
+			ar.copyMenu = nil -- every click closes the menu; a click on a team copies
+			for _, r in ipairs(pop) do
+				if r.kind == "arcopyto" and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+					ar.copyRow(src, r.value)
+				end
+			end
+			return true
+		end
+		for _, r in ipairs(rects0) do
 			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 				hit = r
 			end
@@ -1094,7 +1141,9 @@ return function(host)
 			return true
 		end
 		local k = hit.kind
-		if k == "arfield" then
+		if k == "arteam" then
+			ar.copyMenu = hit.row
+		elseif k == "arfield" then
 			ar.edit = { field = hit.field, row = hit.row, buf = "" }
 			widgetHandler:OwnText()
 		elseif k == "aron" then

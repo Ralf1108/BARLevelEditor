@@ -186,11 +186,24 @@ steps[790] = function()
 	local ids = arenaUnits()
 	local fight, other = 0, 0
 	for _, id in ipairs(ids) do
-		local cmds = Spring.GetUnitCommands(id, 1)
-		if cmds and cmds[1] and cmds[1].id == CMD.FIGHT then fight = fight + 1 else other = other + 1 end
+		local cmds = Spring.GetUnitCommands(id, 3) or {}
+		local f = false
+		for _, c in ipairs(cmds) do if c.id == CMD.FIGHT then f = true end end
+		if f then fight = fight + 1 else other = other + 1 end
 	end
 	log("units with the fight order:", fight, "without:", other)
+	before.march = {}
+	for t = 0, 2 do before.march[t] = { stats(t) } end
 	shot("running")
+end
+
+steps[1000] = function()
+	-- the armies shall walk at the same speed (slowest unit) and keep their rectangle: distance walked per team in 7 seconds
+	for t = 0, 2 do
+		local _, x, z = stats(t)
+		local m = before.march[t]
+		log("march team", t, string.format("walked %.0f Elmo", math.sqrt((x - m[2]) ^ 2 + (z - m[3]) ^ 2)))
+	end
 end
 
 steps[1300] = function()
@@ -212,6 +225,16 @@ steps[1650] = function()
 	report("after Clear")
 	log("cleared:", #arenaUnits() == 0 and ar.cfg().point == nil and "OK" or "WRONG")
 	-- a button that must not fail: copy to table, switch a row, a field
+	-- the menu "Copy to": click the team number of row 2, then team 3 (value 4)
+	click(pageRect("arteam", nil, 2))
+	local _, content = W():DebugLayout()
+	local pop = ar.copyPopup(ar.layout(content))
+	log("copy menu items", pop and #pop or "none")
+	for _, r in ipairs(pop or {}) do
+		if r.value == 4 then click(r) end
+	end
+	local r4 = ar.cfg().rows[4]
+	log("copy row 2 to team 3:", (#r4.allowed == 2 and r4.on) and "OK" or "WRONG", #r4.allowed, tostring(r4.on))
 	click(pageRect("arcol"))
 	click(pageRect("aron", nil, 4))
 	log("copy / on buttons clicked, row 4 on:", ar.cfg().rows[4].on)

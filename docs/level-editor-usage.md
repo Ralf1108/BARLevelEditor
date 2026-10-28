@@ -71,9 +71,12 @@ One per level; each has its own page, a test run (**Start test**) and export as 
 | [![Tower Defense page](level-editor-tower-defense.jpg)](../LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](level-editor-capture-the-flag.jpg)](../LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](level-editor-reclaim-the-fame.jpg)](../LevelEditor/game-modes/reclaim-the-fame.md) |
 | **TD**: walls, spawn, waypoints, goal, waves | **CF**: collection and flag points, income | **RF**: crystals, points, score limit |
 
-## Arena
+## Sandbox
 
-- Button **A** (between **G** and **TD**): armies of several teams fight each other. See the [Arena manual](../LevelEditor/tools/arena.md)
+| [Arena](../LevelEditor/sandbox/arena.md) |
+|---|
+| [![Arena page](level-editor-arena.jpg)](../LevelEditor/sandbox/arena.md) |
+| **A**: armies of several teams fight each other |
 
 ## Demo levels
 
