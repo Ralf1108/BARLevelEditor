@@ -994,9 +994,9 @@ return function(host)
 			{ kind = "arclear", label = "Clear", w = 3, tip = "Removes the units that Generate placed, and the Arena Point. Units you placed yourself stay. Ctrl+Z undoes it" },
 		})
 		line({ { kind = "arformation", label = "Formation attack", w = 3, fs = 22 * S, tint = c.formation and { 0.15, 0.6, 0.2 } or nil,
-				tip = "On (green): every army keeps its rectangle and all units walk at the speed of the slowest one until a quarter of the way is left, then at full speed (the armies meet at the same time). Off: every unit runs as fast as it can. Both end with fighting back and forth through the Arena Point." },
+				tip = "On (green): every army keeps its rectangle and all units walk at the speed of the slowest one until a quarter of the way is left, then at full speed (the armies meet at the same time). Off: every unit runs as fast as it can. Both end with a patrol through the Arena Point." },
 			{ kind = "arplay", label = running and "Stop" or "Start", w = 7, active = running, fs = 26 * S, tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
-				tip = "Start: all units of the rows that are on march through the Arena Point and fight on the way, then back and forth. The state before is saved as _beforeplay. Stop brings it back." } })
+				tip = "Start: all units of the rows that are on march to 250 Elmo in front of the Arena Point and fight on the way, then they patrol through it. The state before is saved as _beforeplay. Stop brings it back." } })
 		y = y - m.PAD
 		return rects, labels, rect.top - y
 	end

@@ -874,8 +874,8 @@ end
 -- everything that comes into the range of the weapons on the way, CMD.PATROL does the same between two places again and again.
 --  Phase 1 (only with the formation attack): all units walk at the speed of the slowest unit of all armies (the data of the move type: the command
 --           alone did not limit the speed) until the center of the army is at 25 % of its first distance from the point.
---  Phase 2: full speed (the cap is taken away), FIGHT to 250 Elmo behind the Arena Point (the units go through the other army), then PATROL to 250 Elmo
---           in front of it: the units keep going back and forth through the point and fight, whoever is not fighting walks on.
+--  Phase 2: full speed (the cap is taken away), FIGHT to 250 Elmo in front of the Arena Point (the near side of the army), then PATROL to 250 Elmo
+--           behind it: the units keep going back and forth through the point and fight, whoever is not fighting walks on.
 -- Without the formation attack there is no cap and no phase 1: phase 2 starts at once.
 local ARENA_BEYOND = 250
 local arenaRun = nil -- { x, z, armies = { { ids, d0, phase } } } while it runs
@@ -918,7 +918,7 @@ local function orderTo(ids, cmdID, dx, dz, options)
 	end
 end
 
--- Phase 2 of an army whose center is at (cx, cz): FIGHT through the point to ARENA_BEYOND behind it, then PATROL back to ARENA_BEYOND in front of it
+-- Phase 2 of an army whose center is at (cx, cz): FIGHT to ARENA_BEYOND in front of the point, then PATROL to ARENA_BEYOND behind it (through the other army)
 local function arenaFight(a, x, z, cx, cz)
 	local dx, dz = x - cx, z - cz
 	local d = math.sqrt(dx * dx + dz * dz)
@@ -932,8 +932,8 @@ local function arenaFight(a, x, z, cx, cz)
 			capSpeed(id, ud and ud.speed or 100) -- the cap of phase 1 is taken away
 		end
 	end
-	orderTo(a.ids, CMD.FIGHT, ux * (d + ARENA_BEYOND), uz * (d + ARENA_BEYOND), 0)
-	orderTo(a.ids, CMD.PATROL, ux * (d - ARENA_BEYOND), uz * (d - ARENA_BEYOND), CMD.OPT_SHIFT)
+	orderTo(a.ids, CMD.FIGHT, ux * (d - ARENA_BEYOND), uz * (d - ARENA_BEYOND), 0)
+	orderTo(a.ids, CMD.PATROL, ux * (d + ARENA_BEYOND), uz * (d + ARENA_BEYOND), CMD.OPT_SHIFT)
 	a.phase = 2
 end
 
