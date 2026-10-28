@@ -816,6 +816,9 @@ local function transformUnits(ids, mode, dx, dz)
 			if r.indestructible then
 				setIndestructible(id)
 			end
+			if r.arena then
+				setArena(id)
+			end
 			replaceId(r.old, id) -- earlier steps should hit the new unit
 			record({ k = "swap", id = id, name = r.name, before = r, after = snapshot(id) })
 			made[#made + 1] = id

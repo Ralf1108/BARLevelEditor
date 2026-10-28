@@ -11,6 +11,11 @@ return function(host)
 	local ar = { open = false, edit = nil, pick = nil, data = nil, notice = nil, spent = {}, spentAt = -10 }
 	local pollState -- below
 	local ROWS = 10 -- one row per team 0 .. 9
+	-- A team that gets a row: it exists in the game and is not Gaia
+	local function hasTeam(t)
+		return Spring.GetTeamInfo(t) ~= nil and t ~= Spring.GetGaiaTeamID()
+	end
+
 	local MAX_UNITS = 3000 -- units of one army (and of one team on the map)
 	local LIMITS = { radius = { 100, 30000 }, count = { 1, MAX_UNITS }, metal = { 0, 99999999 }, energy = { 0, 99999999 } }
 
@@ -396,7 +401,7 @@ return function(host)
 		local c = ar.cfg(true)
 		local active = {}
 		for i = 1, ROWS do
-			if c.rows[i].on and Spring.GetTeamInfo(i - 1) then
+			if c.rows[i].on and hasTeam(i - 1) then
 				active[#active + 1] = i
 			end
 		end
@@ -510,7 +515,7 @@ return function(host)
 		end
 		local teams = {}
 		for i = 1, ROWS do
-			if c.rows[i].on and Spring.GetTeamInfo(i - 1) then
+			if c.rows[i].on and hasTeam(i - 1) then
 				teams[#teams + 1] = tostring(i - 1)
 			end
 		end
@@ -679,7 +684,8 @@ return function(host)
 		local px1, _, _, py1 = host.panelRect()
 		local vsx, vsy = Spring.GetViewGeometry()
 		local right = px1 - Shared.m.HB - 8 * S - 70 * S -- the team strip and the numbers of units left of it
-		local w = math.floor(560 * S)
+		local cw = ar.units:size() -- as wide as the Place menu: room for the columns of tiles that the settings ask for
+		local w = math.floor(math.min(math.max(cw, 560 * S), vsx * 0.5))
 		return { x1 = math.max(8 * S, right - w), x2 = right, top = py1, y0 = vsy * 0.06 }
 	end
 
@@ -811,7 +817,7 @@ return function(host)
 		for i = 1, ROWS do
 			local t = i - 1
 			local m, e = 0, 0
-			if Spring.GetTeamInfo(t) then
+			if hasTeam(t) then
 				for _, u in ipairs(Spring.GetTeamUnits(t) or {}) do
 					local ud = UnitDefs[Spring.GetUnitDefID(u)]
 					if ud then
@@ -928,7 +934,7 @@ return function(host)
 		for i = 1, ROWS do
 			local t = i - 1
 			local r = c.rows[i]
-			if Spring.GetTeamInfo(t) then
+			if hasTeam(t) then
 				local cr, cg, cb = Spring.GetTeamColor(t)
 				local n = #r.allowed
 				local spent = ar.spent[i] or { 0, 0 }

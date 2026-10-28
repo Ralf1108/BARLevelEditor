@@ -2112,6 +2112,11 @@ function widget:DebugRtf()
 	return rtf
 end
 
+-- For tests: the Arena page
+function widget:DebugArena()
+	return ar
+end
+
 -- Orders for selected units of other teams: the engine only sends orders for the own units, so the command menu and the right click are
 -- forwarded to the gadget (led|order|cmdID|options|params|ids); the own units of the selection get their order from the engine as usual
 function widget:CommandNotify(cmdID, params, options)
