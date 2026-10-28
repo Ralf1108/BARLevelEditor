@@ -1017,7 +1017,7 @@ local function genLayout(rect)
 		local w = (rect.x2 - rect.x1 - 2 * m.PAD - gap * (n - 1)) / n
 		for i, it in ipairs(items) do
 			local bx = rect.x1 + m.PAD + (i - 1) * (w + gap)
-			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind or kind, value = it.value, label = it.label, active = it.active, icon = it.icon, fs = 24 * S,
+			rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind or kind, value = it.value, label = it.label, active = it.active, icon = it.icon, fs = 24 * S, tint = it.tint,
 				tip = it.tip or TIPS[it.kind or kind] }
 		end
 		y = y - m.HB - 10 * S
@@ -1047,9 +1047,10 @@ local function genLayout(rect)
 	-- Bottom of both sub-tabs: Area (rectangle / circle: pressing one starts the generating, there is no extra button)
 	local function bottom()
 		local armed = gen.sub == "maze" and mazeKind ~= nil or gen.sub ~= "maze" and gen.armed
+		local START_GREEN = { 0.25, 0.5, 0.28 } -- light green: these are the buttons to press
 		row(armed and "Drag the area on the map (right click ends)" or "Generate in an area (circle: drag from the center outwards)", {
-			{ value = "rect", label = "Rectangle", active = armed and gen.shape == "rect" },
-			{ value = "circle", label = "Circle", active = armed and gen.shape == "circle" },
+			{ value = "rect", label = "Rectangle", active = armed and gen.shape == "rect", tint = not (armed and gen.shape == "rect") and START_GREEN or nil },
+			{ value = "circle", label = "Circle", active = armed and gen.shape == "circle", tint = not (armed and gen.shape == "circle") and START_GREEN or nil },
 		}, "genshape")
 		return rects, labels, rect.top - y
 	end
@@ -1898,8 +1899,8 @@ end
 
 local function drawMenu()
 	drawMenuBody()
-	if not collapsed or true then
 	tm.drawMenu() -- the menu of the alliance colors on top of everything (it can open over the panel: the Alliance cell of the page T)
+	if not collapsed or true then
 		local mx, my = Spring.GetMouseState()
 		Shared.drawTip((headerRects()), mx, my)
 	end

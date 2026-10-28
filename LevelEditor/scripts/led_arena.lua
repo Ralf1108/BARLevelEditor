@@ -986,7 +986,7 @@ return function(host)
 		local state = Spring.GetGameRulesParam("arenaState") or ""
 		local running = state == "running"
 		line({
-			{ kind = "argen", label = "Generate", w = 3, active = ar.pick == "gen",
+			{ kind = "argen", label = "Generate", w = 3, active = ar.pick == "gen", tint = ar.pick ~= "gen" and { 0.25, 0.5, 0.28 } or nil, -- light green: the button to press
 				tip = "Generate: then click on the map, once. The Arena Point is set there and every army of a row that is on stands around it. Ctrl+Z undoes it" },
 			{ kind = "arpoint", label = "Arena Point", w = 4, active = ar.pick == "point",
 				tip = "Arena Point: click, then click the map. The point where all armies meet. Alt + drag moves it, Shift + Alt + drag moves the whole setup, Del over it removes it" },
