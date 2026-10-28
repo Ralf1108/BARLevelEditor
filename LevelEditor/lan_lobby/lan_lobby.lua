@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 5, stamp = "2026-10-28 09:24" }
+local LAN_VERSION = { number = 6, stamp = "2026-10-28 10:20" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -801,7 +801,7 @@ end
 local function startHosting()
 	local cf = Config()
 	if S or lan then lanStop("restart") end
-	local s, e = socket.bind("*", PORT)
+	local s, e = socket.bind("*", PORT, 128)   -- a queue for many connections at once: every joiner fetches a map on 8 of them
 	if not s then setStatus("Cannot listen on port " .. PORT .. ": " .. tostring(e)); return end
 	s:settimeout(0)
 	local name = playerName()
