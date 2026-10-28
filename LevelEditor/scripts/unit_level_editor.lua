@@ -869,15 +869,15 @@ local function clearThese(units, features, playerID, quiet)
 	end
 end
 
--- Arena (page A, Start): the armies march in two phases and then attack. Every army (team) keeps its rectangle: each unit walks straight ahead, the
--- whole army is shifted so that its center ends at a place on the line to the Arena Point (a front, not a heap).
---  Phase 1: all units walk at the speed of the slowest unit of all armies (the data of the move type: the command alone did not limit the speed) until
---           the center of the army is at 25 % of its first distance from the point.
---  Phase 2: full speed (the cap is taken away) to 300 Elmo from the point, then an area attack (CMD.ATTACK with a radius of ARENA_ATTACK_RADIUS)
---           around the Arena Point: the units attack every enemy within it.
--- Without the formation attack (button of the page) there is no cap and no phase 1: every unit runs as fast as it can, in its rectangle, to 300 Elmo from
--- the point and gets the area attack.
-local ARENA_ATTACK_RADIUS = 600
+-- Arena (page A, Start): the armies march and fight. Every army (team) keeps its rectangle: each unit walks straight ahead, the whole army is
+-- shifted so that its center ends at a place on the line through the Arena Point (a front, not a heap). Fighting is the engine's: CMD.FIGHT attacks
+-- everything that comes into the range of the weapons on the way, CMD.PATROL does the same between two places again and again.
+--  Phase 1 (only with the formation attack): all units walk at the speed of the slowest unit of all armies (the data of the move type: the command
+--           alone did not limit the speed) until the center of the army is at 25 % of its first distance from the point.
+--  Phase 2: full speed (the cap is taken away), FIGHT to 250 Elmo behind the Arena Point (the units go through the other army), then PATROL to 250 Elmo
+--           in front of it: the units keep going back and forth through the point and fight, whoever is not fighting walks on.
+-- Without the formation attack there is no cap and no phase 1: phase 2 starts at once.
+local ARENA_BEYOND = 250
 local arenaRun = nil -- { x, z, armies = { { ids, d0, phase } } } while it runs
 
 -- top speed of a unit: the data of its move type (ground, hover and ships; gunships; planes), in Elmo per second
@@ -906,16 +906,35 @@ local function armyCenter(ids)
 	return n > 0 and sx / n or 0, n > 0 and sz / n or 0, n
 end
 
--- Orders every unit of the list to fight its way to its own place shifted by (dx, dz); the first order replaces the queue
-local function marchTo(ids, dx, dz)
+-- Gives every unit of the list the order cmdID to its own place shifted by (dx, dz); options 0 replaces the queue, CMD.OPT_SHIFT queues
+local function orderTo(ids, cmdID, dx, dz, options)
 	local maxX, maxZ = Game.mapSizeX - 16, Game.mapSizeZ - 16
 	for _, id in ipairs(ids) do
 		if Spring.ValidUnitID(id) then
 			local ux, _, uz = Spring.GetUnitPosition(id)
 			local tx, tz = math.max(16, math.min(maxX, ux + dx)), math.max(16, math.min(maxZ, uz + dz))
-			Spring.GiveOrderToUnit(id, CMD.FIGHT, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
+			Spring.GiveOrderToUnit(id, cmdID, { tx, Spring.GetGroundHeight(tx, tz), tz }, options)
 		end
 	end
+end
+
+-- Phase 2 of an army whose center is at (cx, cz): FIGHT through the point to ARENA_BEYOND behind it, then PATROL back to ARENA_BEYOND in front of it
+local function arenaFight(a, x, z, cx, cz)
+	local dx, dz = x - cx, z - cz
+	local d = math.sqrt(dx * dx + dz * dz)
+	if d < 1 then
+		dx, dz, d = 1, 0, 1
+	end
+	local ux, uz = dx / d, dz / d
+	for _, id in ipairs(a.ids) do
+		if Spring.ValidUnitID(id) then
+			local ud = UnitDefs[Spring.GetUnitDefID(id)]
+			capSpeed(id, ud and ud.speed or 100) -- the cap of phase 1 is taken away
+		end
+	end
+	orderTo(a.ids, CMD.FIGHT, ux * (d + ARENA_BEYOND), uz * (d + ARENA_BEYOND), 0)
+	orderTo(a.ids, CMD.PATROL, ux * (d - ARENA_BEYOND), uz * (d - ARENA_BEYOND), CMD.OPT_SHIFT)
+	a.phase = 2
 end
 
 local function startArena(x, z, teamList, formation)
@@ -940,17 +959,9 @@ local function startArena(x, z, teamList, formation)
 			for _, id in ipairs(a.ids) do
 				capSpeed(id, slowest)
 			end
-			marchTo(a.ids, (x - cx) * 0.75, (z - cz) * 0.75) -- 25 % of the distance stay
+			orderTo(a.ids, CMD.FIGHT, (x - cx) * 0.75, (z - cz) * 0.75, 0) -- 25 % of the distance stay
 		else
-			a.phase = 2 -- no phase 1: straight on at full speed, then the area attack
-			local d = a.d0
-			local f = d > 300 and (d - 300) / d or 0
-			marchTo(a.ids, (x - cx) * f, (z - cz) * f)
-			for _, id in ipairs(a.ids) do
-				if Spring.ValidUnitID(id) then
-					Spring.GiveOrderToUnit(id, CMD.ATTACK, { x, Spring.GetGroundHeight(x, z), z, ARENA_ATTACK_RADIUS }, CMD.OPT_SHIFT)
-				end
-			end
+			arenaFight(a, x, z, cx, cz) -- no phase 1: straight on at full speed
 		end
 		count = count + #a.ids
 	end
@@ -959,7 +970,7 @@ local function startArena(x, z, teamList, formation)
 	return count
 end
 
--- Every 10 frames: an army that has reached 25 % of its first distance goes on at full speed and gets the area attack
+-- Every 10 frames: an army that has reached 25 % of its first distance goes on at full speed (phase 2)
 local function arenaStep(n)
 	if not arenaRun or n % 10 ~= 0 then
 		return
@@ -970,24 +981,8 @@ local function arenaStep(n)
 			local cx, cz, alive = armyCenter(a.ids)
 			if alive == 0 then
 				a.phase = 3
-			else
-				local d = math.sqrt((r.x - cx) ^ 2 + (r.z - cz) ^ 2)
-				if d <= 0.25 * a.d0 + 60 then
-					a.phase = 2
-					local f = d > 300 and (d - 300) / d or 0 -- on to 300 Elmo from the point
-					for _, id in ipairs(a.ids) do
-						if Spring.ValidUnitID(id) then
-							local ud = UnitDefs[Spring.GetUnitDefID(id)]
-							capSpeed(id, ud and ud.speed or 100)
-						end
-					end
-					marchTo(a.ids, (r.x - cx) * f, (r.z - cz) * f)
-					for _, id in ipairs(a.ids) do
-						if Spring.ValidUnitID(id) then
-							Spring.GiveOrderToUnit(id, CMD.ATTACK, { r.x, Spring.GetGroundHeight(r.x, r.z), r.z, ARENA_ATTACK_RADIUS }, CMD.OPT_SHIFT)
-						end
-					end
-				end
+			elseif math.sqrt((r.x - cx) ^ 2 + (r.z - cz) ^ 2) <= 0.25 * a.d0 + 60 then
+				arenaFight(a, r.x, r.z, cx, cz)
 			end
 		end
 	end
