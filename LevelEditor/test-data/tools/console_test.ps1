@@ -23,7 +23,7 @@ foreach ($who in 'H', 'J') {
     foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$Data\$j" | Out-Null }
     Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
     Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\"
-    [IO.File]::WriteAllLines("$d\springsettings.cfg", @('LogFlushLevel = 0', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev'))
+    [IO.File]::WriteAllLines("$d\springsettings.cfg", @('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev'))
 }
 $common = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$repo\LevelEditor\scenario\template\start_scenario.ps1", '-Lobby', '-HostIp', '127.0.0.1', '-ScenarioDir', $bundle, '-EditorDir', "$repo\LevelEditor")
 $procs = @{}
