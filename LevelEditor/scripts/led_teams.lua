@@ -421,5 +421,6 @@ return function(host)
 		return player == 0 and 1 or 0
 	end
 
+	tm.menuRects, tm.dropRects = menuRects, dropRects -- for tests
 	return tm
 end

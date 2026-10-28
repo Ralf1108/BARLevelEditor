@@ -1967,6 +1967,11 @@ function widget:DebugArena()
 	return ar
 end
 
+-- For tests: the teams (page T), the functions that save and load a level, the Tower Defense page
+function widget:DebugTeams()
+	return tm, saveLevel, load_level, td
+end
+
 -- Orders for selected units of other teams: the engine only sends orders for the own units, so the command menu and the right click are
 -- forwarded to the gadget (led|order|cmdID|options|params|ids); the own units of the selection get their order from the engine as usual
 function widget:CommandNotify(cmdID, params, options)

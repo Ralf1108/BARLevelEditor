@@ -39,7 +39,6 @@ $UNIT_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y
 $FEATURE_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*resurrectas\s*=\s*'([^']+)')?\s*\}")
 $COLORS = @('0 0.51 0.78', '0.9 0.1 0.29', '0.96 0.51 0.19', '1 0.88 0.1', '0.27 0.6 0.31', '0.57 0.12 0.71', '0.27 0.94 0.94', '0.94 0.2 0.9')
 $SIDES = @{ arm = 'Armada'; cor = 'Cortex'; leg = 'Legion' }
-$ROLE_TXT = @{ s = 'Player'; v = 'Allied AI'; e = 'Enemy (AI)' }
 $WIN_TXT = @{ com = 'Commanders'; killall = 'All units'; neverend = 'No end' }
 
 # ---------------------------------------------------------------- Questions
@@ -368,6 +367,24 @@ function Read-Reclaim([string]$txt) {
 }
 
 # ---------------------------------------------------------------- Read the level
+# The section teams of the level (page T of the editor): ten rows, team 0 to 9: group (alliance), ai ('' = a human), metal, energy
+function Read-Teams([string]$txt) {
+    $rows = @(0..9 | ForEach-Object { [pscustomobject]@{ group = 0; ai = $(if ($_ -eq 0) { '' } else { 'NullAI' }); metal = 1000; energy = 1000 } })
+    $m = [regex]::Match($txt, '(?s)\n\s*teams = \{(.*?)\n\t\},')
+    if (-not $m.Success) { return $rows }
+    $i = 0
+    foreach ($r in [regex]::Matches($m.Groups[1].Value, '\{[^{}]*\}')) {
+        if ($i -ge 10) { break }
+        $b = $r.Value
+        $g = [regex]::Match($b, '\bgroup = (\d+)'); if ($g.Success) { $rows[$i].group = [int]$g.Groups[1].Value }
+        $a = [regex]::Match($b, '\bai = "([^"]*)"'); if ($a.Success) { $rows[$i].ai = $a.Groups[1].Value }
+        $mt = [regex]::Match($b, '\bmetal = (\d+)'); if ($mt.Success) { $rows[$i].metal = [int]$mt.Groups[1].Value }
+        $en = [regex]::Match($b, '\benergy = (\d+)'); if ($en.Success) { $rows[$i].energy = [int]$en.Groups[1].Value }
+        $i++
+    }
+    return $rows
+}
+
 function Read-LevelFile([string]$path) {
     $txt = $BLOCK_RX.Replace([IO.File]::ReadAllText($path, $utf8), '')
     $m = [regex]::Match($txt, 'map\s*=\s*"([^"]+)"')
@@ -409,6 +426,7 @@ function Read-LevelFile([string]$path) {
     $level.ctf = Read-Capture $txt
     $level.rtf = Read-Reclaim $txt
     $level.rst = Read-Restrictions $txt
+    $level.teams = Read-Teams $txt
     return $level
 }
 
@@ -509,8 +527,10 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $td = $level.td
     if ($td) {
         Write-Host "Tower Defense is on in the level: $($td.waves.Count) waves, $($td.waypoints.Count) waypoints. The waves are part of the scenario." -ForegroundColor Cyan
-        # the waves belong to an enemy team: when the level has none, a team without units is added
-        if ($teamsFound.Count -eq 1) { $teamsFound = @($teamsFound) + @([int]$teamsFound[0] + 1) }
+        # the waves belong to the first team that is an AI (page T of the editor): it is part of the scenario even without units
+        $spawner = @(0..9 | Where-Object { $level.teams[$_].ai -ne '' })[0]
+        if ($null -eq $spawner) { throw 'Tower Defense needs a team that is an AI (page T of the editor): it spawns the waves.' }
+        $teamsFound = @(@($teamsFound) + @($spawner) | Sort-Object -Unique)
     }
     $rst = $level.rst
     if ($rst) { Write-Host "Restrictions in the level: $($rst.banned.Count) units the player cannot build." -ForegroundColor Cyan }
@@ -532,6 +552,10 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
             if ($td -or $ctf) { throw 'Reclaim the Fame and another game mode (Tower Defense or Capture the Flag) are both on in the level: switch one of them off in the editor (only one game mode can be on).' }
         }
     }
+    # human or AI per team (page T): a human team has no AI, the lobby puts the players into the human teams
+    $human = @{}
+    foreach ($t in $teamsFound) { $human[[int]$t] = ([int]$t -lt 10 -and $level.teams[[int]$t].ai -eq '') }
+    if (@($teamsFound | Where-Object { $human[[int]$_] }).Count -eq 0) { throw 'No team with units is a human: set a team with units to "Human" on the page T of the editor.' }
     $info = "`nLevel ${base}: map $($level.map), $($level.units.Count) units, $($level.features.Count) features, teams [$($teamsFound -join ', ')]"
     if ($nGaia) { $info += ", $nGaia Gaia units" }
     Write-Host ($info + "`n")
@@ -543,32 +567,11 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $briefDef = Get-Val $saved 'briefing' $summary
     $briefing = AskMultiline 'Briefing / task' $briefDef
 
-    # --- Teams
-    if (-not $Auto) {
-        Write-Host "`nRoles of the teams in the level. Player = the human (exactly one team), Allied = AI on the side of the player, Enemy = AI against the player." }
-    $savedRoles = Get-Val $saved 'roles' ([ordered]@{})
-    $roles = [ordered]@{}
-    $opts = @(@('s', 'Player'), @('v', 'Allied AI'), @('e', 'Enemy (AI)'))
+    # --- Teams (page T of the editor): human or AI, alliance, start resources
+    Write-Host 'Teams (set on the page T of the editor):'
     foreach ($t in $teamsFound) {
-        $n = @($level.units | Where-Object { $_.team -eq $t }).Count
-        $side = Get-TeamSide $level.units $t
-        $def = Get-Val $savedRoles ([string]$t) $(if ($t -eq $teamsFound[0]) { 's' } else { 'e' })
-        $roles[[string]$t] = AskChoice "Team ${t}: $n units, side $side" $opts $def
-    }
-    while (@($roles.Values | Where-Object { $_ -eq 's' }).Count -ne 1) {
-        if ($Auto) { throw 'There must be exactly one player team.' }
-        Write-Host 'There must be exactly one player team, please try again:'
-        foreach ($t in $teamsFound) { $roles[[string]$t] = AskChoice "Team $t" $opts $roles[[string]$t] }
-    }
-    $savedTiers = Get-Val $saved 'tiers' ([ordered]@{})
-    $tiers = [ordered]@{}
-    foreach ($t in $teamsFound) {
-        $tiers[[string]$t] = AskTiers "Tech team $t" (Get-Val $savedTiers ([string]$t) '123')
-    }
-    $ai = Get-Val $saved 'ai' 'BARb'
-    if (@($roles.Values | Where-Object { $_ -ne 's' }).Count -gt 0) {
-        $c = AskChoice 'Behavior of the AI teams' @(@('1', 'BARb - expands and attacks'), @('2', 'NullAI - does nothing (targets)')) $(if ($ai -eq 'NullAI') { '2' } else { '1' })
-        $ai = @{ '1' = 'BARb'; '2' = 'NullAI' }[$c]
+        $r = $level.teams[[int]$t]
+        Write-Host ('  team {0}: {1}, {2}, start {3} metal / {4} energy' -f $t, $(if ($r.ai -eq '') { 'human' } else { 'AI ' + $r.ai }), $(if ($r.group -gt 0) { 'alliance ' + $r.group } else { 'no alliance' }), $r.metal, $r.energy)
     }
 
     # --- Game rules
@@ -578,22 +581,18 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                                        @('2', 'All units: a team only loses when everything is destroyed'),
                                        @('3', 'No end (sandbox)')) $winDef
     $win = @{ '1' = 'com'; '2' = 'killall'; '3' = 'neverend' }[$c]
-    $metal = AskInt 'Start metal per team' (Get-Val $saved 'metal' 1000) 0 100000
-    $energy = AskInt 'Start energy per team' (Get-Val $saved 'energy' 1000) 0 100000
     $grace = AskMinutes 'Grace period as minutes:seconds, e.g. 2:30 (as long as that, every team stays in its start area and is safe from damage there; 0 = none)' (Get-Val $saved 'grace' 0)
     $sid = Get-Val $saved 'sid' (Get-Slug $title)
     $sid = Get-Slug (Ask 'ID (lowercase letters and digits only)' $sid)
     # From the start menu, at the end: the values stored in the level, then the title (Enter keeps it) and the name (ID) of the package; a new
     # title proposes a new name, an existing scenario of that name is only overwritten after a question; title and ID are written into the level
     if ($AskName) {
-        $roleTxt = ($roles.Keys | ForEach-Object { 'team {0} = {1}' -f $_, $ROLE_TXT[$roles[$_]] }) -join ', '
-        $tierTxt = ($tiers.Keys | Where-Object { $tiers[$_] -ne '123' } | ForEach-Object { 'team {0} only T{1}' -f $_, (($tiers[$_].ToCharArray()) -join '+T') }) -join ', '
+        $roleTxt = ($teamsFound | ForEach-Object { 'team {0} = {1}' -f $_, $(if ($human[[int]$_]) { 'human' } else { 'AI ' + $level.teams[[int]$_].ai }) }) -join ', '
         Write-Host ''
         Write-Host 'Scenario info stored in the level:' -ForegroundColor Cyan
         foreach ($row in @(
-                @('Title', $title), @('Author', $author), @('Summary', $summary), @('Briefing', ($briefing -replace "`r?`n", ' / ')), @('Roles', $roleTxt),
-                @('Tech', $(if ($tierTxt) { $tierTxt } else { 'all tiers' })), @('AI behavior', $ai), @('Win condition', $WIN_TXT[$win]), @('Start metal', $metal),
-                @('Start energy', $energy), @('Grace period', $(if ($grace -gt 0) { (Format-Minutes $grace) + ' min' } else { 'none' })), @('ID', $sid),
+                @('Title', $title), @('Author', $author), @('Summary', $summary), @('Briefing', ($briefing -replace "`r?`n", ' / ')), @('Teams', $roleTxt),
+                @('Win condition', $WIN_TXT[$win]), @('Grace period', $(if ($grace -gt 0) { (Format-Minutes $grace) + ' min' } else { 'none' })), @('ID', $sid),
                 @('Tower Defense', $(if ($td) { 'on: {0} waves, {1} waypoints' -f $td.waves.Count, $td.waypoints.Count } else { 'off' })),
                 @('Capture the Flag', $(if ($ctf) { 'on: {0} flag points, {1} collection points' -f $ctf.flags.Count, $ctf.homes.Count } else { 'off' })),
                 @('Reclaim the Fame', $(if ($rtf) { 'on: {0} crystals, {1} points win' -f $crystals.Count, $rtf.score } else { 'off' })))) {
@@ -610,20 +609,20 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     # Map size for the start areas: from the level
     $mapX = $level.mapX; $mapZ = $level.mapZ
     if ($grace -gt 0 -and $mapX -le 0) { throw 'The map size is missing in the level (needed for the grace period). Save the level again in the Level Editor.' }
-    # Tower Defense: the enemy team only gets the waves (no AI of its own that takes them over) and the gadget decides about winning and losing
-    $aiRun = if ($td -or $ctf -or $rtf) { 'NullAI' } else { $ai }
-    # AI per team (button AI of the editor); with Tower Defense, Capture the Flag and Reclaim the Fame the gadget alone steers the enemy
-    $teamAi = Get-Val $saved 'teamai' ([ordered]@{})
+    # AI per team (page T of the editor); with Tower Defense the enemy teams only get the waves (NullAI: no AI of its own that takes them over, the gadget
+    # steers them and decides about winning and losing)
     $aiOf = @{}
     foreach ($t in $teamsFound) {
-        $n = if ($td -or $ctf -or $rtf -or -not $teamAi.Contains([string]$t)) { $aiRun } else { [string]$teamAi[[string]$t] }
-        $aiOf[[int]$t] = Get-AiSpec $n
+        if (-not $human[[int]$t]) {
+            $n = $level.teams[[int]$t].ai
+            if ($td) { $n = 'NullAI' }
+            $aiOf[[int]$t] = Get-AiSpec $n
+        }
     }
     $winRun = if ($td -or $ctf -or $rtf) { 'neverend' } else { $win }
     $answers = [ordered]@{}
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
-    $answers['roles'] = $roles; $answers['tiers'] = $tiers; $answers['ai'] = $ai; $answers['win'] = $win; $answers['metal'] = $metal; $answers['energy'] = $energy; $answers['grace'] = $grace; $answers['sid'] = $sid
-    if ($teamAi.Count -gt 0) { $answers['teamai'] = $teamAi }
+    $answers['win'] = $win; $answers['grace'] = $grace; $answers['sid'] = $sid
     if (-not $BundleDir) { Save-Block $path $answers }   # (the temporary scenario of "Play a level" leaves the level as it is)
     # Tower Defense: no grace period (the no-rush rules of the game keep every unit inside its start area while it runs, so the wave
     # units could not leave the spawn point); the saved answer stays in the level
@@ -632,12 +631,22 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $grace = 0
     }
 
-    # --- Renumber the teams (0..n-1, player first)
-    $order = @($teamsFound | Where-Object { $roles[[string]$_] -eq 's' }) + @($teamsFound | Where-Object { $roles[[string]$_] -ne 's' })
+    # --- Renumber the teams (0..n-1, humans first); teams of the same alliance (page T) get the same ally team, a team without alliance its own
+    $order = @($teamsFound | Where-Object { $human[[int]$_] }) + @($teamsFound | Where-Object { -not $human[[int]$_] })
     $newid = @{}
     for ($i = 0; $i -lt $order.Count; $i++) { $newid[[int]$order[$i]] = $i }
     $ally = @{}
-    foreach ($t in $teamsFound) { $ally[[int]$t] = $(if ($roles[[string]$t] -in 's', 'v') { 0 } else { 1 }) }
+    $allyOfGroup = @{}
+    $na = 0
+    foreach ($t in $order) {
+        $g = [int]$level.teams[[int]$t].group
+        if ($g -gt 0) {
+            if (-not $allyOfGroup.ContainsKey($g)) { $allyOfGroup[$g] = $na; $na++ }
+            $ally[[int]$t] = $allyOfGroup[$g]
+        } else {
+            $ally[[int]$t] = $na; $na++
+        }
+    }
 
     # --- scenariooptions
     $units = New-Object Collections.ArrayList
@@ -648,12 +657,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         if ($u.neutral) { $e['neutral'] = $true }
         [void]$units.Add($e)
     }
-    # Tech restriction: only teams where not all tiers are allowed (key = new team number)
-    $tierOut = [ordered]@{}
-    foreach ($t in $order) { if ($tiers[[string]$t] -ne '123') { $tierOut[[string]$newid[[int]$t]] = $tiers[[string]$t] } }
     $so = [ordered]@{ scenarioid = $sid; scenariomaker = $true; grace = $grace; version = '1'; title = $title; author = $author; summary = $summary
                       briefing = $briefing; disablefactionpicker = $true; unitloadout = @($units); featureloadout = @($level.features) }
-    if ($tierOut.Count -gt 0) { $so['tiers'] = $tierOut }
     $raw = $utf8.GetBytes((ConvertTo-JsonText $so -1 $false))
     $payload = [Convert]::ToBase64String((Compress-Zlib $raw)).Replace('+', '-').Replace('/', '_')
 
@@ -712,24 +717,24 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $i = $newid[[int]$t]
         $side = Get-TeamSide $level.units $t
         $color = $COLORS[$i % $COLORS.Count]
-        $luaAi = if ($roles[[string]$t] -ne 's' -and $aiOf[[int]$t].Lua) { "`t`tLuaAI=$($aiOf[[int]$t].Lua);`n" } else { '' }
-        [void]$lines.Add("`t[team$i]`n`t{`n`t`tAllyTeam=$($ally[[int]$t]);`n`t`tTeamLeader=0;`n`t`tSide=$side;`n`t`tHandicap=0;`n`t`tRgbColor=$color;`n$luaAi`t}")
+        $luaAi = if (-not $human[[int]$t] -and $aiOf[[int]$t].Lua) { "`t`tLuaAI=$($aiOf[[int]$t].Lua);`n" } else { '' }
+        $res = "`t`tStartMetal=$($level.teams[[int]$t].metal);`n`t`tStartEnergy=$($level.teams[[int]$t].energy);`n"
+        [void]$lines.Add("`t[team$i]`n`t{`n`t`tAllyTeam=$($ally[[int]$t]);`n`t`tTeamLeader=0;`n`t`tSide=$side;`n`t`tHandicap=0;`n`t`tRgbColor=$color;`n$res$luaAi`t}")
     }
     $k = 0
     foreach ($t in $order) {
         $i = $newid[[int]$t]
-        if ($roles[[string]$t] -eq 's') { continue }
+        if ($human[[int]$t]) { continue }
         $spec = $aiOf[[int]$t]
         if ($spec.Lua) { continue }   # a Lua AI is named in the team ([team] LuaAI=), it has no [ai] section
         [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$($spec.Short);`n`t`tName=$($spec.Short)_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$($spec.Version);`n$($spec.Options)`t}")
         $k++
     }
     [void]$lines.Add("`t[player0]`n`t{`n`t`tName=__PLAYERNAME__;`n`t`tTeam=0;`n`t`tspectator=0;`n`t`trank=0;`n`t}")
-    $mods = [ordered]@{ deathmode = $winRun; maxunits = $level.unitLimit; startmetal = $metal; startenergy = $energy; scenariooptions = $payload }
+    $mods = [ordered]@{ deathmode = $winRun; maxunits = $level.unitLimit; startmetal = $level.teams[[int]$order[0]].metal; startenergy = $level.teams[[int]$order[0]].energy; scenariooptions = $payload }
     if ($td) {
         # settings for the gadget td_waves.lua (text made harmless for the start script: base64url, no ';' inside)
-        $enemyOld = @($order | Where-Object { $roles[[string]$_] -eq 'e' })[0]
-        if ($null -eq $enemyOld) { $enemyOld = @($order | Where-Object { $roles[[string]$_] -ne 's' })[0] }
+        $enemyOld = @($order | Where-Object { -not $human[[int]$_] })[0]
         $enemyNew = $newid[[int]$enemyOld]
         $path = if ($td.waypoints.Count -gt 0) { ($td.waypoints | ForEach-Object { '{0},{1}' -f $_[0], $_[1] }) -join '/' } else { '-' }
         $waves = ($td.waves | ForEach-Object { '{0},{1},{2},{3},{4},{5}' -f $_.fac, $_.kind, $_.tech, $_.count, $_.gap, $_.hp }) -join '/'
@@ -756,11 +761,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     if ($fixed.Count -gt 0) {
         $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
         $mods['fixedunits'] = [Convert]::ToBase64String($utf8.GetBytes(($groups -join '|'))).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-    }
-    if ($tierOut.Count -gt 0) {
-        # the tech levels per team for the gadget unit_restrictions.lua (team:digits/team:digits, the new team numbers)
-        $plainT = (@($tierOut.Keys | ForEach-Object { '{0}:{1}' -f $_, $tierOut[$_] }) -join '/')
-        $mods['techtiers'] = [Convert]::ToBase64String($utf8.GetBytes($plainT)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
     }
     if ($rst) {
         # settings for the gadget unit_restrictions.lua (the names of the units)
@@ -816,8 +816,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     if ($author) { [void]$readme.Add("Author: $author"); [void]$readme.Add('') }
     if ($summary) { [void]$readme.Add($summary); [void]$readme.Add('') }
     if ($briefing -and $briefing -ne $summary) { [void]$readme.Add($briefing); [void]$readme.Add('') }
-    foreach ($l in @("Map: $($level.map)", "Win condition: $winTxt", $(if ($grace -gt 0) { "Grace period: $(Format-Minutes $grace) minutes (until then every side stays in its start area and is safe from damage there)" } else { 'Grace period: none' }), "Start resources: $metal metal, $energy energy", '',
-                     ('Teams: ' + (($order | ForEach-Object { '{0} = {1}' -f $newid[[int]$_], $ROLE_TXT[$roles[[string]$_]] }) -join ', ')), $(if ($tierOut.Count -gt 0) { 'Tech: ' + (($tierOut.Keys | ForEach-Object { 'Team {0} only T{1}' -f $_, (($tierOut[$_].ToCharArray()) -join '+T') }) -join '; ') } else { 'Tech: no restriction' }), '',
+    foreach ($l in @("Map: $($level.map)", "Win condition: $winTxt", $(if ($grace -gt 0) { "Grace period: $(Format-Minutes $grace) minutes (until then every side stays in its start area and is safe from damage there)" } else { 'Grace period: none' }), "Start resources: $($level.teams[[int]$order[0]].metal) metal, $($level.teams[[int]$order[0]].energy) energy", '',
+                     ('Teams: ' + (($order | ForEach-Object { '{0} = {1}, alliance {2}' -f $newid[[int]$_], $(if ($human[[int]$_]) { 'human' } else { 'AI' }), $ally[[int]$_] }) -join '; ')), '',
                      'How to play the scenario',
                      '1. Install Beyond All Reason and start it once (the launcher downloads the game and the engine).',
                      '2. Double-click "Start Scenario.bat". The script finds BAR itself (otherwise it asks for the folder),',
@@ -856,27 +856,13 @@ function Edit-Scenario([string]$levelName) {
     $base = [IO.Path]::GetFileNameWithoutExtension($path)
     $saved = Read-Block $path
     if (-not $saved) { throw "The level $base has no (readable) scenario info yet. Create a scenario from it first (key 3)." }
-    $level = Read-LevelFile $path
-    $teams = @($level.units | Where-Object { -not $_.gaia } | ForEach-Object { $_.team } | Sort-Object -Unique)
-    $savedRoles = Get-Val $saved 'roles' ([ordered]@{})
-    $roles = [ordered]@{}
-    foreach ($t in $teams) { $roles[[string]$t] = Get-Val $savedRoles ([string]$t) $(if ($t -eq $teams[0]) { 's' } else { 'e' }) }
-    $opts = @(@('s', 'Player'), @('v', 'Allied AI'), @('e', 'Enemy (AI)'))
-    $onePlayer = { @($roles.Values | Where-Object { $_ -eq 's' }).Count -eq 1 }
-    $savedTiers = Get-Val $saved 'tiers' ([ordered]@{})
-
+    # (human or AI, alliances and start resources are set on the page T of the editor)
     while ($true) {
-        $items = @(@('Title', 'title'), @('Author', 'author'), @('Summary', 'summary'), @('Briefing', 'briefing'))
-        foreach ($t in $teams) { $items += , @("Role team $t", "role:$t") }
-        foreach ($t in $teams) { $items += , @("Tech team $t", "tiers:$t") }
-        $items += @(@('AI behavior', 'ai'), @('Win condition', 'win'), @('Start metal', 'metal'), @('Start energy', 'energy'), @('Grace period (min:sec)', 'grace'), @('ID', 'sid'))
+        $items = @(@('Title', 'title'), @('Author', 'author'), @('Summary', 'summary'), @('Briefing', 'briefing'), @('Win condition', 'win'), @('Grace period (min:sec)', 'grace'), @('ID', 'sid'))
         Write-Host "`nLevel $base - saved info:"
         for ($n = 0; $n -lt $items.Count; $n++) {
             $label = $items[$n][0]; $key = $items[$n][1]
-            if ($key.StartsWith('role:')) { $val = $ROLE_TXT[$roles[$key.Substring(5)]] }
-            elseif ($key.StartsWith('tiers:')) { $val = 'T' + ((Get-Val $savedTiers $key.Substring(6) '123').ToCharArray() -join '+T') }
-            elseif ($key -eq 'win') { $val = $WIN_TXT[(Get-Val $saved 'win' 'com')] }
-            elseif ($key -eq 'ai') { $val = Get-Val $saved 'ai' 'BARb' }
+            if ($key -eq 'win') { $val = $WIN_TXT[(Get-Val $saved 'win' 'com')] }
             elseif ($key -eq 'grace') { $val = Format-Minutes (Get-Val $saved 'grace' 0) }
             else {
                 $val = ([string](Get-Val $saved $key '')).Replace("`n", ' / ')
@@ -889,41 +875,19 @@ function Edit-Scenario([string]$levelName) {
         $num = 0
         if (-not [int]::TryParse($v, [ref]$num) -or $num -lt 1 -or $num -gt $items.Count) { Write-Host '   Please enter a number from the list.'; continue }
         $label = $items[$num - 1][0]; $key = $items[$num - 1][1]
-        if ($key.StartsWith('role:')) {
-            $tk = $key.Substring(5)
-            $roles[$tk] = AskChoice $label $opts $roles[$tk]
-            if (-not (& $onePlayer)) { Write-Host '   Note: in the end there must be exactly one player team.' }
-        }
-        elseif ($key.StartsWith('tiers:')) {
-            $tk = $key.Substring(6)
-            $nt = [ordered]@{}
-            foreach ($p in @($savedTiers.Keys)) { $nt[[string]$p] = $savedTiers[$p] }
-            $nt[$tk] = AskTiers $label (Get-Val $savedTiers $tk '123')
-            $savedTiers = $nt
-            $saved['tiers'] = $nt
-        }
-        elseif ($key -eq 'briefing') { $saved['briefing'] = AskMultiline 'Briefing / task' (Get-Val $saved 'briefing' '') }
-        elseif ($key -eq 'ai') {
-            $c = AskChoice 'Behavior of the AI teams' @(@('1', 'BARb - expands and attacks'), @('2', 'NullAI - does nothing (targets)')) $(if ((Get-Val $saved 'ai' 'BARb') -eq 'NullAI') { '2' } else { '1' })
-            $saved['ai'] = @{ '1' = 'BARb'; '2' = 'NullAI' }[$c]
-        }
+        if ($key -eq 'briefing') { $saved['briefing'] = AskMultiline 'Briefing / task' (Get-Val $saved 'briefing' '') }
         elseif ($key -eq 'win') {
             $d = @{ com = '1'; killall = '2'; neverend = '3' }[(Get-Val $saved 'win' 'com')]
             if (-not $d) { $d = '1' }
             $c = AskChoice 'Win condition' @(@('1', 'Commanders'), @('2', 'All units'), @('3', 'No end (sandbox)')) $d
             $saved['win'] = @{ '1' = 'com'; '2' = 'killall'; '3' = 'neverend' }[$c]
         }
-        elseif ($key -eq 'metal' -or $key -eq 'energy') { $saved[$key] = AskInt $label (Get-Val $saved $key 1000) 0 100000 }
         elseif ($key -eq 'grace') { $saved[$key] = AskMinutes $label (Get-Val $saved $key 0) }
         elseif ($key -eq 'sid') { $saved['sid'] = Get-Slug (Ask 'ID (lowercase letters and digits only)' (Get-Val $saved 'sid' '')) }
         else { $saved[$key] = Ask $label (Get-Val $saved $key '') }
-        if (& $onePlayer) {
-            $saved['roles'] = $roles
-            Save-Block $path $saved
-            Write-Host '   Saved.'
-        }
+        Save-Block $path $saved
+        Write-Host '   Saved.'
     }
-    if (-not (& $onePlayer)) { throw 'Not saved: there must be exactly one player team.' }
     if ((Ask 'Rebuild the scenario package now? (y/n)' 'y').ToLower().StartsWith('y')) { Build-Scenario $base $true }
 }
 

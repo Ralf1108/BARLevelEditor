@@ -1,7 +1,7 @@
 # Arena test: one sandbox game of the Level Editor (built from the files of this repository: nothing of the installed game is changed) with four
 # teams on a flat map and the test widget zz_arena.lua, which works the Arena page (settings, Generate, move, undo, Start, Stop, Clear) and logs
 # "[zzar]" lines into infolog.txt of the sandbox (<Work>\data\infolog.txt). The game ends itself (quitforce) when the test is through.
-param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame)
+param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame, [string]$Widget = '')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1')
@@ -20,7 +20,7 @@ if (Test-Path $Work) { Remove-Item $Work -Recurse -Force }
 New-Item -ItemType Directory "$d\cache", "$d\games", "$d\LuaUI\Widgets", "$d\LevelEditor" -Force | Out-Null
 foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$Data\$j" | Out-Null }
 Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
-Copy-Item ("$tools\" + $(if ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
+Copy-Item ("$tools\" + $(if ($Widget) { $Widget } elseif ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
 
 # the extra game "Level Editor" from the files of the repository (as install_editor.ps1 builds it)
 $game = Get-GameVersion $Data
