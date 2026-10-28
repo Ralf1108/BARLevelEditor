@@ -929,8 +929,10 @@ local function spawnBuildersHere()
 end
 
 -- Menu geometry: bar at the right edge. Content (grid, units, settings) comes from editor_common.lua.
+local baseCache = {} -- the rectangle of the menu without the mover, once per call-in (rescale() clears it, it starts every call-in): the heights of the pages are worked out from their layouts
 local function rescale()
 	S = Shared.rescale()
+	baseCache[1], baseCache.hdrA, baseCache.hdrB, baseCache.teams, baseCache.drawing = nil, nil, nil, nil, nil
 end
 
 -- ---------------------------------------------------------------- Scenario info (button I)
@@ -1177,7 +1179,7 @@ local function titleH()
 	return 44 * S
 end
 
-local function basePanelRect()
+local function basePanelRectRaw()
 	local m = Shared.m
 	local vsx, vsy = Spring.GetViewGeometry()
 	if collapsed then
@@ -1213,6 +1215,14 @@ local function basePanelRect()
 end
 
 -- The menu where it is now: its place at the right edge, moved by dragging the title row
+local function basePanelRect()
+	local c = baseCache
+	if not c[1] then
+		c[1], c[2], c[3], c[4] = basePanelRectRaw()
+	end
+	return c[1], c[2], c[3], c[4]
+end
+
 local function panelRect()
 	local x1, y0, x2, y1 = basePanelRect()
 	local m = Shared.m
@@ -1223,7 +1233,7 @@ local function panelRect()
 end
 
 -- Header: row 0 = mode and settings, below it Create (blueprints) or faction, group, tech (units)
-local function headerRects()
+local function headerRectsRaw()
 	local m = Shared.m
 	local x1, _, x2, y1 = panelRect()
 	local rects = {}
@@ -1329,6 +1339,18 @@ local function headerRects()
 	return rects, hh
 end
 
+-- While the screen is drawn the layout of the header and the strip is worked out once (they were rebuilt by every hit test: tens of KB per call)
+local function headerRects()
+	local c = baseCache
+	if not c.drawing then
+		return headerRectsRaw()
+	end
+	if not c.hdrA then
+		c.hdrA, c.hdrB = headerRectsRaw()
+	end
+	return c.hdrA, c.hdrB
+end
+
 -- Content area below the header
 local function contentRect()
 	local x1, y0, x2, y1 = panelRect()
@@ -1348,7 +1370,7 @@ local function inPanel(mx, my)
 end
 
 -- Team strip left of the menu: vertical buttons with the team number, the chosen team (team) is highlighted
-local function teamRects()
+local function teamRectsRaw()
 	local out = {}
 	if not menuOpen or collapsed then
 		return out
@@ -1413,6 +1435,17 @@ local function teamRects()
 		i = i + 1
 	end
 	return out
+end
+
+local function teamRects()
+	local c = baseCache
+	if not c.drawing then
+		return teamRectsRaw()
+	end
+	if not c.teams then
+		c.teams = teamRectsRaw()
+	end
+	return c.teams
 end
 
 local function teamAt(mx, my)
@@ -1585,39 +1618,6 @@ local function drawLevels(rect, mx, my)
 	Shared.drawTip(rects, mx, my)
 end
 
-local function levelPress(rect, mx, my)
-	for _, r in ipairs(levelRects(rect)) do
-		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-			if r.kind == "new" then
-				local n = 1
-				local taken = {}
-				for _, nm in ipairs(levelList) do
-					taken[nm] = true
-				end
-				while taken[string.format("level_%03d", n)] do
-					n = n + 1
-				end
-				saveLevel(string.format("level_%03d", n), false)
-				scanLevels()
-			elseif levelConfirm and levelConfirm.kind == r.kind and levelConfirm.name == r.name then
-				levelConfirm = nil
-				if r.kind == "load" then
-					load_level(nil, nil, { r.name })
-				else
-					saveLevel(r.name, false)
-					scanLevels()
-				end
-			else
-				levelConfirm = { kind = r.kind, name = r.name }
-			end
-			return true
-		end
-	end
-	levelConfirm = nil
-	return false
-end
-
--- Rows and button of the scenario page (button I)
 -- A test of a game mode (Tower Defense, Capture the Flag, Reclaim the Fame) or the Arena fight is running (Start was pressed). With stop = true
 -- the Stop button is pressed for it (the state before comes back, with all its consequences); returns whether something was running.
 -- Leaving the level (load, save, quit) must not take the state of the test with it.
@@ -1641,14 +1641,48 @@ local function runningModes(stop)
 	return any
 end
 
-local function scenarioRects(rect)
-	local m = Shared.m
-	local rh = scenarioRowH()
+local function levelPress(rect, mx, my)
+	for _, r in ipairs(levelRects(rect)) do
+		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 			if (r.kind == "new" or (levelConfirm and levelConfirm.kind == r.kind and levelConfirm.name == r.name and r.kind ~= "load")) and runningModes(true) then
 				levelConfirm = nil
 				say("The test was running: it is stopped and the state before is back. Press Save again.")
 				return true
 			end
+			if r.kind == "new" then
+				local n = 1
+				local taken = {}
+				for _, nm in ipairs(levelList) do
+					taken[nm] = true
+				end
+				while taken[string.format("level_%03d", n)] do
+					n = n + 1
+				end
+				saveLevel(string.format("level_%03d", n), false)
+				scanLevels()
+			elseif levelConfirm and levelConfirm.kind == r.kind and levelConfirm.name == r.name then
+				levelConfirm = nil
+				if r.kind == "load" then
+					runningModes(true) -- Stop first, then the other level replaces everything
+					load_level(nil, nil, { r.name })
+				else
+					saveLevel(r.name, false)
+					scanLevels()
+				end
+			else
+				levelConfirm = { kind = r.kind, name = r.name }
+			end
+			return true
+		end
+	end
+	levelConfirm = nil
+	return false
+end
+
+-- Rows and button of the scenario page (button I)
+local function scenarioRects(rect)
+	local m = Shared.m
+	local rh = scenarioRowH()
 	local gap = 5 * S
 	local rects = {}
 	local y = rect.top - 40 * S
@@ -1663,7 +1697,6 @@ end
 local function dropLastChar(t)
 	return (t:gsub("[%z\1-\127\194-\244][\128-\191]*$", "", 1))
 end
-					runningModes(true) -- Stop first, then the other level replaces everything
 
 local function dropFirstChar(t)
 	return (t:gsub("^[%z\1-\127\194-\244][\128-\191]*", "", 1))
@@ -1753,6 +1786,10 @@ end
 
 -- Save level: under the current name, otherwise as a new level_NNN (Ctrl+S)
 local function saveCurrentLevel()
+	if runningModes(true) then
+		say("The test was running: it is stopped and the state before is back. Press Ctrl+S again.")
+		return true
+	end
 	local name = currentLevel and currentLevel:sub(1, 1) ~= "_" and currentLevel or nil
 	if not name then
 		local n = 1
@@ -1786,10 +1823,6 @@ local function scenarioPress(rect, mx, my)
 					scEdit = { row = row, buf = scenarioValue(row) }
 					widgetHandler:OwnText()
 				end
-	if runningModes(true) then
-		say("The test was running: it is stopped and the state before is back. Press Ctrl+S again.")
-		return true
-	end
 			end
 			return true
 		end
@@ -2001,6 +2034,29 @@ function widget:DebugArena()
 	return ar
 end
 
+-- For tests: wraps the call-ins of the widget and adds up the Lua memory every one of them allocates (garbage collector stopped by the caller);
+-- returns acc (KB) and calls per call-in name. Called once; a second call returns the same tables.
+function widget:DebugProfile()
+	if not widget.profile then
+		local acc, calls = {}, {}
+		for _, n in ipairs({ "Update", "GameFrame", "DrawScreen", "DrawWorld", "DrawScreenEffects", "DrawInMiniMap", "MouseMove", "IsAbove", "KeyPress", "TextInput" }) do
+			local f = widget[n]
+			if type(f) == "function" then
+				acc[n], calls[n] = 0, 0
+				widget[n] = function(...)
+					local before = collectgarbage("count")
+					local r1, r2, r3 = f(...)
+					acc[n] = acc[n] + (collectgarbage("count") - before)
+					calls[n] = calls[n] + 1
+					return r1, r2, r3
+				end
+			end
+		end
+		widget.profile = { acc, calls }
+	end
+	return widget.profile[1], widget.profile[2]
+end
+
 -- For tests: the teams (page T), the functions that save and load a level, the Tower Defense page
 function widget:DebugTeams()
 	return tm, saveLevel, load_level, td
@@ -2046,8 +2102,15 @@ local function sideAt(mx, my)
 end
 
 function widget:IsAbove(mx, my)
+	-- asked several times per frame with the same pointer position: worked out once per drawn frame
+	local c, frame = baseCache, Spring.GetDrawFrame()
+	if c.aboveFrame == frame and c.aboveX == mx and c.aboveY == my then
+		return c.above
+	end
 	rescale()
-	return inPanel(mx, my) or teamAt(mx, my) ~= nil or sideAt(mx, my) ~= nil
+	local above = inPanel(mx, my) or teamAt(mx, my) ~= nil or sideAt(mx, my) ~= nil
+	c.aboveFrame, c.aboveX, c.aboveY, c.above = frame, mx, my, above
+	return above
 end
 
 area = Shared.newAreaAttack({
@@ -3708,6 +3771,7 @@ local lastAutosave = 0
 local autosave
 
 function widget:Update()
+	baseCache[1] = nil
 	-- Cheat mode and god mode for all teams (once, in the editor game): units of every team can be selected like your own, the command menu
 	-- appears for them; the orders for units of other teams go through widget:CommandNotify and the gadget
 	if not gen.godAsked and Spring.GetGameFrame() > 5 then
@@ -4092,6 +4156,16 @@ autosave = function()
 	if not canEdit() or #loadQueue > 0 or pendingAutoload or Spring.GetGameFrame() < 100 then
 		return
 	end
+	if runningModes(false) then
+		-- a test is running (the editor is closed meanwhile): the autosave is the state before the test (_beforeplay), not the state of the test
+		local f = io.open(OUTDIR .. "_beforeplay.lua", "r")
+		if f then
+			local text = f:read("*a")
+			f:close()
+			Shared.writeFile(OUTDIR .. "_last.lua", text)
+		end
+		return
+	end
 	saveLevel("_last", true)
 end
 
@@ -4151,21 +4225,12 @@ end
 
 function widget:DrawScreen()
 	rescale()
+	baseCache.drawing = true
 	local vsx, vsy = Spring.GetViewGeometry()
 	td.hud(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 	gl.Text(
 		string.format("Level Editor  |  %s  |  Team %d  |  Grid %d  |  %s", unitName, team, grid, FACING_NAME[facing]),
-	if runningModes(false) then
-		-- a test is running (the editor is closed meanwhile): the autosave is the state before the test (_beforeplay), not the state of the test
-		local f = io.open(OUTDIR .. "_beforeplay.lua", "r")
-		if f then
-			local text = f:read("*a")
-			f:close()
-			Shared.writeFile(OUTDIR .. "_last.lua", text)
-		end
-		return
-	end
 		vsx * 0.5, vsy - 24 * S, 14 * S, "co"
 	)
 	local bp = bpCurrent()

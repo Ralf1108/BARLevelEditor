@@ -1,5 +1,5 @@
 function widget:GetInfo() return { name = "zz arena fight", desc = "test only: what the armies shoot at after the area attack", layer = 1000000, enabled = true } end
--- Test widget of arena_test.ps1 -Widget zz_arena_fight.lua: two armies (radius 800, 20 units each), Start, then every 150 frames the targets of the weapons
+-- Test widget of arena_test.ps1 -Widget zz_arena_fight.lua: two armies (radius RADIUS, 20 units each), Start, then every 150 frames the targets of the weapons
 -- of the arena units (none / unit / ground), the units left and the queue of one unit. Logs "[zzar]" lines, ends with quitforce.
 local function log(...)
 	local t = {}
@@ -8,6 +8,7 @@ local function log(...)
 end
 local function W() return WG.LevelEditorWidget end
 local ar
+local RADIUS = 2000 -- set by the test (a copy of this file with another number is the test of another radius)
 local MX, MZ = Game.mapSizeX / 2, Game.mapSizeZ / 2
 local function arenaUnits()
 	local out = {}
@@ -40,17 +41,17 @@ steps[40] = function()
 		if r.kind == "ar" then W():MousePress((r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2, 1); W():MouseRelease((r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2, 1) end
 	end
 	local c = ar.cfg(true)
-	c.radius = 800
+	c.radius = RADIUS
 	for i = 1, 10 do c.rows[i].allowed, c.rows[i].count, c.rows[i].on = {}, 20, i <= 2 end
 	ar.setAllowed(1, { "armpw", "armham" }, true)
 	ar.setAllowed(2, { "corak", "corthud" }, true)
 end
 steps[80] = function() ar.startPick("gen"); ar.click(MX, MZ) end
 steps[240] = function() report("before the start"); ar.toggle() end
-for k = 1, 8 do
-	steps[240 + k * 150] = function() report("frame " .. (240 + k * 150)) end
+for k = 1, 14 do
+	steps[240 + k * 300] = function() report("frame " .. (240 + k * 300)) end
 end
-steps[1560] = function() log("END"); Spring.SendCommands("quitforce") end
+steps[4500] = function() log("END"); Spring.SendCommands("quitforce") end
 local done = {}
 function widget:Update()
 	local f0 = Spring.GetGameFrame()
