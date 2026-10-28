@@ -1076,10 +1076,10 @@ function gadget:RecvLuaMsg(msg, playerID)
 					end
 				end
 				if #units > 0 then
-					-- the army stops 20% of the radius short of the point; there the area attack takes over
+					-- the army stops 100 Elmo short of the point (its center); there the area attack over the whole radius takes over
 					local dx, dz = x - sx / #units, z - sz / #units
 					local d = math.sqrt(dx * dx + dz * dz)
-					local f = d > 0.2 * radius and (d - 0.2 * radius) / d or 0
+					local f = d > 100 and (d - 100) / d or 0
 					armies[#armies + 1] = { units = units, dx = dx * f, dz = dz * f }
 				end
 			end
