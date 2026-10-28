@@ -12,6 +12,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 - [Installation (Windows)](#installation-windows)
 - [Documentation](#documentation)
 - [Other useful links](#other-useful-links)
+- [AI assistance](#ai-assistance)
 
 ## Level Editor
 
