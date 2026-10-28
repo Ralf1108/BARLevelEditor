@@ -68,9 +68,12 @@ A small widget for the **official** game that brings blueprints to normal matche
 
 ## Installation (Windows)
 
-1. [Download the repository as a ZIP](https://github.com/Ralf1108/BARLevelEditor/archive/refs/heads/main.zip) and unpack it (or clone it). Start Beyond All Reason once through its launcher.
-2. Run `LevelEditor\install_editor.bat`, then start the desktop shortcut **BAR Level Editor**.
-3. Optional, for normal games: run `BluePrinter\install_blueprinter.bat`.
+1. Install Beyond All Reason and start it at least once through its launcher.
+2. Get the Level Editor. There are two ways:
+   - **`git clone` (recommended):** `git clone https://github.com/Ralf1108/BARLevelEditor.git`. Updating is easy later: a `git pull` and you are up to date again.
+   - **Download the repository as a ZIP:** [main.zip](https://github.com/Ralf1108/BARLevelEditor/archive/refs/heads/main.zip), then unpack it. To update, download it again.
+3. Run `LevelEditor\install_editor.bat`, then start the desktop shortcut **BAR Level Editor**.
+4. Optional, for normal games: run `BluePrinter\install_blueprinter.bat`.
 
 ## Documentation
 
