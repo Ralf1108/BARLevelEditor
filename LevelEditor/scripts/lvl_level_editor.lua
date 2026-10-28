@@ -2458,6 +2458,17 @@ function gen.disarmAll()
 end
 
 -- Restrictions of the level (LevelEditor/scripts/led_restrictions.lua)
+-- Stop of a test (Tower Defense, Capture the Flag, Reclaim the Fame) or of the Arena fight: the level before the Start comes back (units, features), but
+-- what was changed on the pages meanwhile stays: the settings of the pages, the teams, the restrictions and the scenario info
+local function reloadBeforePlay()
+	local current = currentLevel
+	local dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty = td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, scenario, scenarioDirty
+	load_level(nil, nil, { "_beforeplay" })
+	td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, scenario, scenarioDirty = dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty
+	tm.apply() -- the alliances of the changed teams
+	currentLevel = current
+end
+
 rst = VFS.Include("luaui/Include/led_restrictions.lua", nil, VFS.ZIP_FIRST)({
 	serialize = function(v) return td.lua(v, "\t") end,
 })
@@ -2498,9 +2509,7 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 	led = function(msg) led(msg) end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,
 	afterPlay = function()
-		local current = currentLevel
-		load_level(nil, nil, { "_beforeplay" })
-		currentLevel = current
+		reloadBeforePlay()
 	end,
 })
 
@@ -2542,9 +2551,7 @@ rtf = VFS.Include("luaui/Include/led_rtf.lua", nil, VFS.ZIP_FIRST)({
 	end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,
 	afterPlay = function()
-		local current = currentLevel
-		load_level(nil, nil, { "_beforeplay" })
-		currentLevel = current
+		reloadBeforePlay()
 	end,
 })
 
@@ -2575,9 +2582,7 @@ ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	queue = function(msg) placeQueue[#placeQueue + 1] = msg end, -- many messages: sent in packets, in order
 	beforePlay = function() saveLevel("_beforeplay", true) end,
 	afterPlay = function()
-		local current = currentLevel
-		load_level(nil, nil, { "_beforeplay" })
-		currentLevel = current
+		reloadBeforePlay()
 	end,
 })
 
@@ -2647,9 +2652,7 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 		area:disarm()
 	end,
 	restoreBeforePlay = function()
-		local current = currentLevel
-		load_level(nil, nil, { "_beforeplay" })
-		currentLevel = current
+		reloadBeforePlay()
 	end,
 })
 
