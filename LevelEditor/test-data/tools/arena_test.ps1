@@ -23,7 +23,7 @@ Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | 
 Copy-Item ("$tools\" + $(if ($Widget) { $Widget } elseif ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
 Copy-Item "$tools\..\levels\*.lua" "$d\LevelEditor\"   # the test levels (td_test, ctf_test, rtf_test) for the widgets that load them
 Copy-Item "$repo\LevelEditor\levels\demo_*.lua" "$d\LevelEditor\"   # the demo levels (the memory test, the pictures)
-if (Test-Path "$repo\LevelEditorlueprints") { New-Item -ItemType Directory "$d\LevelEditorBlueprints" -Force | Out-Null; Copy-Item "$repo\LevelEditorlueprints\*" "$d\LevelEditorBlueprints\" -Recurse }   # the sample blueprints (the pictures)
+if (Test-Path "$repo\LevelEditor\blueprints") { New-Item -ItemType Directory "$d\LevelEditorBlueprints" -Force | Out-Null; Copy-Item "$repo\LevelEditor\blueprints\*" "$d\LevelEditorBlueprints\" -Recurse }   # the sample blueprints (the pictures)
 
 # the extra game "Level Editor" from the files of the repository (as install_editor.ps1 builds it)
 $game = Get-GameVersion $Data
