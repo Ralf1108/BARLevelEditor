@@ -204,7 +204,7 @@ steps[790] = function()
 		if f then fight = fight + 1 else other = other + 1 end
 		if f and atk then before.attackQueued = (before.attackQueued or 0) + 1 end
 	end
-	log("units with the fight order:", fight, "without:", other, "with the area attack queued:", before.attackQueued or 0)
+	log("units with the fight order:", fight, "without:", other, "(the area attack is queued in phase 2, not at the start):", before.attackQueued or 0)
 	before.march = {}
 	for t = 0, 2 do before.march[t] = { stats(t) } end
 	shot("running")
