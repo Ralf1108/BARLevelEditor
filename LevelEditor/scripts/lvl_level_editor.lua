@@ -1528,7 +1528,6 @@ local function drawTeamStrip()
 			break
 		end
 	end
-	tm.drawMenu()
 	gl.Color(1, 1, 1, 1)
 end
 
@@ -1900,6 +1899,7 @@ end
 local function drawMenu()
 	drawMenuBody()
 	if not collapsed or true then
+	tm.drawMenu() -- the menu of the alliance colors on top of everything (it can open over the panel: the Alliance cell of the page T)
 		local mx, my = Spring.GetMouseState()
 		Shared.drawTip((headerRects()), mx, my)
 	end
