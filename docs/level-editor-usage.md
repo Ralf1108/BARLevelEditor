@@ -44,7 +44,7 @@ All buttons are in the column at the right edge and in the strip left of the men
 
 **Restrictions and AI**
 - **X** on a unit, faction, group or tech button: forbids it for the player in the game
-- **AI**: pick an AI for each team 0–10, applies at the next start
+- **T**: teams 0–9: human or AI (the AI applies in the scenario), alliance, start resources
 
 ## Scenario builder
 

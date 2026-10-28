@@ -542,7 +542,7 @@ local ghost = Shared.newGhost({ owner = "Level Editor", say = say, wg = function
 local menuOpen = false
 local menuMode = "units" -- "bp" = blueprints, "units" = all units (faction / group / tech), "features" = trees/rocks/wrecks, "fav" = recently used
 local optionsOpen = false
-local scenarioOpen = false -- Scenario info (button I) or AI page (button AI)
+local scenarioOpen = false -- Scenario info (button I) or the teams page (button T)
 local scenarioPage = "info" -- what the scenario panel shows: "info" (title, briefing, ...) or "teams" (page T, led_teams.lua)
 local scEdit = nil -- { row, buf }: text field being edited right now
 local collapsed = false -- Menu collapsed: only the small button V stays visible
@@ -1247,7 +1247,7 @@ local function headerRectsRaw()
 		-- Button column at the far right next to the menu: V, below it O, I and at the very bottom ?
 		local sx1 = x2 + m.PAD
 		local sx2 = sx1 + m.HB
-		local function sideTop(k) if k >= 4 then k = k + 1 end return y1 - (k - 1) * (m.HB + 3) end -- slot 4 is the AI button
+		local function sideTop(k) if k >= 4 then k = k + 1 end return y1 - (k - 1) * (m.HB + 3) end -- slot 4 is the button T
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(1) - m.HB, y1 = sideTop(1), kind = "collapse", value = "collapse", label = "V", active = false, side = true, tip = "Collapse or expand the menu" }
 		local gx1, gx2, gy1 = sx1, sx2, sideTop(2)
 		local ix1, ix2, iy1 = sx1, sx2, sideTop(3)
