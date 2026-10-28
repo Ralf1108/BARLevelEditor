@@ -184,7 +184,7 @@ function Read-Level($f, [string]$displayName) {
     $installed = [bool]($mapItem -and $mapItem.Installed)
     $loadable = [bool]($mapItem -and -not $mapItem.Installed -and $mapItem.Url)
     $forceAll = [bool]([regex]::IsMatch($t, 'requiredmodoptions\s*=\s*\{[^}]*forceallunits'))   # the level holds Scavenger or Raptor units
-    $ai1 = [regex]::Match($t, '"teamai"\s*:\s*\{[^}]*"1"\s*:\s*"([^"]+)"')   # AI of team 1 from the AI page of the editor
+    $ai1 = [regex]::Match($t, '(?s)\n\s*teams = \{\s*\{[^{}]*\}\s*,\s*\{[^{}]*?\bai = "([^"]*)"')   # AI of team 1 from the page T of the editor (section teams, second row)
     $name = [IO.Path]::GetFileNameWithoutExtension($f.Name)
     if (-not $displayName) { $displayName = $name }
     $featText = if ($featCount -gt 0) { ", $featCount Features" } else { '' }

@@ -1098,6 +1098,26 @@ function gadget:RecvLuaMsg(msg, playerID)
 			Spring.SetGameRulesParam("arenaState", "running")
 			tell(playerID, n .. " units fight their way to the Arena Point")
 		end
+	elseif cmd == "teams" then
+		-- led|teams|g0,...,g9: the alliance group of every team (0 = none); teams with the same group are allied, all others are enemies
+		-- (the engine cannot move a team into another ally team: Spring.SetAlly between the ally teams)
+		local groups = {}
+		local n = 0
+		for g in tostring(parts[3] or ""):gmatch("%d+") do
+			groups[n] = tonumber(g)
+			n = n + 1
+		end
+		GG.LedGroups = groups
+		for a = 0, n - 1 do
+			for b = a + 1, n - 1 do
+				local aa, ab = select(6, Spring.GetTeamInfo(a, false)), select(6, Spring.GetTeamInfo(b, false))
+				if aa and ab and aa ~= ab then
+					local allied = groups[a] > 0 and groups[a] == groups[b]
+					Spring.SetAlly(aa, ab, allied)
+					Spring.SetAlly(ab, aa, allied)
+				end
+			end
+		end
 	elseif cmd == "arenastop" then
 		Spring.SetGameRulesParam("arenaState", "")
 	elseif cmd == "arenastate" then

@@ -39,9 +39,39 @@ function G.fields(payload)
 	return f
 end
 
--- The ally team of a team
+-- The alliance of a team: in the editor the group of the team (page T, 11f; the editor gadget keeps them in GG.LedGroups) as 100 + the group, a
+-- team without a group is its own alliance (its ally team of the engine); in a scenario the ally team of the engine
 function G.allyOf(team)
+	local group = GG.LedGroups and GG.LedGroups[team]
+	if group and group > 0 then
+		return 100 + group
+	end
 	return (select(6, Spring.GetTeamInfo(team, false)))
+end
+
+-- The teams of an alliance (the value of G.allyOf)
+function G.teamsOfAlliance(alliance)
+	local out = {}
+	for _, team in ipairs(Spring.GetTeamList() or {}) do
+		if G.allyOf(team) == alliance then
+			out[#out + 1] = team
+		end
+	end
+	return out
+end
+
+-- All alliances (every value of G.allyOf once, ascending)
+function G.allianceList()
+	local seen, out = {}, {}
+	for _, team in ipairs(Spring.GetTeamList() or {}) do
+		local a = G.allyOf(team)
+		if a and not seen[a] then
+			seen[a] = true
+			out[#out + 1] = a
+		end
+	end
+	table.sort(out)
+	return out
 end
 
 -- The unit a build order builds (also an order inserted into the queue: CMD.INSERT { position, command, options, ... }); nil for other orders

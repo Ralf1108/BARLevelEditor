@@ -233,7 +233,7 @@ local function stop()
 end
 
 local function blowUp(ally)
-	for _, t in ipairs(Spring.GetTeamList(ally)) do
+	for _, t in ipairs(G.teamsOfAlliance(ally)) do
 		for _, id in ipairs(Spring.GetTeamUnits(t)) do
 			Spring.DestroyUnit(id, true, false)
 		end

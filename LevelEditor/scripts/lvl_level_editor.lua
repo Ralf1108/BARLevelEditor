@@ -258,6 +258,7 @@ local rst -- restrictions of the level (what the player may not build): LevelEdi
 local ctf -- Capture the Flag page (button CF): LevelEditor/scripts/led_ctf.lua, created below (data = section capture of the level file)
 local rtf -- Reclaim the Fame page (button RF): LevelEditor/scripts/led_rtf.lua, created below (data = section reclaim of the level file)
 local ar -- Arena page (button A): LevelEditor/scripts/led_arena.lua, created below (data = section arena of the level file)
+local tm -- Teams (page T and the alliance frames of the team buttons): LevelEditor/scripts/led_teams.lua, created below (data = section teams of the level file)
 
 local function decodeBlock(block)
 	local body = block and block:match("%[==%[(.*)%]==%]")
@@ -376,6 +377,9 @@ local function saveLevel(name, quiet)
 	if ar.data then
 		w("\tarena = " .. ar.lua() .. ",\n")
 	end
+	if tm.data then
+		w("\tteams = " .. tm.lua() .. ",\n")
+	end
 	if not rst.empty() then
 		w("\trestrictions = " .. rst.lua() .. ",\n")
 	end
@@ -464,6 +468,7 @@ local function load_level(_, _, args)
 	rtf.data = knownFields(data.reclaim, rtf.new())
 	ar.data = knownFields(data.arena, ar.new(), { "point" })
 	ar.fix()
+	tm.load(data.teams)
 	rst.load(data.restrictions)
 	td.scroll = 0
 	cfg.v.unitLimit = tonumber(data.unitlimit) or 32000 -- the unit limit belongs to the level (used by the scenario builder); not written into the settings
@@ -538,7 +543,7 @@ local menuOpen = false
 local menuMode = "units" -- "bp" = blueprints, "units" = all units (faction / group / tech), "features" = trees/rocks/wrecks, "fav" = recently used
 local optionsOpen = false
 local scenarioOpen = false -- Scenario info (button I) or AI page (button AI)
-local scenarioPage = "info" -- what the scenario panel shows: "info" (title, roles, ...) or "ai" (AI per team)
+local scenarioPage = "info" -- what the scenario panel shows: "info" (title, briefing, ...) or "teams" (page T, led_teams.lua)
 local scEdit = nil -- { row, buf }: text field being edited right now
 local collapsed = false -- Menu collapsed: only the small button V stays visible
 local panelMover = Shared.newPanelMover() -- the title row moves the menu
@@ -929,86 +934,17 @@ local function rescale()
 end
 
 -- ---------------------------------------------------------------- Scenario info (button I)
-local ROLE_TXT = { s = "Player", v = "Allied AI", e = "Enemy (AI)" }
-local ROLE_NEXT = { s = "v", v = "e", e = "s" }
-local AI_NEXT = { BARb = "NullAI", NullAI = "BARb" }
-local AI_TXT = { BARb = "BARb (expands, attacks)", NullAI = "NullAI (does nothing)" }
--- AI per team (button AI): value in scenario.teamai[team]; "default" = the global AI behavior of the scenario. The scenario builder and
--- the start of the editor write it into the start script ([ai] section, or LuaAI= in the team for the Lua AIs).
-local TeamAi = { count = 11, -- teams 0 to 10; one table, because a Lua function may hold only 200 local variables (this file is close to it)
-	list = { "default", "NullAI", "BARb", "CircuitAI", "CircuitAI easy", "SimpleAI", "SimpleDefenderAI", "SimpleConstructorAI", "ScavengersAI", "RaptorsAI" },
-	txt = {
-		default = "Default", NullAI = "NullAI (does nothing)", BARb = "BARb (expands, attacks)", CircuitAI = "CircuitAI",
-		["CircuitAI easy"] = "CircuitAI easy", SimpleAI = "SimpleAI (easy)", SimpleDefenderAI = "SimpleDefenderAI (easy, defends)",
-		SimpleConstructorAI = "SimpleConstructorAI (easy, builds)", ScavengersAI = "Scavengers (infinite game)", RaptorsAI = "Raptors (defence)",
-	},
-	next = {},
-}
-TeamAi.tip = {
-	"Default: this team gets the AI of the scenario",
-	"(page I, 'AI behavior': BARb or NullAI; the player team",
-	"gets none; Tower Defense, Capture the Flag and",
-	"Reclaim the Fame always NullAI).",
-	"Any other choice applies to this team only.",
-}
-TeamAi.tipTeam1 = {
-	"Default: in the scenario the AI of 'AI behavior' (page I);",
-	"when the editor starts the level: NullAI, it does nothing.",
-	"The editor knows only teams 0 and 1, so at the editor",
-	"start only the entry of team 1 counts.",
-}
-for i, k in ipairs(TeamAi.list) do TeamAi.next[k] = TeamAi.list[i % #TeamAi.list + 1] end
 local WIN_NEXT = { com = "killall", killall = "neverend", neverend = "com" }
 local WIN_TXT = { com = "Commanders", killall = "All units", neverend = "No end" }
 
--- Teams that have units in the level (without Gaia and the editor's builders); re-read every 2 s, not every frame
-local scTeams, scTeamsAt = { 0 }, -10
-local function scenarioTeams()
-	local now = os.clock()
-	if now - scTeamsAt > 2 then
-		scTeamsAt = now
-		local gaia = Spring.GetGaiaTeamID()
-		local seen, list = {}, {}
-		for _, id in ipairs(Spring.GetAllUnits()) do
-			local t = Spring.GetUnitTeam(id)
-			if t ~= gaia and not seen[t] and Spring.GetUnitRulesParam(id, "ledbuilder") ~= 1 then
-				seen[t] = true
-				list[#list + 1] = t
-			end
-		end
-		table.sort(list)
-		if #list == 0 then
-			list[1] = 0
-		end
-		scTeams = list
-	end
-	return scTeams
-end
-
 local function scenarioRows()
-	if scenarioPage == "ai" then
-		local rows = {}
-		for t = 0, TeamAi.count - 1 do
-			rows[#rows + 1] = { id = "teamai", team = t, label = "AI team " .. t, kind = "cycle" }
-		end
-		return rows
-	end
 	local rows = {
 		{ id = "title", label = "Title", kind = "text", max = 80 },
 		{ id = "author", label = "Author", kind = "text", max = 60 },
 		{ id = "summary", label = "Summary", kind = "text", max = 200 },
 		{ id = "briefing", label = "Briefing", kind = "text", max = 800, multi = true },
 	}
-	for _, t in ipairs(scenarioTeams()) do
-		rows[#rows + 1] = { id = "role", team = t, label = "Role team " .. t, kind = "cycle" }
-	end
-	for _, t in ipairs(scenarioTeams()) do
-		rows[#rows + 1] = { id = "tiers", team = t, label = "Tech team " .. t, kind = "tiers" }
-	end
-	rows[#rows + 1] = { id = "ai", label = "AI behavior", kind = "cycle" }
 	rows[#rows + 1] = { id = "win", label = "Win condition", kind = "cycle" }
-	rows[#rows + 1] = { id = "metal", label = "Start metal", kind = "num", max = 6 }
-	rows[#rows + 1] = { id = "energy", label = "Start energy", kind = "num", max = 6 }
 	rows[#rows + 1] = { id = "grace", label = "Grace period (min:sec)", kind = "time", max = 6 }
 	rows[#rows + 1] = { id = "sid", label = "ID", kind = "id", max = 24 }
 	return rows
@@ -1017,21 +953,7 @@ end
 -- current value of a field (text), with the defaults of the scenario maker
 local function scenarioValue(row)
 	local sc = scenario or {}
-	if row.id == "role" then
-		local r = sc.roles and sc.roles[tostring(row.team)]
-		if not r then
-			r = (row.team == scenarioTeams()[1]) and "s" or "e"
-		end
-		return r
-	elseif row.id == "tiers" then
-		local t = sc.tiers and sc.tiers[tostring(row.team)]
-		return type(t) == "string" and t or "123"
-	elseif row.id == "ai" then
-		return sc.ai or "BARb"
-	elseif row.id == "teamai" then
-		local v = type(sc.teamai) == "table" and sc.teamai[tostring(row.team)]
-		return TeamAi.txt[v] and v or "default"
-	elseif row.id == "win" then
+	if row.id == "win" then
 		return sc.win or "com"
 	elseif row.id == "grace" then
 		local g = tonumber(sc.grace) or 0
@@ -1040,8 +962,6 @@ local function scenarioValue(row)
 		end
 		local total = math.floor(g * 60 + 0.5)
 		return string.format("%d:%02d", math.floor(total / 60), total % 60)
-	elseif row.id == "metal" or row.id == "energy" then
-		return tostring(sc[row.id] or 1000)
 	end
 	local v = sc[row.id]
 	return type(v) == "string" and v or ""
@@ -1049,29 +969,7 @@ end
 
 local function scenarioSet(row, value)
 	scenario = scenario or {}
-	if row.id == "role" then
-		if type(scenario.roles) ~= "table" then
-			scenario.roles = {}
-		end
-		for _, t in ipairs(scenarioTeams()) do -- on the first change keep all roles
-			local r = scenarioValue({ id = "role", team = t })
-			scenario.roles[tostring(t)] = scenario.roles[tostring(t)] or r
-		end
-		scenario.roles[tostring(row.team)] = value
-	elseif row.id == "teamai" then
-		if type(scenario.teamai) ~= "table" then
-			scenario.teamai = {}
-		end
-		scenario.teamai[tostring(row.team)] = (value ~= "default") and value or nil
-		if next(scenario.teamai) == nil then
-			scenario.teamai = nil
-		end
-	elseif row.id == "tiers" then
-		if type(scenario.tiers) ~= "table" then
-			scenario.tiers = {}
-		end
-		scenario.tiers[tostring(row.team)] = value
-	elseif row.kind == "num" then
+	if row.kind == "num" then
 		scenario[row.id] = tonumber(value) or 0
 	elseif row.kind == "time" then
 		-- "2:30" (minutes:seconds), "2,5" or "3" -> minutes as a number
@@ -1091,6 +989,9 @@ local function scenarioRowH()
 end
 
 local function scenarioHeight()
+	if scenarioPage == "teams" then
+		return tm.height()
+	end
 	return 44 * S + (#scenarioRows() + 2) * (scenarioRowH() + 5 * S) + Shared.m.PAD
 end
 
@@ -1284,7 +1185,7 @@ local function basePanelRect()
 	end
 	local cw, ch
 	if scenarioOpen then
-		cw, ch = 0, scenarioHeight()
+		cw, ch = scenarioPage == "teams" and math.floor(780 * S) or 0, scenarioHeight() -- the table of the teams needs room
 	elseif td.open then
 		cw, ch = math.floor(780 * S), td.height() -- wider than the other pages: the wave table needs the room
 	elseif ar.open then
@@ -1350,9 +1251,9 @@ local function headerRects()
 				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open), tip = it[3] }
 		end
 		rects[#rects + 1] = { x1 = ix1, x2 = ix2, y0 = iy1 - m.HB, y1 = iy1, side = true, kind = "info", value = "info", label = "I", active = scenarioOpen and scenarioPage == "info",
-			tip = "Scenario: edit title, briefing, roles and rules for building a scenario" }
-		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = y1 - 3 * (m.HB + 3) - m.HB, y1 = y1 - 3 * (m.HB + 3), side = true, kind = "ai", value = "ai", label = "AI", active = scenarioOpen and scenarioPage == "ai",
-			tip = "AI: choose the AI for every team (teams 0 to 10).\nIt is written into the level and takes effect at the next start of the scenario; a running game cannot change it." }
+			tip = "Scenario: edit title, briefing, win condition and ID for building a scenario" }
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = y1 - 3 * (m.HB + 3) - m.HB, y1 = y1 - 3 * (m.HB + 3), side = true, kind = "teams", value = "teams", label = "T", active = scenarioOpen and scenarioPage == "teams",
+			tip = "Teams: human or AI, the alliance and the start resources of every team.\nThe AI takes effect in the scenario (and the AI of team 1 at the next start of the editor)." }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(8) - m.HB, y1 = sideTop(8), side = true, kind = "ar", value = "ar", label = "A", active = ar.open,
@@ -1543,20 +1444,24 @@ local function drawTeamStrip()
 			sel = (r.team == team)
 			cr, cg, cb = Shared.teamColor(r.team)
 		end
-		gl.Color(0, 0, 0, 0.65)
-		gl.Rect(r.x1, r.y0, r.x2, r.y1)
-		gl.Color(cr, cg, cb, sel and 0.95 or 0.35)
-		gl.Rect(r.x1 + 3, r.y0 + 3, r.x2 - 3, r.y1 - 3)
-		if sel then
-			gl.Color(1, 1, 1, 1)
-			gl.LineWidth(3)
-			gl.BeginEnd(GL.LINE_LOOP, function()
-				gl.Vertex(r.x1, r.y0)
-				gl.Vertex(r.x2, r.y0)
-				gl.Vertex(r.x2, r.y1)
-				gl.Vertex(r.x1, r.y1)
-			end)
-			gl.LineWidth(1)
+		if type(r.team) == "number" and not r.gaia then
+			tm.drawButton(r, sel, cr, cg, cb) -- the frame in the color of the alliance, the team color inside (11f)
+		else
+			gl.Color(0, 0, 0, 0.65)
+			gl.Rect(r.x1, r.y0, r.x2, r.y1)
+			gl.Color(cr, cg, cb, sel and 0.95 or 0.35)
+			gl.Rect(r.x1 + 3, r.y0 + 3, r.x2 - 3, r.y1 - 3)
+			if sel then
+				gl.Color(1, 1, 1, 1)
+				gl.LineWidth(3)
+				gl.BeginEnd(GL.LINE_LOOP, function()
+					gl.Vertex(r.x1, r.y0)
+					gl.Vertex(r.x2, r.y0)
+					gl.Vertex(r.x2, r.y1)
+					gl.Vertex(r.x1, r.y1)
+				end)
+				gl.LineWidth(1)
+			end
 		end
 		gl.Color(1, 1, 1, sel and 1 or 0.8)
 		gl.Text((r.edit or r.write or r.del) and r.label or (r.gaia and "G" or tostring(r.team)), (r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2 - 10 * S, 27 * S, "co")
@@ -1570,7 +1475,7 @@ local function drawTeamStrip()
 	-- Tooltip left of the button under the mouse pointer
 	local mx, my = Spring.GetMouseState()
 	for _, r in ipairs(teamRects()) do
-		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 and not tm.menu then
 			local lines
 			if r.write then
 				lines = {
@@ -1603,13 +1508,7 @@ local function drawTeamStrip()
 					"use N (neutral) for many neutral units.",
 				}
 			else
-				local _, _, _, _, _, ally = Spring.GetTeamInfo(r.team)
-				lines = {
-					"Team " .. r.team .. (ally and (" (alliance " .. ally .. ")") or ""),
-					"New units and blueprints",
-					"belong to this team.",
-					"Units: " .. (Spring.GetTeamUnitCount(r.team) or 0) .. " of " .. (Spring.GetTeamMaxUnits(r.team) or "?"),
-				}
+				lines = tm.tipLines(r.team)
 			end
 			local fs = 20 * S
 			local w = 0
@@ -1629,6 +1528,7 @@ local function drawTeamStrip()
 			break
 		end
 	end
+	tm.drawMenu()
 	gl.Color(1, 1, 1, 1)
 end
 
@@ -1744,12 +1644,6 @@ local function scenarioDisplay(row)
 	local v
 	if scEdit and scEdit.row.id == row.id and scEdit.row.team == row.team then
 		v = scEdit.buf
-	elseif row.id == "role" then
-		v = ROLE_TXT[scenarioValue(row)]
-	elseif row.id == "ai" then
-		v = AI_TXT[scenarioValue(row)] or scenarioValue(row)
-	elseif row.id == "teamai" then
-		v = TeamAi.txt[scenarioValue(row)]
 	elseif row.id == "win" then
 		v = WIN_TXT[scenarioValue(row)] or scenarioValue(row)
 	else
@@ -1760,29 +1654,16 @@ end
 
 local function drawScenario(rect, mx, my)
 	local m = Shared.m
+	if scenarioPage == "teams" then
+		tm.draw(rect)
+		return
+	end
 	gl.Color(0.5, 0.8, 1, 1)
-	gl.Text(scenarioPage == "ai" and "AI per team (from the next start)" or "Scenario (written with the level when saving)", rect.x1 + m.PAD, rect.top - 30 * S, 22 * S, "o")
+	gl.Text("Scenario (written with the level when saving)", rect.x1 + m.PAD, rect.top - 30 * S, 22 * S, "o")
 	local rects = scenarioRects(rect)
 	local fs = 22 * S
 	for _, r in ipairs(rects) do
-		if r.row and r.row.kind == "tiers" then
-			gl.Color(1, 1, 1, 0.9)
-			gl.Text(r.row.label, r.labelX, r.y0 + (r.y1 - r.y0 - fs) / 2 + 3 * S, fs, "o")
-			local cur = scenarioValue(r.row)
-			local w = (r.x2 - r.x1) / 3
-			for i = 1, 3 do
-				local on = cur:find(tostring(i), 1, true) ~= nil
-				local bx = r.x1 + (i - 1) * w
-				if on then
-					gl.Color(0.2, 0.55, 0.25, 0.95)
-				else
-					gl.Color(0.35, 0.12, 0.12, 0.95)
-				end
-				gl.Rect(bx + 1, r.y0, bx + w - 1, r.y1)
-				gl.Color(1, 1, 1, on and 1 or 0.5)
-				gl.Text("T" .. i .. (on and "" or " off"), bx + w / 2, r.y0 + (r.y1 - r.y0 - fs) / 2 + 3 * S, fs, "oc")
-			end
-		elseif r.row then
+		if r.row then
 			local editing = scEdit and scEdit.row.id == r.row.id and scEdit.row.team == r.row.team
 			gl.Color(1, 1, 1, 0.9)
 			gl.Text(r.row.label, r.labelX, r.y0 + (r.y1 - r.y0 - fs) / 2 + 3 * S, fs, "o")
@@ -1817,36 +1698,13 @@ local function drawScenario(rect, mx, my)
 	end
 	gl.Color(0.7, 0.7, 0.7, 1)
 	local last = rects[#rects]
-	if scenarioPage == "ai" then
-		gl.Text("Click a team: the next AI. Saved with the level (Save).", rect.x1 + m.PAD, last.y0 - 22 * S, 17 * S, "o")
-		gl.Text("Applies at the next start of the scenario or the editor (team 1).", rect.x1 + m.PAD, last.y0 - 42 * S, 17 * S, "o")
-		-- Tooltip left of the panel for the row under the mouse pointer
-		for _, r in ipairs(rects) do
-			if r.row and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-				local lines = r.row.team == 1 and TeamAi.tipTeam1 or TeamAi.tip
-				local fsT, lh = 18 * S, 22 * S
-				local w = 0
-				for _, l in ipairs(lines) do
-					w = math.max(w, (tonumber(gl.GetTextWidth(l)) or 0) * fsT)
-				end
-				local bx2 = rect.x1 - 6 * S
-				local by1 = r.y1
-				gl.Color(0, 0, 0, 0.88)
-				gl.Rect(bx2 - w - 16 * S, by1 - #lines * lh - 10 * S, bx2, by1)
-				gl.Color(1, 1, 1, 1)
-				for i, l in ipairs(lines) do
-					gl.Text(l, bx2 - w - 8 * S, by1 - 6 * S - i * lh + 4 * S, fsT, "o")
-				end
-			end
-		end
-	else
-		gl.Text("Click a field to type: Enter done, Esc cancel,", rect.x1 + m.PAD, last.y0 - 22 * S, 17 * S, "o")
-		gl.Text("Shift+Enter = new line in the briefing. Scenario package: start menu key 3.", rect.x1 + m.PAD, last.y0 - 42 * S, 17 * S, "o")
-	end
+	gl.Text("Click a field to type: Enter done, Esc cancel,", rect.x1 + m.PAD, last.y0 - 22 * S, 17 * S, "o")
+	gl.Text("Shift+Enter = new line in the briefing. Scenario package: start menu key 3.", rect.x1 + m.PAD, last.y0 - 42 * S, 17 * S, "o")
 	gl.Color(1, 1, 1, 1)
 end
 
 local function scenarioFinish(accept)
+	tm.finish(accept)
 	local e = scEdit
 	if not e then
 		return
@@ -1885,24 +1743,16 @@ local function saveCurrentLevel()
 end
 
 local function scenarioPress(rect, mx, my)
+	if scenarioPage == "teams" then
+		return tm.press(rect, mx, my)
+	end
 	for _, r in ipairs(scenarioRects(rect)) do
 		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 			scenarioFinish(true)
 			if r.row then
 				local row = r.row
-				if row.kind == "tiers" then
-					local i = math.max(1, math.min(3, math.floor((mx - r.x1) / ((r.x2 - r.x1) / 3)) + 1))
-					local cur, out = scenarioValue(row), ""
-					for k = 1, 3 do
-						if (k == i) ~= (cur:find(tostring(k), 1, true) ~= nil) then
-							out = out .. k
-						end
-					end
-					scenarioSet(row, out)
-				elseif row.kind == "cycle" then
-					local cur = scenarioValue(row)
-					local nxt = (row.id == "role" and ROLE_NEXT or row.id == "ai" and AI_NEXT or row.id == "teamai" and TeamAi.next or WIN_NEXT)[cur] or cur
-					scenarioSet(row, nxt)
+				if row.kind == "cycle" then
+					scenarioSet(row, WIN_NEXT[scenarioValue(row)] or scenarioValue(row))
 				else
 					scEdit = { row = row, buf = scenarioValue(row) }
 					widgetHandler:OwnText()
@@ -2288,17 +2138,16 @@ local function applyHeader0(r)
 		scenarioOpen = not (scenarioOpen and scenarioPage == "info")
 		scenarioPage = "info"
 		optionsOpen = false
-		scTeamsAt = -10
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
 	end
-	if r.kind == "ai" then
+	if r.kind == "teams" then
 		bpGrid:resetEdit()
 		bpGrid:setArmed(false)
 		armedUnit = false
 		armedFeature = false
-		scenarioOpen = not (scenarioOpen and scenarioPage == "ai")
-		scenarioPage = "ai"
+		scenarioOpen = not (scenarioOpen and scenarioPage == "teams")
+		scenarioPage = "teams"
 		optionsOpen = false
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
@@ -2630,8 +2479,19 @@ ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	end,
 })
 
+-- Teams (LevelEditor/scripts/led_teams.lua): alliances, human or AI, start resources
+tm = VFS.Include("luaui/Include/led_teams.lua", nil, VFS.ZIP_FIRST)({
+	Shared = Shared,
+	S = function() return S end,
+	say = function(text) say(text) end,
+	led = function(msg) led(msg) end,
+	serialize = function(v) return td.lua(v, "\t") end,
+	teamUnits = function(t) return Spring.GetTeamUnitCount(t) end,
+})
+
 -- Tower Defense page (LevelEditor/scripts/led_td.lua): the functions of td, with the services of the widget
 VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
+	tm = tm,
 	S = function() return S end,
 	team = function() return team end,
 	grid = function() return grid end,
@@ -2640,7 +2500,6 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 	armedFeature = function() return armedFeature end,
 	unitName = function() return unitName end,
 	currentLevel = function() return currentLevel end,
-	scenario = function() return scenario end,
 	placeQueue = function() return placeQueue end,
 	stampDrag = function() return stampDrag end,
 	mazeKind = function() return mazeKind end,
@@ -2663,8 +2522,6 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 	placed = placed,
 	saveLevel = saveLevel,
 	say = say,
-	scenarioValue = scenarioValue,
-	scenarioTeams = scenarioTeams,
 	contentRect = contentRect,
 	ctf = ctf,
 	rtf = rtf,
@@ -2938,6 +2795,9 @@ end
 
 function widget:MousePress(mx, my, button)
 	rescale()
+	if tm.menuPress(mx, my, button) then
+		return true -- the menu of the alliance colors: every click closes it, a click on a color chooses it
+	end
 	if gen.edit and not inPanel(mx, my) then
 		genFinish(true)
 	end
@@ -3058,8 +2918,10 @@ function widget:MousePress(mx, my, button)
 	end
 	local tr = teamAt(mx, my)
 	if tr then
-		if button == 1 then
-			local tm = tr.team
+		if button == 3 and type(tr.team) == "number" and not tr.gaia then
+			tm.openMenu(tr.team, tr, "left")
+		elseif button == 1 then
+			local tn = tr.team
 			if tr.write then
 				writeOn = not writeOn
 				say(writeOn and "Write: on (placing overwrites what is in the way)" or "Write: off (nothing is placed on occupied spots)")
@@ -3067,14 +2929,14 @@ function widget:MousePress(mx, my, button)
 				delToggle(tr.del)
 			elseif tr.edit then
 				editSelected(tr.edit)
-			elseif tm == "N" then
+			elseif tn == "N" then
 				neutralOn = not neutralOn
 				say(neutralOn and "Neutral: on (new units are neutral)" or "Neutral: off")
 			else
-				team = tm
-				say("Team: " .. tm)
+				team = tn
+				say("Team: " .. tn)
 				if #selectedUnits() > 0 then
-					assign(nil, nil, { tostring(tm) }) -- selected units change team
+					assign(nil, nil, { tostring(tn) }) -- selected units change team
 				end
 			end
 		end
@@ -3369,6 +3231,9 @@ function widget:TextInput(utf8char)
 	end
 	if ar.edit then
 		return ar.text(utf8char)
+	end
+	if tm.edit then
+		return tm.text(utf8char)
 	end
 	if scEdit then
 		return scenarioText(utf8char)
@@ -3937,6 +3802,9 @@ function widget:KeyPress(key, mods, isRepeat)
 	if (td.pick == "corridor" or td.pick == "route") and td.mode == "line" and (key == 13 or key == 271) then
 		td.finishDraw()
 		return true
+	end
+	if tm.edit then
+		return tm.key(key)
 	end
 	if scEdit then
 		return scenarioKey(key, mods)

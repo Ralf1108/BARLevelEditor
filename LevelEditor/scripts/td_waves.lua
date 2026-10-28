@@ -113,8 +113,7 @@ end
 -- The teams the build rule holds for: every human team of the player's ally team (several humans of a LAN game, Copilots included)
 local function playerTeams(cfg)
 	local set = {}
-	local ally = select(6, Spring.GetTeamInfo(cfg.player, false))
-	for _, team in ipairs(Spring.GetTeamList(ally) or {}) do
+	for _, team in ipairs(G.teamsOfAlliance(G.allyOf(cfg.player))) do
 		local isAI = select(4, Spring.GetTeamInfo(team, false))
 		if not isAI or team == cfg.player then
 			set[team] = true

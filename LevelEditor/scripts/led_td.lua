@@ -742,17 +742,9 @@ return function(td, H)
 		if not (c.spawn and c.goal) then
 			return nil, "Cannot start the test: " .. (not c.spawn and not c.goal and "spawn point and goal are missing." or (not c.spawn and "the spawn point is missing." or "the goal is missing."))
 		end
-		local player, enemy
-		for _, t in ipairs(H.scenarioTeams()) do
-			local role = H.scenarioValue({ id = "role", team = t })
-			if role == "s" and not player then
-				player = t
-			elseif role == "e" and not enemy then
-				enemy = t
-			end
-		end
-		player = player or 0
-		enemy = enemy or (player == 0 and 1 or 0)
+		-- the first human team is the player (every human team is a player), the first AI team spawns the waves (all AI teams are enemies)
+		local player = H.tm.player()
+		local enemy = H.tm.enemy(player)
 		local path, waves = {}, {}
 		for _, p in ipairs(td.route()) do
 			path[#path + 1] = string.format("%d,%d", p[1], p[2])
@@ -762,7 +754,7 @@ return function(td, H)
 		end
 		return table.concat({ enemy, player, c.spawn[1], c.spawn[2], c.goal[1], c.goal[2], c.leaks, #path > 0 and table.concat(path, "/") or "-", table.concat(waves, "/"),
 			c.economy ~= false and "economy" or "towers", c.fog ~= false and "1" or "0",
-			math.floor(H.scenario() and tonumber(H.scenario().metal) or 1000), math.floor(H.scenario() and tonumber(H.scenario().energy) or 1000) }, ";")
+			H.tm.row(player).metal, H.tm.row(player).energy }, ";")
 	end
 
 	-- Ends the pick mode (spawn point, goal, corridor, route)

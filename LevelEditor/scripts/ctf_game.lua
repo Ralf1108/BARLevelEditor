@@ -343,7 +343,7 @@ end
 
 -- The units of an alliance blow up (flags and collection points stay)
 local function blowUp(ally)
-	for _, team in ipairs(Spring.GetTeamList(ally) or {}) do
+	for _, team in ipairs(G.teamsOfAlliance(ally)) do
 		for _, id in ipairs(Spring.GetTeamUnits(team)) do
 			if not protected[id] then
 				Spring.DestroyUnit(id, true, false)
@@ -359,7 +359,7 @@ local function finish(ally, lastStanding)
 	end
 	g.state = "won by alliance " .. ally
 	local gaiaAlly = allyOf(Spring.GetGaiaTeamID())
-	for _, a in ipairs(Spring.GetAllyTeamList()) do
+	for _, a in ipairs(G.allianceList()) do
 		if a ~= ally and a ~= gaiaAlly and not g.out[a] then
 			g.out[a] = true
 			blowUp(a)
