@@ -30,7 +30,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 **Play it**
 - Select and command units of every team, with the cheat and god mode switched on for you
 - An AI of your choice for every team (BARb, CircuitAI, Simple AIs, Scavengers, Raptors)
-- Restrictions: forbid units, factions or tech levels for the player
+- Restrictions: restrict units, factions or tech levels for the player
 - Test a level at once: single player, host, join or split screen
 
 **Share it**

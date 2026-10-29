@@ -1123,7 +1123,7 @@ local function searchSet(q)
 	uGrid.scroll, fGrid.scroll, bpGrid.scroll = 0, 0, 0
 end
 
--- Shows a unit in the Units list (crosshair button: the unit clicked on the map; window of the forbidden units: the unit of the row)
+-- Shows a unit in the Units list (crosshair button: the unit clicked on the map; window of the restricted units: the unit of the row)
 function search.locate(name)
 	searchFocus(false)
 	searchSet("")
@@ -1152,7 +1152,7 @@ local function searchRects(x1, x2, top, hb)
 			tip = "Search in recent items, units, features and blueprints at once: type words of the description or the code.\nThe tabs below show how many match (the field is reddish while a text is in it; category buttons do nothing visible until you clear it). Enter = done, Esc = clear." },
 		{ x1 = x2 - pad - 2 * hb - 3, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X", tint = tint, tip = "Clear search" },
 		{ x1 = x2 - pad - hb, x2 = x2 - pad, y0 = top - hb, y1 = top, kind = "restr", value = "restr", label = "R", active = rst.open,
-			tip = "Restrictions: opens a list of the forbidden units next to the menu. A click on a unit in it shows the unit in the Units list." },
+			tip = "Restrictions: opens a list of the restricted units next to the menu. A click on a unit in it shows the unit in the Units list." },
 	}
 end
 
@@ -1380,7 +1380,7 @@ local function inPanel(mx, my)
 		return false
 	end
 	if rst and rst.winAt(mx, my) then
-		return true -- the list of the forbidden units, too
+		return true -- the list of the restricted units, too
 	end
 	if ar and ar.winAt(mx, my) then
 		return true -- the unit window of the Arena page counts as part of the menu: no click goes through it to the map
@@ -1985,7 +1985,7 @@ end
 
 local function drawMenu()
 	drawMenuBody()
-	rst.drawWindow() -- the list of the forbidden units (button R), left of the menu
+	rst.drawWindow() -- the list of the restricted units (button R), left of the menu
 	tm.drawMenu() -- the menu of the alliance colors on top of everything (it can open over the panel: the Alliance cell of the page T)
 	if not collapsed or true then
 		local mx, my = Spring.GetMouseState()
@@ -2889,7 +2889,7 @@ local function panelPress(mx, my, button)
 		if menuMode == "units" then
 			local xi = uGrid:xAt(rect, mx, my)
 			if xi then
-				rst.toggle(uGrid:list()[xi].name) -- the X of a symbol: forbid it for the player in the game, or allow it again
+				rst.toggle(uGrid:list()[xi].name) -- the X of a symbol: restrict it for the player in the game, or allow it again
 				return true
 			end
 			local ui = uGrid:at(rect, mx, my)

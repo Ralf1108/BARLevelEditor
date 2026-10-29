@@ -1807,7 +1807,7 @@ function M.newUnits(o)
 		return self.cache[self.faction][self.group][self.tech]
 	end
 
-	-- Shows the tile of a unit (crosshair button of the Place menu, window of the forbidden units): faction, group and tech are set to the unit's,
+	-- Shows the tile of a unit (crosshair button of the Place menu, window of the restricted units): faction, group and tech are set to the unit's,
 	-- the search is cleared and the next draw scrolls to the tile and lets its frame flash green. Returns true, or nil and a message.
 	function u:locate(name)
 		if not self.cache then
@@ -1963,7 +1963,7 @@ function M.newUnits(o)
 					icon = (kind == "faction") and M.FACTION_ICONS[it[1]] or nil, tint = tint,
 					reserve = rs and (hb * 0.62 + 6) or nil }
 				if rs then
-					-- X in the right end of the button: forbids everything of it (the player cannot build it in the game)
+					-- X in the right end of the button: restricts everything of it (the player cannot build it in the game)
 					local xs = hb * 0.62
 					local what = (kind == "faction" and "this faction") or (kind == "group" and "this group of the chosen faction") or "this tech level (all factions and groups)"
 					rects[#rects + 1] = { x1 = bx + bw - xs - 3, x2 = bx + bw - 3, y0 = t - hb / 2 - xs / 2, y1 = t - hb / 2 + xs / 2, kind = kind .. "x", value = it[1],
@@ -1971,7 +1971,7 @@ function M.newUnits(o)
 						tint = banned and (allow and { 0.1, 0.6, 0.15 } or { 0.85, 0.1, 0.1 }) or { 0.1, 0.1, 0.1 },
 						tip = allow and (banned and ("Allowed: every unit of " .. what .. " is in this army. Click to remove them again.") or
 								("Click: allow every unit of " .. what .. " in this army.")) or
-							banned and ("Forbidden: the player cannot build anything of " .. what .. " in the game. Click to allow it again.") or
+							banned and ("Restricted: the player cannot build anything of " .. what .. " in the game. Click to allow it again.") or
 							("Click: the player cannot build anything of " .. what .. " in the game (you can always place it in the editor).") }
 				end
 			end
@@ -2235,7 +2235,7 @@ function M.newUnits(o)
 			local shot, sps, isAA, shotEnergy, shotMetal = M.shotInfo(e.id)
 			local title = string.format("%s (%s)", human, e.name)
 			if self.restrict and self.restrict.isBanned(e.name) then
-				title = title .. ((self.restrict.style == "allow") and "  - allowed" or "  - forbidden")
+				title = title .. ((self.restrict.style == "allow") and "  - allowed" or "  - restricted")
 			end
 			local items = {
 				{ text = title, fs = 26 },

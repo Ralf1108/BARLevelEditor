@@ -43,7 +43,7 @@ All buttons are in the column at the right edge and in the strip left of the men
 - Select units → **P → Blueprints → Create** saves a layout
 
 **Restrictions and AI**
-- **X** on a unit, faction, group or tech button: forbids it for the player in the game
+- **X** on a unit, faction, group or tech button: restricts it for the player in the game
 - **T**: teams 0–9: human or AI (the AI applies in the scenario), alliance, start resources
 
 ## Scenario builder

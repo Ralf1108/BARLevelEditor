@@ -337,7 +337,7 @@ return function(td, H)
 	end
 
 	-- The restrictions are one list for the whole level (led_restrictions.lua): the Tower Defense page and the Place menu write the same one
-	function td.techBanned(t) -- every unit of the tech level is forbidden (the tech button X of the Place menu does the same)
+	function td.techBanned(t) -- every unit of the tech level is restricted (the tech button X of the Place menu does the same)
 		return H.rst.allBanned(H.uGrid:namesOf("tech", t))
 	end
 
@@ -483,7 +483,7 @@ return function(td, H)
 		local economy, fog = c.economy ~= false, c.fog ~= false
 		line({
 			{ kind = "tdeconomy", label = (economy and "[x] " or "[ ] ") .. "Economy", active = economy,
-				tip = "On: the player can also build economy structures (metal extractors, solar, wind and other power plants, storage, converters); the list below shows them too, so you can forbid single ones. Off: towers only. Towers can always be built." },
+				tip = "On: the player can also build economy structures (metal extractors, solar, wind and other power plants, storage, converters); the list below shows them too, so you can restrict single ones. Off: towers only. Towers can always be built." },
 			{ kind = "tdfog", label = (fog and "[x] " or "[ ] ") .. "Fog of war", active = fog,
 				tip = "On: fog of war in the game, the player can build radars (they are in the list below). Off: no radars, the whole map is visible. The editor always shows the whole map." },
 		})
@@ -518,7 +518,7 @@ return function(td, H)
 			end
 			rects[#rects + 1] = { x1 = rt.x2 - xs - 4 * H.S(), x2 = rt.x2 - 4 * H.S(), y0 = (rt.y0 + rt.y1) / 2 - xs / 2, y1 = (rt.y0 + rt.y1) / 2 + xs / 2, kind = "tdtechx",
 				value = rt.value, label = "", banned = tb,
-				tip = tb and ("Tech level " .. rt.value .. " is forbidden: no unit of it can be built in the game. Click to allow it again.") or
+				tip = tb and ("Tech level " .. rt.value .. " is restricted: no unit of it can be built in the game. Click to allow it again.") or
 					("Click: the player can build no unit of tech level " .. rt.value .. " in the game (all factions).") }
 		end
 		local list = td.turrets(td.tfac, td.ttech, td.tcat)
@@ -536,7 +536,7 @@ return function(td, H)
 				banned = banned, armed = H.armedUnit() and H.unitName() == e.name }
 			local xs = tw * 0.36
 			rects[#rects + 1] = { x1 = tx + tw - xs, x2 = tx + tw, y0 = ty - xs, y1 = ty, kind = "tdban", value = e.name, id = e.id, label = "", banned = banned,
-				tip = banned and "Forbidden: the player cannot build this in the game. Click to allow it again." or
+				tip = banned and "Restricted: the player cannot build this in the game. Click to allow it again." or
 					"Click: the player cannot build this in the game (in the editor you can always place it)." }
 		end
 		y = y - shown * (tw + gapT) - 8 * H.S()
@@ -559,7 +559,7 @@ return function(td, H)
 		return rects, labels, rect.top - y
 	end
 
-	-- Tower tiles: the picture, a red X in the upper right corner (button), a big red X over a forbidden tower; the 3D model and
+	-- Tower tiles: the picture, a red X in the upper right corner (button), a big red X over a restricted tower; the 3D model and
 	-- the data of the tower under the mouse pointer as in the unit list
 	function td.drawTiles(rect, tiles)
 		local mx, my = Spring.GetMouseState()
@@ -621,7 +621,7 @@ return function(td, H)
 			gl.Color(1, 1, 1, 1)
 			local ud = UnitDefs[hover.id]
 			local cx = (rect.x1 + rect.x2) / 2
-			gl.Text(string.format("%s (%s)%s", ud.translatedHumanName or ud.humanName or hover.value, hover.value, hover.banned and "  - forbidden" or ""), cx, rect.y0 - 40 * H.S(), 29 * H.S(), "co")
+			gl.Text(string.format("%s (%s)%s", ud.translatedHumanName or ud.humanName or hover.value, hover.value, hover.banned and "  - restricted" or ""), cx, rect.y0 - 40 * H.S(), 29 * H.S(), "co")
 			gl.Text(string.format("Metal %d   Energy %d", ud.metalCost or 0, ud.energyCost or 0), cx, rect.y0 - 78 * H.S(), 26 * H.S(), "co")
 		end
 	end

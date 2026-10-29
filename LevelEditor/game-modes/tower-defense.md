@@ -37,7 +37,7 @@ Waves of enemy land units walk from a spawn point along a route to a goal. The p
 - **Enemies allowed through**: more leaks = lost
 
 **Restrictions**
-- Red **X** on a tower forbids it for the player
+- Red **X** on a tower restricts it for the player
 - **Economy** on: extractors, power plants and storage are allowed
 - **Fog of war** on: radars are allowed, the map is hidden
 - The list is the same as in the Place menu

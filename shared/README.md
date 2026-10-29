@@ -4,7 +4,7 @@
 
 - Blueprint library (read, sort, rename files, move them to the trash, write new blueprints)
 - Tile grid for blueprints (drag to sort, double click to rename, x to delete, scrolling, search filter, name, count and total cost per tile)
-- Unit catalog with a selection grid (faction, group, tech, sorting, name/description/cost) and the feature grid; for the Level Editor optionally with the red X marks that forbid units (single units, factions, groups, tech levels)
+- Unit catalog with a selection grid (faction, group, tech, sorting, name/description/cost) and the feature grid; for the Level Editor optionally with the red X marks that restrict units (single units, factions, groups, tech levels)
 - Search helpers (words of the code, name and description) and a scrollbar for the lists
 - Settings (gear): columns and rows (and the grid and unit limit of the Level Editor), stored in a config file
 - 3D preview of the models at the mouse pointer

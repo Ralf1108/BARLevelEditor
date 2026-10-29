@@ -91,7 +91,7 @@ return function(host)
 		Spring.SendLuaRulesMsg("rst|stop")
 	end
 
-	-- The window with the forbidden units (button R right of the search field of the Place menu): it sits left of the menu, one row per unit with its
+	-- The window with the restricted units (button R right of the search field of the Place menu): it sits left of the menu, one row per unit with its
 	-- picture; a click on a row shows the unit in the Units list (host.locate, as the crosshair button does). host: Shared, S(), panelRect(), canShow(), locate(name)
 	rst.open = false
 	rst.scroll = 0
@@ -136,7 +136,7 @@ return function(host)
 	local function clearRect(w)
 		local S, m = host.S(), host.Shared.m
 		return { x1 = w.x2 - m.PAD - 224 * S, x2 = w.x2 - m.PAD - 114 * S, y0 = w.top - m.PAD - m.HB, y1 = w.top - m.PAD, kind = "rclear", label = "Clear", fs = 20 * S,
-			tip = "Allow every forbidden unit again" }
+			tip = "Allow every restricted unit again" }
 	end
 
 	local function maxScroll(w)
@@ -158,7 +158,7 @@ return function(host)
 		gl.Color(0.07, 0.07, 0.09, 0.94)
 		gl.Rect(w.x1, w.y0, w.x2, w.top)
 		gl.Color(0.5, 0.8, 1, 1)
-		gl.Text(string.format("Forbidden units (%d)", #list), w.x1 + m.PAD, w.top - m.PAD - m.HB / 2 - 8 * S, 24 * S, "o")
+		gl.Text(string.format("Restricted units (%d)", #list), w.x1 + m.PAD, w.top - m.PAD - m.HB / 2 - 8 * S, 24 * S, "o")
 		local close = closeRect(w)
 		local clear = clearRect(w)
 		host.Shared.drawButtons({ clear, close }, 20 * S, m.HB)
@@ -167,7 +167,7 @@ return function(host)
 		gl.Scissor(w.x1, w.y0, w.x2 - w.x1, w.top - w.head - w.y0)
 		if #list == 0 then
 			gl.Color(0.7, 0.7, 0.7, 1)
-			gl.Text("Nothing is forbidden.", w.x1 + m.PAD, w.top - w.head - 30 * S, 22 * S, "o")
+			gl.Text("Nothing is restricted.", w.x1 + m.PAD, w.top - w.head - 30 * S, 22 * S, "o")
 		end
 		for i, name in ipairs(list) do
 			local y1 = rowTop(w, i)

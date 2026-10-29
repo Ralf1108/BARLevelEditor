@@ -351,7 +351,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID, attackerID)
 end
 
 -- Build orders of the players that are not allowed are refused while the game runs: the restriction to towers (and economy; the units
--- that are forbidden in the level are refused by unit_restrictions.lua, the indestructible buildings are protected by unit_indestructible.lua).
+-- that are restricted in the level are refused by unit_restrictions.lua, the indestructible buildings are protected by unit_indestructible.lua).
 -- Units from factories are not restricted. The message goes only to the team of the order, at most once per unit type every few seconds.
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	local defID = td and td.state == "running" and td.teams[teamID] and G.builtDef(cmdID, cmdParams)
