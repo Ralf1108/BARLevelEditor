@@ -1529,6 +1529,22 @@ function M.shotInfo(unitDefID)
 	return bestDmg, bestSps, bestAA
 end
 
+-- Longest range of a weapon that does damage (0 without one)
+function M.weaponRange(unitDefID)
+	local best = 0
+	local ud = UnitDefs[unitDefID]
+	if ud and WeaponDefs then
+		for _, w in ipairs(ud.weapons or {}) do
+			local wd = WeaponDefs[w.weaponDef]
+			if wd and wd.damages and (tonumber(wd.range) or 0) > best and ((tonumber(wd.damages[(Game.armorTypes or {}).default or 0]) or 0) > 1
+				or (tonumber(wd.damages[(Game.armorTypes or {}).vtol or 14]) or 0) > 1) then
+				best = tonumber(wd.range)
+			end
+		end
+	end
+	return math.floor(best + 0.5)
+end
+
 -- Explosion of a building: damage and radius when destroyed and on self-destruct.
 -- Returns (damage, radius, selfDamage, selfRadius), 0 if there is no explosion.
 local boomCache = {}
@@ -2107,6 +2123,23 @@ function M.newUnits(o)
 			}
 			if shot > 0 then
 				items[#items + 1] = { text = string.format("%s shots/s x %d damage = %s DPS%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   (air)" or ""), fs = 22 }
+			end
+			local range, los = M.weaponRange(e.id), math.floor((ud.losRadius or ud.sightDistance or 0) + 0.5)
+			if range > 0 or los > 0 then
+				local x = (range > 0) and string.format("Range %d", range) or ""
+				if los > 0 then
+					x = x .. ((x ~= "") and "   " or "") .. string.format("Line of sight %d", los)
+				end
+				items[#items + 1] = { text = x, fs = 22 }
+			end
+			local sensors = {}
+			for _, s in ipairs({ { "Radar", ud.radarRadius }, { "Sonar", ud.sonarRadius }, { "Radar jammer", ud.jammerRadius }, { "Sonar jammer", ud.sonarJamRadius } }) do
+				if (tonumber(s[2]) or 0) > 0 then
+					sensors[#sensors + 1] = string.format("%s %d", s[1], math.floor(s[2] + 0.5))
+				end
+			end
+			if #sensors > 0 then
+				items[#items + 1] = { text = table.concat(sensors, "   "), fs = 22 }
 			end
 			if isBuildingDef(ud) then
 				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
