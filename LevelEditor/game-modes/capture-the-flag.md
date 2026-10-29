@@ -1,6 +1,6 @@
 # Capture the Flag
 
-[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11b) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../../specs/capture-the-flag.md) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
 
 ![Capture the Flag page](../../docs/level-editor-capture-the-flag.jpg)
 

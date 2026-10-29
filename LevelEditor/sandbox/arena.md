@@ -1,6 +1,6 @@
 # Arena
 
-[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11e) · [Start page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../../specs/arena.md) · [Start page](../../README.md)
 
 ![Arena page](../../docs/level-editor-arena.jpg)
 

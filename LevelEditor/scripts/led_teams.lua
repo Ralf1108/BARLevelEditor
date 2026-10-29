@@ -1,5 +1,5 @@
 -- Teams of the Level Editor: alliances (the colored frames of the team buttons, right click menu) and the page T (button T): human or AI per
--- team, alliance and start resources. Specification: SPECIFICATION.md section 11f. Loaded by lvl_level_editor.lua
+-- team, alliance and start resources. Specification: specs/teams.md. Loaded by lvl_level_editor.lua
 -- (VFS.Include("luaui/Include/led_teams.lua")) as a function that gets the host (the services of the widget) and returns the table tm; a file of
 -- its own because the widget is close to the limit of 200 local variables. The data (tm.data) is the section teams of the level file.
 --   host.Shared, host.S() (UI scale), host.say(text), host.led(message) (message to the editor gadget), host.serialize(table), host.panelRect(),

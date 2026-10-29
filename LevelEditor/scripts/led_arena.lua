@@ -1,5 +1,5 @@
 -- Arena page of the Level Editor (button A): armies of several teams around an Arena Point, they fight there. A tool, not a game mode:
--- nothing is won or lost, nothing of it is played in a scenario. Specification: SPECIFICATION.md section 11e, user page sandbox/arena.md.
+-- nothing is won or lost, nothing of it is played in a scenario. Specification: specs/arena.md, user page sandbox/arena.md.
 -- Loaded by lvl_level_editor.lua (VFS.Include("luaui/Include/led_arena.lua")) as a function that gets the host (the services of the widget) and
 -- returns the page; a file of its own because the widget is close to the limit of 200 local variables. The settings (ar.data) are saved in
 -- their own section arena of the level file.

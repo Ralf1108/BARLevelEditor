@@ -45,4 +45,4 @@ Play with computers in the same network. No account, no server in the cloud.
 - Tested with two game instances on one computer: Capture the Flag, Reclaim the Fame, Tower Defense, Copilot, scenario transfer, map transfer, version warning
 - Not tested yet: two real computers, three or more players
 
-Technical details: [LAN lobby](../LevelEditor/lan_lobby/README.md)
+Technical details: [LAN Play specification](../specs/lan-play.md)

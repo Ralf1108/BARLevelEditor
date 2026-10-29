@@ -1,6 +1,6 @@
 # Tower Defense
 
-[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11a) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../../specs/tower-defense.md) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
 
 ![Tower Defense page](../../docs/level-editor-tower-defense.jpg)
 

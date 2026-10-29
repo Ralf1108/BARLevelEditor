@@ -89,6 +89,6 @@ One playable level per game mode comes with the editor (start menu key `2`, then
 
 ## More
 
-- [Level Editor readme](../LevelEditor/README.md), [specification](../LevelEditor/SPECIFICATION.md)
+- [Level Editor readme](../LevelEditor/README.md), [specification](../specs/level-editor.md)
 - [Test data](../LevelEditor/test-data/README.md)
 - [Notes on the screenshots](screenshots.md) (what each picture shows, to take them again)

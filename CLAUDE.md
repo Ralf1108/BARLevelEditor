@@ -1,8 +1,8 @@
 # Working on this repository (notes for Claude Code)
 
 A Level Editor and the BluePrinter for Beyond All Reason (BAR): Lua widgets and gadgets that run inside the game engine, PowerShell scripts for setup,
-start menu, scenario builder and lobby. Start with `README.md`; the specifications (`LevelEditor/SPECIFICATION.md`, `BluePrinter/SPECIFICATION.md`,
-`shared/SPECIFICATION.md`) describe the current state and are kept up to date with every change.
+start menu, scenario builder and lobby. Start with `README.md`; the specifications in `specs/` (index: `specs/README.md`) describe the current state for development and are
+kept up to date with every change. They are not the manuals: the READMEs and `docs/` are written for the players and stay as they are.
 
 ## Rules
 - Everything visible and written is English: texts in the game, console menus, comments, documents, file names. No umlauts in texts drawn in the game.

@@ -95,10 +95,10 @@ A small widget for the **official** game that brings blueprints to normal matche
 - **[Using the Level Editor](docs/level-editor-usage.md)**: installation details, keys and controls, scenario builder, game modes
 - **[Using the BluePrinter](docs/blueprinter-usage.md)**: installation, what it does, area attacks
 - **[LAN Play](docs/lan-play.md)** and Copilot
-- [Level Editor](LevelEditor/README.md), [Scenario builder](LevelEditor/scenario/README.md), [LAN Play](LevelEditor/lan_lobby/README.md), [BluePrinter](BluePrinter/README.md)
+- [Level Editor](LevelEditor/README.md), [Scenario builder](LevelEditor/scenario/README.md), [BluePrinter](BluePrinter/README.md)
 - Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
 - Sandbox: [Arena](LevelEditor/sandbox/arena.md)
-- Specifications: [Level Editor](LevelEditor/SPECIFICATION.md), [BluePrinter](BluePrinter/SPECIFICATION.md), [shared code](shared/SPECIFICATION.md)
+- Specifications (for development): [specs](specs/README.md)
 
 Windows only for now. Not an official Beyond All Reason project. Please report anything that does not work as described.
 

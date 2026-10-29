@@ -1500,7 +1500,7 @@ local function drawTeamStrip()
 			cr, cg, cb = Shared.teamColor(r.team)
 		end
 		if type(r.team) == "number" and not r.gaia then
-			tm.drawButton(r, sel, cr, cg, cb) -- the frame in the color of the alliance, the team color inside (11f)
+			tm.drawButton(r, sel, cr, cg, cb) -- the frame in the color of the alliance, the team color inside (specs/teams.md)
 		else
 			gl.Color(0, 0, 0, 0.65)
 			gl.Rect(r.x1, r.y0, r.x2, r.y1)

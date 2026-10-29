@@ -1,6 +1,6 @@
 # Reclaim the Fame
 
-[Level Editor manual](../README.md) · [Specification](../SPECIFICATION.md) (section 11d) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
+[Level Editor manual](../README.md) · [Specification](../../specs/reclaim-the-fame.md) · [Scenario builder](../scenario/README.md) · [Start page](../../README.md)
 
 ![Reclaim the Fame page](../../docs/level-editor-reclaim-the-fame.jpg)
 

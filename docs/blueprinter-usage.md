@@ -43,4 +43,4 @@ Spread the shots or bombs of all selected units over an area (bombers, artillery
 
 ## More
 
-- [BluePrinter manual](../BluePrinter/README.md), [specification](../BluePrinter/SPECIFICATION.md)
+- [BluePrinter manual](../BluePrinter/README.md), [specification](../specs/blueprinter.md)
