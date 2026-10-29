@@ -1871,6 +1871,9 @@ local function drawWorldInner()
 					if i <= ghost.max then
 						ghost:draw("s" .. i, ud1.id, team, x, y, z, f * (math.pi / 2))
 					end
+					if i <= 40 then
+						Shared.drawRangeCircles(x, z, ud1.id) -- red: weapon range, blue: line of sight
+					end
 				end
 			end
 		elseif ud1 then
@@ -1887,6 +1890,7 @@ local function drawWorldInner()
 					outline({ x = x, z = z }, hx, hz, y + 4, 1, 0.3, 0.3, 0.9)
 				end
 				ghost:draw("u", ud1.id, Spring.GetMyTeamID(), x, y, z, f * (math.pi / 2))
+				Shared.drawRangeCircles(x, z, ud1.id) -- red: weapon range, blue: line of sight
 			end
 		end
 		local bp = bpGrid.armed and LIST[bpGrid.selected] or nil
@@ -1925,6 +1929,31 @@ local function drawWorldInner()
 		end
 		gl.LineWidth(1)
 		gl.Color(1, 1, 1, 1)
+		-- circles of all buildings of the blueprint (together: what the whole blueprint covers; at most 120 buildings with circles)
+		if bp then
+			local mx, my = Spring.GetMouseState()
+			local _, pos = Spring.TraceScreenRay(mx, my, true)
+			if pos and not inPanel(mx, my) then
+				local centers = { { x = snap16(pos[1]), z = snap16(pos[3]) } }
+				if stampDrag and stampDrag.bp then
+					centers = bpStampList(bp, pos[1], pos[3])
+				end
+				local circles = 120
+				for _, ctr in ipairs(centers) do
+					for _, u in ipairs(bp.units) do
+						local ud = UnitDefNames[u.name]
+						if circles > 0 and ud and (ud.isBuilding or not ud.canMove) then
+							local dx, dz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, rot)
+							local f = (headingToFacing(u.rot) + rot) % 4
+							local x, _, z = buildPos(ud, ctr.x + dx, ctr.z + dz, f)
+							if Shared.drawRangeCircles(x, z, ud.id) then
+								circles = circles - 1
+							end
+						end
+					end
+				end
+			end
+		end
 		-- 3D models (for large blueprints only the ghost.max buildings closest to the center)
 		if bp then
 			local mx, my = Spring.GetMouseState()
