@@ -10,6 +10,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 - [Game modes](#game-modes)
 - [Sandbox](#sandbox)
 - [BluePrinter](#blueprinter)
+- [LAN Play](#lan-play)
 - [Installation (Windows)](#installation-windows)
 - [Documentation](#documentation)
 - [Other useful links](#other-useful-links)
@@ -35,7 +36,6 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 
 **Share it**
 - Scenario builder: a level becomes a ZIP with briefing, AI opponents and win condition that others start with their own BAR
-- [LAN Play](docs/lan-play.md): host and join games in the same network, with Copilot (two people play one player)
 
 | Blueprints | Generate: units | Generate: maze |
 |---|---|---|
@@ -80,6 +80,20 @@ A small widget for the **official** game that brings blueprints to normal matche
 | Blueprints | Buildings |
 |---|---|
 | ![BluePrinter, Blueprints view](docs/blueprinter-blueprints.jpg) | ![BluePrinter, Buildings view](docs/blueprinter-buildings.jpg) |
+
+## LAN Play
+
+Play with computers in the same network, no account and no server in the cloud. A new entry **LAN Play** in the main menu of the game, right below Multiplayer, opens the normal battle room (map, options, AIs, teams, chat); the normal Multiplayer is not touched.
+
+- **Host a LAN game**, or pick a game that shows up in the list by itself, or type the host's address
+- **Custom Scenario**: the host picks a scenario built with the Level Editor; map and teams are set and the other players get the scenario's game file automatically
+- **Copilot**: two or more people of a team play **one** player together, for example one fights and one builds
+- A missing map is fetched from the host over the network and checked against the list of official maps; different versions of LAN Play are reported with a warning
+- Installed together with the Level Editor. Only computers of the local network (or a VPN such as Tailscale or Hamachi) can join
+
+<img src="docs/lanPlay.png" alt="LAN Play: the menu entry on the left, Host a LAN game on the page" width="740">
+
+More in [LAN Play](docs/lan-play.md).
 
 ## Installation (Windows)
 
