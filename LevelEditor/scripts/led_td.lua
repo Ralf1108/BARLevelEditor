@@ -157,10 +157,12 @@ return function(td, H)
 				td.tcache[f] = { {}, {}, {} }
 				for t = 1, 3 do
 					local buckets = { tower = {}, economy = {}, radar = {} }
-					for _, e in ipairs(cache[f].buildings[t]) do
-						local cls = e.rank < 100 and H.Shared.buildClass(UnitDefs[e.id])
-						if cls then
-							buckets[cls][#buckets[cls] + 1] = { name = e.name, id = e.id, class = cls }
+					for _, g in ipairs({ "buildings", "turrets" }) do
+						for _, e in ipairs(cache[f][g][t]) do
+							local cls = e.rank < 100 and H.Shared.buildClass(UnitDefs[e.id])
+							if cls then
+								buckets[cls][#buckets[cls] + 1] = { name = e.name, id = e.id, class = cls }
+							end
 						end
 					end
 					for _, cls in ipairs({ "tower", "economy", "radar" }) do

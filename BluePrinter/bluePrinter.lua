@@ -162,15 +162,17 @@ local function factionBuildable(f)
 		return true
 	end
 	for tl = 1, 3 do
-		for _, e in ipairs(uGrid.cache[f].buildings[tl]) do
-			if buildable[e.id] then
-				return true
+		for _, g in ipairs({ "buildings", "turrets" }) do
+			for _, e in ipairs(uGrid.cache[f][g][tl]) do
+				if buildable[e.id] then
+					return true
+				end
 			end
 		end
 	end
 	return false
 end
-uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings" }, factions = { "arm", "cor", "leg" }, -- no Scavengers or Raptors: their units exist only with forceallunits
+uGrid = Shared.newUnits({ cfg = cfg, groups = { "buildings", "turrets" }, factions = { "arm", "cor", "leg" }, -- no Scavengers or Raptors: their units exist only with forceallunits
 	factionUsable = factionBuildable, canUse = canBuildNow, searchLabel = "Search Buildings",
 	ownText = function(on)
 		if on then

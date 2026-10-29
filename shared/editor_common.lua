@@ -1436,7 +1436,7 @@ M.FACTIONS = { { "arm", "Armada" }, { "cor", "Cortex" }, { "leg", "Legion" }, { 
 -- Faction symbols (in the game under sidepics/), left in the faction button
 M.FACTION_ICONS = { arm = "sidepics/armada.png", cor = "sidepics/cortex.png", leg = "sidepics/Legion.png", rap = "icons/raptor.png" }
 M.GROUPS = {
-	{ "buildings", "Buildings" }, { "bot", "Bots" }, { "vehicle", "Vehicles" }, { "hover", "Hover" },
+	{ "buildings", "Buildings" }, { "turrets", "Turrets" }, { "bot", "Bots" }, { "vehicle", "Vehicles" }, { "hover", "Hover" },
 	{ "air", "Air" }, { "ships", "Ships" },
 }
 M.TECHS = { { 1, "T1" }, { 2, "T2" }, { 3, "T3" } }
@@ -1444,6 +1444,10 @@ M.TECHS = { { 1, "T1" }, { 2, "T2" }, { 3, "T3" } }
 local function unitGroup(ud)
 	local mc = ud.modCategories or {}
 	if ud.isBuilding or not ud.canMove then
+		-- turrets: buildings with a weapon (no factories, no mines and other explosive buildings)
+		if #(ud.weapons or {}) > 0 and not ud.isFactory and (ud.customParams or {}).unitgroup ~= "explo" then
+			return "turrets"
+		end
 		return "buildings"
 	elseif mc.ship or mc.underwater then
 		return "ships"
@@ -1477,6 +1481,9 @@ local function unitRank(ud, group, cp)
 	local ug = cp.unitgroup
 	local weapons = (ud.weapons and #ud.weapons) or 0
 	local mc = ud.modCategories or {}
+	if group == "turrets" then
+		return 2
+	end
 	if group == "buildings" then
 		if ud.isFactory then
 			return 1
@@ -1692,7 +1699,7 @@ function M.buildUnitCache()
 			local list = fac[group][tech]
 			local filler = group == "buildings" and cp.objectify ~= nil -- dragon teeth, walls ... you hardly need
 			local minW = tonumber(ud.minWaterDepth) or 0
-			local water = (group == "buildings" and (minW > 0 or (ud.floatOnWater and minW >= 0)))
+			local water = ((group == "buildings" or group == "turrets") and (minW > 0 or (ud.floatOnWater and minW >= 0)))
 				or (group == "air" and (tonumber(ud.maxWaterDepth) or 0) > 0) -- water buildings or seaplanes
 			water = water and true or false
 			-- the Scavengers hold the units of all three factions: first all of Armada, then Cortex, then Legion (and the units of their own), each in the order of the other factions

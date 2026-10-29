@@ -127,12 +127,12 @@ Options: `cfg`, `groups` (offer only these groups; default all), `factions` (off
 
 ### 9.1 Selection
 - Factions: Armada (`arm`), Cortex (`cor`), Legion (`leg`) – by the name prefix – and, since 2026-10-27, **Scavengers** (`scv`: every name ending in `_scav`, the copies of all units of the three factions and the units of their own) and **Raptors** (`rap`: names starting with `raptor_`). `M.factionOf(name)` gives the key. These two exist only with the game option `forceallunits` (the lists are empty otherwise and say so); there is no AI that steers them.
-- Groups in this order: **Buildings, Bots, Vehicles, Hover, Air, Ships**. Tech: T1 to T3 (`customParams.techlevel`, limited to 1 to 3, default 1; `M.techLevel(ud)` counts every unit named "Epic ..." or with an epic movement class as T3, because BAR files a few of them under T1 / T2).
+- Groups in this order: **Buildings, Turrets, Bots, Vehicles, Hover, Air, Ships**. Tech: T1 to T3 (`customParams.techlevel`, limited to 1 to 3, default 1; `M.techLevel(ud)` counts every unit named "Epic ..." or with an epic movement class as T3, because BAR files a few of them under T1 / T2).
 - Excluded (for the Scavengers the name without `_scav` is tested): names with "scav" (except the `_scav` copies), "decom", "comlvl<digit>" (the commander variants level 2 to 10), "dummy", "drone", `customParams.isdrone`, and also decoration (names with `_` at the fourth position like `arm_leftshoulder_nationwars_*`, `cor_hat_*`, and names with `_wings`).
 - The catalog is built once from `UnitDefs`: `[faction][group][tech]`.
 
 ### 9.2 Group assignment (order of the checks)
-1. Buildings: `isBuilding` or not mobile.
+1. Buildings: `isBuilding` or not mobile. Of these the **Turrets** are those with a weapon (not factories, not `unitgroup` `explo` such as mines); the rest stays in Buildings.
 2. Ships: category `ship` or `underwater`.
 3. Air: `canFly`.
 3a. Raptors (names starting with `raptor_`): bots. Their movement classes are called `RAPTORSMALLHOVER` and so on although they walk; without this check 76 of 124 raptors landed in Hover (found 2026-10-27).
@@ -146,7 +146,8 @@ Background: the category `BOT` no longer exists in BAR; bots are therefore sorte
 ### 9.3 Sorting within group and tech
 Sort key `rank = (faction block 10000) + (filler 1000) + (water 100) + kind`, then alphabetically by name. Smaller = further front. The faction block is 0 for every faction except the Scavengers, whose list holds the units of all three factions: 1 for the `arm...` units, 2 for `cor...`, 3 for `leg...`, 4 for their own units (`dice`, `lootboxbronze`, ...); so each of them stands in the usual order (economy, factories, turrets, utility, water, fillers) one after the other.
 
-- **Buildings:** kind 0 economy (`unitgroup` energy/metal, metal extractors; storage belongs here), 1 factories (`isFactory`), 2 turrets (weapons, not `explo`), 3 other (radar, mines, nano turrets, shields …). **Land first, then water** (water buildings: `minWaterDepth > 0` or floating with `minWaterDepth >= 0`). **Fillers** (dragon teeth, walls: `customParams.objectify`) at the very back.
+- **Turrets:** all the same kind (2); land before water (as for Buildings).
+- **Buildings:** kind 0 economy (`unitgroup` energy/metal, metal extractors; storage belongs here), 1 factories (`isFactory`), 3 other (radar, mines, nano turrets, shields …). **Land first, then water** (water buildings: `minWaterDepth > 0` or floating with `minWaterDepth >= 0`). **Fillers** (dragon teeth, walls: `customParams.objectify`) at the very back.
 - **Bots:** 0 construction bots (everything that can build), 1 combat bots (with weapons), 2 support bots (without weapons: radar, jammers …), 3 commander bots.
 - **Vehicles, hover, ships:** 0 builders, 1 rest (combat).
 - **Air:** land aircraft first: 0 construction aircraft, 1 scouts and radar aircraft (`lightairscout` or `unitgroup = util`), 2 interceptors (`unitgroup = aa`), 3 attack aircraft (other armed ones), 4 transport aircraft (transport capacity > 0 and no weapons, at the very back). **After that the seaplanes** (`maxWaterDepth > 0`) in the same structure: construction aircraft first, then combat aircraft.
