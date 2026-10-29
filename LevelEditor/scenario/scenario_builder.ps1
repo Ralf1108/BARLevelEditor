@@ -84,21 +84,6 @@ function AskInt([string]$prompt, $default, [int]$lo, [int]$hi) {
     }
 }
 
-function ConvertTo-Tiers($v) {
-    $s = ''
-    foreach ($k in '1', '2', '3') { if ("$v".Contains($k)) { $s += $k } }
-    return $s
-}
-
-# allowed tech tiers of a team, e.g. "123" (all), "12", "1"; empty = nothing
-function AskTiers([string]$prompt, $default = '123') {
-    while ($true) {
-        $v = Ask "$prompt (digits of the allowed tiers, e.g. 123 = all, 12, 1)" $default
-        if ($v -match '^[1-3]*$') { return (ConvertTo-Tiers $v) }
-        Write-Host '   Please enter digits from 1, 2, 3.'
-    }
-}
-
 function AskMultiline([string]$prompt, [string]$default = '') {
     if ($Auto) { return $default }
     Write-Host "$prompt (several lines possible; an empty line ends, Enter alone takes the default)"

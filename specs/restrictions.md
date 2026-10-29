@@ -45,10 +45,6 @@ Synced; in the extra game `LevelEditorMod.sdz` and in every scenario package wit
 
 `Read-Restrictions` in `scenario_builder.ps1` reads the section. With a non-empty list the package gets the game option `restrictions`, the gadget file and `bar_rules.lua`; the starter starts it, like every scenario, with the extra game "Level Editor Scenarios <version>" ([Scenario builder](scenario-builder.md)).
 
-## 6. Leftover code
-
-The per-team tech restriction no longer exists in the editor, but code for it is still there and nothing produces its data: `unit_restrictions.lua` (the game option `techtiers`, `startTiers`, `TECH_REASON`), `scenario_briefing.lua` (`info.tiers`) and the tier question helper in `scenario_builder.ps1`. It can be removed.
-
-## 7. Not checked
+## 6. Not checked
 
 A real mouse click on an X; the greyed-out build menu in a real game.

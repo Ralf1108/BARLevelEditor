@@ -67,23 +67,6 @@ local function layout()
 		wrap(string.format("Grace period: %d:%02d minutes. Until then every side stays in its start area and is safe from damage there.",
 			math.floor(total / 60), total % 60), pw - 2 * fontSize, lines, "body")
 	end
-	if type(info.tiers) == "table" then
-		local parts = {}
-		for team, allowed in pairs(info.tiers) do
-			local t = {}
-			for k in tostring(allowed):gmatch("[123]") do
-				t[#t + 1] = "T" .. k
-			end
-			parts[#parts + 1] = { tonumber(team) or 0, "Team " .. team .. ": " .. (#t > 0 and ("only " .. table.concat(t, "+")) or "nothing") }
-		end
-		table.sort(parts, function(a, b) return a[1] < b[1] end)
-		local txt = {}
-		for _, p in ipairs(parts) do
-			txt[#txt + 1] = p[2]
-		end
-		lines[#lines + 1] = { "", "body" }
-		wrap("Tech restriction: " .. table.concat(txt, "; ") .. " (the other teams have no restriction).", pw - 2 * fontSize, lines, "body")
-	end
 	lines[#lines + 1] = { "", "body" }
 	lines[#lines + 1] = { "Click, Esc or Enter closes. /briefing shows it again.", "dim" }
 	local lh = fontSize * 1.3
