@@ -1152,6 +1152,7 @@ local function searchRects(x1, x2, top, hb)
 			tip = "Search in recent items, units, features and blueprints at once: type words of the description or the code.\nThe tabs below show how many match (the field is reddish while a text is in it; category buttons do nothing visible until you clear it). Enter = done, Esc = clear." },
 		{ x1 = x2 - pad - 2 * hb - 3, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X", tint = tint, tip = "Clear search" },
 		{ x1 = x2 - pad - hb, x2 = x2 - pad, y0 = top - hb, y1 = top, kind = "restr", value = "restr", label = "R", active = rst.open,
+			tint = (rst.data and #rst.data.banned > 0) and (rst.open and { 0.85, 0.2, 0.2 } or { 0.6, 0.1, 0.1 }) or nil, -- red: at least one unit is restricted
 			tip = "Restrictions: opens a list of the restricted units next to the menu. A click on a unit in it shows the unit in the Units list." },
 	}
 end
@@ -2747,6 +2748,9 @@ local function paintPlace(kind, x, z)
 		led(string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, x, z, facing, neutralOn and 1 or 0))
 	end
 	notePlaced(name, x, z, face, isF)
+	if isF then
+		recent:add("feature", name)
+	end
 	return true
 end
 
@@ -2921,6 +2925,11 @@ local function panelPress(mx, my, button)
 				armedFeature = false
 				bpGrid:setArmed(false)
 				say("Unit: " .. name)
+			elseif kind == "feature" then
+				armedFeature = name
+				armedUnit = false
+				bpGrid:setArmed(false)
+				say("Feature: " .. name .. ". Left click places, right click ends, Del deletes.")
 			elseif kind == "bp" then
 				local i = lib:index(name)
 				if i then
@@ -3369,6 +3378,9 @@ function widget:MouseRelease(mx, my, button)
 					notePlaced(armedFeature, p.x, p.z, 0, true)
 					n = n + 1
 				end
+			end
+			if n > 0 then
+				recent:add("feature", armedFeature)
 			end
 			say(string.format("%d x %s placed%s", n, armedFeature, n < #list and (" (" .. (#list - n) .. " occupied)") or ""))
 		elseif bp and pos and canEdit() then

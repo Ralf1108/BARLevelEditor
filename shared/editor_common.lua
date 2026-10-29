@@ -2665,6 +2665,9 @@ function M.newFeatures(o)
 	local f = { cfg = o.cfg, kind = "tree", scroll = 0, query = "", focus = false, ownText = o.ownText, cache = nil }
 
 	function f:list()
+		if self.override then
+			return self.override -- the Recent tab: only the recently placed features
+		end
 		if not self.cache then
 			self.cache = M.buildFeatureCache()
 		end
@@ -2942,11 +2945,12 @@ function M.newRecent(file, maxN)
 	return r
 end
 
--- Favorites view: on top the recently chosen blueprints (text lines), below the recently placed units (symbols).
+-- Favorites view: on top the recently chosen blueprints (text lines), below the recently placed units (symbols), at the bottom the recently placed features.
 -- o: { cfg, recent, lib, canUse }
 function M.newFav(o)
 	local v = { recent = o.recent, lib = o.lib, scroll = 0, query = "" }
 	v.units = M.newUnits({ cfg = o.cfg, canUse = o.canUse, search = false })
+	v.feats = M.newFeatures({ cfg = o.cfg })
 
 	local BP_ROWS = 6
 
@@ -2979,7 +2983,18 @@ function M.newFav(o)
 		return out
 	end
 
-	-- Split: blueprints header, rows, units header, rest = units area
+	function v:featureList()
+		local out = {}
+		for _, n in ipairs(self.recent:list("feature")) do
+			local fd = FeatureDefNames[n]
+			if fd and (self.query == "" or M.matches(self.query, M.featureSearchText(n, fd.id))) then
+				out[#out + 1] = { name = n, id = fd.id }
+			end
+		end
+		return out
+	end
+
+	-- Split: blueprints header, rows, units header, units area, features header, features area (two rows of tiles)
 	function v:layout(rect)
 		local S = M.S
 		local head = 34 * S
@@ -2994,13 +3009,16 @@ function M.newFav(o)
 			y = y - self:rowH()
 		end
 		local uhead = y - 6 * S
-		local urect = { x1 = rect.x1, x2 = rect.x2, y0 = rect.y0, top = uhead - head }
-		return rows, uhead, urect
+		local fh = head + 2 * (math.floor(M.m.UCELL * 0.4) + 3) + 2 * M.m.UPAD
+		local ftop = rect.y0 + fh
+		local frect = { x1 = rect.x1, x2 = rect.x2, y0 = rect.y0, top = ftop - head }
+		local urect = { x1 = rect.x1, x2 = rect.x2, y0 = ftop + 6 * S, top = uhead - head }
+		return rows, uhead, urect, frect, ftop
 	end
 
 	function v:draw(rect, mx, my, hot)
 		local S = M.S
-		local rows, uhead, urect = self:layout(rect)
+		local rows, uhead, urect, frect, ftop = self:layout(rect)
 		gl.Color(0.5, 0.8, 1, 1)
 		gl.Text("Recently chosen blueprints", rect.x1 + M.m.PAD, rect.top - 26 * S, 24 * S, "o")
 		gl.Color(1, 1, 1, 1)
@@ -3027,14 +3045,26 @@ function M.newFav(o)
 		gl.Color(1, 1, 1, 1)
 		self.units.override = self:unitList()
 		self.units:draw(urect, mx, my, nil, nil, hot)
+		gl.Color(0.5, 0.8, 1, 1)
+		gl.Text("Recently placed features", rect.x1 + M.m.PAD, ftop - 26 * S, 24 * S, "o")
+		gl.Color(1, 1, 1, 1)
+		self.feats.override = self:featureList()
+		self.feats:draw(frect, mx, my, nil, hot)
 	end
 
-	-- returns "bp", name or "unit", name
+	-- returns "bp", name, "unit", name or "feature", name
 	function v:press(rect, mx, my)
-		local rows, _, urect = self:layout(rect)
+		local rows, _, urect, frect = self:layout(rect)
 		for _, r in ipairs(rows) do
 			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
 				return "bp", r.name
+			end
+		end
+		self.feats.override = self:featureList()
+		if my <= frect.top and my >= frect.y0 then
+			local i = self.feats:at(frect, mx, my)
+			if i then
+				return "feature", self.feats.override[i].name
 			end
 		end
 		self.units.override = self:unitList()
@@ -3047,13 +3077,19 @@ function M.newFav(o)
 	end
 
 	function v:wheel(rect, up)
-		local _, _, urect = self:layout(rect)
+		local _, _, urect, frect = self:layout(rect)
+		local _, my = Spring.GetMouseState()
+		if my <= frect.top then
+			self.feats.override = self:featureList()
+			self.feats:wheel(frect, up)
+			return
+		end
 		self.units.override = self:unitList()
 		self.units:wheel(urect, up)
 	end
 
 	function v:matchCount() -- entries shown (the search applies to both parts)
-		return #self:bpNames() + #self:unitList()
+		return #self:bpNames() + #self:unitList() + #self:featureList()
 	end
 
 	function v:size()
