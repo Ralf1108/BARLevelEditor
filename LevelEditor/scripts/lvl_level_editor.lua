@@ -1565,21 +1565,24 @@ local function drawTeamStrip()
 			else
 				lines = tm.tipLines(r.team)
 			end
-			local fs = 20 * S
-			local w = 0
-			for _, l in ipairs(lines) do
-				w = math.max(w, gl.GetTextWidth(l) * fs)
-			end
-			local tx2 = r.x1 - 8 * S
-			local tx1 = tx2 - w - 16 * S
-			local th = #lines * (fs + 4 * S) + 10 * S
-			local ty1 = r.y1
-			gl.Color(0, 0, 0, 0.85)
-			gl.Rect(tx1, ty1 - th, tx2, ty1)
-			gl.Color(1, 1, 1, 1)
-			for i, l in ipairs(lines) do
-				gl.Text(l, tx1 + 8 * S, ty1 - 5 * S - i * (fs + 4 * S) + 4 * S, fs, "o")
-			end
+			-- drawn at the end of the frame (Shared.flushTip), on top of every window
+			local rx1, ry1 = r.x1, r.y1
+			Shared.pendingTip = { fn = function()
+				local fs = 20 * S
+				local w = 0
+				for _, l in ipairs(lines) do
+					w = math.max(w, gl.GetTextWidth(l) * fs)
+				end
+				local tx2 = rx1 - 8 * S
+				local tx1 = tx2 - w - 16 * S
+				local th = #lines * (fs + 4 * S) + 10 * S
+				gl.Color(0, 0, 0, 0.85)
+				gl.Rect(tx1, ry1 - th, tx2, ry1)
+				gl.Color(1, 1, 1, 1)
+				for i, l in ipairs(lines) do
+					gl.Text(l, tx1 + 8 * S, ry1 - 5 * S - i * (fs + 4 * S) + 4 * S, fs, "o")
+				end
+			end }
 			break
 		end
 	end
