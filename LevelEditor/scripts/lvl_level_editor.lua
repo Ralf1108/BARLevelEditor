@@ -2966,8 +2966,18 @@ function widget:MousePress(mx, my, button)
 			if kind == "unit" and Spring.ValidUnitID(id) then
 				search.pick = false
 				search.locate(UnitDefs[Spring.GetUnitDefID(id)].name)
+			elseif kind == "feature" and FeatureDefs[Spring.GetFeatureDefID(id)] then
+				-- a wreck or heap: "armsolar_dead" / "armsolar_heap" belong to the unit "armsolar"
+				local fname = FeatureDefs[Spring.GetFeatureDefID(id)].name or ""
+				local base = fname:match("^(.+)_dead%d*$") or fname:match("^(.+)_heap%d*$")
+				if base and UnitDefNames[base] then
+					search.pick = false
+					search.locate(base)
+				else
+					say("This feature does not come from a unit: " .. fname)
+				end
 			else
-				say("No unit there: click on a unit")
+				say("No unit there: click on a unit or a wreck")
 			end
 			return true
 		elseif button == 3 then
