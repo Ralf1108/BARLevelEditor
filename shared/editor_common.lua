@@ -2168,7 +2168,7 @@ function M.newUnits(o)
 				items[#items + 1] = it
 			end
 			if shot > 0 then
-				items[#items + 1] = { text = string.format("%s DPS = %s shots/s x %d damage%s", fmtRate(shot * sps), fmtRate(sps), shot, isAA and "   (air)" or ""), fs = 22 }
+				items[#items + 1] = { text = string.format("%s DPS = %s shots/s x %d dmg%s", fmtRate(shot * sps), fmtRate(sps), shot, isAA and "   (air)" or ""), fs = 22 }
 			end
 			for _, it in ipairs(M.reachItems({ e.id })) do
 				items[#items + 1] = it
@@ -2176,10 +2176,10 @@ function M.newUnits(o)
 			-- Damage to the units around when it is destroyed and when it blows itself up (power plants can hit neighbors hard)
 			local bd, br, sd, sr = M.explosionInfo(e.id)
 			if bd > 0 then
-				items[#items + 1] = { text = string.format("Destroyed: %d damage, radius %d", bd, br), fs = 22 }
+				items[#items + 1] = { text = string.format("Destroyed: %d dmg, radius %d", bd, br), fs = 22 }
 			end
 			if sd > 0 then
-				items[#items + 1] = { text = string.format("Self-destruct: %d damage, radius %d", sd, sr), fs = 22 }
+				items[#items + 1] = { text = string.format("Self-destruct: %d dmg, radius %d", sd, sr), fs = 22 }
 			end
 			local lines, h = M.infoLayout(items, size + 2 * M.infoGap())
 			local _, uy = self:geom(rect, hoverIdx)
