@@ -1183,7 +1183,7 @@ function M.newGrid(o)
 				local size = M.PREVIEW_SIZE * S
 				local c = M.blueprintCost(bp.units)
 				local items = { { text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 } }
-				for _, it in ipairs(M.costItems(c.metal, c.energy)) do
+				for _, it in ipairs(M.costItems(c.metal, c.energy, " (Sum)")) do
 					items[#items + 1] = it
 				end
 				-- the largest range, sight, radar, sonar and jammer value of all units in it
@@ -1196,7 +1196,7 @@ function M.newGrid(o)
 							ids[#ids + 1] = d.id
 						end
 					end
-					reach = M.reachItems(ids)
+					reach = M.reachItems(ids, true)
 					reachCache[bp.units] = reach
 				end
 				for _, it in ipairs(reach) do
@@ -1547,13 +1547,16 @@ function M.shotInfo(unitDefID)
 	return bestDmg, bestSps, bestAA
 end
 
--- Info lines Range, Line of sight, Radar, Radar jammer, Sonar, Sonar jammer (one line each) of a list of unit def ids; with several units the largest
--- value of each is shown (a blueprint). Only the values above 0.
-function M.reachItems(ids)
-	local best = {}
+-- Info lines Range, LoS, Speed, Radar, Radar jammer, Sonar, Sonar jammer (one line each) of a list of unit def ids. Only the values above 0.
+-- blueprint = true: the largest value of each over all units, but for Speed the smallest one (the slowest unit that moves), marked "(Min)".
+function M.reachItems(ids, blueprint)
+	local best, slowest = {}, nil
 	for _, id in ipairs(ids) do
 		local ud = UnitDefs[id]
 		if ud then
+			if (tonumber(ud.speed) or 0) > 0 then
+				slowest = math.min(slowest or ud.speed, ud.speed)
+			end
 			local v = { M.weaponRange(id), ud.losRadius or ud.sightDistance, ud.radarRadius, ud.sonarRadius, ud.jammerRadius, ud.sonarJamRadius }
 			for i = 1, 6 do
 				best[i] = math.max(best[i] or 0, tonumber(v[i]) or 0)
@@ -1561,10 +1564,10 @@ function M.reachItems(ids)
 		end
 	end
 	local items = {}
-	for _, s in ipairs({ { "Range", 1 }, { "Line of sight", 2 }, { "Radar", 3 }, { "Radar jammer", 5 }, { "Sonar", 4 }, { "Sonar jammer", 6 } }) do
-		local n = math.floor((best[s[2]] or 0) + 0.5)
+	for _, s in ipairs({ { "Range", 1 }, { "LoS", 2 }, { "Speed", 7 }, { "Radar", 3 }, { "Radar jammer", 5 }, { "Sonar", 4 }, { "Sonar jammer", 6 } }) do
+		local n = math.floor(((s[2] == 7) and slowest or best[s[2]] or 0) + 0.5)
 		if n > 0 then
-			items[#items + 1] = { text = string.format("%s %d", s[1], n), fs = 22 }
+			items[#items + 1] = { text = string.format("%s %d%s", s[1], n, (s[2] == 7 and blueprint) and " (Min)" or ""), fs = 22 }
 		end
 	end
 	return items
@@ -2448,10 +2451,11 @@ end
 
 -- "Metal 100   Energy 1500   (Eco time 1:25)" as parts that wrap only between the parts
 -- Metal, Energy and Eco time as three lines (items of M.infoLayout)
-function M.costItems(metal, energy)
+function M.costItems(metal, energy, suffix)
+	suffix = suffix or ""
 	return {
-		{ text = string.format("Metal %d", metal or 0), fs = 22 },
-		{ text = string.format("Energy %d", energy or 0), fs = 22 },
+		{ text = string.format("Metal %d%s", metal or 0, suffix), fs = 22 },
+		{ text = string.format("Energy %d%s", energy or 0, suffix), fs = 22 },
 		{ text = "Eco time " .. M.ecoTime(metal, energy), fs = 22 },
 	}
 end
