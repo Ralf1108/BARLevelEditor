@@ -178,15 +178,25 @@ return function(host)
 				gl.Rect(w.x1 + m.PAD, y0, w.x2 - m.PAD, y1 - 3 * S)
 				local ud = UnitDefNames[name]
 				local pic = (ROW - 8) * S
+				local fpic = pic * 0.8 -- the symbol of the faction, then the picture of the unit
+				local fx = w.x1 + m.PAD + 6 * S
+				local ux = fx + fpic + 8 * S
+				local icon = host.Shared.FACTION_ICONS[host.Shared.factionOf(name)]
+				if icon then
+					gl.Color(1, 1, 1, 1)
+					gl.Texture(icon)
+					gl.TexRect(fx, y0 + 2 * S + (pic - fpic) / 2, fx + fpic, y0 + 2 * S + (pic - fpic) / 2 + fpic)
+					gl.Texture(false)
+				end
 				if ud then
 					gl.Color(1, 1, 1, 1)
 					gl.Texture("#" .. ud.id)
-					gl.TexRect(w.x1 + m.PAD + 4 * S, y0 + 2 * S, w.x1 + m.PAD + 4 * S + pic, y0 + 2 * S + pic)
+					gl.TexRect(ux, y0 + 2 * S, ux + pic, y0 + 2 * S + pic)
 					gl.Texture(false)
 				end
 				gl.Color(1, 1, 1, 1)
 				local human = ud and (ud.translatedHumanName or ud.humanName) or name
-				gl.Text(string.format("%s (%s)", human, name), w.x1 + m.PAD + pic + 12 * S, y0 + (ROW * S - 3 * S - 22 * S) / 2 + 3 * S, 22 * S, "o")
+				gl.Text(string.format("%s (%s)", human, name), ux + pic + 10 * S, y0 + (ROW * S - 3 * S - 22 * S) / 2 + 3 * S, 22 * S, "o")
 			end
 		end
 		gl.Scissor(false)
