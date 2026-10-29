@@ -604,7 +604,9 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
             $aiOf[[int]$t] = Get-AiSpec $n
         }
     }
-    $winRun = if ($td -or $ctf -or $rtf) { 'neverend' } else { $win }
+    # The win condition of the scenario info (page I) is the game option deathmode. Tower Defense removes the start commanders when the waves start, so
+    # "commanders" could never be met there (the player would lose at once): it runs as "no end" (the waves decide).
+    $winRun = if ($td -and $win -eq 'com') { 'neverend' } else { $win }
     $answers = [ordered]@{}
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['win'] = $win; $answers['grace'] = $grace; $answers['sid'] = $sid
@@ -725,7 +727,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $waves = ($td.waves | ForEach-Object { '{0},{1},{2},{3},{4},{5}' -f $_.fac, $_.kind, $_.tech, $_.count, $_.gap, $_.hp }) -join '/'
         $plain = (@($enemyNew, 0, $td.spawn[0], $td.spawn[1], $td.goal[0], $td.goal[1], $td.leaks, $path, $waves, $(if ($td.economy) { 'economy' } else { 'towers' }), $(if ($td.fog) { '1' } else { '0' })) -join ';')
         $mods['tdconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Tower Defense (the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
+        if ($win -eq 'com') { Write-Host "Note: the win condition 'commanders' is set to 'no end' for Tower Defense (the start commanders are removed; the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
     }
     if ($ctf) {
         # settings for the gadget ctf_game.lua (amount;radius;score;returnTime;speed;homes;flags;visible, teams renumbered like the units)
@@ -733,13 +735,11 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $flags = @($ctf.flags | ForEach-Object { '{0},{1},{2}' -f $(if ($newid.ContainsKey([int]$_.team)) { $newid[[int]$_.team] } else { -1 }), $_.x, $_.z }) -join '/'
         $plain = (@($ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $ctf.speed, $homes, $flags, $(if ($ctf.visible) { '1' } else { '0' })) -join ';')
         $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Capture the Flag (the flags decide: the first team that holds $($ctf.score) flags at once wins; 0 = no end)." -ForegroundColor Yellow }
     }
     if ($rtf) {
         # settings for the gadget rtf_game.lua (rate;score;f1;f2;f3;visible;cats: buildings, ground, ships, air as 0/1); the crystals are features of the level
         $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), ($(if ($rtf.statics) { '1' } else { '0' }) + $(if ($rtf.ground) { '1' } else { '0' }) + $(if ($rtf.ships) { '1' } else { '0' }) + $(if ($rtf.air) { '1' } else { '0' }))) -join ';')
         $mods['rtfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
-        if ($win -ne 'neverend') { Write-Host "Note: the win condition is set to 'no end' for Reclaim the Fame (the points decide: the first team that reaches $($rtf.score) points wins; 0 = no end)." -ForegroundColor Yellow }
     }
     # indestructible buildings (buildings marked with FX, corridor walls), in every game mode: gadget unit_indestructible.lua, name:x,z,x,z|name:...
     $fixed = @($level.units | Where-Object { $_.fixed })

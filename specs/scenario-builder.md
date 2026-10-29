@@ -42,7 +42,7 @@ Field `grace` (minutes, also fractional; input `m:ss`, `2,5` or `3`). With `grac
 
 ## 5. Game modes in the scenario
 
-A level with a game mode on gets that mode's game option and gadget; the modes exclude each other, a level file with two on is refused by the script (`throw`). The computer opponents get NullAI and the win condition is "no end" (the gadget decides): the BARb of a scenario would take the wave units over (Tower Defense); a destroyed start commander must not eliminate the player (`deathmode` is `neverend`).
+A level with a game mode on gets that mode's game option and gadget; the modes exclude each other, a level file with two on is refused by the script (`throw`). The win condition of the scenario info is the game option `deathmode`; the gadget of the mode decides about its own result in any case. Tower Defense: the AI of every enemy team is NullAI (a BARb would take the wave units over) and the win condition `com` runs as `neverend`, because the start commanders are removed when the waves start. Capture the Flag and Reclaim the Fame: the AI of each team is the one set on the page T, the win condition as chosen.
 
 | Mode | Game option | Gadget | Page |
 |---|---|---|---|

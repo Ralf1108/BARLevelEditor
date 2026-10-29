@@ -66,7 +66,7 @@ BAR's gadget `pve_supply_drops.lua` treats every unit with "lootbox" in its name
 
 ## 7. Scenario
 
-A level with Capture the Flag on becomes a scenario with the settings in the game option `ctfconfig` (teams renumbered like the units, a team with a collection point but without units is added). `ctf_game.lua` and `bar_rules.lua` are in the package and the starter builds them into the small extra game ([Scenario builder](scenario-builder.md)). The computer opponents get no AI (NullAI), the win condition is "no end" (the gadget decides). A level with another mode on as well is refused by the script.
+A level with Capture the Flag on becomes a scenario with the settings in the game option `ctfconfig` (teams renumbered like the units, a team with a collection point but without units is added). `ctf_game.lua` and `bar_rules.lua` are in the package and the starter builds them into the small extra game ([Scenario builder](scenario-builder.md)). The computer opponents get the AI set on the page T (none plays the mode); `deathmode` is the win condition of the scenario info. A level with another mode on as well is refused by the script.
 
 ## 8. Not checked and open
 

@@ -42,7 +42,7 @@ Page, top to bottom: checkbox `rtfon`; the line "On the map: n small, n medium, 
 
 ## 5. Scenario
 
-`Read-Reclaim` in `scenario_builder.ps1` reads the section (on only; the crystals must exist in `$level.features`, otherwise a note and the scenario is built without the mode). `rtfconfig` (base64url of the payload), `rtf_game.lua` and `bar_rules.lua` go into the package; the computer opponents get NullAI and the win condition is "no end" (the gadget decides); the starter starts it with the extra game "Level Editor Scenarios <version>" ([Scenario builder](scenario-builder.md)). The crystals are normal features of the level, so the scenario mechanism of the game creates them. A level with another mode on as well is refused by the script.
+`Read-Reclaim` in `scenario_builder.ps1` reads the section (on only; the crystals must exist in `$level.features`, otherwise a note and the scenario is built without the mode). `rtfconfig` (base64url of the payload), `rtf_game.lua` and `bar_rules.lua` go into the package; the computer opponents get the AI set on the page T and `deathmode` is the win condition of the scenario info; the starter starts it with the extra game "Level Editor Scenarios <version>" ([Scenario builder](scenario-builder.md)). The crystals are normal features of the level, so the scenario mechanism of the game creates them. A level with another mode on as well is refused by the script.
 
 ## 6. Not tested
 
