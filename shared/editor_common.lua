@@ -712,13 +712,14 @@ local reachCache = setmetatable({}, { __mode = "k" })
 function M.blueprintCost(units)
 	local c = costCache[units]
 	if not c then
-		c = { metal = 0, energy = 0, buildTime = 0, count = 0 }
+		c = { metal = 0, energy = 0, buildTime = 0, health = 0, count = 0 }
 		for _, u in ipairs(units) do
 			local ud = UnitDefNames[u.name]
 			if ud then
 				c.metal = c.metal + (ud.metalCost or 0)
 				c.energy = c.energy + (ud.energyCost or 0)
 				c.buildTime = c.buildTime + (ud.buildTime or 0)
+				c.health = c.health + (ud.health or 0)
 				c.count = c.count + 1
 			end
 		end
@@ -1183,7 +1184,7 @@ function M.newGrid(o)
 				local size = M.PREVIEW_SIZE * S
 				local c = M.blueprintCost(bp.units)
 				local items = { { text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 } }
-				for _, it in ipairs(M.costItems(c.metal, c.energy, " (Sum)")) do
+				for _, it in ipairs(M.costItems(c.metal, c.energy, " (Sum)", c.health)) do
 					items[#items + 1] = it
 				end
 				-- the largest range, sight, radar, sonar and jammer value of all units in it
@@ -2164,7 +2165,7 @@ function M.newUnits(o)
 				{ text = title, fs = 26 },
 				{ text = tostring(ud.translatedTooltip or ud.tooltip or ""), fs = 20, color = { 0.85, 0.85, 0.85 } },
 			}
-			for _, it in ipairs(M.costItems(ud.metalCost, ud.energyCost)) do
+			for _, it in ipairs(M.costItems(ud.metalCost, ud.energyCost, "", ud.health)) do
 				items[#items + 1] = it
 			end
 			if shot > 0 then
@@ -2450,13 +2451,14 @@ function M.ecoTime(metal, energy)
 end
 
 -- "Metal 100   Energy 1500   (Eco time 1:25)" as parts that wrap only between the parts
--- Metal, Energy and Eco time as three lines (items of M.infoLayout)
-function M.costItems(metal, energy, suffix)
+-- Metal, Energy, Eco time and Health as four lines (items of M.infoLayout)
+function M.costItems(metal, energy, suffix, health)
 	suffix = suffix or ""
 	return {
 		{ text = string.format("Metal %d%s", metal or 0, suffix), fs = 22 },
 		{ text = string.format("Energy %d%s", energy or 0, suffix), fs = 22 },
 		{ text = "Eco time " .. M.ecoTime(metal, energy), fs = 22 },
+		{ text = string.format("Health %d%s", math.floor((health or 0) + 0.5), suffix), fs = 22 },
 	}
 end
 
