@@ -2156,6 +2156,7 @@ function widget:DrawScreen()
 			say("Help board disabled: " .. tostring(err))
 		end
 	end
+	Shared.flushTip(helpOpen) -- the tooltips come last: on top of everything
 end
 
 -- Painting: while the left mouse button is held a plan is added after every footprint of mouse movement; blocked spots are left out

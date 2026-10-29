@@ -3317,16 +3317,28 @@ function M.drawHelp(title, sections, footer)
 	gl.Color(1, 1, 1, 1)
 end
 
--- Draws the tooltip (field tip) of the button under the mouse
+-- Notes the tooltip (field tip) of the button under the mouse; it is not drawn here but by M.flushTip() at the end of the frame, so it
+-- always lies on top of every panel and window (the last one noted wins: it was drawn last)
 function M.drawTip(rects, mx, my)
 	for i = #rects, 1, -1 do -- the last one lies on top (e.g. the small X in a button)
 		local r = rects[i]
 		if r.tip and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-			M.tooltipBox(r.tip, mx, my)
+			M.pendingTip = { text = r.tip, x = mx, y = my }
 			return true
 		end
 	end
 	return false
+end
+
+-- Draws the noted tooltip (once per frame, after everything else); skip = true only forgets it
+function M.flushTip(skip)
+	local t = M.pendingTip
+	M.pendingTip = nil
+	if t and not skip then
+		gl.Scissor(false)
+		M.tooltipBox(t.text, t.x, t.y)
+		gl.Color(1, 1, 1, 1)
+	end
 end
 
 ---------------------------------------------------------------- Settings (gear): columns and rows

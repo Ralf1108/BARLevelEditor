@@ -4375,6 +4375,7 @@ function widget:DrawScreen()
 			say("Help board disabled: " .. tostring(err))
 		end
 	end
+	Shared.flushTip(helpOpen) -- the tooltips come last: on top of every panel and window
 end
 
 function widget:GetConfigData()
