@@ -1517,9 +1517,9 @@ local shotCache = {}
 function M.shotInfo(unitDefID)
 	local c = shotCache[unitDefID]
 	if c then
-		return c[1], c[2], c[3]
+		return c[1], c[2], c[3], c[4], c[5]
 	end
-	local bestDmg, bestSps, bestAA = 0, 0, false
+	local bestDmg, bestSps, bestAA, bestEnergy, bestMetal = 0, 0, false, 0, 0
 	local ud = UnitDefs[unitDefID]
 	if ud and WeaponDefs then
 		local types = (Game and Game.armorTypes) or {}
@@ -1538,14 +1538,14 @@ function M.shotInfo(unitDefID)
 				local sps = (reload > 0) and (perShot / reload) or 0
 				-- Weapons against ground targets take priority; pure anti-air only if there are none
 				if (bestDmg == 0) or (bestAA and not aa and d > 0) or (bestAA == aa and d > bestDmg) then
-					bestDmg, bestSps, bestAA = d, sps, aa
+					bestDmg, bestSps, bestAA, bestEnergy, bestMetal = d, sps, aa, tonumber(wd.energyCost) or 0, tonumber(wd.metalCost) or 0
 				end
 			end
 		end
 	end
 	bestDmg = math.floor(bestDmg + 0.5)
-	shotCache[unitDefID] = { bestDmg, bestSps, bestAA }
-	return bestDmg, bestSps, bestAA
+	shotCache[unitDefID] = { bestDmg, bestSps, bestAA, bestEnergy, bestMetal }
+	return bestDmg, bestSps, bestAA, bestEnergy, bestMetal
 end
 
 -- Info lines Range, LoS, Speed, Radar, Radar jammer, Sonar, Sonar jammer (one line each) of a list of unit def ids. Only the values above 0.
@@ -2156,7 +2156,7 @@ function M.newUnits(o)
 			local size = M.PREVIEW_SIZE * S
 			local ud = UnitDefs[e.id]
 			local human = ud.translatedHumanName or ud.humanName or e.name
-			local shot, sps, isAA = M.shotInfo(e.id)
+			local shot, sps, isAA, shotEnergy, shotMetal = M.shotInfo(e.id)
 			local title = string.format("%s (%s)", human, e.name)
 			if self.restrict and self.restrict.isBanned(e.name) then
 				title = title .. ((self.restrict.style == "allow") and "  - allowed" or "  - forbidden")
@@ -2169,7 +2169,13 @@ function M.newUnits(o)
 				items[#items + 1] = it
 			end
 			if shot > 0 then
-				items[#items + 1] = { text = string.format("%s DPS = %s shots/s x %d dmg%s", fmtRate(shot * sps), fmtRate(sps), shot, isAA and "   (air)" or ""), fs = 22 }
+				items[#items + 1] = { text = string.format("DPS %s = %s shots/s x %d dmg%s", fmtRate(shot * sps), fmtRate(sps), shot, isAA and "   (air)" or ""), fs = 22 }
+				if shotMetal > 0 then
+					items[#items + 1] = { text = string.format("Metal per shot %s", fmtRate(shotMetal)), fs = 22 }
+				end
+				if shotEnergy > 0 then
+					items[#items + 1] = { text = string.format("Energy per shot %s", fmtRate(shotEnergy)), fs = 22 }
+				end
 			end
 			for _, it in ipairs(M.reachItems({ e.id })) do
 				items[#items + 1] = it
