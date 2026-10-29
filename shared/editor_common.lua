@@ -1807,32 +1807,9 @@ function M.newUnits(o)
 		return self.cache[self.faction][self.group][self.tech]
 	end
 
-	-- Crosshair button: shows the tile of a selected unit. Faction, group and tech are set to the unit's, the search is cleared and the next draw
-	-- scrolls to the tile and lets its frame flash green. Several selected units: the first one; every further click goes on to the next kind of unit
-	-- (in the order of the selection, one tile per kind), then it starts again. Returns true, or nil and a message.
-	-- locate(name): that unit instead of the selection
-	function u:locate(only)
-		local names, seen = {}, {}
-		for _, id in ipairs(only and {} or Spring.GetSelectedUnits() or {}) do
-			local d = Spring.GetUnitDefID(id)
-			local ud = d and UnitDefs[d]
-			if ud and not seen[ud.name] then
-				seen[ud.name] = true
-				names[#names + 1] = ud.name
-			end
-		end
-		if only then
-			names[1] = only
-		end
-		if #names == 0 then
-			return nil, "Select a unit on the map first"
-		end
-		local sig = table.concat(names, ",")
-		if sig ~= self.locateSig then
-			self.locateSig, self.locateIdx = sig, 0
-		end
-		self.locateIdx = self.locateIdx % #names + 1
-		local name = names[self.locateIdx]
+	-- Shows the tile of a unit (crosshair button of the Place menu, window of the forbidden units): faction, group and tech are set to the unit's,
+	-- the search is cleared and the next draw scrolls to the tile and lets its frame flash green. Returns true, or nil and a message.
+	function u:locate(name)
 		if not self.cache then
 			self.cache = self:buildCache()
 		end

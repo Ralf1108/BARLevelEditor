@@ -1123,7 +1123,7 @@ local function searchSet(q)
 	uGrid.scroll, fGrid.scroll, bpGrid.scroll = 0, 0, 0
 end
 
--- Shows a unit in the Units list (crosshair button: the selected unit; window of the forbidden units: the unit of the row)
+-- Shows a unit in the Units list (crosshair button: the unit clicked on the map; window of the forbidden units: the unit of the row)
 function search.locate(name)
 	searchFocus(false)
 	searchSet("")
@@ -1147,7 +1147,7 @@ local function searchRects(x1, x2, top, hb)
 	local tint = search.query ~= "" and { 0.75, 0.3, 0.28 } or nil -- reddish while a search text is active
 	return {
 		{ x1 = x1 + pad, x2 = x1 + pad + hb, y0 = top - hb, y1 = top, kind = "locate", value = "locate", label = "", cross = true,
-			tip = "Find the selected unit: sets faction, group and tech and scrolls to its tile, which flashes green.\nSeveral units selected: the first kind; click again for the next kind." },
+			active = search.pick, tip = "Find a unit in the list: the crosshair hangs at the mouse pointer, a left click on a unit on the map shows its tile in the Units list (it flashes green).\nRight click, Esc or this button again ends it." },
 		{ x1 = x1 + pad + hb + 3, x2 = x2 - pad - 2 * (hb + 3), y0 = top - hb, y1 = top, kind = "search", value = "search", label = label, active = search.focus, tint = tint,
 			tip = "Search in recent items, units, features and blueprints at once: type words of the description or the code.\nThe tabs below show how many match (the field is reddish while a text is in it; category buttons do nothing visible until you clear it). Enter = done, Esc = clear." },
 		{ x1 = x2 - pad - 2 * hb - 3, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X", tint = tint, tip = "Clear search" },
@@ -2184,7 +2184,14 @@ local function applyHeader0(r)
 		searchSet("")
 		return
 	elseif r.kind == "locate" then
-		search.locate()
+		searchFocus(false)
+		if search.pick then
+			search.pick = false
+		else
+			gen.disarmAll()
+			search.pick = true
+			say("Click a unit on the map to find it in the list (right click ends)")
+		end
 		return
 	elseif r.kind == "restr" then
 		searchFocus(false)
@@ -2950,6 +2957,21 @@ function widget:MousePress(mx, my, button)
 		elseif button == 3 then
 			gen.armed, gen.drag = false, nil
 			say("Generate rectangle ended")
+			return true
+		end
+	end
+	if search.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+		if button == 1 then
+			local kind, id = Spring.TraceScreenRay(mx, my)
+			if kind == "unit" and Spring.ValidUnitID(id) then
+				search.pick = false
+				search.locate(UnitDefs[Spring.GetUnitDefID(id)].name)
+			else
+				say("No unit there: click on a unit")
+			end
+			return true
+		elseif button == 3 then
+			search.pick = false
 			return true
 		end
 	end
@@ -3844,6 +3866,9 @@ function widget:Update()
 	if td.pick and (armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
 		td.endPick()
 	end
+	if search.pick and (armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed() or not menuOpen or collapsed) then
+		search.pick = false
+	end
 	if ctf.pick and (not ctf.open or armedUnit or armedFeature or bpGrid.armed or delMode or mazeKind or gen.armed or area:armed()) then
 		ctf.endPick()
 	end
@@ -3949,6 +3974,10 @@ local ctrlEdit -- Ctrl+C/V/X/Z/Y (defined below)
 local ARROW_STEP = { [273] = { 0, -1 }, [274] = { 0, 1 }, [275] = { 1, 0 }, [276] = { -1, 0 } } -- up, down, right, left
 
 function widget:KeyPress(key, mods, isRepeat)
+	if search.pick and key == 27 then
+		search.pick = false -- Esc ends the search for a unit
+		return true
+	end
 	if helpOpen and key == 27 then
 		helpOpen = false -- Esc closes the help board
 		return true
@@ -4296,6 +4325,26 @@ function widget:DrawScreen()
 			gl.Scissor(false)
 			say("Blueprint menu disabled: " .. tostring(err))
 		end
+	end
+	if search.pick then
+		-- the crosshair hangs at the mouse pointer
+		local mx, my = Spring.GetMouseState()
+		local rad = 18 * S
+		gl.Color(0.2, 1, 0.3, 1)
+		gl.LineWidth(3 * S)
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			for a = 0, 23 do
+				gl.Vertex(mx + rad * math.cos(a * math.pi / 12), my + rad * math.sin(a * math.pi / 12))
+			end
+		end)
+		gl.BeginEnd(GL.LINES, function()
+			gl.Vertex(mx - rad * 1.8, my); gl.Vertex(mx - rad * 0.5, my)
+			gl.Vertex(mx + rad * 0.5, my); gl.Vertex(mx + rad * 1.8, my)
+			gl.Vertex(mx, my - rad * 1.8); gl.Vertex(mx, my - rad * 0.5)
+			gl.Vertex(mx, my + rad * 0.5); gl.Vertex(mx, my + rad * 1.8)
+		end)
+		gl.LineWidth(1)
+		gl.Color(1, 1, 1, 1)
 	end
 	if helpOpen then
 		local ok, err = pcall(Shared.drawHelp, "Level Editor - Help", HELP.sections)
