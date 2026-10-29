@@ -2132,14 +2132,18 @@ function M.newUnits(o)
 				end
 				items[#items + 1] = { text = x, fs = 22 }
 			end
-			local sensors = {}
-			for _, s in ipairs({ { "Radar", ud.radarRadius }, { "Sonar", ud.sonarRadius }, { "Jammer", ud.jammerRadius }, { "Sonar jam", ud.sonarJamRadius } }) do
-				if (tonumber(s[2]) or 0) > 0 then
-					sensors[#sensors + 1] = string.format("%s %d", s[1], math.floor(s[2] + 0.5))
+			-- one line for radar and sonar, one for the two jammers; only the parts the unit has
+			for _, group in ipairs({ { { "Radar", ud.radarRadius }, { "Sonar", ud.sonarRadius } },
+				{ { "Radar jammer", ud.jammerRadius }, { "Sonar jammer", ud.sonarJamRadius } } }) do
+				local parts = {}
+				for _, s in ipairs(group) do
+					if (tonumber(s[2]) or 0) > 0 then
+						parts[#parts + 1] = string.format("%s %d", s[1], math.floor(s[2] + 0.5))
+					end
 				end
-			end
-			if #sensors > 0 then
-				items[#items + 1] = { text = table.concat(sensors, "   "), fs = 22 }
+				if #parts > 0 then
+					items[#items + 1] = { text = table.concat(parts, "   "), fs = 22 }
+				end
 			end
 			if isBuildingDef(ud) then
 				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
