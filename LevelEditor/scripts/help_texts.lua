@@ -13,7 +13,7 @@ local sections = {
 		{ "Mouse over a tile", "Large rotating 3D view (unit, blueprint, feature, recent item). Features: the list shows only pictures, below it the code name, metal, energy and description." },
 		{ "Search field", "At the top of Place: one search over Recent, Units, Features and Blueprints at once (words of the description or the code). The tabs show the number of matches. Enter = done, Esc or X = clear." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename, Create = save the selection." },
-		{ "Recent", "Recently chosen blueprints and recently placed units." },
+		{ "Recent", "Recently chosen blueprints and recently placed units and features." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
 		{ "I", "Scenario info: title, author, summary, briefing, win condition, grace period, ID. Click a field and type; written with the level when you save it. Human or AI, alliances and start resources are on the page T." },
 		{ "T", "Teams (0 to 9): per team Human or AI (click), the AI (click: NullAI, BARb, CircuitAI, Simple AIs, Scavengers, Raptors), the alliance (click: ten colors; teams with the same color are allies) and the start metal and energy. Saved with the level; the AI takes effect in the scenario (a running game cannot change an AI). Also: right click on a team button at the left chooses its alliance; the frame around the button shows it." },
@@ -149,7 +149,7 @@ local topics = {
 		names = { "search", "recent", "levels" },
 		lines = {
 			"SEARCH: the Place menu has one search field at the top for Units, Features and Blueprints together. Click and type words of the description or the code; the tabs Recent, Units, Features and Blueprints show how many match and list the matches (across all factions, groups and tech levels). Enter ends the input, Esc or the X button next to it clears the search.",
-			"RECENT: recently chosen blueprints and recently placed units, click to use them again (stored in LuaUI/Config/LevelEditorRecent.lua).",
+			"RECENT: recently chosen blueprints and recently placed units and features, click to use them again (stored in LuaUI/Config/LevelEditorRecent.lua).",
 			"LEVELS: 'O' opens the settings, below them the list of saved levels. Loading and saving need a second click as confirmation, 'Save as new' creates level_001, level_002 ...",
 		},
 	},
