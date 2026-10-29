@@ -2128,12 +2128,12 @@ function M.newUnits(o)
 			if range > 0 or los > 0 then
 				local x = (range > 0) and string.format("Range %d", range) or ""
 				if los > 0 then
-					x = x .. ((x ~= "") and "   " or "") .. string.format("Line of sight %d", los)
+					x = x .. ((x ~= "") and "   " or "") .. string.format("LOS %d", los)
 				end
 				items[#items + 1] = { text = x, fs = 22 }
 			end
 			local sensors = {}
-			for _, s in ipairs({ { "Radar", ud.radarRadius }, { "Sonar", ud.sonarRadius }, { "Radar jammer", ud.jammerRadius }, { "Sonar jammer", ud.sonarJamRadius } }) do
+			for _, s in ipairs({ { "Radar", ud.radarRadius }, { "Sonar", ud.sonarRadius }, { "Jammer", ud.jammerRadius }, { "Sonar jam", ud.sonarJamRadius } }) do
 				if (tonumber(s[2]) or 0) > 0 then
 					sensors[#sensors + 1] = string.format("%s %d", s[1], math.floor(s[2] + 0.5))
 				end
