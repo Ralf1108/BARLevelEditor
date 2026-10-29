@@ -97,8 +97,14 @@ return function(host)
 	rst.scroll = 0
 	local ROW = 44
 
+	-- The banned names in the order of the window (faction, group, name); sorted again only when the list has changed
+	local sorted, sortedFrom = {}, nil
 	local function names()
-		return rst.data and rst.data.banned or {}
+		local list = rst.data and rst.data.banned or {}
+		if list ~= sortedFrom then
+			sorted, sortedFrom = host.Shared.sortUnitNames(list), list
+		end
+		return sorted
 	end
 
 	function rst.winRect()

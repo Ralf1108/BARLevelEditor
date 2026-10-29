@@ -1634,6 +1634,42 @@ function M.factionOf(name)
 	return name:sub(1, 3), name
 end
 
+-- A copy of a list of unit names, sorted by faction (order of M.FACTIONS), then group (order of M.GROUPS), then the name shown for the unit
+function M.sortUnitNames(names)
+	local order = {}
+	for i, f in ipairs(M.FACTIONS) do
+		order[f[1]] = i
+	end
+	local gorder = {}
+	for i, g in ipairs(M.GROUPS) do
+		gorder[g[1]] = i
+	end
+	local keys = {}
+	for _, n in ipairs(names) do
+		local ud = UnitDefNames[n]
+		local fac = M.factionOf(n)
+		keys[n] = { order[fac] or 99, ud and gorder[unitGroup(ud)] or 99, string.lower(ud and (ud.translatedHumanName or ud.humanName) or n) }
+	end
+	local out = {}
+	for i, n in ipairs(names) do
+		out[i] = n
+	end
+	table.sort(out, function(a, b)
+		local ka, kb = keys[a], keys[b]
+		if ka[1] ~= kb[1] then
+			return ka[1] < kb[1]
+		end
+		if ka[2] ~= kb[2] then
+			return ka[2] < kb[2]
+		end
+		if ka[3] ~= kb[3] then
+			return ka[3] < kb[3]
+		end
+		return a < b
+	end)
+	return out
+end
+
 -- [faction][group][tech] = { { name, id, filler, rank } ... }, built once from UnitDefs
 function M.buildUnitCache()
 	local cache = {}
