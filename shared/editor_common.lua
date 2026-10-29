@@ -708,6 +708,7 @@ function M.shortNumber(n)
 	return tostring(n)
 end
 
+local reachCache = setmetatable({}, { __mode = "k" })
 function M.blueprintCost(units)
 	local c = costCache[units]
 	if not c then
@@ -1181,10 +1182,27 @@ function M.newGrid(o)
 			if bp and bp.units then
 				local size = M.PREVIEW_SIZE * S
 				local c = M.blueprintCost(bp.units)
-				local lines, h = M.infoLayout({
+				local items = {
 					{ text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 },
 					{ parts = M.costParts(c.metal, c.energy), fs = 22 },
-				}, size + 2 * M.infoGap())
+				}
+				-- the largest range, sight, radar, sonar and jammer value of all units in it
+				local reach = reachCache[bp.units]
+				if not reach then
+					local ids = {}
+					for _, u in ipairs(bp.units) do
+						local d = UnitDefNames[u.name]
+						if d then
+							ids[#ids + 1] = d.id
+						end
+					end
+					reach = M.reachItems(ids)
+					reachCache[bp.units] = reach
+				end
+				for _, it in ipairs(reach) do
+					items[#items + 1] = it
+				end
+				local lines, h = M.infoLayout(items, size + 2 * M.infoGap())
 				local _, by = self:geom(rect, hi)
 				local px, py = M.previewPos(rect, by, TILE, size, h + 4 * S)
 				pcall(M.drawBlueprintPreview, bp, px, py, size)
@@ -1527,6 +1545,35 @@ function M.shotInfo(unitDefID)
 	bestDmg = math.floor(bestDmg + 0.5)
 	shotCache[unitDefID] = { bestDmg, bestSps, bestAA }
 	return bestDmg, bestSps, bestAA
+end
+
+-- Info lines for Range / LOS, Radar / Sonar and the two jammers of a list of unit def ids; with several units the largest value of each is shown
+-- (a blueprint). Only the parts that are above 0; a line without parts is left out.
+function M.reachItems(ids)
+	local best = {}
+	for _, id in ipairs(ids) do
+		local ud = UnitDefs[id]
+		if ud then
+			local v = { M.weaponRange(id), ud.losRadius or ud.sightDistance, ud.radarRadius, ud.sonarRadius, ud.jammerRadius, ud.sonarJamRadius }
+			for i = 1, 6 do
+				best[i] = math.max(best[i] or 0, tonumber(v[i]) or 0)
+			end
+		end
+	end
+	local items = {}
+	for _, group in ipairs({ { { "Range", 1 }, { "LOS", 2 } }, { { "Radar", 3 }, { "Sonar", 4 } }, { { "Radar jammer", 5 }, { "Sonar jammer", 6 } } }) do
+		local parts = {}
+		for _, s in ipairs(group) do
+			local n = math.floor((best[s[2]] or 0) + 0.5)
+			if n > 0 then
+				parts[#parts + 1] = string.format("%s %d", s[1], n)
+			end
+		end
+		if #parts > 0 then
+			items[#items + 1] = { text = table.concat(parts, "   "), fs = 22 }
+		end
+	end
+	return items
 end
 
 -- Longest range of a weapon that does damage (0 without one)
@@ -2124,26 +2171,8 @@ function M.newUnits(o)
 			if shot > 0 then
 				items[#items + 1] = { text = string.format("%s shots/s x %d damage = %s DPS%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   (air)" or ""), fs = 22 }
 			end
-			local range, los = M.weaponRange(e.id), math.floor((ud.losRadius or ud.sightDistance or 0) + 0.5)
-			if range > 0 or los > 0 then
-				local x = (range > 0) and string.format("Range %d", range) or ""
-				if los > 0 then
-					x = x .. ((x ~= "") and "   " or "") .. string.format("LOS %d", los)
-				end
-				items[#items + 1] = { text = x, fs = 22 }
-			end
-			-- one line for radar and sonar, one for the two jammers; only the parts the unit has
-			for _, group in ipairs({ { { "Radar", ud.radarRadius }, { "Sonar", ud.sonarRadius } },
-				{ { "Radar jammer", ud.jammerRadius }, { "Sonar jammer", ud.sonarJamRadius } } }) do
-				local parts = {}
-				for _, s in ipairs(group) do
-					if (tonumber(s[2]) or 0) > 0 then
-						parts[#parts + 1] = string.format("%s %d", s[1], math.floor(s[2] + 0.5))
-					end
-				end
-				if #parts > 0 then
-					items[#items + 1] = { text = table.concat(parts, "   "), fs = 22 }
-				end
+			for _, it in ipairs(M.reachItems({ e.id })) do
+				items[#items + 1] = it
 			end
 			if isBuildingDef(ud) then
 				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
