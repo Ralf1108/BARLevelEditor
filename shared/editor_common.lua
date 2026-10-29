@@ -1597,6 +1597,41 @@ function M.weaponRange(unitDefID)
 	return math.floor(best + 0.5)
 end
 
+-- Circles on the ground around (x, z), following the terrain, for a unit or blueprint at the mouse pointer in stamp mode:
+-- red = weapon range, blue = line of sight (of the unit def)
+local function ringAt(x, z, radius, r, g, b)
+	gl.Color(r, g, b, 0.85)
+	gl.BeginEnd(GL.LINE_LOOP, function()
+		for a = 0, 47 do
+			local ang = a / 48 * 2 * math.pi
+			local px, pz = x + math.cos(ang) * radius, z + math.sin(ang) * radius
+			gl.Vertex(px, Spring.GetGroundHeight(px, pz) + 6, pz)
+		end
+	end)
+end
+
+function M.drawRangeCircles(x, z, unitDefID)
+	local ud = UnitDefs[unitDefID]
+	if not ud then
+		return false
+	end
+	local range, los = M.weaponRange(unitDefID), tonumber(ud.losRadius or ud.sightDistance) or 0
+	if range <= 0 and los <= 0 then
+		return false
+	end
+	gl.DepthTest(false)
+	gl.LineWidth(2)
+	if los > 0 then
+		ringAt(x, z, los, 0.3, 0.55, 1)
+	end
+	if range > 0 then
+		ringAt(x, z, range, 1, 0.2, 0.15)
+	end
+	gl.LineWidth(1)
+	gl.Color(1, 1, 1, 1)
+	return true
+end
+
 -- Explosion of a building: damage and radius when destroyed and on self-destruct.
 -- Returns (damage, radius, selfDamage, selfRadius), 0 if there is no explosion.
 local boomCache = {}

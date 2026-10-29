@@ -3570,6 +3570,12 @@ local function drawWorldInner()
 				end
 				gl.LineWidth(1)
 				gl.Color(1, 1, 1, 1)
+				for i, p in ipairs(list) do
+					if i > 40 then
+						break -- many copies: the first ones show the circles
+					end
+					Shared.drawRangeCircles(p.x, p.z, ud.id)
+				end
 				return
 			end
 			local x, z = snap(pos[1]), snap(pos[3])
@@ -3590,6 +3596,7 @@ local function drawWorldInner()
 			end)
 			gl.LineWidth(1)
 			gl.Color(1, 1, 1, 1)
+			Shared.drawRangeCircles(x, z, ud.id) -- red: how far the unit shoots, blue: how far it sees
 		end)
 		if not ok then
 			armedUnit = false
@@ -3655,6 +3662,25 @@ local function drawWorldInner()
 				return da < db
 			end)
 		end
+		-- circles of all units of the blueprint (together they show what the whole blueprint covers; the ones nearest to the center
+		-- first, at most 120 units with circles)
+		local circles = 120
+		for _, ctr in ipairs(centers) do
+			for k = 1, #bp.near do
+				if circles <= 0 then
+					break
+				end
+				local u = bp.units[bp.near[k]]
+				local ud = UnitDefNames[u.name]
+				if ud then
+					local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, bpRot)
+					if Shared.drawRangeCircles(ctr.x + odx, ctr.z + odz, ud.id) then
+						circles = circles - 1
+					end
+				end
+			end
+		end
+		gl.DepthTest(true)
 		local budget = ghost.max
 		for c, ctr in ipairs(centers) do
 			for k = 1, #bp.near do
