@@ -1182,10 +1182,10 @@ function M.newGrid(o)
 			if bp and bp.units then
 				local size = M.PREVIEW_SIZE * S
 				local c = M.blueprintCost(bp.units)
-				local items = {
-					{ text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 },
-					{ parts = M.costParts(c.metal, c.energy), fs = 22 },
-				}
+				local items = { { text = string.format("%s  (%d %s)", bp.name, c.count, self.unitWord), fs = 26 } }
+				for _, it in ipairs(M.costItems(c.metal, c.energy)) do
+					items[#items + 1] = it
+				end
 				-- the largest range, sight, radar, sonar and jammer value of all units in it
 				local reach = reachCache[bp.units]
 				if not reach then
@@ -1547,8 +1547,8 @@ function M.shotInfo(unitDefID)
 	return bestDmg, bestSps, bestAA
 end
 
--- Info lines for Range / LOS, Radar / Sonar and the two jammers of a list of unit def ids; with several units the largest value of each is shown
--- (a blueprint). Only the parts that are above 0; a line without parts is left out.
+-- Info lines Range, Line of sight, Radar, Radar jammer, Sonar, Sonar jammer (one line each) of a list of unit def ids; with several units the largest
+-- value of each is shown (a blueprint). Only the values above 0.
 function M.reachItems(ids)
 	local best = {}
 	for _, id in ipairs(ids) do
@@ -1561,16 +1561,10 @@ function M.reachItems(ids)
 		end
 	end
 	local items = {}
-	for _, group in ipairs({ { { "Range", 1 }, { "LOS", 2 } }, { { "Radar", 3 }, { "Sonar", 4 } }, { { "Radar jammer", 5 }, { "Sonar jammer", 6 } } }) do
-		local parts = {}
-		for _, s in ipairs(group) do
-			local n = math.floor((best[s[2]] or 0) + 0.5)
-			if n > 0 then
-				parts[#parts + 1] = string.format("%s %d", s[1], n)
-			end
-		end
-		if #parts > 0 then
-			items[#items + 1] = { text = table.concat(parts, "   "), fs = 22 }
+	for _, s in ipairs({ { "Range", 1 }, { "Line of sight", 2 }, { "Radar", 3 }, { "Radar jammer", 5 }, { "Sonar", 4 }, { "Sonar jammer", 6 } }) do
+		local n = math.floor((best[s[2]] or 0) + 0.5)
+		if n > 0 then
+			items[#items + 1] = { text = string.format("%s %d", s[1], n), fs = 22 }
 		end
 	end
 	return items
@@ -2166,24 +2160,23 @@ function M.newUnits(o)
 			local items = {
 				{ text = title, fs = 26 },
 				{ text = tostring(ud.translatedTooltip or ud.tooltip or ""), fs = 20, color = { 0.85, 0.85, 0.85 } },
-				{ parts = M.costParts(ud.metalCost, ud.energyCost), fs = 22 },
 			}
+			for _, it in ipairs(M.costItems(ud.metalCost, ud.energyCost)) do
+				items[#items + 1] = it
+			end
 			if shot > 0 then
-				items[#items + 1] = { text = string.format("%s shots/s x %d damage = %s DPS%s", fmtRate(sps), shot, fmtRate(shot * sps), isAA and "   (air)" or ""), fs = 22 }
+				items[#items + 1] = { text = string.format("%s DPS = %s shots/s x %d damage%s", fmtRate(shot * sps), fmtRate(sps), shot, isAA and "   (air)" or ""), fs = 22 }
 			end
 			for _, it in ipairs(M.reachItems({ e.id })) do
 				items[#items + 1] = it
 			end
-			if isBuildingDef(ud) then
-				-- Buildings: damage and radius of the explosion (power plants can hit neighbors hard)
-				local bd, br, sd, sr = M.explosionInfo(e.id)
-				if bd > 0 or sd > 0 then
-					local x = string.format("Explosion %d damage, radius %d", bd, br)
-					if sd > 0 and (sd ~= bd or sr ~= br) then
-						x = x .. string.format("  |  Self-destruct %d, radius %d", sd, sr)
-					end
-					items[#items + 1] = { text = x, fs = 18, color = { 0.85, 0.85, 0.85 } }
-				end
+			-- Damage to the units around when it is destroyed and when it blows itself up (power plants can hit neighbors hard)
+			local bd, br, sd, sr = M.explosionInfo(e.id)
+			if bd > 0 then
+				items[#items + 1] = { text = string.format("Destroyed: %d damage, radius %d", bd, br), fs = 22 }
+			end
+			if sd > 0 then
+				items[#items + 1] = { text = string.format("Self-destruct: %d damage, radius %d", sd, sr), fs = 22 }
 			end
 			local lines, h = M.infoLayout(items, size + 2 * M.infoGap())
 			local _, uy = self:geom(rect, hoverIdx)
@@ -2454,6 +2447,15 @@ function M.ecoTime(metal, energy)
 end
 
 -- "Metal 100   Energy 1500   (Eco time 1:25)" as parts that wrap only between the parts
+-- Metal, Energy and Eco time as three lines (items of M.infoLayout)
+function M.costItems(metal, energy)
+	return {
+		{ text = string.format("Metal %d", metal or 0), fs = 22 },
+		{ text = string.format("Energy %d", energy or 0), fs = 22 },
+		{ text = "Eco time " .. M.ecoTime(metal, energy), fs = 22 },
+	}
+end
+
 function M.costParts(metal, energy)
 	return { string.format("Metal %d", metal or 0), string.format("Energy %d", energy or 0), "(Eco time " .. M.ecoTime(metal, energy) .. ")" }
 end
