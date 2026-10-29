@@ -1133,7 +1133,9 @@ local function searchRects(x1, x2, top, hb)
 	end
 	local tint = search.query ~= "" and { 0.75, 0.3, 0.28 } or nil -- reddish while a search text is active
 	return {
-		{ x1 = x1 + pad, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label, active = search.focus, tint = tint,
+		{ x1 = x1 + pad, x2 = x1 + pad + hb, y0 = top - hb, y1 = top, kind = "locate", value = "locate", label = "", cross = true,
+			tip = "Find the selected unit: sets faction, group and tech and scrolls to its tile, which flashes green.\nSeveral units selected: the first kind; click again for the next kind." },
+		{ x1 = x1 + pad + hb + 3, x2 = x2 - pad - hb - 3, y0 = top - hb, y1 = top, kind = "search", value = "search", label = label, active = search.focus, tint = tint,
 			tip = "Search in recent items, units, features and blueprints at once: type words of the description or the code.\nThe tabs below show how many match (the field is reddish while a text is in it; category buttons do nothing visible until you clear it). Enter = done, Esc = clear." },
 		{ x1 = x2 - pad - hb, x2 = x2 - pad, y0 = top - hb, y1 = top, kind = "searchclear", value = "searchclear", label = "X", tint = tint, tip = "Clear search" },
 	}
@@ -2161,6 +2163,17 @@ local function applyHeader0(r)
 		return
 	elseif r.kind == "searchclear" then
 		searchSet("")
+		return
+	elseif r.kind == "locate" then
+		searchFocus(false)
+		searchSet("")
+		menuMode = "units"
+		bpGrid:setArmed(false)
+		armedFeature = false
+		local ok, msg = uGrid:locate()
+		if not ok then
+			say(msg)
+		end
 		return
 	end
 	searchFocus(false)

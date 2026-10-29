@@ -1771,6 +1771,48 @@ function M.newUnits(o)
 		return self.cache[self.faction][self.group][self.tech]
 	end
 
+	-- Crosshair button: shows the tile of a selected unit. Faction, group and tech are set to the unit's, the search is cleared and the next draw
+	-- scrolls to the tile and lets its frame flash green. Several selected units: the first one; every further click goes on to the next kind of unit
+	-- (in the order of the selection, one tile per kind), then it starts again. Returns true, or nil and a message.
+	function u:locate()
+		local names, seen = {}, {}
+		for _, id in ipairs(Spring.GetSelectedUnits() or {}) do
+			local d = Spring.GetUnitDefID(id)
+			local ud = d and UnitDefs[d]
+			if ud and not seen[ud.name] then
+				seen[ud.name] = true
+				names[#names + 1] = ud.name
+			end
+		end
+		if #names == 0 then
+			return nil, "Select a unit on the map first"
+		end
+		local sig = table.concat(names, ",")
+		if sig ~= self.locateSig then
+			self.locateSig, self.locateIdx = sig, 0
+		end
+		self.locateIdx = self.locateIdx % #names + 1
+		local name = names[self.locateIdx]
+		if not self.cache then
+			self.cache = self:buildCache()
+		end
+		for _, f in ipairs(self.factions) do
+			for _, g in ipairs(self.groups) do
+				for t = 1, 3 do
+					for _, e in ipairs(self.cache[f[1]][g[1]][t]) do
+						if e.name == name then
+							self.faction, self.group, self.tech = f[1], g[1], t
+							self.query, self.override = "", nil
+							self.locateName = name
+							return true
+						end
+					end
+				end
+			end
+		end
+		return nil, name .. " is not in the list"
+	end
+
 	function u:setFocus(on)
 		on = on and true or false
 		if self.focus ~= on then
@@ -2066,11 +2108,28 @@ function M.newUnits(o)
 		local m, S = M.m, M.S
 		local list = self:list()
 		gl.Scissor(rect.x1, rect.y0, rect.x2 - rect.x1, rect.top - rect.y0)
+		if self.locateName then
+			-- crosshair button: bring the tile into the middle of the view, its frame flashes for about two seconds
+			for i, e in ipairs(list) do
+				if e.name == self.locateName then
+					local row = math.floor((i - 1) / self:colsFor(rect))
+					self.scroll = math.max(0, math.min(self:maxScroll(rect), row * self:cell() + self:cell() / 2 + m.UPAD - (rect.top - rect.y0) / 2))
+					self.flashName, self.flashUntil = e.name, os.clock() + 2
+				end
+			end
+			self.locateName = nil
+		end
+		local flash = self.flashName and os.clock() < self.flashUntil and self.flashName or nil
 		local hoverIdx = hot and self:at(rect, mx, my) or nil
 		for i, e in ipairs(list) do
 			local ix, iy = self:geom(rect, i)
 			if iy + self:icon() > rect.y0 and iy < rect.top then
 				local usable = not self.canUse or self.canUse(e.id)
+				if flash == e.name then
+					local k = 0.5 + 0.5 * math.sin(os.clock() * 14)
+					gl.Color(0.1, 1, 0.2, 0.45 + 0.5 * k)
+					gl.Rect(ix - 6 * S, iy - 6 * S, ix + self:icon() + 6 * S, iy + self:icon() + 6 * S)
+				end
 				if selectedName and selectedName == e.name then
 					gl.Color(0.25, 0.5, 1, 0.8)
 					gl.Rect(ix - 3, iy - 3, ix + self:icon() + 3, iy + self:icon() + 3)
@@ -3008,6 +3067,24 @@ function M.drawButtons(rects, fontSize, hb)
 				gl.Vertex(r.x1 + w * 0.2, r.y0 + h * 0.5)
 				gl.Vertex(r.x1 + w * 0.42, r.y0 + h * 0.25)
 				gl.Vertex(r.x1 + w * 0.8, r.y0 + h * 0.75)
+			end)
+			gl.LineWidth(1)
+		end
+		if r.cross then
+			-- crosshair: a ring with four short lines through it
+			local cx, cy, rad = (r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2, math.min(r.x2 - r.x1, r.y1 - r.y0) * 0.27
+			gl.Color(1, 1, 1, 0.9)
+			gl.LineWidth(2 * S)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for a = 0, 15 do
+					gl.Vertex(cx + rad * math.cos(a * math.pi / 8), cy + rad * math.sin(a * math.pi / 8))
+				end
+			end)
+			gl.BeginEnd(GL.LINES, function()
+				gl.Vertex(cx - rad * 1.7, cy); gl.Vertex(cx - rad * 0.5, cy)
+				gl.Vertex(cx + rad * 0.5, cy); gl.Vertex(cx + rad * 1.7, cy)
+				gl.Vertex(cx, cy - rad * 1.7); gl.Vertex(cx, cy - rad * 0.5)
+				gl.Vertex(cx, cy + rad * 0.5); gl.Vertex(cx, cy + rad * 1.7)
 			end)
 			gl.LineWidth(1)
 		end

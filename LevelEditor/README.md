@@ -69,6 +69,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - **Moving:** **Alt + drag** on a selected unit moves the selection, **Alt + drag** on a feature (tree, rock, wreck) moves that feature; the **arrow keys** move it by one grid step (up = north). **[** and **]** rotate a stamp; **L / R / S** rotate and mirror a selection.
 - **Undo / redo:** **Ctrl+Z** / **Ctrl+Y** for placing, deleting, moving, rotating, generating, team changes, features and Tower Defense route changes.
 - **Indestructible buildings:** **FX / FD** (drag a rectangle) mark buildings as indestructible or destructible again (only buildings; in every scenario, whatever the game mode); the flag is saved in levels, blueprints and the clipboard.
+- **Crosshair button** left of the search field (Place menu): select a unit on the map, click it, and the Units list jumps to the faction, group and tech of that unit, scrolls to it and lets its frame flash green. With several units selected it takes the first kind and goes on to the next kind with every click.
 - The shortcuts only work in the Level Editor; in the chat input and in the search fields of the menu they do not apply.
 
 ## Levels and settings
