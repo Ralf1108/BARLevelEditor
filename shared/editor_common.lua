@@ -3125,7 +3125,7 @@ function M.drawButtons(rects, fontSize, hb)
 		if tw > avail and tw > 0 then
 			fs = fs * avail / tw
 		end
-		gl.Text(r.label, (tx1 + tx2) / 2, r.y0 + (hb - fs) / 2 + 3 * S, fs, "co")
+		gl.Text(r.label, (tx1 + tx2) / 2, r.y0 + (math.min(hb, r.y1 - r.y0) - fs) / 2 + 3 * S, fs, "co") -- centered in the button itself (the small X boxes are lower than hb)
 	end
 	gl.Color(1, 1, 1, 1)
 end
