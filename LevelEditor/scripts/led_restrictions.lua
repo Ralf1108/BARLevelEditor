@@ -132,6 +132,13 @@ return function(host)
 			tint = { 0.5, 0.15, 0.15 }, tip = "Close this list" }
 	end
 
+	-- Clear: left of Close; allows every unit again
+	local function clearRect(w)
+		local S, m = host.S(), host.Shared.m
+		return { x1 = w.x2 - m.PAD - 224 * S, x2 = w.x2 - m.PAD - 114 * S, y0 = w.top - m.PAD - m.HB, y1 = w.top - m.PAD, kind = "rclear", label = "Clear", fs = 20 * S,
+			tip = "Allow every forbidden unit again" }
+	end
+
 	local function maxScroll(w)
 		return math.max(0, #names() * ROW * host.S() - (w.top - w.head - w.y0))
 	end
@@ -153,7 +160,8 @@ return function(host)
 		gl.Color(0.5, 0.8, 1, 1)
 		gl.Text(string.format("Forbidden units (%d)", #list), w.x1 + m.PAD, w.top - m.PAD - m.HB / 2 - 8 * S, 24 * S, "o")
 		local close = closeRect(w)
-		host.Shared.drawButtons({ close }, 20 * S, m.HB)
+		local clear = clearRect(w)
+		host.Shared.drawButtons({ clear, close }, 20 * S, m.HB)
 		local mx, my = Spring.GetMouseState()
 		rst.scroll = math.max(0, math.min(maxScroll(w), rst.scroll))
 		gl.Scissor(w.x1, w.y0, w.x2 - w.x1, w.top - w.head - w.y0)
@@ -182,7 +190,7 @@ return function(host)
 			end
 		end
 		gl.Scissor(false)
-		host.Shared.drawTip({ close }, mx, my)
+		host.Shared.drawTip({ clear, close }, mx, my)
 		gl.Color(1, 1, 1, 1)
 	end
 
@@ -196,6 +204,12 @@ return function(host)
 	function rst.winPress(mx, my, button)
 		local w = rst.winRect()
 		if not w or button ~= 1 then
+			return true
+		end
+		local cl = clearRect(w)
+		if mx >= cl.x1 and mx <= cl.x2 and my >= cl.y0 and my <= cl.y1 then
+			rst.setBanned(names(), false)
+			rst.scroll = 0
 			return true
 		end
 		local c = closeRect(w)
