@@ -949,7 +949,7 @@ local TIPS = {
 	areal = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
 	arear = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
 	areas = "XS (experimental): split attack. Select armed units, press XS, then drag a circle\nfrom the center outwards. The damage per second of the selected units is spread evenly\nover the visible enemies in it: every enemy gets the same share, whatever its health.\nWhen a unit has nothing left to do the units are assigned again.",
-	areaf = "XF (experimental): focus attack. Select armed units, press XF, then drag a circle\nfrom the center outwards. The units kill the visible enemies in it one after the other,\nthe nearest first (mobile ones before buildings), as fast as possible: every enemy gets\nas many units as it needs to die in about 3 seconds, the rest goes on to the next one.",
+	areaf = "XF (experimental): focus attack. Select armed units, press XF, then drag a circle\nfrom the center outwards. The units kill the visible enemies in it one after the other,\nthe most dangerous first (its damage per second compared with the time it takes to kill\nit, including the way there; harmless ones last). Every enemy gets as many units as\nit needs to die in about 3 seconds, the rest goes on to the next one.",
 	areac = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
 

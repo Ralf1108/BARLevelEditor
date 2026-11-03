@@ -1301,7 +1301,7 @@ local function headerRectsRaw()
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
 			{ "split", "XS", "XS (experimental): split attack.\nSelect armed units, press XS, then drag a circle from the center\noutwards. The damage per second of the selected units is spread evenly\nover the visible enemies in it: every enemy gets the same share,\nwhatever its health. When a unit has nothing left to do the\nunits are assigned again." },
-			{ "focus", "XF", "XF (experimental): focus attack.\nSelect armed units, press XF, then drag a circle from the center\noutwards. The units kill the visible enemies in it one after the other,\nthe nearest first (mobile before buildings), as fast as possible:\nevery enemy gets as many units as it needs to die in about 3 seconds,\nthe rest goes on to the next one." },
+			{ "focus", "XF", "XF (experimental): focus attack.\nSelect armed units, press XF, then drag a circle from the center\noutwards. The units kill the visible enemies in it one after the other,\nthe most dangerous first (its damage per second compared with the\ntime it takes to kill it, including the way there; harmless ones last).\nEvery enemy gets as many units as it needs to die in about 3 seconds,\nthe rest goes on to the next one." },
 		}
 		for k, a in ipairs(areas) do
 			local top = sideTop(k <= 3 and 12 + k or 13 + k) -- one button gap before XS: a command of its own

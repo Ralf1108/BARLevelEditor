@@ -3947,24 +3947,58 @@ function M.newAreaAttack(o)
 		return queues
 	end
 
-	-- Focus plan (XF): every unit gets a queue of target ids. The targets in order of priority (mobile first, nearest to the group first)
-	-- take one after the other the nearest units that are still free, until the damage of these units within SPLIT_KILL_TIME
-	-- seconds (at least one volley each) covers the need of the target: a weak target takes one unit, a strong one many. These
-	-- units start on it. A target for which no free unit is left is uncovered: every unit goes on to the uncovered targets after
-	-- its own, in the same order, so the whole group concentrates on one target after the other. Free units that are left when
-	-- every target is covered start on the nearest target they can hit. At the end every unit gets one more target (the
-	-- nearest one it can hit), so nothing stands idle while an enemy lives.
+	-- Focus plan (XF): every unit gets a queue of target ids. The targets in order of danger: damage per second of the enemy
+	-- (against the types of my units) divided by the time I need to get rid of it (the time until my group is in range, at the
+	-- mean speed of its mobile units, plus health + SPLIT_BUFFER divided by the DPS of all my units against it); a target that
+	-- does no damage comes last, nearest first. One after the other a target takes the nearest free units until the damage of
+	-- these units within SPLIT_KILL_TIME seconds (at least one volley each) covers the need of the target: a weak target takes
+	-- one unit, a strong one many. These units start on it. A target for which no free unit is left is uncovered: every unit
+	-- goes on to the uncovered targets after its own, in the same order, so the whole group concentrates on one target after
+	-- the other. Free units that are left when every target is covered start on the nearest target they can hit. At the end
+	-- every unit gets one more target (the nearest one it can hit), so nothing stands idle while an enemy lives.
 	local function focusPlan(attackers, targets)
 		local gx, gz = 0, 0
 		for _, u in ipairs(attackers) do
 			gx, gz = gx + u.x, gz + u.z
 		end
 		gx, gz = gx / math.max(1, #attackers), gz / math.max(1, #attackers)
-		table.sort(targets, function(a, b)
-			if a.mobile ~= b.mobile then
-				return a.mobile
+		local byDef, speedSum, mobiles = {}, 0, 0 -- my units by type; mean speed of the mobile ones
+		for _, u in ipairs(attackers) do
+			byDef[u.def] = (byDef[u.def] or 0) + 1
+			if not u.static then
+				speedSum, mobiles = speedSum + (tonumber(UnitDefs[u.def].speed) or 0), mobiles + 1
 			end
-			return dist2(a.x, a.z, gx, gz) < dist2(b.x, b.z, gx, gz)
+		end
+		local meanSpeed = mobiles > 0 and speedSum / mobiles or 0
+		for _, t in ipairs(targets) do
+			t.need = t.hp * SPLIT_BUFFER + 1
+			local threat = 0 -- damage per second of the enemy against my units (mean over my units)
+			for def, n in pairs(byDef) do
+				for _, w in ipairs(weaponsAgainst(t.def, def)) do
+					threat = threat + w.dps * n / #attackers
+				end
+			end
+			local dps, rangeSum, rangeN = 0, 0, 0 -- damage per second of all my units against it, mean range
+			for _, u in ipairs(attackers) do
+				local d = splitDps(u.def, t.def, u.static, math.sqrt(dist2(u.x, u.z, t.x, t.z)))
+				if d > 0 then
+					dps = dps + d
+					local reach = 0
+					for _, w in ipairs(weaponsAgainst(u.def, t.def)) do
+						reach = math.max(reach, w.range)
+					end
+					rangeSum, rangeN = rangeSum + reach, rangeN + 1
+				end
+			end
+			t.gd = math.sqrt(dist2(gx, gz, t.x, t.z))
+			local travel = (meanSpeed > 0 and rangeN > 0) and math.max(0, t.gd - rangeSum / rangeN) / meanSpeed or 0
+			t.prio = (dps > 0 and threat > 0) and threat / (travel + t.need / dps) or 0
+		end
+		table.sort(targets, function(a, b)
+			if a.prio ~= b.prio then
+				return a.prio > b.prio
+			end
+			return a.gd < b.gd
 		end)
 		local free, queues, uncovered = {}, {}, {}
 		for _, u in ipairs(attackers) do
@@ -3972,7 +4006,6 @@ function M.newAreaAttack(o)
 			queues[u.id] = {}
 		end
 		for _, t in ipairs(targets) do
-			t.need = t.hp * SPLIT_BUFFER + 1
 			local cand = {}
 			for _, u in ipairs(free) do
 				local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))

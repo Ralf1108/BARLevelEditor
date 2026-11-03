@@ -47,7 +47,7 @@ Use the firepower of the selected units against the enemies in a circle.
 
 - Select armed units, press **XS** or **XF** (below the area attack buttons), drag a circle from the center outwards over the enemies you see
 - **XS (split attack)** spreads the damage per second of your units **evenly** over the enemies: every enemy gets the same share, whatever its health
-- **XF (focus attack)** kills **as fast as possible**: mobile enemies first, buildings after them, the nearest first, with as many units as it needs to die (its health + 15 %); the others go on to the next one
+- **XF (focus attack)** kills **as fast as possible**: the most dangerous first (the damage per second of the enemy compared with the time it takes to get rid of it, including the way there: a nearly dead unit with a big gun comes before the same unit at full health; enemies that do no damage come last), with as many units as it needs to die (its health + 15 %); the others go on to the next one
 - When all enemies in the circle are dead your units stop; when an enemy dies or a unit has nothing left to do, the units are assigned again
 - Only the enemies in the circle at the moment you release the mouse button count; right click cancels
 

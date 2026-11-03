@@ -111,7 +111,7 @@ More in the [BluePrinter usage](docs/blueprinter-usage.md#area-attacks-experimen
 **Split attack and focus attack**: use the *firepower* of the selected units against the enemies in a circle. Select armed units, press the button, drag a circle over the enemies you see. The damage per second of your units is given out to the enemies.
 
 - **XS** spreads the damage per second **evenly**: every enemy gets the same share, whatever its health (20 units against 10 enemies: two on each)
-- **XF** kills **as fast as possible**: the nearest enemy first, with as many units as it needs to die (its health + 15 % against the damage per second of your units); the others go on to the next one
+- **XF** kills **as fast as possible**: the most dangerous enemy first (its damage per second against the time it takes to kill it, including the way there), with as many units as it needs to die (its health + 15 % against the damage per second of your units); the others go on to the next one
 
 <p>
 <img src="docs/split-attack.jpg" alt="Split attack (XS): 20 light units against 10 heavier ones; every enemy has a color, the units aimed at it carry the same color (two on each)" width="365">
