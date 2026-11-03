@@ -76,8 +76,8 @@ local HELP_SECTIONS = {
 		{ "Ctrl+Alt+P", "Save the selected buildings as a new blueprint." },
 	} },
 	{ "Area attack (experimental)", {
-		{ "XL  /  XR  /  XC", "Buttons next to the menu. Select bombers, artillery, rocket launchers or nukes first, press XL (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
-		{ "Procedure", "Each unit gets its own target in the shape. Bombers first form up side by side, then all attack at the same moment as a front; artillery and rockets fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
+		{ "XL  /  XR  /  XC", "Buttons next to the menu. Select armed units first (tanks, bots, ships, aircraft, artillery, ...), press XL (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
+		{ "Procedure", "Each unit gets its own target in the shape. Bombers first form up side by side, then all attack at the same moment as a front; all other units walk into range and fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
 	} },
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
@@ -946,11 +946,11 @@ local TIPS = {
 	radfield = "Search radius of the builders in Elmo (200 to 6000):\nclick, type a number, Enter accepts, Esc cancels",
 	com = "Commander (C): the commander helps build too\n(otherwise only other builders do)",
 	create = "Saves the selected buildings\nas a new blueprint",
-	areal = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
-	arear = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
+	areal = "XL (experimental): attack along a line.\nSelect armed units, press XL, then drag a line\non the map. Each unit gets a piece of it\n(bombers: carpet).",
+	arear = "XR (experimental): attack a rectangle.\nSelect armed units, press XR, then drag a\nrectangle. The units spread over the whole area.",
 	areas = "XS (experimental): split attack. Select armed units, press XS, then drag a circle\nfrom the center outwards. The damage per second of the selected units is spread evenly\nover the visible enemies in it: every enemy gets the same share, whatever its health.\nWhen a unit has nothing left to do the units are assigned again.",
 	areaf = "XF (experimental): focus attack. Select armed units, press XF, then drag a circle\nfrom the center outwards. The units kill the visible enemies in it one after the other,\nthe most dangerous first (its damage per second compared with the time it takes to kill\nit, including the way there; harmless ones last). Every enemy gets as many units as\nit needs to die in about 3 seconds, the rest goes on to the next one.",
-	areac = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
+	areac = "XC (experimental): attack a circle.\nSelect armed units, press XC, then drag a circle\nfrom the center outwards. The units spread over it.",
 }
 
 -- Open and in-progress plans

@@ -3524,8 +3524,8 @@ function M.mazeWalls(cols, rows, path, rnd)
 	return out, w, h
 end
 
----------------------------------------------------------------- Area attack (bombers, artillery, rockets, nukes)
--- Selected units with area damage attack a line, a rectangle or a circle that is dragged on the map. Used by the
+---------------------------------------------------------------- Area attack (all armed units), split and focus attack
+-- Selected armed units attack a line, a rectangle or a circle that is dragged on the map. Used by the
 -- Level Editor and the BluePrinter. o: { say = fn(text), mouseGround = fn() -> x, z, inPanel = fn(mx, my) -> bool
 -- (no drawing over the menu), onArm = fn() (called when the mode is switched on, to end other stamp modes) }.
 -- Methods: toggle(mode "line"|"rect"|"circle"|"split"|"focus"|nil; split = XS spreads the firepower evenly over the enemies in a circle, focus = XF kills them one after the other), armed(), mode(), press(button) (map click while armed; true if used),
@@ -3555,14 +3555,12 @@ function M.newAreaAttack(o)
 		return dx * dx + dz * dz
 	end
 
-	-- Selected units with area damage spread evenly over a line A -> B. Each gets a piece of the
-	-- line. Bombers (aircraft with a bomb weapon) approach it from behind, i.e. along the line: move to a point BEFORE
-	-- the piece, then attack its center; this way the bombs fall spread over the whole length. Artillery, rocket launchers,
-	-- nukes and everything else with a large blast radius at long range only gets the attack order on the center
-	-- of its piece (ground target); mobile units walk into range for it.
+	-- Selected armed units spread evenly over a line A -> B. Each gets a piece of the line. Bombers (aircraft with a bomb
+	-- weapon) approach it from behind, i.e. along the line: move to a point BEFORE the piece, then attack its center; this
+	-- way the bombs fall spread over the whole length. All other units that can shoot at the ground (tanks, bots, ships,
+	-- gunships, artillery, rocket launchers, nukes, ...) only get the attack order on the center of their piece (ground
+	-- target); mobile units walk into range for it.
 	local STAGING_DISTANCE = 2000 -- Elmo from the target, where the bombers form up before the run (line: beside the line, on the side of the group)
-	local AREA_MIN = 16 -- blast radius (Elmo) from which a weapon counts as an area weapon (mortar 18, rocket launcher 24, artillery 35 to 60)
-	local RANGE_MIN = 450 -- minimum range of an area weapon (artillery, rockets, nukes)
 
 	local function isBomber(ud)
 		if not ud or not ud.canFly then
@@ -3577,15 +3575,18 @@ function M.newAreaAttack(o)
 		return false
 	end
 
-	-- Artillery, rocket launchers, nukes: ground weapon with a large blast radius and long range (no aircraft)
-	local function isAreaShooter(ud)
-		if not ud or ud.canFly then
+	-- Every other armed unit that can shoot at the ground (no bomber): a weapon with canAttackGround that is not an anti-air
+	-- weapon (damage against the armor class vtol above the default damage). Units that only shoot at aircraft do not count.
+	local function isGroundShooter(ud)
+		if not ud or isBomber(ud) then
 			return false
 		end
+		local types = Game.armorTypes or {}
+		local defIdx, vtolIdx = types.default or 0, types.vtol or 14
 		for _, w in ipairs(ud.weapons or {}) do
 			local wd = WeaponDefs[w.weaponDef]
-			if wd and wd.type ~= "AircraftBomb" and wd.canAttackGround ~= false
-				and (wd.damageAreaOfEffect or wd.areaOfEffect or 0) >= AREA_MIN and (wd.range or 0) >= RANGE_MIN then
+			if wd and wd.damages and wd.canAttackGround ~= false and not wd.paralyzer
+				and (tonumber(wd.damages[vtolIdx]) or 0) <= (tonumber(wd.damages[defIdx]) or 0) then
 				return true
 			end
 		end
@@ -3607,7 +3608,7 @@ function M.newAreaAttack(o)
 	end
 
 	local function selectedShooters()
-		return selectedBy(isAreaShooter)
+		return selectedBy(isGroundShooter)
 	end
 
 	local function clampToMap(x, z)
@@ -3616,7 +3617,7 @@ function M.newAreaAttack(o)
 	end
 
 	-- Plan: per unit { id, x, z (center of the piece), fx, fz (approach point) }; ids is the list of units (or nil: n placeholders);
-	-- approach = 0: no approach (artillery), otherwise distance of the approach point before the piece
+	-- approach = 0: no approach (everything but bombers), otherwise distance of the approach point before the piece
 	local function linePlan(ax, az, bx, bz, ids, n, approach)
 		approach = approach or STAGING_DISTANCE
 		local dx, dz = bx - ax, bz - az
@@ -4253,7 +4254,7 @@ function M.newAreaAttack(o)
 		end
 		local bombers, guns = selectedBombers(), selectedShooters()
 		if #bombers == 0 and #guns == 0 then
-			say("No bombers or artillery selected (bombers, artillery, rocket launchers, nukes)")
+			say("No armed units selected")
 			return
 		end
 		local len = 0
@@ -4278,7 +4279,7 @@ function M.newAreaAttack(o)
 				Spring.GiveOrderToUnit(p.id, CMD.ATTACK, { p.x, Spring.GetGroundHeight(p.x, p.z), p.z }, {})
 			end
 		end
-		say(string.format("%s attack: %d bombers, %d artillery/rockets (%s %d Elmo)", areaMode == "line" and "Carpet" or (areaMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, areaMode == "circle" and "radius" or "size", math.floor(len)))
+		say(string.format("%s attack: %d bombers, %d other units (%s %d Elmo)", areaMode == "line" and "Carpet" or (areaMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, areaMode == "circle" and "radius" or "size", math.floor(len)))
 	end
 
 	local AREA_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards",
@@ -4299,7 +4300,7 @@ function M.newAreaAttack(o)
 		end
 		local n = SPLIT_MODES[areaMode] and #selectedBy(isArmed) or (#selectedBombers() + #selectedShooters())
 		say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, AREA_HINT[areaMode])
-			or "Experimental: select " .. (SPLIT_MODES[areaMode] and "armed units" or "bombers, artillery, rocket launchers or nukes") .. " first, then on the map " .. AREA_HINT[areaMode] .. ".")
+			or "Experimental: select armed units first, then on the map " .. AREA_HINT[areaMode] .. ".")
 		return true
 	end
 

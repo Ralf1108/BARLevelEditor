@@ -36,7 +36,7 @@ local sections = {
 		{ "Shift+Mouse wheel, Alt+Z / X", "Spacing between the units of a row or rectangle." },
 		{ "Generate", "Generate tab: choose faction, type (several possible: units, buildings, turrets, air, ships), tech T1-T3 and count (input field), press Rectangle or Circle (a circle is dragged from its center outwards) and drag the area on the map; random units appear in it for the chosen team. Ctrl+Z undoes them. The Maze sub-tab builds a random maze in the dragged area." },
 		{ "DL  /  DR  /  DC", "Delete along a line, in a rectangle or in a circle: press the button (D = rectangle), then drag the shape on the map; everything in it (units, wrecks, features) is deleted. Ctrl+Z undoes it." },
-		{ "XL  /  XR  /  XC", "Experimental area attacks (line, rectangle, circle): select bombers, artillery, rocket launchers or nukes, press the button and drag the shape on the map (circle from the center). Bombers form up and attack together, front targets first." },
+		{ "XL  /  XR  /  XC", "Experimental area attacks (line, rectangle, circle): select armed units (tanks, bots, ships, aircraft, artillery, ...), press the button and drag the shape on the map (circle from the center). Bombers form up and attack together, front targets first; all other units walk into range and fire at their target." },
 		{ "XS  /  XF", "Experimental attacks on the enemies in a circle: select armed units, press the button and drag a circle from the center over visible enemies. XS spreads the damage per second of your units evenly over them (every enemy gets the same share, whatever its health). XF kills them as fast as possible: the most dangerous first (its damage per second against the time it takes to kill it, including the way there; harmless ones last), each with as many units as it needs to die (health + 15 %)." },
 		{ "M", "Maze: the key cycles through dragon teeth, walls, off (also the Maze sub-tab of the Generate tab). Then drag a rectangle or circle; a random maze appears in it (entrance top left, exit bottom right). Right click or arming something else ends the mode, Ctrl+Z undoes it." },
 	} },
@@ -167,7 +167,7 @@ local topics = {
 		lines = {
 			"DELETE: the buttons DL, DR and DC in the strip left of the menu delete everything along a dragged line, in a dragged rectangle (also key D) or in a dragged circle: units, wrecks and features. Ctrl+Z brings it back.",
 			"MAZE: Generate menu, sub-tab Maze (or key M): choose dragon teeth or walls, press Generate and drag the area; entrance top left, exit bottom right.",
-			"AREA ATTACK (experimental): select bombers, artillery, rocket launchers or nukes, press XL, XR or XC and drag a line, rectangle or circle; the bombs and shots of all of them are spread evenly over it.",
+			"AREA ATTACK (experimental): select armed units, press XL, XR or XC and drag a line, rectangle or circle; every unit gets its own target in it, bombers attack together.",
 			"SPLIT / FOCUS ATTACK (experimental): select armed units, press XS or XF and drag a circle from the center over visible enemies; XS spreads the damage per second of your units evenly over them, XF kills them one after the other, nearest first.",
 			"RIGHT CLICK: anywhere it ends every mode (placing, delete, maze, generate, area attack); without a mode it gives the order to the selected units.",
 		},
