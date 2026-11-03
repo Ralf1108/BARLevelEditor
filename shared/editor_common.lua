@@ -3528,7 +3528,7 @@ end
 -- Selected units with area damage attack a line, a rectangle or a circle that is dragged on the map. Used by the
 -- Level Editor and the BluePrinter. o: { say = fn(text), mouseGround = fn() -> x, z, inPanel = fn(mx, my) -> bool
 -- (no drawing over the menu), onArm = fn() (called when the mode is switched on, to end other stamp modes) }.
--- Methods: toggle(mode "line"|"rect"|"circle"|nil), armed(), mode(), press(button) (map click while armed; true if used),
+-- Methods: toggle(mode "line"|"rect"|"circle"|"split"|nil; split = XS, spreads the firepower over the enemies in a circle), armed(), mode(), press(button) (map click while armed; true if used),
 -- release() (mouse released: starts the attack), draw() (in DrawWorld), step(frame) (call every frame), disarm().
 function M.newAreaAttack(o)
 	local say = o.say
@@ -3752,6 +3752,328 @@ function M.newAreaAttack(o)
 		return areaPlan(areaMode, ax, az, bx, bz, ids, n, approach)
 	end
 
+	-- Split attack (XS): the firepower of the selected units is spread over the visible enemy units inside a circle, so that
+	-- every target gets about the damage it needs to die (health + SPLIT_BUFFER) and no shots are wasted on a target that
+	-- dies anyway. Firepower = damage per second against the armor class of the target, from the weapon definitions (beam
+	-- lasers count like the others; paralyzer weapons, stockpile weapons (nukes) and the D-Gun do not; area damage is not
+	-- counted). Mobile enemies come first, buildings after them.
+	local SPLIT_BUFFER = 1.15 -- a target is planned with 15 % more damage than its health
+	local SPLIT_QUEUE = 8 -- planned targets per unit (and one more at the end)
+	local SPLIT_MAX_TARGETS, SPLIT_MAX_UNITS = 150, 300
+	local SPLIT_EVERY = 30 -- frames between two checks of the plan
+	local SPLIT_TIMEOUT = 30 * 600 -- the plan ends after 10 minutes at the latest
+	local split = nil -- running split attack: { units = { [unitID] = { target ids } }, targets = { [unitID] = true }, frame }
+	local weaponCache = {}
+
+	local function isArmed(ud)
+		return ud ~= nil and #(ud.weapons or {}) > 0
+	end
+
+	-- Weapons of the unit def aDef that can hurt the unit def tDef: list of { dps, volley (damage of one salvo), range }
+	local function weaponsAgainst(aDef, tDef)
+		local key = aDef * 100000 + tDef
+		local c = weaponCache[key]
+		if c then
+			return c
+		end
+		c = {}
+		local aud, tud = UnitDefs[aDef], UnitDefs[tDef]
+		if aud and tud and WeaponDefs then
+			local types = Game.armorTypes or {}
+			local defIdx, vtolIdx = types.default or 0, types.vtol or 14
+			local armor = tonumber(tud.armorType) or defIdx
+			local airTarget = tud.canFly and true or false
+			for _, w in ipairs(aud.weapons or {}) do
+				local wd = WeaponDefs[w.weaponDef]
+				if wd and wd.damages and not wd.paralyzer and wd.type ~= "DGun" and not wd.stockpile then
+					local aa = (tonumber(wd.damages[vtolIdx]) or 0) > (tonumber(wd.damages[defIdx]) or 0)
+					local fits = (airTarget and aa) or (not airTarget and not aa and wd.canAttackGround ~= false)
+					local dmg = tonumber(wd.damages[armor]) or tonumber(wd.damages[defIdx]) or 0
+					local reload = tonumber(wd.reload) or 0
+					if fits and dmg > 1 and reload > 0 then
+						local volley = dmg * (tonumber(wd.projectiles) or 1) * (tonumber(wd.salvoSize) or 1)
+						c[#c + 1] = { dps = volley / reload, volley = volley, range = tonumber(wd.range) or 0 }
+					end
+				end
+			end
+		end
+		weaponCache[key] = c
+		return c
+	end
+
+	-- Damage per second and damage per volley of a unit against a target at distance dist; a unit that cannot move
+	-- (static) only counts the weapons that reach
+	local function splitDps(aDef, tDef, static, dist)
+		local dps, volley = 0, 0
+		for _, w in ipairs(weaponsAgainst(aDef, tDef)) do
+			if not static or dist <= w.range then
+				dps, volley = dps + w.dps, volley + w.volley
+			end
+		end
+		return dps, volley
+	end
+
+	local function targetInfo(id)
+		local def = Spring.GetUnitDefID(id)
+		local hp = Spring.GetUnitHealth(id)
+		if not def or not hp or hp <= 0 or Spring.GetUnitIsDead(id) then
+			return nil
+		end
+		local x, _, z = Spring.GetUnitPosition(id)
+		if not x then
+			return nil
+		end
+		return { id = id, def = def, x = x, z = z, hp = hp, mobile = (tonumber(UnitDefs[def].speed) or 0) > 0 }
+	end
+
+	local function attackerInfo(id)
+		local def = Spring.GetUnitDefID(id)
+		local ud = def and UnitDefs[def]
+		local x, _, z = Spring.GetUnitPosition(id)
+		if not (ud and x and isArmed(ud)) then
+			return nil
+		end
+		return { id = id, def = def, x = x, z = z, static = (tonumber(ud.speed) or 0) <= 0 }
+	end
+
+	-- The visible enemies in a circle (not Gaia)
+	local function enemiesIn(cx, cz, r)
+		local out = {}
+		local gaia = Spring.GetGaiaTeamID and Spring.GetGaiaTeamID() or -1
+		for _, id in ipairs(Spring.GetUnitsInCylinder(cx, cz, r, Spring.ENEMY_UNITS or -4)) do
+			if Spring.GetUnitTeam(id) ~= gaia then
+				local t = targetInfo(id)
+				if t then
+					out[#out + 1] = t
+				end
+			end
+		end
+		return out
+	end
+
+	-- Plan: every unit gets a queue of target ids. Time horizon H = damage all targets need / firepower of all units: every
+	-- unit has H seconds. Target by target (mobile ones first, nearest to the group first) the nearest units take volleys
+	-- until the need of the target is covered; a unit takes whole volleys, so a weak target costs it one volley and the unit
+	-- goes on to the next target. At the end every unit gets one more target (the nearest uncovered one, else the nearest
+	-- one it can hit), so nothing stands idle while an enemy lives.
+	local function splitPlan(attackers, targets)
+		local gx, gz = 0, 0
+		for _, u in ipairs(attackers) do
+			gx, gz = gx + u.x, gz + u.z
+		end
+		gx, gz = gx / math.max(1, #attackers), gz / math.max(1, #attackers)
+		table.sort(targets, function(a, b)
+			if a.mobile ~= b.mobile then
+				return a.mobile
+			end
+			return dist2(a.x, a.z, gx, gz) < dist2(b.x, b.z, gx, gz)
+		end)
+		local need, power = 0, 0
+		for _, t in ipairs(targets) do
+			t.need = t.hp * SPLIT_BUFFER + 1
+			need = need + t.need
+		end
+		for _, u in ipairs(attackers) do
+			local sum, count = 0, 0
+			for _, t in ipairs(targets) do
+				local d = splitDps(u.def, t.def, u.static, math.sqrt(dist2(u.x, u.z, t.x, t.z)))
+				if d > 0 then
+					sum, count = sum + d, count + 1
+				end
+			end
+			power = power + (count > 0 and sum / count or 0)
+		end
+		local horizon = power > 0 and need / power or 0
+		local used, queues, uncovered = {}, {}, {}
+		for _, u in ipairs(attackers) do
+			used[u.id], queues[u.id] = 0, {}
+		end
+		for _, t in ipairs(targets) do
+			local cand = {}
+			for _, u in ipairs(attackers) do
+				local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
+				local dps, volley = splitDps(u.def, t.def, u.static, d)
+				if dps > 0 then
+					cand[#cand + 1] = { id = u.id, d = d, dps = dps, volley = volley }
+				end
+			end
+			table.sort(cand, function(a, b) return a.d < b.d end)
+			local rest = t.need
+			for _, c in ipairs(cand) do
+				if rest <= 0 then
+					break
+				end
+				local q, left = queues[c.id], horizon - used[c.id]
+				if left > 0 and #q < SPLIT_QUEUE then
+					local volTime = c.volley / c.dps
+					local volleys = math.min(math.ceil(rest / c.volley), math.max(1, math.floor(left / volTime + 0.01)))
+					rest = rest - volleys * c.volley
+					used[c.id] = used[c.id] + volleys * volTime
+					q[#q + 1] = t.id
+				end
+			end
+			if rest > 0 then
+				uncovered[#uncovered + 1] = t
+			end
+		end
+		for _, u in ipairs(attackers) do
+			local q, inQueue = queues[u.id], {}
+			for _, id in ipairs(q) do
+				inQueue[id] = true
+			end
+			local function nearest(list)
+				local best, bestD
+				for _, t in ipairs(list) do
+					if not inQueue[t.id] then
+						local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
+						if (not bestD or d < bestD) and splitDps(u.def, t.def, u.static, d) > 0 then
+							best, bestD = t, d
+						end
+					end
+				end
+				return best
+			end
+			local t = nearest(uncovered) or nearest(targets)
+			if t then
+				q[#q + 1] = t.id
+			end
+		end
+		return queues
+	end
+
+	-- Gives the orders of a plan; units without a target are dropped from the attack
+	local function splitApply(attackers, targets)
+		local queues = splitPlan(attackers, targets)
+		local given = 0
+		split.units = {}
+		for _, u in ipairs(attackers) do
+			local q = queues[u.id]
+			if q and #q > 0 then
+				for i, tid in ipairs(q) do
+					Spring.GiveOrderToUnit(u.id, CMD.ATTACK, { tid }, i == 1 and {} or { "shift" })
+				end
+				split.units[u.id] = q
+				given = given + 1
+			end
+		end
+		return given
+	end
+
+	local function splitGo(ax, az, bx, bz)
+		local attackers = {}
+		for _, id in ipairs(Spring.GetSelectedUnits()) do
+			local u = attackerInfo(id)
+			if u and #attackers < SPLIT_MAX_UNITS then
+				attackers[#attackers + 1] = u
+			end
+		end
+		if #attackers == 0 then
+			say("No armed units selected")
+			return
+		end
+		local r = math.max(math.sqrt(dist2(ax, az, bx, bz)), 16)
+		local targets = enemiesIn(ax, az, r)
+		if #targets == 0 then
+			say("No visible enemy in the circle")
+			return
+		end
+		table.sort(targets, function(a, b) return dist2(a.x, a.z, ax, az) < dist2(b.x, b.z, ax, az) end)
+		while #targets > SPLIT_MAX_TARGETS do
+			targets[#targets] = nil
+		end
+		split = { units = {}, targets = {}, frame = Spring.GetGameFrame() }
+		local mobile = 0
+		for _, t in ipairs(targets) do
+			split.targets[t.id] = true
+			if t.mobile then
+				mobile = mobile + 1
+			end
+		end
+		local given = splitApply(attackers, targets)
+		if given == 0 then
+			split = nil
+			say("Split attack: no selected unit can hit these enemies")
+			return
+		end
+		say(string.format("Split attack: %d units on %d enemies (%d mobile, %d buildings)", given, #targets, mobile, #targets - mobile))
+	end
+
+	local function firstCommand(id)
+		if Spring.GetUnitCurrentCommand then
+			return (Spring.GetUnitCurrentCommand(id, 1))
+		end
+		local c = Spring.GetUnitCommands(id, 1)
+		return type(c) == "table" and c[1] and c[1].id or nil
+	end
+
+	-- Every second: forget dead targets and units that got another order; a unit that has finished its queue while enemies
+	-- live makes a new plan for all units that are left
+	local function splitStep(frame)
+		if not split or frame % SPLIT_EVERY ~= 0 then
+			return
+		end
+		if frame - split.frame > SPLIT_TIMEOUT then
+			split = nil
+			say("Split attack ended (time limit)")
+			return
+		end
+		local living, count = {}, 0
+		for id in pairs(split.targets) do
+			local t = targetInfo(id)
+			if t then
+				living[id] = t
+				count = count + 1
+			end
+		end
+		if count == 0 then
+			split = nil
+			say("Split attack finished")
+			return
+		end
+		split.targets = {}
+		for id in pairs(living) do
+			split.targets[id] = true
+		end
+		local attackers, replan = {}, false
+		for id, q in pairs(split.units) do
+			local u = attackerInfo(id)
+			local cmd = u and firstCommand(id)
+			if not u then
+				split.units[id] = nil
+			elseif cmd == nil then
+				local open = false
+				for _, tid in ipairs(q) do
+					open = open or living[tid] ~= nil
+				end
+				if open then
+					split.units[id] = nil -- idle with a living target: stopped by the player
+				else
+					replan = true
+					attackers[#attackers + 1] = u
+				end
+			elseif cmd ~= CMD.ATTACK then
+				split.units[id] = nil -- the player gave another order
+			else
+				attackers[#attackers + 1] = u
+			end
+		end
+		if next(split.units) == nil and #attackers == 0 then
+			split = nil
+			say("Split attack ended: no units left")
+			return
+		end
+		if replan then
+			local targets = {}
+			for _, t in pairs(living) do
+				targets[#targets + 1] = t
+			end
+			if splitApply(attackers, targets) == 0 then
+				split = nil
+				say("Split attack ended: nothing left to hit")
+			end
+		end
+	end
+
 	-- Bombers form up first (MOVE to their staging point), then all get the ATTACK order at the same moment: they
 	-- fly the run together as a front. { members = { [unitID] = plan entry }, frame = start frame }
 	local wave = nil
@@ -3788,6 +4110,9 @@ function M.newAreaAttack(o)
 	end
 
 	local function areaGo(ax, az, bx, bz)
+		if areaMode == "split" then
+			return splitGo(ax, az, bx, bz)
+		end
 		local bombers, guns = selectedBombers(), selectedShooters()
 		if #bombers == 0 and #guns == 0 then
 			say("No bombers or artillery selected (bombers, artillery, rocket launchers, nukes)")
@@ -3818,7 +4143,8 @@ function M.newAreaAttack(o)
 		say(string.format("%s attack: %d bombers, %d artillery/rockets (%s %d Elmo)", areaMode == "line" and "Carpet" or (areaMode == "rect" and "Rectangle" or "Circle"), #bombers, #guns, areaMode == "circle" and "radius" or "size", math.floor(len)))
 	end
 
-	local AREA_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards" }
+	local AREA_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards",
+		split = "drag a circle from the center outwards: the firepower is spread over the visible enemies in it" }
 	toggleArea = function(mode)
 		if areaArmed and (mode == nil or mode == areaMode) then
 			areaArmed = false
@@ -3832,9 +4158,9 @@ function M.newAreaAttack(o)
 		if o.onArm then
 			o.onArm()
 		end
-		local n = #selectedBombers() + #selectedShooters()
+		local n = areaMode == "split" and #selectedBy(isArmed) or (#selectedBombers() + #selectedShooters())
 		say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, AREA_HINT[areaMode])
-			or "Experimental: select bombers, artillery, rocket launchers or nukes first, then on the map " .. AREA_HINT[areaMode] .. ".")
+			or "Experimental: select " .. (areaMode == "split" and "armed units" or "bombers, artillery, rocket launchers or nukes") .. " first, then on the map " .. AREA_HINT[areaMode] .. ".")
 		return true
 	end
 
@@ -3867,10 +4193,10 @@ function M.newAreaAttack(o)
 		end
 		local bombers, guns = selectedBombers(), selectedShooters()
 		local plans = {}
-		if #bombers > 0 or #guns == 0 then
+		if areaMode ~= "split" and (#bombers > 0 or #guns == 0) then
 			plans[#plans + 1] = (planFor(areaDrag.x, areaDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), STAGING_DISTANCE))
 		end
-		if #guns > 0 then
+		if areaMode ~= "split" and #guns > 0 then
 			plans[#plans + 1] = (planFor(areaDrag.x, areaDrag.z, gx, gz, guns, nil, 0))
 		end
 		gl.LineWidth(2)
@@ -3910,6 +4236,22 @@ function M.newAreaAttack(o)
 				gl.BeginEnd(GL.LINES, function() -- approach
 					gl.Vertex(p.fx, Spring.GetGroundHeight(p.fx, p.fz) + 8, p.fz)
 					gl.Vertex(p.x, y, p.z)
+				end)
+			end
+		end
+		if areaMode == "split" then
+			local list = enemiesIn(ax, az, math.max(math.sqrt(dist2(ax, az, gx, gz)), 16))
+			gl.Color(1, 0.3, 0.2, 0.95)
+			for i, e in ipairs(list) do
+				if i > SPLIT_MAX_TARGETS then
+					break
+				end
+				local y = Spring.GetGroundHeight(e.x, e.z) + 8
+				gl.BeginEnd(GL.LINE_LOOP, function()
+					gl.Vertex(e.x - 22, y, e.z - 22)
+					gl.Vertex(e.x + 22, y, e.z - 22)
+					gl.Vertex(e.x + 22, y, e.z + 22)
+					gl.Vertex(e.x - 22, y, e.z + 22)
 				end)
 			end
 		end
@@ -3963,6 +4305,7 @@ function M.newAreaAttack(o)
 		drawArea()
 	end
 	function A:step(frame)
+		splitStep(frame)
 		if wave and frame % 15 == 0 then
 			waveStep(frame)
 		end

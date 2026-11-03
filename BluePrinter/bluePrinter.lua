@@ -82,7 +82,7 @@ local HELP_SECTIONS = {
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
 		{ "/bp_rotate  /bp_undo  /bp_clear", "Rotate, undo, clear all." },
-		{ "/bp_carpet [line|rect|circle]  /bp_spacing", "Area attack, spacing." },
+		{ "/bp_carpet [line|rect|circle|split]  /bp_spacing", "Area attack, split attack, spacing." },
 	} },
 }
 local area -- area attacks (XL, XR, XC), created below from the shared code
@@ -933,7 +933,7 @@ local function radiusEnd(accept)
 end
 
 local TIPS = {
-	queue = "Queue order (Q): off = idle builders take the nearest plan (as before).\nOn = they take the open plan with the lowest number first.\Change the order of selected plans with Page up, Page down, Home and End.",	collapse = "V: collapse or expand the menu",
+	queue = "Queue order (Q): off = idle builders take the nearest plan (as before).\nOn = they take the open plan with the lowest number first.\nChange the order of selected plans with Page up, Page down, Home and End.",	collapse = "V: collapse or expand the menu",
 	gear = "O: settings, columns and rows",
 	help = "?: show the keys and controls on the screen",
 	modebp = "Blueprints: saved groups of buildings",
@@ -948,6 +948,7 @@ local TIPS = {
 	create = "Saves the selected buildings\nas a new blueprint",
 	areal = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
 	arear = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
+	areas = "XS (experimental): split attack. Select armed units, press XS, then drag a circle\nfrom the center outwards. The firepower of the selected units is spread over the\nvisible enemies in it: every enemy gets about the damage it needs to die (+15 %),\nmobile ones first, then buildings. Units without a job attack the rest.",
 	areac = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
 
@@ -991,6 +992,7 @@ local function layout()
 	colBtn(8, "areal", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
 	colBtn(9, "arear", "XR", area:armed() and area:mode() == "rect")
 	colBtn(10, "areac", "XC", area:armed() and area:mode() == "circle")
+	colBtn(12, "areas", "XS", area:armed() and area:mode() == "split") -- one button gap: a command of its own
 	colBtn(5, "queue", "Q", queueOrder, TIPS.queue .. "\nNow: " .. (queueOrder and "ON" or "OFF"))
 	colBtn(6, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
@@ -1089,6 +1091,8 @@ local function pressButton(id)
 		area:toggle("rect")
 	elseif id == "areac" then
 		area:toggle("circle")
+	elseif id == "areas" then
+		area:toggle("split")
 	elseif id == "create" then
 		widget:CreateBlueprint()
 	elseif id == "collapse" then
@@ -2291,7 +2295,7 @@ local ACTIONS = {
 	end,
 	bp_carpet = function(_, _, words)
 		local w = words and words[1]
-		return area:toggle((w == "rect" or w == "circle" or w == "line") and w or nil)
+		return area:toggle((w == "rect" or w == "circle" or w == "line" or w == "split") and w or nil)
 	end,
 	bp_helpbox = function()
 		helpOpen = not helpOpen

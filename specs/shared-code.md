@@ -162,7 +162,7 @@ The hover block of a **blueprint** shows name, the sums of metal, energy and hea
 ## 13. Maze and area attack
 
 - `M.mazeWalls(cols, rows, path, rnd)` returns the wall tiles `{i, j}` (0-based) of a random maze (cells of `path` × `path` tiles, one tile of wall between them, depth-first search, entrance top left, exit bottom right) and width and height in tiles. Used by key M and the Maze sub-tab of the Level Editor. Property: every corridor is reachable from the entrance, the exit is reachable, exactly cells−1 passages (no cycle).
-- `M.newAreaAttack(o)` (`o = { say, mouseGround, inPanel, onArm }`): methods `toggle(mode)` ("line" | "rect" | "circle" | nil = off), `armed()`, `mode()`, `press(button)` (map click while armed; true if used), `release()` (starts the attack), `draw()`, `step(frame)` (every frame; synchronized bomber waves), `disarm()`. The logic is described in [BluePrinter](blueprinter.md), "Area attacks".
+- `M.newAreaAttack(o)` (`o = { say, mouseGround, inPanel, onArm }`): methods `toggle(mode)` ("line" | "rect" | "circle" | "split" = XS | nil = off), `armed()`, `mode()`, `press(button)` (map click while armed; true if used), `release()` (starts the attack), `draw()`, `step(frame)` (every frame; synchronized bomber waves), `disarm()`. The logic is described in [BluePrinter](blueprinter.md), "Area attacks".
 
 ## 14. Tests
 

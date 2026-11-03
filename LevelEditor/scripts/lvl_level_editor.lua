@@ -1300,9 +1300,10 @@ local function headerRectsRaw()
 			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
+			{ "split", "XS", "XS (experimental): split attack.\nSelect armed units, press XS, then drag a circle from the center\noutwards. The firepower of the selected units is spread over the\nvisible enemies in it: every enemy gets about the damage it needs\nto die (+15 %), mobile ones first, then buildings.\nUnits without a job attack the rest." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(12 + k)
+			local top = sideTop(k <= 3 and 12 + k or 13 + k) -- one button gap before XS: a command of its own
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1312,7 +1313,7 @@ local function headerRectsRaw()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(16 + k)
+			local top = sideTop(18 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,

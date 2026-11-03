@@ -36,6 +36,10 @@ What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
 `tools\arena_test.ps1 -Widget zz_teams.lua` starts the same sandbox game (ten teams) with a widget that plays through the page T and the alliances (right click menu, Alliance cell, Human / AI, AI list, number field, save and load, `Spring.AreTeamsAllied`) and takes the picture of the README. `-Widget zz_modes.lua` loads `td_test`, `ctf_test` and `rtf_test` from `levels` (the tool copies them into the sandbox), puts the teams into alliances and starts each game mode. Both log `[zzar]` lines with OK / WRONG and end themselves. `-AlongsideGame` lets the test run next to a running game (it only closes the processes it started). Details: [TESTING.md](TESTING.md).
 
+## Split attack test (`tools`)
+
+`tools\arena_test.ps1 -Widget zz_split.lua` starts the same sandbox game; the Arena generates 30 units of team 0 and 10 of team 1 (no fight), team 0 is selected and attacks team 1 with the split attack XS (`Shared.newAreaAttack`, mode `split`). It logs `[zzsp]` lines (enemies left, health, idle units, queue of one unit) and ends the game itself 90 frames after "Split attack finished". Checked: visible enemies (`Spring.ENEMY_UNITS`), queues of attack orders, new plan when units are idle, end message. The units of team 1 shoot back, so a fair fight can be lost; 30 against 10 is won.
+
 ## Console lobby test (`tools\console_test.ps1`)
 
 `tools\console_test.ps1 -Mode ctf|rtf|td` does the same for the console lobby of the scenario packages (`Host Game` / `Join Game`, `start_scenario.ps1 -Lobby`): two starters in minimized console windows, each with its own BAR folder in the work folder (`%TEMP%\console_test\barH`, `barJ`), the host starts when two players are in. Results of 2026-10-27: Capture the Flag (PlayerA team 0, PlayerB team 1, 2:0 on both), Reclaim the Fame (1564 : 1638 on both), Tower Defense ("won" on both; the lobby put PlayerB in team 1, the team of the enemy AI slot, because the lobby simply gives the joiner the free team, the host could move them in the lobby).

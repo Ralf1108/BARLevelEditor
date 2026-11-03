@@ -41,6 +41,15 @@ Spread the shots or bombs of all selected units over an area (bombers, artillery
 
 ![Area attack](area-attack.jpg)
 
+## Split attack (experimental)
+
+Spread the firepower of the selected units over the enemies in a circle, so that every enemy gets about the damage it needs to die and no shots are wasted.
+
+- **XS** (below the area attack buttons): select armed units, press the button, drag a circle from the center outwards over the enemies you see
+- The damage per second of your units is given out to the enemies (health + 15 %): weak enemies get one shooter, strong ones several; mobile enemies first, buildings after them
+- Units that are not needed keep shooting at what is left; when all enemies in the circle are dead your units stop
+- Only the enemies in the circle at the moment you release the mouse button count; right click cancels
+
 ## More
 
 - [BluePrinter manual](../BluePrinter/README.md), [specification](../specs/blueprinter.md)

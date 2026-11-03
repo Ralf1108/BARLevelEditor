@@ -77,6 +77,7 @@ A small widget for the **official** game that brings blueprints to normal matche
 - Cost, build time and **Eco time** (how long your income needs to pay for it) of every building and blueprint
 - Auto-build can be switched off (it may count as automation in ranked games)
 - Area attacks (XL, XR, XC): spread the bombs and shots of many units evenly over a line, rectangle or circle *(experimental)*
+- Split attack (XS): spread the firepower of many units over the enemies in a circle, so that none is wasted *(experimental)*
 
 | Blueprints | Buildings |
 |---|---|
@@ -102,6 +103,8 @@ More in [LAN Play](docs/lan-play.md).
 
 - **XL** line (carpet), **XR** rectangle, **XC** circle: select units, press the button, drag the shape on the map
 - Every unit gets its own target; bombers form up first and attack together
+
+**Split attack**: spread the *firepower* of the selected units over the enemies in a circle. **XS**: select armed units, press the button, drag a circle over the enemies you see. The damage per second of your units is given out so that every enemy gets about the damage it needs to die (health + 15 %), mobile enemies first, buildings after them; no shots are wasted on an enemy that dies anyway.
 
 <img src="docs/area-attack.jpg" alt="Area attack: a circle (XC) drawn on the map, every selected unit gets its own target inside it" width="740">
 
