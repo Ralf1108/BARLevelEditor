@@ -11,7 +11,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 - [Sandbox](#sandbox)
 - [BluePrinter](#blueprinter)
 - [LAN Play](#lan-play)
-- [Experimental](#experimental)
+- [Experimental Attacks](#experimental-attacks)
 - [Installation (Windows)](#installation-windows)
 - [Documentation](#documentation)
 - [Other useful links](#other-useful-links)
@@ -76,8 +76,7 @@ A small widget for the **official** game that brings blueprints to normal matche
 - Painting, rows, rectangles and search as in the Level Editor
 - Cost, build time and **Eco time** (how long your income needs to pay for it) of every building and blueprint
 - Auto-build can be switched off (it may count as automation in ranked games)
-- Area attacks (XL, XR, XC): spread the bombs and shots of many units evenly over a line, rectangle or circle *(experimental)*
-- Split attack (XS) and focus attack (XF): use the firepower of many units against the enemies in a circle, spread evenly or one enemy after the other *(experimental)*
+- Experimental attacks (XL, XR, XC, XS, XF): give many units an order for a whole area or for the enemies in a circle, see [Experimental Attacks](#experimental-attacks) *(experimental)*
 
 | Blueprints | Buildings |
 |---|---|
@@ -97,30 +96,16 @@ Play with computers in the same network, no account and no server in the cloud. 
 
 More in [LAN Play](docs/lan-play.md).
 
-## Experimental
+## Experimental Attacks
 
-**Area attacks**: spread the bombs or shots of all selected units evenly over an area. Works with bombers, artillery, rocket launchers and nukes, in the BluePrinter and in the Level Editor.
+Five buttons in the BluePrinter and in the Level Editor give many units one order for a whole area or for the enemies in a circle (select armed units of any kind, press the button, drag the shape on the map):
 
-- **XL** line (carpet), **XR** rectangle, **XC** circle: select units, press the button, drag the shape on the map
-- Every unit gets its own target; bombers form up first and attack together
+| [Area attacks](docs/experimental-attacks.md#area-attacks-xl-xr-xc) | [Split attack](docs/experimental-attacks.md#split-attack-xs) | [Focus attack](docs/experimental-attacks.md#focus-attack-xf) |
+|---|---|---|
+| [![Area attack](docs/area-attack.jpg)](docs/experimental-attacks.md#area-attacks-xl-xr-xc) | [![Split attack](docs/split-attack.jpg)](docs/experimental-attacks.md#split-attack-xs) | [![Focus attack](docs/focus-attack.jpg)](docs/experimental-attacks.md#focus-attack-xf) |
+| **XL**, **XR**, **XC**: spread the units over a line, rectangle or circle; every unit gets its own target, bombers attack together | **XS**: spread the damage per second of the units evenly over the visible enemies in a circle (two on each enemy) | **XF**: kill the enemies in a circle one after the other, the most dangerous first, with as many units as each needs |
 
-<img src="docs/area-attack.jpg" alt="Area attack: a circle (XC) drawn on the map, every selected unit gets its own target inside it" width="740">
-
-More in the [BluePrinter usage](docs/blueprinter-usage.md#area-attacks-experimental).
-
-**Split attack and focus attack**: use the *firepower* of the selected units against the enemies in a circle. Select armed units, press the button, drag a circle over the enemies you see. The damage per second of your units is given out to the enemies.
-
-- **XS** spreads the damage per second **evenly**: every enemy gets the same share, whatever its health (20 units against 10 enemies: two on each)
-- **XF** kills **as fast as possible**: the most dangerous enemy first (its damage per second against the time it takes to kill it, including the way there), with as many units as it needs to die (its health + 15 % against the damage per second of your units); the others go on to the next one
-
-<p>
-<img src="docs/split-attack.jpg" alt="Split attack (XS): 20 light units against 10 heavier ones; every enemy has a color, the units aimed at it carry the same color (two on each)" width="365">
-<img src="docs/focus-attack.jpg" alt="Focus attack (XF): four enemies get five units each, the gray ones come next" width="365">
-</p>
-
-*Left: XS spreads the units evenly, two on each enemy. Right: XF puts five units on each of the four nearest enemies, the gray ones come next.*
-
-More in the [BluePrinter usage](docs/blueprinter-usage.md#split-attack-and-focus-attack-experimental).
+Details, rules and pictures: [Experimental Attacks](docs/experimental-attacks.md).
 
 ## Installation (Windows)
 
@@ -134,7 +119,8 @@ More in the [BluePrinter usage](docs/blueprinter-usage.md#split-attack-and-focus
 ## Documentation
 
 - **[Using the Level Editor](docs/level-editor-usage.md)**: installation details, keys and controls, scenario builder, game modes
-- **[Using the BluePrinter](docs/blueprinter-usage.md)**: installation, what it does, area attacks
+- **[Using the BluePrinter](docs/blueprinter-usage.md)**: installation, what it does
+- **[Experimental Attacks](docs/experimental-attacks.md)**: area attacks (XL, XR, XC), split attack (XS), focus attack (XF)
 - **[LAN Play](docs/lan-play.md)** and Copilot
 - [Level Editor](LevelEditor/README.md), [Scenario builder](LevelEditor/scenario/README.md), [BluePrinter](BluePrinter/README.md)
 - Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
