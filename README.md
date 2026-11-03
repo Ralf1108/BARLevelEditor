@@ -77,7 +77,7 @@ A small widget for the **official** game that brings blueprints to normal matche
 - Cost, build time and **Eco time** (how long your income needs to pay for it) of every building and blueprint
 - Auto-build can be switched off (it may count as automation in ranked games)
 - Area attacks (XL, XR, XC): spread the bombs and shots of many units evenly over a line, rectangle or circle *(experimental)*
-- Split attack (XS): spread the firepower of many units over the enemies in a circle, so that none is wasted *(experimental)*
+- Split attack (XS) and focus attack (XF): use the firepower of many units against the enemies in a circle, spread evenly or one enemy after the other *(experimental)*
 
 | Blueprints | Buildings |
 |---|---|
@@ -108,11 +108,19 @@ More in [LAN Play](docs/lan-play.md).
 
 More in the [BluePrinter usage](docs/blueprinter-usage.md#area-attacks-experimental).
 
-**Split attack**: spread the *firepower* of the selected units over the enemies in a circle. **XS**: select armed units, press the button, drag a circle over the enemies you see. The damage per second of your units is given out so that every enemy gets about the damage it needs to die (health + 15 %), mobile enemies first, buildings after them; no shots are wasted on an enemy that dies anyway.
+**Split attack and focus attack**: use the *firepower* of the selected units against the enemies in a circle. Select armed units, press the button, drag a circle over the enemies you see. The damage per second of your units is compared with the health of the enemies (+ 15 %).
 
-<img src="docs/split-attack.jpg" alt="Split attack: 20 light units against 10 heavier ones; every enemy has a color, the units aimed at it carry the same color (mostly two per enemy)" width="740">
+- **XS** spreads the firepower **evenly**: every enemy gets about the damage it needs to die, all at the same time
+- **XF** kills **as fast as possible**: the nearest enemy first, with as many units as it needs; the others go on to the next one
 
-More in the [BluePrinter usage](docs/blueprinter-usage.md#split-attack-experimental).
+<p>
+<img src="docs/split-attack.jpg" alt="Split attack (XS): 20 light units against 10 heavier ones; every enemy has a color, the units aimed at it carry the same color (two or three per enemy)" width="365">
+<img src="docs/focus-attack.jpg" alt="Focus attack (XF): four enemies get five units each, the gray ones come next" width="365">
+</p>
+
+*Left: XS spreads the units evenly, two or three on each enemy. Right: XF puts five units on each of the four nearest enemies, the gray ones come next.*
+
+More in the [BluePrinter usage](docs/blueprinter-usage.md#split-attack-and-focus-attack-experimental).
 
 ## Installation (Windows)
 

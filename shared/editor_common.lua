@@ -3528,7 +3528,7 @@ end
 -- Selected units with area damage attack a line, a rectangle or a circle that is dragged on the map. Used by the
 -- Level Editor and the BluePrinter. o: { say = fn(text), mouseGround = fn() -> x, z, inPanel = fn(mx, my) -> bool
 -- (no drawing over the menu), onArm = fn() (called when the mode is switched on, to end other stamp modes) }.
--- Methods: toggle(mode "line"|"rect"|"circle"|"split"|nil; split = XS, spreads the firepower over the enemies in a circle), armed(), mode(), press(button) (map click while armed; true if used),
+-- Methods: toggle(mode "line"|"rect"|"circle"|"split"|"focus"|nil; split = XS spreads the firepower evenly over the enemies in a circle, focus = XF kills them one after the other), armed(), mode(), press(button) (map click while armed; true if used),
 -- release() (mouse released: starts the attack), draw() (in DrawWorld), step(frame) (call every frame), disarm().
 function M.newAreaAttack(o)
 	local say = o.say
@@ -3752,12 +3752,17 @@ function M.newAreaAttack(o)
 		return areaPlan(areaMode, ax, az, bx, bz, ids, n, approach)
 	end
 
-	-- Split attack (XS): the firepower of the selected units is spread over the visible enemy units inside a circle, so that
-	-- every target gets about the damage it needs to die (health + SPLIT_BUFFER) and no shots are wasted on a target that
-	-- dies anyway. Firepower = damage per second against the armor class of the target, from the weapon definitions (beam
+	-- Split attack (XS) and focus attack (XF): the selected units attack the visible enemy units inside a circle. XS spreads
+	-- the firepower evenly: every target gets about the damage it needs to die (health + SPLIT_BUFFER), all at the same time.
+	-- XF kills the targets as fast as possible one after the other (nearest first), every target with as many units as it
+	-- needs, the rest goes on to the next. Firepower = damage per second against the armor class of the target, from the
+	-- weapon definitions (beam
 	-- lasers count like the others; paralyzer weapons, stockpile weapons (nukes) and the D-Gun do not; area damage is not
 	-- counted). Mobile enemies come first, buildings after them.
+	local SPLIT_MODES = { split = true, focus = true } -- the modes of this attack (areaMode)
+	local SPLIT_NAMES = { split = "Split attack", focus = "Focus attack" }
 	local SPLIT_BUFFER = 1.15 -- a target is planned with 15 % more damage than its health
+	local SPLIT_KILL_TIME = 3 -- seconds in which the units given to a target should kill it
 	local SPLIT_QUEUE = 8 -- planned targets per unit (and one more at the end)
 	local SPLIT_MAX_TARGETS, SPLIT_MAX_UNITS = 150, 300
 	local SPLIT_EVERY = 30 -- frames between two checks of the plan
@@ -3851,7 +3856,7 @@ function M.newAreaAttack(o)
 		return out
 	end
 
-	-- Plan: every unit gets a queue of target ids. Time horizon H = damage all targets need / firepower of all units: every
+	-- Split plan (XS): every unit gets a queue of target ids. Time horizon H = damage all targets need / firepower of all units: every
 	-- unit has H seconds. Target by target (mobile ones first, nearest to the group first) the nearest units take volleys
 	-- until the need of the target is covered; a unit takes whole volleys, so a weak target costs it one volley and the unit
 	-- goes on to the next target. At the end every unit gets one more target (the nearest uncovered one, else the nearest
@@ -3941,9 +3946,106 @@ function M.newAreaAttack(o)
 		return queues
 	end
 
+	-- Focus plan (XF): every unit gets a queue of target ids. The targets in order of priority (mobile first, nearest to the group first)
+	-- take one after the other the nearest units that are still free, until the damage of these units within SPLIT_KILL_TIME
+	-- seconds (at least one volley each) covers the need of the target: a weak target takes one unit, a strong one many. These
+	-- units start on it. A target for which no free unit is left is uncovered: every unit goes on to the uncovered targets after
+	-- its own, in the same order, so the whole group concentrates on one target after the other. Free units that are left when
+	-- every target is covered start on the nearest target they can hit. At the end every unit gets one more target (the
+	-- nearest one it can hit), so nothing stands idle while an enemy lives.
+	local function focusPlan(attackers, targets)
+		local gx, gz = 0, 0
+		for _, u in ipairs(attackers) do
+			gx, gz = gx + u.x, gz + u.z
+		end
+		gx, gz = gx / math.max(1, #attackers), gz / math.max(1, #attackers)
+		table.sort(targets, function(a, b)
+			if a.mobile ~= b.mobile then
+				return a.mobile
+			end
+			return dist2(a.x, a.z, gx, gz) < dist2(b.x, b.z, gx, gz)
+		end)
+		local free, queues, uncovered = {}, {}, {}
+		for _, u in ipairs(attackers) do
+			free[#free + 1] = u
+			queues[u.id] = {}
+		end
+		for _, t in ipairs(targets) do
+			t.need = t.hp * SPLIT_BUFFER + 1
+			local cand = {}
+			for _, u in ipairs(free) do
+				local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
+				local dps, volley = splitDps(u.def, t.def, u.static, d)
+				if dps > 0 then
+					cand[#cand + 1] = { u = u, d = d, dps = dps, volley = volley }
+				end
+			end
+			table.sort(cand, function(a, b) return a.d < b.d end)
+			local rest, taken, count = t.need, {}, 0
+			for _, c in ipairs(cand) do
+				if rest <= 0 then
+					break
+				end
+				local volleys = math.max(1, math.floor(SPLIT_KILL_TIME * c.dps / c.volley + 0.5))
+				rest = rest - volleys * c.volley
+				taken[c.u.id] = true
+				count = count + 1
+				queues[c.u.id][1] = t.id
+			end
+			if count == 0 then
+				uncovered[#uncovered + 1] = t
+			else
+				local left = {}
+				for _, u in ipairs(free) do
+					if not taken[u.id] then
+						left[#left + 1] = u
+					end
+				end
+				free = left
+			end
+		end
+		for _, u in ipairs(attackers) do
+			local q, inQueue = queues[u.id], {}
+			for _, id in ipairs(q) do
+				inQueue[id] = true
+			end
+			local function nearest(list)
+				local best, bestD
+				for _, t in ipairs(list) do
+					if not inQueue[t.id] then
+						local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
+						if (not bestD or d < bestD) and splitDps(u.def, t.def, u.static, d) > 0 then
+							best, bestD = t, d
+						end
+					end
+				end
+				return best
+			end
+			if #q == 0 then -- a free unit that nobody needed: the nearest target
+				local t = nearest(targets)
+				if t then
+					q[1], inQueue[t.id] = t.id, true
+				end
+			end
+			for _, t in ipairs(uncovered) do
+				if #q >= SPLIT_QUEUE then
+					break
+				end
+				if not inQueue[t.id] and splitDps(u.def, t.def, u.static, math.sqrt(dist2(u.x, u.z, t.x, t.z))) > 0 then
+					q[#q + 1], inQueue[t.id] = t.id, true
+				end
+			end
+			local t = nearest(targets)
+			if t then
+				q[#q + 1] = t.id
+			end
+		end
+		return queues
+	end
+
 	-- Gives the orders of a plan; units without a target are dropped from the attack
 	local function splitApply(attackers, targets)
-		local queues = splitPlan(attackers, targets)
+		local queues = (split.mode == "focus" and focusPlan or splitPlan)(attackers, targets)
 		local given = 0
 		split.units = {}
 		for _, u in ipairs(attackers) do
@@ -3981,7 +4083,7 @@ function M.newAreaAttack(o)
 		while #targets > SPLIT_MAX_TARGETS do
 			targets[#targets] = nil
 		end
-		split = { units = {}, targets = {}, frame = Spring.GetGameFrame() }
+		split = { units = {}, targets = {}, frame = Spring.GetGameFrame(), mode = areaMode }
 		local mobile = 0
 		for _, t in ipairs(targets) do
 			split.targets[t.id] = true
@@ -3992,10 +4094,10 @@ function M.newAreaAttack(o)
 		local given = splitApply(attackers, targets)
 		if given == 0 then
 			split = nil
-			say("Split attack: no selected unit can hit these enemies")
+			say(SPLIT_NAMES[areaMode] .. ": no selected unit can hit these enemies")
 			return
 		end
-		say(string.format("Split attack: %d units on %d enemies (%d mobile, %d buildings)", given, #targets, mobile, #targets - mobile))
+		say(string.format("%s: %d units on %d enemies (%d mobile, %d buildings)", SPLIT_NAMES[areaMode], given, #targets, mobile, #targets - mobile))
 	end
 
 	local function firstCommand(id)
@@ -4006,19 +4108,21 @@ function M.newAreaAttack(o)
 		return type(c) == "table" and c[1] and c[1].id or nil
 	end
 
-	-- Every second: forget dead targets and units that got another order; a unit that has finished its queue while enemies
-	-- live makes a new plan for all units that are left
+	-- Every second: forget dead targets and units that got another order; when a target has died, or a unit has finished its
+	-- queue while enemies live, a new plan is made for all units that are left (current health, current positions)
 	local function splitStep(frame)
 		if not split or frame % SPLIT_EVERY ~= 0 then
 			return
 		end
+		local name = SPLIT_NAMES[split.mode]
 		if frame - split.frame > SPLIT_TIMEOUT then
 			split = nil
-			say("Split attack ended (time limit)")
+			say(name .. " ended (time limit)")
 			return
 		end
-		local living, count = {}, 0
+		local living, count, before = {}, 0, 0
 		for id in pairs(split.targets) do
+			before = before + 1
 			local t = targetInfo(id)
 			if t then
 				living[id] = t
@@ -4027,14 +4131,14 @@ function M.newAreaAttack(o)
 		end
 		if count == 0 then
 			split = nil
-			say("Split attack finished")
+			say(name .. " finished")
 			return
 		end
 		split.targets = {}
 		for id in pairs(living) do
 			split.targets[id] = true
 		end
-		local attackers, replan = {}, false
+		local attackers, replan = {}, split.mode == "focus" and count < before
 		for id, q in pairs(split.units) do
 			local u = attackerInfo(id)
 			local cmd = u and firstCommand(id)
@@ -4059,7 +4163,7 @@ function M.newAreaAttack(o)
 		end
 		if next(split.units) == nil and #attackers == 0 then
 			split = nil
-			say("Split attack ended: no units left")
+			say(name .. " ended: no units left")
 			return
 		end
 		if replan then
@@ -4069,7 +4173,7 @@ function M.newAreaAttack(o)
 			end
 			if splitApply(attackers, targets) == 0 then
 				split = nil
-				say("Split attack ended: nothing left to hit")
+				say(name .. " ended: nothing left to hit")
 			end
 		end
 	end
@@ -4110,7 +4214,7 @@ function M.newAreaAttack(o)
 	end
 
 	local function areaGo(ax, az, bx, bz)
-		if areaMode == "split" then
+		if SPLIT_MODES[areaMode] then
 			return splitGo(ax, az, bx, bz)
 		end
 		local bombers, guns = selectedBombers(), selectedShooters()
@@ -4144,7 +4248,8 @@ function M.newAreaAttack(o)
 	end
 
 	local AREA_HINT = { line = "drag a line", rect = "drag a rectangle", circle = "drag a circle from the center outwards",
-		split = "drag a circle from the center outwards: the firepower is spread over the visible enemies in it" }
+		split = "drag a circle from the center outwards: the firepower is spread evenly over the visible enemies in it",
+		focus = "drag a circle from the center outwards: the units kill the visible enemies in it one after the other" }
 	toggleArea = function(mode)
 		if areaArmed and (mode == nil or mode == areaMode) then
 			areaArmed = false
@@ -4158,9 +4263,9 @@ function M.newAreaAttack(o)
 		if o.onArm then
 			o.onArm()
 		end
-		local n = areaMode == "split" and #selectedBy(isArmed) or (#selectedBombers() + #selectedShooters())
+		local n = SPLIT_MODES[areaMode] and #selectedBy(isArmed) or (#selectedBombers() + #selectedShooters())
 		say(n > 0 and string.format("Experimental: %d units selected. On the map %s, right click cancels.", n, AREA_HINT[areaMode])
-			or "Experimental: select " .. (areaMode == "split" and "armed units" or "bombers, artillery, rocket launchers or nukes") .. " first, then on the map " .. AREA_HINT[areaMode] .. ".")
+			or "Experimental: select " .. (SPLIT_MODES[areaMode] and "armed units" or "bombers, artillery, rocket launchers or nukes") .. " first, then on the map " .. AREA_HINT[areaMode] .. ".")
 		return true
 	end
 
@@ -4193,10 +4298,10 @@ function M.newAreaAttack(o)
 		end
 		local bombers, guns = selectedBombers(), selectedShooters()
 		local plans = {}
-		if areaMode ~= "split" and (#bombers > 0 or #guns == 0) then
+		if not SPLIT_MODES[areaMode] and (#bombers > 0 or #guns == 0) then
 			plans[#plans + 1] = (planFor(areaDrag.x, areaDrag.z, gx, gz, #bombers > 0 and bombers or nil, math.max(1, #bombers), STAGING_DISTANCE))
 		end
-		if areaMode ~= "split" and #guns > 0 then
+		if not SPLIT_MODES[areaMode] and #guns > 0 then
 			plans[#plans + 1] = (planFor(areaDrag.x, areaDrag.z, gx, gz, guns, nil, 0))
 		end
 		gl.LineWidth(2)
@@ -4239,7 +4344,7 @@ function M.newAreaAttack(o)
 				end)
 			end
 		end
-		if areaMode == "split" then
+		if SPLIT_MODES[areaMode] then
 			local list = enemiesIn(ax, az, math.max(math.sqrt(dist2(ax, az, gx, gz)), 16))
 			gl.Color(1, 0.3, 0.2, 0.95)
 			for i, e in ipairs(list) do

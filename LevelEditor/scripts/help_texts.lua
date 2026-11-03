@@ -5,7 +5,7 @@
 local sections = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, T teams (human or AI, alliance, start resources), ? this help, P / G / TD / CF / RF pages, XL / XR / XC area attacks and XS split attack (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, T teams (human or AI, alliance, start resources), ? this help, P / G / TD / CF / RF pages, XL / XR / XC area attacks, XS split attack and XF focus attack (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Title row", "Drag the title \"Level Editor\" with the left mouse button: the whole menu (with the strip at the left and the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Red X (Place menu)", "A small X on a unit picture, on a faction, a group or a tech button restricts it for the player in the game (Start, scenario): all units in it, or all units of a tech level. The X is on when all of them are restricted and goes off when you allow one. Click again to allow. You can always place everything in the editor. The Tower Defense page shows the same list." },
@@ -37,7 +37,7 @@ local sections = {
 		{ "Generate", "Generate tab: choose faction, type (several possible: units, buildings, turrets, air, ships), tech T1-T3 and count (input field), press Rectangle or Circle (a circle is dragged from its center outwards) and drag the area on the map; random units appear in it for the chosen team. Ctrl+Z undoes them. The Maze sub-tab builds a random maze in the dragged area." },
 		{ "DL  /  DR  /  DC", "Delete along a line, in a rectangle or in a circle: press the button (D = rectangle), then drag the shape on the map; everything in it (units, wrecks, features) is deleted. Ctrl+Z undoes it." },
 		{ "XL  /  XR  /  XC", "Experimental area attacks (line, rectangle, circle): select bombers, artillery, rocket launchers or nukes, press the button and drag the shape on the map (circle from the center). Bombers form up and attack together, front targets first." },
-		{ "XS", "Experimental split attack: select armed units, press XS and drag a circle from the center over visible enemies. The damage per second of your units is spread over them so that every enemy gets about the damage it needs to die (+15 %), mobile enemies first, then buildings; units that are not needed keep shooting at the rest." },
+		{ "XS  /  XF", "Experimental attacks on the enemies in a circle: select armed units, press the button and drag a circle from the center over visible enemies. XS spreads the firepower evenly (every enemy gets about the damage it needs to die, +15 %, all at the same time), XF kills them as fast as possible, the nearest first, with as many units as each needs. Mobile enemies first, then buildings." },
 		{ "M", "Maze: the key cycles through dragon teeth, walls, off (also the Maze sub-tab of the Generate tab). Then drag a rectangle or circle; a random maze appears in it (entrance top left, exit bottom right). Right click or arming something else ends the mode, Ctrl+Z undoes it." },
 	} },
 	{ "Editing the selection", {
@@ -168,7 +168,7 @@ local topics = {
 			"DELETE: the buttons DL, DR and DC in the strip left of the menu delete everything along a dragged line, in a dragged rectangle (also key D) or in a dragged circle: units, wrecks and features. Ctrl+Z brings it back.",
 			"MAZE: Generate menu, sub-tab Maze (or key M): choose dragon teeth or walls, press Generate and drag the area; entrance top left, exit bottom right.",
 			"AREA ATTACK (experimental): select bombers, artillery, rocket launchers or nukes, press XL, XR or XC and drag a line, rectangle or circle; the bombs and shots of all of them are spread evenly over it.",
-			"SPLIT ATTACK (experimental): select armed units, press XS and drag a circle from the center over visible enemies; the damage per second of your units is spread over them so that every enemy gets about the damage it needs to die.",
+			"SPLIT / FOCUS ATTACK (experimental): select armed units, press XS or XF and drag a circle from the center over visible enemies; XS spreads the damage per second of your units evenly over them, XF kills them one after the other, nearest first.",
 			"RIGHT CLICK: anywhere it ends every mode (placing, delete, maze, generate, area attack); without a mode it gives the order to the selected units.",
 		},
 	},

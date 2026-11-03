@@ -82,7 +82,7 @@ local HELP_SECTIONS = {
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
 		{ "/bp_rotate  /bp_undo  /bp_clear", "Rotate, undo, clear all." },
-		{ "/bp_carpet [line|rect|circle|split]  /bp_spacing", "Area attack, split attack, spacing." },
+		{ "/bp_carpet [line|rect|circle|split|focus]  /bp_spacing", "Area, split and focus attack, spacing." },
 	} },
 }
 local area -- area attacks (XL, XR, XC), created below from the shared code
@@ -948,7 +948,8 @@ local TIPS = {
 	create = "Saves the selected buildings\nas a new blueprint",
 	areal = "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or\nnukes, press XL, then drag a line on the map.\nEach unit gets a piece of it.",
 	arear = "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XR, then drag a rectangle.\nThe units spread over the whole area.",
-	areas = "XS (experimental): split attack. Select armed units, press XS, then drag a circle\nfrom the center outwards. The firepower of the selected units is spread over the\nvisible enemies in it: every enemy gets about the damage it needs to die (+15 %),\nmobile ones first, then buildings. Units without a job attack the rest.",
+	areas = "XS (experimental): split attack. Select armed units, press XS, then drag a circle\nfrom the center outwards. The firepower of the selected units is spread evenly over\nthe visible enemies in it: every enemy gets about the damage it needs to die (+15 %),\nall at the same time. Mobile enemies first, then buildings.",
+	areaf = "XF (experimental): focus attack. Select armed units, press XF, then drag a circle\nfrom the center outwards. The units kill the visible enemies in it one after the other,\nthe nearest first (mobile ones before buildings), as fast as possible: every enemy gets\nas many units as it needs to die in about 3 seconds, the rest goes on to the next one.",
 	areac = "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or\nnukes, press XC, then drag a circle from the\ncenter outwards. The units spread over it.",
 }
 
@@ -992,7 +993,8 @@ local function layout()
 	colBtn(8, "areal", "XL", area:armed() and area:mode() == "line") -- one button gap above: these are experimental
 	colBtn(9, "arear", "XR", area:armed() and area:mode() == "rect")
 	colBtn(10, "areac", "XC", area:armed() and area:mode() == "circle")
-	colBtn(12, "areas", "XS", area:armed() and area:mode() == "split") -- one button gap: a command of its own
+	colBtn(12, "areas", "XS", area:armed() and area:mode() == "split") -- one button gap: commands of their own
+	colBtn(13, "areaf", "XF", area:armed() and area:mode() == "focus")
 	colBtn(5, "queue", "Q", queueOrder, TIPS.queue .. "\nNow: " .. (queueOrder and "ON" or "OFF"))
 	colBtn(6, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
@@ -1093,6 +1095,8 @@ local function pressButton(id)
 		area:toggle("circle")
 	elseif id == "areas" then
 		area:toggle("split")
+	elseif id == "areaf" then
+		area:toggle("focus")
 	elseif id == "create" then
 		widget:CreateBlueprint()
 	elseif id == "collapse" then
@@ -2295,7 +2299,7 @@ local ACTIONS = {
 	end,
 	bp_carpet = function(_, _, words)
 		local w = words and words[1]
-		return area:toggle((w == "rect" or w == "circle" or w == "line" or w == "split") and w or nil)
+		return area:toggle((w == "rect" or w == "circle" or w == "line" or w == "split" or w == "focus") and w or nil)
 	end,
 	bp_helpbox = function()
 		helpOpen = not helpOpen

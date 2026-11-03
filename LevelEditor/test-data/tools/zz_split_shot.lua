@@ -1,8 +1,8 @@
 function widget:GetInfo() return { name = "zz split shot", desc = "test only: the picture of the split attack for the README", layer = 1000000, enabled = true } end
--- Test widget of arena_test.ps1 -Widget zz_split_shot.lua: the Arena generates 20 light units (team 0) and 10 heavier ones (team 1) 600 Elmo apart,
--- team 0 is selected and attacks team 1 with the split attack. Right after the order every unit keeps only its first target (the plan of the
+-- Test widget of arena_test.ps1 -Widget zz_split_shot.lua: the Arena generates 20 light units (team 0) and 10 heavier ones (team 1) 900 Elmo apart,
+-- team 0 is selected and attacks team 1 with the split attack XS (MODE "split") or the focus attack XF (MODE "focus"). Right after the order every unit keeps only its first target (the plan of the
 -- split attack without the surplus target at the end of every queue), so the command lines of the selected units show who is aimed at whom;
--- the circle is drawn by this widget. Two screenshots: with the interface and without. Logs "[zzsp]" lines (units per enemy), ends with quitforce.
+-- the circle is drawn by this widget. One screenshot (the interface is hidden). Logs "[zzsp]" lines (units per enemy), ends with quitforce.
 local lines = {}
 local function log(...)
 	local t = {}
@@ -12,7 +12,9 @@ end
 local function W() return WG.LevelEditorWidget end
 local Shared = VFS.Include("luaui/Include/editor_common.lua", nil, VFS.ZIP_FIRST)
 local MX, MZ = Game.mapSizeX / 2, Game.mapSizeZ / 2
-local LIGHT, HEAVY = "armpw", "corcan"
+local MODE = "focus" -- "split" (XS) or "focus" (XF)
+local LIGHT = "armpw"
+local HEAVY = MODE == "split" and "corcan" or "corthud" -- XS: 20 Peewees need about 2 per Can; XF: about 5 per Thud, four groups of five
 local ar, area, ring
 local assign = {} -- unit -> its target (drawn as a colored line, one color per enemy)
 local colorOf = {}
@@ -51,10 +53,26 @@ local later = {} -- { at = frame, fn }: steps after the order (the orders of the
 local function after(n, fn) later[#later + 1] = { at = Spring.GetGameFrame() + n, fn = fn } end
 local steps = {}
 steps[40] = function()
+	-- how many light units a candidate enemy needs (kill time 3 s, buffer 15 %), logged to choose the enemy of the picture
+	local lu = UnitDefs[UnitDefNames[LIGHT].id]
+	for _, name in ipairs({ "corak", "corthud", "corstorm", "corcan", "corwolv", "armham", "armrock", "armfido", "armmav", "armstump", "corraid", "armflash" }) do
+		local ud = UnitDefNames[name] and UnitDefs[UnitDefNames[name].id]
+		if ud then
+			local vol, dps = 0, 0
+			for _, w in ipairs(lu.weapons) do
+				local wd = WeaponDefs[w.weaponDef]
+				local d = wd.damages[ud.armorType or 0] or wd.damages[0]
+				local v = d * (wd.projectiles or 1) * (wd.salvoSize or 1)
+				vol, dps = vol + v, dps + v / wd.reload
+			end
+			local volleys = math.max(1, math.floor(3 * dps / vol + 0.5))
+			log("candidate", name, "health", ud.health, "light units needed", string.format("%.1f", (ud.health * 1.15 + 1) / (volleys * vol)))
+		end
+	end
 	ar = W():DebugArena()
 	click(rect("ar", "ar"))
 	local c = ar.cfg(true)
-	c.radius = 300
+	c.radius = 450
 	for i = 1, 10 do c.rows[i].allowed, c.rows[i].count, c.rows[i].on = {}, (i == 1) and 20 or 10, i <= 2 end
 	ar.setAllowed(1, { LIGHT }, true)
 	ar.setAllowed(2, { HEAVY }, true)
@@ -63,6 +81,7 @@ end
 steps[100] = function() ar.startPick("gen"); ar.click(MX, MZ) end
 steps[220] = function()
 	click(rect("ar", "ar")) -- the page closes
+	Spring.SendCommands("hideinterface 1")
 	ar.cfg(true).point = nil -- no marker of the Arena Point in the picture
 	local mine, foe = army(0), army(1)
 	log("armies", #mine, #foe)
@@ -75,7 +94,7 @@ steps[220] = function()
 	mx, mz = mx / #mine, mz / #mine
 	local r = 230
 	area = Shared.newAreaAttack({ say = function(s) log("say:", s) end, mouseGround = function() return mouse[1], mouse[2] end })
-	area:toggle("split")
+	area:toggle(MODE)
 	mouse = { cx, cz }
 	area:press(1)
 	mouse = { cx + r, cz }
@@ -92,17 +111,23 @@ steps[220] = function()
 				assign[id] = tid
 			end
 		end
-		for i, id in ipairs(foe) do colorOf[id] = PALETTE[(i - 1) % #PALETTE + 1] end
+		local n = 0
+		for _, id in ipairs(foe) do
+			if per[id] then
+				n = n + 1
+				colorOf[id] = PALETTE[(n - 1) % #PALETTE + 1]
+			else
+				colorOf[id] = { 0.65, 0.65, 0.65 } -- nobody is aimed at it yet: it comes next
+			end
+		end
 		Spring.SelectUnitArray({}) -- no selection: the lines of the engine are gone, the colored ones show the plan
 		local hist = {}
 		for _, id in ipairs(foe) do hist[#hist + 1] = tostring(per[id] or 0) end
 		log("units per enemy:", table.concat(hist, " "))
-		camera((cx + mx) / 2, (cz + mz) / 2, 900)
+		camera((cx * 2 + mx) / 3, (cz * 2 + mz) / 3, 1250)
 	end)
-	after(30, function() Spring.SendCommands("screenshot png"); log("screenshot with the interface") end)
-	after(45, function() Spring.SendCommands("hideinterface 1") end)
-	after(110, function() Spring.SendCommands("screenshot png"); log("screenshot without the interface") end)
-	after(130, function()
+	after(22, function() Spring.SendCommands("screenshot png"); log("screenshot") end)
+	after(60, function()
 		log("END")
 		for _, l in ipairs(lines) do Spring.Echo(l) end
 		Spring.SendCommands("quitforce")

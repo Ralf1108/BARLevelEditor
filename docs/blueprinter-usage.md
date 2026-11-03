@@ -41,18 +41,23 @@ Spread the shots or bombs of all selected units over an area (bombers, artillery
 
 ![Area attack](area-attack.jpg)
 
-## Split attack (experimental)
+## Split attack and focus attack (experimental)
 
-Spread the firepower of the selected units over the enemies in a circle, so that every enemy gets about the damage it needs to die and no shots are wasted.
+Use the firepower of the selected units against the enemies in a circle.
 
-- **XS** (below the area attack buttons): select armed units, press the button, drag a circle from the center outwards over the enemies you see
-- The damage per second of your units is given out to the enemies (health + 15 %): weak enemies get one shooter, strong ones several; mobile enemies first, buildings after them
-- Units that are not needed keep shooting at what is left; when all enemies in the circle are dead your units stop
+- Select armed units, press **XS** or **XF** (below the area attack buttons), drag a circle from the center outwards over the enemies you see
+- **XS (split attack)** spreads the firepower **evenly**: every enemy gets about the damage it needs to die (health + 15 %), all at the same time
+- **XF (focus attack)** kills **as fast as possible**: nearest enemy first, with as many units as it needs; the others go on to the next one
+- Mobile enemies first, buildings after them; units that are not needed keep shooting at what is left; when all enemies in the circle are dead your units stop
 - Only the enemies in the circle at the moment you release the mouse button count; right click cancels
 
 ![Split attack](split-attack.jpg)
 
-*20 light units against 10 heavier ones, just after the order: every enemy has a color and the units aimed at it carry the same color, mostly two per enemy. (The colors were drawn for the picture; in the game the selected units show their orders as thin lines.)*
+*XS: 20 light units against 10 heavier ones, just after the order: every enemy has a color and the units aimed at it carry the same color, two or three on each. (The colors were drawn for the picture; in the game the selected units show their orders as thin lines.)*
+
+![Focus attack](focus-attack.jpg)
+
+*XF: 20 light units against 10 heavier ones that need about five of them each: four enemies get five units each (colors), the other six (gray) come next.*
 
 ## More
 

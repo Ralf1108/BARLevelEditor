@@ -10,6 +10,7 @@ end
 local function W() return WG.LevelEditorWidget end
 local Shared = VFS.Include("luaui/Include/editor_common.lua", nil, VFS.ZIP_FIRST)
 local MX, MZ = Game.mapSizeX / 2, Game.mapSizeZ / 2
+local MODE = "focus" -- "split" (XS, even) or "focus" (XF, one target after the other); a copy with the other word tests the other mode
 local ar, area
 local mouse = { 0, 0 }
 local endAt
@@ -58,7 +59,7 @@ steps[200] = function()
 		end,
 		mouseGround = function() return mouse[1], mouse[2] end,
 	})
-	area:toggle("split")
+	area:toggle(MODE)
 	mouse = { cx, cz }
 	area:press(1)
 	mouse = { cx + 1500, cz }
