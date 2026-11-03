@@ -30,4 +30,4 @@ How changes are checked. The details of the test tools and what got in the way a
 
 ## 4. Not checkable in the game
 
-Ctrl+click and Alt-drag (the key states cannot be given there; mocks only); screenshots of the OpenGL window of the lobby (they come out black).
+Ctrl+click and Alt-drag (the key states cannot be given there; mocks only); screenshots of the lobby only with `PrintWindow` (`lan_test.ps1 -Shots`).

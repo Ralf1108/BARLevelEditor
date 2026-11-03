@@ -5,11 +5,14 @@
 #   -KeepOnline   with -NoMap: the lobby of the joiner may download the map online (without it the test cancels that download)
 #   -MapList none | official | wrong   the list of official map md5 of the joiners: none, the real one (fetched online), or one with a wrong md5
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
-#   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map)
+#   -Shots 20,45   pictures of the window of the host (seconds after the start): shot_<s>.png in -Work (PrintWindow: the window may stay behind others;
+#                  gl.SaveImage and a copy of the screen come out black or disturb)
+#   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
+#         teams = the buttons "3 teams" / "2 per team" of the room (log: lan_status.txt in the data folder of the host; pictures with -Shots)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data')
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '')
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -23,7 +26,7 @@ public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowP
 '@
 $exe = (Get-ChildItem "$real\engine" -Directory | Select -Last 1).FullName + '\spring.exe'
 $scn = "${Mode}_test"
-if ($Mode -ne 'cp') {
+if ($Mode -notin 'cp', 'teams') {
     if (Test-Path "$sp\bundle_$scn") { Remove-Item "$sp\bundle_$scn" -Recurse -Force }
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\LevelEditor\scenario\scenario_builder.ps1" -Level $scn -LevelDir "$repo\LevelEditor\test-data\levels" -Auto -BundleDir "$sp\bundle_$scn" | Out-Null
 }
@@ -51,12 +54,12 @@ foreach ($who in $who2) {
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
-        if ($Mode -ne 'cp') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
+        if ($Mode -notin 'cp', 'teams') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=40" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -80,9 +83,33 @@ foreach ($who in $who2) {
     $t0 = Get-Date
     while (((Get-Date) - $t0).TotalSeconds -lt 20) { $procs[$who].Refresh(); if ($procs[$who].MainWindowHandle -ne [IntPtr]::Zero) { [void][W2]::SetWindowPos($procs[$who].MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013) }; [void][W2]::SetForegroundWindow($prev); Start-Sleep -Milliseconds 500 }
 }
+Add-Type -AssemblyName System.Drawing
+Add-Type @'
+using System; using System.Runtime.InteropServices;
+public class W3 { [StructLayout(LayoutKind.Sequential)] public struct R { public int L, T, Rt, B; }
+ [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out R r);
+ [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags); }
+'@
+function Save-Shot($proc, $name) {
+    $h = $proc.MainWindowHandle
+    $r = New-Object W3+R; [void][W3]::GetWindowRect($h, [ref]$r)
+    $w = $r.Rt - $r.L; $ht = $r.B - $r.T
+    if ($w -lt 50 -or $ht -lt 50) { "shot $name : window not found"; return }
+    $bmp = New-Object Drawing.Bitmap $w, $ht
+    $g = [Drawing.Graphics]::FromImage($bmp)
+    $dc = $g.GetHdc(); [void][W3]::PrintWindow($h, $dc, 2); $g.ReleaseHdc($dc)
+    $g.Dispose(); $bmp.Save("$sp\$name", [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+    "shot $name ($w x $ht)"
+}
+$shotAt = @(); foreach ($s in ($Shots -split '[,\s]+' | ? { $_ })) { $shotAt += [int]$s }
 $start = Get-Date
 while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not $procs[$_].HasExited }).Count -gt 0))) {
     foreach ($who in $who2) { if (-not $procs[$who].HasExited) { $procs[$who].Refresh(); [void][W2]::SetWindowPos($procs[$who].MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013) } }
+    $el = ((Get-Date) - $start).TotalSeconds
+    foreach ($s in @($shotAt)) { if ($el -ge $s -and -not $procs['H'].HasExited) {
+        $shotAt = @($shotAt | ? { $_ -ne $s }); $procs['H'].Refresh()
+        Save-Shot $procs['H'] "shot_$s.png"
+    } }
     Start-Sleep 3
 }
 foreach ($who in $who2) { if (-not $procs[$who].HasExited) { "timeout: killing $who"; try { Stop-Process -Id $procs[$who].Id -Force } catch {} } else { "$who ended itself" } }
