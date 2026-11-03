@@ -14,15 +14,15 @@ end
 --   host:    the lobby connects to its own server and joins the battle
 --   joiner:  the lobby connects to the server of the host (the server address of the lobby is changed for the time of the LAN game) and joins the battle
 -- So the official MULTIPLAYER battle room is used unchanged (map, options, AIs, colours, teams, chat). The server answers the autohost commands the room sends
--- as chat: !map, !bSet, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
+-- as chat: !map, !bSet, !nbTeams, !set teamSize, !balance, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list)
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room)
 
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 1, stamp = "2026-10-28 10:25" }
+local LAN_VERSION = { number = 1, stamp = "2026-11-03 23:35" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -282,6 +282,147 @@ forcedStatus = function(c)
 	return encodeStatus(bs)
 end
 
+-- ---- teams and start boxes: the part of the autohost the room talks to. The buttons "N teams" and "N per team" send !nbTeams N and !set teamSize N; the
+-- room changes only when the autohost reports the new value (as a BarManager line, which SPADS sends), then asks !balance. The start boxes of the map for the
+-- number of teams are sent as game options (mapmetadata_startboxes_set: the arrangement of the map; mapmetadata_startbox_override: plain rectangles), which the
+-- room draws and the game uses, as with the official server.
+local MAX_TEAMS = 16
+
+local function barManager(fields)
+	local parts = {}
+	for k, v in pairs(fields) do parts[#parts + 1] = '"' .. k .. '":"' .. tostring(v) .. '"' end
+	toBattle('SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{' .. table.concat(parts, ",") .. '}}')
+end
+
+-- rectangles (0 to 200 on both axes: left, top, right, bottom) for a map without boxes of its own: 20 % of the map on each side for two teams, corners for
+-- four, otherwise round the middle
+local function generatedBoxes(n)
+	if n <= 2 then return { { 0, 0, 40, 200 }, { 160, 0, 200, 200 } } end
+	if n == 4 then return { { 0, 0, 64, 64 }, { 136, 136, 200, 200 }, { 136, 0, 200, 64 }, { 0, 136, 64, 200 } } end
+	local boxes, half = {}, (n <= 4) and 32 or 24
+	for i = 1, n do
+		local a = math.pi + (i - 1) * 2 * math.pi / n
+		local cx, cz = 100 + 72 * math.cos(a), 100 + 72 * math.sin(a)
+		boxes[i] = { math.max(0, math.floor(cx - half)), math.max(0, math.floor(cz - half)), math.min(200, math.floor(cx + half)), math.min(200, math.floor(cz + half)) }
+	end
+	return boxes
+end
+
+-- the two game options for a map and a number of teams: the arrangement of the map when it has one (as the official server sends it), else the saved boxes
+-- of the lobby (SPADS list) or generated rectangles
+local function startboxOptions(map, n)
+	local cf = Config()
+	local msb = cf and cf.gameConfig and cf.gameConfig.mapStartBoxes
+	if not msb then return "0", "0", "none" end
+	if cf.gameConfig.useDefaultStartBoxes and msb.loadStartboxesSet and msb.encodeStartboxesSetModoption then
+		local ok, set = pcall(msb.loadStartboxesSet, map, n)
+		if ok and set then
+			local ok2, enc = pcall(msb.encodeStartboxesSetModoption, set)
+			if ok2 and enc then return enc, "0", "arrangement of the map" end
+		end
+	end
+	local rects, source
+	if msb.savedBoxes and msb.selectStartBoxesForAllyTeamCount then
+		local ok, sel = pcall(msb.selectStartBoxesForAllyTeamCount, msb.savedBoxes[map], n)
+		if ok and sel then
+			rects, source = {}, "saved boxes"
+			for i = 1, n do
+				local b = sel[i]
+				if not b then rects = nil; break end
+				rects[i] = { 200 * b[1], 200 * b[2], 200 * b[3], 200 * b[4] }
+			end
+		end
+	end
+	if not rects then rects, source = generatedBoxes(n), "generated" end
+	local ok, enc = pcall(msb.encodeStartboxOverrideModoption, rects)
+	if ok and enc then return "0", enc, source end
+	return "0", "0", "none"
+end
+
+-- keep the options for the current map and number of teams; broadcast = false only stores them (a joiner gets the stored options with the others)
+local function applyStartboxes(broadcast)
+	if not S then return end
+	local b = S.battle
+	local key = b.map .. "|" .. b.nbTeams
+	if b.boxKey == key then return end
+	b.boxKey = key
+	local set, override, source = startboxOptions(b.map, b.nbTeams)
+	b.modoptions.mapmetadata_startboxes_set, b.modoptions.mapmetadata_startbox_override = set, override
+	if broadcast then tag("mapmetadata_startboxes_set", set); tag("mapmetadata_startbox_override", override) end
+	log("start boxes for", b.map, b.nbTeams, "teams:", source, "(set " .. #set .. " bytes, override " .. #override .. " bytes)")
+end
+
+-- people and computers play in ally teams 0 .. nbTeams-1, one after the other (host first, then the other humans, then the computers)
+local function balanceTeams()
+	local l = lobby()
+	if not (l and S) then return end
+	local members = {}
+	for _, c in ipairs(battleUsers()) do
+		local bs = c.battleStatus and l:ParseBattleStatus(c.battleStatus)
+		if bs and not bs.isSpectator then members[#members + 1] = { conn = c, bs = bs } end
+	end
+	for _, bot in ipairs(S.battle.bots) do members[#members + 1] = { bot = bot, bs = l:ParseBattleStatus(bot.status) } end
+	local moved = 0
+	for i, m in ipairs(members) do
+		local want = (i - 1) % S.battle.nbTeams
+		if m.bs.allyNumber ~= want then
+			m.bs.allyNumber = want
+			local st = encodeStatus(m.bs)
+			moved = moved + 1
+			if m.conn then
+				m.conn.battleStatus = st
+				toBattle("CLIENTBATTLESTATUS " .. m.conn.name .. " " .. st .. " " .. (m.conn.teamColor or "0"))
+			else
+				m.bot.status = st
+				toBattle(string.format("UPDATEBOT 1 %s %s %s", m.bot.name, st, m.bot.color))
+			end
+		end
+	end
+	log("balance:", #members, "players in", S.battle.nbTeams, "teams,", moved, "moved")
+end
+
+-- the first status of a player who has just come in: the team with the fewest players (the lowest one on a tie), as the official autohost does; the changed
+-- status goes to everybody, also the sender. Not with a scenario (its teams are fixed) and not for spectators.
+local function placeNewPlayer(c)
+	local l = lobby()
+	if c.teamPlaced or S.battle.scenario or not (l and c.battleStatus) then return end
+	local bs = l:ParseBattleStatus(c.battleStatus)
+	if bs.isSpectator then return end
+	c.teamPlaced = true
+	local count = {}
+	for i = 0, S.battle.nbTeams - 1 do count[i] = 0 end
+	local function add(st) local o = l:ParseBattleStatus(st); if not o.isSpectator and count[o.allyNumber] then count[o.allyNumber] = count[o.allyNumber] + 1 end end
+	for _, o in ipairs(battleUsers()) do if o ~= c and o.battleStatus then add(o.battleStatus) end end
+	for _, bot in ipairs(S.battle.bots) do add(bot.status) end
+	local best = 0
+	for i = 1, S.battle.nbTeams - 1 do if count[i] < count[best] then best = i end end
+	if bs.allyNumber ~= best then
+		bs.allyNumber = best
+		c.battleStatus = encodeStatus(bs)
+		log("placed", c.name, "in team", best + 1)
+	end
+end
+
+-- !nbTeams N and !set teamSize N (the host only; a scenario has its own teams)
+local function setTeamLayout(nbTeams, teamSize)
+	local b = S.battle
+	if b.scenario then say("The teams are the scenario's: choose the official map mode first (Custom Scenario > Official map)."); return end
+	if nbTeams then
+		nbTeams = math.floor(nbTeams)
+		if nbTeams < 1 or nbTeams > MAX_TEAMS then say("The number of teams is 1 to " .. MAX_TEAMS .. "."); return end
+		b.nbTeams = nbTeams
+	end
+	if teamSize then
+		teamSize = math.floor(teamSize)
+		if teamSize < 1 or teamSize > MAX_TEAMS then say("The team size is 1 to " .. MAX_TEAMS .. "."); return end
+		b.teamSize = teamSize
+	end
+	barManager({ nbTeams = b.nbTeams, teamSize = b.teamSize })
+	toBattle("SAIDBATTLEEX " .. HOSTNAME .. " * Global setting changed by " .. (S.hostName or HOSTNAME) .. " (" .. (nbTeams and ("nbTeams=" .. nbTeams) or ("teamSize=" .. teamSize)) .. ")")
+	if nbTeams then applyStartboxes(true) end
+	log("teams:", b.nbTeams, "team size:", b.teamSize)
+end
+
 local function applyScenarioToUsers()
 	for _, c in ipairs(battleUsers()) do
 		local st = forcedStatus(c)
@@ -296,6 +437,7 @@ selectScenario = function(name)
 		toBattle("SETSCRIPTTAGS game/modoptions/lanscenario=")
 		toBattle("SETSCRIPTTAGS game/modoptions/lansync=")
 		say("Scenario removed: choose a map and the teams as you like.")
+		S.battle.boxKey = nil; applyStartboxes(true)
 		log("scenario cleared")
 		return
 	end
@@ -356,9 +498,13 @@ local function autohostCommand(c, msg)
 		-- choosing a map sets the official-map mode again: the scenario (and its fixed teams) is dropped
 		if S.battle.scenario then selectScenario(nil) end
 		S.battle.map = rest; updateBattleInfo(); say("Map: " .. rest)
+		applyStartboxes(true)
 	elseif cmd == "bset" then
 		local k, v = rest:match("^(%S+)%s+(.*)$")
 		if k then S.battle.modoptions[k] = v; tag(k, v) end
+	elseif cmd == "nbteams" and tonumber(rest) then setTeamLayout(tonumber(rest), nil)
+	elseif cmd == "set" and rest:lower():match("^teamsize%s+%d+") then setTeamLayout(nil, tonumber(rest:match("(%d+)")))
+	elseif cmd == "balance" then balanceTeams()
 	elseif cmd == "cv" and rest:lower():match("^start") then startGameNow()
 	elseif cmd == "start" then startGameNow()
 	else log("autohost: ignored command", msg) end
@@ -502,7 +648,9 @@ local function serverLine(c, line)
 		for _, o in ipairs(battleUsers()) do
 			if o ~= c and o.battleStatus then sendLine(c, "CLIENTBATTLESTATUS " .. o.name .. " " .. o.battleStatus .. " " .. (o.teamColor or "0")) end
 		end
+		applyStartboxes(false)
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
+		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"nbTeams":"' .. S.battle.nbTeams .. '","teamSize":"' .. S.battle.teamSize .. '"}}')
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
@@ -515,6 +663,7 @@ local function serverLine(c, line)
 		local st, col = args:match("^(%S+)%s+(%S+)")
 		if st and c.inBattle then
 			c.battleStatus, c.teamColor = st, col
+			placeNewPlayer(c)
 			c.battleStatus = forcedStatus(c)   -- with a scenario the ally team is the scenario's: the corrected status goes to everybody, also the sender
 			toBattle("CLIENTBATTLESTATUS " .. c.name .. " " .. c.battleStatus .. " " .. col); updateBattleInfo()
 		end
@@ -655,6 +804,15 @@ buildScript = function(myName)
 	local players, teams, ais = {}, {}, {}
 	local allyIndex = {}
 	local function ally(a) if allyIndex[a] == nil then local n = 0; for _ in pairs(allyIndex) do n = n + 1 end; allyIndex[a] = n end; return allyIndex[a] end
+	-- the ally teams in the order of the room (the start boxes are by room team, not by who joined first)
+	local used = {}
+	for _, c in ipairs(battleUsers()) do
+		local bs = c.battleStatus and l:ParseBattleStatus(c.battleStatus)
+		if bs and not bs.isSpectator then used[#used + 1] = bs.allyNumber end
+	end
+	for _, bot in ipairs(S.battle.bots) do used[#used + 1] = l:ParseBattleStatus(bot.status).allyNumber end
+	table.sort(used)
+	for _, a in ipairs(used) do ally(a) end
 	local pi = 0
 	local eff = effectiveSlots(humanList())
 	-- the start positions are chosen in the game (2) unless humans play one player together: the game of such a team is started by the little widget
@@ -806,7 +964,7 @@ local function startHosting()
 	s:settimeout(0)
 	local name = playerName()
 	local game = cf and cf:GetDefaultGameName() or "Beyond All Reason"
-	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {} } }
+	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {}, nbTeams = 2, teamSize = 2 } }
 	found = {}; updateFoundUi()
 	setStatus("Hosting as " .. name .. " (port " .. PORT .. ").")
 	lanConnect("host", "127.0.0.1", name)
@@ -1453,7 +1611,8 @@ local function roomPlace(btn, row, show)
 	local col = ui.roomCol
 	local mark = "lanButton" .. row -- the controls of the lobby are proxies here: a column is told apart by a field, not by ==
 	if col then
-		local y, w = (ui.roomBottom or 266) + 6 + (row - 1) * 42, col.width - 10
+		-- at the bottom end of the column (the advanced options above grow downwards, a button in the middle would be covered), never above the "Map Ready" lines
+		local y, w = math.max(col.height - 5 - 36 - (2 - row) * 42, (ui.roomBottom or 266) + 6 + (row - 1) * 42), col.width - 10
 		local key = w .. ":" .. y
 		if col[mark] ~= key then
 			if col[mark] == nil then
@@ -1715,6 +1874,48 @@ function widget:Update()
 		toggleSlotWindow(true)
 	end
 	if cfg.showCopilot and lan and lan.step == "in" and not cfg.showAt then cfg.showAt = os.clock() + 30 end
+	-- test: the buttons "N teams" and "N per team" of the room (the same chat commands), then what the lobby knows about the battle and the middle column
+	if cfg.teams and S and lan and lan.step == "in" and not cfg.teamsDone then
+		cfg.teamsAt = cfg.teamsAt or (os.clock() + 8)
+		if os.clock() > cfg.teamsAt then
+			cfg.teamsDone = true
+			local col = roomMain()
+			for _, ch in ipairs(col and col.children or {}) do
+				if ch.name == "teamCountSelect" then log("test: team button: ", cfg.teams, "teams"); ch:Select(tonumber(cfg.teams)) end
+			end
+			cfg.sizeAt = os.clock() + 3
+			cfg.teamsCheck = os.clock() + 8
+		end
+	end
+	if cfg.sizeAt and os.clock() > cfg.sizeAt then
+		cfg.sizeAt = nil
+		for _, ch in ipairs(roomMain() and roomMain().children or {}) do
+			if ch.name == "teamSizeSelect" and cfg.teamSize then log("test: team size button: ", cfg.teamSize, "per team"); ch:Select(tonumber(cfg.teamSize)) end
+		end
+	end
+	if cfg.teamsCheck and os.clock() > cfg.teamsCheck then
+		cfg.teamsCheck = nil
+		local lb = lobby()
+		local bt = lb and lb.myBattleID and lb.battles[lb.myBattleID]
+		log("test: the lobby knows nbTeams", bt and bt.nbTeams, "teamSize", bt and bt.teamSize, "max players", bt and lb:GetBattleMaxPlayers(lb.myBattleID))
+		local mo = lb and lb.modoptions or {}
+		log("test: game options: startboxes_set", mo.mapmetadata_startboxes_set and #mo.mapmetadata_startboxes_set or "none", "startbox_override", mo.mapmetadata_startbox_override and #mo.mapmetadata_startbox_override or "none")
+		for _, c in ipairs(battleUsers()) do
+			local bs = c.battleStatus and lb:ParseBattleStatus(c.battleStatus)
+			log("test: ally team of", c.name, bs and bs.allyNumber)
+		end
+	end
+	if cfg.dump and lan and lan.step == "in" and not cfg.dumpDone then
+		cfg.dumpAt = cfg.dumpAt or (os.clock() + tonumber(cfg.dump))
+		if os.clock() > cfg.dumpAt then
+			cfg.dumpDone = true
+			local col = roomMain()
+			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "buttons at", ui.scnButton and ui.scnButton.y, ui.slotButton and ui.slotButton.y)
+			for _, ch in ipairs(col and col.children or {}) do
+				log("test:   child", tostring(ch.name), tostring(ch.classname), "y", ch.y, "h", ch.height, "visible", tostring(ch.visible), "caption", tostring(ch.caption or ch.text))
+			end
+		end
+	end
 	if cfg.clickFirst and not lan and not S and #found > 0 then log("test: click on the first entry"); joinHost(found[1].ip) end
 	local l = lobby()
 	if cfg.auto and not autoStarted and os.clock() > 8 and Config() and l then

@@ -9,6 +9,7 @@ Play with computers in the same network. No account, no server in the cloud.
 - Installed together with the Level Editor (close the game first)
 - New entry **LAN Play** in the main menu, below Multiplayer. Normal Multiplayer is not touched
 - **Host a LAN game** opens the normal battle room: map, options, AIs, colours, teams, chat. Press Start when everybody is in
+- **Teams:** the buttons "N teams" and "N per team" of the room work as on the official server: the teams of the room change at once, the players are spread over the teams, and the **start boxes** of the map for that number of teams are shown on the map and used in the game (a map without boxes gets left/right for two teams, corners for four, otherwise boxes round the middle)
 - Joining: games in your network show up in a list by themselves, a click joins. Or type the host's address and press **Join**
 - The field "Your name" starts with your lobby name. Two players cannot have the same name in one game
 - **Leave LAN play** (or leaving the room) brings you back to the normal lobby
