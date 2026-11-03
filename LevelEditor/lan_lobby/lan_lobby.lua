@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 1, stamp = "2026-11-03 23:35" }
+local LAN_VERSION = { number = 1, stamp = "2026-11-03 23:55" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1610,18 +1610,12 @@ local function roomPlace(btn, row, show)
 	if os.clock() > (ui.roomAt or 0) then ui.roomAt = os.clock() + 1; ui.roomCol = show and roomColumn() or nil end
 	local col = ui.roomCol
 	local mark = "lanButton" .. row -- the controls of the lobby are proxies here: a column is told apart by a field, not by ==
-	if col then
-		-- at the bottom end of the column (the advanced options above grow downwards, a button in the middle would be covered), never above the "Map Ready" lines
-		local y, w = math.max(col.height - 5 - 36 - (2 - row) * 42, (ui.roomBottom or 266) + 6 + (row - 1) * 42), col.width - 10
-		local key = w .. ":" .. y
-		if col[mark] ~= key then
-			if col[mark] == nil then
-				if btn.parent then btn.parent:RemoveChild(btn) end
-				col:AddChild(btn)
-			end
-			btn:SetPos(5, y, w, 36)
-			col[mark] = key
-		end
+	if col and col[mark] == nil then
+		-- the buttons are anchored to the bottom end of the column (x, right, bottom; made so in ensureScenarioUi and ensureSlotUi): they follow every size of it by
+		-- themselves, and the advanced options above grow downwards without covering them. Moved into the column once.
+		if btn.parent then btn.parent:RemoveChild(btn) end
+		col:AddChild(btn)
+		col[mark] = true
 	end
 	local vis = show and col ~= nil
 	if btn.visible ~= vis then btn:SetVisibility(vis) end
@@ -1658,7 +1652,7 @@ local function ensureScenarioUi()
 	if not ui.scnButton then
 		if not show or not roomMain() then return end
 		local font = roomFont()
-		ui.scnButton = Button:New { parent = screen0, x = 8, y = 8, width = 200, height = 36, caption = "Custom Scenario", objectOverrideFont = font, classname = "action_button",
+		ui.scnButton = Button:New { parent = screen0, x = 5, right = 5, bottom = 5 + 42, height = 36, caption = "Custom Scenario", objectOverrideFont = font, classname = "action_button",
 			OnClick = { toggleScenarioWindow } }
 		log("Custom Scenario button added")
 	end
@@ -1799,7 +1793,7 @@ local function ensureSlotUi()
 	if not ui.slotButton then
 		if not show or not roomMain() then return end
 		local font = roomFont()
-		ui.slotButton = Button:New { parent = screen0, x = 8, y = 8, width = 200, height = 36, caption = "Copilot", objectOverrideFont = font, classname = "action_button", tooltip = COPILOT_TIP,
+		ui.slotButton = Button:New { parent = screen0, x = 5, right = 5, bottom = 5, height = 36, caption = "Copilot", objectOverrideFont = font, classname = "action_button", tooltip = COPILOT_TIP,
 			OnClick = { function() toggleSlotWindow() end } }
 		log("Copilot button added")
 	end
