@@ -3829,7 +3829,7 @@ function M.newAreaAttack(o)
 		if not x then
 			return nil
 		end
-		return { id = id, def = def, x = x, z = z, hp = hp, mobile = (tonumber(UnitDefs[def].speed) or 0) > 0 }
+		return { id = id, def = def, x = x, z = z, hp = hp, team = Spring.GetUnitTeam(id), mobile = (tonumber(UnitDefs[def].speed) or 0) > 0 }
 	end
 
 	local function attackerInfo(id)
@@ -3842,12 +3842,41 @@ function M.newAreaAttack(o)
 		return { id = id, def = def, x = x, z = z, static = (tonumber(ud.speed) or 0) <= 0 }
 	end
 
-	-- The visible enemies in a circle (not Gaia)
-	local function enemiesIn(cx, cz, r)
+	-- The teams of a list of unit ids (every team once)
+	local function teamsOf(ids)
+		local out, seen = {}, {}
+		for _, id in ipairs(ids) do
+			local team = Spring.GetUnitTeam(id)
+			if team and not seen[team] then
+				seen[team] = true
+				out[#out + 1] = team
+			end
+		end
+		if #out == 0 then
+			out[1] = Spring.GetMyTeamID()
+		end
+		return out
+	end
+
+	-- Is a team on the side of the attacking units: the same team or allied to one of their teams (in the Level Editor the
+	-- teams of one group are allied with Spring.SetAlly, which Spring.ENEMY_UNITS does not know)
+	local function ownSide(team, teams)
+		for _, mine in ipairs(teams) do
+			if team == mine or Spring.AreTeamsAllied(mine, team) then
+				return true
+			end
+		end
+		return false
+	end
+
+	-- The visible enemies in a circle: everything the player sees (also what only other units of the player see), no unit of
+	-- the teams of the attackers or of their allies, no Gaia
+	local function enemiesIn(cx, cz, r, teams)
 		local out = {}
 		local gaia = Spring.GetGaiaTeamID and Spring.GetGaiaTeamID() or -1
-		for _, id in ipairs(Spring.GetUnitsInCylinder(cx, cz, r, Spring.ENEMY_UNITS or -4)) do
-			if Spring.GetUnitTeam(id) ~= gaia then
+		for _, id in ipairs(Spring.GetUnitsInCylinder(cx, cz, r)) do
+			local team = Spring.GetUnitTeam(id)
+			if team and team ~= gaia and not ownSide(team, teams) then
 				local t = targetInfo(id)
 				if t then
 					out[#out + 1] = t
@@ -4109,7 +4138,8 @@ function M.newAreaAttack(o)
 			return
 		end
 		local r = math.max(math.sqrt(dist2(ax, az, bx, bz)), 16)
-		local targets = enemiesIn(ax, az, r)
+		local teams = teamsOf(Spring.GetSelectedUnits())
+		local targets = enemiesIn(ax, az, r, teams)
 		if #targets == 0 then
 			say("No visible enemy in the circle")
 			return
@@ -4118,7 +4148,7 @@ function M.newAreaAttack(o)
 		while #targets > SPLIT_MAX_TARGETS do
 			targets[#targets] = nil
 		end
-		split = { units = {}, targets = {}, frame = Spring.GetGameFrame(), mode = areaMode }
+		split = { units = {}, targets = {}, frame = Spring.GetGameFrame(), mode = areaMode, teams = teams }
 		local mobile = 0
 		for _, t in ipairs(targets) do
 			split.targets[t.id] = true
@@ -4159,7 +4189,7 @@ function M.newAreaAttack(o)
 		for id in pairs(split.targets) do
 			before = before + 1
 			local t = targetInfo(id)
-			if t then
+			if t and not ownSide(t.team, split.teams) then
 				living[id] = t
 				count = count + 1
 			end
@@ -4380,7 +4410,7 @@ function M.newAreaAttack(o)
 			end
 		end
 		if SPLIT_MODES[areaMode] then
-			local list = enemiesIn(ax, az, math.max(math.sqrt(dist2(ax, az, gx, gz)), 16))
+			local list = enemiesIn(ax, az, math.max(math.sqrt(dist2(ax, az, gx, gz)), 16), teamsOf(Spring.GetSelectedUnits()))
 			gl.Color(1, 0.3, 0.2, 0.95)
 			for i, e in ipairs(list) do
 				if i > SPLIT_MAX_TARGETS then

@@ -57,8 +57,8 @@ Kill the enemies in the circle **as fast as possible**: one after the other, wit
 
 ## Good to know
 
-- Only enemies you **see** count. Radar blips are not enough: the type and the health must be known.
+- Only enemies **you** see count, also those that only other units of yours see. Radar blips are not enough: the type and the health must be known. Your own units and those of your allies are never targets.
 - At most **150 enemies** (the nearest to the center of the circle) and **300 units** take part in a split or focus attack. The attack ends after 10 minutes at the latest.
 - Not in the calculation: shields, repair, enemies that run away or hide, the spread and flight time of shots. Some shots are wasted anyway; the 15 % buffer of the focus attack absorbs part of it.
-- In the **Level Editor** the enemies are the units of the other alliances ([teams](../LevelEditor/README.md)); allied teams are not attacked.
+- In the **Level Editor** the enemies are the units of teams that are neither the team of the selected units nor allied to it ([teams](../LevelEditor/README.md)).
 - The tooltips of the buttons and the help (**?**) in both widgets describe the modes too.
