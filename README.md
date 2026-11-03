@@ -11,6 +11,7 @@ A level editor and a building helper for [Beyond All Reason](https://www.beyonda
 - [Sandbox](#sandbox)
 - [BluePrinter](#blueprinter)
 - [LAN Play](#lan-play)
+- [Experimental](#experimental)
 - [Installation (Windows)](#installation-windows)
 - [Documentation](#documentation)
 - [Other useful links](#other-useful-links)
@@ -94,6 +95,17 @@ Play with computers in the same network, no account and no server in the cloud. 
 <img src="docs/lanPlay.png" alt="LAN Play: the menu entry on the left, Host a LAN game on the page" width="740">
 
 More in [LAN Play](docs/lan-play.md).
+
+## Experimental
+
+**Area attacks**: spread the bombs or shots of all selected units evenly over an area. Works with bombers, artillery, rocket launchers and nukes, in the BluePrinter and in the Level Editor.
+
+- **XL** line (carpet), **XR** rectangle, **XC** circle: select units, press the button, drag the shape on the map
+- Every unit gets its own target; bombers form up first and attack together
+
+<img src="docs/area-attack.jpg" alt="Area attack: a circle (XC) drawn on the map, every selected unit gets its own target inside it" width="740">
+
+More in the [BluePrinter usage](docs/blueprinter-usage.md#area-attacks-experimental).
 
 ## Installation (Windows)
 
