@@ -1300,7 +1300,7 @@ local function headerRectsRaw()
 			{ "line", "XL", "XL (experimental): carpet attack along a line.\nSelect bombers, artillery, rocket launchers or nukes,\npress XL, then drag a line on the map.\nEach unit gets a piece of it." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XR, then drag a rectangle.\nThe units spread over the whole area." },
 			{ "circle", "XC", "XC (experimental): attack a circle.\nSelect bombers, artillery, rocket launchers or nukes,\npress XC, then drag a circle from the center outwards.\nThe units spread over it." },
-			{ "split", "XS", "XS (experimental): split attack.\nSelect armed units, press XS, then drag a circle from the center\noutwards. The firepower of the selected units is spread evenly over the\nvisible enemies in it: every enemy gets about the damage it needs\nto die (+15 %), all at the same time. Mobile enemies first, then buildings." },
+			{ "split", "XS", "XS (experimental): split attack.\nSelect armed units, press XS, then drag a circle from the center\noutwards. The damage per second of the selected units is spread evenly\nover the visible enemies in it: every enemy gets the same share,\nwhatever its health. When a unit has nothing left to do the\nunits are assigned again." },
 			{ "focus", "XF", "XF (experimental): focus attack.\nSelect armed units, press XF, then drag a circle from the center\noutwards. The units kill the visible enemies in it one after the other,\nthe nearest first (mobile before buildings), as fast as possible:\nevery enemy gets as many units as it needs to die in about 3 seconds,\nthe rest goes on to the next one." },
 		}
 		for k, a in ipairs(areas) do

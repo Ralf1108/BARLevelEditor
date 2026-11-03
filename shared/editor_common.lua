@@ -3753,15 +3753,15 @@ function M.newAreaAttack(o)
 	end
 
 	-- Split attack (XS) and focus attack (XF): the selected units attack the visible enemy units inside a circle. XS spreads
-	-- the firepower evenly: every target gets about the damage it needs to die (health + SPLIT_BUFFER), all at the same time.
-	-- XF kills the targets as fast as possible one after the other (nearest first), every target with as many units as it
-	-- needs, the rest goes on to the next. Firepower = damage per second against the armor class of the target, from the
-	-- weapon definitions (beam
+	-- the damage per second of the units evenly over the targets (health is not looked at). XF kills the targets as fast as
+	-- possible one after the other (nearest first), every target with as many units as it needs to die (health +
+	-- SPLIT_BUFFER), the rest goes on to the next. Firepower = damage per second against the armor class of the target,
+	-- from the weapon definitions (beam
 	-- lasers count like the others; paralyzer weapons, stockpile weapons (nukes) and the D-Gun do not; area damage is not
 	-- counted). Mobile enemies come first, buildings after them.
 	local SPLIT_MODES = { split = true, focus = true } -- the modes of this attack (areaMode)
 	local SPLIT_NAMES = { split = "Split attack", focus = "Focus attack" }
-	local SPLIT_BUFFER = 1.15 -- a target is planned with 15 % more damage than its health
+	local SPLIT_BUFFER = 1.15 -- XF: a target is planned with 15 % more damage than its health
 	local SPLIT_KILL_TIME = 3 -- seconds in which the units given to a target should kill it
 	local SPLIT_QUEUE = 8 -- planned targets per unit (and one more at the end)
 	local SPLIT_MAX_TARGETS, SPLIT_MAX_UNITS = 150, 300
@@ -3856,11 +3856,10 @@ function M.newAreaAttack(o)
 		return out
 	end
 
-	-- Split plan (XS): every unit gets a queue of target ids. Time horizon H = damage all targets need / firepower of all units: every
-	-- unit has H seconds. Target by target (mobile ones first, nearest to the group first) the nearest units take volleys
-	-- until the need of the target is covered; a unit takes whole volleys, so a weak target costs it one volley and the unit
-	-- goes on to the next target. At the end every unit gets one more target (the nearest uncovered one, else the nearest
-	-- one it can hit), so nothing stands idle while an enemy lives.
+	-- Split plan (XS): the damage per second of all units is spread evenly over the targets; health and armor of the targets
+	-- are not looked at. Every target gets the same share of the total DPS. Target by target (mobile first, nearest to the
+	-- group first) the nearest free units are taken until the share is reached; units that are left over go to the target
+	-- that has the least damage so far. Every unit gets its target first and, behind it, the nearest other target it can hit.
 	local function splitPlan(attackers, targets)
 		local gx, gz = 0, 0
 		for _, u in ipairs(attackers) do
@@ -3873,11 +3872,7 @@ function M.newAreaAttack(o)
 			end
 			return dist2(a.x, a.z, gx, gz) < dist2(b.x, b.z, gx, gz)
 		end)
-		local need, power = 0, 0
-		for _, t in ipairs(targets) do
-			t.need = t.hp * SPLIT_BUFFER + 1
-			need = need + t.need
-		end
+		local total = 0 -- DPS of all units (mean over the targets a unit can hit)
 		for _, u in ipairs(attackers) do
 			local sum, count = 0, 0
 			for _, t in ipairs(targets) do
@@ -3886,61 +3881,67 @@ function M.newAreaAttack(o)
 					sum, count = sum + d, count + 1
 				end
 			end
-			power = power + (count > 0 and sum / count or 0)
+			total = total + (count > 0 and sum / count or 0)
 		end
-		local horizon = power > 0 and need / power or 0
-		local used, queues, uncovered = {}, {}, {}
+		local share = total / math.max(1, #targets)
+		local free, queues, got = {}, {}, {}
 		for _, u in ipairs(attackers) do
-			used[u.id], queues[u.id] = 0, {}
+			free[#free + 1] = u
+			queues[u.id] = {}
 		end
 		for _, t in ipairs(targets) do
+			got[t.id] = 0
 			local cand = {}
-			for _, u in ipairs(attackers) do
+			for _, u in ipairs(free) do
 				local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
-				local dps, volley = splitDps(u.def, t.def, u.static, d)
+				local dps = splitDps(u.def, t.def, u.static, d)
 				if dps > 0 then
-					cand[#cand + 1] = { id = u.id, d = d, dps = dps, volley = volley }
+					cand[#cand + 1] = { u = u, d = d, dps = dps }
 				end
 			end
 			table.sort(cand, function(a, b) return a.d < b.d end)
-			local rest = t.need
+			local taken = {}
 			for _, c in ipairs(cand) do
-				if rest <= 0 then
+				if got[t.id] > 0 and got[t.id] + c.dps / 2 > share then
 					break
 				end
-				local q, left = queues[c.id], horizon - used[c.id]
-				if left > 0 and #q < SPLIT_QUEUE then
-					local volTime = c.volley / c.dps
-					local volleys = math.min(math.ceil(rest / c.volley), math.max(1, math.floor(left / volTime + 0.01)))
-					rest = rest - volleys * c.volley
-					used[c.id] = used[c.id] + volleys * volTime
-					q[#q + 1] = t.id
+				got[t.id] = got[t.id] + c.dps
+				taken[c.u.id] = true
+				queues[c.u.id][1] = t.id
+			end
+			local left = {}
+			for _, u in ipairs(free) do
+				if not taken[u.id] then
+					left[#left + 1] = u
 				end
 			end
-			if rest > 0 then
-				uncovered[#uncovered + 1] = t
+			free = left
+		end
+		for _, u in ipairs(free) do -- units that were not needed for a share: the target with the least damage so far
+			local best, bestGot, bestD
+			for _, t in ipairs(targets) do
+				local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
+				if splitDps(u.def, t.def, u.static, d) > 0 and (not best or got[t.id] < bestGot or (got[t.id] == bestGot and d < bestD)) then
+					best, bestGot, bestD = t, got[t.id], d
+				end
+			end
+			if best then
+				queues[u.id][1] = best.id
+				got[best.id] = got[best.id] + splitDps(u.def, best.def, u.static, bestD)
 			end
 		end
-		for _, u in ipairs(attackers) do
-			local q, inQueue = queues[u.id], {}
-			for _, id in ipairs(q) do
-				inQueue[id] = true
-			end
-			local function nearest(list)
-				local best, bestD
-				for _, t in ipairs(list) do
-					if not inQueue[t.id] then
-						local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
-						if (not bestD or d < bestD) and splitDps(u.def, t.def, u.static, d) > 0 then
-							best, bestD = t, d
-						end
+		for _, u in ipairs(attackers) do -- behind its target the nearest other one, so nothing stands idle while an enemy lives
+			local q, best, bestD = queues[u.id], nil, nil
+			for _, t in ipairs(targets) do
+				if t.id ~= q[1] then
+					local d = math.sqrt(dist2(u.x, u.z, t.x, t.z))
+					if (not bestD or d < bestD) and splitDps(u.def, t.def, u.static, d) > 0 then
+						best, bestD = t, d
 					end
 				end
-				return best
 			end
-			local t = nearest(uncovered) or nearest(targets)
-			if t then
-				q[#q + 1] = t.id
+			if best then
+				q[#q + 1] = best.id
 			end
 		end
 		return queues

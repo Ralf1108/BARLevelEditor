@@ -46,14 +46,14 @@ Spread the shots or bombs of all selected units over an area (bombers, artillery
 Use the firepower of the selected units against the enemies in a circle.
 
 - Select armed units, press **XS** or **XF** (below the area attack buttons), drag a circle from the center outwards over the enemies you see
-- **XS (split attack)** spreads the firepower **evenly**: every enemy gets about the damage it needs to die (health + 15 %), all at the same time
-- **XF (focus attack)** kills **as fast as possible**: nearest enemy first, with as many units as it needs; the others go on to the next one
-- Mobile enemies first, buildings after them; units that are not needed keep shooting at what is left; when all enemies in the circle are dead your units stop
+- **XS (split attack)** spreads the damage per second of your units **evenly** over the enemies: every enemy gets the same share, whatever its health
+- **XF (focus attack)** kills **as fast as possible**: mobile enemies first, buildings after them, the nearest first, with as many units as it needs to die (its health + 15 %); the others go on to the next one
+- When all enemies in the circle are dead your units stop; when an enemy dies or a unit has nothing left to do, the units are assigned again
 - Only the enemies in the circle at the moment you release the mouse button count; right click cancels
 
 ![Split attack](split-attack.jpg)
 
-*XS: 20 light units against 10 heavier ones, just after the order: every enemy has a color and the units aimed at it carry the same color, two or three on each. (The colors were drawn for the picture; in the game the selected units show their orders as thin lines.)*
+*XS: 20 light units against 10 heavier ones, just after the order: every enemy has a color and the units aimed at it carry the same color, two on each. (The colors were drawn for the picture; in the game the selected units show their orders as thin lines.)*
 
 ![Focus attack](focus-attack.jpg)
 

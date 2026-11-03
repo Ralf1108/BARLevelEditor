@@ -14,7 +14,7 @@ local Shared = VFS.Include("luaui/Include/editor_common.lua", nil, VFS.ZIP_FIRST
 local MX, MZ = Game.mapSizeX / 2, Game.mapSizeZ / 2
 local MODE = "focus" -- "split" (XS) or "focus" (XF)
 local LIGHT = "armpw"
-local HEAVY = MODE == "split" and "corcan" or "corthud" -- XS: 20 Peewees need about 2 per Can; XF: about 5 per Thud, four groups of five
+local HEAVY = "corthud" -- XF: a Thud needs about 5 Peewees (four groups of five); XS: two on each
 local ar, area, ring
 local assign = {} -- unit -> its target (drawn as a colored line, one color per enemy)
 local colorOf = {}
