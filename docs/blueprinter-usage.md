@@ -50,6 +50,10 @@ Spread the firepower of the selected units over the enemies in a circle, so that
 - Units that are not needed keep shooting at what is left; when all enemies in the circle are dead your units stop
 - Only the enemies in the circle at the moment you release the mouse button count; right click cancels
 
+![Split attack](split-attack.jpg)
+
+*20 light units against 10 heavier ones, just after the order: every enemy has a color and the units aimed at it carry the same color, mostly two per enemy. (The colors were drawn for the picture; in the game the selected units show their orders as thin lines.)*
+
 ## More
 
 - [BluePrinter manual](../BluePrinter/README.md), [specification](../specs/blueprinter.md)
