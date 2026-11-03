@@ -38,7 +38,7 @@ What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
 ## Split attack test (`tools`)
 
-`tools\arena_test.ps1 -Widget zz_split.lua` starts the same sandbox game; the Arena generates 30 units of team 0 and 10 of team 1 (no fight), team 0 is selected and attacks team 1 with the focus attack XF (`Shared.newAreaAttack`; `MODE` at the top of the file: `"focus"` or `"split"` for XS). `zz_split_shot.lua` takes the pictures of the two attacks (`MODE` too). It logs `[zzsp]` lines (enemies left, health, idle units, queue of one unit) and ends the game itself 90 frames after "Split attack finished". Checked: visible enemies (`Spring.ENEMY_UNITS`), queues of attack orders, new plan when units are idle, end message. The units of team 1 shoot back, so a fair fight can be lost; 30 against 10 is won.
+`tools\arena_test.ps1 -Widget zz_split.lua` starts the same sandbox game; the Arena generates 30 units of team 0 and 10 of team 1 (no fight), team 0 is selected and attacks team 1 with the focus attack XF (`Shared.newAreaAttack`; `MODE` at the top of the file: `"focus"` or `"split"` for XS). `zz_split_shot.lua` takes the pictures of the two attacks (`MODE` too). `zz_area_shot.lua` takes the picture of the area attack XR (16 artillery tanks and rocket launchers, a rectangle in front of them). It logs `[zzsp]` lines (enemies left, health, idle units, queue of one unit) and ends the game itself 90 frames after "Split attack finished". Checked: visible enemies (`Spring.ENEMY_UNITS`), queues of attack orders, new plan when units are idle, end message. The units of team 1 shoot back, so a fair fight can be lost; 30 against 10 is won.
 
 ## Console lobby test (`tools\console_test.ps1`)
 

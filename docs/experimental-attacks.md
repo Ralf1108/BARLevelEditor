@@ -27,7 +27,7 @@ Spread your units evenly over an area: **XL** a line, **XR** a rectangle, **XC**
 
 ![Area attack](area-attack.jpg)
 
-*An area attack with a circle (XC): every selected unit gets its own target inside it.*
+*An area attack with a rectangle (XR): 16 artillery tanks and long range rocket launchers, every unit gets its own target point (red squares) inside the rectangle. The shells have hit, more rockets are on their way. (The orange rectangle, the red squares and the thin lines were drawn for the picture.)*
 
 ## Split attack (XS)
 
