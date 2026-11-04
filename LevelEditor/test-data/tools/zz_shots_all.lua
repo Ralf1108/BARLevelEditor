@@ -129,6 +129,10 @@ add(200, function()
 	d[1].metal, d[1].energy, d[3].metal = 2000, 3000, 500
 end)
 add(60, function() shot("teams") end)
+-- Save page (button S): the page reaches down to the Gaia button; afterwards the page T is opened again, as the Arena step expects
+add(20, function() click("teams"); click("sv", "sv") end)
+add(60, function() shot("save") end)
+add(20, function() click("sv", "sv"); click("teams") end)
 -- Arena
 add(20, function()
 	click("teams")

@@ -59,6 +59,7 @@ Turns a level into a ZIP that others play with their own BAR.
 
 ![Scenario info (button I)](level-editor-scenario.jpg)
 ![Teams (button T)](level-editor-teams.jpg)
+![Saved levels (button S)](level-editor-save.jpg)
 
 Details: [scenario builder](../LevelEditor/scenario/README.md)
 
