@@ -4434,6 +4434,39 @@ function M.newAreaAttack(o)
 	function A:toggle(mode)
 		return toggleArea(mode)
 	end
+	-- The three buttons in the command menu of the game (next to Hold pos, Repeat Off ...): Area Attack (circle), Split Attack (XS), Focus Attack (XF); their
+	-- descriptions are in bar_rules.lua. A button is a custom command of type ICON; pressing it arms the mode like the key does (drag the circle on
+	-- the map). The BluePrinter adds them with A:addCommands(widgetHandler) in widget:CommandsChanged; in the Level Editor the gadget gives them to the
+	-- units. Both pass widget:CommandNotify to A:notify(cmdID).
+	function A:commands()
+		return Rules.attackButtonDescs()
+	end
+	-- the texts of the buttons for the order menu (call once, e.g. in widget:Initialize)
+	function A:registerTexts()
+		local i18n = (BAR and BAR.I18N) or Spring.I18N
+		if i18n and i18n.load then
+			pcall(i18n.load, Rules.attackButtonTexts())
+		end
+	end
+	-- widget:CommandsChanged of a user widget: widgetHandler.customCommands (the handler of the game checks and copies them)
+	function A:addCommands(handler)
+		local list = handler.customCommands
+		if not list then
+			return
+		end
+		for _, cmd in ipairs(A:commands()) do
+			list[#list + 1] = cmd
+		end
+	end
+	-- widget:CommandNotify: true if the command is one of the three buttons (it is used up here, the units get no order)
+	function A:notify(cmdID)
+		local b = Rules.ATTACK_BUTTONS[(tonumber(cmdID) or 0) - Rules.ATTACK_BUTTONS.base]
+		if not b then
+			return false
+		end
+		toggleArea(b.mode)
+		return true
+	end
 	function A:armed()
 		return areaArmed
 	end

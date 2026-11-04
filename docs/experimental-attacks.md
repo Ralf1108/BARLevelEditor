@@ -10,7 +10,7 @@ Five buttons give your units an order for a whole area or a group of enemies at 
 ## How it works for all of them
 
 1. Select your **armed units** (any kind: tanks, bots, ships, aircraft, artillery, rocket launchers, ...).
-2. Press the button in the column at the right edge of the menu: **XL**, **XR**, **XC** (area attacks), below them with a gap **XS** (split attack) and **XF** (focus attack). The button is lit while the mode is on.
+2. Press the button in the column at the right edge of the menu: **XL**, **XR**, **XC** (area attacks), below them with a gap **XS** (split attack) and **XF** (focus attack). The button is lit while the mode is on. The command menu of the game (bottom, next to Hold pos and Repeat Off) has three more buttons for units: **Area Attack** (a circle, like XC), **Split Attack** (XS) and **Focus Attack** (XF). Press one, then drag the circle on the map. It works like the keys; the buttons only show while units are selected.
 3. Drag the shape on the map with the left mouse button (a line, a rectangle, or a circle from its center outwards). A preview shows the shape and where the units will go.
 4. Let go of the mouse button: the orders are given and the mode is over. **Right click** cancels at any time.
 

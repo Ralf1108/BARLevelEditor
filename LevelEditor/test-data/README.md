@@ -42,6 +42,8 @@ What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
 `tools\arena_test.ps1 -Widget zz_save.lua` starts the same sandbox game with a widget that works the Save page (button S): the order of the button column, the suggested name, a typed name (characters that are not allowed are dropped), a taken name is refused, twelve more levels so that the list scrolls, the mouse wheel, the sort buttons A-Z / Recent, Save on a row (no question), Load (second click) and that the settings page O no longer shows the list. It logs `[zzar] OK` / `[zzar] FAIL` lines and takes screenshots (`<Work>\data\screenshots`). Run it in the background like every test.
 
+`tools\arena_test.ps1 -Widget zz_cmdbuttons.lua` selects the commander, looks for the three buttons Area / Split / Focus Attack in the command menu (`Spring.GetActiveCmdDescs`), presses each (`Spring.SetActiveCommand`) and checks the mode of the area attack; the screenshot shows the menu. It logs `[zzar] OK` / `[zzar] FAIL` lines.
+
 `tools\arena_test.ps1 -Widget zz_scenario.lua` works the Scenario info page (button I): types a title (Enter accepts), cycles the win condition, types a grace period, switches to the page T and back, and checks the values through `DebugScenario()`. It logs `[zzar] OK` / `[zzar] FAIL` lines. Run it in the background like every test.
 
 ## Console lobby test (`tools\console_test.ps1`)

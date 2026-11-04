@@ -1605,6 +1605,10 @@ function widget:DebugRtf()
 end
 
 -- For tests: the Arena page
+function widget:DebugArea() -- test hook: the area attack mode (the buttons of the command menu)
+	return area:armed(), area:mode()
+end
+
 function widget:DebugScenario() -- test hook: the scenario info (page I)
 	return si.data
 end
@@ -1644,6 +1648,9 @@ end
 -- Orders for selected units of other teams: the engine only sends orders for the own units, so the command menu and the right click are
 -- forwarded to the gadget (led|order|cmdID|options|params|ids); the own units of the selection get their order from the engine as usual
 function widget:CommandNotify(cmdID, params, options)
+	if area:notify(cmdID) then
+		return true -- one of the buttons Area / Split / Focus Attack of the command menu (the gadget gives the commands to the units)
+	end
 	local mine = Spring.GetMyTeamID()
 	local ids = {}
 	for _, id in ipairs(Spring.GetSelectedUnits()) do
@@ -3855,6 +3862,7 @@ local function buildSpacingAction(_, _, words)
 end
 
 function widget:Initialize()
+	area:registerTexts()
 	WG.LevelEditorWidget = widget -- for tests in the game
 	-- The BluePrinter removes itself in the Level Editor (mod option leveleditor). Removing it from here also removed
 	-- the Level Editor itself (checked in the game), so this widget leaves it alone.

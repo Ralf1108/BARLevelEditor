@@ -74,4 +74,38 @@ function R.decode64(s)
 	return table.concat(out)
 end
 
+-- The three buttons Area Attack, Split Attack and Focus Attack of the command menu (custom commands of type ICON: pressing one arms the circle mode of
+-- the area attack, see newAreaAttack in editor_common.lua). The BluePrinter adds them as a widget (widgetHandler.customCommands); the Level Editor
+-- gives every unit these commands in its gadget (unit_level_editor.lua: a widget of a game archive may not add commands, a gadget may).
+R.ATTACK_BUTTONS = {
+	base = 43020, -- command ids base + 1 .. base + 3
+	{ mode = "circle", name = "Area Attack",
+		tip = "Area Attack (XC): drag a circle on the map, the selected units attack the area. Press the button again or right click to end." },
+	{ mode = "split", name = "Split Attack",
+		tip = "Split Attack (XS, experimental): drag a circle, the selected units spread their fire evenly over the visible enemies in it." },
+	{ mode = "focus", name = "Focus Attack",
+		tip = "Focus Attack (XF, experimental): drag a circle, the selected units kill the visible enemies in it one after the other." },
+}
+
+-- The order menu of BAR shows the text of "commands.<action>" and the tooltip of "commands.<action>_tooltip" from its translation table (it draws no
+-- pictures for custom commands: showIcons is off): R.attackButtonTexts() is the table for Spring.I18N.load
+function R.attackButtonTexts()
+	local commands = {}
+	for _, b in ipairs(R.ATTACK_BUTTONS) do
+		commands["led_" .. b.mode .. "_attack"] = b.name
+		commands["led_" .. b.mode .. "_attack_tooltip"] = b.tip
+	end
+	return { en = { commands = commands } }
+end
+
+-- The command descriptions of the three buttons (a new table every call: the engine may change what it gets)
+function R.attackButtonDescs()
+	local out = {}
+	for i, b in ipairs(R.ATTACK_BUTTONS) do
+		out[#out + 1] = { id = R.ATTACK_BUTTONS.base + i, type = CMDTYPE.ICON, name = b.name, action = "led_" .. b.mode .. "_attack", cursor = "Attack",
+			tooltip = b.tip }
+	end
+	return out
+end
+
 return R

@@ -1268,7 +1268,25 @@ function gadget:RecvLuaMsg(msg, playerID)
 	return true
 end
 
+-- The buttons Area / Split / Focus Attack in the command menu (shared/bar_rules.lua): every unit gets the three commands; the widget uses them up
+-- in widget:CommandNotify (a command that gets here is refused)
+local function giveAttackButtons(unitID)
+	if not (Spring.FindUnitCmdDesc and Spring.InsertUnitCmdDesc) then
+		return
+	end
+	for _, desc in ipairs(Rules.attackButtonDescs()) do
+		if not Spring.FindUnitCmdDesc(unitID, desc.id) then
+			Spring.InsertUnitCmdDesc(unitID, desc)
+		end
+	end
+end
+
 function gadget:Initialize()
+	if EDITOR_MODE then
+		for _, unitID in ipairs(Spring.GetAllUnits()) do
+			giveAttackButtons(unitID)
+		end
+	end
 	GG.LevelEditor = {
 		place = place, remove = remove, undo = undo, clear = clearAll, load = loadUnit, boom = boom, assign = assignTeam, removeIds = removeIds, generate = generate, feature = placeFeature, clearFeatures = clearFeatures,
 		replaceFid = replaceFid, -- a feature made again by another gadget (rtf_game.lua): the steps of the history follow it
@@ -1289,8 +1307,17 @@ if EDITOR_MODE then
 	-- are removed in the first frames (silently, no wreck), so these teams are empty until something is placed for them
 	local startCommanders = {}
 
+	function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
+		local base = Rules.ATTACK_BUTTONS.base
+		if cmdID > base and cmdID <= base + #Rules.ATTACK_BUTTONS then
+			return false
+		end
+		return true
+	end
+
 	function gadget:UnitCreated(unitID, unitDefID, teamID, builderID)
 		local ud = UnitDefs[unitDefID]
+		giveAttackButtons(unitID)
 		if teamID >= 2 and Spring.GetGameFrame() < 150 and teamID ~= Spring.GetGaiaTeamID() and ud and ud.customParams and ud.customParams.iscommander then
 			startCommanders[#startCommanders + 1] = unitID
 		end

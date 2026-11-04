@@ -80,6 +80,7 @@ local HELP_SECTIONS = {
 		{ "Procedure", "Each unit gets its own target in the shape. Bombers first form up side by side, then all attack at the same moment as a front; all other units walk into range and fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
 	} },
 	{ "Split and focus attack (experimental)", {
+		{ "Area / Split / Focus Attack", "Three buttons in the command menu of the game (next to Hold pos, Repeat Off ...), shown while units are selected: Area Attack (a circle, like XC), Split Attack (XS) and Focus Attack (XF). Press one, then drag the circle on the map." },
 		{ "XS  /  XF", "Buttons next to the menu, below XL, XR and XC. Select armed units, press XS or XF, then drag a circle from the center outwards over visible enemies." },
 		{ "XS (split)", "The damage per second of the selected units is spread evenly over the enemies in the circle: every enemy gets the same share, whatever its health." },
 		{ "XF (focus)", "The units kill the enemies in the circle one after the other, the most dangerous first. Every enemy gets as many units as it needs to die in about 3 seconds, the rest goes on to the next one. Right click cancels." },
@@ -2390,7 +2391,17 @@ local function gridKeyHook(_, _, _, _, isRepeat, release, _, key)
 	return false
 end
 
+-- The buttons Area Attack, Split Attack and Focus Attack in the command menu of the game (see newAreaAttack in editor_common.lua)
+function widget:CommandsChanged()
+	area:addCommands(widgetHandler)
+end
+
+function widget:CommandNotify(cmdID)
+	return area:notify(cmdID)
+end
+
 function widget:Initialize()
+	area:registerTexts()
 	local modOptions = Spring.GetModOptions and Spring.GetModOptions() or {}
 	if WG.LevelEditorWidget or modOptions.leveleditor == "1" then
 		-- the Level Editor brings the same interface; two of them at the same time get in each other's way. The
