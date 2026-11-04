@@ -79,6 +79,11 @@ local HELP_SECTIONS = {
 		{ "XL  /  XR  /  XC", "Buttons next to the menu. Select armed units first (tanks, bots, ships, aircraft, artillery, ...), press XL (line), XR (rectangle) or XC (circle), then drag the shape on the map. For the circle drag from the center outwards." },
 		{ "Procedure", "Each unit gets its own target in the shape. Bombers first form up side by side, then all attack at the same moment as a front; all other units walk into range and fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
 	} },
+	{ "Split and focus attack (experimental)", {
+		{ "XS  /  XF", "Buttons next to the menu, below XL, XR and XC. Select armed units, press XS or XF, then drag a circle from the center outwards over visible enemies." },
+		{ "XS (split)", "The damage per second of the selected units is spread evenly over the enemies in the circle: every enemy gets the same share, whatever its health." },
+		{ "XF (focus)", "The units kill the enemies in the circle one after the other, the most dangerous first. Every enemy gets as many units as it needs to die in about 3 seconds, the rest goes on to the next one. Right click cancels." },
+	} },
 	{ "Chat commands", {
 		{ "/bp_menu", "Menu on or off." },
 		{ "/bp_rotate  /bp_undo  /bp_clear", "Rotate, undo, clear all." },
