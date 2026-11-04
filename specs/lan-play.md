@@ -22,7 +22,7 @@ TCP 8453, the text protocol of the official lobby. The host's lobby connects to 
 
 ## 3. LAN Play page
 
-A field "Your name", Host a LAN game, Find LAN games, an address field + Join, the list of found games (a click joins), a busy indicator under Find LAN games while a search runs (`ui.spin`: the text "Searching for LAN games" with a turning bar, set by `widget:Update`), Leave LAN play (`ui.leave`, only visible while this computer hosts or plays a LAN game; Back then sits right of it, otherwise at the left edge), Back. While the page is open and the computer neither hosts nor plays, it looks for games every few seconds: `WHO` on port 8453 at the addresses x.y.z.1..254 of the own /24 network (the lobby cannot ask for the netmask; 24 connections per frame, 8 s at most). A host does not scan, so it never finds itself.
+A field "Your name", Host a LAN game, Find LAN games, an address field + Join, the list of found games (a click joins), a busy indicator under Find LAN games while a search runs (`ui.spin`: the text "Searching for LAN games" with a turning bar, set by `widget:Update`; when no search runs and none found: "No LAN game found"; with games found the list stands in that place), Leave LAN play (`ui.leave`, only visible while this computer hosts or plays a LAN game; Back then sits right of it, otherwise at the left edge), Back. While the page is open and the computer neither hosts nor plays, it looks for games every few seconds: `WHO` on port 8453 at the addresses x.y.z.1..254 of the own /24 network (the lobby cannot ask for the netmask; 24 connections per frame, 8 s at most). A host does not scan, so it never finds itself.
 
 ## 4. Start of the game
 
