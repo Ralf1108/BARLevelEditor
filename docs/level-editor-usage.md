@@ -39,7 +39,7 @@ All buttons are in the column at the right edge and in the strip left of the men
 - **Ctrl+Z / Y**: undo, redo for everything
 
 **Save**
-- **Ctrl+S** saves the level (autosave when you leave), **O** loads
+- **Ctrl+S** saves the level (autosave when you leave), **S** opens the list of the saved levels: **Save as new** (with a name you can type), **Save** (overwrites a level at once) and **Load** (a second click confirms); sort A-Z or by last use
 - Select units → **P → Blueprints → Create** saves a layout
 
 **Restrictions and AI**

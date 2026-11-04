@@ -5,7 +5,7 @@
 local sections = {
 	{ "Menu (right)", {
 		{ "Header", "Two main menus: Place (Recent, Units, Features, Blueprints) and Generate (Units, Maze)." },
-		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, levels), I scenario info, T teams (human or AI, alliance, start resources), ? this help, P / G / TD / CF / RF pages, XL / XR / XC area attacks, XS split attack and XF focus attack (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
+		{ "Button column at the far right", "V collapse, O settings (grid, unit limit, columns and rows), S levels (save and load), I scenario info, T teams (human or AI, alliance, start resources), ? this help, P / G / TD / CF / RF pages, XL / XR / XC area attacks, XS split attack and XF focus attack (experimental), FX / FD buildings indestructible / destructible (drag a rectangle)." },
 		{ "Title row", "Drag the title \"Level Editor\" with the left mouse button: the whole menu (with the strip at the left and the button column) moves. Right click on the title: back to its place. The position is remembered." },
 		{ "Click", "Arm a blueprint, unit or feature. Left click on the map places it, right click ends." },
 		{ "Red X (Place menu)", "A small X on a unit picture, on a faction, a group or a tech button restricts it for the player in the game (Start, scenario): all units in it, or all units of a tech level. The X is on when all of them are restricted and goes off when you allow one. Click again to allow. You can always place everything in the editor. The Tower Defense page shows the same list." },
@@ -14,7 +14,8 @@ local sections = {
 		{ "Search field", "At the top of Place: one search over Recent, Units, Features and Blueprints at once (words of the description or the code). The tabs show the number of matches. Enter = done, Esc or X = clear." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename, Create = save the selection." },
 		{ "Recent", "Recently chosen blueprints and recently placed units and features." },
-		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows, below them the level list with load and save (second click confirms)." },
+		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows." },
+		{ "S", "The saved levels as a list with a scrollbar. Save as new: type a name (suggested: level_001, ...) and press the button. Save on a row overwrites that level at once. Load asks for a second click. Sort: A-Z or Recent (last used first)." },
 		{ "I", "Scenario info: title, author, summary, briefing, win condition, grace period, ID. Click a field and type; written with the level when you save it. Human or AI, alliances and start resources are on the page T." },
 		{ "T", "Teams (0 to 9): per team Human or AI (click), the AI (click: NullAI, BARb, CircuitAI, Simple AIs, Scavengers, Raptors), the alliance (click: ten colors; teams with the same color are allies) and the start metal and energy. Saved with the level; the AI takes effect in the scenario (a running game cannot change an AI). Also: right click on a team button at the left chooses its alliance; the frame around the button shows it." },
 		{ "CF", "Capture the Flag (button CF below TD): tick the box. Flag points belong to the team chosen in the strip (Gaia = neutral flags that every team may take); the box makes the flags visible on the whole map. Income: metal per second for every flag at the collection point (a carried or stolen flag pays nothing). Flags to hold at once to win (0 = no end), capture radius, time after which a dropped flag goes back (0 = it stays where the carrier died). A carrier cannot shoot and is slowed down to the top speed you set (default 50). Choose the team in the strip at the left, then Collection point and Flag point (as many of both as you like) and click on the map; Del over a point removes it. Start runs it, Stop brings the level back." },
@@ -116,7 +117,7 @@ local topics = {
 		names = { "save", "load", "last" },
 		lines = {
 			"SAVING: Ctrl+S writes the level to LevelEditor/levels/<name>.lua: all units (position, height, team) and all features (wrecks, trees, rocks).",
-			"LOADING: the level list in the settings (button O) clears the map (except the builder rows) and sets the level up again. Features are replaced if the file contains any. /led_clear clears units only.",
+			"LOADING: the level list (button S) clears the map (except the builder rows) and sets the level up again. Features are replaced if the file contains any. /led_clear clears units only.",
 			"Ctrl+S saves the level under the current name, otherwise as a new level_001, level_002 ...",
 			"AUTOSAVE: the editor saves every 2 minutes and when you leave, as _last. At the next start key 0 ('Continue the last state') brings it back.",
 			"Air units in the air are loaded in the air, air units on the ground landed. The file states which game options (e.g. extra pack) must be on in the main game.",
@@ -151,7 +152,7 @@ local topics = {
 		lines = {
 			"SEARCH: the Place menu has one search field at the top for Units, Features and Blueprints together. Click and type words of the description or the code; the tabs Recent, Units, Features and Blueprints show how many match and list the matches (across all factions, groups and tech levels). Enter ends the input, Esc or the X button next to it clears the search.",
 			"RECENT: recently chosen blueprints and recently placed units and features, click to use them again (stored in LuaUI/Config/LevelEditorRecent.lua).",
-			"LEVELS: 'O' opens the settings, below them the list of saved levels. Loading and saving need a second click as confirmation, 'Save as new' creates level_001, level_002 ...",
+			"LEVELS: 'S' opens the list of saved levels (scrollbar, sort A-Z or Recent). 'Save as new' saves under the name in the field (suggested level_001, level_002 ...), 'Save' on a row overwrites that level at once, 'Load' needs a second click.",
 		},
 	},
 	{

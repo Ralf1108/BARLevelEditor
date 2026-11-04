@@ -49,10 +49,7 @@ local armedFeature = false -- Stamp mode for a feature (tree, rock, wreck)
 local moveDrag = nil -- { x, z }: start point while the selection is moved with Alt + drag
 local pendingNew = false -- an edit (rotate, mirror, move) is under way, the new IDs are expected
 local lastNewN = nil
-local levelList = {} -- Names of the saved levels (options menu)
-local levelScroll = 0
-local levelConfirm = nil -- { kind, name }: button is waiting for the second click
-local MAX_LEVEL_ROWS = 8
+local sv -- Save page (button S): LevelEditor/scripts/led_save.lua, created below (the list of the saved levels, Save as new, Save, Load)
 local helpOpen = false -- Help board on the screen
 
 -- Texts of the help board and of /led_help (data only, own file)
@@ -400,6 +397,7 @@ local function saveLevel(name, quiet)
 		say(string.format("%d units and %d features saved in %s%s.lua", count, #flines, OUTDIR, name))
 		if name:sub(1, 1) ~= "_" then
 			currentLevel = name
+			sv.touch(name)
 		end
 		if count == 0 then
 			say("Note: 0 units saved. Are all units visible?")
@@ -458,6 +456,9 @@ local function load_level(_, _, args)
 	scenario = decodeBlock(keptScenario)
 	scenarioDirty = false
 	currentLevel = name
+	if name:sub(1, 1) ~= "_" then
+		sv.touch(name)
+	end
 	if not data then
 		say("Loading failed: " .. tostring(err))
 		return true
@@ -1158,7 +1159,7 @@ local function searchRects(x1, x2, top, hb)
 end
 
 local function headerRowCount() -- Rows of the header
-	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or ar.open then
+	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or ar.open or sv.open then
 		return 0
 	end
 	-- Place menu: search, sub-tabs, then the rows of the chosen sub-tab
@@ -1170,26 +1171,6 @@ local function headerRowCount() -- Rows of the header
 		return 2
 	end
 	return 2 + 1 -- blueprints: Create
-end
-
--- List of the saved levels (LevelEditor/*.lua, without internal files with _ except the autosave _last)
-local function scanLevels()
-	levelList = {}
-	local files = (VFS and VFS.DirList and VFS.DirList(OUTDIR, "*.lua", VFS.RAW)) or {}
-	for _, path in ipairs(files) do
-		local name = path:match("([^/\\]+)%.lua$")
-		if name and (name:sub(1, 1) ~= "_" or name == "_last" or name == "_beforeplay") then
-			levelList[#levelList + 1] = name
-		end
-	end
-	table.sort(levelList)
-	levelScroll = 0
-end
-
-local function levelsHeight()
-	local m = Shared.m
-	local rows = math.min(#levelList, MAX_LEVEL_ROWS)
-	return 40 * S + (m.HB + 10 * S) * (rows + 1) + m.PAD
 end
 
 -- Title row "Level Editor" above the Place / Generate buttons
@@ -1217,8 +1198,10 @@ local function basePanelRectRaw()
 		cw, ch = 0, rtf.height()
 	elseif gen.open then
 		cw, ch = 0, genHeight()
+	elseif sv.open then
+		cw, ch = sv.width(), sv.height()
 	elseif optionsOpen then
-		cw, ch = optionsUI:width(), optionsUI:height() + levelsHeight()
+		cw, ch = optionsUI:width(), optionsUI:height()
 	elseif menuMode == "units" or menuMode == "features" or menuMode == "fav" then
 		cw, ch = uGrid:size()
 	else
@@ -1227,7 +1210,7 @@ local function basePanelRectRaw()
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
 	local top = vsy * 0.94 -- top edge of the menu: 94 % of the screen height
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or ar.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
+	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or ar.open or sv.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
 end
@@ -1265,7 +1248,7 @@ local function headerRectsRaw()
 		-- Button column at the far right next to the menu: V, below it O, I and at the very bottom ?
 		local sx1 = x2 + m.PAD
 		local sx2 = sx1 + m.HB
-		local function sideTop(k) if k >= 4 then k = k + 1 end return y1 - (k - 1) * (m.HB + 3) end -- slot 4 is the button T
+		local function sideTop(k) if k >= 3 then k = k + 1 end if k >= 5 then k = k + 1 end return y1 - (k - 1) * (m.HB + 3) end -- slots 3 and 5 are the buttons S and T
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(1) - m.HB, y1 = sideTop(1), kind = "collapse", value = "collapse", label = "V", active = false, side = true, tip = "Collapse or expand the menu" }
 		local gx1, gx2, gy1 = sx1, sx2, sideTop(2)
 		local ix1, ix2, iy1 = sx1, sx2, sideTop(3)
@@ -1277,11 +1260,13 @@ local function headerRectsRaw()
 		}
 		for i, it in ipairs(tops) do
 			rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5 + i) - m.HB, y1 = sideTop(5 + i), side = true, kind = "top", value = it[1], label = it[2],
-				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open), tip = it[3] }
+				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open and not sv.open), tip = it[3] }
 		end
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = y1 - 2 * (m.HB + 3) - m.HB, y1 = y1 - 2 * (m.HB + 3), side = true, kind = "sv", value = "sv", label = "S", active = sv.open,
+			tip = "Save: the saved levels with Save as new, Save (overwrites) and Load; sorted A-Z or by last use" }
 		rects[#rects + 1] = { x1 = ix1, x2 = ix2, y0 = iy1 - m.HB, y1 = iy1, side = true, kind = "info", value = "info", label = "I", active = scenarioOpen and scenarioPage == "info",
 			tip = "Scenario: edit title, briefing, win condition and ID for building a scenario" }
-		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = y1 - 3 * (m.HB + 3) - m.HB, y1 = y1 - 3 * (m.HB + 3), side = true, kind = "teams", value = "teams", label = "T", active = scenarioOpen and scenarioPage == "teams",
+		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = y1 - 4 * (m.HB + 3) - m.HB, y1 = y1 - 4 * (m.HB + 3), side = true, kind = "teams", value = "teams", label = "T", active = scenarioOpen and scenarioPage == "teams",
 			tip = "Teams: human or AI, the alliance and the start resources of every team.\nThe AI takes effect in the scenario (and the AI of team 1 at the next start of the editor)." }
 		rects[#rects + 1] = { x1 = hx1, x2 = hx2, y0 = hy1 - m.HB, y1 = hy1, side = true, kind = "help", value = "help", label = "?", active = helpOpen,
 			tip = "Help: show the keys and controls on the screen" }
@@ -1321,7 +1306,7 @@ local function headerRectsRaw()
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open then
+	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open and not sv.open then
 		local rowTop = y1 - 4 - titleH()
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
@@ -1591,59 +1576,6 @@ local function drawTeamStrip()
 	gl.Color(1, 1, 1, 1)
 end
 
--- Level management in the options menu: row "New level" and per level the buttons Load and Save
-local function levelRects(rect)
-	local m = Shared.m
-	local rects = {}
-	local rowH = m.HB + 10 * S
-	local y = rect.top - optionsUI:height() - 40 * S
-	local bx2 = rect.x2 - m.PAD
-	local function confirmLabel(kind, name, text)
-		if levelConfirm and levelConfirm.kind == kind and levelConfirm.name == name then
-			return "Sure?"
-		end
-		return text
-	end
-	rects[#rects + 1] = { x1 = bx2 - 330 * S, x2 = bx2, y0 = y - m.HB, y1 = y, kind = "new", label = "Save as new", fs = 22 * S,
-		tip = "Saves the map as a new level (name level_001, level_002 ...)" }
-	y = y - rowH
-	for i = 1, math.min(MAX_LEVEL_ROWS, #levelList - levelScroll) do
-		local name = levelList[levelScroll + i]
-		rects[#rects + 1] = { x1 = bx2 - 330 * S, x2 = bx2 - 180 * S, y0 = y - m.HB, y1 = y, kind = "load", name = name,
-			label = confirmLabel("load", name, "Load"), fs = 22 * S, active = (levelConfirm and levelConfirm.kind == "load" and levelConfirm.name == name) or nil,
-			tip = "Load level: replaces everything on the map\n(second click confirms)" }
-		rects[#rects + 1] = { x1 = bx2 - 175 * S, x2 = bx2, y0 = y - m.HB, y1 = y, kind = "save", name = name,
-			label = confirmLabel("save", name, "Save"), fs = 22 * S, active = (levelConfirm and levelConfirm.kind == "save" and levelConfirm.name == name) or nil,
-			tip = "Writes the current state into this level\n(overwrites, second click confirms)" }
-		rects[#rects].rowName = name
-		y = y - rowH
-	end
-	return rects
-end
-
-local function drawLevels(rect, mx, my)
-	local m = Shared.m
-	local rowH = m.HB + 10 * S
-	local y = rect.top - optionsUI:height()
-	gl.Color(0.5, 0.8, 1, 1)
-	gl.Text("Levels", rect.x1 + m.PAD, y - 32 * S, 27 * S, "o")
-	local rects = levelRects(rect)
-	Shared.drawButtons(rects, 22 * S, m.HB)
-	gl.Color(1, 1, 1, 1)
-	local ty = y - 40 * S - rowH
-	for i = 1, math.min(MAX_LEVEL_ROWS, #levelList - levelScroll) do
-		gl.Text(levelList[levelScroll + i], rect.x1 + m.PAD * 3, ty - m.HB + (m.HB - 27 * S) / 2 + 3 * S, 27 * S, "o")
-		ty = ty - rowH
-	end
-	if #levelList == 0 then
-		gl.Text("no levels saved yet", rect.x1 + m.PAD * 3, y - 40 * S - rowH, 22 * S, "o")
-	elseif #levelList > MAX_LEVEL_ROWS then
-		gl.Text(string.format("%d-%d of %d (mouse wheel scrolls)", levelScroll + 1, math.min(#levelList, levelScroll + MAX_LEVEL_ROWS), #levelList),
-			rect.x1 + m.PAD * 3, y - 40 * S - rowH * (MAX_LEVEL_ROWS + 1) - 28 * S, 20 * S, "o")
-	end
-	Shared.drawTip(rects, mx, my)
-end
-
 -- A test of a game mode (Tower Defense, Capture the Flag, Reclaim the Fame) or the Arena fight is running (Start was pressed). With stop = true
 -- the Stop button is pressed for it (the state before comes back, with all its consequences); returns whether something was running.
 -- Leaving the level (load, save, quit) must not take the state of the test with it.
@@ -1665,44 +1597,6 @@ local function runningModes(stop)
 		end
 	end
 	return any
-end
-
-local function levelPress(rect, mx, my)
-	for _, r in ipairs(levelRects(rect)) do
-		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-			if (r.kind == "new" or (levelConfirm and levelConfirm.kind == r.kind and levelConfirm.name == r.name and r.kind ~= "load")) and runningModes(true) then
-				levelConfirm = nil
-				say("The test was running: it is stopped and the state before is back. Press Save again.")
-				return true
-			end
-			if r.kind == "new" then
-				local n = 1
-				local taken = {}
-				for _, nm in ipairs(levelList) do
-					taken[nm] = true
-				end
-				while taken[string.format("level_%03d", n)] do
-					n = n + 1
-				end
-				saveLevel(string.format("level_%03d", n), false)
-				scanLevels()
-			elseif levelConfirm and levelConfirm.kind == r.kind and levelConfirm.name == r.name then
-				levelConfirm = nil
-				if r.kind == "load" then
-					runningModes(true) -- Stop first, then the other level replaces everything
-					load_level(nil, nil, { r.name })
-				else
-					saveLevel(r.name, false)
-					scanLevels()
-				end
-			else
-				levelConfirm = { kind = r.kind, name = r.name }
-			end
-			return true
-		end
-	end
-	levelConfirm = nil
-	return false
 end
 
 -- Rows and button of the scenario page (button I)
@@ -1818,19 +1712,11 @@ local function saveCurrentLevel()
 	end
 	local name = currentLevel and currentLevel:sub(1, 1) ~= "_" and currentLevel or nil
 	if not name then
-		local n = 1
-		local taken = {}
-		scanLevels()
-		for _, nm in ipairs(levelList) do
-			taken[nm] = true
-		end
-		while taken[string.format("level_%03d", n)] do
-			n = n + 1
-		end
-		name = string.format("level_%03d", n)
+		sv.scan()
+		name = sv.suggest()
 	end
 	saveLevel(name, false)
-	scanLevels()
+	sv.scan()
 	return true
 end
 
@@ -1912,7 +1798,7 @@ local function drawMenuBody()
 	end
 	gl.Color(1, 1, 1, 1)
 	-- with Tower Defense on (tick box) or its page open the title says so
-	gl.Text(ar.open and "Level Editor - Arena" or rtf.open and "Level Editor - Reclaim the Fame" or ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
+	gl.Text(sv.open and "Level Editor - Levels" or ar.open and "Level Editor - Arena" or rtf.open and "Level Editor - Reclaim the Fame" or ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
 		drawScenario(rect, mx, my)
@@ -1934,6 +1820,10 @@ local function drawMenuBody()
 		rtf.draw(rect)
 		return
 	end
+	if sv.open then
+		sv.draw(rect)
+		return
+	end
 	if gen.open then
 		local rects, labels = genLayout(rect)
 		Shared.drawButtons(rects, 24 * S, Shared.m.HB)
@@ -1950,7 +1840,6 @@ local function drawMenuBody()
 	end
 	if optionsOpen then
 		optionsUI:draw(rect, mx, my)
-		drawLevels(rect, mx, my)
 		return
 	end
 	if menuMode == "features" then
@@ -2113,7 +2002,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), levelRects(contentRect()), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect()))
+	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), scenarioRects(contentRect()), (genLayout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect()))
 end
 
 -- Button of the column left of the team strip (V, O, I, ?) under the mouse pointer
@@ -2207,9 +2096,10 @@ local function applyHeader0(r)
 	end
 	searchFocus(false)
 	if r.kind == "top" then
-		local tdWas = td.open or ctf.open or rtf.open or ar.open
+		local tdWas = td.open or ctf.open or rtf.open or ar.open or sv.open
 		ar.finish(true)
-		td.open, ctf.open, rtf.open, ar.open = false, false, false, false
+		sv.finish(true)
+		td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 		local pageWas = scenarioOpen or optionsOpen
 		scenarioFinish(true)
 		scenarioOpen, optionsOpen = false, false -- the scenario, AI and settings pages give way to Place and Generate
@@ -2221,13 +2111,14 @@ local function applyHeader0(r)
 		end
 		return
 	end
-	local tdWas, ctfWas, rtfWas, arWas = td.open, ctf.open, rtf.open, ar.open
+	local tdWas, ctfWas, rtfWas, arWas, svWas = td.open, ctf.open, rtf.open, ar.open, sv.open
 	ctf.finish(true)
+	sv.finish(true)
 	rtf.finish(true)
 	ar.finish(true)
 	if r.kind ~= "create" then
 		gen.open, gen.armed, gen.drag = false, false, nil
-		td.open, ctf.open, rtf.open, ar.open = false, false, false, false
+		td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 	end
 	uGrid:setFocus(false)
 	fGrid:setFocus(false)
@@ -2274,6 +2165,19 @@ local function applyHeader0(r)
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
 	end
+	if r.kind == "sv" then
+		bpGrid:resetEdit()
+		bpGrid:setArmed(false)
+		armedUnit = false
+		armedFeature = false
+		scenarioOpen, optionsOpen = false, false
+		sv.open = not svWas
+		if sv.open then
+			sv.scan()
+		end
+		bpGrid.scroll, uGrid.scroll = 0, 0
+		return
+	end
 	if r.kind == "info" then
 		bpGrid:resetEdit()
 		bpGrid:setArmed(false)
@@ -2303,10 +2207,6 @@ local function applyHeader0(r)
 		armedFeature = false
 		scenarioOpen = false
 		optionsOpen = not optionsOpen
-		levelConfirm = nil
-		if optionsOpen then
-			scanLevels()
-		end
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
 	end
@@ -2633,6 +2533,18 @@ ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	end,
 })
 
+-- Save page (LevelEditor/scripts/led_save.lua): the saved levels, Save as new, Save and Load
+sv = VFS.Include("luaui/Include/led_save.lua", nil, VFS.ZIP_FIRST)({
+	Shared = Shared,
+	S = function() return S end,
+	say = function(text) say(text) end,
+	outDir = OUTDIR,
+	currentLevel = function() return currentLevel end,
+	saveLevel = saveLevel,
+	loadLevel = function(name) load_level(nil, nil, { name }) end,
+	runningModes = runningModes,
+})
+
 -- Teams (LevelEditor/scripts/led_teams.lua): alliances, human or AI, start resources
 tm = VFS.Include("luaui/Include/led_teams.lua", nil, VFS.ZIP_FIRST)({
 	Shared = Shared,
@@ -2834,6 +2746,9 @@ local function panelPress(mx, my, button)
 		if ar.open then
 			return ar.press(rect, mx, my)
 		end
+		if sv.open then
+			return sv.press(rect, mx, my)
+		end
 		if gen.open then
 			local hit
 			for _, gr in ipairs((genLayout(rect))) do
@@ -2883,8 +2798,6 @@ local function panelPress(mx, my, button)
 			if optionsUI:press(rect, mx, my) then
 				grid = cfg.v.grid
 				bpGrid.scroll, uGrid.scroll = 0, 0
-			else
-				levelPress(rect, mx, my)
 			end
 			return true
 		end
@@ -3442,6 +3355,9 @@ function widget:TextInput(utf8char)
 	if ar.edit then
 		return ar.text(utf8char)
 	end
+	if sv.edit then
+		return sv.text(utf8char)
+	end
 	if tm.edit then
 		return tm.text(utf8char)
 	end
@@ -3486,12 +3402,11 @@ function widget:MouseWheel(up, value)
 	if ctf.open or rtf.open or ar.open then
 		return true
 	end
+	if sv.open then
+		sv.wheel(up)
+		return true
+	end
 	if optionsOpen then
-		local mxw, myw = Spring.GetMouseState()
-		local rw = contentRect()
-		if myw < rw.top - optionsUI:height() then
-			levelScroll = math.max(0, math.min(math.max(0, #levelList - MAX_LEVEL_ROWS), levelScroll + (up and -1 or 1)))
-		end
 		return true
 	end
 	if menuMode == "units" then
@@ -4017,7 +3932,7 @@ function bpQuickSave()
 	menuMode = "bp"
 	optionsOpen = false
 	scenarioOpen = false
-	td.open, ctf.open, rtf.open, ar.open = false, false, false, false
+	td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 	bpGrid:scrollTo(contentRect(), bpGrid.selected)
 	return true
 end
@@ -4056,6 +3971,9 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if ar.edit then
 		return ar.key(key)
+	end
+	if sv.edit then
+		return sv.key(key)
 	end
 	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt() or ar.deleteAt()) then
 		return true
