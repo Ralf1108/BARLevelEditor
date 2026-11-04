@@ -42,6 +42,8 @@ What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
 `tools\arena_test.ps1 -Widget zz_save.lua` starts the same sandbox game with a widget that works the Save page (button S): the order of the button column, the suggested name, a typed name (characters that are not allowed are dropped), a taken name is refused, twelve more levels so that the list scrolls, the mouse wheel, the sort buttons A-Z / Recent, Save on a row (no question), Load (second click) and that the settings page O no longer shows the list. It logs `[zzar] OK` / `[zzar] FAIL` lines and takes screenshots (`<Work>\data\screenshots`). Run it in the background like every test.
 
+`tools\arena_test.ps1 -Widget zz_scenario.lua` works the Scenario info page (button I): types a title (Enter accepts), cycles the win condition, types a grace period, switches to the page T and back, and checks the values through `DebugScenario()`. It logs `[zzar] OK` / `[zzar] FAIL` lines. Run it in the background like every test.
+
 ## Console lobby test (`tools\console_test.ps1`)
 
 `tools\console_test.ps1 -Mode ctf|rtf|td` does the same for the console lobby of the scenario packages (`Host Game` / `Join Game`, `start_scenario.ps1 -Lobby`): two starters in minimized console windows, each with its own BAR folder in the work folder (`%TEMP%\console_test\barH`, `barJ`), the host starts when two players are in. Results of 2026-10-27: Capture the Flag (PlayerA team 0, PlayerB team 1, 2:0 on both), Reclaim the Fame (1564 : 1638 on both), Tower Defense ("won" on both; the lobby put PlayerB in team 1, the team of the enemy AI slot, because the lobby simply gives the joiner the free team, the host could move them in the lobby).
