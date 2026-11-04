@@ -4,22 +4,24 @@
 #   -NoMap   the joiners have an empty maps folder (not the junction to the installed maps): the map comes from the host over LAN Play
 #   -KeepOnline   with -NoMap: the lobby of the joiner may download the map online (without it the test cancels that download)
 #   -MapList none | official | wrong   the list of official map md5 of the joiners: none, the real one (fetched online), or one with a wrong md5
+#   -AlongsideGame   run next to a game you are playing (only the processes of the test are ever stopped)
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
 #   -Shots 20,45   pictures of the window of the host (seconds after the start): shot_<s>.png in -Work (PrintWindow: the window may stay behind others;
 #                  gl.SaveImage and a copy of the screen come out black or disturb)
 #   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
+#         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
 #         page = one instance, the LAN Play page opened and left alone (pictures of the page with -Shots, -WaitSec 60 ends it)
 #         teams = the buttons "3 teams" / "2 per team" of the room (log: lan_status.txt in the data folder of the host; pictures with -Shots)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '')
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame)
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1')   # Write-ScenarioGame and its files
 New-Item -ItemType Directory -Force $sp | Out-Null
-if (Get-Process spring -ErrorAction SilentlyContinue) { 'A game is running: aborted'; return }
+if (-not $AlongsideGame -and (Get-Process spring -ErrorAction SilentlyContinue)) { 'A game is running: aborted'; return }
 Add-Type @'
 using System; using System.Runtime.InteropServices;
 public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
@@ -27,7 +29,7 @@ public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowP
 '@
 $exe = (Get-ChildItem "$real\engine" -Directory | Select -Last 1).FullName + '\spring.exe'
 $scn = "${Mode}_test"
-if ($Mode -notin 'cp', 'teams', 'page') {
+if ($Mode -notin 'cp', 'teams', 'page', 'boss') {
     if (Test-Path "$sp\bundle_$scn") { Remove-Item "$sp\bundle_$scn" -Recurse -Force }
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\LevelEditor\scenario\scenario_builder.ps1" -Level $scn -LevelDir "$repo\LevelEditor\test-data\levels" -Auto -BundleDir "$sp\bundle_$scn" | Out-Null
 }
@@ -55,12 +57,12 @@ foreach ($who in $who2) {
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
-        if ($Mode -notin 'cp', 'teams') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
+        if ($Mode -notin 'cp', 'teams', 'boss') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }

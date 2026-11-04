@@ -17,7 +17,7 @@ Playing with computers in the same network with the multiplayer battle room of t
 TCP 8453, the text protocol of the official lobby. The host's lobby connects to it and joins the battle; the lobby of every joiner connects to the host's address, so the official multiplayer room works unchanged.
 
 - **Accepted addresses** (`localAddress`): 127.x, 10.x, 172.16-31.x, 192.168.x, 169.254.x, 100.64-127.x (Tailscale) and 25.x (Hamachi); every other connection is closed at once. The lobby cannot list the network cards, so these ranges stand for "the LAN". Windows asks once for the firewall (private networks); both ports 8453 (lobby) and 8452 (game, `HostPort` of the start script, `HostIP=0.0.0.0`) must be reachable.
-- **Answered:** `LOGIN` (+ `ACCEPTED`, `ADDUSER`, `CLIENTSTATUS`, `BATTLEOPENED`, `JOINEDBATTLE`, `LOGININFOEND`), `PING`, `JOINBATTLE` (+ `REQUESTBATTLESTATUS`, `SETSCRIPTTAGS`, bots), `LEAVEBATTLE`, `MYBATTLESTATUS` (relayed as `CLIENTBATTLESTATUS`), `SAYBATTLE` / `SAYBATTLEEX`, `ADDBOT` / `REMOVEBOT` / `UPDATEBOT`, `WHO`, and the autohost commands the room sends as chat from the host only: `!map`, `!bSet` (game options), `!cv start` / `!start`. The founder of the battle is the pseudo user "LANHost". Scores, ratings, friends, channels and queues are not answered.
+- **Answered:** `LOGIN` (+ `ACCEPTED`, `ADDUSER`, `CLIENTSTATUS`, `BATTLEOPENED`, `JOINEDBATTLE`, `LOGININFOEND`), `PING`, `JOINBATTLE` (+ `REQUESTBATTLESTATUS`, `SETSCRIPTTAGS`, bots), `LEAVEBATTLE`, `MYBATTLESTATUS` (relayed as `CLIENTBATTLESTATUS`), `SAYBATTLE` / `SAYBATTLEEX`, `ADDBOT` / `REMOVEBOT` / `UPDATEBOT`, `WHO`, and the autohost commands the room sends as chat from the host only: `!map`, `!bSet` (game options), `!cv start` / `!start`, `!boss <name>` / `!unboss <name>` (Make Boss / Disable Boss). The founder of the battle is the pseudo user "LANHost". Scores, ratings, friends, channels and queues are not answered.
 - **Short connections before login** (each answered with one line or a file, then closed): `WHO` (search for games), `COPILOT` (the numbers of the humans), `LANVER` (versions), `MAPINFO <name>`, `FETCHGAME <hash>`, `FETCHMAP <first> <count> <name>`. A game option set by the widget would be shown by the room as a text line and push its buttons away, so checks and transfers never use game options.
 
 ## 3. LAN Play page
@@ -27,6 +27,10 @@ A field "Your name", Host a LAN game, Find LAN games, an address field + Join, t
 ## 4. Start of the game
 
 `!cv start` makes the autohost "in game" (`CLIENTSTATUS LANHost 65`); every lobby in the battle then connects as for a game on a server (`ConnectToBattle`, script password from the `JOINBATTLE`). The host's lobby runs the game server: its `ConnectToBattle` is wrapped and starts `Spring.Reload` with a script built from the room (game, map, options, players with password, teams, ally teams, colours, sides, AIs, `HostIP=0.0.0.0`, port 8452). After leaving the room the player is on the LAN Play page again; the lobby is rebuilt after a game, so a marker file `lan_return.txt` (written when the widget ends during a LAN game) makes the widget open the LAN Play page then.
+
+### Bosses (`!boss`, `!unboss`)
+
+"Make Boss" / "Disable Boss" in the menu of a player send `!boss <name>` / `!unboss <name>` as chat. `autohostCommand` keeps the names in `S.battle.bosses` and tells the room with the BarManager line `{"BattleStateChanged":{"boss":"PlayerB,PlayerC"}}` (empty = no boss; the room sets `isBoss` from it, only if it comes from the founder); a joiner gets the line right after `JOINBATTLE`. A boss may use the same room commands as the host (`isBoss(c.name)`); a player who leaves is dropped from the list (`dropBoss`). Test: `lan_test.ps1 -Mode boss` (log lines `test: ... isBoss`).
 
 ### Teams and start boxes (`!nbTeams`, `!set teamSize`, `!balance`)
 

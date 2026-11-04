@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 3, stamp = "2026-11-04 17:05" }
+local LAN_VERSION = { number = 4, stamp = "2026-11-04 18:03" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -489,11 +489,50 @@ local function startGameNow()
 	toAll("CLIENTSTATUS " .. HOSTNAME .. " 65") -- bot + in game: every lobby in the battle connects
 end
 
+-- ---- bosses: "Make Boss" / "Disable Boss" in the menu of a player send !boss <name> / !unboss <name> to the autohost, which tells the room with a BarManager line
+-- ("boss": the names, separated by commas; empty = no boss). A boss may do what the host may do in the room (map, teams, balance, start).
+local function sendBosses()
+	barManager({ boss = table.concat(S.battle.bosses, ",") })
+end
+
+local function isBoss(name)
+	for _, b in ipairs(S.battle.bosses) do if b == name then return true end end
+	return false
+end
+
+-- takes a name out of the list of bosses (a player who left); true if it was in
+local function dropBoss(name)
+	for i, b in ipairs(S.battle.bosses) do
+		if b == name then table.remove(S.battle.bosses, i); return true end
+	end
+	return false
+end
+
+-- the player in the room whose name is `name` (any case), nil if there is none
+local function playerNamed(name)
+	for _, o in ipairs(S.conns) do
+		if o.name and o.inBattle and o.name:lower() == name:lower() then return o end
+	end
+end
+
 local function autohostCommand(c, msg)
 	local isHost = (c == S.hostConn)
 	local cmd, rest = msg:match("^!(%S+)%s*(.*)$")
 	cmd = (cmd or ""):lower()
-	if not isHost then say("Only the host can use !" .. cmd); return end
+	if not (isHost or isBoss(c.name)) then say("Only the host or a boss can use !" .. cmd); return end
+	if cmd == "boss" or cmd == "unboss" then
+		local who = playerNamed(rest ~= "" and rest or c.name)
+		if not who then say("There is no player " .. (rest ~= "" and rest or "?") .. " in the room."); return end
+		if cmd == "boss" then
+			if not isBoss(who.name) then S.battle.bosses[#S.battle.bosses + 1] = who.name end
+			say(who.name .. " is boss now.")
+		else
+			if dropBoss(who.name) then say(who.name .. " is no boss any more.") end
+		end
+		sendBosses()
+		log("autohost: bosses now", table.concat(S.battle.bosses, ","))
+		return
+	end
 	if cmd == "map" and rest ~= "" then
 		-- choosing a map sets the official-map mode again: the scenario (and its fixed teams) is dropped
 		if S.battle.scenario then selectScenario(nil) end
@@ -517,6 +556,7 @@ local function removeConn(c)
 		if c.inBattle then
 			c.inBattle = false
 			toAll("LEFTBATTLE 1 " .. c.name)
+			if dropBoss(c.name) then sendBosses() end
 			for i = #S.battle.bots, 1, -1 do
 				local bot = S.battle.bots[i]
 				if bot.owner == c.name then table.remove(S.battle.bots, i); toAll("REMOVEBOT 1 " .. bot.name) end
@@ -651,6 +691,7 @@ local function serverLine(c, line)
 		applyStartboxes(false)
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
 		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"nbTeams":"' .. S.battle.nbTeams .. '","teamSize":"' .. S.battle.teamSize .. '"}}')
+		if #S.battle.bosses > 0 then sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"boss":"' .. table.concat(S.battle.bosses, ",") .. '"}}') end
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
@@ -658,7 +699,7 @@ local function serverLine(c, line)
 		updateBattleInfo()
 		log("joined the battle:", c.name)
 	elseif cmd == "LEAVEBATTLE" then
-		if c.inBattle then c.inBattle = false; toAll("LEFTBATTLE 1 " .. c.name); updateBattleInfo() end
+		if c.inBattle then c.inBattle = false; toAll("LEFTBATTLE 1 " .. c.name); if dropBoss(c.name) then sendBosses() end; updateBattleInfo() end
 	elseif cmd == "MYBATTLESTATUS" then
 		local st, col = args:match("^(%S+)%s+(%S+)")
 		if st and c.inBattle then
@@ -974,7 +1015,7 @@ local function startHosting()
 	s:settimeout(0)
 	local name = playerName()
 	local game = cf and cf:GetDefaultGameName() or "Beyond All Reason"
-	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {}, nbTeams = 2, teamSize = 2 } }
+	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {}, bosses = {}, nbTeams = 2, teamSize = 2 } }
 	found = {}; updateFoundUi()
 	setStatus("Hosting as " .. name .. " (port " .. PORT .. ").")
 	lanConnect("host", "127.0.0.1", name)
@@ -1907,6 +1948,21 @@ function widget:Update()
 	end
 	if cfg.showCopilot and lan and lan.step == "in" and not cfg.showAt then cfg.showAt = os.clock() + 30 end
 	-- test: the buttons "N teams" and "N per team" of the room (the same chat commands), then what the lobby knows about the battle and the middle column
+	if cfg.boss and S and lan and lan.step == "in" and #humanList() >= 2 then
+		-- test: the host chooses "Make Boss" for the other player like the menu does (lobby:SayBattle("!boss <name>")), then "Disable Boss"; logs what the lobby shows
+		local l = lobby()
+		cfg.bossAt = cfg.bossAt or (os.clock() + 5)
+		local target
+		for _, h in ipairs(humanList()) do if not (S.hostConn and h.name == S.hostConn.name) then target = h.name end end
+		local function shown() local bs = l and target and l.userBattleStatus and l.userBattleStatus[target]; return bs and bs.isBoss end
+		if os.clock() > cfg.bossAt and not cfg.bossStep then
+			cfg.bossStep = 1; log("test: Make Boss", target); l:SayBattle("!boss " .. target); cfg.bossAt = os.clock() + 4
+		elseif cfg.bossStep == 1 and os.clock() > cfg.bossAt then
+			cfg.bossStep = 2; log("test: the lobby shows isBoss for", target, ":", tostring(shown())); log("test: Disable Boss", target); l:SayBattle("!unboss " .. target); cfg.bossAt = os.clock() + 4
+		elseif cfg.bossStep == 2 and os.clock() > cfg.bossAt then
+			cfg.bossStep = 3; log("test: after Disable Boss the lobby shows isBoss for", target, ":", tostring(shown()))
+		end
+	end
 	if cfg.teams and S and lan and lan.step == "in" and not cfg.teamsDone then
 		cfg.teamsAt = cfg.teamsAt or (os.clock() + 8)
 		if os.clock() > cfg.teamsAt then
