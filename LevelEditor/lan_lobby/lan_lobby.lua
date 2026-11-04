@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 1, stamp = "2026-11-03 23:55" }
+local LAN_VERSION = { number = 2, stamp = "2026-11-04 16:48" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -912,6 +912,8 @@ local function openLanPage()
 	if root and root.OpenSingleplayerTabByName then pcall(root.OpenSingleplayerTabByName, "LAN Play") end
 end
 
+local lanWasLoggedIn = false -- the lobby was logged in on the normal server when the LAN game began
+
 local function lanStop(reason, noReconnect)
 	log("lanStop:", reason, "configured server", tostring(Config() and Config().serverAddress))
 	local l = lobby()
@@ -923,20 +925,28 @@ local function lanStop(reason, noReconnect)
 	local wasLan = lan ~= nil
 	if lan and lan.leftListener and l then pcall(l.RemoveListener, l, "OnLeftBattle", lan.leftListener) end
 	lan = nil
+	local hadLogin = wasLan and lanWasLoggedIn
+	if not noReconnect then lanWasLoggedIn = false end
 	if wasLan and not noReconnect and l then
 		-- back to the normal server: the lobby is disconnected from the LAN server and logs in again the way the settings window does after a server change
 		pcall(function() l:Disconnect(reason or "LAN play ended") end)
 		local cf = Config()
 		if cf and cf.serverAddress then pcall(function() l.host = cf.serverAddress end) end
-		if WG.LoginWindowHandler and WG.LoginWindowHandler.TryLogin then pcall(WG.LoginWindowHandler.TryLogin) end
-		log("back on the normal server:", tostring(cf and cf.serverAddress))
+		-- the login (and with it the login window of the cloud server) only when the player was logged in there before the LAN game: otherwise Leave Lobby would open a login window that makes no sense
+		if hadLogin and WG.LoginWindowHandler and WG.LoginWindowHandler.TryLogin then pcall(WG.LoginWindowHandler.TryLogin) end
+		log("back on the normal server:", tostring(cf and cf.serverAddress), "login again:", tostring(hadLogin == true))
 	end
 end
 
 local function lanConnect(role, ip, name)
 	local l, cf = lobby(), Config()
 	if not (l and cf) then setStatus("The lobby is not ready."); return false end
+	local wasInLan = lan ~= nil
 	if lan then lanStop("new LAN game", true) end
+	if not wasInLan then -- (while a LAN game runs the name is the LAN name: it says nothing about the normal server)
+		local okName, myName = pcall(l.GetMyUserName, l)
+		lanWasLoggedIn = okName and type(myName) == "string" and myName ~= ""
+	end
 	lan = { role = role, ip = ip, name = name, step = "connecting", t = os.clock() }
 	-- the configuration (server address) stays as it is: the lobby saves it when it ends. Only this connection goes to the LAN server.
 	pcall(function() l:Disconnect("LAN play") end)
@@ -1943,7 +1953,7 @@ buildUi = function()
 	local cf = Config()
 	if not (WG.Chili and cf and cf.gameConfig and cf.gameConfig.singleplayerConfig and screen0) then return false end
 	local font = cf:GetFont(2)
-	local P = Control:New { name = "LAN Play", x = 0, y = 0, width = "100%", height = "100%", resizable = false, padding = { 10, 10, 10, 10 } }
+	local P = Control:New { name = "LAN Play", x = 0, y = 0, width = "100%", height = "100%", resizable = false, padding = { 28, 24, 28, 10 } }
 	local y = 0
 	TextBox:New { parent = P, x = 0, y = y + 4, right = 0, height = 30, text = "LAN Play - play with computers in the same network (no server needed)", objectOverrideFont = font }
 	y = y + 44
