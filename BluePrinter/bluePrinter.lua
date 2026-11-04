@@ -38,6 +38,8 @@ local autoBuild = true
 local autoBuildStopped = false -- an error in the build routine switched auto-build off for this game only (the saved setting stays on)
 local radius = 1000 -- builders react to plans within this radius (Elmo)
 local useCommander = true -- commanders should build too
+local adaptFaction = true -- blueprints are turned into the buildings of the faction of the builders (arm / cor / leg), button F
+local ownPrefix = nil -- "arm" | "cor" | "leg": faction of the own builders (set in refreshBuildable)
 local rot = 0 -- 0 south, 1 east, 2 north, 3 west
 local optionsOpen = false
 local collapsed = false -- Menu collapsed: only the small button V stays visible
@@ -80,6 +82,7 @@ local HELP_SECTIONS = {
 		{ "Procedure", "Each unit gets its own target in the shape. Bombers first form up side by side, then all attack at the same moment as a front; all other units walk into range and fire at their target. Right click cancels. Ctrl+Alt+K = XL." },
 	} },
 	{ "Split and focus attack (experimental)", {
+		{ "F (faction)", "A blueprint is turned into the buildings of the faction of your builders (armsolar becomes corsolar for Cortex). Buildings the faction does not have are left out. Switch F off to build a blueprint as it is." },
 		{ "Area / Split / Focus Attack", "Three buttons in the command menu of the game (next to Hold pos, Repeat Off ...), shown while units are selected: Area Attack (a circle, like XC), Split Attack (XS) and Focus Attack (XF). Press one, then drag the circle on the map." },
 		{ "XS  /  XF", "Buttons next to the menu, below XL, XR and XC. Select armed units, press XS or XF, then drag a circle from the center outwards over visible enemies." },
 		{ "XS (split)", "The damage per second of the selected units is spread evenly over the enemies in the circle: every enemy gets the same share, whatever its health." },
@@ -339,13 +342,40 @@ end
 -- Queue a blueprint copy as ONE step. A building of the blueprint that would lie on a real building or on bad ground is left out (counted as blocked),
 -- the others are placed. Plans that lie below its buildings are replaced: they leave the queue (their builders stop) and the new ones come on top;
 -- Undo brings them back. Returns new, skipped, blocked (left out), replaced.
+-- The faction the buildings of a blueprint are made for: the builders that are selected, otherwise the own builders (nil = leave the blueprint as it is)
+local FACTION_PREFIX = { arm = true, cor = true, leg = true }
+local function targetPrefix()
+	for _, id in ipairs(Spring.GetSelectedUnits() or {}) do
+		local ud = UnitDefs[Spring.GetUnitDefID(id) or -1]
+		if ud and ud.isBuilder and FACTION_PREFIX[ud.name:sub(1, 3)] then
+			return ud.name:sub(1, 3)
+		end
+	end
+	return ownPrefix
+end
+
+-- The building of the faction `prefix` that matches a building of another faction: the same name with the other prefix (armsolar - corsolar - legsolar)
+local function adaptedName(name, prefix)
+	local own = name:sub(1, 3)
+	if not prefix or not adaptFaction or own == prefix or not FACTION_PREFIX[own] then
+		return name
+	end
+	local other = prefix .. name:sub(4)
+	return UnitDefNames[other] and other or nil -- nil: that faction has no such building
+end
+
 local function addPlan(units, cx, cz, k)
 	batchCounter = batchCounter + 1
 	groupCounter = groupCounter + 1
-	local n, skipped, blocked = 0, 0, 0
+	local n, skipped, blocked, noMatch = 0, 0, 0, 0
 	local list, under = {}, {}
+	local prefix = adaptFaction and targetPrefix() or nil
 	for _, u in ipairs(units) do
-		local ud = UnitDefNames[u.name]
+		local uname = adaptedName(u.name, prefix)
+		local ud = uname and UnitDefNames[uname]
+		if not uname then
+			noMatch = noMatch + 1
+		end
 		if ud and (ud.isBuilding or not ud.canMove) then
 			local dx, dz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
 			local f = (headingToFacing(u.rot) + k) % 4
@@ -379,7 +409,7 @@ local function addPlan(units, cx, cz, k)
 		sites[#sites + 1] = s
 		n = n + 1
 	end
-	return n, skipped, blocked, #removed
+	return n, skipped, blocked, #removed, noMatch
 end
 
 local function pendingCount()
@@ -843,6 +873,7 @@ local function refreshBuildable()
 		end
 	end
 	buildable = any and set or nil
+	ownPrefix = (prefix == "arm" or prefix == "cor" or prefix == "leg") and prefix or nil
 	if factionAuto and (prefix == "arm" or prefix == "cor" or prefix == "leg") then
 		uGrid.faction = prefix
 	end
@@ -950,6 +981,7 @@ local TIPS = {
 	radmin = "Reduce the builders' search radius",
 	radplus = "Increase the builders' search radius",
 	radfield = "Search radius of the builders in Elmo (200 to 6000):\nclick, type a number, Enter accepts, Esc cancels",
+	faction = "Faction (F): a blueprint is turned into the buildings of the faction of your builders (armsolar becomes corsolar for Cortex builders);\nbuildings the faction does not have are left out",
 	com = "Commander (C): the commander helps build too\n(otherwise only other builders do)",
 	create = "Saves the selected buildings\nas a new blueprint",
 	areal = "XL (experimental): attack along a line.\nSelect armed units, press XL, then drag a line\non the map. Each unit gets a piece of it\n(bombers: carpet).",
@@ -1001,6 +1033,7 @@ local function layout()
 	colBtn(10, "areac", "XC", area:armed() and area:mode() == "circle")
 	colBtn(12, "areas", "XS", area:armed() and area:mode() == "split") -- one button gap: commands of their own
 	colBtn(13, "areaf", "XF", area:armed() and area:mode() == "focus")
+	colBtn(7, "faction", "F", adaptFaction, TIPS.faction .. "\nNow: " .. (adaptFaction and "ON" or "OFF"))
 	colBtn(5, "queue", "Q", queueOrder, TIPS.queue .. "\nNow: " .. (queueOrder and "ON" or "OFF"))
 	colBtn(6, "com", "C", useCommander, TIPS.com .. "\nNow: " .. (useCommander and "YES" or "NO"))
 	local function row2(a, b)
@@ -1086,6 +1119,8 @@ local function pressButton(id)
 		uGrid:setFocus(false)
 		radiusEdit = { text = "" }
 		widgetHandler:OwnText()
+	elseif id == "faction" then
+		adaptFaction = not adaptFaction
 	elseif id == "com" then
 		useCommander = not useCommander
 	elseif id == "queue" then
@@ -1620,10 +1655,11 @@ function widget:MousePress(mx, my, button)
 			if bp and gx and shift then
 				stampDrag = { x = snap16(gx), z = snap16(gz), bp = true } -- Row/rectangle of blueprints
 			elseif bp and gx then
-				local n, skipped, blocked, replaced = addPlan(bp.units, snap16(gx), snap16(gz), rot)
-				say(string.format("%d plans queued%s%s%s", n, skipped > 0 and (" (" .. skipped .. " already present)") or "",
+				local n, skipped, blocked, replaced, noMatch = addPlan(bp.units, snap16(gx), snap16(gz), rot)
+				say(string.format("%d plans queued%s%s%s%s", n, skipped > 0 and (" (" .. skipped .. " already present)") or "",
 					blocked > 0 and (", " .. blocked .. " left out: a building or bad ground in the way") or "",
-					replaced > 0 and (", " .. replaced .. " plans below replaced (Undo brings them back)") or ""))
+					replaced > 0 and (", " .. replaced .. " plans below replaced (Undo brings them back)") or "",
+					noMatch > 0 and (", " .. noMatch .. " left out: no matching building in your faction") or ""))
 			end
 			return true
 		end
@@ -2459,6 +2495,10 @@ function widget:DebugSetAuto(on)
 	autoBuild = on and true or false
 end
 
+function widget:DebugSetAdapt(on)
+	adaptFaction = on and true or false
+end
+
 function widget:DebugSetQueue(on)
 	queueOrder = on and true or false
 end
@@ -2495,7 +2535,7 @@ function widget:GetConfigData()
 		end
 	end
 	return {
-		side = side, autoBuild = autoBuild or autoBuildStopped, queueOrder = queueOrder, radius = radius, useCommander = useCommander, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
+		side = side, autoBuild = autoBuild or autoBuildStopped, queueOrder = queueOrder, radius = radius, useCommander = useCommander, adaptFaction = adaptFaction, menuOpen = menuOpen, rot = rot, panel = panelMover:save(),
 		map = Game and Game.mapName, game = Game and Game.gameID, plans = saved,
 	}
 end
@@ -2511,6 +2551,9 @@ function widget:SetConfigData(data)
 	radius = math.max(RADIUS_MIN, math.min(RADIUS_MAX, tonumber(data.radius) or radius))
 	if data.queueOrder ~= nil then
 		queueOrder = data.queueOrder and true or false
+	end
+	if data.adaptFaction ~= nil then
+		adaptFaction = data.adaptFaction and true or false
 	end
 	if data.useCommander ~= nil then
 		useCommander = data.useCommander and true or false

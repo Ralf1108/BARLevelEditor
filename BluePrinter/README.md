@@ -28,6 +28,7 @@ After a change to `bluePrinter.lua` or `shared\editor_common.lua`: the BluePrint
 Files `<name>.lua` are read from `data\LuaUI\Config\BluePrinter` (that is from `BluePrinter\blueprints`) and from
 `data\LuaUI\Config\LevelEditorBlueprints` (the blueprints of the Level Editor, if the folder `LevelEditor` lies next to `BluePrinter`). Only buildings are used,
 units in a blueprint are skipped. The team in the blueprint does not matter, it is built for you.
+**Faction (button F, on by default):** a blueprint is turned into the buildings of the faction of your builders: for Cortex builders `armsolar` becomes `corsolar`, for Legion `legsolar` (the faction of the selected builders, otherwise of your own). Buildings that the faction does not have are left out and the message says how many. The buildings of the other factions are not always the same size, so a blueprint made for one faction may not fit exactly; switch F off to build the blueprint as it is.
 
 ## Usage
 - Menu on the right (with `/bp_side left` to the left): click a blueprint in the list, then left click on the map = queue it
