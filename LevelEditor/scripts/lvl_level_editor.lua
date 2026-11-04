@@ -1378,13 +1378,16 @@ local function inPanel(mx, my)
 end
 
 -- Team strip left of the menu: vertical buttons with the team number, the chosen team (team) is highlighted
-local function teamRectsRaw()
+local function teamRectsRaw(topY) -- topY: the strip as it would be for a panel with this top edge (the Save page measures it)
 	local out = {}
 	if not menuOpen or collapsed then
 		return out
 	end
 	local m = Shared.m
-	local x1, _, _, y1 = panelRect()
+	local x1, _, _, y1 = 0, 0, 0, topY
+	if not topY then
+		x1, _, _, y1 = panelRect()
+	end
 	local _, vsy = Spring.GetViewGeometry()
 	local gaia = Spring.GetGaiaTeamID and Spring.GetGaiaTeamID()
 	local ids = {}
@@ -2543,10 +2546,16 @@ sv = VFS.Include("luaui/Include/led_save.lua", nil, VFS.ZIP_FIRST)({
 	saveLevel = saveLevel,
 	loadLevel = function(name) load_level(nil, nil, { name }) end,
 	runningModes = runningModes,
-	-- the page reaches at least down to the Gaia button of the team strip (the strip ends at 5 % of the screen height)
+	-- the page reaches down to the lower edge of the Gaia button of the team strip (not further: the widgets at the lower right would hide it)
 	minHeight = function()
 		local _, vsy = Spring.GetViewGeometry()
-		return vsy * 0.94 - vsy * 0.05 - (titleH() + 4 + headerRowCount() * (Shared.m.HB + 3) + 2)
+		local top, low = vsy * 0.94, nil
+		for _, r in ipairs(teamRectsRaw(top)) do
+			if r.gaia or not low then
+				low = r.y0
+			end
+		end
+		return top - (low or vsy * 0.12) - (titleH() + 4 + headerRowCount() * (Shared.m.HB + 3) + 2)
 	end,
 })
 

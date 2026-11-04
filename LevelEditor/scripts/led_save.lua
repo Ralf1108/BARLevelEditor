@@ -68,7 +68,7 @@ return function(host)
 
 	sv.suggest = suggest
 
-	-- rows shown: as many as the levels need (6 to 12), more when the page has to be taller (host.minHeight: the page reaches down to the Gaia button of the team strip)
+	-- rows shown: as many as the levels need (6 to 12), more when the page has to be taller (host.minHeight: the page reaches down to the lower edge of the Gaia button of the team strip)
 	local measuring = false
 	local function visibleRows()
 		local rows = math.max(MIN_ROWS, math.min(MAX_ROWS, #sv.list))
