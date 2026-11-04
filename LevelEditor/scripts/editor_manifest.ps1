@@ -25,6 +25,7 @@ $EditorGameFiles = @(
     @('scripts', 'led_rtf.lua', 'luaui/Include/led_rtf.lua'),
     @('scripts', 'led_save.lua', 'luaui/Include/led_save.lua'),
     @('scripts', 'led_gen.lua', 'luaui/Include/led_gen.lua'),
+    @('scripts', 'led_scenario.lua', 'luaui/Include/led_scenario.lua'),
     @('scripts', 'led_arena.lua', 'luaui/Include/led_arena.lua'),
     @('scripts', 'led_teams.lua', 'luaui/Include/led_teams.lua'),
     @('scripts', 'led_restrictions.lua', 'luaui/Include/led_restrictions.lua'),

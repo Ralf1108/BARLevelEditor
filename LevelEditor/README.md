@@ -91,6 +91,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\led_arena.lua` - the Arena page of the widget (loaded by the widget); manual: `tools\arena.md`
 - `scripts\led_save.lua` - the Save page of the widget (button S: the list of the saved levels; loaded by the widget)
 - `scripts\led_gen.lua` - the Generate page of the widget (button G: state and layout; loaded by the widget)
+- `scripts\led_scenario.lua` - the Scenario info page of the widget (button I: title, briefing, win condition ...; loaded by the widget)
 - `scripts\led_gadgets.lua` - what the gadgets share (editor mode, rules, messages to a team, the messages of the widget, the game options of a scenario)
 - `scripts\pve_supply_drops_stub.lua` - replaces the lootbox gadget of the game inside the extra game (otherwise enemies next to the flags and collection points would capture them)
 - `scripts\help_texts.lua` - texts of the help board (?) and of `/led_help`

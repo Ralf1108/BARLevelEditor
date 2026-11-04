@@ -247,8 +247,7 @@ end
 -- Edit the scenario info in the game (button I in the menu): table with the same fields as the scenario maker
 -- (title, author, summary, briefing, roles, ai, win, metal, energy, grace, sid).
 local Json = Json or VFS.Include("common/luaUtilities/json.lua")
-local scenario = nil -- Info of the loaded scenario or one created in the game
-local scenarioDirty = false -- changed in the game: when saving, this state is written instead of the block from the file
+local si -- Scenario info page (button I, LevelEditor/scripts/led_scenario.lua, created below): si.data = info of the loaded scenario or one created in the game, si.dirty = changed in the game (when saving, this state is written instead of the block from the file)
 local currentLevel = nil -- Name of the level loaded or saved last
 local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke = nil, wall = 1, scroll = 0, data = nil } -- Tower Defense page (button TD): LevelEditor/scripts/led_td.lua fills in its functions below; data = section towerdefense of the level file
 local rst -- restrictions of the level (what the player may not build): LevelEditor/scripts/led_restrictions.lua, created below (data = section restrictions of the level file)
@@ -315,7 +314,7 @@ local function saveLevel(name, quiet)
 		end
 	end
 	table.sort(flines)
-	local block = scenarioDirty and scenario and encodeBlock(scenario) or nil
+	local block = si.dirty and si.data and encodeBlock(si.data) or nil
 	if not block then
 		local old = io.open(OUTDIR .. name .. ".lua", "r")
 		if old then
@@ -453,8 +452,8 @@ local function load_level(_, _, args)
 	f:close()
 	local data, err = widget:ParseLevel(text)
 	keptScenario = scenarioBlockOf("\n" .. text .. "\n")
-	scenario = decodeBlock(keptScenario)
-	scenarioDirty = false
+	si.data = decodeBlock(keptScenario)
+	si.dirty = false
 	currentLevel = name
 	if name:sub(1, 1) ~= "_" then
 		sv.touch(name)
@@ -545,7 +544,6 @@ local menuMode = "units" -- "bp" = blueprints, "units" = all units (faction / gr
 local optionsOpen = false
 local scenarioOpen = false -- Scenario info (button I) or the teams page (button T)
 local scenarioPage = "info" -- what the scenario panel shows: "info" (title, briefing, ...) or "teams" (page T, led_teams.lua)
-local scEdit = nil -- { row, buf }: text field being edited right now
 local collapsed = false -- Menu collapsed: only the small button V stays visible
 local panelMover = Shared.newPanelMover() -- the title row moves the menu
 local mazeKind = nil -- Maze mode: nil = off, otherwise index into MAZE_KINDS
@@ -920,65 +918,11 @@ local function rescale()
 end
 
 -- ---------------------------------------------------------------- Scenario info (button I)
-local WIN_NEXT = { com = "killall", killall = "neverend", neverend = "com" }
-local WIN_TXT = { com = "Commanders", killall = "All units", neverend = "No end" }
-
-local function scenarioRows()
-	local rows = {
-		{ id = "title", label = "Title", kind = "text", max = 80 },
-		{ id = "author", label = "Author", kind = "text", max = 60 },
-		{ id = "summary", label = "Summary", kind = "text", max = 200 },
-		{ id = "briefing", label = "Briefing", kind = "text", max = 800, multi = true },
-	}
-	rows[#rows + 1] = { id = "win", label = "Win condition", kind = "cycle" }
-	rows[#rows + 1] = { id = "grace", label = "Grace period (min:sec)", kind = "time", max = 6 }
-	rows[#rows + 1] = { id = "sid", label = "ID", kind = "id", max = 24 }
-	return rows
-end
-
--- current value of a field (text), with the defaults of the scenario maker
-local function scenarioValue(row)
-	local sc = scenario or {}
-	if row.id == "win" then
-		return sc.win or "com"
-	elseif row.id == "grace" then
-		local g = tonumber(sc.grace) or 0
-		if g <= 0 then
-			return "0"
-		end
-		local total = math.floor(g * 60 + 0.5)
-		return string.format("%d:%02d", math.floor(total / 60), total % 60)
-	end
-	local v = sc[row.id]
-	return type(v) == "string" and v or ""
-end
-
-local function scenarioSet(row, value)
-	scenario = scenario or {}
-	if row.kind == "num" then
-		scenario[row.id] = tonumber(value) or 0
-	elseif row.kind == "time" then
-		-- "2:30" (minutes:seconds), "2,5" or "3" -> minutes as a number
-		local m, sec = value:match("^(%d+):(%d%d?)$")
-		local minutes = m and (tonumber(m) + math.min(59, tonumber(sec)) / 60) or tonumber((value:gsub(",", "."))) or 0
-		scenario[row.id] = math.max(0, math.min(120, math.floor(minutes * 60 + 0.5) / 60))
-	elseif value == "" then
-		scenario[row.id] = nil
-	else
-		scenario[row.id] = value
-	end
-	scenarioDirty = true
-end
-
-local function scenarioRowH()
-	return Shared.m.HB * 0.85
-end
-
 local function scenarioHeight()
 	if scenarioPage == "teams" then
 		return tm.height()
 	end
-	return 44 * S + (#scenarioRows() + 2) * (scenarioRowH() + 5 * S) + Shared.m.PAD
+	return si.height()
 end
 
 -- One search for Units, Features and Blueprints (field at the top of the Place menu)
@@ -1476,111 +1420,6 @@ local function runningModes(stop)
 	return any
 end
 
--- Rows and button of the scenario page (button I)
-local function scenarioRects(rect)
-	local m = Shared.m
-	local rh = scenarioRowH()
-	local gap = 5 * S
-	local rects = {}
-	local y = rect.top - 40 * S
-	local vx1 = rect.x1 + (rect.x2 - rect.x1) * 0.36
-	for _, row in ipairs(scenarioRows()) do
-		rects[#rects + 1] = { x1 = vx1, x2 = rect.x2 - m.PAD, y0 = y - rh, y1 = y, row = row, labelX = rect.x1 + m.PAD }
-		y = y - rh - gap
-	end
-	return rects
-end
-
-local function dropLastChar(t)
-	return (t:gsub("[%z\1-\127\194-\244][\128-\191]*$", "", 1))
-end
-
-local function dropFirstChar(t)
-	return (t:gsub("^[%z\1-\127\194-\244][\128-\191]*", "", 1))
-end
-
-local function scenarioDisplay(row)
-	local v
-	if scEdit and scEdit.row.id == row.id and scEdit.row.team == row.team then
-		v = scEdit.buf
-	elseif row.id == "win" then
-		v = WIN_TXT[scenarioValue(row)] or scenarioValue(row)
-	else
-		v = scenarioValue(row)
-	end
-	return (v:gsub("\n", " / "))
-end
-
-local function drawScenario(rect, mx, my)
-	local m = Shared.m
-	if scenarioPage == "teams" then
-		tm.draw(rect)
-		return
-	end
-	gl.Color(0.5, 0.8, 1, 1)
-	gl.Text("Scenario (written with the level when saving)", rect.x1 + m.PAD, rect.top - 30 * S, 22 * S, "o")
-	local rects = scenarioRects(rect)
-	local fs = 22 * S
-	for _, r in ipairs(rects) do
-		if r.row then
-			local editing = scEdit and scEdit.row.id == r.row.id and scEdit.row.team == r.row.team
-			gl.Color(1, 1, 1, 0.9)
-			gl.Text(r.row.label, r.labelX, r.y0 + (r.y1 - r.y0 - fs) / 2 + 3 * S, fs, "o")
-			if editing then
-				gl.Color(0.25, 0.5, 1, 0.85)
-			elseif r.row.kind == "cycle" then
-				gl.Color(0.2, 0.2, 0.2, 0.9)
-			else
-				gl.Color(0.08, 0.08, 0.08, 0.95)
-			end
-			gl.Rect(r.x1, r.y0, r.x2, r.y1)
-			local text = scenarioDisplay(r.row)
-			local avail = (r.x2 - r.x1) - 12 * S
-			if editing then
-				text = text .. "_"
-				while text ~= "" and (tonumber(gl.GetTextWidth(text)) or 0) * fs > avail do
-					text = dropFirstChar(text) -- while typing the end stays visible
-				end
-			else
-				local cut = false
-				while text ~= "" and (tonumber(gl.GetTextWidth(text .. (cut and "..." or ""))) or 0) * fs > avail do
-					text = dropLastChar(text)
-					cut = true
-				end
-				if cut then
-					text = text .. "..."
-				end
-			end
-			gl.Color(1, 1, 1, 1)
-			gl.Text(text, r.x1 + 6 * S, r.y0 + (r.y1 - r.y0 - fs) / 2 + 3 * S, fs, "o")
-		end
-	end
-	gl.Color(0.7, 0.7, 0.7, 1)
-	local last = rects[#rects]
-	gl.Text("Click a field to type: Enter done, Esc cancel,", rect.x1 + m.PAD, last.y0 - 22 * S, 17 * S, "o")
-	gl.Text("Shift+Enter = new line in the briefing. Scenario package: start menu key 3.", rect.x1 + m.PAD, last.y0 - 42 * S, 17 * S, "o")
-	gl.Color(1, 1, 1, 1)
-end
-
-local function scenarioFinish(accept)
-	tm.finish(accept)
-	local e = scEdit
-	if not e then
-		return
-	end
-	scEdit = nil
-	widgetHandler:DisownText()
-	if accept then
-		local v = e.buf
-		if e.row.kind == "id" then
-			v = v:lower():gsub("[^a-z0-9]", "")
-		end
-		if v ~= scenarioValue(e.row) then
-			scenarioSet(e.row, v)
-		end
-	end
-end
-
 -- Save level: under the current name, otherwise as a new level_NNN (Ctrl+S)
 local function saveCurrentLevel()
 	if runningModes(true) then
@@ -1597,70 +1436,9 @@ local function saveCurrentLevel()
 	return true
 end
 
-local function scenarioPress(rect, mx, my)
-	if scenarioPage == "teams" then
-		return tm.press(rect, mx, my)
-	end
-	for _, r in ipairs(scenarioRects(rect)) do
-		if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-			scenarioFinish(true)
-			if r.row then
-				local row = r.row
-				if row.kind == "cycle" then
-					scenarioSet(row, WIN_NEXT[scenarioValue(row)] or scenarioValue(row))
-				else
-					scEdit = { row = row, buf = scenarioValue(row) }
-					widgetHandler:OwnText()
-				end
-			end
-			return true
-		end
-	end
-	scenarioFinish(true)
-	return true
-end
-
--- Keys while a field is being edited: Enter done, Esc cancel, Backspace deletes
-local function scenarioKey(key, mods)
-	if key == 13 or key == 271 then
-		if mods and mods.shift and scEdit.row.multi then
-			if #scEdit.buf < scEdit.row.max then
-				scEdit.buf = scEdit.buf .. "\n"
-			end
-		else
-			scenarioFinish(true)
-		end
-	elseif key == 27 then
-		scenarioFinish(false)
-	elseif key == 8 then
-		scEdit.buf = dropLastChar(scEdit.buf)
-	end
-	return true
-end
-
-local function scenarioText(ch)
-	local e = scEdit
-	if not e or not ch or ch == "" or ch:byte(1) < 32 then
-		return false
-	end
-	if e.row.kind == "num" then
-		if not ch:match("^%d$") or #e.buf >= e.row.max then
-			return true
-		end
-	elseif e.row.kind == "time" then
-		if not ch:match("^[%d:.,]$") or #e.buf >= e.row.max then
-			return true
-		end
-	elseif e.row.kind == "id" then
-		ch = ch:lower()
-		if not ch:match("^[a-z0-9]$") or #e.buf >= e.row.max then
-			return true
-		end
-	elseif #e.buf + #ch > e.row.max then
-		return true
-	end
-	e.buf = e.buf .. ch
-	return true
+local function siFinish(accept)
+	tm.finish(accept)
+	si.finish(accept)
 end
 
 local function drawMenuBody()
@@ -1678,7 +1456,11 @@ local function drawMenuBody()
 	gl.Text(sv.open and "Level Editor - Levels" or ar.open and "Level Editor - Arena" or rtf.open and "Level Editor - Reclaim the Fame" or ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
-		drawScenario(rect, mx, my)
+		if scenarioPage == "teams" then
+			tm.draw(rect)
+		else
+			si.draw(rect)
+		end
 		return
 	end
 	if td.open then
@@ -1823,6 +1605,10 @@ function widget:DebugRtf()
 end
 
 -- For tests: the Arena page
+function widget:DebugScenario() -- test hook: the scenario info (page I)
+	return si.data
+end
+
 function widget:DebugArena()
 	return ar
 end
@@ -1879,7 +1665,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), scenarioRects(contentRect()), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect()))
+	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect()))
 end
 
 -- Button of the column left of the team strip (V, O, I, ?) under the mouse pointer
@@ -1978,7 +1764,7 @@ local function applyHeader0(r)
 		sv.finish(true)
 		td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 		local pageWas = scenarioOpen or optionsOpen
-		scenarioFinish(true)
+		siFinish(true)
 		scenarioOpen, optionsOpen = false, false -- the scenario, AI and settings pages give way to Place and Generate
 		if (tdWas or pageWas) and r.value == "place" then
 			return
@@ -2000,7 +1786,7 @@ local function applyHeader0(r)
 	uGrid:setFocus(false)
 	fGrid:setFocus(false)
 	bpGrid:setFocus(false)
-	scenarioFinish(true)
+	siFinish(true)
 	if r.kind == "td" then
 		bpGrid:resetEdit()
 		bpGrid:setArmed(false)
@@ -2281,9 +2067,9 @@ end
 -- what was changed on the pages meanwhile stays: the settings of the pages, the teams, the restrictions and the scenario info
 local function reloadBeforePlay()
 	local current = currentLevel
-	local dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty = td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, scenario, scenarioDirty
+	local dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty = td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, si.data, si.dirty
 	load_level(nil, nil, { "_beforeplay" })
-	td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, scenario, scenarioDirty = dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty
+	td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, si.data, si.dirty = dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty
 	tm.apply() -- the alliances of the changed teams
 	currentLevel = current
 end
@@ -2432,6 +2218,9 @@ sv = VFS.Include("luaui/Include/led_save.lua", nil, VFS.ZIP_FIRST)({
 		return top - (low or vsy * 0.12) - (titleH() + 4 + headerRowCount() * (Shared.m.HB + 3) + 2)
 	end,
 })
+
+-- Scenario info page (LevelEditor/scripts/led_scenario.lua): title, briefing, win condition, grace period, ID (button I)
+si = VFS.Include("luaui/Include/led_scenario.lua", nil, VFS.ZIP_FIRST)({ Shared = Shared, S = function() return S end })
 
 -- Teams (LevelEditor/scripts/led_teams.lua): alliances, human or AI, start resources
 tm = VFS.Include("luaui/Include/led_teams.lua", nil, VFS.ZIP_FIRST)({
@@ -2620,7 +2409,10 @@ local function panelPress(mx, my, button)
 		end
 		local rect = contentRect()
 		if scenarioOpen then
-			return scenarioPress(rect, mx, my)
+			if scenarioPage == "teams" then
+				return tm.press(rect, mx, my)
+			end
+			return si.press(rect, mx, my)
 		end
 		if td.open then
 			return td.press(rect, mx, my)
@@ -3249,8 +3041,8 @@ function widget:TextInput(utf8char)
 	if tm.edit then
 		return tm.text(utf8char)
 	end
-	if scEdit then
-		return scenarioText(utf8char)
+	if si.edit then
+		return si.text(utf8char)
 	end
 	return bpGrid:textInput(utf8char) or uGrid:textInput(utf8char) or fGrid:textInput(utf8char) or ar.units:textInput(utf8char)
 end
@@ -3873,8 +3665,8 @@ function widget:KeyPress(key, mods, isRepeat)
 	if tm.edit then
 		return tm.key(key)
 	end
-	if scEdit then
-		return scenarioKey(key, mods)
+	if si.edit then
+		return si.key(key, mods)
 	end
 	if search.focus then
 		if key == 13 or key == 271 then
