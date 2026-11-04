@@ -2543,6 +2543,11 @@ sv = VFS.Include("luaui/Include/led_save.lua", nil, VFS.ZIP_FIRST)({
 	saveLevel = saveLevel,
 	loadLevel = function(name) load_level(nil, nil, { name }) end,
 	runningModes = runningModes,
+	-- the page reaches at least down to the Gaia button of the team strip (the strip ends at 5 % of the screen height)
+	minHeight = function()
+		local _, vsy = Spring.GetViewGeometry()
+		return vsy * 0.94 - vsy * 0.05 - (titleH() + 4 + headerRowCount() * (Shared.m.HB + 3) + 2)
+	end,
 })
 
 -- Teams (LevelEditor/scripts/led_teams.lua): alliances, human or AI, start resources
