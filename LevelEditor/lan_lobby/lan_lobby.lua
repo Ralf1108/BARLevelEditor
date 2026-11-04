@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 2, stamp = "2026-11-04 16:48" }
+local LAN_VERSION = { number = 3, stamp = "2026-11-04 16:53" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1820,6 +1820,19 @@ end
 ---------------------------------------------------------------- per frame
 function widget:Update()
 	ensureScenarioUi()
+	if ui.leave and ui.back then
+		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Back" then moves to the right of it
+		local want = S ~= nil or lan ~= nil
+		if ui.leave.visible ~= want then
+			ui.leave:SetVisibility(want)
+			ui.back:SetPos(want and 276 or 0, ui.back.y, ui.back.width, ui.back.height)
+		end
+	end
+	if ui.spin then
+		local busy = scan ~= nil
+		if ui.spin.visible ~= busy then ui.spin:SetVisibility(busy) end
+		if busy then ui.spin:Invalidate() end
+	end
 	ensureSlotUi()
 	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and os.clock() > 14 then
 		cfg.scenarioPicked = true
@@ -1955,18 +1968,35 @@ buildUi = function()
 	local font = cf:GetFont(2)
 	local P = Control:New { name = "LAN Play", x = 0, y = 0, width = "100%", height = "100%", resizable = false, padding = { 28, 24, 28, 10 } }
 	local y = 0
-	TextBox:New { parent = P, x = 0, y = y + 4, right = 0, height = 30, text = "LAN Play - play with computers in the same network (no server needed)", objectOverrideFont = font }
+	TextBox:New { parent = P, x = 0, y = y + 4, right = 0, height = 30, text = "LAN Play - play with computers in the same network (no cloud server / internet needed)", objectOverrideFont = font }
 	y = y + 44
 	TextBox:New { parent = P, x = 0, y = y + 8, width = 130, height = 30, text = "Your name", objectOverrideFont = font }
 	ui.name = EditBox:New { parent = P, x = 140, y = y + 2, width = 260, height = 36, text = savedName() or defaultName(), objectOverrideFont = font }
 	TextBox:New { parent = P, x = 416, y = y + 8, right = 0, height = 30, text = "(your account name; change it if you like)", objectOverrideFont = font }
 	y = y + 48
 	Button:New { parent = P, x = 0, y = y, width = 260, height = 44, caption = "Host a LAN game", objectOverrideFont = font, classname = "action_button", OnClick = { function() startHosting() end } }
-	TextBox:New { parent = P, x = 276, y = y + 8, right = 0, height = 30, text = "you get the multiplayer battle room: map, options, chat", objectOverrideFont = font }
 	y = y + 60
 	Button:New { parent = P, x = 0, y = y, width = 260, height = 44, caption = "Find LAN games", objectOverrideFont = font, OnClick = { function() startScan() end } }
 	ui.ip = EditBox:New { parent = P, x = 276, y = y + 4, width = 200, height = 36, text = cfg.ip or "", hint = "or an address", objectOverrideFont = font }
 	Button:New { parent = P, x = 486, y = y, width = 120, height = 44, caption = "Join", objectOverrideFont = font, OnClick = { function() joinHost(ui.ip.text) end } }
+	-- busy indicator while the search for games runs: a ring of eight dots, one bright dot runs round (drawn by the control itself, redrawn every frame by widget:Update)
+	ui.spin = Control:New { parent = P, x = 622, y = y + 6, width = 32, height = 32, padding = { 0, 0, 0, 0 }, DrawControl = function(self)
+		pcall(function()
+			local cx, cy, r = self.width / 2, self.height / 2, self.width * 0.36
+			local lead = math.floor(os.clock() * 10) % 8
+			gl.PointSize(5)
+			gl.BeginEnd(GL.POINTS, function()
+				for i = 0, 7 do
+					local a = i * math.pi / 4
+					local age = (lead - i) % 8 -- 0 = the bright one, the others fade behind it
+					local v = 1 - age * 0.11
+					gl.Color(0.5 * v, 0.85 * v, 1 * v, 1 - age * 0.1)
+					gl.Vertex(cx + math.sin(a) * r, cy + math.cos(a) * r)
+				end
+			end)
+		end)
+	end }
+	ui.spin:SetVisibility(false)
 	y = y + 56
 	ui.found = {}
 	for i = 1, 6 do
@@ -1978,12 +2008,13 @@ buildUi = function()
 	end
 	y = y + 6 * 46 + 10
 	ui.status = TextBox:New { parent = P, x = 0, y = y, right = 0, height = 30, text = status, objectOverrideFont = font }
-	Button:New { parent = P, x = 0, y = y + 40, width = 260, height = 40, caption = "Leave LAN play", objectOverrideFont = font, OnClick = { function() lanStop("left"); setStatus("Back on the normal server.") end } }
-	Button:New { parent = P, x = 276, y = y + 40, width = 180, height = 40, caption = "Back", objectOverrideFont = font, OnClick = { function()
+	ui.leave = Button:New { parent = P, x = 0, y = y + 40, width = 260, height = 40, caption = "Leave LAN play", objectOverrideFont = font, OnClick = { function() lanStop("left"); setStatus("Back on the normal server.") end } }
+	ui.back = Button:New { parent = P, x = 0, y = y + 40, width = 180, height = 40, caption = "Back", objectOverrideFont = font, OnClick = { function()
 		local root = WG.Chobby and WG.Chobby.interfaceRoot
 		local sub = root and root.GetSingleplayerSubmenu and root.GetSingleplayerSubmenu()
 		if sub and sub.CloseTabs then pcall(sub.CloseTabs) end
 	end } }
+	ui.leave:SetVisibility(false) -- only while a LAN game is hosted or played (see widget:Update)
 	ui.panel = P
 	log("panel built; player name on the page:", tostring(ui.name and ui.name.text), "(account name:", tostring(cf.userName) .. ")")
 	return true

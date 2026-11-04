@@ -12,7 +12,7 @@ Play with computers in the same network. No account, no server in the cloud.
 - **Teams:** the buttons "N teams" and "N per team" of the room work as on the official server: the teams of the room change at once, the players are spread over the teams, and the **start boxes** of the map for that number of teams are shown on the map and used in the game (a map without boxes gets left/right for two teams, corners for four, otherwise boxes round the middle)
 - Joining: games in your network show up in a list by themselves, a click joins. Or type the host's address and press **Join**
 - The field "Your name" starts with your lobby name. Two players cannot have the same name in one game
-- **Leave LAN play** (or leaving the room) brings you back to the normal lobby
+- **Leave LAN play** (the button only shows while you host or play a LAN game; or leave the room) brings you back to the normal lobby. **Back** only closes the page. A turning ring next to **Join** shows that the search for games is running
 - Only computers of the local network (or of a VPN such as Tailscale or Hamachi) can join. Your firewall may ask once: allow it (ports 8453 for the lobby and 8452 for the game)
 
 <img src="lanPlay.png" alt="LAN Play: the menu entry on the left, Host a LAN game on the page" width="740">
