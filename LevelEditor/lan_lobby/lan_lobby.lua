@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 2, stamp = "2026-11-04 16:59" }
+local LAN_VERSION = { number = 3, stamp = "2026-11-04 17:05" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1370,6 +1370,12 @@ local function updateVersionCheck()
 	local mine = versionTag()
 	if tag == mine then
 		log("version check: same lobby and game widget as the host (" .. mine .. ")")
+		return
+	end
+	-- only the version number counts: it is raised when the network protocol or the logic changes; a change of the looks alone changes the files but not the number
+	local hostNumber = tag and tonumber(tag:match("^[^|]*|[^|]*|([^|]*)|"))
+	if hostNumber and hostNumber == LAN_VERSION.number then
+		log("version check: same version number " .. hostNumber .. " (the files differ, which is fine: " .. tostring(tag) .. " / " .. mine .. ")")
 		return
 	end
 	local msg
