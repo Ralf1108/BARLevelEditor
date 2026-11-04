@@ -33,6 +33,7 @@ local sections = {
 	} },
 	{ "Placing (mouse on the map)", {
 		{ "[  ]", "Rotate (south, east, north, west), also for blueprints." },
+		{ "Ctrl + mouse wheel", "On the map, with the Blueprints tab open: choose the next / previous blueprint (round at the ends)." },
 		{ "Shift + drag", "Place a row. With Shift+Alt a rectangle." },
 		{ "Shift+Mouse wheel, Alt+Z / X", "Spacing between the units of a row or rectangle." },
 		{ "Generate", "Generate tab: choose faction, type (several possible: units, buildings, turrets, air, ships), tech T1-T3 and count (input field), press Rectangle or Circle (a circle is dragged from its center outwards) and drag the area on the map; random units appear in it for the chosen team. Ctrl+Z undoes them. The Maze sub-tab builds a random maze in the dragged area." },

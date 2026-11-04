@@ -1761,6 +1761,14 @@ end
 function widget:MouseWheel(up, value)
 	rescale()
 	local mx, my = Spring.GetMouseState()
+	-- Ctrl + mouse wheel on the map: choose the next / previous blueprint (the camera does not zoom then)
+	if menuOpen and not collapsed and menuMode ~= "units" and not optionsOpen and not inPanel(mx, my) then
+		local _, ctrl = Spring.GetModKeyState()
+		if ctrl and bpGrid:cycle(layout().rect, up) then
+			armedUnit = false
+			return true
+		end
+	end
 	if (armedUnit or bpGrid.armed) and not inPanel(mx, my) then
 		local _, _, _, shift = Spring.GetModKeyState()
 		if shift then

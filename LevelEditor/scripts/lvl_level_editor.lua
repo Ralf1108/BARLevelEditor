@@ -1609,6 +1609,10 @@ function widget:DebugArea() -- test hook: the area attack mode (the buttons of t
 	return area:armed(), area:mode()
 end
 
+function widget:DebugGrid() -- test hook: the blueprint grid and its library
+	return bpGrid, lib
+end
+
 function widget:DebugScenario() -- test hook: the scenario info (page I)
 	return si.data
 end
@@ -3057,6 +3061,15 @@ end
 function widget:MouseWheel(up, value)
 	rescale()
 	local mx0, my0 = Spring.GetMouseState()
+	-- Ctrl + mouse wheel on the map: choose the next / previous blueprint (the camera does not zoom then)
+	if menuOpen and not collapsed and not inPanel(mx0, my0) and not (scenarioOpen or optionsOpen or gen.open or td.open or ctf.open or rtf.open or ar.open or sv.open)
+		and menuMode ~= "units" and menuMode ~= "features" and menuMode ~= "fav" then
+		local _, ctrl = Spring.GetModKeyState()
+		if ctrl and bpGrid:cycle(contentRect(), up) then
+			armedUnit, armedFeature = false, false
+			return true
+		end
+	end
 	if (armedUnit or armedFeature or bpGrid.armed) and not inPanel(mx0, my0) then
 		local _, _, _, shift = Spring.GetModKeyState()
 		if shift then

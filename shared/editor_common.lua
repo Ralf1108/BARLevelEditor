@@ -1043,6 +1043,39 @@ function M.newGrid(o)
 		self.selected = i
 	end
 
+	-- Ctrl + mouse wheel on the map: the next (wheel down) or the previous (wheel up) blueprint of the list shown (the search filter counts), at the ends it goes
+	-- round. The blueprint is armed like after a click on its tile and the list scrolls to it. Returns true when there was a blueprint to choose.
+	function g:cycle(rect, up)
+		local shown = list()
+		local n = #shown
+		if n == 0 then
+			return false
+		end
+		local cur = 0
+		local sel = self.lib.list[self.selected]
+		for vi, bp in ipairs(shown) do
+			if bp == sel then
+				cur = vi
+			end
+		end
+		local nextView
+		if cur == 0 then
+			nextView = up and n or 1
+		else
+			nextView = (cur - 1 + (up and -1 or 1)) % n + 1
+		end
+		local real = realIndex(nextView)
+		self.selected = real
+		self:setArmed(true)
+		if rect then
+			self:scrollTo(rect, real)
+		end
+		if o.onSelect then
+			o.onSelect(real, false)
+		end
+		return true
+	end
+
 	-- Scroll tile i into view
 	function g:scrollTo(rect, i)
 		if self.query ~= "" then
