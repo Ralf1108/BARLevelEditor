@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 4, stamp = "2026-11-04 16:55" }
+local LAN_VERSION = { number = 5, stamp = "2026-11-04 16:56" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1982,8 +1982,8 @@ buildUi = function()
 	ui.ip = EditBox:New { parent = P, x = 276, y = y + 4, width = 200, height = 36, text = cfg.ip or "", hint = "or an address", objectOverrideFont = font }
 	Button:New { parent = P, x = 486, y = y, width = 120, height = 44, caption = "Join", objectOverrideFont = font, OnClick = { function() joinHost(ui.ip.text) end } }
 	-- busy indicator under the button while the search for games runs: a text with a turning bar (| / - \\), set by widget:Update
-	ui.spin = TextBox:New { parent = P, x = 4, y = y + 50, width = 400, height = 30, text = "", objectOverrideFont = font }
-	y = y + 92 -- room for the busy indicator under the button
+	ui.spin = TextBox:New { parent = P, x = 4, y = y + 60, width = 400, height = 30, text = "", objectOverrideFont = font }
+	y = y + 102 -- room for the busy indicator under the button
 	ui.found = {}
 	for i = 1, 6 do
 		local idx = i
