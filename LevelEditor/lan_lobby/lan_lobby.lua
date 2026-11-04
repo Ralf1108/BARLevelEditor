@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 6, stamp = "2026-11-04 16:57" }
+local LAN_VERSION = { number = 7, stamp = "2026-11-04 16:58" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1509,7 +1509,7 @@ local function updateScan()
 		if not quiet or #results ~= lastFoundCount then log("scan finished:", #results, "game(s) in", string.format("%.1f", os.clock() - scan.started), "s"); for _, f in ipairs(results) do log("found", f.ip, f.name, f.map, f.players) end end
 		lastFoundCount = #results
 		if ui.status and not (lan or S) then ui.status:SetText("") end -- the result is shown under the button Find LAN games (list of games or "No LAN game found")
-		nextScanAt = os.clock() + 4
+		nextScanAt = os.clock() + 3 -- the message says: retry in 3 seconds
 		scan = nil
 	end
 end
@@ -1835,7 +1835,7 @@ function widget:Update()
 			frame = math.floor(os.clock() * 8) % 4 + 1
 			text = "Searching for LAN games  " .. ({ "|", "/", "-", "\\" })[frame]
 		elseif not (S or lan) and lastFoundCount == 0 then
-			frame, text = -1, "No LAN game found"
+			frame, text = -1, "No LAN game found (retry in 3 seconds)"
 		end
 		if frame ~= ui.spinFrame then
 			ui.spinFrame = frame
