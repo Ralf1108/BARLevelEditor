@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 9, stamp = "2026-11-05 21:10" }
+local LAN_VERSION = { number = 10, stamp = "2026-11-05 22:00" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1008,9 +1008,11 @@ local function hookConnect()
 			-- the host's lobby is the one that runs the game server
 			local script = buildScript(lan.name)
 			-- the game server runs inside this game: its send limit per player (LinkOutgoingBandwidth, 192 KB/s by default) is much lower than the one of a
-			-- server of the cloud; with many units the data reaches the players late ("Player is lagging behind" / "caught up"). Only for this run (overlay, not saved).
+			-- server of the cloud; with many units the data reaches the players late ("Player is lagging behind" / "caught up"). The values are saved in springsettings.cfg (a
+			-- value that is already higher stays): the engine may read them only at its start, so they count from the next start of the game on.
 			for k, v in pairs({ LinkOutgoingBandwidth = 4 * 1024 * 1024, LinkIncomingSustainedBandwidth = 4 * 1024 * 1024, LinkIncomingPeakBandwidth = 8 * 1024 * 1024, LinkIncomingMaxPacketRate = 4096 }) do
-				pcall(Spring.SetConfigInt, k, v, true)
+				local ok, cur = pcall(Spring.GetConfigInt, k, 0)
+				if not ok or (tonumber(cur) or 0) < v then pcall(Spring.SetConfigInt, k, v) end
 			end
 			log("Spring.Reload (host) with start script:\n" .. script)
 			return Spring.Reload(script)
