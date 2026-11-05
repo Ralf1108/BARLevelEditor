@@ -918,6 +918,9 @@ buildScript = function(myName)
 	for _, bot in ipairs(S.battle.bots) do
 		local bs = l:ParseBattleStatus(bot.status)
 		local lib, ver = bot.lib:match("^(%S+)%s*(.*)$")
+		-- a Scavengers or Raptors AI of the room does not play: it is started as NullAI (0 AI), so the humans of its team command those units themselves
+		local low = (lib or bot.lib):lower()
+		if low:find("scav", 1, true) or low:find("raptor", 1, true) then lib, ver = "NullAI", "0.1" end
 		ais[#ais + 1] = { name = bot.name, lib = lib or bot.lib, version = ver, team = #teams }
 		teams[#teams + 1] = { leader = 0, ally = ally(bs.allyNumber), color = rgb(bot.color), side = sideName(bs.side), handicap = bs.handicap or 0 }
 	end
