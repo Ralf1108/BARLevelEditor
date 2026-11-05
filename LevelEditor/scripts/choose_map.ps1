@@ -503,17 +503,16 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
 # ---------------------------------------------------------------- write the start script
 function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false, [string]$ai1 = '') {
     $game = 'Level Editor 1'
-    # AI of team 1 (default and unknown names: NullAI, it does nothing); the Lua AIs are named in the team, the others get an [ai] section
+    # AI of team 1 (default and unknown names: NullAI, it does nothing); every AI gets an [ai] section (the Lua AIs with the version <not-versioned>; LuaAI= in [team] is ignored by the engine)
     $luaAis = @('SimpleAI', 'SimpleDefenderAI', 'SimpleConstructorAI', 'ScavengersAI', 'RaptorsAI')
-    $aiShort = if ($ai1 -in 'BARb', 'CircuitAI', 'CircuitAI easy', 'NullAI') { $ai1 -replace ' easy$', '' } else { 'NullAI' }
-    $aiVer = if ($aiShort -eq 'NullAI') { '0.1' } else { 'stable' }
+    $aiShort = if ($ai1 -in 'BARb', 'CircuitAI', 'CircuitAI easy', 'NullAI') { $ai1 -replace ' easy$', '' } elseif ($ai1 -in $luaAis) { $ai1 } else { 'NullAI' }
+    $aiVer = if ($ai1 -in $luaAis) { '<not-versioned>' } elseif ($aiShort -eq 'NullAI') { '0.1' } else { 'stable' }
     $aiOpt = if ($ai1 -eq 'CircuitAI easy') { ' [Options] { profile=easy; }' } else { '' }
-    $team1Lua = if ($ai1 -in $luaAis) { " LuaAI=$ai1;" } else { '' }
-    $ai0 = if ($ai1 -in $luaAis) { '' } else { "[ai0] { shortname=$aiShort; version=$aiVer; team=1; host=0; name=${aiShort}1;$aiOpt }" }
+    $ai0 = "[ai0] { shortname=$aiShort; version=$aiVer; team=1; host=0; name=${aiShort}1;$aiOpt }"
     $fa = if ($forceAll) { ' forceallunits=1;' } else { '' }
     # ten teams, each in its own ally team (Arena needs them; teams 2 to 9 stay empty: the gadget removes their start commanders)
     $allies = (0..9 | ForEach-Object { "`t[allyteam$_] { numallies=0; }" }) -join "`n"
-    $teams = (0..9 | ForEach-Object { $side = if ($_ % 2 -eq 0) { 'Armada' } else { 'Cortex' }; $extra = if ($_ -eq 1) { $team1Lua } else { '' }; "`t[team$_] { allyteam=$_; teamleader=0; side=$side; handicap=0;$extra }" }) -join "`n"
+    $teams = (0..9 | ForEach-Object { $side = if ($_ % 2 -eq 0) { 'Armada' } else { 'Cortex' }; "`t[team$_] { allyteam=$_; teamleader=0; side=$side; handicap=0; }" }) -join "`n"
     $script = @"
 [game]
 {

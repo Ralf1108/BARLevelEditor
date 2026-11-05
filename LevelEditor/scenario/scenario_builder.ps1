@@ -464,7 +464,7 @@ function Get-AiSpec([string]$name) {
     $spec = @{ Short = $name; Version = '0.1'; Lua = $null; Options = '' }
     if ($name -eq 'CircuitAI easy') { $spec.Short = 'CircuitAI'; $spec.Options = "`t`t[Options]`n`t`t{`n`t`t`tprofile=easy;`n`t`t}`n" }
     if ($spec.Short -in 'BARb', 'CircuitAI') { $spec.Version = 'stable' }
-    if ($name -in $LUA_AIS) { $spec.Lua = $name }
+    if ($name -in $LUA_AIS) { $spec.Lua = $name; $spec.Version = '<not-versioned>' }   # a Lua AI also gets an [ai] section: the engine ignores LuaAI= in [team] (the AI gadget stays off)
     return $spec
 }
 
@@ -704,16 +704,14 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $i = $newid[[int]$t]
         $side = Get-TeamSide $level.units $t
         $color = $COLORS[$i % $COLORS.Count]
-        $luaAi = if (-not $human[[int]$t] -and $aiOf[[int]$t].Lua) { "`t`tLuaAI=$($aiOf[[int]$t].Lua);`n" } else { '' }
         $res = "`t`tStartMetal=$($level.teams[[int]$t].metal);`n`t`tStartEnergy=$($level.teams[[int]$t].energy);`n"
-        [void]$lines.Add("`t[team$i]`n`t{`n`t`tAllyTeam=$($ally[[int]$t]);`n`t`tTeamLeader=0;`n`t`tSide=$side;`n`t`tHandicap=0;`n`t`tRgbColor=$color;`n$res$luaAi`t}")
+        [void]$lines.Add("`t[team$i]`n`t{`n`t`tAllyTeam=$($ally[[int]$t]);`n`t`tTeamLeader=0;`n`t`tSide=$side;`n`t`tHandicap=0;`n`t`tRgbColor=$color;`n$res`t}")
     }
     $k = 0
     foreach ($t in $order) {
         $i = $newid[[int]$t]
         if ($human[[int]$t]) { continue }
         $spec = $aiOf[[int]$t]
-        if ($spec.Lua) { continue }   # a Lua AI is named in the team ([team] LuaAI=), it has no [ai] section
         [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$($spec.Short);`n`t`tName=$($spec.Short)_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$($spec.Version);`n$($spec.Options)`t}")
         $k++
     }

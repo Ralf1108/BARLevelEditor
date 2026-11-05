@@ -56,7 +56,7 @@ Teams without units are shown too (gray), so AI and alliance can be set before u
 `Read-Teams` in `scenario_builder.ps1` reads `teams`:
 
 - Teams = those with units, plus the Tower Defense spawner and the teams with a collection point.
-- A team with `ai = ""` has no `[ai]` section in `scenario.txt` (a human; the lobby puts the players in). A team with an AI gets the `[ai]` section (BARb and CircuitAI version `stable`, NullAI `0.1`, `CircuitAI easy` with `[Options] profile=easy`) or, for the Lua AIs, `LuaAI=<name>;` in the `[team]` section (`Get-AiSpec`). BARb has only its default profile.
+- A team with `ai = ""` has no `[ai]` section in `scenario.txt` (a human; the lobby puts the players in). A team with an AI gets the `[ai]` section (BARb and CircuitAI version `stable`, NullAI `0.1`, `CircuitAI easy` with `[Options] profile=easy`) also for the Lua AIs (`SimpleAI` ...: version `<not-versioned>`, `Get-AiSpec`). `LuaAI=<name>;` in the `[team]` section does not work: the engine ignores it, `GetTeamLuaAI` stays empty, the AI gadget (`ai_simpleai.lua`) does not load and the team does nothing. BARb has only its default profile.
 - Teams with the same group get the same `allyteam`, a team without a group its own.
 - The start resources are written as `StartMetal` and `StartEnergy` of the `[team]` section (open: whether the engine takes them from the team section; BAR also reads the game options `startmetal` / `startenergy`; if the keys are ignored, the largest values of the teams go into the game options).
 
