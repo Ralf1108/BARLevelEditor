@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 8, stamp = "2026-11-05 20:40" }
+local LAN_VERSION = { number = 9, stamp = "2026-11-05 21:10" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -515,6 +515,15 @@ local function playerNamed(name)
 	end
 end
 
+-- The SPADS settings of the room that the lobby shows and that its Option Presets save and load (preset, autoBalance, balanceMode): reported to the room as
+-- BarManager fields (the lobby keeps them in battle.preset / autoBalance / balanceMode). The Option Presets load builds "!preset " .. battle.preset and so on:
+-- with a value missing (nil) that raises an error and nothing is loaded at all. The values are only kept and reported (this autohost does not balance by them).
+local SPADS_KEYS = { preset = "preset", autobalance = "autoBalance", balancemode = "balanceMode" }
+local function spadsState()
+	S.battle.spads = S.battle.spads or { preset = "team", autoBalance = "off", balanceMode = "skill" }
+	return S.battle.spads
+end
+
 -- "Change Team" of the menu of a player sends !force <name> team <N> (N counts from 1, as on SPADS); "Add Bonus" sends !force <name> bonus <N> (the handicap).
 -- The host or a boss may do it for any human or computer player of the room: the new status goes out as CLIENTBATTLESTATUS / UPDATEBOT, as in balanceTeams.
 local function forceCommand(rest)
@@ -580,6 +589,12 @@ local function autohostCommand(c, msg)
 	elseif cmd == "nbteams" and tonumber(rest) then setTeamLayout(tonumber(rest), nil)
 	elseif cmd == "set" and rest:lower():match("^teamsize%s+%d+") then setTeamLayout(nil, tonumber(rest:match("(%d+)")))
 	elseif cmd == "balance" then balanceTeams()
+	elseif SPADS_KEYS[cmd] then
+		if rest ~= "" then
+			spadsState()[SPADS_KEYS[cmd]] = rest
+			barManager({ [SPADS_KEYS[cmd]] = rest })
+			say(SPADS_KEYS[cmd] .. ": " .. rest)
+		end
 	elseif cmd == "force" then forceCommand(rest)
 	elseif cmd == "cv" and rest:lower():match("^start") then startGameNow()
 	elseif cmd == "start" then startGameNow()
@@ -762,6 +777,8 @@ local function serverLine(c, line)
 		applyStartboxes(false)
 		for k, v in pairs(S.battle.modoptions) do sendLine(c, "SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. tostring(v)) end
 		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"nbTeams":"' .. S.battle.nbTeams .. '","teamSize":"' .. S.battle.teamSize .. '"}}')
+		local sp = spadsState()
+		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"preset":"' .. sp.preset .. '","autoBalance":"' .. sp.autoBalance .. '","balanceMode":"' .. sp.balanceMode .. '"}}')
 		if #S.battle.bosses > 0 then sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"boss":"' .. table.concat(S.battle.bosses, ",") .. '"}}') end
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		if S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
