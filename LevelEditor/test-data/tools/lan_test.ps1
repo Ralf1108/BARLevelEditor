@@ -126,6 +126,10 @@ function Click-Middle($proc, $dir) {
     $h = $proc.MainWindowHandle
     [void][W2]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
     $r = New-Object W3+R; [void][W6]::GetClientRect($h, [ref]$r)
+    # a message box in the middle of the window (the Scavengers' "Warning, Scavengers are active in this region") closes with a click beside it: first a click near the top left corner
+    $pt = New-Object W6+P; $pt.X = [int]($r.Rt * 0.06); $pt.Y = [int]($r.B * 0.12); [void][W6]::ClientToScreen($h, [ref]$pt)
+    [void][W6]::SetCursorPos($pt.X, $pt.Y); Start-Sleep -Milliseconds 300
+    [W6]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150; [W6]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 500
     $pt = New-Object W6+P; $pt.X = [int]($r.Rt / 2); $pt.Y = [int]($r.B / 2); [void][W6]::ClientToScreen($h, [ref]$pt)
     [void][W6]::SetCursorPos($pt.X, $pt.Y); Start-Sleep -Milliseconds 300
     [W6]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150; [W6]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 300
