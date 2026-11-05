@@ -1,7 +1,12 @@
 function widget:GetInfo() return { name = "zz LAN test", desc = "test only", layer = 0, enabled = true } end
 local mo = Spring.GetModOptions() or {}
 local mode = mo.rtfconfig and "rtf" or (mo.ctfconfig and "ctf" or (mo.tdconfig and "td" or "cp"))
-local QUIT = tonumber((VFS.LoadFile("zz_quit.txt", VFS.RAW) or "4500"):match("%d+")) -- game frames
+local function readFile(name)
+	local txt = VFS.LoadFile(name, VFS.RAW) or VFS.LoadFile(name, VFS.RAW_FIRST)
+	if not txt and io and io.open then local f = io.open(name, "rb"); if f then txt = f:read("*a"); f:close() end end
+	return txt
+end
+local QUIT = tonumber((readFile("zz_quit.txt") or (mo.lanpvehold and "60000") or "4500"):match("%d+")) -- game frames
 local function log(...) Spring.Echo("[zzlan] " .. table.concat({ ... }, " ")) end
 local function gp(k) local v = Spring.GetGameRulesParam(k); if v == nil then return "nil" end return tostring(v) end
 local ordered = false

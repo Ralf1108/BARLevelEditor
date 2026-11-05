@@ -10,12 +10,14 @@
 #                  gl.SaveImage and a copy of the screen come out black or disturb)
 #   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
+#         pve = the host adds a Raptors computer (-Ai RaptorsAI | ScavengersAI) to its ally team, both players place their start position (a click into the middle of the window, the
+#               widget zz_place.lua points the camera at the start box) and press ready; zz_pve.lua (host) measures the orders of the AI and of the human (lan_pve_hold.lua)
 #         page = one instance, the LAN Play page opened and left alone (pictures of the page with -Shots, -WaitSec 60 ends it)
 #         teams = the buttons "3 teams" / "2 per team" of the room (log: lan_status.txt in the data folder of the host; pictures with -Shots)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame)
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame)
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -29,11 +31,17 @@ public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowP
 '@
 $exe = (Get-ChildItem "$real\engine" -Directory | Select -Last 1).FullName + '\spring.exe'
 $scn = "${Mode}_test"
-if ($Mode -notin 'cp', 'teams', 'page', 'boss') {
+if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve') {
     if (Test-Path "$sp\bundle_$scn") { Remove-Item "$sp\bundle_$scn" -Recurse -Force }
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\LevelEditor\scenario\scenario_builder.ps1" -Level $scn -LevelDir "$repo\LevelEditor\test-data\levels" -Auto -BundleDir "$sp\bundle_$scn" | Out-Null
 }
-$rects = @{ H = @(60, 60, 1300, 800); J = @(1400, 60, 1000, 700); K = @(1400, 780, 1000, 600) }
+# windows: the left half of the screen in quarters (host top left, first joiner bottom left, second joiner top right); the size is the inside of the window (title bar and frame left out)
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -Name Dpi -Namespace W7 -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][W7.Dpi]::SetProcessDPIAware()   # otherwise the screen size is the scaled one (2560 x 1440 for 3840 x 2160 at 150 %), the engine works with the real pixels
+$wa = [Windows.Forms.Screen]::PrimaryScreen.Bounds
+$qw = [int]($wa.Width / 2) - 16; $qh = [int]($wa.Height / 2) - 80
+$rects = @{ H = @(0, 0, $qw, $qh); J = @(0, [int]($wa.Height / 2), $qw, $qh); K = @([int]($wa.Width / 2), 0, $qw, $qh) }
 $who2 = if ($Mode -eq 'page') { @('H') } else { @('H', 'J') + $(if ($Clients -ge 2) { 'K' }) }
 $names = @{ H = 'PlayerA'; J = 'PlayerB'; K = 'PlayerC' }
 $procs = @{}
@@ -52,17 +60,21 @@ foreach ($who in $who2) {
     if ($who -ne 'H' -and $Lobby -eq 'other') { Add-Content "$d\LuaMenu\Widgets\lan_lobby.lua" "`n-- another version for the version test" -Encoding ASCII }
     Copy-Item "$repo\LevelEditor\scenario\template\shared_start.lua" "$d\LuaUI\Widgets\"
     Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\"
+    if ($Mode -eq 'pve') { Copy-Item "$tools\zz_place.lua" "$d\LuaUI\Widgets\" }
+    if ($Mode -eq 'pve' -and $who -eq 'H') { Copy-Item "$tools\zz_pve.lua" "$d\LuaUI\Widgets\" }
     [IO.File]::WriteAllText("$d\zz_mode.txt", $Mode); [IO.File]::WriteAllText("$d\zz_quit.txt", "$QuitFrame")
-    Set-Content "$d\LuaMenu\Config\IGL_data.lua" 'return { ["Chili lobby"] = { loadLocalWidgets = true } }' -Encoding ASCII
+    # the lobby (Chobby) puts the window to the full screen in the menu and again when a game starts, unless its window mode is 6 (manual window): lobby and game in this window
+    $rc = $rects[$who]; $box = "{ x = $($rc[0]), y = $($rc[1]), width = $($rc[2]), height = $($rc[3]) }"
+    Set-Content "$d\LuaMenu\Config\IGL_data.lua" "return { [`"Chili lobby`"] = { loadLocalWidgets = true, lobby_fullscreen = 6, game_fullscreen = 6, manualWindowed = { lobby = $box, game = $box } } }" -Encoding ASCII
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
-        if ($Mode -notin 'cp', 'teams', 'boss') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
+        if ($Mode -notin 'cp', 'teams', 'boss', 'pve') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -89,6 +101,11 @@ foreach ($who in $who2) {
 Add-Type -AssemblyName System.Drawing
 Add-Type @'
 using System; using System.Runtime.InteropServices;
+public class W6 { [StructLayout(LayoutKind.Sequential)] public struct P { public int X, Y; }
+ [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out W3.R r);
+ [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref P p);
+ [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+ [DllImport("user32.dll")] public static extern void mouse_event(uint f, int dx, int dy, uint d, UIntPtr e); }
 public class W3 { [StructLayout(LayoutKind.Sequential)] public struct R { public int L, T, Rt, B; }
  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out R r);
  [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags); }
@@ -104,6 +121,18 @@ function Save-Shot($proc, $name) {
     $g.Dispose(); $bmp.Save("$sp\$name", [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
     "shot $name ($w x $ht)"
 }
+# -Mode pve: the engine takes a start position only from a mouse click: when the widget zz_place.lua has pointed the camera at the position, click the middle of the window
+function Click-Middle($proc, $dir) {
+    $h = $proc.MainWindowHandle
+    [void][W2]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
+    $r = New-Object W3+R; [void][W6]::GetClientRect($h, [ref]$r)
+    $pt = New-Object W6+P; $pt.X = [int]($r.Rt / 2); $pt.Y = [int]($r.B / 2); [void][W6]::ClientToScreen($h, [ref]$pt)
+    [void][W6]::SetCursorPos($pt.X, $pt.Y); Start-Sleep -Milliseconds 300
+    [W6]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150; [W6]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 300
+    [void][W2]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($prev)
+    "clicked the middle of the window of $dir"
+}
+$clicked = @{}; $hostEnded = $null
 $shotAt = @(); foreach ($s in ($Shots -split '[,\s]+' | ? { $_ })) { $shotAt += [int]$s }
 $start = Get-Date
 while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not $procs[$_].HasExited }).Count -gt 0))) {
@@ -113,6 +142,20 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
         $shotAt = @($shotAt | ? { $_ -ne $s }); $procs['H'].Refresh()
         Save-Shot $procs['H'] "shot_$s.png"
     } }
+    if ($Mode -eq 'pve') {
+        # click the middle of the window (the widget points the camera at the start position) until the widget logs "placed"; in the draft mode the players place one after the other
+        foreach ($who in $who2) {
+            $dd = "$sp\sbx_$who\data"
+            if ($procs[$who].HasExited -or $clicked[$who] -ge 40) { continue }
+            $log = "$dd\infolog.txt"
+            if (-not (Select-String -Path $log -Pattern 'Random draft order' -Quiet -ErrorAction SilentlyContinue)) { continue }
+            if (Select-String -Path $log -Pattern '\[zzplace\] (placed|GameStart)' -Quiet -ErrorAction SilentlyContinue) { $clicked[$who] = 99; continue }
+            if (-not $clicked.ContainsKey($who)) { Start-Sleep 5 }   # the game is loaded: wait until it takes input
+            $clicked[$who] = 1 + [int]$clicked[$who]; Click-Middle $procs[$who] $dd
+        }
+    }
+    # the host's game ended (quitforce of the test widget): the joiners stay in their lobby, end them after some seconds
+    if ($Mode -eq 'pve' -and $procs['H'].HasExited) { if (-not $hostEnded) { $hostEnded = Get-Date } elseif (((Get-Date) - $hostEnded).TotalSeconds -gt 10) { break } }
     Start-Sleep 3
 }
 foreach ($who in $who2) { if (-not $procs[$who].HasExited) { "timeout: killing $who"; try { Stop-Process -Id $procs[$who].Id -Force } catch {} } else { "$who ended itself" } }

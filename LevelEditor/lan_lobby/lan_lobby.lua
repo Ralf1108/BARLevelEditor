@@ -2124,6 +2124,11 @@ function widget:Update()
 			end
 		end
 	end
+	if cfg.bot and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.botDone and os.clock() > 14 then
+		cfg.botDone = true   -- test: a computer in the room (the Add AI button: lobby:AddAi)
+		log("test: adding the computer", cfg.bot, "to ally team", tostring(cfg.botAlly or 0))
+		log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot .. "1", cfg.bot, tonumber(cfg.botAlly) or 0, "<not-versioned>")))
+	end
 	if cfg.auto and lan and lan.step == "in" and not lan.chatted then
 		lan.chatted = true
 		l:SayBattle("hello from " .. lan.name)
