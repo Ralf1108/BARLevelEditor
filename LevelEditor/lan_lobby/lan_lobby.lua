@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 5, stamp = "2026-11-05 19:05" }
+local LAN_VERSION = { number = 6, stamp = "2026-11-05 19:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -562,7 +562,8 @@ local function autohostCommand(c, msg)
 			if not isBoss(who.name) then S.battle.bosses[#S.battle.bosses + 1] = who.name end
 			say(who.name .. " is boss now.")
 		else
-			if dropBoss(who.name) then say(who.name .. " is no boss any more.") end
+			if who == S.hostConn then say(who.name .. " is the host and stays boss.")
+			elseif dropBoss(who.name) then say(who.name .. " is no boss any more.") end
 		end
 		sendBosses()
 		log("autohost: bosses now", table.concat(S.battle.bosses, ","))
@@ -703,7 +704,8 @@ local function serverLine(c, line)
 		for _, o in ipairs(S.conns) do if o ~= c and o.name == name then taken = true end end
 		if taken then sendLine(c, "DENIED name invalid or taken"); c.close = true; return end
 		c.name = name
-		if not S.hostConn then S.hostConn = c; S.hostName = name end
+		-- the host is the boss of the room from the start: the lobby (Option Presets: modoptions, bots with bonus) applies things only when it sees a boss (battle.bossed)
+		if not S.hostConn then S.hostConn = c; S.hostName = name; if not isBoss(name) then S.battle.bosses[#S.battle.bosses + 1] = name end end
 		sendLine(c, "ACCEPTED " .. name)
 		sendLine(c, "ADDUSER " .. HOSTNAME .. " XX 0 LAN")
 		sendLine(c, "CLIENTSTATUS " .. HOSTNAME .. " 64")
