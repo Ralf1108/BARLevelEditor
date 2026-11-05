@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 12, stamp = "2026-11-06 00:30" }
+local LAN_VERSION = { number = 13, stamp = "2026-11-06 01:30" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1164,7 +1164,31 @@ local function lanConnect(role, ip, name)
 	return true
 end
 
+-- Option Presets saved while the room did not report preset / autoBalance / balanceMode (before version 9) have a "Multiplayer Battle Settings" block without them: the
+-- lobby's load builds "!preset " .. nil from it, raises an error and loads nothing. Before hosting the missing values are put into the file (the defaults of the room), the
+-- rest of the file stays as it is (text edit, no new encoding).
+local function repairPresetFile()
+	local f = io.open("optionsPresets.json", "r")
+	if not f then return end
+	local txt = f:read("*a") or ""
+	f:close()
+	local count = 0
+	local fixed = txt:gsub('("Multiplayer Battle Settings"%s*:%s*{)([^{}]*)}', function(head, body)
+		local add = ""
+		for _, kv in ipairs({ { "preset", "team" }, { "autoBalance", "off" }, { "balanceMode", "skill" } }) do
+			if not body:find('"' .. kv[1] .. '"', 1, true) then add = add .. '"' .. kv[1] .. '":"' .. kv[2] .. '",'; count = count + 1 end
+		end
+		if add == "" then return nil end
+		if body:match("^%s*$") then add = add:gsub(",$", "") end
+		return head .. add .. body .. "}"
+	end)
+	if count == 0 then return end
+	local w = io.open("optionsPresets.json", "w")
+	if w then w:write(fixed); w:close(); log("option presets: added", count, "missing value(s) of the multiplayer settings to optionsPresets.json (preset / autoBalance / balanceMode)") end
+end
+
 local function startHosting()
+	pcall(repairPresetFile)
 	local cf = Config()
 	if S or lan then lanStop("restart") end
 	local s, e = socket.bind("*", PORT, 128)   -- a queue for many connections at once: every joiner fetches a map on 8 of them
@@ -2100,13 +2124,16 @@ function widget:Update()
 			log("test: preset " .. tag .. ": bossed", tostring(b.bossed), "preset", tostring(b.preset), "autoBalance", tostring(b.autoBalance), "balanceMode", tostring(b.balanceMode),
 				"teamSize", tostring(b.teamSize), "nbTeams", tostring(b.nbTeams), "locked", tostring(b.locked), "map", tostring(b.mapName), "bots", tostring(#(lobby().battleAis or {})))
 			local mo = lobby():GetMyBattleModoptions() or {}
-			log("test: preset " .. tag .. ": modoptions startenergy", tostring(mo.startenergy), "startmetal", tostring(mo.startmetal), "ranked_game", tostring(mo.ranked_game))
+			log("test: preset " .. tag .. ": modoptions startenergy", tostring(mo.startenergy), "startmetal", tostring(mo.startmetal), "ranked_game", tostring(mo.ranked_game),
+				"maxunits", tostring(mo.maxunits), "deathmode", tostring(mo.deathmode), "draft_mode", tostring(mo.draft_mode), "raptor_firstwavesboost", tostring(mo.raptor_firstwavesboost))
+			log("test: preset " .. tag .. ": computers", table.concat(lobby().battleAis or {}, ", "))
 		end
 		if not cfg.presetStep and os.clock() > cfg.presetAt then
 			cfg.presetStep = 1
 			dump("before")
-			local f = io.open("optionsPresets.json", "w")
-			if f then
+			local f = not cfg.presetName and io.open("optionsPresets.json", "w")   -- presetName: the script put the file of the user into the folder
+			if cfg.presetName then log("test: using the preset file of the folder, preset", cfg.presetName)
+			elseif f then
 				f:write('{"t1":{"Multiplayer Battle Settings":{"preset":"team","locked":true,"autoBalance":"advanced","balanceMode":"clan;skill","teamSize":3,"nbTeams":2},"Map":"Full Metal Plate 1.7","Start Boxes":[{"left":0,"top":0,"right":40,"bottom":200},{"left":160,"top":0,"right":200,"bottom":200}],"Bots":{"SimpleAI1":{"aiLib":"SimpleAI","allyNumber":1,"aiVersion":"<not-versioned>","aiOptions":{},"teamColor":[0.2,0.4,0.8],"side":0,"handicap":15}},"Modoptions":{"startenergy":"2500","startmetal":"2500"}}}')
 				f:close()
 				log("test: preset file written")
@@ -2119,10 +2146,11 @@ function widget:Update()
 			local combo = walk(screen0, function(c) return c.items and c.selectByName and c.Select end)
 			log("test: preset list found:", tostring(combo ~= nil), combo and table.concat(combo.items, ",") or "")
 			if combo then
-				for i, name in ipairs(combo.items) do if name == "t1" then pcall(combo.Select, combo, i) end end
+				local want = cfg.presetName or "t1"
+				for i, name in ipairs(combo.items) do if name == want then pcall(combo.Select, combo, i) end end
 				log("test: preset list after Select: selected", tostring(combo.selected), "name", tostring(combo.items[combo.selected] or combo.selected))
 				-- the real list calls OnSelectName when the user picks an entry; Select alone may not
-				for _, fn in ipairs(combo.OnSelectName or {}) do pcall(fn, combo, "t1") end
+				for _, fn in ipairs(combo.OnSelectName or {}) do pcall(fn, combo, cfg.presetName or "t1") end
 				log("test: preset list: OnSelectName called (", tostring(#(combo.OnSelectName or {})), "listeners)")
 			end
 			cfg.presetAt = os.clock() + 2
@@ -2133,7 +2161,7 @@ function widget:Update()
 			if btn then
 				for _, fn in ipairs(btn.OnClick) do local ok, err = pcall(fn, btn); log("test: Load pressed", tostring(ok), tostring(err)) end
 			end
-			cfg.presetAt = os.clock() + 12
+			cfg.presetAt = os.clock() + 40
 		elseif cfg.presetStep == 3 and os.clock() > cfg.presetAt then
 			cfg.presetStep = 4
 			dump("after")

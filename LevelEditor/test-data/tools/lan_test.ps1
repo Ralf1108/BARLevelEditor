@@ -12,14 +12,14 @@
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
 #         pve = the host adds a Raptors computer (-Ai RaptorsAI | ScavengersAI) to its ally team, both players place their start position (a click into the middle of the window, the
 #               widget zz_place.lua points the camera at the start box) and press ready; zz_pve.lua (host) measures the orders of the AI and of the human (lan_pve_hold.lua)
-#         preset = one instance, the host's room, the Option Presets of the lobby: a preset file is written, the real panel opened, the preset chosen and loaded; log "test: preset"
+#         preset = (-PresetFile <optionsPresets.json> -PresetName <preset in it>, otherwise a small own preset) one instance, the host's room, the Option Presets of the lobby: a preset file is written, the real panel opened, the preset chosen and loaded; log "test: preset"
 #               lines with the values of the room before and after (no game is started: -WaitSec 90)
 #         page = one instance, the LAN Play page opened and left alone (pictures of the page with -Shots, -WaitSec 60 ends it)
 #         teams = the buttons "3 teams" / "2 per team" of the room (log: lan_status.txt in the data folder of the host; pictures with -Shots)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame)
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame)
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -76,7 +76,7 @@ foreach ($who in $who2) {
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -92,6 +92,7 @@ foreach ($who in $who2) {
             "joiner $who own version $($sgo.Version), host version $($sg0.Version)"
         }
     }
+    if ($Mode -eq 'preset' -and $PresetFile) { Copy-Item $PresetFile "$d\optionsPresets.json" }   # a preset file of a user: -PresetFile <path> -PresetName <name>
     [IO.File]::WriteAllText("$d\lanlobby_cfg.txt", $auto)
     $r = $rects[$who]
     [IO.File]::WriteAllLines("$sbx\springsettings.cfg", @('Fullscreen = 0', 'WindowBorderless = 0', "XResolution = $($r[2])", "YResolution = $($r[3])", "XResolutionWindowed = $($r[2])", "YResolutionWindowed = $($r[3])", "WindowPosX = $($r[0])", "WindowPosY = $($r[1])", 'LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0', 'InitialNetworkTimeout = 600', 'NetworkTimeout = 600', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev'))
