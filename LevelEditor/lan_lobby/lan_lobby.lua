@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 6, stamp = "2026-11-05 19:40" }
+local LAN_VERSION = { number = 7, stamp = "2026-11-05 20:05" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -920,9 +920,6 @@ buildScript = function(myName)
 	for _, bot in ipairs(S.battle.bots) do
 		local bs = l:ParseBattleStatus(bot.status)
 		local lib, ver = bot.lib:match("^(%S+)%s*(.*)$")
-		-- a Scavengers or Raptors AI of the room does not play: it is started as NullAI (0 AI), so the humans of its team command those units themselves
-		local low = (lib or bot.lib):lower()
-		if low:find("scav", 1, true) or low:find("raptor", 1, true) then lib, ver = "NullAI", "0.1" end
 		ais[#ais + 1] = { name = bot.name, lib = lib or bot.lib, version = ver, team = #teams }
 		teams[#teams + 1] = { leader = 0, ally = ally(bs.allyNumber), color = rgb(bot.color), side = sideName(bs.side), handicap = bs.handicap or 0 }
 	end
