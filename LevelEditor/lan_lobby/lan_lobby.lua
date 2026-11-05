@@ -2025,7 +2025,7 @@ end
 function widget:Update()
 	ensureScenarioUi()
 	if ui.leave and ui.back then
-		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Back" then moves to the right of it
+		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Close" then moves to the right of it
 		local want = S ~= nil or lan ~= nil
 		if ui.leave.visible ~= want then
 			ui.leave:SetVisibility(want)
@@ -2279,7 +2279,7 @@ buildUi = function()
 	y = y + 6 * 46 + 10
 	ui.status = TextBox:New { parent = P, x = 0, y = y, right = 0, height = 30, text = status, objectOverrideFont = font }
 	ui.leave = Button:New { parent = P, x = 0, y = y + 40, width = 260, height = 40, caption = "Leave LAN play", objectOverrideFont = font, OnClick = { function() lanStop("left"); setStatus("Back on the normal server.") end } }
-	ui.back = Button:New { parent = P, x = 0, y = y + 40, width = 180, height = 40, caption = "Back", objectOverrideFont = font, OnClick = { function()
+	ui.back = Button:New { parent = P, x = 0, y = y + 40, width = 180, height = 40, caption = "Close", classname = "negative_button", objectOverrideFont = font, OnClick = { function()
 		local root = WG.Chobby and WG.Chobby.interfaceRoot
 		local sub = root and root.GetSingleplayerSubmenu and root.GetSingleplayerSubmenu()
 		if sub and sub.CloseTabs then pcall(sub.CloseTabs) end
