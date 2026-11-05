@@ -22,8 +22,8 @@ $pvOk = Initialize-MapPreview $Data   # thumbnails from the lobby package of the
 try { [void](Remove-OldCache) } catch { }   # old scenarios and maps from hosts, half-finished downloads (lobby.ps1)
 $autoloadFile = Join-Path $levelsDir '_autoload.txt'
 $lastFile = Join-Path $userDir 'Last Map.txt'
-$scavFile = Join-Path $userDir 'Scav Units.txt'   # 1 = the editor loads the Scavenger and Raptor units (game option forceallunits; the start takes about 10 s longer)
-function Get-ScavSetting { return ((Test-Path $scavFile) -and (([IO.File]::ReadAllText($scavFile)).Trim() -eq '1')) }
+$scavFile = Join-Path $userDir 'Scav Units.txt'   # on unless the file says 0: the editor loads the Scavenger and Raptor units (game option forceallunits; the start takes about 10 s longer)
+function Get-ScavSetting { return (-not (Test-Path $scavFile)) -or (([IO.File]::ReadAllText($scavFile)).Trim() -ne '0') }
 
 # ---------------------------------------------------------------- installed maps from the archive cache
 $cache = Get-ChildItem (Join-Path $Data 'cache') -Filter 'ArchiveCache*.lua' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
