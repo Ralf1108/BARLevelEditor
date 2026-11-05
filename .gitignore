@@ -11,3 +11,5 @@ LevelEditor/blueprints/*
 BluePrinter/blueprints/*
 !BluePrinter/blueprints/.gitkeep
 _claudeResumeSession.txt
+# data extracted from the game or the website: can be created again at any time (the script next to it)
+shared/unit_categories/unit_categories.json
