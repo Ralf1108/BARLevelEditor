@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 7, stamp = "2026-11-05 20:05" }
+local LAN_VERSION = { number = 8, stamp = "2026-11-05 20:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -586,6 +586,38 @@ local function autohostCommand(c, msg)
 	else log("autohost: ignored command", msg) end
 end
 
+-- A Scavengers or Raptors AI in the room needs the gadget lan_pve_hold.lua (it drops the orders that the AI's gadgets give, so the humans command those units),
+-- which is in the extra game of the scenarios: the room then plays with that game (every player needs the same file, announced like a scenario's: game option
+-- lansync). Without a scenario only; the scenario brings the game anyway.
+local function hasPveBot()
+	for _, bot in ipairs(S.battle.bots) do
+		local low = (bot.lib or ""):lower()
+		if low:find("scav", 1, true) or low:find("raptor", 1, true) then return true end
+	end
+	return false
+end
+
+local function syncPveGame()
+	if not S or S.battle.scenario then return end
+	if hasPveBot() then
+		local own = ownGame()
+		local data = own and VFS.LoadFile(own.file, VFS.RAW)
+		if data then
+			if not (S.gameFile and S.gameFile.ver == own.ver) then
+				S.gameFile = { data = data, size = #data, hash = VFS.CalculateHash(data, 0), ver = own.ver, name = own.name }
+			end
+			S.pveGame = true
+			toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size)
+		elseif not S.pveWarned then
+			S.pveWarned = true
+			say("Warning: the extra game of the scenarios is not installed on the host (run the Level Editor setup): the Scavengers / Raptors AI will command its units.")
+		end
+	elseif S.pveGame then
+		S.pveGame = nil; S.gameFile = nil
+		toBattle("SETSCRIPTTAGS game/modoptions/lansync=")
+	end
+end
+
 local function removeConn(c)
 	for i, o in ipairs(S.conns) do if o == c then table.remove(S.conns, i); break end end
 	pcall(function() c.sock:close() end)
@@ -598,6 +630,7 @@ local function removeConn(c)
 				local bot = S.battle.bots[i]
 				if bot.owner == c.name then table.remove(S.battle.bots, i); toAll("REMOVEBOT 1 " .. bot.name) end
 			end
+			syncPveGame()
 		end
 		toAll("REMOVEUSER " .. c.name)
 		log("left:", c.name)
@@ -731,7 +764,7 @@ local function serverLine(c, line)
 		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"nbTeams":"' .. S.battle.nbTeams .. '","teamSize":"' .. S.battle.teamSize .. '"}}')
 		if #S.battle.bosses > 0 then sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"boss":"' .. table.concat(S.battle.bosses, ",") .. '"}}') end
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
-		if S.battle.scenario and S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
+		if S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
 		for _, bot in ipairs(S.battle.bots) do sendLine(c, string.format("ADDBOT 1 %s %s %s %s %s", bot.name, bot.owner, bot.status, bot.color, bot.lib)) end
 		sendLine(c, "REQUESTBATTLESTATUS")
 		updateBattleInfo()
@@ -754,10 +787,12 @@ local function serverLine(c, line)
 		if name then
 			S.battle.bots[#S.battle.bots + 1] = { name = name, owner = c.name, status = st, color = col, lib = lib }
 			toBattle(string.format("ADDBOT 1 %s %s %s %s %s", name, c.name, st, col, lib))
+			syncPveGame()
 		end
 	elseif cmd == "REMOVEBOT" and c.inBattle then
 		local name = args:match("^(%S+)")
 		for i, bot in ipairs(S.battle.bots) do if bot.name == name then table.remove(S.battle.bots, i); toBattle("REMOVEBOT 1 " .. name); break end end
+		syncPveGame()
 	elseif cmd == "UPDATEBOT" and c.inBattle then
 		local name, st, col = args:match("^(%S+)%s+(%S+)%s+(%S+)")
 		for _, bot in ipairs(S.battle.bots) do if bot.name == name then bot.status, bot.color = st, col; toBattle(string.format("UPDATEBOT 1 %s %s %s", name, st, col)) end end
@@ -923,10 +958,12 @@ buildScript = function(myName)
 		ais[#ais + 1] = { name = bot.name, lib = lib or bot.lib, version = ver, team = #teams }
 		teams[#teams + 1] = { leader = 0, ally = ally(bs.allyNumber), color = rgb(bot.color), side = sideName(bs.side), handicap = bs.handicap or 0 }
 	end
-	local t = { "[GAME]\n{\n\tGameType=", S.battle.game, ";\n\tMapName=", S.battle.map, ";\n\tHostIP=0.0.0.0;\n\tHostPort=", GAMEPORT,
+	local pve = hasPveBot() and S.gameFile   -- the game with the gadget that drops the orders of the Scavengers / Raptors AI
+	local t = { "[GAME]\n{\n\tGameType=", pve and S.gameFile.name or S.battle.game, ";\n\tMapName=", S.battle.map, ";\n\tHostIP=0.0.0.0;\n\tHostPort=", GAMEPORT,
 		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=", startPos, ";\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" }
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
 	for k, v in pairs(S.battle.modoptions) do t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end
+	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
 	t[#t + 1] = "\t\tlanplay=1;\n" -- the game widget shared_start.lua acts only in LAN Play games and scenarios
 	t[#t + 1] = string.format("\t\tdate_year=%s;\n\t\tdate_month=%s;\n\t\tdate_day=%s;\n\t\tdate_hour=%s;\n\t}\n", os.date("%Y"), os.date("%m"), os.date("%d"), os.date("%H"))
 	for _, p in ipairs(players) do
@@ -966,10 +1003,10 @@ local function hookConnect()
 			log("start postponed until the map is loaded")
 			return
 		end
-		if lan and lan.role == "client" and self.modoptions and self.modoptions.lanscenario and self.modoptions.lanscenario ~= "" then
+		if lan and lan.role == "client" and self.modoptions and self.modoptions.lansync and self.modoptions.lansync ~= "" then
 			local want = gameOfTag((self.modoptions.lansync or ""):match("^(%x+)|"))
 			if not want then
-				local msg = "The host plays the scenario '" .. self.modoptions.lanscenario .. "' with another version of the Level Editor (no game version announced): please update the Level Editor manually."
+				local msg = "The host plays " .. ((self.modoptions.lanscenario and self.modoptions.lanscenario ~= "") and ("the scenario '" .. self.modoptions.lanscenario .. "'") or "with a Scavengers / Raptors AI") .. " with another version of the Level Editor (no game version announced): please update the Level Editor manually."
 				log("cannot join the scenario:", msg)
 				bigPopup(msg)
 				return
@@ -1151,7 +1188,7 @@ local function updateSync()
 	local mo = l and l.modoptions
 	if lan.fetch then updateFetch(); return end
 	local tag = mo and mo.lansync
-	if not (mo and mo.lanscenario and mo.lanscenario ~= "" and tag and tag ~= "") then return end
+	if not (mo and tag and tag ~= "") then return end
 	local ver, hash, size = tag:match("^(%x+)|(.-)|(%d+)$")
 	local want = gameOfTag(ver)
 	if not want or lan.syncAsked == ver then return end
@@ -1167,7 +1204,7 @@ local function updateSync()
 	local function yes() lan.syncGame = want; startFetch(hash, tonumber(size)) end
 	local function no() lan.syncFailed = ver; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
 	if cfg.autoAccept then yes(); return end
-	local q = "The host plays the scenario '" .. mo.lanscenario .. "' with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
+	local q = "The host plays " .. ((mo.lanscenario and mo.lanscenario ~= "") and ("the scenario '" .. mo.lanscenario .. "'") or "with a Scavengers / Raptors AI") .. " with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
 	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
 end
 
