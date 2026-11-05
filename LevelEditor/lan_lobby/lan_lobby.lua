@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 10, stamp = "2026-11-05 22:00" }
+local LAN_VERSION = { number = 11, stamp = "2026-11-05 23:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -633,6 +633,57 @@ local function syncPveGame()
 	end
 end
 
+-- A human player in the ally team of a Scavengers / Raptors computer takes over its units (the gadget lan_pve_hold.lua drops the computer's own orders then, see
+-- the game option lanpvehold). The room tells everybody when that starts for a team (the first human comes, or the computer is added to a team with a human) and when it
+-- ends (the last human leaves the team or the computer is removed). Checked about once a second.
+local function pveHumanNotice()
+	local l = lobby()
+	if not (S and l and hasPveBot()) and not (S and S.pveHeld and next(S.pveHeld)) then return end
+	if S.pveNoticeAt and os.clock() < S.pveNoticeAt then return end
+	S.pveNoticeAt = os.clock() + 1
+	local humans, bots = {}, {}
+	for _, c in ipairs(S.conns) do
+		local bs = c.inBattle and c.battleStatus and select(2, pcall(l.ParseBattleStatus, l, c.battleStatus))
+		if type(bs) == "table" and not bs.isSpectator then humans[bs.allyNumber] = true end
+	end
+	for _, bot in ipairs(S.battle.bots) do
+		local low = (bot.lib or ""):lower()
+		if low:find("scav", 1, true) or low:find("raptor", 1, true) then
+			local ok, bs = pcall(l.ParseBattleStatus, l, bot.status)
+			if ok and type(bs) == "table" then bots[bs.allyNumber] = bot.name end
+		end
+	end
+	S.pveHeld = S.pveHeld or {}
+	local announced = false
+	for ally, name in pairs(bots) do
+		local now = humans[ally] and true or false
+		if now and not S.pveHeld[ally] then
+			announced = true
+			log("pve notice: a human is in the team of", name)
+			say("Information: a human player is in the team of " .. name .. " (Scavengers / Raptors): the computer does not command its units any more, the human players of the team do.")
+		elseif not now and S.pveHeld[ally] then
+			announced = true
+			log("pve notice: no human in the team of", name, "any more")
+			say("Information: no human player is in the team of " .. name .. " any more: the computer commands its units itself again.")
+		end
+		S.pveHeld[ally] = now
+	end
+	for ally in pairs(S.pveHeld) do if not bots[ally] then S.pveHeld[ally] = nil end end
+	-- whoever comes into the room later gets the current state once (the message above went to the users who were in the room then)
+	for _, c in ipairs(S.conns) do
+		if c.inBattle then
+			if not c.pveSeen and not announced then
+				for ally, held in pairs(S.pveHeld) do
+					if held then
+						sendLine(c, "SAIDBATTLE " .. HOSTNAME .. " Information: a human player is in the team of " .. bots[ally] .. " (Scavengers / Raptors): the computer does not command its units, the human players of its team do.")
+					end
+				end
+			end
+			c.pveSeen = true
+		end
+	end
+end
+
 local function removeConn(c)
 	for i, o in ipairs(S.conns) do if o == c then table.remove(S.conns, i); break end end
 	pcall(function() c.sock:close() end)
@@ -821,6 +872,7 @@ local function serverLine(c, line)
 end
 
 local function updateServer()
+	pveHumanNotice()
 	local new = S.srv:accept()
 	while new do
 		new:settimeout(0)

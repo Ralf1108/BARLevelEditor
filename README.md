@@ -89,6 +89,7 @@ Play with computers in the same network, no account and no server in the cloud. 
 - **Host a LAN game**, or pick a game that shows up in the list by itself, or type the host's address
 - **Custom Scenario**: the host picks a scenario built with the Level Editor; map and teams are set and the other players get the scenario's game file automatically
 - **Copilot**: two or more people of a team play **one** player together, for example one fights and one builds
+- **Play the Scavengers or Raptors yourself**: put a Scavengers or Raptors computer into a team with a human player and the computer stops commanding its units, the humans of the team do (the official game does not allow that); the room tells everybody when this starts and ends
 - A missing map is fetched from the host over the network and checked against the list of official maps; different versions of LAN Play are reported with a warning
 - Installed together with the Level Editor. Only computers of the local network (or a VPN such as Tailscale or Hamachi) can join
 
