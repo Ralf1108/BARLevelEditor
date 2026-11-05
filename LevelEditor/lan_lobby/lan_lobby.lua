@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 4, stamp = "2026-11-04 18:03" }
+local LAN_VERSION = { number = 5, stamp = "2026-11-05 18:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -515,6 +515,41 @@ local function playerNamed(name)
 	end
 end
 
+-- "Change Team" of the menu of a player sends !force <name> team <N> (N counts from 1, as on SPADS); "Add Bonus" sends !force <name> bonus <N> (the handicap).
+-- The host or a boss may do it for any human or computer player of the room: the new status goes out as CLIENTBATTLESTATUS / UPDATEBOT, as in balanceTeams.
+local function forceCommand(rest)
+	local name, what, value = rest:match("^(%S+)%s+(%S+)%s+(%-?%d+)")
+	what = (what or ""):lower()
+	local l = lobby()
+	if not (name and l and (what == "team" or what == "bonus")) then log("autohost: ignored !force " .. rest); return end
+	local function change(bs)
+		if what == "team" then bs.allyNumber = math.max(0, math.min(MAX_TEAMS - 1, tonumber(value) - 1))
+		else bs.handicap = math.max(0, math.min(99, tonumber(value))) end
+	end
+	local who = playerNamed(name)
+	if who and who.battleStatus then
+		local bs = l:ParseBattleStatus(who.battleStatus)
+		change(bs)
+		who.battleStatus = encodeStatus(bs)
+		who.battleStatus = forcedStatus(who)   -- with a scenario the ally team stays the scenario's
+		toBattle("CLIENTBATTLESTATUS " .. who.name .. " " .. who.battleStatus .. " " .. (who.teamColor or "0"))
+		updateBattleInfo()
+		log("autohost: forced", who.name, what, value)
+		return
+	end
+	for _, bot in ipairs(S.battle.bots) do
+		if bot.name:lower() == name:lower() then
+			local bs = l:ParseBattleStatus(bot.status)
+			change(bs)
+			bot.status = encodeStatus(bs)
+			toBattle(string.format("UPDATEBOT 1 %s %s %s", bot.name, bot.status, bot.color))
+			log("autohost: forced", bot.name, what, value)
+			return
+		end
+	end
+	say("There is no player " .. name .. " in the room.")
+end
+
 local function autohostCommand(c, msg)
 	local isHost = (c == S.hostConn)
 	local cmd, rest = msg:match("^!(%S+)%s*(.*)$")
@@ -544,6 +579,7 @@ local function autohostCommand(c, msg)
 	elseif cmd == "nbteams" and tonumber(rest) then setTeamLayout(tonumber(rest), nil)
 	elseif cmd == "set" and rest:lower():match("^teamsize%s+%d+") then setTeamLayout(nil, tonumber(rest:match("(%d+)")))
 	elseif cmd == "balance" then balanceTeams()
+	elseif cmd == "force" then forceCommand(rest)
 	elseif cmd == "cv" and rest:lower():match("^start") then startGameNow()
 	elseif cmd == "start" then startGameNow()
 	else log("autohost: ignored command", msg) end
