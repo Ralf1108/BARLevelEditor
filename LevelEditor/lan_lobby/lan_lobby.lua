@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 11, stamp = "2026-11-05 23:40" }
+local LAN_VERSION = { number = 12, stamp = "2026-11-06 00:30" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -199,7 +199,7 @@ local function spectatorCount()
 end
 
 local function updateBattleInfo()
-	toAll("UPDATEBATTLEINFO 1 " .. spectatorCount() .. " 0 0 " .. S.battle.map)
+	toAll("UPDATEBATTLEINFO 1 " .. spectatorCount() .. " " .. ((S.battle.spads and S.battle.spads.locked == "locked") and 1 or 0) .. " 0 " .. S.battle.map)
 end
 
 local function battleOpenedLine(c)
@@ -520,7 +520,7 @@ end
 -- with a value missing (nil) that raises an error and nothing is loaded at all. The values are only kept and reported (this autohost does not balance by them).
 local SPADS_KEYS = { preset = "preset", autobalance = "autoBalance", balancemode = "balanceMode" }
 local function spadsState()
-	S.battle.spads = S.battle.spads or { preset = "team", autoBalance = "off", balanceMode = "skill" }
+	S.battle.spads = S.battle.spads or { preset = "team", autoBalance = "off", balanceMode = "skill", locked = "unlocked" }
 	return S.battle.spads
 end
 
@@ -595,6 +595,11 @@ local function autohostCommand(c, msg)
 			barManager({ [SPADS_KEYS[cmd]] = rest })
 			say(SPADS_KEYS[cmd] .. ": " .. rest)
 		end
+	elseif cmd == "lock" or cmd == "unlock" then
+		-- the Option Presets send !lock / !unlock: the state is kept and reported to the lobby (UPDATEBATTLEINFO, field locked), the room itself stays open for joiners
+		spadsState().locked = cmd == "lock" and "locked" or "unlocked"
+		updateBattleInfo()
+		say(spadsState().locked)
 	elseif cmd == "force" then forceCommand(rest)
 	elseif cmd == "cv" and rest:lower():match("^start") then startGameNow()
 	elseif cmd == "start" then startGameNow()
@@ -830,6 +835,7 @@ local function serverLine(c, line)
 		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"nbTeams":"' .. S.battle.nbTeams .. '","teamSize":"' .. S.battle.teamSize .. '"}}')
 		local sp = spadsState()
 		sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"preset":"' .. sp.preset .. '","autoBalance":"' .. sp.autoBalance .. '","balanceMode":"' .. sp.balanceMode .. '"}}')
+		if sp.locked == "locked" then sendLine(c, "UPDATEBATTLEINFO 1 " .. spectatorCount() .. " 1 0 " .. S.battle.map) end
 		if #S.battle.bosses > 0 then sendLine(c, 'SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{"boss":"' .. table.concat(S.battle.bosses, ",") .. '"}}') end
 		if S.battle.scenario then sendLine(c, "SETSCRIPTTAGS game/modoptions/lanscenario=" .. S.battle.scenario.name) end
 		if S.gameFile then sendLine(c, "SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size) end
@@ -2078,6 +2084,59 @@ function widget:Update()
 			local script = txt:gsub("__GAMETYPE__", cfg.scenarioGame or own.name or "Level Editor Scenarios"):gsub("__PLAYERNAME__", cfg.name or "PlayerC")
 			log("test: starting the scenario with Spring.Reload")
 			Spring.Reload(script)
+		end
+	end
+	if cfg.presetTest and S and lan and lan.step == "in" and ui.slotButton then
+		-- test: the Option Presets of the lobby: write a preset file, open the real panel (WG.OptionpresetsPanel.ShowPresetPanel), choose the preset in its list, press its
+		-- Load button and write the values of the room into the log (no game is started)
+		cfg.presetAt = cfg.presetAt or (os.clock() + 8)
+		local function walk(ctl, fn, depth)
+			if not ctl or (depth or 0) > 30 then return end
+			if fn(ctl) then return ctl end
+			for _, ch in ipairs(ctl.children or {}) do local r = walk(ch, fn, (depth or 0) + 1); if r then return r end end
+		end
+		local function dump(tag)
+			local b = lobby():GetBattle(lobby():GetMyBattleID()) or {}
+			log("test: preset " .. tag .. ": bossed", tostring(b.bossed), "preset", tostring(b.preset), "autoBalance", tostring(b.autoBalance), "balanceMode", tostring(b.balanceMode),
+				"teamSize", tostring(b.teamSize), "nbTeams", tostring(b.nbTeams), "locked", tostring(b.locked), "map", tostring(b.mapName), "bots", tostring(#(lobby().battleAis or {})))
+			local mo = lobby():GetMyBattleModoptions() or {}
+			log("test: preset " .. tag .. ": modoptions startenergy", tostring(mo.startenergy), "startmetal", tostring(mo.startmetal), "ranked_game", tostring(mo.ranked_game))
+		end
+		if not cfg.presetStep and os.clock() > cfg.presetAt then
+			cfg.presetStep = 1
+			dump("before")
+			local f = io.open("optionsPresets.json", "w")
+			if f then
+				f:write('{"t1":{"Multiplayer Battle Settings":{"preset":"team","locked":true,"autoBalance":"advanced","balanceMode":"clan;skill","teamSize":3,"nbTeams":2},"Map":"Full Metal Plate 1.7","Start Boxes":[{"left":0,"top":0,"right":40,"bottom":200},{"left":160,"top":0,"right":200,"bottom":200}],"Bots":{"SimpleAI1":{"aiLib":"SimpleAI","allyNumber":1,"aiVersion":"<not-versioned>","aiOptions":{},"teamColor":[0.2,0.4,0.8],"side":0,"handicap":15}},"Modoptions":{"startenergy":"2500","startmetal":"2500"}}}')
+				f:close()
+				log("test: preset file written")
+			else log("test: preset file NOT written") end
+			local ok, err = pcall(WG.OptionpresetsPanel.ShowPresetPanel)
+			log("test: ShowPresetPanel", tostring(ok), tostring(err))
+			cfg.presetAt = os.clock() + 3
+		elseif cfg.presetStep == 1 and os.clock() > cfg.presetAt then
+			cfg.presetStep = 2
+			local combo = walk(screen0, function(c) return c.items and c.selectByName and c.Select end)
+			log("test: preset list found:", tostring(combo ~= nil), combo and table.concat(combo.items, ",") or "")
+			if combo then
+				for i, name in ipairs(combo.items) do if name == "t1" then pcall(combo.Select, combo, i) end end
+				log("test: preset list after Select: selected", tostring(combo.selected), "name", tostring(combo.items[combo.selected] or combo.selected))
+				-- the real list calls OnSelectName when the user picks an entry; Select alone may not
+				for _, fn in ipairs(combo.OnSelectName or {}) do pcall(fn, combo, "t1") end
+				log("test: preset list: OnSelectName called (", tostring(#(combo.OnSelectName or {})), "listeners)")
+			end
+			cfg.presetAt = os.clock() + 2
+		elseif cfg.presetStep == 2 and os.clock() > cfg.presetAt then
+			cfg.presetStep = 3
+			local btn = walk(screen0, function(c) return c.classname == "action_button" and c.caption and tostring(c.caption):lower():find("load", 1, true) and c.OnClick end)
+			log("test: Load button found:", tostring(btn ~= nil))
+			if btn then
+				for _, fn in ipairs(btn.OnClick) do local ok, err = pcall(fn, btn); log("test: Load pressed", tostring(ok), tostring(err)) end
+			end
+			cfg.presetAt = os.clock() + 12
+		elseif cfg.presetStep == 3 and os.clock() > cfg.presetAt then
+			cfg.presetStep = 4
+			dump("after")
 		end
 	end
 	if cfg.leaveAfter and lan and lan.step == "in" then
