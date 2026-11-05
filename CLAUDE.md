@@ -12,7 +12,7 @@ kept up to date with every change. They are not the manuals: the READMEs and `do
   what the gadgets share in `LevelEditor/scripts/led_gadgets.lua`. Which file goes where is listed once: `LevelEditor/scripts/editor_manifest.ps1` and
   `$ScenarioGameFiles` in `shared/bar_common.ps1`; a new file is added there, not in the scripts that use the lists.
 - Lua 5.1 allows at most 200 local variables per function: `lvl_level_editor.lua` is close to it at top level. Count the `^local` lines before adding
-  one; put new values into an existing table or a page module (`led_td.lua`, `led_ctf.lua`, `led_rtf.lua`, `led_save.lua`, `led_gen.lua`, `led_scenario.lua`, `led_restrictions.lua`).
+  one; put new values into an existing table or a page module (`led_td.lua`, `led_ctf.lua`, `led_rtf.lua`, `led_save.lua`, `led_gen.lua`, `led_scenario.lua`, `led_export.lua`, `led_restrictions.lua`).
 - LAN Play has a version number with date and time (`LAN_VERSION` at the top of `lan_lobby.lua`): raise the number and set the time when the network protocol or the logic of `lan_lobby.lua` or `shared_start.lua` changes (what host and joiner must agree on); a change of the looks alone (positions, texts, colors, indicators) does not raise it (the first release is out; the number stays 1 for everything up to 2026-11-04, counting started with the next change); the joiner warns when the numbers of host and joiner differ and says who is newer.
 - After a change of the widget, gadgets or shared code: `start_level_editor.bat` rebuilds the extra games by itself (stamp); the BluePrinter needs
   `BluePrinter\install_blueprinter.bat` (or its start scripts).

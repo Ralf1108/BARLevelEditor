@@ -594,7 +594,7 @@ local optionsUI = Shared.newOptions(cfg, {
 	{ title = "Blueprints", keys = { { "bpCols", "Columns" }, { "bpRows", "Rows" } } },
 	{ title = "Units", keys = { { "uCols", "Columns" }, { "uRows", "Rows" } } },
 	{ title = "Placing", keys = { { "grid", "Grid (1 = free)" }, { "unitLimit", "Unit limit (scenario)" } } },
-})
+}, VFS.Include("luaui/Include/led_export.lua", nil, VFS.ZIP_FIRST)({ Shared = Shared, outDir = OUTDIR, say = say }).actions) -- the export buttons (led_export.lua)
 isBpArmed = function() return bpGrid.armed and not armedUnit end
 
 -- Re-read the list; the selection stays if the blueprint is still there
@@ -1607,6 +1607,10 @@ end
 -- For tests: the Arena page
 function widget:DebugArea() -- test hook: the area attack mode (the buttons of the command menu)
 	return area:armed(), area:mode()
+end
+
+function widget:DebugOptions() -- test hook: the settings page and its rectangle
+	return optionsUI, contentRect()
 end
 
 function widget:DebugGrid() -- test hook: the blueprint grid and its library

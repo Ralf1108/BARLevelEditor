@@ -1775,7 +1775,7 @@ function M.buildUnitCache()
 			if key == "scv" and sub == 0 then
 				sub = 4
 			end
-			list[#list + 1] = { name = name, id = id, filler = filler, rank = sub * 10000 + (filler and 1000 or 0) + (water and 100 or 0) + unitRank(ud, group, cp) }
+			list[#list + 1] = { name = name, id = id, filler = filler, water = water, rank = sub * 10000 + (filler and 1000 or 0) + (water and 100 or 0) + unitRank(ud, group, cp) }
 		end
 	end
 	for _, fac in pairs(cache) do
@@ -3424,12 +3424,18 @@ end
 
 ---------------------------------------------------------------- Settings (gear): columns and rows
 -- blocks = { { title = "Blueprints", keys = { { "bpCols", "Columns" }, { "bpRows", "Rows" } } }, ... }
-function M.newOptions(cfg, blocks)
-	local op = { cfg = cfg, blocks = blocks }
+-- actions (optional) = { { label = "Export", tip = "...", fn = function() return "message" end }, ... }: wide buttons under the blocks; the message that fn returns
+-- (lines separated by "\n") is shown under them
+function M.newOptions(cfg, blocks, actions)
+	local op = { cfg = cfg, blocks = blocks, actions = actions or {}, message = nil }
 
 	function op:height()
 		local m, S = M.m, M.S
-		return #self.blocks * (40 * S) + #self.blocks * 2 * (m.HB + 10 * S) + 2 * m.PAD
+		local h = #self.blocks * (40 * S) + #self.blocks * 2 * (m.HB + 10 * S) + 2 * m.PAD
+		if #self.actions > 0 then
+			h = h + 10 * S + #self.actions * (m.HB + 10 * S) + 60 * S
+		end
+		return h
 	end
 
 	function op:width()
@@ -3458,6 +3464,18 @@ function M.newOptions(cfg, blocks)
 				y = y - rowH
 			end
 		end
+		if #self.actions > 0 then
+			y = y - 10 * S
+			for _, a in ipairs(self.actions) do
+				rects[#rects + 1] = { x1 = rect.x1 + m.PAD, x2 = rect.x2 - m.PAD, y0 = y - m.HB, y1 = y, label = a.label, action = a, tip = a.tip }
+				y = y - rowH
+			end
+			local ly = y - 6 * S
+			for line in (self.message or ""):gmatch("[^\n]+") do
+				labels[#labels + 1] = { text = line, x = rect.x1 + m.PAD, y = ly - 18 * S, size = 20 * S }
+				ly = ly - 26 * S
+			end
+		end
 		return rects, labels
 	end
 
@@ -3471,6 +3489,7 @@ function M.newOptions(cfg, blocks)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(r.label, (r.x1 + r.x2) / 2, r.y0 + (m.HB - 27 * S) / 2 + 3 * S, 27 * S, "co")
 		end
+		M.drawTip(rects, mx, my)
 		for _, l in ipairs(labels) do
 			if l.head then
 				gl.Color(0.5, 0.8, 1, 1)
@@ -3486,6 +3505,10 @@ function M.newOptions(cfg, blocks)
 	function op:press(rect, mx, my)
 		for _, r in ipairs((self:layout(rect))) do
 			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				if r.action then
+					self.message = r.action.fn()
+					return false
+				end
 				self.cfg:change(r.key, r.delta)
 				return true
 			end
