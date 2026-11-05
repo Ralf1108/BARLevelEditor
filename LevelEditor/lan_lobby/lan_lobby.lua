@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 5, stamp = "2026-11-05 18:40" }
+local LAN_VERSION = { number = 5, stamp = "2026-11-05 19:05" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -954,6 +954,11 @@ local function hookConnect()
 		if lan and lan.role == "host" and S then
 			-- the host's lobby is the one that runs the game server
 			local script = buildScript(lan.name)
+			-- the game server runs inside this game: its send limit per player (LinkOutgoingBandwidth, 192 KB/s by default) is much lower than the one of a
+			-- server of the cloud; with many units the data reaches the players late ("Player is lagging behind" / "caught up"). Only for this run (overlay, not saved).
+			for k, v in pairs({ LinkOutgoingBandwidth = 4 * 1024 * 1024, LinkIncomingSustainedBandwidth = 4 * 1024 * 1024, LinkIncomingPeakBandwidth = 8 * 1024 * 1024, LinkIncomingMaxPacketRate = 4096 }) do
+				pcall(Spring.SetConfigInt, k, v, true)
+			end
 			log("Spring.Reload (host) with start script:\n" .. script)
 			return Spring.Reload(script)
 		end
