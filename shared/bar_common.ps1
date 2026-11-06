@@ -145,6 +145,7 @@ $ScenarioGameFiles = @(
     @('rtf_game.lua', 'luarules/gadgets/rtf_game.lua'),
     @('unit_restrictions.lua', 'luarules/gadgets/unit_restrictions.lua'),
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
+    @('lan_latejoin.lua', 'luarules/gadgets/lan_latejoin.lua'),   # LAN Play: a player who joins a running game is moved into a team
     @('lan_pve_hold.lua', 'luarules/gadgets/lan_pve_hold.lua'),   # LAN Play: drops the orders of a Scavengers / Raptors AI of the room
     @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),

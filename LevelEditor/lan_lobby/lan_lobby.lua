@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 14, stamp = "2026-11-06 14:00" }
+local LAN_VERSION = { number = 15, stamp = "2026-11-06 17:00" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -595,6 +595,12 @@ local function autohostCommand(c, msg)
 			barManager({ [SPADS_KEYS[cmd]] = rest })
 			say(SPADS_KEYS[cmd] .. ": " .. rest)
 		end
+	elseif cmd == "latejoin" then
+		-- players may join the running game as players (the game server accepts names that are not in the start script, the gadget lan_latejoin.lua gives them a team)
+		if S.battle.running then say("Late join can only be changed before the game starts."); return end
+		S.battle.lateJoin = (rest:lower() ~= "off")
+		syncPveGame()
+		say(S.battle.lateJoin and "Late join is on: players can join the running game and get a team." or "Late join is off.")
 	elseif cmd == "lock" or cmd == "unlock" then
 		-- the Option Presets send !lock / !unlock: the state is kept and reported to the lobby (UPDATEBATTLEINFO, field locked), the room itself stays open for joiners
 		spadsState().locked = cmd == "lock" and "locked" or "unlocked"
@@ -617,9 +623,14 @@ local function hasPveBot()
 	return false
 end
 
+-- "late join" (!latejoin on, chosen before the start) also needs the extra game: its gadget lan_latejoin.lua puts a player who comes into the running game into a team
+local function needsExtraGame()
+	return hasPveBot() or S.battle.lateJoin
+end
+
 local function syncPveGame()
 	if not S or S.battle.scenario then return end
-	if hasPveBot() then
+	if needsExtraGame() then
 		local own = ownGame()
 		local data = own and VFS.LoadFile(own.file, VFS.RAW)
 		if data then
@@ -826,6 +837,9 @@ local function serverLine(c, line)
 	elseif not c.name then return
 	elseif cmd == "JOINBATTLE" then
 		local _, _, sp = args:match("^(%S+)%s+(%S+)%s*(%S*)")
+		if S.battle.running and not S.rejoin[c.name] then
+			say(c.name .. (S.battle.lateJoin and " joins the running game." or " is new: this game does not take new players (the host can switch late join on with !latejoin on before the start)."))
+		end
 		c.scriptPassword = (sp and sp ~= "") and sp or tostring(math.random(100000, 999999)); c.inBattle = true
 		-- rejoin: the game server knows the password of the start script; the one of the first join is announced again (JOINEDBATTLE)
 		if S.battle.running and S.rejoin[c.name] and S.rejoin[c.name].password then c.scriptPassword = S.rejoin[c.name].password end
@@ -1039,12 +1053,15 @@ buildScript = function(myName)
 		ais[#ais + 1] = { name = bot.name, lib = lib or bot.lib, version = ver, team = #teams }
 		teams[#teams + 1] = { leader = 0, ally = ally(bs.allyNumber), color = rgb(bot.color), side = sideName(bs.side), handicap = bs.handicap or 0 }
 	end
-	local pve = hasPveBot() and S.gameFile   -- the game with the gadget that drops the orders of the Scavengers / Raptors AI
-	local t = { "[GAME]\n{\n\tGameType=", pve and S.gameFile.name or S.battle.game, ";\n\tMapName=", S.battle.map, ";\n\tHostIP=0.0.0.0;\n\tHostPort=", GAMEPORT,
-		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=", startPos, ";\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" }
+	local extra = needsExtraGame() and S.gameFile   -- the extra game with the gadgets: drops the orders of the Scavengers / Raptors AI, late join
+	local pve = hasPveBot() and extra
+	local late = S.battle.lateJoin and extra
+	local t = { "[GAME]\n{\n\tGameType=", extra and S.gameFile.name or S.battle.game, ";\n\tMapName=", S.battle.map, ";\n\tHostIP=0.0.0.0;\n\tHostPort=", GAMEPORT,
+		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=", startPos, ";\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" .. (late and "\tAllowAdditionalPlayers=1;\n" or "") }
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
 	for k, v in pairs(S.battle.modoptions) do t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end
 	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
+	if late then t[#t + 1] = "\t\tlanlatejoin=1;\n" end
 	t[#t + 1] = "\t\tlanplay=1;\n" -- the game widget shared_start.lua acts only in LAN Play games and scenarios
 	t[#t + 1] = string.format("\t\tdate_year=%s;\n\t\tdate_month=%s;\n\t\tdate_day=%s;\n\t\tdate_hour=%s;\n\t}\n", os.date("%Y"), os.date("%m"), os.date("%d"), os.date("%H"))
 	for _, p in ipairs(players) do
@@ -2259,6 +2276,10 @@ function widget:Update()
 		end
 	end
 	if cfg.auto == "join" and autoStarted and not lan and not scan and #found > 0 then joinHost(found[1].ip) end
+	if cfg.lateJoin and cfg.auto == "host" and lan and lan.step == "in" and S and not S.battle.lateJoin and not S.battle.running then
+		S.battle.lateJoin = true   -- test: !latejoin on
+		syncPveGame()
+	end
 	if cfg.auto == "host" and lan and lan.step == "in" and S and not S.battle.running then
 		if #battleUsers() >= (tonumber(cfg.players) or 2) then
 			S.autoAt = S.autoAt or (os.clock() + (tonumber(cfg.startDelay) or 4))
