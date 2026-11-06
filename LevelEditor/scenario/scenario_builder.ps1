@@ -1,9 +1,9 @@
 # Builds a scenario for the official Beyond All Reason (without a mod) from a level of the Level Editor.
 #
 # Result in scenarios\<id>\ and scenarios\<id>.zip:
-#   Start Scenario.bat   - double-click start for the recipient
-#   start_scenario.ps1     - finds BAR, determines the game version, downloads the map, starts the game
-#   scenario_briefing.lua  - user widget with the briefing window
+#   Start Scenario.bat, Host Game.bat, Join Game.bat - double-click starts for the recipient
+#   start_scenario.ps1, bar_common.ps1, player_mapping.ps1, lobby.ps1 - find BAR, the game version and the map, build the extra game, the lobby, start the game
+#   the Lua files of the extra game of the scenarios ($ScenarioGameFiles: gadgets, game widgets such as the briefing window, bar_rules.lua)
 #   scenario.txt           - start script (teams, AIs, game options, scenariooptions with units and features)
 #   README.txt             - briefing and instructions
 # The start script uses the scenario mechanism of the official game (scenariooptions.unitloadout and
@@ -42,17 +42,13 @@ $SIDES = @{ arm = 'Armada'; cor = 'Cortex'; leg = 'Legion' }
 $WIN_TXT = @{ com = 'Commanders'; killall = 'All units'; neverend = 'No end' }
 
 # ---------------------------------------------------------------- Questions
+# Like AskLine, but in the automatic mode the default is taken without asking
 function Ask([string]$prompt, $default = '') {
     if ($Auto) { return [string]$default }
-    $suffix = if ("$default" -ne '') { " [$default]" } else { '' }
-    Write-Host "${prompt}${suffix}: " -NoNewline
-    $v = [Console]::ReadLine()
-    if ($null -eq $v) { throw 'Input ended, aborted.' }
-    $v = $v.Trim()
-    if ($v) { return $v } else { return [string]$default }
+    return AskLine $prompt $default
 }
 
-# Like Ask, but also asks in the automatic mode (the start menu asks for the title and the name)
+# Asks for one line, also in the automatic mode (the start menu asks for the title and the name); Enter alone takes the default
 function AskLine([string]$prompt, $default = '') {
     $suffix = if ("$default" -ne '') { " [$default]" } else { '' }
     Write-Host "${prompt}${suffix}: " -NoNewline
@@ -156,6 +152,9 @@ function Get-AsciiName([string]$text) {
     $t = ($t -creplace '[^A-Za-z0-9 _\-]+', '').Trim()
     if ($t) { return $t } else { return 'Scenario' }
 }
+
+# Text as base64url without padding (the game options of the gadgets: no ';' or '=' inside the start script; decoded by bar_rules.lua decode64)
+function ConvertTo-Base64Url([string]$text) { return [Convert]::ToBase64String($utf8.GetBytes($text)).Replace('+', '-').Replace('/', '_').TrimEnd('=') }
 
 function Get-Val($h, [string]$key, $default = $null) {
     if ($h.Contains($key) -and $null -ne $h[$key]) { return $h[$key] }
@@ -265,9 +264,6 @@ function Read-TowerDefense([string]$txt) {
             $v = $kv.Groups[2].Value.Trim('"')
             if ($kv.Groups[1].Value -in 'count', 'gap', 'hp') { $w[$kv.Groups[1].Value] = [int]$v } else { $w[$kv.Groups[1].Value] = $v }
         }
-        # older values of the page: kind any / bot / vehicle
-        $oldKinds = @{ any = 'vb'; bot = 'b'; vehicle = 'v' }
-        if ($oldKinds.ContainsKey([string]$w.kind)) { $w.kind = $oldKinds[[string]$w.kind] }
         $td.waves += ,$w
     }
     if (-not $td.spawn -or -not $td.goal -or $td.waves.Count -eq 0) {
@@ -277,8 +273,6 @@ function Read-TowerDefense([string]$txt) {
     return $td
 }
 
-# Section "capture" of the level (written by the Level Editor): the settings of the Capture the Flag page.
-# $null when the section is missing, Capture the Flag is off or collection points or flag points are missing.
 # Section "restrictions" of the level (written by the Level Editor): the units and tech levels the player cannot build. $null when empty.
 function Read-Restrictions([string]$txt) {
     $m = [regex]::Match($txt, 'restrictions\s*=\s*\{')
@@ -301,6 +295,8 @@ function Read-Restrictions([string]$txt) {
     return @{ banned = $names }
 }
 
+# Section "capture" of the level (written by the Level Editor): the settings of the Capture the Flag page.
+# $null when the section is missing, Capture the Flag is off or collection points or flag points are missing.
 function Read-Capture([string]$txt) {
     $m = [regex]::Match($txt, '\bcapture\s*=\s*\{')
     if (-not $m.Success) { return $null }
@@ -724,7 +720,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $path = if ($td.waypoints.Count -gt 0) { ($td.waypoints | ForEach-Object { '{0},{1}' -f $_[0], $_[1] }) -join '/' } else { '-' }
         $waves = ($td.waves | ForEach-Object { '{0},{1},{2},{3},{4},{5}' -f $_.fac, $_.kind, $_.tech, $_.count, $_.gap, $_.hp }) -join '/'
         $plain = (@($enemyNew, 0, $td.spawn[0], $td.spawn[1], $td.goal[0], $td.goal[1], $td.leaks, $path, $waves, $(if ($td.economy) { 'economy' } else { 'towers' }), $(if ($td.fog) { '1' } else { '0' })) -join ';')
-        $mods['tdconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        $mods['tdconfig'] = ConvertTo-Base64Url $plain
         if ($win -eq 'com') { Write-Host "Note: the win condition 'commanders' is set to 'no end' for Tower Defense (the start commanders are removed; the waves decide: all beaten = won, too many through = lost)." -ForegroundColor Yellow }
     }
     if ($ctf) {
@@ -732,23 +728,22 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $homes = @($ctf.homes | Where-Object { $newid.ContainsKey([int]$_.team) } | ForEach-Object { '{0},{1},{2}' -f $newid[[int]$_.team], $_.x, $_.z }) -join '/'
         $flags = @($ctf.flags | ForEach-Object { '{0},{1},{2}' -f $(if ($newid.ContainsKey([int]$_.team)) { $newid[[int]$_.team] } else { -1 }), $_.x, $_.z }) -join '/'
         $plain = (@($ctf.amount, $ctf.radius, $ctf.score, $ctf.returnTime, $ctf.speed, $homes, $flags, $(if ($ctf.visible) { '1' } else { '0' })) -join ';')
-        $mods['ctfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        $mods['ctfconfig'] = ConvertTo-Base64Url $plain
     }
     if ($rtf) {
         # settings for the gadget rtf_game.lua (rate;score;f1;f2;f3;visible;cats: buildings, ground, ships, air as 0/1); the crystals are features of the level
         $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), ($(if ($rtf.statics) { '1' } else { '0' }) + $(if ($rtf.ground) { '1' } else { '0' }) + $(if ($rtf.ships) { '1' } else { '0' }) + $(if ($rtf.air) { '1' } else { '0' }))) -join ';')
-        $mods['rtfconfig'] = [Convert]::ToBase64String($utf8.GetBytes($plain)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        $mods['rtfconfig'] = ConvertTo-Base64Url $plain
     }
     # indestructible buildings (buildings marked with FX, corridor walls), in every game mode: gadget unit_indestructible.lua, name:x,z,x,z|name:...
     $fixed = @($level.units | Where-Object { $_.fixed })
     if ($fixed.Count -gt 0) {
         $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
-        $mods['fixedunits'] = [Convert]::ToBase64String($utf8.GetBytes(($groups -join '|'))).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        $mods['fixedunits'] = ConvertTo-Base64Url ($groups -join '|')
     }
     if ($rst) {
         # settings for the gadget unit_restrictions.lua (the names of the units)
-        $plainR = ($rst.banned -join ',')
-        $mods['restrictions'] = [Convert]::ToBase64String($utf8.GetBytes($plainR)).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        $mods['restrictions'] = ConvertTo-Base64Url ($rst.banned -join ',')
     }
     if ($grace -gt 0) { $mods['norushtimer'] = $grace.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }
     foreach ($mk in $level.mods.Keys) { $mods[$mk] = $level.mods[$mk] }
@@ -810,11 +805,11 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                      '   gadgets of the game modes and the briefing window; no official file is changed.',
                      $(if ($grace -gt 0) { 'Grace period: before the start the start position selection appears. Click into your start area (marked frame) and press Ready.' } else { '' }),
                      '', 'Several players in the same network (LAN)',
-                     '1. Every player unpacks the folder on their own computer (same Beyond All Reason version, same folder contents).',
-                     '2. One player double-clicks "Host Game.bat", enters the number of players and gives the others the address and names shown in the window.',
-                     '3. The others double-click "Join Game.bat" within about 90 seconds after the host window has started and enter the address (the last ones are offered) and their name.',
-                     '   The host is asked who plays which team (names and teams, every line can be edited; the last one used is offered); the other teams keep their computer opponent.',
-                     '   If Windows asks about the firewall, allow spring.exe in the private network (the host needs UDP port 8452).',
+                     '1. Every player unpacks the folder on their own computer (same Beyond All Reason version).',
+                     '2. One player double-clicks "Host Game.bat": a lobby opens with one box per team and shows the address of this computer.',
+                     '3. The others double-click "Join Game.bat" and enter that address (the last ones are offered) and their name: they appear in the lobby of the host.',
+                     '   The host moves the players into the teams (arrow keys, Enter) and starts with F5; the teams without a player keep their computer opponent.',
+                     '   If Windows asks about the firewall, allow spring.exe and PowerShell in the private network (the host needs TCP port 8453 and UDP port 8452).',
                      '', 'Note: the folder may be copied to any place, also to another computer.')) { [void]$readme.Add($l) }
     [IO.File]::WriteAllText((Join-Path $folder 'README.txt'), (($readme -join "`r`n") + "`r`n"), (New-Object Text.UTF8Encoding($true)))
     $zpath = Join-Path $OUT ($sid + '.zip')

@@ -6,23 +6,23 @@
 # Without -JoinIp the join mode (Join Game.bat passes -Join) asks for the address.
 # Split screen (start menu of the Level Editor, several games on one computer): -WindowRect x,y,w,h starts the game in a framed window on this
 # rectangle of the screen (outer size, pixels) instead of the settings of the user (which are only read, never changed); -HostIp 127.0.0.1 lets
-# the host listen on this computer only; -NoBuild has no effect any more (the extra game is only built when it is missing); -WaitForHost
+# the host listen on this computer only (the extra game is only built when it is missing); -WaitForHost
 # waits (up to 2 minutes) until a host listens on the port before the game is started.
 # From the start menu of the Level Editor this script runs from the editor's own folder (scenario\template) with -ScenarioDir <folder of the scenario:
 # scenario.txt> and -EditorDir <the LevelEditor folder>: the gadgets (td_waves, ctf_game, rtf_game, unit_restrictions ... in scripts\, bar_rules in
 # ..\shared), the starter, the lobby and the briefing are always the current ones of the editor, so a scenario built earlier is never out of date. Started
 # from the unpacked package of a scenario (Start Scenario.bat) both are empty: everything comes from the package folder.
 # -Bundle (start menu key 6, "Play a level"): the scenario is a bundle in the cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>: scenario.txt and the gadgets, made from a
-# level by scenario_builder.ps1 -BundleDir and put there by Install-Bundle): the host gives -ScenarioDir <that folder>, a joiner gives no -ScenarioDir (he gets the
+# level by scenario_builder.ps1 -BundleDir and put there by Install-Bundle): the host gives -ScenarioDir <that folder>, a joiner gives no -ScenarioDir (it gets the
 # scenario through the lobby, as in every hosted game). Needs -EditorDir (starter, lobby and gadgets are the editor's own).
 # -LobbyMapKey D or H (tests, automation): a joiner without the map takes this answer at once (D = download it, H = get it from the host).
 # The map of a hosted game: a joiner in the same network as the host gets it from the host, everybody else downloads it from the internet (nothing is asked).
-# In a hosted game with the lobby everybody plays the host's game: the host offers a bundle (scenario.txt and the Lua files of his extra game) and the
+# In a hosted game with the lobby everybody plays the host's game: the host offers a bundle (scenario.txt and the Lua files of the host's extra game) and the
 # joiners build their extra game from it. Only the lobby version (lobby.ps1) must be the same; another one is refused ("update the Level Editor manually").
 # Lobby (-Lobby with -HostGame or -Join): before anything is built the host sees a box per team and distributes the players who joined (TCP port
-# -LobbyPort, default 8453); a joiner only sends his name. When the host starts, everybody prepares (extra game, map), the host's game starts and
-# the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "PlayerA=0,Anna=2" (first = host).
-param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join,[int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$NoBuild, [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null)
+# -LobbyPort, default 8453); a joiner only sends its name. When the host starts, everybody prepares (extra game, map), the host's game starts and
+# the joiners connect to it (lobby.ps1). -LobbyAutoStart n: the host starts by itself when n players are in (tests, automation). Hosting without -Lobby: who plays which team is asked (player_mapping.ps1; the last one used is offered), or given as -Mapping "PlayerA=0,PlayerB=2" (first = host).
+param([string]$BarPath = $null, [string]$Name = $null, [switch]$ScriptOnly, [switch]$HostGame, [switch]$Join, [int]$Players = 0, [string]$JoinIp = $null, [int]$Port = 8452, [int]$Wait = 90, [string]$WindowRect = $null, [string]$HostIp = '0.0.0.0', [switch]$WaitForHost, [string]$Mapping = $null, [switch]$Lobby, [int]$LobbyPort = 8453, [int]$LobbyAutoStart = 0, [string]$ScenarioDir = $null, [string]$EditorDir = $null, [switch]$Bundle, [string]$LobbyMapKey = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -96,7 +96,7 @@ if ($WaitForHost) {
 # The files of the extra game of the scenarios (see below): the current ones of the editor (-EditorDir) or the ones of the package; a joiner of a
 # lobby takes the host's (the bundle)
 $gameDirs = if ($EditorDir) { @((Join-Path $EditorDir 'scripts'), (Join-Path (Split-Path $EditorDir -Parent) 'shared'), $here) } else { @($pkg) }
-# The lobby, before the extra game is built and the map is fetched (lobby.ps1). The host distributes the players; when he starts, the script goes on
+# The lobby, before the extra game is built and the map is fetched (lobby.ps1). The host distributes the players; when the host starts, the script goes on
 # with the roster as -Mapping (the host builds the game and starts it, the joiners prepare and wait for GO)
 if ($Lobby -and ($HostGame -or $JoinIp)) {
     if ($HostGame) {
@@ -104,7 +104,7 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
         if ($teamInfo.Count -lt 2) { Fail 'This scenario has only one team, there is nobody to play against.' }
         # the scenario and the Lua files of the game this computer runs ($gameDirs) go to the joiners: everybody plays the host's game
         $hostBundle = New-HostBundle $pkg $gameDirs
-        $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (he has to ask and the host has to agree)
+        $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (the joiner has to ask and the host has to agree)
         if (-not $hostBundle.Map) { Write-Host "Note: the archive of the map '$map' was not found, a joiner without the map has to download it from the internet." -ForegroundColor Yellow }
         $gameDirs = @($hostBundle.Dir)
         $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $hostBundle
@@ -275,8 +275,8 @@ public class SplitWin {
 }
 if ($JoinIp) {
     if ($Lobby) {
-        # the extra game and the map are ready: tell the host and wait until his game is running
-        Write-Host 'Ready. Waiting for the host to start his game ...'
+        # the extra game and the map are ready: tell the host and wait until the host's game is running
+        Write-Host 'Ready. Waiting for the host to start the game ...'
         $go = Wait-JoinerGo 300
         if ($go -ne 'go') { Write-Host "The game was not started ($go)." -ForegroundColor Yellow; exit 0 }
     }

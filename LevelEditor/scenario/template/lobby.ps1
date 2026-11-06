@@ -1,5 +1,5 @@
 # Lobby before a hosted game (dot-sourced by start_scenario.ps1; needs player_mapping.ps1 for ConvertTo-PlayerName and the last mapping).
-# The host sees one box per team; every player who joins lands in a team box at once (the team he had last time if it is free, otherwise the first
+# The host sees one box per team; every player who joins lands in a team box at once (the team it had last time if it is free, otherwise the first
 # team without a player) and the host moves them. The joiners only send their name; a joiner whose connection breaks is removed.
 # Protocol (one text line each, UTF-8, TCP): joiner -> host: "VERSION <protocol>" (the version of the lobby protocol, $script:LobbyProtocol), "HELLO <name>",
 # "BYE", later "READY"; host -> joiner: "OK <name as the host knows it>" or "ERR <reason>" (also for another protocol: "please update the Level Editor
@@ -7,21 +7,21 @@
 # prepare: extra game, map) or "CANCEL"; when every joiner has said "READY" and the host's game is running the host sends "GO" and the joiners connect.
 # The scenario itself goes from the host to the joiners through the lobby, in every hosted game: a bundle with scenario.txt and the Lua files of the
 # game (the gadgets and game widgets the host runs; Lua runs only inside the game engine, nothing that runs on the computer itself - no .ps1, no .bat
-# - is ever taken from another computer). So every player runs the host's game, whatever version of the editor he has. After "OK" and "VERSION" the
-# host sends "OFFER <hash> <size>"; a joiner who has that hash in his cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>\) answers "HAVE <hash>",
-# otherwise he opens a second connection to the same port, sends "FETCH <hash>", gets "SIZE <n>" and n bytes (a zip) and then says "HAVE <hash>";
-# "PROGRESS <percent>" tells the host how far he is. The host cannot start before everybody has it.
-# The map: the host adds "MAP <size> <sha256> <file name>" to the offer (if he has the archive of the map). A joiner who has not got the map is not
-# asked: a joiner in the same network as the host (Test-SameLan: the address of the other one is in a subnet of one of his network cards) says
+# - is ever taken from another computer). So every player runs the host's game, whatever version of the editor it has. After "OK" and "VERSION" the
+# host sends "OFFER <hash> <size>"; a joiner who has that hash in its cache (%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>\) answers "HAVE <hash>",
+# otherwise it opens a second connection to the same port, sends "FETCH <hash>", gets "SIZE <n>" and n bytes (a zip) and then says "HAVE <hash>";
+# "PROGRESS <percent>" tells the host how far it is. The host cannot start before everybody has it.
+# The map: the host adds "MAP <size> <sha256> <file name>" to the offer (if the host has the archive of the map). A joiner who has not got the map is not
+# asked: a joiner in the same network as the host (Test-SameLan: the address of the other one is in a subnet of one of its network cards) says
 # "MAPREQ" at once and the host answers "MAPYES" (a request from outside the network gets "MAPNO"); everybody else downloads the map from the internet (the
-# official map service). Only if that fails the joiner is offered D (download again) or H (ask the host). After "MAPYES" the joiner fetches the file on a second connection ("FETCHMAP <sha256> <his name>"), checks the hash, keeps it in the
-# cache (an extra data folder of the engine) and says "MAPOK" (also when the map was there from the start); "MAPPROGRESS <percent>" shows how far he is.
+# official map service). Only if that fails the joiner is offered D (download again) or H (ask the host). After "MAPYES" the joiner fetches the file on a second connection ("FETCHMAP <sha256> <its name>"), checks the hash, keeps it in the
+# cache (an extra data folder of the engine) and says "MAPOK" (also when the map was there from the start); "MAPPROGRESS <percent>" shows how far it is.
 # The focus starts on "Start game" (the last box): Enter or F5 starts at once.
 # Keys of the host: Tab / Shift+Tab or Left / Right = next box, Up / Down = player in the box, Enter = pick the player up (then Up / Down /
-# Left / Right move him into the neighbouring box, Enter drops him, Esc brings him back), Enter on "Start game" (the last stop) or F5 = start,
+# Left / Right move the player into the neighbouring box, Enter drops it, Esc brings it back), Enter on "Start game" (the last stop) or F5 = start,
 # Esc twice = cancel.
 # Player numbers: a box is one player of the game (one team of the scenario) and the boxes of one ally team are its players 1, 2, 3 ...; every human who
-# joins gets a box of his own if one is free. N on a human puts him into the next player of his ally team (after the last one the first again), so the humans with the
+# joins gets a box of its own if one is free. N on a human puts it into the next player of its ally team (after the last one the first again), so the humans with the
 # same number play ONE player together (all of them can give orders to its units, they share its resources). Marked in the lobby: "player 2" after
 # the name, "Copilot with PlayerB" when a box holds more than one human. The game of such a team does not start by itself (the engine waits for a
 # second "ready" that never comes): the little widget shared_start.lua starts it from the host's game (see there).
@@ -164,10 +164,9 @@ function Use-CacheItem([string]$path) { try { (Get-Item $path -Force).LastWriteT
 # Throws away what is not needed any more: scenarios not used for 30 days, maps not used for 60 days and (oldest first) as many more as are needed to stay
 # below 3 GB, half-finished downloads and unpacked updates older than a day, zips of hosts that were left in TEMP. Returns the number of bytes freed.
 function Remove-OldCache {
-    $freed = [long]0
     $now = Get-Date
     $root = Get-BundleCacheRoot
-    function Drop($item) { $script:dropped += (Get-DirSize $item.FullName) + $(if (-not $item.PSIsContainer) { $item.Length } else { 0 }); Remove-Item $item.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+    function Drop($item) { $script:dropped += $(if ($item.PSIsContainer) { Get-DirSize $item.FullName } else { $item.Length }); Remove-Item $item.FullName -Recurse -Force -ErrorAction SilentlyContinue }
     $script:dropped = [long]0
     if (Test-Path $root) {
         foreach ($d in @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue)) {
@@ -254,7 +253,7 @@ function Find-MapArchive([string]$dataDir, [string]$mapName) {
     return $null
 }
 
-# what the host offers: Name, Path, File, Size and Hash of his map archive, or $null (no archive found, a name or size that cannot be sent)
+# what the host offers: Name, Path, File, Size and Hash of its map archive, or $null (no archive found, a name or size that cannot be sent)
 function Get-HostMap([string]$dataDir, [string]$mapName) {
     $f = Find-MapArchive $dataDir $mapName
     if (-not $f) { return $null }
@@ -338,7 +337,7 @@ function Step-BundleFetch($f) {
                 if ($f.Header -notmatch '^SIZE (\d+)$') { return 'error: the host answered something else' }
                 $f.Total = [long]$Matches[1]
                 if ($f.Total -gt $f.Max) { return 'error: it is too big' }
-                if ($f.Expect -ge 0 -and $f.Total -ne $f.Expect) { return 'error: the host sends another size than he offered' }
+                if ($f.Expect -ge 0 -and $f.Total -ne $f.Expect) { return 'error: the host sends another size than it offered' }
             } else {
                 $f.Header += [char]$b
                 if ($f.Header.Length -gt 40) { return 'error: the host answered something else' }
@@ -406,7 +405,7 @@ function Get-AllyBoxes($st, [int]$box) {
 # The number of a box inside its ally team: 1, 2, 3 ...
 function Get-SlotNumber($st, [int]$box) { return (@(Get-AllyBoxes $st $box).IndexOf($box)) + 1 }
 
-# A human gets the next player number of his ally team (after the last one the first again); with the number of another human he plays that player together with him
+# A human gets the next player number of its ally team (after the last one the first again); with the number of another human both play that player together
 function Step-LobbyNumber($st, $p) {
     $boxes = @(Get-AllyBoxes $st $p.Box)
     if ($boxes.Count -lt 2) { $st.Msg = 'This team has only one player: everybody in it is Copilot of that player.'; return }
@@ -659,7 +658,7 @@ function Update-LobbyNet($st, $listener) {
             if (-not $nm) { Send-LobbyLine $q 'ERR The name has no usable letters.'; $q.Closed = $true }
             elseif ($taken) { Send-LobbyLine $q 'ERR That name is used already.'; $q.Closed = $true }
             elseif ($q.Proto -ne $script:LobbyProtocol) {
-                # another version of the starter and the lobby: nothing is sent to him, he has to update by hand
+                # another version of the starter and the lobby: nothing is sent to that player, who has to update by hand
                 Send-LobbyLine $q ('ERR The host has another version of the Level Editor (lobby version {0}, yours {1}): please update the Level Editor manually (the same version on every computer).' -f $script:LobbyProtocol, $(if ($q.Proto) { $q.Proto } else { 'older' }))
                 $q.Closed = $true
             }
@@ -708,7 +707,7 @@ function New-LobbyKey([string]$key, [switch]$Shift) {
     return New-Object ConsoleKeyInfo($ch, [ConsoleKey]$key, [bool]$Shift, $false, $false)
 }
 
-# The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when he cancels.
+# The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when the host cancels.
 # $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
 # there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
 function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $bundle = $null) {
@@ -870,12 +869,12 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 $dirty = $true
             }
             if (-not $result -and $mapState -eq 'prompt') {
-                $hostPart = if ($mapInfo) { '   H = get it from the host (' + [Math]::Round($mapInfo.Size / 1MB, 1) + ' MB, he has to agree)' } else { '' }
+                $hostPart = if ($mapInfo) { '   H = get it from the host (' + [Math]::Round($mapInfo.Size / 1MB, 1) + ' MB, the host has to agree)' } else { '' }
                 $line = $mapText + "The map '$mapName' is not installed.   D = download it from the internet (official map service)" + $hostPart
                 if ($line -ne $script:LastMapPrompt) { $script:LastMapPrompt = $line; $dirty = $true }
                 $mapShown = $line; $mapKind = 6
                 if (-not $mapKey -and $mapCtx -and $mapCtx.Auto -and -not $mapAutoUsed) { $mapKey = $mapCtx.Auto; $mapAutoUsed = $true }
-                # nothing is asked: the same network as the host and he has the map: from him; otherwise from the internet. Only after a failure the choice is shown
+                # nothing is asked: the same network as the host and the host has the map: from the host; otherwise from the internet. Only after a failure the choice is shown
                 if (-not $mapKey -and -not $mapChosen) { $mapChosen = $true; $mapKey = $(if ($sameLan -and $mapInfo) { 'H' } else { 'D' }) }
                 if ($mapKey -eq 'D') { $mapState = 'downloading'; $mapText = "Map: downloading '$mapName' from the internet ..."; $dirty = $true }
                 elseif ($mapKey -eq 'H' -and $mapInfo) {

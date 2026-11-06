@@ -180,14 +180,14 @@ function Read-Level($f, [string]$displayName) {
     $featPart = if ($fi -ge 0) { $t.Substring($fi) } else { '' }
     $count = ([regex]::Matches($unitPart, "name\s*=\s*'")).Count
     $featCount = ([regex]::Matches($featPart, "name\s*=\s*'")).Count
-    $mapItem = $maps | Where-Object { $_.Spring -ieq $mapName } | Select-Object -First 1
+    $mapItem = $byName[$mapName.ToLower()]
     $installed = [bool]($mapItem -and $mapItem.Installed)
     $loadable = [bool]($mapItem -and -not $mapItem.Installed -and $mapItem.Url)
     $forceAll = [bool]([regex]::IsMatch($t, 'requiredmodoptions\s*=\s*\{[^}]*forceallunits'))   # the level holds Scavenger or Raptor units
     $ai1 = [regex]::Match($t, '(?s)\n\s*teams = \{\s*\{[^{}]*\}\s*,\s*\{[^{}]*?\bai = "([^"]*)"')   # AI of team 1 from the page T of the editor (section teams, second row)
     $name = [IO.Path]::GetFileNameWithoutExtension($f.Name)
     if (-not $displayName) { $displayName = $name }
-    $featText = if ($featCount -gt 0) { ", $featCount Features" } else { '' }
+    $featText = if ($featCount -gt 0) { ", $featCount features" } else { '' }
     $label = '{0}   Map: {1}   {2} units{3}   {4}' -f $displayName, ($mapName -replace '_', ' '), $count, $featText, $f.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
     if (-not $installed) { if ($loadable) { $label += '   (map is downloaded after you choose it)' } else { $label += '   (map not available!)' } }
     return [pscustomobject]@{ Ai1 = $(if ($ai1.Success) { $ai1.Groups[1].Value } else { '' }); ForceAll = $forceAll; Name = $name; Map = $mapName; Count = $count; Installed = $installed; Loadable = $loadable; MapItem = $mapItem; Time = $f.LastWriteTime; Label = $label; Search = ($displayName + ' ' + $mapName).ToLower() -replace '_', ' ' }
@@ -210,11 +210,12 @@ function Get-Scenarios {
     foreach ($d in Get-ChildItem $dir -Directory) {
         $script = Join-Path $d.FullName 'scenario.txt'
         if (-not (Test-Path $script)) { continue }   # the starter is the current one of the editor, so a scenario only needs its scenario.txt
-        $map = [regex]::Match([IO.File]::ReadAllText($script), '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
+        $stext = [IO.File]::ReadAllText($script)
+        $map = [regex]::Match($stext, '(?m)^\s*mapname\s*=\s*(.+?);').Groups[1].Value.Trim()
         $title = $d.Name
         $readme = Join-Path $d.FullName 'README.txt'
         if (Test-Path $readme) { $first = (Get-Content $readme -TotalCount 1 -Encoding UTF8); if ($first) { $title = $first.Trim([char]0xFEFF).Trim() } }
-        $td = if ((Get-Content (Join-Path $d.FullName 'scenario.txt') -Raw -ErrorAction SilentlyContinue) -match 'tdconfig=') { '   Tower Defense' } else { '' }
+        $td = if ($stext -match 'tdconfig=') { '   Tower Defense' } else { '' }
         $label = '{0}   "{1}"   Map: {2}{3}   {4}' -f $d.Name, $title, ($map -replace '_', ' '), $td, $d.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
         $res += [pscustomobject]@{ Name = $d.Name; Path = $d.FullName; Time = $d.LastWriteTime; Label = $label; Search = ($d.Name + ' ' + $title + ' ' + $map).ToLower() -replace '_', ' ' }
     }
@@ -404,7 +405,7 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
         if ($sel -ge $offset + $rows) { $offset = $sel - $rows + 1 }
         # Build the lines: index 0 = row of the filters (if there are any, drawn below), then search, counter, lines of the list
         $lines = New-Object 'string[]' ($rows + 2 + $fo)
-        $kinds = New-Object 'int[]' ($rows + 2 + $fo)   # 0 normal, 1 gelb, 2 grau, 3 markiert
+        $kinds = New-Object 'int[]' ($rows + 2 + $fo)   # 0 normal, 1 yellow, 2 gray, 3 highlighted
         $lines[$fo] = ('Search: ' + $query + '_'); $kinds[$fo] = 1
         $lines[$fo + 1] = ("{0} of {1}" -f $res.Count, $items.Count); $kinds[$fo + 1] = 2
         for ($i = 0; $i -lt $rows; $i++) {
@@ -653,8 +654,8 @@ while ($true) {
     $levels = @(Get-Levels)
     $lastLevel = Get-LastLevel
     # The menu always appears: 0 = continue the last state, 1 = new level, 2 = load a saved level, 3 = scenario package, 4 = start a scenario, 5 = upgrade one,
-    # 6 = play a level at once
-    # (the last two only if there are levels already). Choose with arrow up/down and Enter or with the digit key.
+    # 6 = play a level at once, 7 = Scavenger and Raptor units on / off, 8 = clean up (grayed out when there is nothing for them yet).
+    # Choose with arrow up/down and Enter or with the digit key.
     $haveLevels = $levels.Count -gt 0
     $scenarios = @(Get-Scenarios)
     $cacheInfo = Get-CacheInfo
@@ -666,7 +667,7 @@ while ($true) {
         @{ Key = '4'; Mode = 5; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Start a scenario ({0} available)' -f $scenarios.Count } else { 'Start a scenario (none available yet: key 3)' }) },
         @{ Key = '5'; Mode = 6; On = ($scenarios.Count -gt 0); Text = $(if ($scenarios.Count -gt 0) { 'Upgrade a scenario package (build it again from its level, {0} available)' -f $scenarios.Count } else { 'Upgrade a scenario package (none available yet: key 3)' }) },
         @{ Key = '6'; Mode = 7; On = $true; Text = 'Play a level at once (single player, host, join or split screen; the others get it from the host)' },
-        @{ Key = '7'; Mode = 9; On = $true; Text = $(if (Get-ScavSetting) { 'Scavenger and Raptor units in the Place menu: ON, loading takes about 10 seconds longer (Enter = switch off)' } else { 'Scavenger and Raptor units in the Place menu: off, when ON loading takes about 10 seconds longer (Enter = switch on)' }) }
+        @{ Key = '7'; Mode = 9; On = $true; Text = $(if (Get-ScavSetting) { 'Scavenger and Raptor units in the Place menu: ON, loading takes about 10 seconds longer (Enter = switch off)' } else { 'Scavenger and Raptor units in the Place menu: off, when ON loading takes about 10 seconds longer (Enter = switch on)' }) },
         @{ Key = '8'; Mode = 8; On = $true; Text = ('Clean up: own levels and scenarios (into _trash), scenarios and maps from other players ({0} MB in %LOCALAPPDATA%\BAR-Scenario)' -f [Math]::Round($cacheInfo.Bytes / 1MB)) }
     )
     $sel = 0
@@ -745,7 +746,7 @@ while ($true) {
             $common = @('-BarPath', $barDir, '-ScenarioDir', $chosen.Path, '-EditorDir', $root)
             for ($k = 1; $k -lt $players; $k++) {
                 [void](Start-Process powershell -WindowStyle Minimized -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"')) + @($common | ForEach-Object { '"' + $_ + '"' }) +
-                    @('-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k])))
+                    @('-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-WaitForHost', '-WindowRect', $rects[$k])))
             }
             & powershell -NoProfile -ExecutionPolicy Bypass -File $starter @common -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
             continue # the games ended: back to the menu
@@ -769,7 +770,7 @@ while ($true) {
 
     if ($mode -eq 7) {
         # Play a level at once: the scenario is built from the level into a temporary bundle (scenario.txt and the gadgets, nothing is written into the level
-        # and no package is made), put into the cache (Cache\<hash>) and played from there. The host offers it in the lobby, the others get it from him
+        # and no package is made), put into the cache (Cache\<hash>) and played from there. The host offers it in the lobby, the others get it from the host
         # (or from their cache) and only need the same version of the editor.
         $playModes = @(
             [pscustomobject]@{ Label = 'Single player'; Search = 'single player alone'; Args = @(); Level = $true },
@@ -822,7 +823,7 @@ while ($true) {
             $names = Get-SplitNames $players
             for ($k = 1; $k -lt $players; $k++) {
                 [void](Start-Process powershell -WindowStyle Minimized -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $starter + '"')) + @($common | ForEach-Object { '"' + $_ + '"' }) +
-                    @('-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-NoBuild', '-WaitForHost', '-WindowRect', $rects[$k])))
+                    @('-Join', '-JoinIp', '127.0.0.1', '-Lobby', '-Name', $names[$k], '-WaitForHost', '-WindowRect', $rects[$k])))
             }
             & powershell -NoProfile -ExecutionPolicy Bypass -File $starter @common -ScenarioDir $inst.Dir -HostGame -Lobby -Name $names[0] -HostIp 127.0.0.1 -WindowRect $rects[0]
             continue
