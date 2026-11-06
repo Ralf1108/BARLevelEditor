@@ -28,6 +28,10 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 
 What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
+## Shared parts of the test tools (`tools\test_common.ps1`)
+
+`arena_test.ps1`, `bp_test.ps1`, `pve_test.ps1`, `lan_test.ps1` and `console_test.ps1` dot-source `test_common.ps1`: `New-SandboxData` (a new sandbox data folder with junctions to the game files of the installation and its archive cache; `-NoMaps` = an empty maps folder), `Write-SandboxSettings` (window size and position, other settings lines), `Start-SandboxProcess` / `Push-SandboxWindow` (the game window stays behind the other windows), `Invoke-SandboxGame` (start, wait until the game ends itself, close it after the time limit, print the matching log lines) and `Get-SandboxLobby` (the name of the installed lobby package for `--menu`). `arena_test.ps1` builds the extra game with `Write-EditorGame` of `editor_manifest.ps1`, as the setup does.
+
 ## Arena test (`tools`)
 
 `tools\arena_test.ps1` starts one sandbox game of the Level Editor (built from the repository files, ten teams like the editor game, flat map) with `zz_arena.lua`, which plays through the Arena page (Generate, moving the setup, undo and redo, Start, Stop, Clear) and logs `[zzar]` lines; the game ends itself. Details and what to look at: [TESTING.md](TESTING.md).

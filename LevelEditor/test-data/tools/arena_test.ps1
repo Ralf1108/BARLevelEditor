@@ -4,37 +4,17 @@
 param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame, [string]$Widget = '')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
-. (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1')
-Add-Type -AssemblyName System.IO.Compression
-Add-Type -AssemblyName System.IO.Compression.FileSystem
+. (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
 if (-not $AlongsideGame -and (Get-Process spring -ErrorAction SilentlyContinue)) { 'A game is running: aborted'; return }
-Add-Type @'
-using System; using System.Runtime.InteropServices;
-public class W3 { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
- [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
-'@
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
-$d = "$Work\data"
-if (Test-Path $d) { foreach ($j in Get-ChildItem $d -Directory | ? { $_.Attributes -band 'ReparsePoint' }) { cmd /c rmdir "$($j.FullName)" } }
-if (Test-Path $Work) { Remove-Item $Work -Recurse -Force }
-New-Item -ItemType Directory "$d\cache", "$d\games", "$d\LuaUI\Widgets", "$d\LevelEditor" -Force | Out-Null
-foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$Data\$j" | Out-Null }
-Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
+$d = New-SandboxData $Work $Data @('LevelEditor')
 Copy-Item ("$tools\" + $(if ($Widget) { $Widget } elseif ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
 Copy-Item "$tools\..\levels\*.lua" "$d\LevelEditor\"   # the test levels (td_test, ctf_test, rtf_test) for the widgets that load them
 Copy-Item "$repo\LevelEditor\levels\demo_*.lua" "$d\LevelEditor\"   # the demo levels (the memory test, the pictures)
 if (Test-Path "$repo\LevelEditor\blueprints") { New-Item -ItemType Directory "$d\LevelEditorBlueprints" -Force | Out-Null; Copy-Item "$repo\LevelEditor\blueprints\*" "$d\LevelEditorBlueprints\" -Recurse }   # the sample blueprints (the pictures)
 
 # the extra game "Level Editor" from the files of the repository (as install_editor.ps1 builds it)
-$game = Get-GameVersion $Data
-$modinfo = "return {`n`tname = `"Level Editor`",`n`tshortName = `"LevelEd`",`n`tversion = `"1`",`n`tgame = `"LevelEditorMod`",`n`tshortGame = `"LevelEd`",`n`tdescription = `"test`",`n`tmutator = `"Official`",`n`tmodtype = 1,`n`tdepend = { `"$game`" },`n}`n"
-$entries = @(, @('modinfo.lua', $modinfo))
-foreach ($e in (Get-EditorGameEntries)) {
-    $text = Get-Content $e[1] -Raw
-    if ($e[0] -eq 'luaui/widgets/lvl_level_editor.lua') { $text = ([regex]'enabled = false,').Replace($text, 'enabled = true,', 1) }
-    $entries += , @($e[0], $text)
-}
-Write-GameZip "$d\games\LevelEditorMod.sdz" $entries
+Write-EditorGame "$d\games\LevelEditorMod.sdz" (Get-GameVersion $Data)
 
 # ten teams like the editor game (choose_map.ps1), one human: every team belongs to its own ally team
 $allies = (0..9 | ForEach-Object { "`t[allyteam$_] { numallies=0; }" }) -join "`n"
@@ -59,15 +39,5 @@ $teams
 }
 "@
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
-[IO.File]::WriteAllLines("$Work\springsettings.cfg", @('Fullscreen = 0', 'WindowBorderless = 0', 'XResolution = 2400', 'YResolution = 1300', 'XResolutionWindowed = 2400', 'YResolutionWindowed = 1300', 'WindowPosX = 60', 'WindowPosY = 60', 'LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0'))
-$prev = [W3]::GetForegroundWindow()
-$p = Start-Process $exe -ArgumentList @('--config', "`"$Work\springsettings.cfg`"", '--write-dir', "`"$d`"", "`"$d\script.txt`"") -PassThru
-"started pid $($p.Id)"
-$start = Get-Date
-while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and -not $p.HasExited) {
-    $p.Refresh()
-    if ($p.MainWindowHandle -ne [IntPtr]::Zero) { [void][W3]::SetWindowPos($p.MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][W3]::SetForegroundWindow($prev) }
-    Start-Sleep 3
-}
-if (-not $p.HasExited) { 'timeout: killing the test game'; try { Stop-Process -Id $p.Id -Force } catch {} } else { 'the game ended itself' }
-Select-String -Path "$d\infolog.txt" -Pattern '\[zzar\]|Failed to load|Error' -ErrorAction SilentlyContinue | % { $_.Line } | Select -First 120
+Write-SandboxSettings "$Work\springsettings.cfg" @(60, 60, 2400, 1300) @('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0')
+Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzar\]|Failed to load|Error'

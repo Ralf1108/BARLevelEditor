@@ -41,28 +41,7 @@ foreach ($p in (Get-EditorSourceFiles)) {
 $gamesDir = Join-Path $data 'games'
 New-Item -ItemType Directory -Force $gamesDir | Out-Null
 $zipPath = Join-Path $gamesDir 'LevelEditorMod.sdz'
-$modinfo = @"
-return {
-	name = "Level Editor",
-	shortName = "LevelEd",
-	version = "1",
-	game = "LevelEditorMod",
-	shortGame = "LevelEd",
-	description = "Beyond All Reason plus Level Editor",
-	mutator = "Official",
-	modtype = 1,
-	depend = { "$game" },
-}
-"@
-# the files of the list (editor_manifest.ps1); the widget is switched on in the mod: only the first 'enabled = false,' (GetInfo), the same text
-# appears in the code as data
-$entries = @(, @('modinfo.lua', $modinfo))
-foreach ($e in (Get-EditorGameEntries)) {
-    $text = Get-Content $e[1] -Raw
-    if ($e[0] -eq 'luaui/widgets/lvl_level_editor.lua') { $text = ([regex]'enabled = false,').Replace($text, 'enabled = true,', 1) }
-    $entries += , @($e[0], $text)
-}
-Write-GameZip $zipPath $entries
+Write-EditorGame $zipPath $game   # the files of the list (editor_manifest.ps1), the widget switched on
 
 Write-Host "Created: $zipPath"
 

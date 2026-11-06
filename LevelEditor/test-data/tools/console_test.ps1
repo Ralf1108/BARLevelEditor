@@ -8,6 +8,7 @@ param([string]$Mode = 'ctf', [int]$WaitSec = 600, [string]$Work = (Join-Path $en
 $ErrorActionPreference = 'Stop'
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
+. (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $tools 'test_common.ps1')
 if (Get-Process spring -ErrorAction SilentlyContinue) { 'A game is running: aborted'; return }
 $scn = "${Mode}_test"
 New-Item -ItemType Directory -Force $Work | Out-Null
@@ -16,14 +17,9 @@ if (Test-Path $bundle) { Remove-Item $bundle -Recurse -Force }
 & powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\LevelEditor\scenario\scenario_builder.ps1" -Level $scn -LevelDir "$repo\LevelEditor\test-data\levels" -Auto -BundleDir $bundle | Out-Null
 $rects = @{ H = '60,60,1300,800'; J = '1400,60,1000,700' }
 foreach ($who in 'H', 'J') {
-    $bar = "$Work\bar$who"; $d = "$bar\data"
-    if (Test-Path $d) { foreach ($j in Get-ChildItem $d -Directory | ? { $_.Attributes -band 'ReparsePoint' }) { cmd /c rmdir "$($j.FullName)" } }
-    if (Test-Path $bar) { Remove-Item $bar -Recurse -Force }
-    New-Item -ItemType Directory "$d\cache", "$d\games", "$d\LuaUI\Widgets" -Force | Out-Null
-    foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$Data\$j" | Out-Null }
-    Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
+    $d = New-SandboxData "$Work\bar$who" $Data
     Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\"
-    [IO.File]::WriteAllLines("$d\springsettings.cfg", @('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev'))
+    Write-SandboxSettings "$d\springsettings.cfg" $null @('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev')
 }
 $common = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$repo\LevelEditor\scenario\template\start_scenario.ps1", '-Lobby', '-HostIp', '127.0.0.1', '-ScenarioDir', $bundle, '-EditorDir', "$repo\LevelEditor")
 $procs = @{}

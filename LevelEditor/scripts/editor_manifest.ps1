@@ -54,6 +54,20 @@ function Get-EditorGameEntries {
     return $list
 }
 
+# Builds the extra game "Level Editor" at $zipPath for the installed game $game from the files of the list (the setup and the sandbox test arena_test.ps1).
+# The widget is switched on in the archive: only the first 'enabled = false,' (GetInfo) is replaced, the same text appears in the code as data.
+function Write-EditorGame([string]$zipPath, [string]$game) {
+    $modinfo = "return {`n`tname = `"Level Editor`",`n`tshortName = `"LevelEd`",`n`tversion = `"1`",`n`tgame = `"LevelEditorMod`",`n`tshortGame = `"LevelEd`",`n" +
+               "`tdescription = `"Beyond All Reason plus Level Editor`",`n`tmutator = `"Official`",`n`tmodtype = 1,`n`tdepend = { `"$game`" },`n}`n"
+    $entries = @(, @('modinfo.lua', $modinfo))
+    foreach ($e in (Get-EditorGameEntries)) {
+        $text = Get-Content $e[1] -Raw
+        if ($e[0] -eq 'luaui/widgets/lvl_level_editor.lua') { $text = ([regex]'enabled = false,').Replace($text, 'enabled = true,', 1) }
+        $entries += , @($e[0], $text)
+    }
+    Write-GameZip $zipPath $entries
+}
+
 # Every source file of the setup (for the check before building and for the stamp)
 function Get-EditorSourceFiles {
     $paths = @(Get-EditorGameEntries | ForEach-Object { $_[1] })

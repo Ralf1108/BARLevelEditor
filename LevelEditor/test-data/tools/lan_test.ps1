@@ -28,13 +28,9 @@ $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1')   # Write-ScenarioGame and its files
+. (Join-Path $tools 'test_common.ps1')   # the sandbox data folder, the window settings, starting a game behind the other windows
 New-Item -ItemType Directory -Force $sp | Out-Null
 if (-not $AlongsideGame -and (Get-Process spring -ErrorAction SilentlyContinue)) { 'A game is running: aborted'; return }
-Add-Type @'
-using System; using System.Runtime.InteropServices;
-public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
- [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
-'@
 $exe = (Get-Engine $real).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $scn = "${Mode}_test"
 if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix') {
@@ -51,17 +47,11 @@ $rects = @{ H = @(0, 0, $qw, $qh); J = @(0, [int]($wa.Height / 2), $qw, $qh); K 
 $who2 = if ($Mode -in 'page', 'preset') { @('H') } else { @('H', 'J') + $(if ($Clients -ge 2) { 'K' }) }
 $names = @{ H = 'PlayerA'; J = 'PlayerB'; K = 'PlayerC' }
 $procs = @{}
-$prev = [W2]::GetForegroundWindow()
+$prev = [SbxWin]::GetForegroundWindow()
+$menu = Get-SandboxLobby $real   # the installed lobby package (its name changes with every lobby update)
 foreach ($who in $who2) {
-    $sbx = "$sp\sbx_$who"; $d = "$sbx\data"
-    if (Test-Path $d) { foreach ($j in Get-ChildItem $d -Directory | ? { $_.Attributes -band 'ReparsePoint' }) { cmd /c rmdir "$($j.FullName)" } }
-    if (Test-Path $sbx) { Remove-Item $sbx -Recurse -Force }
-    New-Item -ItemType Directory "$d\cache", "$d\LuaMenu\Config", "$d\LuaMenu\Widgets", "$d\games", "$d\LuaUI\Widgets", "$d\LevelEditor" -Force | Out-Null
-    foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') {
-        if ($j -eq 'maps' -and $NoMap -and $who -ne 'H') { New-Item -ItemType Directory "$d\maps" -Force | Out-Null; continue }
-        New-Item -ItemType Junction -Path "$d\$j" -Target "$real\$j" | Out-Null
-    }
-    Copy-Item (Get-ChildItem "$real\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
+    $sbx = "$sp\sbx_$who"
+    $d = New-SandboxData $sbx $real @('LuaMenu\Config', 'LuaMenu\Widgets', 'LevelEditor') -NoMaps:($NoMap -and $who -ne 'H')
     Copy-Item "$repo\LevelEditor\lan_lobby\lan_lobby.lua" "$d\LuaMenu\Widgets\"
     if ($who -ne 'H' -and $Lobby -eq 'other') { Add-Content "$d\LuaMenu\Widgets\lan_lobby.lua" "`n-- another version for the version test" -Encoding ASCII }
     Copy-Item "$repo\LevelEditor\scenario\template\shared_start.lua" "$d\LuaUI\Widgets\"
@@ -100,12 +90,10 @@ foreach ($who in $who2) {
     if ($Mode -eq 'preset' -and $PresetFile) { Copy-Item $PresetFile "$d\optionsPresets.json" }   # a preset file of a user: -PresetFile <path> -PresetName <name>
     [IO.File]::WriteAllText("$d\lanlobby_cfg.txt", $auto)
     $r = $rects[$who]
-    [IO.File]::WriteAllLines("$sbx\springsettings.cfg", @('Fullscreen = 0', 'WindowBorderless = 0', "XResolution = $($r[2])", "YResolution = $($r[3])", "XResolutionWindowed = $($r[2])", "YResolutionWindowed = $($r[3])", "WindowPosX = $($r[0])", "WindowPosY = $($r[1])", 'LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0', 'InitialNetworkTimeout = 600', 'NetworkTimeout = 600', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev'))
+    Write-SandboxSettings "$sbx\springsettings.cfg" $r @('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0', 'InitialNetworkTimeout = 600', 'NetworkTimeout = 600', 'RapidTagResolutionOrder = repos-cdn.beyondallreason.dev;repos.beyondallreason.dev')
     if ($Mode -eq 'latejoin' -and $who -eq 'J') { continue }   # started when the game of the host runs
-    $procs[$who] = Start-Process $exe -ArgumentList @('--config', "`"$sbx\springsettings.cfg`"", '--write-dir', "`"$d`"", '--menu', '"BYAR Chobby test-4663-ecee530"') -PassThru
+    $procs[$who] = Start-SandboxProcess $exe @('--config', "$sbx\springsettings.cfg", '--write-dir', $d, '--menu', $menu) 20   # (window kept behind the others for 20 s)
     "started $who pid $($procs[$who].Id)"
-    $t0 = Get-Date
-    while (((Get-Date) - $t0).TotalSeconds -lt 20) { $procs[$who].Refresh(); if ($procs[$who].MainWindowHandle -ne [IntPtr]::Zero) { [void][W2]::SetWindowPos($procs[$who].MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013) }; [void][W2]::SetForegroundWindow($prev); Start-Sleep -Milliseconds 500 }
 }
 if ($Mode -eq 'latejoin') { $who2 = @('H') }
 Add-Type -AssemblyName System.Drawing
@@ -134,7 +122,7 @@ function Save-Shot($proc, $name) {
 # -Mode pve: the engine takes a start position only from a mouse click: when the widget zz_place.lua has pointed the camera at the position, click the middle of the window
 function Click-Middle($proc, $dir) {
     $h = $proc.MainWindowHandle
-    [void][W2]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
+    [void][SbxWin]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
     $r = New-Object W3+R; [void][W6]::GetClientRect($h, [ref]$r)
     # a message box in the middle of the window (the Scavengers' "Warning, Scavengers are active in this region") closes with a click beside it: first a click near the top left corner
     $pt = New-Object W6+P; $pt.X = [int]($r.Rt * 0.06); $pt.Y = [int]($r.B * 0.12); [void][W6]::ClientToScreen($h, [ref]$pt)
@@ -143,14 +131,14 @@ function Click-Middle($proc, $dir) {
     $pt = New-Object W6+P; $pt.X = [int]($r.Rt / 2); $pt.Y = [int]($r.B / 2); [void][W6]::ClientToScreen($h, [ref]$pt)
     [void][W6]::SetCursorPos($pt.X, $pt.Y); Start-Sleep -Milliseconds 300
     [W6]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150; [W6]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 300
-    [void][W2]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($prev)
+    [void][SbxWin]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($prev)
     "clicked the middle of the window of $dir"
 }
 $clicked = @{}; $hostEnded = $null; $killedAt = $null; $placedAt = $null; $rjShot = @{}
 $shotAt = @(); foreach ($s in ($Shots -split '[,\s]+' | ? { $_ })) { $shotAt += [int]$s }
 $start = Get-Date
 while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not $procs[$_].HasExited }).Count -gt 0))) {
-    foreach ($who in $who2) { if (-not $procs[$who].HasExited) { $procs[$who].Refresh(); [void][W2]::SetWindowPos($procs[$who].MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013) } }
+    foreach ($who in $who2) { if (-not $procs[$who].HasExited) { $procs[$who].Refresh(); [void][SbxWin]::SetWindowPos($procs[$who].MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013) } }
     $el = ((Get-Date) - $start).TotalSeconds
     foreach ($s in @($shotAt)) { if ($el -ge $s -and -not $procs['H'].HasExited) {
         $shotAt = @($shotAt | ? { $_ -ne $s }); $procs['H'].Refresh()
@@ -160,7 +148,7 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
         if (-not $placedAt) { $placedAt = Get-Date }
         elseif (((Get-Date) - $placedAt).TotalSeconds -gt 40) {
             $sbx = "$sp\sbx_J"; $dj = "$sbx\data"
-            $procs['J'] = Start-Process $exe -ArgumentList @('--config', "`"$sbx\springsettings.cfg`"", '--write-dir', "`"$dj`"", '--menu', '"BYAR Chobby test-4663-ecee530"') -PassThru
+            $procs['J'] = Start-SandboxProcess $exe @('--config', "$sbx\springsettings.cfg", '--write-dir', $dj, '--menu', $menu)
             $who2 = @('H', 'J'); $killedAt = Get-Date; 'latejoin test: PlayerB started (the game of PlayerA runs)'
         }
     }
@@ -183,7 +171,7 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
         elseif (((Get-Date) - $placedAt).TotalSeconds -gt 40) {
             'rejoin test: killing the game of PlayerB (a crash)'; Stop-Process -Id $procs['J'].Id -Force; $killedAt = Get-Date; Start-Sleep 5
             $dj = "$sp\sbx_J\data"; Copy-Item "$dj\infolog.txt" "$dj\infolog_first.txt" -Force
-            $procs['J'] = Start-Process $exe -ArgumentList @('--config', "`"$sp\sbx_J\springsettings.cfg`"", '--write-dir', "`"$dj`"", '--menu', '"BYAR Chobby test-4663-ecee530"') -PassThru
+            $procs['J'] = Start-SandboxProcess $exe @('--config', "$sp\sbx_J\springsettings.cfg", '--write-dir', $dj, '--menu', $menu)
             'rejoin test: PlayerB started again'
         }
     }
@@ -193,10 +181,10 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
         if ($k -ge 45 -and -not $rjShot['click']) {
             # the Rejoin button of the room (bottom right of the room page, as in rejoin_J_40.png: 52 % of the width, 66 % of the height of the window)
             $rjShot['click'] = 1; $h = $procs['J'].MainWindowHandle; $r = New-Object W3+R; [void][W3]::GetWindowRect($h, [ref]$r)
-            [void][W2]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
+            [void][SbxWin]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
             [void][W6]::SetCursorPos([int]($r.L + ($r.Rt - $r.L) * 0.524), [int]($r.T + ($r.B - $r.T) * 0.666)); Start-Sleep -Milliseconds 300
             [W6]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150; [W6]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero)
-            [void][W2]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][W2]::SetForegroundWindow($prev); 'rejoin test: clicked Rejoin'
+            [void][SbxWin]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($prev); 'rejoin test: clicked Rejoin'
         }
         if ($k -gt 130) { break }
     }

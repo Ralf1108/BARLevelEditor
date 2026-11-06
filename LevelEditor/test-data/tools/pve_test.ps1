@@ -9,19 +9,9 @@ param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'pve_test'), [st
       [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0)
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
-. (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1')
-Add-Type @'
-using System; using System.Runtime.InteropServices;
-public class W5 { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
- [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
-'@
+. (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
-$d = "$Work\data"
-if (Test-Path $d) { foreach ($j in Get-ChildItem $d -Directory | ? { $_.Attributes -band 'ReparsePoint' }) { cmd /c rmdir "$($j.FullName)" } }
-if (Test-Path $Work) { Remove-Item $Work -Recurse -Force }
-New-Item -ItemType Directory "$d\cache", "$d\games", "$d\LuaUI\Widgets", "$d\LuaUI\Config" -Force | Out-Null
-foreach ($j in 'engine', 'packages', 'pool', 'rapid', 'maps') { New-Item -ItemType Junction -Path "$d\$j" -Target "$Data\$j" | Out-Null }
-Copy-Item (Get-ChildItem "$Data\cache\ArchiveCache*.lua" | Sort LastWriteTime | Select -Last 1).FullName "$d\cache\"
+$d = New-SandboxData $Work $Data @('LuaUI\Config')
 Copy-Item "$tools\zz_pve.lua" "$d\LuaUI\Widgets\"
 $game = Get-GameVersion $Data
 $sg = Write-ScenarioGame $d $game (Get-ScenarioGameDirs)
@@ -57,15 +47,5 @@ $allies
 }
 "@
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
-[IO.File]::WriteAllLines("$Work\springsettings.cfg", @('Fullscreen = 0', 'WindowBorderless = 0', 'XResolution = 1200', 'YResolution = 700', 'XResolutionWindowed = 1200', 'YResolutionWindowed = 700', 'WindowPosX = 40', 'WindowPosY = 40', 'Sound = 0', 'MaxSounds = 0'))
-$prev = [W5]::GetForegroundWindow()
-$p = Start-Process $exe -ArgumentList @('--config', "`"$Work\springsettings.cfg`"", '--write-dir', "`"$d`"", "`"$d\script.txt`"") -PassThru
-"started pid $($p.Id) ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
-$start = Get-Date
-while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and -not $p.HasExited) {
-    $p.Refresh()
-    if ($p.MainWindowHandle -ne [IntPtr]::Zero) { [void][W5]::SetWindowPos($p.MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][W5]::SetForegroundWindow($prev) }
-    Start-Sleep 3
-}
-if (-not $p.HasExited) { 'timeout: ending the test game'; try { $p.CloseMainWindow() | Out-Null; Start-Sleep 5; if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force } } catch {} } else { 'the game ended itself' }
-Select-String -Path "$d\infolog.txt" -Pattern '\[zzpve\]|\[LAN\]|Failed to load|Error' -ErrorAction SilentlyContinue | % { $_.Line } | Select -First 80
+Write-SandboxSettings "$Work\springsettings.cfg" @(40, 40, 1200, 700) @('Sound = 0', 'MaxSounds = 0')
+Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzpve\]|\[LAN\]|Failed to load|Error' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
