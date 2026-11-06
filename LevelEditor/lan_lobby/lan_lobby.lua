@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 13, stamp = "2026-11-06 01:30" }
+local LAN_VERSION = { number = 14, stamp = "2026-11-06 14:00" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -695,6 +695,8 @@ local function removeConn(c)
 	if c.name then
 		if c.inBattle then
 			c.inBattle = false
+			-- a game is running: the status (team, color) is kept for the rejoin of the same name
+			if S.battle.running and c.battleStatus then S.rejoin[c.name] = { status = c.battleStatus, color = c.teamColor, password = c.scriptPassword } end
 			toAll("LEFTBATTLE 1 " .. c.name)
 			if dropBoss(c.name) then sendBosses() end
 			for i = #S.battle.bots, 1, -1 do
@@ -812,7 +814,7 @@ local function serverLine(c, line)
 		if not S.hostConn then S.hostConn = c; S.hostName = name; if not isBoss(name) then S.battle.bosses[#S.battle.bosses + 1] = name end end
 		sendLine(c, "ACCEPTED " .. name)
 		sendLine(c, "ADDUSER " .. HOSTNAME .. " XX 0 LAN")
-		sendLine(c, "CLIENTSTATUS " .. HOSTNAME .. " 64")
+		sendLine(c, "CLIENTSTATUS " .. HOSTNAME .. (S.battle.running and " 65" or " 64"))   -- 65 = in game: the lobby of a player who comes back offers the rejoin
 		for _, o in ipairs(S.conns) do
 			if o.name then sendLine(c, "ADDUSER " .. o.name .. " XX " .. o.id .. " LAN"); sendLine(c, "CLIENTSTATUS " .. o.name .. " 0") end
 		end
@@ -825,6 +827,8 @@ local function serverLine(c, line)
 	elseif cmd == "JOINBATTLE" then
 		local _, _, sp = args:match("^(%S+)%s+(%S+)%s*(%S*)")
 		c.scriptPassword = (sp and sp ~= "") and sp or tostring(math.random(100000, 999999)); c.inBattle = true
+		-- rejoin: the game server knows the password of the start script; the one of the first join is announced again (JOINEDBATTLE)
+		if S.battle.running and S.rejoin[c.name] and S.rejoin[c.name].password then c.scriptPassword = S.rejoin[c.name].password end
 		sendLine(c, "JOINBATTLE 1 0")
 		toBattle("JOINEDBATTLE 1 " .. c.name .. " " .. c.scriptPassword)
 		for _, o in ipairs(battleUsers()) do
@@ -849,6 +853,8 @@ local function serverLine(c, line)
 		local st, col = args:match("^(%S+)%s+(%S+)")
 		if st and c.inBattle then
 			c.battleStatus, c.teamColor = st, col
+			local back = S.battle.running and S.rejoin[c.name]
+			if back then c.battleStatus, c.teamColor, c.teamPlaced = back.status, back.color, true; col = back.color or col end   -- rejoin: the same team as before
 			placeNewPlayer(c)
 			c.battleStatus = forcedStatus(c)   -- with a scenario the ally team is the scenario's: the corrected status goes to everybody, also the sender
 			toBattle("CLIENTBATTLESTATUS " .. c.name .. " " .. c.battleStatus .. " " .. col); updateBattleInfo()
@@ -1196,7 +1202,7 @@ local function startHosting()
 	s:settimeout(0)
 	local name = playerName()
 	local game = cf and cf:GetDefaultGameName() or "Beyond All Reason"
-	S = { srv = s, conns = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {}, bosses = {}, nbTeams = 2, teamSize = 2 } }
+	S = { srv = s, conns = {}, rejoin = {}, nextId = 100, battle = { map = (cfg.map and cfg.map ~= "" and cfg.map) or "Hooked 1.1", game = game, title = "LAN game of " .. name, modoptions = {}, bots = {}, bosses = {}, nbTeams = 2, teamSize = 2 } }
 	found = {}; updateFoundUi()
 	setStatus("Hosting as " .. name .. " (port " .. PORT .. ").")
 	lanConnect("host", "127.0.0.1", name)

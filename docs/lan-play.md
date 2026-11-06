@@ -22,6 +22,7 @@ Play with computers in the same network. No account, no server in the cloud.
 - **Official maps:** just play, like any room
 - **Custom Scenario:** the host picks a scenario built with the Level Editor. Map and teams are set, all humans play the scenario's team together. The other players get the scenario's game file automatically
 
+- **Rejoin:** if your game crashes or you close it while the others play on, start the game again, open **LAN Play**, join the room with the same name and press **Rejoin**. You come back to your team and catch up with the game.
 - **Scavengers / Raptors played by humans:** add a Scavengers or Raptors computer to a team and put a human player into the same team. The computer then only spawns (waves, beacons, queens as in the official game); its own orders to its units are ignored and the humans of that team command the units. The room writes a message into the chat when the first human comes into the team of such a computer, and again when the last one leaves (then the computer commands its units itself again). A Scavengers / Raptors computer alone in its team plays as in the official game. All players need the same extra game of the scenarios (LAN Play fetches it like a scenario's game file)
 
 ## Copilot
