@@ -573,15 +573,24 @@ function Send-LobbyLine($p, [string]$line) {
     try { $b = [Text.Encoding]::UTF8.GetBytes($line + "`n"); $p.Client.GetStream().Write($b, 0, $b.Length) } catch { $p.Closed = $true }
 }
 
+# The longest line of the protocol that is accepted: a connection that sends more without a line end is closed (it would fill the memory)
+$script:LobbyMaxLine = 65536
+
+# The complete lines that have arrived on the connection of $p (the rest waits in $p.Buf). The bytes are decoded by one decoder per connection, so a
+# character split between two reads stays whole.
 function Read-LobbyLines($p) {
     $res = @()
     try {
         $c = $p.Client
+        if (-not $p.PSObject.Properties['Dec']) { $p | Add-Member -NotePropertyName Dec -NotePropertyValue ([Text.Encoding]::UTF8.GetDecoder()) }
+        $buf = New-Object byte[] 4096
+        $chars = New-Object char[] 4097
         while ($c.Available -gt 0) {
-            $buf = New-Object byte[] 4096
             $n = $c.GetStream().Read($buf, 0, $buf.Length)
             if ($n -le 0) { break }
-            [void]$p.Buf.Append([Text.Encoding]::UTF8.GetString($buf, 0, $n))
+            $k = $p.Dec.GetChars($buf, 0, $n, $chars, 0)
+            [void]$p.Buf.Append($chars, 0, $k)
+            if ($p.Buf.Length -gt 4 * $script:LobbyMaxLine) { $p.Closed = $true; return $res }
         }
         $txt = $p.Buf.ToString()
         $i = $txt.IndexOf("`n")
@@ -591,6 +600,7 @@ function Read-LobbyLines($p) {
             $i = $txt.IndexOf("`n")
         }
         [void]$p.Buf.Clear(); [void]$p.Buf.Append($txt)
+        if ($txt.Length -gt $script:LobbyMaxLine) { $p.Closed = $true }
         if ($c.Client.Poll(0, [Net.Sockets.SelectMode]::SelectRead) -and $c.Available -eq 0) { $p.Closed = $true }
     } catch { $p.Closed = $true }
     return $res
