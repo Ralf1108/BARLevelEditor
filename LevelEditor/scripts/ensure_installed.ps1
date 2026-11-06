@@ -16,5 +16,5 @@ if (Get-Process spring -ErrorAction SilentlyContinue) {
     exit 0
 }
 Write-Host 'The Level Editor is not up to date: running the setup ...' -ForegroundColor Cyan
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $here 'install_editor.ps1') -Quick
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $here 'install_editor.ps1') -Quick -BarPath (Split-Path $Data -Parent)
 if ($LASTEXITCODE -ne 0) { Write-Host 'The setup failed: the Level Editor starts with what is installed.' -ForegroundColor Yellow }

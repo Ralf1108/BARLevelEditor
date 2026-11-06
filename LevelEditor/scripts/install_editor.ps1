@@ -1,8 +1,8 @@
 # Sets up the Level Editor on a machine with Beyond All Reason installed.
 # Run through install_editor.bat. Changes nothing in the official game: it only creates an extra game "Level Editor"
 # (data\games\LevelEditorMod.sdz) that builds on the official BAR, plus a start file and a level folder.
-# -Quick (used by ensure_installed.ps1 from start_level_editor.bat): only builds the extra game and its stamp.
-param([switch]$Quick)
+# -Quick (used by ensure_installed.ps1 from start_level_editor.bat): only builds the extra game and its stamp. -BarPath: the BAR folder (tried first).
+param([switch]$Quick, [string]$BarPath = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -18,7 +18,7 @@ if (-not (Test-Path $common)) { Write-Host "ERROR: $common missing (the folder s
 
 # ---------------------------------------------------------------- 1. Find BAR
 Step 'Find Beyond All Reason'
-$bar = Find-Bar
+$bar = Find-Bar @($BarPath)
 $data = Join-Path $bar 'data'
 Write-Host "BAR found: $bar"
 if (Get-Process spring -ErrorAction SilentlyContinue) { Fail 'The game is running: close it first (it holds the extra game files).' }

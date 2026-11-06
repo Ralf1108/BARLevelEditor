@@ -51,7 +51,7 @@ if (Test-Path $ptr) {
     if ($own -match '^LevelEditorScenarios_[0-9a-f]{8}\.sdz$') { $items += @{ Path = (Join-Path $data "games\$own"); Text = "Extra game ""Level Editor Scenarios"" (data\games\$own)"; Kind = 'file' } }
 }
 if ($WithSettings) {
-    foreach ($n in 'LevelEditorRecent.lua', 'LevelEditorUI.lua') {
+    foreach ($n in 'LevelEditorRecent.lua', 'LevelEditorUI.lua', 'LevelEditorSave.lua') {
         $items += @{ Path = (Join-Path $data "LuaUI\Config\$n"); Text = "Settings file LuaUI\Config\$n"; Kind = 'file' }
     }
 }

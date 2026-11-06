@@ -1,4 +1,4 @@
-# Makes sure the junctions in the BAR data folder point to the levels and blueprints folders next to the scripts folder.
+# Makes sure the junctions in the BAR data folder point to the levels, blueprints and built scenarios folders of this LevelEditor folder.
 # Called by start_level_editor.bat before every start, so a moved or renamed project folder does not break saving.
 param([Parameter(Mandatory)][string]$Data)
 $here = $PSScriptRoot
@@ -7,3 +7,4 @@ $repo = Split-Path $root -Parent         # repository
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
 Set-Junction (Join-Path $Data 'LevelEditor') (Join-Path $root 'levels')
 Set-Junction (Join-Path $Data 'LevelEditorBlueprints') (Join-Path $root 'blueprints')
+Set-Junction (Join-Path $Data 'LevelEditorScenarios') (Join-Path $root 'scenario\scenarios')   # (LAN Play: Custom Scenario)
