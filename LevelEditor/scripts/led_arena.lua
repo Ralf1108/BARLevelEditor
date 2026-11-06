@@ -890,32 +890,9 @@ return function(host)
 	function ar.layout(rect)
 		local S, m = host.S(), Shared.m
 		local c = ar.cfg()
-		local rects, labels = {}, {}
-		local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
-		local y = rect.top - m.PAD
-		local gap = 4 * S
-		local function line(items, after)
-			local total = 0
-			for _, it in ipairs(items) do
-				total = total + (it.w or 1)
-			end
-			local avail, bx = x2 - x1 - gap * (#items - 1), x1
-			for _, it in ipairs(items) do
-				local w = avail * (it.w or 1) / total
-				rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
-					fs = it.fs or 22 * S, field = it.field, row = it.row, tint = it.tint, tip = it.tip }
-				bx = bx + w + gap
-			end
-			y = y - m.HB - (after or 6 * S)
-		end
-		local function head(text)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 26 * S, size = 22 * S, head = true }
-			y = y - 32 * S
-		end
-		local function note(text, color)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 18 * S, size = 19 * S, color = color }
-			y = y - 24 * S
-		end
+		local L = Shared.newPageLayout(rect, S)
+		local rects, labels, x1, x2, gap = L.rects, L.labels, L.x1, L.x2, L.gap
+		local line, head, note = L.line, L.head, L.note
 		local function field(name, row, tip, prefix)
 			local e = ar.edit
 			local editing = e ~= nil and e.field == name and e.row == row
@@ -929,7 +906,7 @@ return function(host)
 			field("bmetal", nil, "Metal budget for all rows. Empty = no limit. Click, type a number, Enter accepts; the button C in the table (column Metal) writes it into every row", "M "),
 			field("benergy", nil, "Energy budget for all rows. Empty = no limit. Click, type a number, Enter accepts; the button C in the table (column Energy) writes it into every row", "E "),
 		})
-		y = y - 4 * S
+		L.y = L.y - 4 * S
 		-- table: team, on / off, units, count, metal, energy, remaining budget
 		local W = { 1, 1.5, 2.4, 1.7, 2.1, 2.1, 3.2 }
 		local function tline(items, after)
@@ -978,11 +955,11 @@ return function(host)
 				}, 3 * S)
 			end
 		end
-		y = y - 6 * S
+		L.y = L.y - 6 * S
 		if ar.notice and os.clock() < ar.notice.untilT then
 			note(ar.notice.text, { 1, 0.4, 0.35 })
 		end
-		y = y - 4 * S
+		L.y = L.y - 4 * S
 		local state = Spring.GetGameRulesParam("arenaState") or ""
 		local running = state == "running"
 		line({
@@ -997,8 +974,8 @@ return function(host)
 				tip = "On (green): every army keeps its rectangle and all units walk at the speed of the slowest one until a quarter of the way is left, then at full speed (the armies meet at the same time). Off: every unit runs as fast as it can. Both end with a patrol through the Arena Point." },
 			{ kind = "arplay", label = running and "Stop" or "Start", w = 7, active = running, fs = 26 * S, tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
 				tip = "Start: all units of the rows that are on march to 250 Elmo in front of the Arena Point and fight on the way, then they patrol through it. The state before is saved as _beforeplay. Stop brings it back." } })
-		y = y - m.PAD
-		return rects, labels, rect.top - y
+		L.y = L.y - m.PAD
+		return rects, labels, rect.top - L.y
 	end
 
 	-- The menu "Copy to": opens at the team number that was clicked (ar.copyMenu = row); one button per other team

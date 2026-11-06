@@ -3422,6 +3422,43 @@ function M.flushTip(skip)
 	end
 end
 
+---------------------------------------------------------------- Page layout (the pages TD, CF, RF and A of the Level Editor)
+-- Rows of buttons and labels from the top of rect downwards. L.rects, L.labels: what the page draws; L.x1, L.x2: the inner edges; L.y: the current
+-- height (the page may move it on: L.y = L.y - 6 * S); L.gap: room between two buttons of a row.
+-- L.line(items, after): a row of buttons; it.w = relative width (default 1), it.fs = font size (default 22·S), the fields kind, value, label, active,
+-- field, row, tint, icon, tip are taken into the rect; after = room below the row (default 6·S). L.head(text): a heading. L.note(text, color): a small line.
+local PAGE_FIELDS = { "kind", "value", "label", "active", "field", "row", "tint", "icon", "tip" }
+function M.newPageLayout(rect, S)
+	local m = M.m
+	local L = { rects = {}, labels = {}, x1 = rect.x1 + m.PAD, x2 = rect.x2 - m.PAD, y = rect.top - m.PAD, gap = 4 * S }
+	function L.line(items, after)
+		local total = 0
+		for _, it in ipairs(items) do
+			total = total + (it.w or 1)
+		end
+		local avail, bx = L.x2 - L.x1 - L.gap * (#items - 1), L.x1
+		for _, it in ipairs(items) do
+			local w = avail * (it.w or 1) / total
+			local r = { x1 = bx, x2 = bx + w, y0 = L.y - m.HB, y1 = L.y, fs = it.fs or 22 * S }
+			for _, k in ipairs(PAGE_FIELDS) do
+				r[k] = it[k]
+			end
+			L.rects[#L.rects + 1] = r
+			bx = bx + w + L.gap
+		end
+		L.y = L.y - m.HB - (after or 6 * S)
+	end
+	function L.head(text)
+		L.labels[#L.labels + 1] = { text = text, x = L.x1, y = L.y - 26 * S, size = 22 * S, head = true }
+		L.y = L.y - 32 * S
+	end
+	function L.note(text, color)
+		L.labels[#L.labels + 1] = { text = text, x = L.x1, y = L.y - 18 * S, size = 19 * S, color = color }
+		L.y = L.y - 24 * S
+	end
+	return L
+end
+
 ---------------------------------------------------------------- Settings (gear): columns and rows
 -- blocks = { { title = "Blueprints", keys = { { "bpCols", "Columns" }, { "bpRows", "Rows" } } }, ... }
 -- actions (optional) = { { label = "Export", tip = "...", fn = function() return "message" end }, ... }: wide buttons under the blocks; the message that fn returns

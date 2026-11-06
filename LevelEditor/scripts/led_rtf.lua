@@ -83,32 +83,9 @@ return function(host)
 	function rtf.layout(rect)
 		local S, m = host.S(), Shared.m
 		local c = rtf.cfg()
-		local rects, labels = {}, {}
-		local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
-		local y = rect.top - m.PAD
-		local gap = 4 * S
-		local function line(items)
-			local total = 0
-			for _, it in ipairs(items) do
-				total = total + (it.w or 1)
-			end
-			local avail, bx = x2 - x1 - gap * (#items - 1), x1
-			for _, it in ipairs(items) do
-				local w = avail * (it.w or 1) / total
-				rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
-					fs = it.fs or 22 * S, field = it.field, tint = it.tint, tip = it.tip }
-				bx = bx + w + gap
-			end
-			y = y - m.HB - 6 * S
-		end
-		local function head(text)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 26 * S, size = 22 * S, head = true }
-			y = y - 32 * S
-		end
-		local function note(text, color)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 18 * S, size = 19 * S, color = color }
-			y = y - 24 * S
-		end
+		local L = Shared.newPageLayout(rect, S)
+		local rects, labels, x1, x2, gap = L.rects, L.labels, L.x1, L.x2, L.gap
+		local line, head, note = L.line, L.head, L.note
 		local function num(field)
 			return (rtf.edit and rtf.edit.field == field) and (rtf.edit.buf .. "_") or tostring(c[field])
 		end
@@ -121,7 +98,7 @@ return function(host)
 		-- the switch of the mode is the first thing on the page
 		line({ { kind = "rtfon", label = (c.enabled and "[x] " or "[ ] ") .. "Reclaim the Fame", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
 			tip = "Switch Reclaim the Fame on or off for this level (saved in the level file, section reclaim)" } })
-		y = y - 6 * S
+		L.y = L.y - 6 * S
 		local n = rtf.counts()
 		local total = n[1] + n[2] + n[3]
 		note(string.format("On the map: %d small, %d medium, %d large", n[1], n[2], n[3]), { 0.8, 0.8, 0.8 })
@@ -151,19 +128,19 @@ return function(host)
 			{ kind = "rtfcat", value = "air", label = (c.air and "[x] " or "[ ] ") .. "Air", active = c.air, fs = 19 * S,
 				tip = "Builder aircraft and seaplanes earn points. Off by default: they reach a crystal from anywhere and ignore the space around it." },
 		})
-		y = y - 6 * S
+		L.y = L.y - 6 * S
 		-- very bottom: the button that starts the test (red message above it: what is missing)
 		local state = Spring.GetGameRulesParam("rtfState") or ""
 		local running = state == "running"
 		if rtf.notice and os.clock() < rtf.notice.untilT then
 			note(rtf.notice.text, { 1, 0.4, 0.35 })
 		end
-		y = y - 8 * S
+		L.y = L.y - 8 * S
 		line({ { kind = "rtfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start"), active = running, fs = 26 * S,
 			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
 			tip = "Start: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
 		-- very bottom: the crystals to place (like the tower list of the Tower Defense page)
-		y = y - 4 * S
+		L.y = L.y - 4 * S
 		head("Crystals: click a tile, then click the map to place")
 		line({
 			{ kind = "rtfsize", value = 0, label = "All", active = rtf.sizeFilter == 0, tip = "Show all crystals, ordered by size" },
@@ -176,9 +153,9 @@ return function(host)
 		local rows = math.ceil(#grid:list() / grid:colsFor(probe))
 		local _, iy1 = grid:geom(probe, 1)
 		local gridH = rows * (-iy1 - m.UPAD) + 2 * m.UPAD -- the rows of tiles, no scrolling
-		rtf.gridRect = { x1 = rect.x1, x2 = rect.x2, top = y, y0 = y - gridH }
-		y = y - gridH
-		return rects, labels, rect.top - y
+		rtf.gridRect = { x1 = rect.x1, x2 = rect.x2, top = L.y, y0 = L.y - gridH }
+		L.y = L.y - gridH
+		return rects, labels, rect.top - L.y
 	end
 
 	function rtf.height()

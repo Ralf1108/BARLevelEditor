@@ -350,28 +350,9 @@ return function(td, H)
 	function td.layout(rect)
 		local m = H.Shared.m
 		local c = td.cfg()
-		local rects, labels = {}, {}
-		local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
-		local y = rect.top - m.PAD
-		local gap = 4 * H.S()
-		local function line(items)
-			local total = 0
-			for _, it in ipairs(items) do
-				total = total + (it.w or 1)
-			end
-			local avail, bx = x2 - x1 - gap * (#items - 1), x1
-			for _, it in ipairs(items) do
-				local w = avail * (it.w or 1) / total
-				rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
-					fs = it.fs or 22 * H.S(), row = it.row, field = it.field, tint = it.tint, icon = it.icon, tip = it.tip }
-				bx = bx + w + gap
-			end
-			y = y - m.HB - 6 * H.S()
-		end
-		local function head(text)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 26 * H.S(), size = 22 * H.S(), head = true }
-			y = y - 32 * H.S()
-		end
+		local L = H.Shared.newPageLayout(rect, H.S())
+		local rects, labels, x1, x2, gap = L.rects, L.labels, L.x1, L.x2, L.gap
+		local line, head = L.line, L.head
 		local function editing(field, row)
 			return td.edit ~= nil and td.edit.field == field and td.edit.row == row
 		end
@@ -423,9 +404,9 @@ return function(td, H)
 				tip = "How many enemies may reach the goal before you lose. Click, type a number, Enter accepts" },
 			{ kind = "tdplus", value = "leaks", label = "+", tip = "One more enemy allowed through" },
 		})
-		y = y - 4 * H.S()
-		labels[#labels + 1] = { line = true, x1 = x1, x2 = x2, y = y }
-		y = y - 10 * H.S()
+		L.y = L.y - 4 * H.S()
+		labels[#labels + 1] = { line = true, x1 = x1, x2 = x2, y = L.y }
+		L.y = L.y - 10 * H.S()
 		head("Waves")
 		line({
 			{ kind = "tdminus", value = "nwaves", label = "-", tip = "One wave less (the last one is removed)" },
@@ -446,9 +427,9 @@ return function(td, H)
 			acc = acc + w
 		end
 		for _, h in ipairs({ { 1, "#" }, { 2, "Faction" }, { 5, "Tech" }, { 8, "Type" }, { 11, "Count" }, { 12, "Gap s" }, { 13, "HP %" } }) do
-			labels[#labels + 1] = { text = h[2], x = cx[h[1]] + 3 * H.S(), y = y - 20 * H.S(), size = 18 * H.S(), head = true }
+			labels[#labels + 1] = { text = h[2], x = cx[h[1]] + 3 * H.S(), y = L.y - 20 * H.S(), size = 18 * H.S(), head = true }
 		end
-		y = y - 26 * H.S()
+		L.y = L.y - 26 * H.S()
 		local TYPE_TIP = { v = "V: vehicles (tanks)", b = "B: bots", h = "H: hovercraft" }
 		for k, v in pairs(TYPE_TIP) do
 			TYPE_TIP[k] = v .. " (several can be on at once, one always stays on)"
@@ -475,12 +456,12 @@ return function(td, H)
 			line(items)
 		end
 		if #c.waves > td.VISIBLE then
-			labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = y - 18 * H.S(), size = 17 * H.S() }
-			y = y - 24 * H.S()
+			labels[#labels + 1] = { text = string.format("Waves %d-%d of %d (mouse wheel scrolls)", td.scroll + 1, last, #c.waves), x = x1, y = L.y - 18 * H.S(), size = 17 * H.S() }
+			L.y = L.y - 24 * H.S()
 		end
-		y = y - 6 * H.S()
-		labels[#labels + 1] = { line = true, x1 = x1, x2 = x2, y = y }
-		y = y - 10 * H.S()
+		L.y = L.y - 6 * H.S()
+		labels[#labels + 1] = { line = true, x1 = x1, x2 = x2, y = L.y }
+		L.y = L.y - 10 * H.S()
 		head("Restrictions")
 		local economy, fog = c.economy ~= false, c.fog ~= false
 		line({
@@ -532,7 +513,7 @@ return function(td, H)
 		for i = td.tscroll * cols + 1, math.min(#list, (td.tscroll + shown) * cols) do
 			local e = list[i]
 			local col, row = (i - 1) % cols, math.floor((i - 1) / cols) - td.tscroll
-			local tx, ty = x1 + col * (tw + gapT), y - row * (tw + gapT)
+			local tx, ty = x1 + col * (tw + gapT), L.y - row * (tw + gapT)
 			local banned = td.isBanned(e.name)
 			rects[#rects + 1] = { x1 = tx, x2 = tx + tw, y0 = ty - tw, y1 = ty, kind = "tdtile", value = e.name, id = e.id, label = "",
 				banned = banned, armed = H.armedUnit() and H.unitName() == e.name }
@@ -541,24 +522,24 @@ return function(td, H)
 				tip = banned and "Restricted: the player cannot build this in the game. Click to allow it again." or
 					"Click: the player cannot build this in the game (in the editor you can always place it)." }
 		end
-		y = y - shown * (tw + gapT) - 8 * H.S()
+		L.y = L.y - shown * (tw + gapT) - 8 * H.S()
 		if rows > shown then
-			labels[#labels + 1] = { text = string.format("Rows %d-%d of %d (mouse wheel scrolls)", td.tscroll + 1, td.tscroll + shown, rows), x = x1, y = y - 14 * H.S(), size = 17 * H.S() }
-			y = y - 22 * H.S()
+			labels[#labels + 1] = { text = string.format("Rows %d-%d of %d (mouse wheel scrolls)", td.tscroll + 1, td.tscroll + shown, rows), x = x1, y = L.y - 14 * H.S(), size = 17 * H.S() }
+			L.y = L.y - 22 * H.S()
 		end
-		y = y - 4 * H.S()
+		L.y = L.y - 4 * H.S()
 		-- very bottom: the button that starts the test (red message above it: what is missing)
 		local state = Spring.GetGameRulesParam("tdState") or ""
 		local running = state == "running"
 		if td.notice and os.clock() < td.notice.untilT then
-			labels[#labels + 1] = { text = td.notice.text, x = x1, y = y - 20 * H.S(), size = 19 * H.S(), color = { 1, 0.4, 0.35 } }
+			labels[#labels + 1] = { text = td.notice.text, x = x1, y = L.y - 20 * H.S(), size = 19 * H.S(), color = { 1, 0.4, 0.35 } }
 		end
-		y = y - 26 * H.S()
+		L.y = L.y - 26 * H.S()
 		line({ { kind = "tdplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start"), active = running, fs = 26 * H.S(),
 			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 }, -- red while running, green otherwise
 			tip = "Start: runs the waves in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
-		y = y - m.PAD
-		return rects, labels, rect.top - y
+		L.y = L.y - m.PAD
+		return rects, labels, rect.top - L.y
 	end
 
 	-- Tower tiles: the picture, a red X in the upper right corner (button), a big red X over a restricted tower; the 3D model and

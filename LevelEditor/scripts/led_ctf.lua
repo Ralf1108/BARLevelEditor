@@ -108,32 +108,9 @@ return function(host)
 	function ctf.layout(rect)
 		local S, m = host.S(), Shared.m
 		local c = ctf.cfg()
-		local rects, labels = {}, {}
-		local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
-		local y = rect.top - m.PAD
-		local gap = 4 * S
-		local function line(items)
-			local total = 0
-			for _, it in ipairs(items) do
-				total = total + (it.w or 1)
-			end
-			local avail, bx = x2 - x1 - gap * (#items - 1), x1
-			for _, it in ipairs(items) do
-				local w = avail * (it.w or 1) / total
-				rects[#rects + 1] = { x1 = bx, x2 = bx + w, y0 = y - m.HB, y1 = y, kind = it.kind, value = it.value, label = it.label, active = it.active,
-					fs = it.fs or 22 * S, field = it.field, tint = it.tint, tip = it.tip }
-				bx = bx + w + gap
-			end
-			y = y - m.HB - 6 * S
-		end
-		local function head(text)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 26 * S, size = 22 * S, head = true }
-			y = y - 32 * S
-		end
-		local function note(text, color)
-			labels[#labels + 1] = { text = text, x = x1, y = y - 18 * S, size = 19 * S, color = color }
-			y = y - 24 * S
-		end
+		local L = Shared.newPageLayout(rect, S)
+		local rects, labels, x1, x2, gap = L.rects, L.labels, L.x1, L.x2, L.gap
+		local line, head, note = L.line, L.head, L.note
 		local function num(field)
 			return (ctf.edit and ctf.edit.field == field) and (ctf.edit.buf .. "_") or tostring(c[field])
 		end
@@ -143,7 +120,7 @@ return function(host)
 		-- the switch of the mode is the first thing on the page
 		line({ { kind = "ctfon", label = (c.enabled and "[x] " or "[ ] ") .. "Capture the Flag", active = c.enabled, tint = c.enabled and { 0.15, 0.6, 0.2 } or nil,
 			tip = "Switch Capture the Flag on or off for this level (saved in the level file, section capture)" } })
-		y = y - 6 * S
+		L.y = L.y - 6 * S
 		head("Places on the map (team: strip at the left)")
 		line({
 			{ kind = "ctfhome", label = "Collection point", active = ctf.pick == "home", w = 5,
@@ -182,7 +159,7 @@ return function(host)
 		end
 		note("Collection points: " .. (#homes > 0 and table.concat(homes, ", ") or "none"), { 0.8, 0.8, 0.8 })
 		note("Flag points: " .. (#parts > 0 and table.concat(parts, ", ") or "none"), { 0.8, 0.8, 0.8 })
-		y = y - 6 * S
+		L.y = L.y - 6 * S
 		line({ { kind = "ctfvisible", label = (c.visible ~= false and "[x] " or "[ ] ") .. "Flags always visible on the map", active = c.visible ~= false,
 			tip = "On: the flags are shown on the whole map and the minimap, also without radar or a unit nearby. Off: only what a unit sees." } })
 		head("Income: metal per second per flag held")
@@ -195,19 +172,19 @@ return function(host)
 		line({ field("speed", "A unit that carries a flag is slowed down to this speed until it delivers the flag or loses it (a scout would fetch the flags in no time otherwise); slower units keep their own speed. For comparison: a scout drives about 100, a tank 30 to 60 Elmo per second. 0 = no limit. Click, type a number, Enter accepts") })
 		head("Dropped flag goes back after (s, 0 = stays)")
 		line({ field("returnTime", "When the unit that carries a flag is destroyed, the flag is dropped where it died. 0 = it stays there until a unit takes it, a number = it goes back to its flag point after this many seconds. A carrier cannot shoot. Click, type a number, Enter accepts") })
-		y = y - 6 * S
+		L.y = L.y - 6 * S
 		-- very bottom: the button that starts the test (red message above it: what is missing)
 		local state = Spring.GetGameRulesParam("ctfState") or ""
 		local running = state == "running"
 		if ctf.notice and os.clock() < ctf.notice.untilT then
 			note(ctf.notice.text, { 1, 0.4, 0.35 })
 		end
-		y = y - 8 * S
+		L.y = L.y - 8 * S
 		line({ { kind = "ctfplay", label = running and "Stop" or (state ~= "" and "Reset" or "Start"), active = running, fs = 26 * S,
 			tint = running and { 0.8, 0.15, 0.15 } or { 0.15, 0.6, 0.2 },
 			tip = "Start: runs the game in the editor (the state before is saved as _beforeplay). Stop / Reset ends it and brings that state back." } })
-		y = y - m.PAD
-		return rects, labels, rect.top - y
+		L.y = L.y - m.PAD
+		return rects, labels, rect.top - L.y
 	end
 
 	function ctf.height()
