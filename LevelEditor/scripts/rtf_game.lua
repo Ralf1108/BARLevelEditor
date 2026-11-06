@@ -163,8 +163,7 @@ local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- wh
 local EDITOR_MODE = G.EDITOR_MODE
 
 local g = nil -- running game: nil = none
-local pendingCfg = nil -- configuration waiting for the start (finished scenario)
-local START_FRAME = 30 -- finished scenario: starts this frame (the features of the scenario exist by then)
+local mode -- messages, game option and start of a finished scenario: G.gameMode, made at the end of this file
 local nodeSet = {} -- featureID -> factor (1 = basic rate): the nodes
 local reclaiming = {} -- builder unitID -> { frame of its last reclaim step on a node, factor of that node }
 
@@ -345,11 +344,7 @@ local function pointsPerFrame(unitID, factor)
 end
 
 function gadget:GameFrame(n)
-	if pendingCfg and n >= START_FRAME then
-		local cfg = pendingCfg
-		pendingCfg = nil
-		start(cfg)
-	end
+	mode.gameFrame(n) -- a finished scenario starts at frame G.START_FRAME (led_gadgets.lua)
 	if not g or g.state ~= "running" then
 		return
 	end
@@ -416,20 +411,18 @@ function gadget:FeatureDestroyed(featureID)
 	nodeSet[featureID] = nil
 end
 
-local messages = { start = function(payload) start(parse(payload)) end, stop = function() stop() end }
+-- The messages of the editor (rtf|start|<payload>, rtf|stop) and the game option rtfconfig of a finished scenario (the payload as base64url; starts when the features of the scenario exist): G.gameMode of led_gadgets.lua
+mode = G.gameMode({ tag = "rtf", option = "rtfconfig", state = "rtfState", parse = parse, start = start, stop = stop, say = say,
+	handler = gadgetHandler, allowCommand = false })
 
 function gadget:RecvLuaMsg(msg, playerID)
-	return G.handleMessage("rtf", messages, msg, playerID)
+	return mode.recvLuaMsg(msg, playerID)
 end
 
 function gadget:Initialize()
-	Spring.SetGameRulesParam("rtfState", "")
+	mode.initialize()
 end
 
--- Finished scenario: the settings come in the game option rtfconfig (the payload as base64url)
 function gadget:GamePreload()
-	local text = G.option("rtfconfig")
-	if text then
-		pendingCfg = parse(text)
-	end
+	mode.gamePreload()
 end

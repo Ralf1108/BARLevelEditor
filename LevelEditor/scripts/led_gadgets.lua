@@ -132,6 +132,51 @@ function G.handleMessage(tag, handlers, msg, playerID)
 	return true
 end
 
+-- What every game mode gadget (td_waves, ctf_game, rtf_game) does the same way: the messages "<tag>|start|<payload>" and "<tag>|stop" of the editor,
+-- the game option of a finished scenario (read in GamePreload; started at frame START_FRAME, when the units and features of the scenario exist) and the
+-- empty state parameter at the start. m = { tag, option (name of the game option), state (name of the game rules parameter), parse(payload) -> cfg or nil,
+-- start(cfg), stop(), say, startFail (text when the editor's payload is not usable; optional), handler (gadgetHandler), allowCommand (true: the gadget has
+-- an AllowCommand) }. The gadget calls from its call-ins: mode.initialize(), mode.gamePreload(), mode.recvLuaMsg(msg, playerID), mode.gameFrame(n).
+G.START_FRAME = 30
+function G.gameMode(m)
+	local pending = nil -- configuration of a finished scenario waiting for the start
+	local messages = {
+		start = function(payload)
+			local cfg = m.parse(payload)
+			if cfg then
+				m.start(cfg)
+			elseif m.startFail then
+				m.say(m.startFail)
+			end
+		end,
+		stop = function() m.stop() end,
+	}
+	local mode = {}
+	function mode.initialize()
+		if m.allowCommand and m.handler.RegisterAllowCommand then
+			m.handler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns
+		end
+		Spring.SetGameRulesParam(m.state, "")
+	end
+	function mode.gamePreload()
+		local text = G.option(m.option)
+		if text then
+			pending = m.parse(text)
+		end
+	end
+	function mode.recvLuaMsg(msg, playerID)
+		return G.handleMessage(m.tag, messages, msg, playerID)
+	end
+	function mode.gameFrame(n)
+		if pending and n >= G.START_FRAME then
+			local cfg = pending
+			pending = nil
+			m.start(cfg)
+		end
+	end
+	return mode
+end
+
 -- The text of a game option of a finished scenario (written as base64url by the scenario builder); nil when it is not set
 function G.option(name)
 	local v = Spring.GetModOptions()[name]

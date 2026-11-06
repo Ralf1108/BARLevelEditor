@@ -42,8 +42,7 @@ local techLevel, buildClass, hitsGround = G.Rules.techLevel, G.Rules.buildClass,
 
 local td = nil -- running game: nil = none
 local alive = {} -- unitID -> { x, z, frame: where it stood at the last check for being stuck, tries: new routes given }
-local START_FRAME = 30 -- finished scenario: the waves start this frame (the units of the scenario exist by then)
-local pendingCfg = nil -- configuration waiting for the start
+local mode -- messages, game option and start of a finished scenario: G.gameMode, made at the end of this file
 
 local say = G.sayer("Tower Defense")
 local split = G.split
@@ -289,11 +288,7 @@ function gadget:GameFrame(n)
 		Spring.SetTeamResource(c.player, "m", c.metal)
 		Spring.SetTeamResource(c.player, "e", c.energy)
 	end
-	if pendingCfg and n >= START_FRAME then
-		local cfg = pendingCfg
-		pendingCfg = nil
-		start(cfg)
-	end
+	mode.gameFrame(n) -- a finished scenario starts at frame G.START_FRAME (led_gadgets.lua)
 	if not td or td.state ~= "running" then
 		return
 	end
@@ -373,35 +368,18 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	return true
 end
 
-local messages = {
-	start = function(payload)
-		local cfg = parse(payload)
-		if cfg then
-			start(cfg)
-		else
-			say("Cannot start: set spawn point, goal and at least one wave first.")
-		end
-	end,
-	stop = function() stop() end,
-}
+-- The messages of the editor (tdw|start|<payload>, tdw|stop) and the game option tdconfig of a finished scenario (the payload as base64url; the waves start when the units of the scenario exist): G.gameMode of led_gadgets.lua
+mode = G.gameMode({ tag = "tdw", option = "tdconfig", state = "tdState", parse = parse, start = start, stop = stop, say = say, startFail = "Cannot start: set spawn point, goal and at least one wave first.",
+	handler = gadgetHandler, allowCommand = true })
 
 function gadget:RecvLuaMsg(msg, playerID)
-	return G.handleMessage("tdw", messages, msg, playerID)
+	return mode.recvLuaMsg(msg, playerID)
 end
 
--- Finished scenario: the configuration is in the game option tdconfig and the waves start with the game
 function gadget:Initialize()
-	if gadgetHandler.RegisterAllowCommand then
-		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- build orders: otherwise the engine registers it and warns
-	end
-	Spring.SetGameRulesParam("tdState", "")
+	mode.initialize()
 end
 
--- Finished scenario: the settings come in the game option tdconfig (the payload as base64url); the waves start a moment after the game
--- start, when the units of the scenario exist
 function gadget:GamePreload()
-	local text = G.option("tdconfig")
-	if text then
-		pendingCfg = parse(text)
-	end
+	mode.gamePreload()
 end

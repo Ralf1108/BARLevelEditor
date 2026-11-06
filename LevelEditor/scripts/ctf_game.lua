@@ -175,8 +175,7 @@ local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- wh
 local EDITOR_MODE = G.EDITOR_MODE
 
 local g = nil -- running game: nil = none
-local pendingCfg = nil -- configuration waiting for the start (finished scenario)
-local START_FRAME = 30 -- finished scenario: starts this frame (the units of the scenario exist by then)
+local mode -- messages, game option and start of a finished scenario: G.gameMode, made at the end of this file
 local protected = {} -- unitID -> true: flags and collection points
 local carrying = {} -- carrier unitID -> flag
 
@@ -561,11 +560,7 @@ local function check(n)
 end
 
 function gadget:GameFrame(n)
-	if pendingCfg and n >= START_FRAME then
-		local cfg = pendingCfg
-		pendingCfg = nil
-		start(cfg)
-	end
+	mode.gameFrame(n) -- a finished scenario starts at frame G.START_FRAME (led_gadgets.lua)
 	if n % 5 == 0 then
 		-- the capture progress that the game's lootbox gadget adds (enemy units within 1024 Elmo) is reset: the bar stays empty
 		for id in pairs(protected) do
@@ -667,33 +662,18 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	return true
 end
 
-local messages = {
-	start = function(payload)
-		local cfg = parse(payload)
-		if cfg then
-			start(cfg)
-		else
-			say("Cannot start: place at least one collection point and one flag point first.")
-		end
-	end,
-	stop = function() stop() end,
-}
+-- The messages of the editor (ctf|start|<payload>, ctf|stop) and the game option ctfconfig of a finished scenario (the payload as base64url; starts when the units of the scenario exist): G.gameMode of led_gadgets.lua
+mode = G.gameMode({ tag = "ctf", option = "ctfconfig", state = "ctfState", parse = parse, start = start, stop = stop, say = say, startFail = "Cannot start: place at least one collection point and one flag point first.",
+	handler = gadgetHandler, allowCommand = true })
 
 function gadget:RecvLuaMsg(msg, playerID)
-	return G.handleMessage("ctf", messages, msg, playerID)
+	return mode.recvLuaMsg(msg, playerID)
 end
 
 function gadget:Initialize()
-	if gadgetHandler.RegisterAllowCommand then
-		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns
-	end
-	Spring.SetGameRulesParam("ctfState", "")
+	mode.initialize()
 end
 
--- Finished scenario: the settings come in the game option ctfconfig (the payload as base64url)
 function gadget:GamePreload()
-	local text = G.option("ctfconfig")
-	if text then
-		pendingCfg = parse(text)
-	end
+	mode.gamePreload()
 end
