@@ -217,7 +217,7 @@ function ConvertTo-Table($o) {
     return $o
 }
 
-# ---------------------------------------------------------------- Tower Defense
+# ---------------------------------------------------------------- Sections of the level file (towerdefense, restrictions, capture, reclaim)
 # Position of the closing brace that belongs to the opening brace at $open
 function Find-CloseBrace([string]$txt, [int]$open) {
     $depth = 0
@@ -228,36 +228,43 @@ function Find-CloseBrace([string]$txt, [int]$open) {
     return -1
 }
 
-# Section "towerdefense" of the level (written by the Level Editor): the settings of the tower defense page.
-# $null when the section is missing, Tower Defense is off or spawn point, goal or waves are missing.
-function Read-TowerDefense([string]$txt) {
-    $m = [regex]::Match($txt, 'towerdefense\s*=\s*\{')
+# The text between the braces of the first "<key> = { ... }" in $txt, $null when there is none. $prefix: the regex in front of the key
+# ('\b' = a whole word; '(?m)^\s*' = at the start of a line, for a key that could also stand inside another section)
+function Get-LuaBlock([string]$txt, [string]$key, [string]$prefix = '\b') {
+    $m = [regex]::Match($txt, $prefix + $key + '\s*=\s*\{')
     if (-not $m.Success) { return $null }
     $open = $m.Index + $m.Length - 1
     $close = Find-CloseBrace $txt $open
     if ($close -lt 0) { return $null }
-    $body = $txt.Substring($open + 1, $close - $open - 1)
-    $en = [regex]::Match($body, '\benabled\s*=\s*(true|false)')
-    if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
-    function Flag($key) { $f = [regex]::Match($body, "\b$key\s*=\s*(true|false)"); return (-not $f.Success) -or ($f.Groups[1].Value -eq 'true') }
-    function Pair($key) {
-        $p = [regex]::Match($body, "\b$key\s*=\s*\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}")
-        if ($p.Success) { return @([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
-        return $null
-    }
-    function Block($key) {
-        $b = [regex]::Match($body, "\b$key\s*=\s*\{")
-        if (-not $b.Success) { return '' }
-        $o = $b.Index + $b.Length - 1
-        $c = Find-CloseBrace $body $o
-        if ($c -lt 0) { return '' }
-        return $body.Substring($o + 1, $c - $o - 1)
-    }
-    $td = @{ spawn = (Pair 'spawn'); goal = (Pair 'goal'); economy = (Flag 'economy'); fog = (Flag 'fog'); leaks = 10; waypoints = @(); waves = @() }
-    $lk = [regex]::Match($body, '\bleaks\s*=\s*(\d+)')
-    if ($lk.Success) { $td.leaks = [int]$lk.Groups[1].Value }
-    foreach ($p in [regex]::Matches((Block 'waypoints'), '\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}')) { $td.waypoints += ,@([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
-    foreach ($wm in [regex]::Matches((Block 'waves'), '\{([^{}]*)\}')) {
+    return $txt.Substring($open + 1, $close - $open - 1)
+}
+
+# Single values of a section: a whole number, true / false, a pair "{ x, z }"; $default when the key is missing
+function Get-LuaNum([string]$body, [string]$key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(\d+)"); if ($n.Success) { return [int]$n.Groups[1].Value } else { return $default } }
+function Get-LuaFlag([string]$body, [string]$key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(true|false)"); if ($n.Success) { return ($n.Groups[1].Value -eq 'true') } else { return $default } }
+function Get-LuaPair([string]$body, [string]$key) {
+    $p = [regex]::Match($body, "\b$key\s*=\s*\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}")
+    if ($p.Success) { return @([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
+    return $null
+}
+
+# The body of a game mode section that is switched on (enabled = true), $null otherwise
+function Get-ModeSection([string]$txt, [string]$key, [string]$prefix = '\b') {
+    $body = Get-LuaBlock $txt $key $prefix
+    if ($null -eq $body -or -not (Get-LuaFlag $body 'enabled' $false)) { return $null }
+    return $body
+}
+
+# Section "towerdefense" of the level (written by the Level Editor): the settings of the tower defense page.
+# $null when the section is missing, Tower Defense is off or spawn point, goal or waves are missing.
+# The payload built from it (tdconfig) is read by parse() in td_waves.lua.
+function Read-TowerDefense([string]$txt) {
+    $body = Get-ModeSection $txt 'towerdefense'
+    if ($null -eq $body) { return $null }
+    $td = @{ spawn = (Get-LuaPair $body 'spawn'); goal = (Get-LuaPair $body 'goal'); economy = (Get-LuaFlag $body 'economy' $true); fog = (Get-LuaFlag $body 'fog' $true)
+             leaks = (Get-LuaNum $body 'leaks' 10); waypoints = @(); waves = @() }
+    foreach ($p in [regex]::Matches([string](Get-LuaBlock $body 'waypoints'), '\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}')) { $td.waypoints += ,@([int]$p.Groups[1].Value, [int]$p.Groups[2].Value) }
+    foreach ($wm in [regex]::Matches([string](Get-LuaBlock $body 'waves'), '\{([^{}]*)\}')) {
         $w = @{ fac = 'arm'; kind = 'vb'; tech = '1'; count = 10; gap = 30; hp = 100 }
         foreach ($kv in [regex]::Matches($wm.Groups[1].Value, '(\w+)\s*=\s*("[^"]*"|-?\d+)')) {
             $v = $kv.Groups[2].Value.Trim('"')
@@ -272,57 +279,33 @@ function Read-TowerDefense([string]$txt) {
     return $td
 }
 
-# Section "restrictions" of the level (written by the Level Editor): the units and tech levels the player cannot build. $null when empty.
+# Section "restrictions" of the level (written by the Level Editor): the units the player cannot build. $null when empty.
 function Read-Restrictions([string]$txt) {
-    $m = [regex]::Match($txt, 'restrictions\s*=\s*\{')
-    if (-not $m.Success) { return $null }
-    $open = $m.Index + $m.Length - 1
-    $close = Find-CloseBrace $txt $open
-    if ($close -lt 0) { return $null }
-    $body = $txt.Substring($open + 1, $close - $open - 1)
-    function Block($key) {
-        $b = [regex]::Match($body, "$key\s*=\s*\{")
-        if (-not $b.Success) { return '' }
-        $o = $b.Index + $b.Length - 1
-        $c = Find-CloseBrace $body $o
-        if ($c -lt 0) { return '' }
-        return $body.Substring($o + 1, $c - $o - 1)
-    }
+    $body = Get-LuaBlock $txt 'restrictions'
+    if ($null -eq $body) { return $null }
     $names = @()
-    foreach ($b in [regex]::Matches((Block 'banned'), '"([^"]+)"')) { $names += $b.Groups[1].Value }
+    foreach ($b in [regex]::Matches([string](Get-LuaBlock $body 'banned'), '"([^"]+)"')) { $names += $b.Groups[1].Value }
     if ($names.Count -eq 0) { return $null }
     return @{ banned = $names }
 }
 
 # Section "capture" of the level (written by the Level Editor): the settings of the Capture the Flag page.
 # $null when the section is missing, Capture the Flag is off or collection points or flag points are missing.
+# The payload built from it (ctfconfig) is read by parse() in ctf_game.lua.
 function Read-Capture([string]$txt) {
-    $m = [regex]::Match($txt, '\bcapture\s*=\s*\{')
-    if (-not $m.Success) { return $null }
-    $open = $m.Index + $m.Length - 1
-    $close = Find-CloseBrace $txt $open
-    if ($close -lt 0) { return $null }
-    $body = $txt.Substring($open + 1, $close - $open - 1)
-    $en = [regex]::Match($body, '\benabled\s*=\s*(true|false)')
-    if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
-    function Num($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(\d+)"); if ($n.Success) { return [int]$n.Groups[1].Value } else { return $default } }
-    function Txt($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*`"(\w+)`""); if ($n.Success) { return $n.Groups[1].Value } else { return $default } }
+    $body = Get-ModeSection $txt 'capture'
+    if ($null -eq $body) { return $null }
     function Points($key) {
-        $b = [regex]::Match($body, "\b$key\s*=\s*\{")
         $out = @()
-        if (-not $b.Success) { return $out }
-        $o = $b.Index + $b.Length - 1
-        $c = Find-CloseBrace $body $o
-        if ($c -lt 0) { return $out }
-        foreach ($pm in [regex]::Matches($body.Substring($o + 1, $c - $o - 1), '\{([^{}]*)\}')) {
+        foreach ($pm in [regex]::Matches([string](Get-LuaBlock $body $key), '\{([^{}]*)\}')) {
             $q = @{ team = -1; x = 0; z = 0 }
             foreach ($kv in [regex]::Matches($pm.Groups[1].Value, '(\w+)\s*=\s*(-?\d+)')) { $q[$kv.Groups[1].Value] = [int]$kv.Groups[2].Value }
             $out += ,$q
         }
         return $out
     }
-    $vis = [regex]::Match($body, '\bvisible\s*=\s*(true|false)')
-    $cap = @{ visible = ((-not $vis.Success) -or $vis.Groups[1].Value -eq 'true'); amount = (Num 'amount' 100); radius = (Num 'radius' 100); score = (Num 'score' 3); returnTime = (Num 'returnTime' 0); speed = (Num 'speed' 50); homes = (Points 'homes'); flags = (Points 'flags') }
+    $cap = @{ visible = (Get-LuaFlag $body 'visible' $true); amount = (Get-LuaNum $body 'amount' 100); radius = (Get-LuaNum $body 'radius' 100); score = (Get-LuaNum $body 'score' 3)
+              returnTime = (Get-LuaNum $body 'returnTime' 0); speed = (Get-LuaNum $body 'speed' 50); homes = (Points 'homes'); flags = (Points 'flags') }
     if ($cap.homes.Count -eq 0 -or $cap.flags.Count -eq 0) {
         Write-Host 'Note: Capture the Flag is on in the level, but collection points or flag points are missing: the scenario is built without it.' -ForegroundColor Yellow
         return $null
@@ -332,18 +315,12 @@ function Read-Capture([string]$txt) {
 
 # Section "reclaim" of the level (written by the Level Editor): the settings of the Reclaim the Fame page. $null when the section is missing or
 # Reclaim the Fame is off. The nodes are features of the level (pilha_crystal1/2/3 in any color), not part of the section.
+# The payload built from it (rtfconfig) is read by parse() in rtf_game.lua.
 function Read-Reclaim([string]$txt) {
-    $m = [regex]::Match($txt, '(?m)^\s*reclaim\s*=\s*\{')
-    if (-not $m.Success) { return $null }
-    $open = $m.Index + $m.Length - 1
-    $close = Find-CloseBrace $txt $open
-    if ($close -lt 0) { return $null }
-    $body = $txt.Substring($open + 1, $close - $open - 1)
-    $en = [regex]::Match($body, '\benabled\s*=\s*(true|false)')
-    if (-not ($en.Success -and $en.Groups[1].Value -eq 'true')) { return $null }
-    function Num($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(\d+)"); if ($n.Success) { return [int]$n.Groups[1].Value } else { return $default } }
-    function Flag($key, $default) { $n = [regex]::Match($body, "\b$key\s*=\s*(true|false)"); if ($n.Success) { return ($n.Groups[1].Value -eq 'true') } else { return $default } }
-    return @{ score = (Num 'score' 100000); rate = (Num 'rate' 100); f1 = (Num 'f1' 100); f2 = (Num 'f2' 200); f3 = (Num 'f3' 400); visible = (Flag 'visible' $true); statics = (Flag 'statics' $false); ground = (Flag 'ground' $true); ships = (Flag 'ships' $true); air = (Flag 'air' $false) }
+    $body = Get-ModeSection $txt 'reclaim' '(?m)^\s*'
+    if ($null -eq $body) { return $null }
+    return @{ score = (Get-LuaNum $body 'score' 100000); rate = (Get-LuaNum $body 'rate' 100); f1 = (Get-LuaNum $body 'f1' 100); f2 = (Get-LuaNum $body 'f2' 200); f3 = (Get-LuaNum $body 'f3' 400)
+              visible = (Get-LuaFlag $body 'visible' $true); statics = (Get-LuaFlag $body 'statics' $false); ground = (Get-LuaFlag $body 'ground' $true); ships = (Get-LuaFlag $body 'ships' $true); air = (Get-LuaFlag $body 'air' $false) }
 }
 
 # ---------------------------------------------------------------- Read the level
