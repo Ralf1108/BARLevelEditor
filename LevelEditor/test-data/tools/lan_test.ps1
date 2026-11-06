@@ -16,12 +16,14 @@
 #               lines with the values of the room before and after (no game is started: -WaitSec 90)
 #         rejoin = host + joiner place their start positions, the game runs; then the joiner's game is killed and started again (same folder, auto join): does the room offer a rejoin?
 #               (log of the first run: infolog_first.txt of the joiner; use -QuitFrame 60000)
+#         mix = Raptors against Scavengers: host (PlayerA) with a Raptors computer in team 1, joiner (PlayerB) with a Scavengers computer in team 2, both place their start position;
+#               zz_mix.lua (host, not with -Play) speeds the game up and logs units, distances and deaths of both computers. -Play: a game to play (no test widgets, no speed-up, no end by itself)
 #         page = one instance, the LAN Play page opened and left alone (pictures of the page with -Shots, -WaitSec 60 ends it)
 #         teams = the buttons "3 teams" / "2 per team" of the room (log: lan_status.txt in the data folder of the host; pictures with -Shots)
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame)
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play)
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -35,7 +37,7 @@ public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowP
 '@
 $exe = (Get-ChildItem "$real\engine" -Directory | Select -Last 1).FullName + '\spring.exe'
 $scn = "${Mode}_test"
-if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin') {
+if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix') {
     if (Test-Path "$sp\bundle_$scn") { Remove-Item "$sp\bundle_$scn" -Recurse -Force }
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\LevelEditor\scenario\scenario_builder.ps1" -Level $scn -LevelDir "$repo\LevelEditor\test-data\levels" -Auto -BundleDir "$sp\bundle_$scn" | Out-Null
 }
@@ -63,8 +65,9 @@ foreach ($who in $who2) {
     Copy-Item "$repo\LevelEditor\lan_lobby\lan_lobby.lua" "$d\LuaMenu\Widgets\"
     if ($who -ne 'H' -and $Lobby -eq 'other') { Add-Content "$d\LuaMenu\Widgets\lan_lobby.lua" "`n-- another version for the version test" -Encoding ASCII }
     Copy-Item "$repo\LevelEditor\scenario\template\shared_start.lua" "$d\LuaUI\Widgets\"
-    Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\"
-    if ($Mode -in 'pve', 'rejoin' -or ($Mode -eq 'latejoin' -and $who -eq 'H')) { Copy-Item "$tools\zz_place.lua" "$d\LuaUI\Widgets\" }
+    if (-not $Play) { Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\" }   # -Play: no test widgets, the game is played
+    if ($Mode -eq 'mix' -and $who -eq 'H' -and -not $Play) { Copy-Item "$tools\zz_mix.lua" "$d\LuaUI\Widgets\" }
+    if ($Mode -in 'pve', 'rejoin', 'mix' -or ($Mode -eq 'latejoin' -and $who -eq 'H')) { Copy-Item "$tools\zz_place.lua" "$d\LuaUI\Widgets\" }
     if ($Mode -eq 'pve' -and $who -eq 'H') { Copy-Item "$tools\zz_pve.lua" "$d\LuaUI\Widgets\" }
     [IO.File]::WriteAllText("$d\zz_mode.txt", $Mode); [IO.File]::WriteAllText("$d\zz_quit.txt", "$QuitFrame")
     # the lobby (Chobby) puts the window to the full screen in the menu and again when a game starts, unless its window mode is 6 (manual window): lobby and game in this window
@@ -73,12 +76,12 @@ foreach ($who in $who2) {
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
-        if ($Mode -notin 'cp', 'teams', 'boss', 'pve', 'preset', 'rejoin', 'latejoin') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
+        if ($Mode -notin 'cp', 'teams', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -161,7 +164,7 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
             $who2 = @('H', 'J'); $killedAt = Get-Date; 'latejoin test: PlayerB started (the game of PlayerA runs)'
         }
     }
-    if ($Mode -in 'pve', 'rejoin', 'latejoin') {
+    if ($Mode -in 'pve', 'rejoin', 'latejoin', 'mix') {
         # click the middle of the window (the widget points the camera at the start position) until the widget logs "placed"; in the draft mode the players place one after the other
         foreach ($who in $who2) {
             $dd = "$sp\sbx_$who\data"
@@ -174,7 +177,7 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
         }
     }
     # the host's game ended (quitforce of the test widget): the joiners stay in their lobby, end them after some seconds
-    if ($Mode -eq 'pve' -and $procs['H'].HasExited) { if (-not $hostEnded) { $hostEnded = Get-Date } elseif (((Get-Date) - $hostEnded).TotalSeconds -gt 10) { break } }
+    if ($Mode -in 'pve', 'mix' -and $procs['H'].HasExited) { if (-not $hostEnded) { $hostEnded = Get-Date } elseif (((Get-Date) - $hostEnded).TotalSeconds -gt 10) { break } }
     if ($Mode -eq 'rejoin' -and -not $killedAt -and (Select-String -Path "$sp\sbx_H\data\infolog.txt" -Pattern '\[zzplace\] (placed|GameStart)' -Quiet -ErrorAction SilentlyContinue) -and (Select-String -Path "$sp\sbx_J\data\infolog.txt" -Pattern '\[zzplace\] (placed|GameStart)' -Quiet -ErrorAction SilentlyContinue)) {
         if (-not $placedAt) { $placedAt = Get-Date }
         elseif (((Get-Date) - $placedAt).TotalSeconds -gt 40) {

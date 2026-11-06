@@ -2294,6 +2294,9 @@ function widget:Update()
 		cfg.botDone = true   -- test: a computer in the room (the Add AI button: lobby:AddAi)
 		log("test: adding the computer", cfg.bot, "to ally team", tostring(cfg.botAlly or 0))
 		log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot .. "1", cfg.bot, tonumber(cfg.botAlly) or 0, "<not-versioned>")))
+		if cfg.bot2 and cfg.bot2 ~= "" then   -- a second computer (Raptors against Scavengers)
+			log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot2 .. "1", cfg.bot2, tonumber(cfg.bot2Ally) or 1, "<not-versioned>")))
+		end
 	end
 	if cfg.auto and lan and lan.step == "in" and not lan.chatted then
 		lan.chatted = true

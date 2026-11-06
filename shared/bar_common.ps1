@@ -189,6 +189,54 @@ function Update-MapHashes([string]$data) {
 
 # Builds the game from the files found in $dirs (for every file the first folder that has it; missing files are left out) unless it exists already.
 # Returns Name (the game name for the start script), Version, Path and File (the file name).
+# Files of the game itself that the extra game replaces by a changed copy (made from the installed game when the extra game is built, so the copy follows the
+# game's updates): archive path, then pairs of text to find and text to put in. The Scavengers and Raptors spawners and the voice message of the game
+# refuse (return false / say "leave the match") when both AIs are in a game: with the changed copies a Raptors AI and a Scavengers AI play against each other.
+# The Scavengers' waves only start when the player teams have power (units); in a room the humans play the computers' teams and the Raptors count as the opponent: their power is added.
+# A file whose text has changed so that it does not fit any more is left out (the extra game is built without it, a note is shown).
+$ScenarioGameDerived = @(
+    @('luarules/gadgets/raptor_spawner_defense.lua', @(, @('if BAR.Utilities.Gametype.IsRaptors() and not BAR.Utilities.Gametype.IsScavengers() then', 'if BAR.Utilities.Gametype.IsRaptors() then'))),
+    @('luarules/gadgets/scav_spawner_defense.lua', @(@('if BAR.Utilities.Gametype.IsScavengers() and not BAR.Utilities.Gametype.IsRaptors() then', 'if BAR.Utilities.Gametype.IsScavengers() then'), @('totalPlayerTeamPower = GG.PowerLib.TotalPlayerTeamsPower()', 'totalPlayerTeamPower = GG.PowerLib.TotalPlayerTeamsPower() + ((GG.PowerLib.RaptorTeam and GG.PowerLib.TeamPower(GG.PowerLib.RaptorTeam)) or 0)'))),
+    @('luaui/widgets/snd_notifications.lua', @(, @('BAR.Utilities.Gametype.IsRaptors() and BAR.Utilities.Gametype.IsScavengers()', 'false')))
+)
+
+# The text of a file of the installed game ($game = its name, as Get-GameVersion gives it): the package list (.sdp of rapid: gzip of records name length, name, md5,
+# crc, size) names the md5 of the file, the file itself lies in pool\xx\<rest of the md5>.gz. $null when it is not found.
+function Get-GameFileText([string]$data, [string]$game, [string]$path) {
+    Add-Type -AssemblyName System.IO.Compression
+    function Read-Gz([string]$file) {
+        $fs = [IO.File]::OpenRead($file); $gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
+        $ms = New-Object IO.MemoryStream; $gz.CopyTo($ms); $gz.Close(); $fs.Close(); return , $ms.ToArray()
+    }
+    $versionsFile = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
+    if (-not (Test-Path $versionsFile)) { return $null }
+    $text = [Text.Encoding]::UTF8.GetString((Read-Gz $versionsFile))
+    $hash = $null
+    foreach ($line in ($text -split "`n")) {
+        $f = $line.Trim().Split(',')
+        if ($f.Count -ge 4 -and $f[3] -eq $game -and (Test-Path (Join-Path $data ('packages\' + $f[1] + '.sdp')))) { $hash = $f[1]; break }
+    }
+    if (-not $hash) { return $null }
+    $d = Read-Gz (Join-Path $data ('packages\' + $hash + '.sdp'))
+    $want = [Text.Encoding]::UTF8.GetBytes($path)
+    $i = 0
+    while ($i -lt $d.Length) {
+        $n = $d[$i]
+        if ($n -eq $want.Length) {
+            $same = $true
+            for ($k = 0; $k -lt $n; $k++) { if ($d[$i + 1 + $k] -ne $want[$k]) { $same = $false; break } }
+            if ($same) {
+                $md5 = -join ($d[($i + 1 + $n)..($i + 16 + $n)] | ForEach-Object { $_.ToString('x2') })
+                $pool = Join-Path $data ('pool\' + $md5.Substring(0, 2) + '\' + $md5.Substring(2) + '.gz')
+                if (-not (Test-Path $pool)) { return $null }
+                return [Text.Encoding]::UTF8.GetString((Read-Gz $pool))
+            }
+        }
+        $i += 1 + $n + 24
+    }
+    return $null
+}
+
 function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
     $entries = @()
     $bytes = New-Object System.Collections.Generic.List[byte]
@@ -200,6 +248,14 @@ function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
         $text = [IO.File]::ReadAllText($src).Replace("`r", '')
         $entries += , @($f[1], $text)
         $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($f[1] + "`n" + $text + "`n"))
+    }
+    foreach ($f in $ScenarioGameDerived) {
+        $text = Get-GameFileText $data $game $f[0]
+        if ($text) { $text = $text.Replace("`r", '') }
+        foreach ($pair in $f[1]) { if ($text) { if ($text.Contains($pair[0])) { $text = $text.Replace($pair[0], $pair[1]) } else { $text = $null } } }
+        if (-not $text) { Write-Host "Note: $($f[0]) of the game was not found or has changed: Raptors against Scavengers in one game is not possible." -ForegroundColor Yellow; continue }
+        $entries += , @($f[0], $text)
+        $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($f[0] + "`n" + $text + "`n"))
     }
     $ver = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($bytes.ToArray())) -replace '-', '').Substring(0, 8).ToLower()
     $name = "Level Editor Scenarios $ver"
