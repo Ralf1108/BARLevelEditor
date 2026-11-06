@@ -14,7 +14,7 @@ cost and build time apply as usual.
 ## Installing
 1. BAR must be installed (launcher started once).
 2. Run `install_blueprinter.bat`. It copies `bluePrinter.lua` to `data\LuaUI\Widgets`, the shared code
-   `shared/editor_common.lua` and `shared/bar_rules.lua` to `data\LuaUI\Include` and creates the junctions `data\LuaUI\Config\BluePrinter` -> `blueprints` and `data\LuaUI\Config\LevelEditorBlueprints` -> blueprints of the Level Editor (BAR only allows user widgets to write under `LuaUI\Config` and to read under `LuaUI`). 
+   `shared/editor_common.lua` and `shared/bar_rules.lua` to `data\LuaUI\Include` and creates the junctions `data\LuaUI\Config\BluePrinter` -> `blueprints` and `data\LuaUI\Config\LevelEditorBlueprints` -> blueprints of the Level Editor (BAR only allows user widgets to write under `LuaUI\Config` and to read under `LuaUI`).
    The folder `shared` must lie next to `BluePrinter`.
 3. In the game switch on "Allow user widgets" in the settings, then switch BluePrinter on in the widget list (F11).
 After a change to `bluePrinter.lua` or `shared\editor_common.lua`: the BluePrinter is installed and kept up to date only by its own scripts: `start_blueprinter.bat` and `start_blueprinter_test.bat` update it before every start (the Level Editor does not touch it); otherwise run `install_blueprinter.bat` again after a change. A game that is already running keeps the old files until a new start or `/luaui reload`.
@@ -50,7 +50,7 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - Blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later). Every open plan also shows a semi-transparent 3D ghost of the building (the 150 closest to the mouse pointer if there are more).
 - **Right click on a plan** with builders selected: exactly these builders build exactly this plan now (Shift = add it behind their current orders). Builders that cannot build it give a message; without a selected builder the click keeps its normal meaning.
 - **Moving the menu:** drag the title ("BluePrinter") with the left mouse button, the menu moves with its button column. A right click on the title puts it back. The position is remembered.
-- Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **C** commanders help build yes/no (hover for a tooltip). In the menu: Undo, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
+- Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **Q** queue order, **C** commanders help build yes/no, **F** faction of your builders (hover for a tooltip). In the menu: Undo, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
 - Only builders that are idle and can build the building take part (e.g. no T2 buildings with a T1 builder).
   If a builder has several plans nearby, it gets up to four in a row. When all plans are taken,
   it helps with one in progress.
@@ -77,7 +77,7 @@ The buttons **XL**, **XR**, **XC** (area attacks: spread the selected units over
 All details, rules and pictures: [Experimental Attacks](../docs/experimental-attacks.md).
 
 ## Chat commands
-`/bp_menu` menu on/off (auto-build and radius are buttons in the menu), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_scan` (re-read the list), `/bp_create` (blueprint from the selection), `/bp_mode bp|units` (switch the view), `/bp_carpet [line|rect|circle]`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]` (state of the 3D preview).
+`/bp_menu` menu on/off (auto-build and radius are buttons in the menu), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_scan` (re-read the list), `/bp_create` (blueprint from the selection), `/bp_mode bp|units` (switch the view), `/bp_carpet [line|rect|circle|split|focus]`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]` (state of the 3D preview).
 
 ## Note
 Automatic building may count as automation in some ranked or tournament games. If in doubt, switch auto-build off (button **A**).

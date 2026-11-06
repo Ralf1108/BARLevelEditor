@@ -16,11 +16,11 @@ The console lobby (`lobby.ps1`), split screen, direct host and join, and playing
 | `-LobbyAutoStart n` | the host starts by itself when n players are in (tests) |
 | `-Port` | UDP game port, 8452, fixed |
 | `-Wait` | seconds the game waits after the host has loaded: 90 without a lobby, 15 with a lobby, 10 for the split screen |
-| `-Mapping "PlayerA=0,Anna=2"` | who plays which team, first = host |
+| `-Mapping "PlayerA=0,PlayerB=2"` | who plays which team, first = host |
 | `-Players n` | without lobby and mapping: number of humans for the dialog |
 | `-HostIp` | 0.0.0.0; the split screen gives 127.0.0.1 |
 | `-WindowRect x,y,w,h` | place the window (section 8) |
-| `-NoBuild`, `-WaitForHost`, `-ScriptOnly` | keep the extra game / wait until the host listens / only write the script |
+| `-WaitForHost`, `-ScriptOnly` | wait until the host listens / only write the script |
 
 - **Join:** the address comes from a list of the last 10 addresses (`%LOCALAPPDATA%\BAR-Scenario\Last Joined Addresses.txt`, newest first, shared by all scenarios): a number picks one, Enter = the newest, anything else is a new address. The name is asked next (default: the Windows user name cleaned to letters, digits and `_-[]`, afterwards the last one used, `Last Player Name.txt`).
 - **Network:** TCP 8453 (lobby) and UDP 8452 (game) in the firewall of the host (Windows asks for `spring.exe` and `powershell`). The host's lobby (`Update-LobbyNet`) closes every connection whose address is not this computer or in a network of one of its network cards (`Test-SameLan`, the networks read once by `Get-LocalNets`; the VPN ranges 100.64.0.0/10 and 25.0.0.0/8 count as a whole when a card has an address there), with the note "A connection from ... (outside the local network) was refused."
@@ -34,7 +34,7 @@ Runs right after the scenario is read, before the extra game is built and the ma
 - **Keys of the host:** `Tab` / `Shift+Tab` or `Left` / `Right` = next / previous box (the last stop is "Start game"); `Up` / `Down` = player in the box; `Enter` = pick the player up (yellow, "<- moving"), then the arrow keys move them into the neighbouring team box, `Enter` drops them, `Esc` puts them back; `N` = see section 3; `Enter` on "Start game" or `F5` = start (two players are needed, otherwise the reason is shown); `Esc` twice = cancel.
 - **Protocol** (TCP, one UTF-8 line each): joiner `VERSION <protocol>`, `HELLO <name>`, `BYE`, later `READY`; host `OK <name as the host knows it>` (name used already or empty after cleaning: `ERR <reason>` and the connection is closed), `VERSION <protocol>`, then `TEAM <n> <text>` and `ROSTER name=team;...` whenever something changes, at the end `START` or `CANCEL`, and `GO`. The joiner (`Join-Lobby`) shows address, status, their team and the players; `Esc` leaves.
 - **Version:** `$script:LobbyProtocol` in `lobby.ps1` (the protocol and what a joiner does with it; raise it when that changes). A host with another protocol answers `ERR ... please update the Level Editor manually` and closes the connection. The start menu shows the lobby version in its first line. Everybody plays the **host's game**: the gadget versions do not have to match (section 4). Nothing that runs on the computer itself comes from another computer; the editor is never updated through the lobby.
-- **Start:** the host sends `START` and keeps the connections; the roster (name, team; host first) is saved as the last mapping and becomes `-Mapping`. Everybody prepares: the host builds the extra game, checks the map and writes the start script; every joiner does the same (extra game unless `-NoBuild`, map) and sends `READY` (`Wait-JoinerGo`). The host waits for all of them (`Wait-LobbyReady`, up to 300 s; if somebody went away or does not come, nothing is started and the others get `CANCEL`), starts `spring.exe`, waits 5 s (the engine listens after about 3 s) and sends `GO`; the joiners then start `spring://<name>@<address>:<port>` and the game begins `-Wait` seconds after the host has loaded.
+- **Start:** the host sends `START` and keeps the connections; the roster (name, team; host first) is saved as the last mapping and becomes `-Mapping`. Everybody prepares: the host builds the extra game, checks the map and writes the start script; every joiner does the same (extra game, map) and sends `READY` (`Wait-JoinerGo`). The host waits for all of them (`Wait-LobbyReady`, up to 300 s; if somebody went away or does not come, nothing is started and the others get `CANCEL`), starts `spring.exe`, waits 5 s (the engine listens after about 3 s) and sends `GO`; the joiners then start `spring://<name>@<address>:<port>` and the game begins `-Wait` seconds after the host has loaded.
 
 ## 3. Player numbers and Copilot in the lobby
 
@@ -82,7 +82,7 @@ Without `-Lobby` the mapping comes from `-Mapping` or from the dialog `Get-Playe
 
 Start menu key 4, fourth entry. Asks "How many players" (2 to 8, at most the number of `[team]` blocks; `Read-PlayerCount`: Enter without digits = the maximum, Esc = back) and starts all games from `choose_map.ps1`:
 
-- the n-1 joiners first, each a minimized `start_scenario.ps1 -Join -JoinIp 127.0.0.1 -Lobby -Name <TopRight, BottomLeft, ... (Get-SplitNames; with three or four columns Top1, Top2, ...)> -NoBuild -WaitForHost -WindowRect <cell>`, which wait up to 2 minutes until the host listens on the lobby port (`GetActiveTcpListeners`; without a lobby until a UDP listener exists on the game port),
+- the n-1 joiners first, each a minimized `start_scenario.ps1 -Join -JoinIp 127.0.0.1 -Lobby -Name <TopRight, BottomLeft, ... (Get-SplitNames; with three or four columns Top1, Top2, ...)> -WaitForHost -WindowRect <cell>`, which wait up to 2 minutes until the host listens on the lobby port (`GetActiveTcpListeners`; without a lobby until a UDP listener exists on the game port),
 - then the host in the foreground: `-HostGame -Lobby -Name TopLeft -HostIp 127.0.0.1 -WindowRect <cell>`.
 
 The players are in the same lobby (the local ones joined by themselves, the host distributes the teams) and start together after "Start game". Everything stays on this computer (`hostip=127.0.0.1`, no firewall question).
