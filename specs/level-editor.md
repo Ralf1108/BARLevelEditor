@@ -207,7 +207,7 @@ The main folder holds only the `.bat` files, `README.md` and what the setup crea
 
 ## 13. Quality assurance
 
-See [Testing](testing.md). Short: Lua changes are checked in the real game (there is no Lua interpreter on the development machine); before every hand-over run both installers, start the editor and check the log for errors.
+See [Testing](testing.md). Short: every Lua file is compiled with Lua 5.1 (`test-data\tools\lua_check.py`), what it does is checked in the real game; before every hand-over run both installers, start the editor and check the log for errors.
 
 ## 14. Known limitations and open points
 

@@ -4,7 +4,7 @@ How changes are checked. The details of the test tools and what got in the way a
 
 ## 1. Principles
 
-- There is **no Lua interpreter** on the development machine. Lua changes are checked in the real game. The mocks (Python with Lupa, not in the repository) cover widget logic but **not** Lua 5.1 engine limits: at most 200 local variables per function and at most 60 upvalues per function. After a change start the real game once and check that the widget loads (`Failed to load: ...` in `infolog.txt`).
+- `LevelEditor\test-data\tools\lua_check.py` compiles every Lua file with Lua 5.1 (the Python package lupa brings it as `lupa.lua51`): syntax errors and the limits of 5.1 (200 locals, 60 upvalues per function) are found without the game. It runs nothing; what the code does is checked in the real game. The mocks (Python with Lupa, not in the repository) cover widget logic but **not** Lua 5.1 engine limits: at most 200 local variables per function and at most 60 upvalues per function. After a change start the real game once and check that the widget loads (`Failed to load: ...` in `infolog.txt`).
 - Tests run in **sandbox instances** of the game: own write folder, own settings with a framed window, own copy of the extra game, nothing in the user's data folder. They can run next to a running game (`-AlongsideGame`). Long tests run in the background and end the game by themselves (`quitforce`); a killed process loses the log tail. Never kill the user's own `spring.exe`.
 - A game instance needs 8 to 10 GB of RAM: LAN tests run with the host plus one joiner at most.
 - Before every hand-over: run both installers (`install_editor`, `install_blueprinter`), start the editor, check the log for errors.
