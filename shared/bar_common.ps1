@@ -192,11 +192,13 @@ function Update-MapHashes([string]$data) {
 # Files of the game itself that the extra game replaces by a changed copy (made from the installed game when the extra game is built, so the copy follows the
 # game's updates): archive path, then pairs of text to find and text to put in. The Scavengers and Raptors spawners and the voice message of the game
 # refuse (return false / say "leave the match") when both AIs are in a game: with the changed copies a Raptors AI and a Scavengers AI play against each other.
+# The area healers of the game heal the units of one computer team (the Raptors'): the copy heals those of the Scavengers' team too.
 # The Scavengers' waves only start when the player teams have power (units); in a room the humans play the computers' teams and the Raptors count as the opponent: their power is added.
 # A file whose text has changed so that it does not fit any more is left out (the extra game is built without it, a note is shown).
 $ScenarioGameDerived = @(
     @('luarules/gadgets/raptor_spawner_defense.lua', @(, @('if BAR.Utilities.Gametype.IsRaptors() and not BAR.Utilities.Gametype.IsScavengers() then', 'if BAR.Utilities.Gametype.IsRaptors() then'))),
     @('luarules/gadgets/scav_spawner_defense.lua', @(@('if BAR.Utilities.Gametype.IsScavengers() and not BAR.Utilities.Gametype.IsRaptors() then', 'if BAR.Utilities.Gametype.IsScavengers() then'), @('totalPlayerTeamPower = GG.PowerLib.TotalPlayerTeamsPower()', 'totalPlayerTeamPower = GG.PowerLib.TotalPlayerTeamsPower() + ((GG.PowerLib.RaptorTeam and GG.PowerLib.TeamPower(GG.PowerLib.RaptorTeam)) or 0)'))),
+    @('luarules/gadgets/pve_areahealers.lua', @(@('if healersTable[unitDefID] and (unitTeam == pveTeamID) then', 'if healersTable[unitDefID] and (unitTeam == pveTeamID or unitTeam == BAR.Utilities.GetScavTeamID()) then'), @('statsTable.healingrange, pveTeamID)', 'statsTable.healingrange, statsTable.teamID)'))),
     @('luaui/widgets/snd_notifications.lua', @(, @('BAR.Utilities.Gametype.IsRaptors() and BAR.Utilities.Gametype.IsScavengers()', 'false')))
 )
 
