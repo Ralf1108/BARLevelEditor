@@ -56,7 +56,7 @@ at(40, function()
 		if nn == 1 then n = 1 break end
 	end
 	chk(n == 1, "a blueprint on free ground is placed")
-	-- the commander stands somewhere: a blueprint on top of him is allowed (mobile units do not block)
+	-- the commander stands somewhere: a blueprint on top of it is allowed (mobile units do not block)
 	local nu, _, bl = W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, cx + 4, cz + 4)
 	log("on top of the commander: new=" .. tostring(nu) .. " left out=" .. tostring(bl) .. " (info)")
 end)

@@ -13,7 +13,7 @@ using System; using System.Runtime.InteropServices;
 public class W3 { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
 '@
-$exe = (Get-ChildItem "$Data\engine" -Directory | Select -Last 1).FullName + '\spring.exe'
+$exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = "$Work\data"
 if (Test-Path $d) { foreach ($j in Get-ChildItem $d -Directory | ? { $_.Attributes -band 'ReparsePoint' }) { cmd /c rmdir "$($j.FullName)" } }
 if (Test-Path $Work) { Remove-Item $Work -Recurse -Force }

@@ -35,7 +35,7 @@ using System; using System.Runtime.InteropServices;
 public class W2 { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);
  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
 '@
-$exe = (Get-ChildItem "$real\engine" -Directory | Select -Last 1).FullName + '\spring.exe'
+$exe = (Get-Engine $real).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $scn = "${Mode}_test"
 if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix') {
     if (Test-Path "$sp\bundle_$scn") { Remove-Item "$sp\bundle_$scn" -Recurse -Force }
