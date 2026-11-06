@@ -18,6 +18,7 @@ $items = @(
     @{ Path = (Join-Path $data 'LuaUI\Widgets\bluePrinter.lua'); Text = 'Widget LuaUI\Widgets\bluePrinter.lua'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LuaUI\Include\editor_common.lua'); Text = 'Shared code LuaUI\Include\editor_common.lua'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LuaUI\Include\bar_rules.lua'); Text = 'Shared code LuaUI\Include\bar_rules.lua'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'LuaUI\Include\area_attack.lua'); Text = 'Shared code LuaUI\Include\area_attack.lua'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LuaUI\Config\BluePrinter'); Text = 'Junction LuaUI\Config\BluePrinter (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LuaUI\Config\LevelEditorBlueprints'); Text = 'Junction LuaUI\Config\LevelEditorBlueprints (the Level Editor blueprints stay)'; Kind = 'junction' }
 )

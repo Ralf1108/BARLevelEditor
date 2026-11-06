@@ -2435,7 +2435,7 @@ local function gridKeyHook(_, _, _, _, isRepeat, release, _, key)
 	return false
 end
 
--- The buttons Area Attack, Split Attack and Focus Attack in the command menu of the game (see newAreaAttack in editor_common.lua)
+-- The buttons Area Attack, Split Attack and Focus Attack in the command menu of the game (see newAreaAttack in area_attack.lua)
 function widget:CommandsChanged()
 	area:addCommands(widgetHandler)
 end

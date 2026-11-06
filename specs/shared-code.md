@@ -1,6 +1,6 @@
 # Shared code (`shared\`)
 
-`editor_common.lua` is the code the [Level Editor](level-editor.md) and the [BluePrinter](blueprinter.md) have in common; `bar_rules.lua` holds the rules about unit definitions that gadgets and widgets need alike; `bar_common.ps1` holds the shared parts of the setup scripts and the scenario starter. A change in `editor_common.lua` affects both widgets: changes to the blueprint / unit interface are made there, only what one widget alone needs stays in the widget.
+`editor_common.lua` is the code the [Level Editor](level-editor.md) and the [BluePrinter](blueprinter.md) have in common (the experimental attacks in `area_attack.lua` next to it, which `editor_common.lua` loads and offers as `M.newAreaAttack`); `bar_rules.lua` holds the rules about unit definitions that gadgets and widgets need alike; `bar_common.ps1` holds the shared parts of the setup scripts and the scenario starter. A change in `editor_common.lua` affects both widgets: changes to the blueprint / unit interface are made there, only what one widget alone needs stays in the widget.
 
 ## 1. Rules
 
@@ -16,7 +16,7 @@
 | BluePrinter | `VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)` | `data\LuaUI\Include\editor_common.lua` in the BAR write folder |
 
 - The two load paths are deliberately separate so the copy in the extra game is never covered by the copy for the BluePrinter.
-- `install_editor.ps1` packs `editor_common.lua` and `bar_rules.lua` into the `.sdz` ([Setup](level-editor-setup.md); the list is `editor_manifest.ps1` and `$ScenarioGameFiles`); `install_blueprinter.ps1` copies them to `data\LuaUI\Include`. Both scripts take the files from the folder `shared` next to the widget folder and abort with a message if it is missing.
+- `install_editor.ps1` packs `editor_common.lua`, `area_attack.lua` and `bar_rules.lua` into the `.sdz` ([Setup](level-editor-setup.md); the list is `editor_manifest.ps1` and `$ScenarioGameFiles`); `install_blueprinter.ps1` copies them to `data\LuaUI\Include`. Both scripts take the files from the folder `shared` next to the widget folder and abort with a message if it is missing.
 - After a change: the Level Editor updates itself at the next start with `start_level_editor.bat` (stamp); for the BluePrinter in a normal game run `BluePrinter\install_blueprinter.bat` (or its start scripts, which compare hashes).
 - **File access:** the code reads and writes files through `io.open` and `VFS.DirList`. User widgets (BluePrinter) may only read under `LuaUI/` and only write under `LuaUI/Config/`; the folders of the library (`dirs`) must lie there. Game widgets (Level Editor) are not restricted.
 
@@ -163,7 +163,7 @@ The hover block of a **blueprint** shows name, the sums of metal, energy and hea
 ## 13. Maze and area attack
 
 - `M.mazeWalls(cols, rows, path, rnd)` returns the wall tiles `{i, j}` (0-based) of a random maze (cells of `path` × `path` tiles, one tile of wall between them, depth-first search, entrance top left, exit bottom right) and width and height in tiles. Used by key M and the Maze sub-tab of the Level Editor. Property: every corridor is reachable from the entrance, the exit is reachable, exactly cells−1 passages (no cycle).
-- `M.newAreaAttack(o)` (`o = { say, mouseGround, inPanel, onArm }`): methods `toggle(mode)` ("line" | "rect" | "circle" | "split" = XS | "focus" = XF | nil = off), `armed()`, `mode()`, `press(button)` (map click while armed; true if used), `release()` (starts the attack), `draw()`, `step(frame)` (every frame; synchronized bomber waves), `disarm()`. The logic is described in [BluePrinter](blueprinter.md), "Area attacks".
+- `M.newAreaAttack(o)` (the code is in `area_attack.lua`, loaded with `VFS.Include("luaui/Include/area_attack.lua", nil, VFS.ZIP_FIRST)` like `bar_rules.lua`; `o = { say, mouseGround, inPanel, onArm }`): methods `toggle(mode)` ("line" | "rect" | "circle" | "split" = XS | "focus" = XF | nil = off), `armed()`, `mode()`, `press(button)` (map click while armed; true if used), `release()` (starts the attack), `draw()`, `step(frame)` (every frame; synchronized bomber waves), `disarm()`. The logic is described in [BluePrinter](blueprinter.md), "Area attacks".
 
 ## 14. Tests
 

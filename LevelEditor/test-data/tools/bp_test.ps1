@@ -9,7 +9,7 @@ $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = New-SandboxData $Work $Data @('LuaUI\Include', 'LuaUI\Config')
 Copy-Item "$repo\BluePrinter\bluePrinter.lua" "$d\LuaUI\Widgets\"
-Copy-Item "$repo\shared\editor_common.lua", "$repo\shared\bar_rules.lua" "$d\LuaUI\Include\"
+Copy-Item "$repo\shared\editor_common.lua", "$repo\shared\bar_rules.lua", "$repo\shared\area_attack.lua" "$d\LuaUI\Include\"
 Copy-Item "$tools\$Widget" "$d\LuaUI\Widgets\"
 $game = Get-GameVersion $Data
 $script = @"

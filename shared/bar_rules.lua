@@ -75,7 +75,7 @@ function R.decode64(s)
 end
 
 -- The three buttons Area Attack, Split Attack and Focus Attack of the command menu (custom commands of type ICON: pressing one arms the circle mode of
--- the area attack, see newAreaAttack in editor_common.lua). The BluePrinter adds them as a widget (widgetHandler.customCommands); the Level Editor
+-- the area attack, see newAreaAttack in area_attack.lua). The BluePrinter adds them as a widget (widgetHandler.customCommands); the Level Editor
 -- gives every unit these commands in its gadget (unit_level_editor.lua: a widget of a game archive may not add commands, a gadget may).
 R.ATTACK_BUTTONS = {
 	base = 43020, -- command ids base + 1 .. base + 3

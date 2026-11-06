@@ -8,7 +8,8 @@ $data = Join-Path $bar 'data'
 $pairs = @(
     @((Join-Path $here 'bluePrinter.lua'), (Join-Path $data 'LuaUI\Widgets\bluePrinter.lua')),
     @((Join-Path $shared 'editor_common.lua'), (Join-Path $data 'LuaUI\Include\editor_common.lua')),
-    @((Join-Path $shared 'bar_rules.lua'), (Join-Path $data 'LuaUI\Include\bar_rules.lua')))
+    @((Join-Path $shared 'bar_rules.lua'), (Join-Path $data 'LuaUI\Include\bar_rules.lua')),
+    @((Join-Path $shared 'area_attack.lua'), (Join-Path $data 'LuaUI\Include\area_attack.lua')))
 $stale = -not (Test-Path (Join-Path $data 'LuaUI\Config\BluePrinter'))
 foreach ($p in $pairs) {
     if (-not (Test-Path $p[1]) -or (Get-FileHash $p[0]).Hash -ne (Get-FileHash $p[1]).Hash) { $stale = $true }

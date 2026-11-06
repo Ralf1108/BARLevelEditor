@@ -20,6 +20,7 @@ $EditorGameFiles = @(
     @('scripts', 'unit_level_editor.lua', 'luarules/gadgets/unit_level_editor.lua'),
     @('scripts', 'lvl_level_editor.lua', 'luaui/widgets/lvl_level_editor.lua'),   # switched on in the archive (enabled = true)
     @('shared', 'editor_common.lua', 'luaui/Include/editor_common.lua'),
+    @('shared', 'area_attack.lua', 'luaui/Include/area_attack.lua'),   # the experimental attacks, loaded by editor_common.lua
     @('scripts', 'led_td.lua', 'luaui/Include/led_td.lua'),
     @('scripts', 'led_ctf.lua', 'luaui/Include/led_ctf.lua'),
     @('scripts', 'led_rtf.lua', 'luaui/Include/led_rtf.lua'),
