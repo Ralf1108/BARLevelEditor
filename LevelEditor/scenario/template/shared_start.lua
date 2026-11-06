@@ -12,7 +12,7 @@ end
 
 -- Found in a test with two instances of the game on one computer: with two humans in different teams the game starts by itself after the delay of the
 -- start script, with two humans in the SAME team it stays in the pregame (nobody is "ready" for the second player of the team). The host (player 0) then
--- sends the engine command "forcestart" once every human player is active: a player becomes active when he has finished loading (seen in the test:
+-- sends the engine command "forcestart" once every human player is active: a player becomes active when it has finished loading (seen in the test:
 -- the host active after 3 s, the second player after 13 s).
 local GRACE = 3 -- seconds after the moment when everybody is active, before the start is forced
 local DEBUG = false

@@ -3623,7 +3623,7 @@ local function help(_, _, args)
 end
 
 -- Create button: save the selection right away as a blueprint with a running number (bp_001, bp_002 ...); rename by double click in the menu
-function bpQuickSave()
+bpQuickSave = function()
 	rescale()
 	if #selectedUnits() == 0 then
 		say("No unit selected. Select first.")

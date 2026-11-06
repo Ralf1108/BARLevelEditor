@@ -121,7 +121,7 @@ local function battleUsers()
 end
 
 -- SHARE-BEGIN (pure functions, no lobby needed; the test of the Level Editor loads this part by itself)
--- Player numbers: inside an ally team every human has a number 1 .. n (n = the humans of that ally team). By default everybody has a number of his
+-- Player numbers: inside an ally team every human has a number 1 .. n (n = the humans of that ally team). By default everybody has a number of their
 -- own; the host can give several humans the same number: they play ONE player together (one team of the start script, all of them can give orders to
 -- its units and share its resources). humans: list of { name = , ally = , slot = number the host chose or nil }, in the order of joining; returns name -> number.
 local function effectiveSlots(humans)
@@ -134,7 +134,7 @@ local function effectiveSlots(humans)
 		local n = #list
 		for i, h in ipairs(list) do
 			-- the number the host chose (a number above the count of the team is not valid any more), otherwise the place in the team: so a human who
-			-- chose the number of another one plays together with him, and the other one keeps his number
+			-- chose the number of another one plays together with that one, and the other one keeps their number
 			out[h.name] = (h.slot and h.slot >= 1 and h.slot <= n) and h.slot or i
 		end
 	end
@@ -230,7 +230,7 @@ end
 
 -- Versions of the Lua files of this computer that every player of a LAN game needs in the same version: the lobby widget (lan_lobby.lua) and the game
 -- widget shared_start.lua (starts the Copilot games on official maps). The host answers the command LANVER (before the login, like COPILOT; a game option would be shown as a text line in the room) with "<lobby>|<shared>" (first 8 characters of VFS.CalculateHash each,
--- hash of the text without carriage returns; "-" when the file is not there); a joiner compares with his own and shows ONE warning on a difference.
+-- hash of the text without carriage returns; "-" when the file is not there); a joiner compares with its own and shows ONE warning on a difference.
 fileTag = function(path)
 	local text = VFS.LoadFile(path, VFS.RAW)
 	if not text then return "-" end
@@ -263,8 +263,8 @@ forcedStatus = function(c)
 	local l = lobby()
 	if not (sc and c.battleStatus and l) then return c.battleStatus end
 	if sc.versus then
-		-- Capture the Flag / Reclaim the Fame: human against human, the ally teams of the room decide. Only the first status of a joiner is corrected: he starts in
-		-- the other ally team than the host (the room gives him the host's); afterwards he may choose (the lobby sends the status again after every change)
+		-- Capture the Flag / Reclaim the Fame: human against human, the ally teams of the room decide. Only the first status of a joiner is corrected: the joiner starts in
+		-- the other ally team than the host (the room gives it the host's); afterwards it may choose (the lobby sends the status again after every change)
 		local host = S.hostConn
 		if c ~= host and not c.versusSet and host and host.battleStatus then
 			c.versusSet = true
@@ -980,7 +980,7 @@ local function buildScenarioScript(myName)
 	for _, c in ipairs(battleUsers()) do
 		if c.name == myName and c.battleStatus then hostAlly = l:ParseBattleStatus(c.battleStatus).allyNumber or 0 end
 	end
-	local oppLeader   -- versus: the first human of the opponent team (its leader); his team replaces the AI of the scenario
+	local oppLeader   -- versus: the first human of the opponent team (its leader); that team replaces the AI of the scenario
 	for i, c in ipairs(players) do
 		local bs = c.battleStatus and l:ParseBattleStatus(c.battleStatus)
 		local spec = (not bs) or bs.isSpectator
@@ -1235,7 +1235,7 @@ end
 
 -- ---- the extra game of the scenario on a joiner: the host announces version, hash and size (game option lansync "<version>|<hash>|<size>"); a joiner who
 -- has not got that version fetches it from the host after a question and keeps it as a file of its own (games/LevelEditorScenarios_<version>.sdz):
--- his own version is never replaced. A version he has already is used as it is (the version is made of the files, equal versions are equal games).
+-- its own version is never replaced. A version it has already is used as it is (the version is made of the files, equal versions are equal games).
 
 local function finishFetch(f, ok, reason)
 	pcall(function() f.sock:close() end)
@@ -1278,7 +1278,7 @@ local function updateFetch()
 				local n = line:match("^SIZE (%d+)$")
 				if n then
 					f.total = tonumber(n)
-					if f.total ~= f.size or f.total > 4 * 1024 * 1024 then finishFetch(f, false, "the host sends another size than he announced"); return end
+					if f.total ~= f.size or f.total > 4 * 1024 * 1024 then finishFetch(f, false, "the host sends another size than announced"); return end
 					local rest = f.buf; f.buf = ""
 					if #rest > 0 then f.parts[#f.parts + 1] = rest:sub(1, f.total); f.got = math.min(#rest, f.total) end
 				elseif not line:find("^TASSERVER") then
@@ -1922,7 +1922,7 @@ local function ensureScenarioUi()
 end
 
 ---------------------------------------------------------------- "Copilot": numbers per human; the same number inside an ally team = one player together
--- Pressing the button of a human gives him the next number of his ally team (1 .. number of humans in it); everybody in the room gets a chat line.
+-- Pressing the button of a human gives them the next number of their ally team (1 .. number of humans in it); everybody in the room gets a chat line.
 local function cycleSlot(name)
 	if not S then return end
 	local humans = humanList()
@@ -1939,9 +1939,9 @@ local function cycleSlot(name)
 	local with = {}
 	for _, h in ipairs(humans) do if h.name ~= name and h.ally == me.ally and eff[h.name] == eff[name] then with[#with + 1] = h.name end end
 	if #with > 0 then
-		say(name .. " is player " .. eff[name] .. " of his team now and is Copilot with " .. table.concat(with, ", ") .. ".")
+		say(name .. " is player " .. eff[name] .. " of their team now and is Copilot with " .. table.concat(with, ", ") .. ".")
 	else
-		say(name .. " is player " .. eff[name] .. " of his team now (alone).")
+		say(name .. " is player " .. eff[name] .. " of their team now (alone).")
 	end
 	log("slot:", name, "->", eff[name], #with > 0 and ("together with " .. table.concat(with, ", ")) or "alone")
 end
@@ -1975,7 +1975,7 @@ local function slotSignature()
 	return table.concat(t, "|") .. (scenarioRoom() and "|scenario" or "")
 end
 
-local COPILOT_TIP = "Click a player to give him the next number of his team. Players with the same number are Copilots: they play one player together."
+local COPILOT_TIP = "Click a player to give them the next number of their team. Players with the same number are Copilots: they play one player together."
 
 -- a text box that is as high as its text needs at this width (about 9 px a letter in the small font)
 local function textHeight(text, width)
@@ -2060,7 +2060,7 @@ local function ensureSlotUi()
 	end
 	roomPlace(ui.slotButton, S and 2 or 1, show)
 	if not show then pcall(function() ui.slotButton:Dispose() end); ui.slotButton = nil end
-	-- a player came or left, changed his team: the list follows (only when the window is open)
+	-- a player came or left, changed their team: the list follows (only when the window is open)
 	if show and ui.slotWindow and ui.slotWindow.visible and os.clock() > (ui.slotNext or 0) then
 		ui.slotNext = os.clock() + 1
 		local sig = slotSignature()
