@@ -71,7 +71,7 @@ local topics = {
 	{
 		names = { "start" },
 		lines = {
-			"START: desktop shortcut 'BAR Level Editor'. Key 0 = continue the last state, key 1 = new level (search a map), key 2 = load a saved level, key 3 = build a scenario package (ZIP) from a level. You change the scenario info in the game with the I button.",
+			"START: desktop shortcut 'BAR Level Editor'. Key 0 = continue the last state, 1 = new level (search a map), 2 = load a saved level, 3 = build a scenario package (ZIP) from a level, 4 = start a scenario, 5 = upgrade a package, 6 = play a level at once, 7 = Scavenger and Raptor units on / off, 8 = clean up. You change the scenario info in the game with the I button.",
 			"No /cheat is needed in the game. Placing, building, saving and loading work right away. Everything is free and finished instantly.",
 			"Legion, the extra pack and release candidates are on. You start the normal multiplayer game through 'Beyond All Reason'.",
 		},
