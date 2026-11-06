@@ -12,7 +12,7 @@
 
 - Called by `choose_map.ps1` with `-Level name -Auto -AskName` (key 3; key 5: `-Level <level> -Auto` without questions) or by hand without parameters (asks everything: level, title, author, summary, briefing, win condition, grace period, ID). `-Auto` asks nothing; `-LevelDir <folder>` takes the levels from another folder (the test levels); `-BundleDir <folder>` see [Scenarios with several players](scenario-multiplayer.md).
 - Key 3 flow: a list "Scenario info stored in the level", then the title with `AskLine` (Enter keeps it; a changed title proposes the ID `Get-Slug <title>`), then `Confirm-ScenarioId`: shows the target `scenarios\<id>`, Enter takes the name or another one is typed (written into the block as `sid`); if folder or zip exists: y = overwrite, n = another name, c = cancel.
-- `-Edit` (by hand): shows the info saved in the level numbered; choose a number and change the value, every change is saved in the block at once; Enter ends, then the question whether to rebuild.
+- The info is changed only in the editor (button I); the script has no edit mode of its own.
 - Console input stays on the default encoding (switched to UTF-8, `Console.ReadLine` returns NUL for umlauts).
 - Result: `scenarios\<id>\` and `scenarios\<id>.zip`.
 

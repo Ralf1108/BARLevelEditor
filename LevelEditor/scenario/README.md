@@ -12,7 +12,7 @@ Builds a finished scenario from a saved level of the Level Editor that anyone ca
    All answers are then stored **in the level itself** (block `scenario` at the start of the level file). On the next run with the same level they are the defaults, Enter takes them. The Level Editor leaves the block unchanged when saving (it reads it before overwriting and writes it back; with "save under" a new name it takes the block of the level loaded last). The ID belongs to the level and stays the same; a new run replaces `scenarios\<id>\`.
 3. The result is in `scenarios\<id>\` and as `scenarios\<id>.zip`. You pass the zip file on.
 
-Change the info: in the Level Editor with the I button (it is stored in the level); then key 3 again. `scenario_builder.ps1 -Edit` still works by hand.
+Change the info: in the Level Editor with the I button (it is stored in the level); then key 3 again (or key 5 for a package built before).
 
 Non-interactive (tests): `powershell -File scenario_builder.ps1 -Level name -Auto`.
 

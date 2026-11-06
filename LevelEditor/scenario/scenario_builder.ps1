@@ -10,15 +10,14 @@
 # featureloadout), the game itself stays unchanged. Only PowerShell is needed, no Python.
 #
 # Call: start menu of the Level Editor, key 3 (build the package)
-#   (or: powershell -File scenario_builder.ps1 [-Level name] [-Auto] [-Edit])
+#   (or: powershell -File scenario_builder.ps1 [-Level name] [-Auto]; the scenario info is changed in the editor, button I)
 #   -Level name   choose a level from ..\levels without asking
 #   -Auto         no questions, take the saved info or the defaults (tests)
-#   -Edit         change the saved info in the level
 #   -AskName      (start menu) show the target name (the ID) and ask whether to take it, change it or - if the scenario exists - overwrite it
 #   -LevelDir d   take the levels from the folder d instead of ..\levels (the test levels in test-data\levels)
 #   -BundleDir d  (start menu key 6, "Play a level") only the data a game needs (scenario.txt and the gadgets it uses) go into the folder d (made new): no
 #                 package (no starters, bats, readme, zip) and nothing is written into the level; implies -Auto
-param([string]$Level = $null, [switch]$Auto, [switch]$Edit, [switch]$AskName, [string]$BundleDir = $null, [string]$LevelDir = $null)
+param([string]$Level = $null, [switch]$Auto, [switch]$AskName, [string]$BundleDir = $null, [string]$LevelDir = $null)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -826,51 +825,8 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     Write-Host 'Test: double-click Start Scenario.bat in the folder.'
 }
 
-# ---------------------------------------------------------------- Change the info
-function Edit-Scenario([string]$levelName) {
-    $script:Auto = $false
-    Write-Host "=== Edit scenario ===`n"
-    $path = Select-LevelFile $levelName
-    $base = [IO.Path]::GetFileNameWithoutExtension($path)
-    $saved = Read-Block $path
-    if (-not $saved) { throw "The level $base has no (readable) scenario info yet. Create a scenario from it first (key 3)." }
-    # (human or AI, alliances and start resources are set on the page T of the editor)
-    while ($true) {
-        $items = @(@('Title', 'title'), @('Author', 'author'), @('Summary', 'summary'), @('Briefing', 'briefing'), @('Win condition', 'win'), @('Grace period (min:sec)', 'grace'), @('ID', 'sid'))
-        Write-Host "`nLevel $base - saved info:"
-        for ($n = 0; $n -lt $items.Count; $n++) {
-            $label = $items[$n][0]; $key = $items[$n][1]
-            if ($key -eq 'win') { $val = $WIN_TXT[(Get-Val $saved 'win' 'com')] }
-            elseif ($key -eq 'grace') { $val = Format-Minutes (Get-Val $saved 'grace' 0) }
-            else {
-                $val = ([string](Get-Val $saved $key '')).Replace("`n", ' / ')
-                if ($val.Length -gt 60) { $val = $val.Substring(0, 57) + '...' }
-            }
-            Write-Host ('  {0,2}  {1}: {2}' -f ($n + 1), $label, $val)
-        }
-        $v = Ask 'Number to change (Enter = done)' ''
-        if ($v -eq '') { break }
-        $num = 0
-        if (-not [int]::TryParse($v, [ref]$num) -or $num -lt 1 -or $num -gt $items.Count) { Write-Host '   Please enter a number from the list.'; continue }
-        $label = $items[$num - 1][0]; $key = $items[$num - 1][1]
-        if ($key -eq 'briefing') { $saved['briefing'] = AskMultiline 'Briefing / task' (Get-Val $saved 'briefing' '') }
-        elseif ($key -eq 'win') {
-            $d = @{ com = '1'; killall = '2'; neverend = '3' }[(Get-Val $saved 'win' 'com')]
-            if (-not $d) { $d = '1' }
-            $c = AskChoice 'Win condition' @(@('1', 'Commanders'), @('2', 'All units'), @('3', 'No end (sandbox)')) $d
-            $saved['win'] = @{ '1' = 'com'; '2' = 'killall'; '3' = 'neverend' }[$c]
-        }
-        elseif ($key -eq 'grace') { $saved[$key] = AskMinutes $label (Get-Val $saved $key 0) }
-        elseif ($key -eq 'sid') { $saved['sid'] = Get-Slug (Ask 'ID (lowercase letters and digits only)' (Get-Val $saved 'sid' '')) }
-        else { $saved[$key] = Ask $label (Get-Val $saved $key '') }
-        Save-Block $path $saved
-        Write-Host '   Saved.'
-    }
-    if ((Ask 'Rebuild the scenario package now? (y/n)' 'y').ToLower().StartsWith('y')) { Build-Scenario $base $true }
-}
-
 try {
-    if ($Edit) { Edit-Scenario $Level } else { Build-Scenario $Level ([bool]($Auto -or $BundleDir)) }
+    Build-Scenario $Level ([bool]($Auto -or $BundleDir))
 } catch {
     Write-Host ''
     Write-Host $_.Exception.Message -ForegroundColor Yellow
