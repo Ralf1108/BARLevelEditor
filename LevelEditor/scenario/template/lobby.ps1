@@ -140,29 +140,26 @@ function New-HostBundle([string]$scenarioDir, [string[]]$luaDirs) {
 }
 
 # ---------------------------------------------------------------- The cache: looking after it
-# What came from other computers or was made for them lives in %LOCALAPPDATA%\BAR-Scenario: Cache\<hash> (scenarios), Cache\Maps\maps (maps), Update\ (unpacked
-# updates of older versions of the editor, which could update itself from a host); Backup\ (files such an update replaced) is never touched here.
+# What came from other computers or was made for them lives in %LOCALAPPDATA%\BAR-Scenario: Cache\<hash> (scenarios), Cache\Maps\maps (maps).
 function Get-DirSize([string]$dir) {
     if (-not (Test-Path $dir)) { return [long]0 }
     $s = (Get-ChildItem $dir -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
     if ($s) { return [long]$s } else { return [long]0 }
 }
 
-function Get-UpdateCacheRoot { return (Join-Path (Split-Path (Get-BundleCacheRoot) -Parent) 'Update') }
-
 # Bytes, Bundles and Maps (numbers) of the cache
 function Get-CacheInfo {
     $root = Get-BundleCacheRoot
     $bundles = @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | Where-Object { Test-BundleId $_.Name })
     $maps = @(Get-ChildItem (Join-Path $root 'Maps\maps') -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -eq '.sd7' -or $_.Extension -eq '.sdz' })
-    return [pscustomobject]@{ Bytes = ((Get-DirSize $root) + (Get-DirSize (Get-UpdateCacheRoot))); Bundles = $bundles.Count; Maps = $maps.Count }
+    return [pscustomobject]@{ Bytes = (Get-DirSize $root); Bundles = $bundles.Count; Maps = $maps.Count }
 }
 
 # marks something in the cache as used just now (the pruning goes by this time)
 function Use-CacheItem([string]$path) { try { (Get-Item $path -Force).LastWriteTime = Get-Date } catch { } }
 
 # Throws away what is not needed any more: scenarios not used for 30 days, maps not used for 60 days and (oldest first) as many more as are needed to stay
-# below 3 GB, half-finished downloads and unpacked updates older than a day, zips of hosts that were left in TEMP. Returns the number of bytes freed.
+# below 3 GB, half-finished downloads older than a day, zips of hosts that were left in TEMP. Returns the number of bytes freed.
 function Remove-OldCache {
     $now = Get-Date
     $root = Get-BundleCacheRoot
@@ -187,9 +184,7 @@ function Remove-OldCache {
             }
         }
     }
-    $upd = Get-UpdateCacheRoot
-    if (Test-Path $upd) { foreach ($d in @(Get-ChildItem $upd -Directory -ErrorAction SilentlyContinue)) { if (($now - $d.LastWriteTime).TotalDays -gt 1) { Drop $d } } }
-    foreach ($f in @(Get-ChildItem $env:TEMP -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'bar_bundle_*.zip' -or $_.Name -like 'bar_update_*.zip' })) { if (($now - $f.LastWriteTime).TotalDays -gt 1) { Drop $f } }
+    foreach ($f in @(Get-ChildItem $env:TEMP -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'bar_bundle_*.zip' })) { if (($now - $f.LastWriteTime).TotalDays -gt 1) { Drop $f } }
     return $script:dropped
 }
 

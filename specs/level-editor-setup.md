@@ -18,7 +18,7 @@ All scripts live in `scripts\` (`$root` = the main folder is their parent, the r
 - The widget is switched on in the extra game by replacing only the first `enabled = false,` of `lvl_level_editor.lua` (the line in `GetInfo`); the same text also appears in the code as data, which stays untouched.
 - **The stamp** `data\games\LevelEditorMod.stamp`: SHA-256 over the game version and every source file of the setup (the packed files, the setup scripts and the LAN Play files), written after building.
 - Replaces the extra game of a previous setup; creates the junctions `data\LevelEditor` → `levels` and `data\LevelEditorBlueprints` → `blueprints`; creates `blueprints\_trash`; writes `start_level_editor.bat` and the desktop shortcut "BAR Level Editor" (no other shortcut). It checks for and downloads no map: maps are chosen in the start menu.
-- **The extra game of the scenarios** "Level Editor Scenarios <version>" is built by the same setup (`Write-ScenarioGame`, [Scenario builder](scenario-builder.md)); the setup also makes the junction `data\LevelEditorScenarios` → `scenario\scenarios`, runs `lan_lobby\install_lan_play.ps1` ([LAN Play](lan-play.md)) and (full run only) saves the official map checksums. The files of the older fixed names (`LevelEditorScenarios.sdz`, `TowerDefenseScenario.sdz`) are removed.
+- **The extra game of the scenarios** "Level Editor Scenarios <version>" is built by the same setup (`Write-ScenarioGame`, [Scenario builder](scenario-builder.md)); the setup also makes the junction `data\LevelEditorScenarios` → `scenario\scenarios`, runs `lan_lobby\install_lan_play.ps1` ([LAN Play](lan-play.md)) and (full run only) saves the official map checksums.
 - **`-Quick`** (called by `ensure_installed.ps1` with `-BarPath`, so a BAR folder outside the usual places is not asked for again): builds only the extra games and the stamp and brings LAN Play up to date; it does not rewrite the start file, because the batch file is running.
 - `editor_script_installed.txt` (start script for the engine, written by `choose_map.ps1`): player "Player", game "Level Editor 1", game options including `maxunits=32000` and `forceallunits=1` when key 7 is on or the level needs it.
 
@@ -28,7 +28,7 @@ Finds BAR like the setup, refuses while the game runs, lists what is there, asks
 
 - `data\games\LevelEditorMod.sdz` and its stamp, the editor's own `LevelEditorScenarios_<version>.sdz` and the pointer file;
 - the junctions `data\LevelEditor`, `data\LevelEditorBlueprints`, `data\LevelEditorScenarios` (only unhooked with `rmdir`: the content of `levels` and `blueprints` stays; a real folder at one of the places is skipped);
-- the LAN Play widget `LuaMenu\Widgets\lan_lobby.lua`, the game widgets `shared_start.lua` and `scenario_briefing.lua`; at the end `install_lan_play.ps1 -Uninstall` switches `loadLocalWidgets` of the lobby off again;
+- the LAN Play widget `LuaMenu\Widgets\lan_lobby.lua`, the game widget `shared_start.lua`; at the end `install_lan_play.ps1 -Uninstall` switches `loadLocalWidgets` of the lobby off again;
 - the desktop shortcut "BAR Level Editor", `start_level_editor.bat`, `editor_script_installed.txt`, and `Last Map.txt`, `Online Maps Cache.json`, `Scav Units.txt` in `%LOCALAPPDATA%\BAR-Level-Editor`.
 
 `-WithSettings` additionally deletes `LuaUI\Config\LevelEditorRecent.lua`, `LevelEditorUI.lua` and `LevelEditorSave.lua`. The desktop shortcut "Beyond All Reason", the folder itself and the cache `%LOCALAPPDATA%\BAR-Scenario` (key 8 of the start menu) stay.

@@ -69,14 +69,13 @@ Write-Host "Created: $zipPath"
 # The extra game of the finished scenarios ("Level Editor Scenarios <version>", Write-ScenarioGame in bar_common.ps1): all gadgets of the scenarios in
 # one game, each switches itself on only by the game options of a scenario. The scenario starter of the editor builds the same file from the same
 # files; LAN Play reads its name from the pointer file. Other versions (received from LAN hosts, or of an older editor) stay; key 8 of the start
-# menu cleans them. The files of the older names (one fixed version) are removed.
+# menu cleans them.
 $prev = Join-Path $gamesDir $ScenarioGamePointer
 $prevFile = if (Test-Path $prev) { @(Get-Content $prev)[0] } else { $null }
 $scGame = Write-ScenarioGame $data $game (Get-ScenarioGameDirs)
 Set-Content -Path $prev -Value @($scGame.File, $scGame.Name) -Encoding ASCII
 Write-Host "Created: $($scGame.Path)"
 if ($prevFile -and $prevFile -ne $scGame.File -and $prevFile -match '^LevelEditorScenarios_[0-9a-f]{8}\.sdz$') { Remove-Item (Join-Path $gamesDir $prevFile) -Force -ErrorAction SilentlyContinue }   # the editor's own older version
-foreach ($old in 'LevelEditorScenarios.sdz', 'TowerDefenseScenario.sdz') { Remove-Item (Join-Path $gamesDir $old) -Force -ErrorAction SilentlyContinue }
 Set-Content -Path (Join-Path $gamesDir 'LevelEditorMod.stamp') -Value (Get-EditorStamp $game) -Encoding ASCII # tells start_level_editor.bat that the setup is up to date
 
 if ($Quick) {
