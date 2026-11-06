@@ -133,6 +133,17 @@ function Write-GameZip([string]$path, $entries, $fixedTime = $null) {
     Move-Item $tmp $path -Force
 }
 
+# ---------------------------------------------------------------- AIs of a start script
+# The AIs of the page T of the editor (led_teams.lua, tm.AIS) as the [ai] section of a start script needs them: Short (shortname), Version and Profile
+# ('easy' for "CircuitAI easy", otherwise ''). The Lua AIs get an [ai] section too (the engine ignores LuaAI= in [team]); an unknown name is NullAI.
+$LuaAiNames = @('SimpleAI', 'SimpleDefenderAI', 'SimpleConstructorAI', 'ScavengersAI', 'RaptorsAI')
+function Get-AiSpec([string]$name) {
+    if ($name -in $LuaAiNames) { return [pscustomobject]@{ Short = $name; Version = '<not-versioned>'; Profile = '' } }
+    if ($name -eq 'CircuitAI easy') { return [pscustomobject]@{ Short = 'CircuitAI'; Version = 'stable'; Profile = 'easy' } }
+    if ($name -in 'BARb', 'CircuitAI') { return [pscustomobject]@{ Short = $name; Version = 'stable'; Profile = '' } }
+    return [pscustomobject]@{ Short = 'NullAI'; Version = '0.1'; Profile = '' }
+}
+
 # ---------------------------------------------------------------- The extra game of the scenarios: "Level Editor Scenarios <version>"
 # One game for every scenario (Tower Defense, Capture the Flag, Reclaim the Fame, restrictions, indestructible buildings, the briefing): the gadgets
 # and widgets switch themselves on only by the game options of a scenario. The version is made of the texts of its files and of the BAR version it builds on

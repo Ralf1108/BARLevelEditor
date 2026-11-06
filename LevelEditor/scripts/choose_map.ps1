@@ -505,11 +505,9 @@ function Show-Chooser($items, [string]$title, [string]$hint, $firstFn, $previewF
 function Write-StartScript([string]$mapSpring, [bool]$forceAll = $false, [string]$ai1 = '') {
     $game = 'Level Editor 1'
     # AI of team 1 (default and unknown names: NullAI, it does nothing); every AI gets an [ai] section (the Lua AIs with the version <not-versioned>; LuaAI= in [team] is ignored by the engine)
-    $luaAis = @('SimpleAI', 'SimpleDefenderAI', 'SimpleConstructorAI', 'ScavengersAI', 'RaptorsAI')
-    $aiShort = if ($ai1 -in 'BARb', 'CircuitAI', 'CircuitAI easy', 'NullAI') { $ai1 -replace ' easy$', '' } elseif ($ai1 -in $luaAis) { $ai1 } else { 'NullAI' }
-    $aiVer = if ($ai1 -in $luaAis) { '<not-versioned>' } elseif ($aiShort -eq 'NullAI') { '0.1' } else { 'stable' }
-    $aiOpt = if ($ai1 -eq 'CircuitAI easy') { ' [Options] { profile=easy; }' } else { '' }
-    $ai0 = "[ai0] { shortname=$aiShort; version=$aiVer; team=1; host=0; name=${aiShort}1;$aiOpt }"
+    $ai = Get-AiSpec $ai1   # (bar_common.ps1)
+    $aiOpt = if ($ai.Profile) { " [Options] { profile=$($ai.Profile); }" } else { '' }
+    $ai0 = "[ai0] { shortname=$($ai.Short); version=$($ai.Version); team=1; host=0; name=$($ai.Short)1;$aiOpt }"
     $fa = if ($forceAll) { ' forceallunits=1;' } else { '' }
     # ten teams, each in its own ally team (Arena needs them; teams 2 to 9 stay empty: the gadget removes their start commanders)
     $allies = (0..9 | ForEach-Object { "`t[allyteam$_] { numallies=0; }" }) -join "`n"

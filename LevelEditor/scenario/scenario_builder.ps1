@@ -453,16 +453,6 @@ function Save-Block([string]$path, $answers) {
     [IO.File]::WriteAllText($path, $text, $utf8)
 }
 
-# AI of a team from its entry in the level (button AI of the editor): 'default' or no entry = the AI behavior of the scenario
-$LUA_AIS = @('SimpleAI', 'SimpleDefenderAI', 'SimpleConstructorAI', 'ScavengersAI', 'RaptorsAI')
-function Get-AiSpec([string]$name) {
-    $spec = @{ Short = $name; Version = '0.1'; Lua = $null; Options = '' }
-    if ($name -eq 'CircuitAI easy') { $spec.Short = 'CircuitAI'; $spec.Options = "`t`t[Options]`n`t`t{`n`t`t`tprofile=easy;`n`t`t}`n" }
-    if ($spec.Short -in 'BARb', 'CircuitAI') { $spec.Version = 'stable' }
-    if ($name -in $LUA_AIS) { $spec.Lua = $name; $spec.Version = '<not-versioned>' }   # a Lua AI also gets an [ai] section: the engine ignores LuaAI= in [team] (the AI gadget stays off)
-    return $spec
-}
-
 function Get-TeamSide($units, [int]$team) {
     $cnt = [ordered]@{}
     foreach ($u in $units) {
@@ -596,7 +586,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         if (-not $human[[int]$t]) {
             $n = $level.teams[[int]$t].ai
             if ($td) { $n = 'NullAI' }
-            $aiOf[[int]$t] = Get-AiSpec $n
+            $aiOf[[int]$t] = Get-AiSpec $n   # (bar_common.ps1)
         }
     }
     # The win condition of the scenario info (page I) is the game option deathmode. Tower Defense removes the start commanders when the waves start, so
@@ -707,7 +697,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $i = $newid[[int]$t]
         if ($human[[int]$t]) { continue }
         $spec = $aiOf[[int]$t]
-        [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$($spec.Short);`n`t`tName=$($spec.Short)_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$($spec.Version);`n$($spec.Options)`t}")
+        [void]$lines.Add("`t[ai$k]`n`t{`n`t`tShortName=$($spec.Short);`n`t`tName=$($spec.Short)_$i;`n`t`tTeam=$i;`n`t`tHost=0;`n`t`tVersion=$($spec.Version);`n$(if ($spec.Profile) { "`t`t[Options]`n`t`t{`n`t`t`tprofile=$($spec.Profile);`n`t`t}`n" })`t}")
         $k++
     }
     [void]$lines.Add("`t[player0]`n`t{`n`t`tName=__PLAYERNAME__;`n`t`tTeam=0;`n`t`tspectator=0;`n`t`trank=0;`n`t}")

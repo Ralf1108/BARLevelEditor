@@ -26,6 +26,7 @@ Dot-sourced by `install_editor.ps1`, `uninstall_editor.ps1`, `check_links.ps1`, 
 
 - `Fail`, `Step` (heading of a setup step), `Read-Yes` (y/n), `Write-GameZip` (a zip through a temporary file),
 - `Write-ScenarioGame` and `$ScenarioGameFiles` (the extra game of the scenarios, [Scenario builder](scenario-builder.md)), `$ScenarioGamePointer`,
+- `Get-AiSpec` and `$LuaAiNames` (an AI of the page T as `[ai]` section: short name, version, profile; the editor's start script and the scenario builder),
 - `Update-MapHashes` and `$MapHashesFile` (the official map checksums for [LAN Play](lan-play.md)),
 - `Find-Bar` (optional folders to try first and a memo file of the last folder found; searches all fixed drives, asks if BAR is not found), `Get-Engine` (the newest engine folder, sorted by the numbers in its name), `Get-GameVersion` (byar:test, otherwise byar:stable, the first whose package is installed),
 - `Set-Junction` (creates a junction, points a stale one to the new target, leaves a real folder alone, prints only changes) and `Remove-Junction` (removes only the link).
