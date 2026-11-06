@@ -3459,6 +3459,40 @@ function M.newPageLayout(rect, S)
 	return L
 end
 
+-- A number field of a page (TD, CF, RF, A, T of the Level Editor): while one is edited the page has page.edit = { field = ..., buf = "" } (the page
+-- starts it and calls OwnText). Gives the page finish(accept) (ends the entry; with accept apply(e, value) is called, value = the typed number or nil),
+-- key(key) (Enter accepts, Esc discards, Backspace deletes; every key is used) and text(ch) (digits only, at most maxLen). disown gives the text input
+-- back (widgetHandler:DisownText of the widget, which this file does not know).
+function M.numberField(page, maxLen, apply, disown)
+	function page.finish(accept)
+		local e = page.edit
+		if not e then
+			return
+		end
+		page.edit = nil
+		disown()
+		if accept then
+			apply(e, tonumber(e.buf))
+		end
+	end
+	function page.key(key)
+		if key == 13 or key == 271 then
+			page.finish(true)
+		elseif key == 27 then
+			page.finish(false)
+		elseif key == 8 then
+			page.edit.buf = page.edit.buf:sub(1, -2)
+		end
+		return true
+	end
+	function page.text(ch)
+		if ch and ch:match("^%d$") and #page.edit.buf < maxLen then
+			page.edit.buf = page.edit.buf .. ch
+		end
+		return true
+	end
+end
+
 ---------------------------------------------------------------- Settings (gear): columns and rows
 -- blocks = { { title = "Blueprints", keys = { { "bpCols", "Columns" }, { "bpRows", "Rows" } } }, ... }
 -- actions (optional) = { { label = "Export", tip = "...", fn = function() return "message" end }, ... }: wide buttons under the blocks; the message that fn returns

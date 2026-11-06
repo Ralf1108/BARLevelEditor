@@ -209,38 +209,13 @@ return function(host)
 		Shared.drawTip(rects, mx, my)
 	end
 
-	-- Ends the entry in a number field (accept: take the value)
-	function ctf.finish(accept)
-		local e = ctf.edit
-		if not e then
-			return
-		end
-		ctf.edit = nil
-		widgetHandler:DisownText()
-		local v = tonumber(e.buf)
-		if accept and v then
+	-- The number fields of the page: Enter accepts, Esc discards, digits only (Shared.numberField); apply takes the typed value
+	Shared.numberField(ctf, 5, function(e, v)
+		if v then
 			local lim = LIMITS[e.field]
 			ctf.cfg(true)[e.field] = math.max(lim[1], math.min(lim[2], math.floor(v)))
 		end
-	end
-
-	function ctf.key(key)
-		if key == 13 or key == 271 then
-			ctf.finish(true)
-		elseif key == 27 then
-			ctf.finish(false)
-		elseif key == 8 then
-			ctf.edit.buf = ctf.edit.buf:sub(1, -2)
-		end
-		return true
-	end
-
-	function ctf.text(ch)
-		if ch and ch:match("^%d$") and #ctf.edit.buf < 5 then
-			ctf.edit.buf = ctf.edit.buf .. ch
-		end
-		return true
-	end
+	end, function() widgetHandler:DisownText() end)
 
 	-- Payload for the gadget (see ctf_game.lua); nil and a message if something is missing
 	function ctf.payload()

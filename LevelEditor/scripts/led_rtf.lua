@@ -181,38 +181,13 @@ return function(host)
 		Shared.drawTip(rects, mx, my)
 	end
 
-	-- Ends the entry in a number field (accept: take the value)
-	function rtf.finish(accept)
-		local e = rtf.edit
-		if not e then
-			return
-		end
-		rtf.edit = nil
-		widgetHandler:DisownText()
-		local v = tonumber(e.buf)
-		if accept and v then
+	-- The number fields of the page: Enter accepts, Esc discards, digits only (Shared.numberField); apply takes the typed value
+	Shared.numberField(rtf, 7, function(e, v)
+		if v then
 			local lim = LIMITS[e.field]
 			rtf.cfg(true)[e.field] = math.max(lim[1], math.min(lim[2], math.floor(v)))
 		end
-	end
-
-	function rtf.key(key)
-		if key == 13 or key == 271 then
-			rtf.finish(true)
-		elseif key == 27 then
-			rtf.finish(false)
-		elseif key == 8 then
-			rtf.edit.buf = rtf.edit.buf:sub(1, -2)
-		end
-		return true
-	end
-
-	function rtf.text(ch)
-		if ch and ch:match("^%d$") and #rtf.edit.buf < 7 then
-			rtf.edit.buf = rtf.edit.buf .. ch
-		end
-		return true
-	end
+	end, function() widgetHandler:DisownText() end)
 
 	-- Payload for the gadget (see rtf_game.lua); nil and a message if something is missing
 	function rtf.payload()

@@ -658,16 +658,9 @@ return function(td, H)
 		H.Shared.drawTip(rects, mx, my)
 	end
 
-	-- Ends the entry in a number field (accept: take the value)
-	function td.finish(accept)
-		local e = td.edit
-		if not e then
-			return
-		end
-		td.edit = nil
-		widgetHandler:DisownText()
-		local v = tonumber(e.buf)
-		if not accept or not v then
+	-- The number fields of the page: Enter accepts, Esc discards, digits only (Shared.numberField); apply takes the typed value
+	H.Shared.numberField(td, 5, function(e, v)
+		if not v then
 			return
 		end
 		v = math.floor(v)
@@ -682,25 +675,7 @@ return function(td, H)
 				w[e.field] = math.max(limits[e.field][1], math.min(limits[e.field][2], v))
 			end
 		end
-	end
-
-	function td.key(key)
-		if key == 13 or key == 271 then
-			td.finish(true)
-		elseif key == 27 then
-			td.finish(false)
-		elseif key == 8 then
-			td.edit.buf = td.edit.buf:sub(1, -2)
-		end
-		return true
-	end
-
-	function td.text(ch)
-		if ch and ch:match("^%d$") and #td.edit.buf < 5 then
-			td.edit.buf = td.edit.buf .. ch
-		end
-		return true
-	end
+	end, function() widgetHandler:DisownText() end)
 
 	function td.wheel(up)
 		local mx, my = Spring.GetMouseState()

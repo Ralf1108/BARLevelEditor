@@ -1057,44 +1057,16 @@ return function(host)
 		ar.drawWindow()
 	end
 
-	-- Ends the entry in a number field (accept: take the value; empty = no limit, except the radius)
-	function ar.finish(accept)
-		local e = ar.edit
-		if not e then
-			return
-		end
-		ar.edit = nil
-		widgetHandler:DisownText()
-		if not accept then
-			return
-		end
+	-- The number fields of the page: Enter accepts, Esc discards, digits only (Shared.numberField); apply takes the typed value
+	Shared.numberField(ar, 8, function(e, v)
 		local c = ar.cfg(true)
-		local v = tonumber(e.buf)
 		if v == nil or v == 0 and e.field ~= "radius" then
 			setValue(c, e.field, e.row, nil)
 		else
 			local lim = limitOf(e.field)
 			setValue(c, e.field, e.row, math.max(lim[1], math.min(lim[2], math.floor(v))))
 		end
-	end
-
-	function ar.key(key)
-		if key == 13 or key == 271 then
-			ar.finish(true)
-		elseif key == 27 then
-			ar.finish(false)
-		elseif key == 8 then
-			ar.edit.buf = ar.edit.buf:sub(1, -2)
-		end
-		return true
-	end
-
-	function ar.text(ch)
-		if ch and ch:match("^%d$") and #ar.edit.buf < 8 then
-			ar.edit.buf = ar.edit.buf .. ch
-		end
-		return true
-	end
+	end, function() widgetHandler:DisownText() end)
 
 	function ar.press(rect, mx, my)
 		local hit

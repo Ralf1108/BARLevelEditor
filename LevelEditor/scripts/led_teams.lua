@@ -326,39 +326,12 @@ return function(host)
 		gl.Color(1, 1, 1, 1)
 	end
 
-	-- Ends the entry in a number field
-	function tm.finish(accept)
-		local e = tm.edit
-		if not e then
-			return
+	-- The number fields of the page: Enter accepts, Esc discards, digits only (Shared.numberField); apply takes the typed value
+	Shared.numberField(tm, 6, function(e, v)
+		if v then
+			write(e.team)[e.field] = math.max(0, math.min(LIMIT, math.floor(v)))
 		end
-		tm.edit = nil
-		widgetHandler:DisownText()
-		if accept then
-			local v = tonumber(e.buf)
-			if v then
-				write(e.team)[e.field] = math.max(0, math.min(LIMIT, math.floor(v)))
-			end
-		end
-	end
-
-	function tm.key(key)
-		if key == 13 or key == 271 then
-			tm.finish(true)
-		elseif key == 27 then
-			tm.finish(false)
-		elseif key == 8 then
-			tm.edit.buf = tm.edit.buf:sub(1, -2)
-		end
-		return true
-	end
-
-	function tm.text(ch)
-		if ch and ch:match("^%d$") and #tm.edit.buf < 6 then
-			tm.edit.buf = tm.edit.buf .. ch
-		end
-		return true
-	end
+	end, function() widgetHandler:DisownText() end)
 
 	function tm.press(rect, mx, my)
 		local dr = dropRects()
