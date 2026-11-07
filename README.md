@@ -48,8 +48,8 @@ Three modes of a level, each with its own page, a test run and export as a scena
 
 | [Tower Defense](LevelEditor/game-modes/tower-defense.md) | [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md) | [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md) | [Evolution](LevelEditor/game-modes/evolution.md) |
 |---|---|---|---|
-| [![Tower Defense page](docs/level-editor-tower-defense.jpg)](LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)](LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)](LevelEditor/game-modes/reclaim-the-fame.md) | [![Evolution: three players on stage 2](docs/evolution-fight.jpg)](LevelEditor/game-modes/evolution.md) |
-| Waves walk along a route you build; the player builds towers | Carry flags to your collection point and earn metal | Reclaim crystals for points; first at the score limit wins | One unit each; kills evolve it through 10 stages up to a tier 3 giant (LAN Play: the button **Evolution** of the room, any map) |
+| [![Tower Defense page](docs/level-editor-tower-defense.jpg)](LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)](LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)](LevelEditor/game-modes/reclaim-the-fame.md) | [![Armageddon: the gift of stage 10](docs/evolution-armageddon.jpg)](LevelEditor/game-modes/evolution.md) |
+| Waves walk along a route you build; the player builds towers | Carry flags to your collection point and earn metal | Reclaim crystals for points; first at the score limit wins | One unit each; kills evolve it through 10 stages up to a tier 3 giant; stage 10 brings Armageddon (LAN Play: **LAN Play** > **Evolution** in the room, any map) |
 | ![Demo level Serpentine](docs/demo-tower-defense.jpg) | ![Demo level Crossroads](docs/demo-capture-the-flag.jpg) | ![Demo level Crystal Fields](docs/demo-reclaim-the-fame.jpg) | ![Evolution in the game](docs/evolution-game.jpg) |
 | Demo level *Serpentine* | Demo level *Crossroads* | Demo level *Crystal Fields* | PlayerA on stage 4 (Welder), *Comet Catcher Remake* |
 
@@ -89,7 +89,8 @@ Play with computers in the same network, no account and no server in the cloud. 
 - **Host a LAN game**, or pick a game that shows up in the list by itself, or type the host's address
 - **Custom Scenario**: the host picks a scenario built with the Level Editor; map and teams are set and the other players get the scenario's game file automatically
 - **Copilot**: two or more people of a team play **one** player together, for example one fights and one builds
-- **Evolution**: a game mode on any map: every player starts with one weak unit, kills evolve it through 10 stages, see [Evolution](LevelEditor/game-modes/evolution.md)
+- **Evolution**: a game mode on any map: every player starts with one weak unit, kills evolve it through 10 stages, stage 10 brings Armageddon, see [Evolution](LevelEditor/game-modes/evolution.md)
+- The buttons of LAN Play (Custom Scenario, Copilot, Evolution) are in the menu of a green button **LAN Play** in the title row of the room
 - **Play the Scavengers or Raptors yourself**: put a Scavengers or Raptors computer into a team with a human player and the computer stops commanding its units, the humans of the team do (the official game does not allow that); the room tells everybody when this starts and ends
 - **Raptors against Scavengers (as a gimmick)**: a Raptors computer in one team and a Scavengers computer in the other, each with a human player in its team: both hordes spawn and fight each other, each human commands the units of its computer (the official game refuses this combination: nothing spawns)
 - **Rejoin and late join**: a player whose game crashed comes back into the room with the same name and presses Rejoin (same team, catches up); with `!latejoin on` before the start, players who come later can join the running game as players
