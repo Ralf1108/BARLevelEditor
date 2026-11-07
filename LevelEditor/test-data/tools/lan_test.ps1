@@ -7,8 +7,11 @@
 #   -AlongsideGame   run next to a game you are playing (only the processes of the test are ever stopped)
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
 #   -Shots 20,45   pictures of the window of the host (seconds after the start): shot_<s>.png in -Work (PrintWindow: the window may stay behind others;
-#                  gl.SaveImage and a copy of the screen come out black or disturb)
-#   -Mode ctf | rtf | td | evo   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
+#                  gl.SaveImage and a copy of the screen come out black or disturb); -FrontShots: the window is brought to the front and the screen is copied
+#                  (for the lobby, when PrintWindow gives a white picture; it takes the focus for a moment)
+#   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
+#         evo = Evolution on an official map (-Map, default Comet Catcher Remake 1.8): the host presses the button Evolution, PlayerA, PlayerB and a BARb computer
+#               (-Ai, default BARb) play each other; zz_lantest.lua logs the stages and sends the units of both players into the middle; -Shots for pictures
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
 #         pve = the host adds a Raptors computer (-Ai RaptorsAI | ScavengersAI) to its ally team, both players place their start position (a click into the middle of the window, the
 #               widget zz_place.lua points the camera at the start box) and press ready; zz_pve.lua (host) measures the orders of the AI and of the human (lan_pve_hold.lua)
@@ -23,7 +26,7 @@
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play)
+param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play, [string]$Map = 'Comet Catcher Remake 1.8', [switch]$FrontShots)
 $sp = $Work; $real = $Data
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -33,7 +36,7 @@ New-Item -ItemType Directory -Force $sp | Out-Null
 if (-not $AlongsideGame -and (Get-Process spring -ErrorAction SilentlyContinue)) { 'A game is running: aborted'; return }
 $exe = (Get-Engine $real).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $scn = "${Mode}_test"
-if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix') {
+if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix', 'evo') {
     if (Test-Path "$sp\bundle_$scn") { Remove-Item "$sp\bundle_$scn" -Recurse -Force }
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\LevelEditor\scenario\scenario_builder.ps1" -Level $scn -LevelDir "$repo\LevelEditor\test-data\levels" -Auto -BundleDir "$sp\bundle_$scn" | Out-Null
 }
@@ -66,12 +69,12 @@ foreach ($who in $who2) {
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
-        if ($Mode -notin 'cp', 'teams', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
+        if ($Mode -notin 'cp', 'teams', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix', 'evo') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'evo') { "auto=host`nname=PlayerA`nplayers=2`nmap=$Map`nevolution=1`nbot=$(if ($Ai -eq 'RaptorsAI') { 'BARb' } else { $Ai })`nbotVersion=stable`nbotAlly=2`nstartDelay=$(if ($Shots) { 70 } else { 25 })" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -115,7 +118,13 @@ function Save-Shot($proc, $name) {
     if ($w -lt 50 -or $ht -lt 50) { "shot $name : window not found"; return }
     $bmp = New-Object Drawing.Bitmap $w, $ht
     $g = [Drawing.Graphics]::FromImage($bmp)
-    $dc = $g.GetHdc(); [void][W3]::PrintWindow($h, $dc, 2); $g.ReleaseHdc($dc)
+    if ($FrontShots) {
+        [void][SbxWin]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($h); Start-Sleep -Milliseconds 900
+        $g.CopyFromScreen($r.L, $r.T, 0, 0, (New-Object Drawing.Size $w, $ht))
+        [void][SbxWin]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($prev)
+    } else {
+        $dc = $g.GetHdc(); [void][W3]::PrintWindow($h, $dc, 2); $g.ReleaseHdc($dc)
+    }
     $g.Dispose(); $bmp.Save("$sp\$name", [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
     "shot $name ($w x $ht)"
 }

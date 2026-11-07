@@ -1,12 +1,12 @@
 function widget:GetInfo() return { name = "zz LAN test", desc = "test only", layer = 0, enabled = true } end
 local mo = Spring.GetModOptions() or {}
-local mode = mo.evoconfig and "evo" or (mo.rtfconfig and "rtf" or (mo.ctfconfig and "ctf" or (mo.tdconfig and "td" or "cp")))
+local mode = mo.lanevolution == "1" and "evo" or (mo.rtfconfig and "rtf" or (mo.ctfconfig and "ctf" or (mo.tdconfig and "td" or "cp")))
 local function readFile(name)
 	local txt = VFS.LoadFile(name, VFS.RAW) or VFS.LoadFile(name, VFS.RAW_FIRST)
 	if not txt and io and io.open then local f = io.open(name, "rb"); if f then txt = f:read("*a"); f:close() end end
 	return txt
 end
-local QUIT = tonumber((readFile("zz_quit.txt") or (mo.lanpvehold and "60000") or "4500"):match("%d+")) -- game frames
+local QUIT = tonumber((readFile("zz_quit.txt") or (mo.lanpvehold and "60000") or (mo.lanevolution == "1" and "9000") or "4500"):match("%d+")) -- game frames
 local function log(...) Spring.Echo("[zzlan] " .. table.concat({ ... }, " ")) end
 local function gp(k) local v = Spring.GetGameRulesParam(k); if v == nil then return "nil" end return tostring(v) end
 local ordered = false
@@ -42,9 +42,9 @@ function widget:GameFrame(f)
 			local t = {}
 			for team in tostring(gp("evoTeams")):gmatch("%d+") do
 				local function tp(k) return tostring(Spring.GetTeamRulesParam(tonumber(team), k)) end
-				t[#t + 1] = string.format("team%s stage=%s xp=%s/%s lives=%s out=%s unit=%s", team, tp("evoStage"), tp("evoXp"), tp("evoNeed"), tp("evoLeft"), tp("evoOut"), tp("evoName"))
+				t[#t + 1] = string.format("team%s stage=%s xp=%s/%s kills=%s deaths=%s unit=%s", team, tp("evoStage"), tp("evoXp"), tp("evoNeed"), tp("evoKills"), tp("evoDeaths"), tp("evoName"))
 			end
-			log("  evo state=", gp("evoState"), table.concat(t, " | "))
+			log("  evo state=", gp("evoState"), table.concat(t, " | "), "| gaia units", tostring(#Spring.GetTeamUnits(Spring.GetGaiaTeamID())))
 		elseif mode == "td" then
 			log("  td state=", gp("tdState"), "wave", gp("tdWave"), "/", gp("tdWaves"), "leaks", gp("tdLeaks"), "killed", gp("tdKilled"))
 		else
@@ -96,6 +96,15 @@ function widget:GameFrame(f)
 			local x, z = Game.mapSizeX * (0.3 + 0.4 * math.random()), Game.mapSizeZ * (0.3 + 0.4 * math.random())
 			Spring.GiveOrderToUnit(id, CMD.FIGHT, { x, Spring.GetGroundHeight(x, z), z }, {})
 		end
+	end
+	-- Evolution: pictures of the host's game (the engine's own screenshot, in screenshots\ of the write dir; a picture of the window from outside comes out white)
+	if mode == "evo" and me == "PlayerA" and (f == 2400 or f == 5400 or f == 8400) then
+		local x, y, z = Spring.GetUnitPosition(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoUnit") or -1)
+		if x then Spring.SetCameraTarget(x, y, z, 0) end
+	end
+	if mode == "evo" and me == "PlayerA" and (f == 2460 or f == 5460 or f == 8460) then
+		Spring.SendCommands("screenshot png")
+		log("screenshot at frame", f)
 	end
 	if f >= QUIT then log("quit at frame", f); Spring.SendCommands("quitforce") end
 end
