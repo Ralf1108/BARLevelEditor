@@ -1,6 +1,6 @@
 function widget:GetInfo() return { name = "zz LAN test", desc = "test only", layer = 0, enabled = true } end
 local mo = Spring.GetModOptions() or {}
-local mode = mo.rtfconfig and "rtf" or (mo.ctfconfig and "ctf" or (mo.tdconfig and "td" or "cp"))
+local mode = mo.evoconfig and "evo" or (mo.rtfconfig and "rtf" or (mo.ctfconfig and "ctf" or (mo.tdconfig and "td" or "cp")))
 local function readFile(name)
 	local txt = VFS.LoadFile(name, VFS.RAW) or VFS.LoadFile(name, VFS.RAW_FIRST)
 	if not txt and io and io.open then local f = io.open(name, "rb"); if f then txt = f:read("*a"); f:close() end end
@@ -38,6 +38,13 @@ function widget:GameFrame(f)
 		if mode == "ctf" then
 			log("  ctf state=", gp("ctfState"), "target", gp("ctfTarget"), "teams", gp("ctfTeams"),
 				"score0", gp("ctfScore0"), "score1", gp("ctfScore1"), "out", gp("ctfOut"))
+		elseif mode == "evo" then
+			local t = {}
+			for team in tostring(gp("evoTeams")):gmatch("%d+") do
+				local function tp(k) return tostring(Spring.GetTeamRulesParam(tonumber(team), k)) end
+				t[#t + 1] = string.format("team%s stage=%s xp=%s/%s lives=%s out=%s unit=%s", team, tp("evoStage"), tp("evoXp"), tp("evoNeed"), tp("evoLeft"), tp("evoOut"), tp("evoName"))
+			end
+			log("  evo state=", gp("evoState"), table.concat(t, " | "))
 		elseif mode == "td" then
 			log("  td state=", gp("tdState"), "wave", gp("tdWave"), "/", gp("tdWaves"), "leaks", gp("tdLeaks"), "killed", gp("tdKilled"))
 		else
@@ -81,6 +88,14 @@ function widget:GameFrame(f)
 		if com and f % 150 == 0 then local x, _, z = Spring.GetUnitPosition(com); log("  commander of team", tostring(team), "at", string.format("%.0f,%.0f", x, z), "seen by", tostring(me)) end
 		if com and me == "PlayerA" and f == 150 then Spring.GiveOrderToUnit(com, CMD.MOVE, { 5200, 449, 6144 }, {}); log("PlayerA orders east") end
 		if com and me == "PlayerB" and f == 900 then Spring.GiveOrderToUnit(com, CMD.MOVE, { 3600, 449, 6144 }, {}); log("PlayerB orders west") end
+	end
+	-- Evolution: every 10 s the own unit fights its way to a random place in the middle of the map (it meets wild units and the other player there)
+	if mode == "evo" and f % 300 == 150 and (me == "PlayerA" or me == "PlayerB") then
+		local id = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoUnit")
+		if id and id > 0 and Spring.ValidUnitID(id) then
+			local x, z = Game.mapSizeX * (0.3 + 0.4 * math.random()), Game.mapSizeZ * (0.3 + 0.4 * math.random())
+			Spring.GiveOrderToUnit(id, CMD.FIGHT, { x, Spring.GetGroundHeight(x, z), z }, {})
+		end
 	end
 	if f >= QUIT then log("quit at frame", f); Spring.SendCommands("quitforce") end
 end

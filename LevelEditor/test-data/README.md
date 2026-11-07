@@ -7,6 +7,7 @@ All levels are on the flat map "Full Metal Plate 1.7" (no mountains, no water): 
 | Level | Mode | Content |
 | --- | --- | --- |
 | `levels/ctf_test.lua` | Capture the Flag | Armada (west) and Cortex (east) with a commander and three fast units each, three neutral flags in the middle, one collection point per team, 3 flags win |
+| `levels/evo_test.lua` | Evolution | an Armada and a Cortex commander 1900 Elmo apart in the middle of the map (team 0 human, team 1 AI: over LAN Play the joiner), 3 lives, 20 wild units |
 | `levels/rtf_test.lua` | Reclaim the Fame | the same bases with four construction bots each, seven crystals in the middle (4 small, 2 medium, 1 large), 2000 points win |
 | `levels/td_test.lua` | Tower Defense | Armada's commander and three LLT in the east, two small waves walk from the west to the goal |
 
@@ -39,6 +40,10 @@ What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 ## Teams and alliances test (`tools`, 2026-10-28)
 
 `tools\arena_test.ps1 -Widget zz_teams.lua` starts the same sandbox game (ten teams) with a widget that plays through the page T and the alliances (right click menu, Alliance cell, Human / AI, AI list, number field, save and load, `Spring.AreTeamsAllied`) and takes the picture of the README. `-Widget zz_modes.lua` loads `td_test`, `ctf_test` and `rtf_test` from `levels` (the tool copies them into the sandbox), puts the teams into alliances and starts each game mode. Both log `[zzar]` lines with OK / WRONG and end themselves. `-AlongsideGame` lets the test run next to a running game (it only closes the processes it started). Details: [TESTING.md](TESTING.md).
+
+## Evolution test (`tools`, 2026-11-07)
+
+`tools\arena_test.ps1 -Widget zz_evo.lua` loads `evo_test` in the editor sandbox, sets 1 life and 2 points to stage 2, starts Evolution at game speed 8 (team 1 is steered by `evo_game.lua`, the widget sends the own unit at it) and logs the stages, points and lives; when the game is won it presses Stop and checks that the level is back. `lan_test.ps1 -Mode evo -QuitFrame 9000` plays the scenario over LAN Play (the joiner takes team 1; `zz_lantest.lua` sends both units to random places in the middle and logs the state). `-Widget zz_dpsdump.lua` writes one `[zzdps]` line per armed ground unit (faction, name, tech level, damage per second, health, metal, speed, range, name, move class) and ends: the numbers behind the ladders of `evo_game.lua`.
 
 ## Split attack test (`tools`)
 

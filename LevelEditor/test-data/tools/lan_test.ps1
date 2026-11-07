@@ -8,7 +8,7 @@
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
 #   -Shots 20,45   pictures of the window of the host (seconds after the start): shot_<s>.png in -Work (PrintWindow: the window may stay behind others;
 #                  gl.SaveImage and a copy of the screen come out black or disturb)
-#   -Mode ctf | rtf | td   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
+#   -Mode ctf | rtf | td | evo   the test level of that name (test-data\levels) as a scenario; cp = Copilot (two humans, one player, official map);
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
 #         pve = the host adds a Raptors computer (-Ai RaptorsAI | ScavengersAI) to its ally team, both players place their start position (a click into the middle of the window, the
 #               widget zz_place.lua points the camera at the start box) and press ready; zz_pve.lua (host) measures the orders of the AI and of the human (lan_pve_hold.lua)
