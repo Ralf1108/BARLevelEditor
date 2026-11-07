@@ -89,6 +89,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
 - `scripts\rtf_game.lua` - gadget of Reclaim the Fame (crystals, points, score limit; also used by scenarios)
 - `scripts\led_rtf.lua` - the Reclaim the Fame page of the widget (loaded by the widget)
+- `scripts\evo_game.lua` - gadget of Evolution, a game mode of LAN Play on any map (one unit per team that evolves with its kills; [manual](game-modes/evolution.md))
 - `scripts\led_teams.lua` - the Teams page of the widget (button T: human or AI, alliance, start resources; loaded by the widget)
 - `scripts\unit_indestructible.lua` - gadget of the buildings marked with FX (also used by scenarios)
 - `scripts\lan_latejoin.lua`, `scripts\lan_pve_hold.lua` - gadgets of LAN Play (late join; Scavengers / Raptors played by humans)
