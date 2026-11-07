@@ -145,7 +145,7 @@ function Get-AiSpec([string]$name) {
 }
 
 # ---------------------------------------------------------------- The extra game of the scenarios: "Level Editor Scenarios <version>"
-# One game for every scenario (Tower Defense, Capture the Flag, Reclaim the Fame, restrictions, indestructible buildings, the briefing): the gadgets
+# One game for every scenario (Tower Defense, Capture the Flag, Reclaim the Fame, Evolution, restrictions, indestructible buildings, the briefing): the gadgets
 # and widgets switch themselves on only by the game options of a scenario. The version is made of the texts of its files and of the BAR version it builds on
 # (the first 8 hex digits of a SHA-256), the file is games\LevelEditorScenarios_<version>.sdz: different files give a different game, so a game that
 # came from somewhere else (a LAN host, an older package) never replaces another one, and equal files give the same game on every computer.
@@ -154,6 +154,7 @@ $ScenarioGameFiles = @(
     @('td_waves.lua', 'luarules/gadgets/td_waves.lua'),
     @('ctf_game.lua', 'luarules/gadgets/ctf_game.lua'),
     @('rtf_game.lua', 'luarules/gadgets/rtf_game.lua'),
+    @('evo_game.lua', 'luarules/gadgets/evo_game.lua'),
     @('unit_restrictions.lua', 'luarules/gadgets/unit_restrictions.lua'),
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
     @('lan_latejoin.lua', 'luarules/gadgets/lan_latejoin.lua'),   # LAN Play: a player who joins a running game is moved into a team
