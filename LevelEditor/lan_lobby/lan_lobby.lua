@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 15, stamp = "2026-11-06 17:00" }
+local LAN_VERSION = { number = 16, stamp = "2026-11-07 18:00" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -263,7 +263,7 @@ forcedStatus = function(c)
 	local l = lobby()
 	if not (sc and c.battleStatus and l) then return c.battleStatus end
 	if sc.versus then
-		-- Capture the Flag / Reclaim the Fame: human against human, the ally teams of the room decide. Only the first status of a joiner is corrected: the joiner starts in
+		-- Capture the Flag / Reclaim the Fame / Evolution: human against human, the ally teams of the room decide. Only the first status of a joiner is corrected: the joiner starts in
 		-- the other ally team than the host (the room gives it the host's); afterwards it may choose (the lobby sends the status again after every change)
 		local host = S.hostConn
 		if c ~= host and not c.versusSet and host and host.battleStatus then
@@ -450,9 +450,9 @@ selectScenario = function(name)
 	if not (map and team and ally) then say("Scenario '" .. name .. "' has no player team (map " .. tostring(map) .. ")."); return end
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
 	for _, c in ipairs(S.conns) do c.versusSet = nil end
-	-- Capture the Flag and Reclaim the Fame are played human against human (a computer opponent does not play them): the opponent team of the scenario
+	-- Capture the Flag, Reclaim the Fame and Evolution are played human against human (a computer opponent does not play the first two): the opponent team of the scenario
 	-- (the team of its AI) is taken by the humans who chose another ally team in the room than the host
-	if low:find("ctfconfig%s*=") or low:find("rtfconfig%s*=") then
+	if low:find("ctfconfig%s*=") or low:find("rtfconfig%s*=") or low:find("evoconfig%s*=") then
 		local opp = low:match("%[ai%d+%]%s*{.-team%s*=%s*(%d+)")
 		if opp then S.battle.scenario.versus = true; S.battle.scenario.oppTeam = tonumber(opp) end
 	end
