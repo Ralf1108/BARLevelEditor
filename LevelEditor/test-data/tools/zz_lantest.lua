@@ -10,6 +10,7 @@ local QUIT = tonumber((readFile("zz_quit.txt") or (mo.lanpvehold and "60000") or
 local function log(...) Spring.Echo("[zzlan] " .. table.concat({ ... }, " ")) end
 local function gp(k) local v = Spring.GetGameRulesParam(k); if v == nil then return "nil" end return tostring(v) end
 local ordered = false
+local giftSeen = nil
 local lastLog = -999
 local function players()
 	local t = {}
@@ -42,9 +43,9 @@ function widget:GameFrame(f)
 			local t = {}
 			for team in tostring(gp("evoTeams")):gmatch("%d+") do
 				local function tp(k) return tostring(Spring.GetTeamRulesParam(tonumber(team), k)) end
-				t[#t + 1] = string.format("team%s stage=%s xp=%s/%s kills=%s deaths=%s unit=%s", team, tp("evoStage"), tp("evoXp"), tp("evoNeed"), tp("evoKills"), tp("evoDeaths"), tp("evoName"))
+				t[#t + 1] = string.format("team%s stage=%s xp=%s/%s kills=%s deaths=%s out=%s gift=%s unit=%s", team, tp("evoStage"), tp("evoXp"), tp("evoNeed"), tp("evoKills"), tp("evoDeaths"), tp("evoOut"), tp("evoGift"), tp("evoName"))
 			end
-			log("  evo state=", gp("evoState"), table.concat(t, " | "), "| gaia units", tostring(#Spring.GetTeamUnits(Spring.GetGaiaTeamID())))
+			log("  evo state=", gp("evoState"), "armageddon", gp("evoArmageddon"), table.concat(t, " | "), "| my units", tostring(#Spring.GetTeamUnits(Spring.GetMyTeamID())))
 		elseif mode == "td" then
 			log("  td state=", gp("tdState"), "wave", gp("tdWave"), "/", gp("tdWaves"), "leaks", gp("tdLeaks"), "killed", gp("tdKilled"))
 		else
@@ -98,6 +99,20 @@ function widget:GameFrame(f)
 		end
 	end
 	-- Evolution: pictures of the host's game (the engine's own screenshot, in screenshots\ of the write dir; a picture of the window from outside comes out white)
+	-- Evolution, stage 10: a picture of the window of the gift (PlayerA), then the choice: PlayerA Gates of Hell, PlayerB Hell on Earth
+	if mode == "evo" and (me == "PlayerA" or me == "PlayerB") and Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoGift") == 1 then
+		giftSeen = giftSeen or f
+		if me == "PlayerA" and f == giftSeen + 20 then Spring.SendCommands("screenshot png"); log("screenshot of the gift at frame", f) end
+		if f == giftSeen + 60 then Spring.SendLuaRulesMsg("evo|gift|" .. (me == "PlayerA" and 3 or 1)); log("gift chosen by", me) end
+	end
+	-- Gates of Hell (PlayerA): the camera on the first red ring, a picture of the ring and one of the impact
+	if mode == "evo" and me == "PlayerA" and giftSeen then
+		if f == giftSeen + 160 then
+			local x, z = tostring(Spring.GetGameRulesParam("evoNukes") or ""):match("(%d+),(%d+)")
+			if x then Spring.SetCameraTarget(tonumber(x), Spring.GetGroundHeight(tonumber(x), tonumber(z)), tonumber(z), 0); log("camera on the missile target", x, z) end
+		end
+		if f == giftSeen + 175 or f == giftSeen + 290 then Spring.SendCommands("screenshot png"); log("screenshot of Gates of Hell at frame", f) end
+	end
 	if mode == "evo" and me == "PlayerA" and (f == 2400 or f == 5400 or f == 8400) then
 		local x, y, z = Spring.GetUnitPosition(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoUnit") or -1)
 		if x then Spring.SetCameraTarget(x, y, z, 0) end
