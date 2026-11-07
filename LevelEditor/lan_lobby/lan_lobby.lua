@@ -17,12 +17,12 @@ end
 -- as chat: !map, !bSet, !nbTeams, !set teamSize, !balance, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room)
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room), evolution=1 (the host switches Evolution on, like a click on its button)
 
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 15, stamp = "2026-11-06 17:00" }
+local LAN_VERSION = { number = 16, stamp = "2026-11-07 15:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -449,6 +449,7 @@ selectScenario = function(name)
 	local ally = team and low:match("%[team" .. team .. "%]%s*{.-allyteam%s*=%s*(%d+)")
 	if not (map and team and ally) then say("Scenario '" .. name .. "' has no player team (map " .. tostring(map) .. ")."); return end
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
+	if S.battle.modoptions.lanevolution then S.battle.modoptions.lanevolution = nil; toBattle("SETSCRIPTTAGS game/modoptions/lanevolution=") end -- a scenario has its own rules
 	for _, c in ipairs(S.conns) do c.versusSet = nil end
 	-- Capture the Flag and Reclaim the Fame are played human against human (a computer opponent does not play them): the opponent team of the scenario
 	-- (the team of its AI) is taken by the humans who chose another ally team in the room than the host
@@ -481,6 +482,7 @@ local function startGameNow()
 	if S.battle.running then return end
 	S.battle.running = true
 	log("the autohost starts the game")
+	if ui.popup then pcall(function() ui.popup:Dispose() end); ui.popup = nil end -- (a window of the room, e.g. the rules of Evolution, would stay over the game)
 	local humans = humanList()
 	local parts = {}
 	for _, g in ipairs(sharedGroups(humans, effectiveSlots(humans))) do parts[#parts + 1] = groupText(g) end
@@ -623,9 +625,11 @@ local function hasPveBot()
 	return false
 end
 
--- "late join" (!latejoin on, chosen before the start) also needs the extra game: its gadget lan_latejoin.lua puts a player who comes into the running game into a team
+-- "late join" (!latejoin on, chosen before the start) also needs the extra game: its gadget lan_latejoin.lua puts a player who comes into the running game into a team;
+-- so does the game mode Evolution (the button Evolution of the room: the game option lanevolution=1, gadget evo_game.lua)
+local function evolutionOn() return S.battle.modoptions.lanevolution == "1" end
 local function needsExtraGame()
-	return hasPveBot() or S.battle.lateJoin
+	return hasPveBot() or S.battle.lateJoin or evolutionOn()
 end
 
 local function syncPveGame()
@@ -641,7 +645,7 @@ local function syncPveGame()
 			toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size)
 		elseif not S.pveWarned then
 			S.pveWarned = true
-			say("Warning: the extra game of the scenarios is not installed on the host (run the Level Editor setup): the Scavengers / Raptors AI will command its units.")
+			say("Warning: the extra game of the scenarios is not installed on the host (run the Level Editor setup): the Scavengers / Raptors AI will command its units, Evolution and late join do not work.")
 		end
 	elseif S.pveGame then
 		S.pveGame = nil; S.gameFile = nil
@@ -1025,8 +1029,9 @@ buildScript = function(myName)
 	local pi = 0
 	local eff = effectiveSlots(humanList())
 	-- the start positions are chosen in the game (2) unless humans play one player together: the game of such a team is started by the little widget
-	-- shared_start.lua as soon as everybody has loaded, nobody could place a start position before that, so the positions of the map are used (0)
-	local startPos = (#sharedGroups(humanList(), eff) > 0) and 0 or 2
+	-- shared_start.lua as soon as everybody has loaded, nobody could place a start position before that, so the positions of the map are used (0);
+	-- Evolution uses them too (the first unit stands there, every later one at a random place: choosing a position would only hold up the start)
+	local startPos = (#sharedGroups(humanList(), eff) > 0 or evolutionOn()) and 0 or 2
 	local groupTeam = {} -- "ally:number" -> the team of the start script (the humans with the same number play it together)
 	local function rgb(col) col = tonumber(col) or 0; return string.format("%.4f %.4f %.4f", (col % 256) / 255, (math.floor(col / 256) % 256) / 255, (math.floor(col / 65536) % 256) / 255) end
 	local function sideName(s) local sd = cf and cf:GetSideById(s); return (sd and sd.name) or "Armada" end
@@ -1059,7 +1064,10 @@ buildScript = function(myName)
 	local t = { "[GAME]\n{\n\tGameType=", extra and S.gameFile.name or S.battle.game, ";\n\tMapName=", S.battle.map, ";\n\tHostIP=0.0.0.0;\n\tHostPort=", GAMEPORT,
 		";\n\tIsHost=1;\n\tMyPlayerName=", myName, ";\n\tNumPlayers=", #players, ";\n\tNumUsers=", #players + #ais, ";\n\tStartPosType=", startPos, ";\n\tNoHelperAIs=0;\n\tGameStartDelay=5;\n" .. (late and "\tAllowAdditionalPlayers=1;\n" or "") }
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
-	for k, v in pairs(S.battle.modoptions) do t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end
+	-- Evolution replaces the commanders: the game must not end when a commander is gone (the mode itself never ends)
+	local evo = evolutionOn() and extra
+	for k, v in pairs(S.battle.modoptions) do if not (evo and k == "deathmode") then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
+	if evo then t[#t + 1] = "\t\tdeathmode=neverend;\n" end
 	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
 	if late then t[#t + 1] = "\t\tlanlatejoin=1;\n" end
 	t[#t + 1] = "\t\tlanplay=1;\n" -- the game widget shared_start.lua acts only in LAN Play games and scenarios
@@ -2068,6 +2076,51 @@ local function ensureSlotUi()
 	end
 end
 
+---------------------------------------------------------------- "Evolution": a game mode on any map (gadget evo_game.lua of the extra game)
+local EVO_TIP = "Evolution: every player starts with one weak unit instead of the commander. Kills give points, points evolve the unit (10 stages up to a tier 3 giant). " ..
+	"A lost unit comes back 5 s later somewhere else, one stage lower. Wild units stand around and only shoot back. The host switches it on or off."
+local EVO_INFO = "Evolution is on.\n\nEvery player (and every computer player) starts with one weak unit instead of the commander; kills give points and evolve it, " ..
+	"10 stages up to a tier 3 giant, a random faction each time. A lost unit comes back 5 s later somewhere else, one stage lower. The game does not end by itself.\n\n" ..
+	"Tip: choose a map of size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata): everybody walks with a single unit, " ..
+	"on a big map you hardly meet."
+
+-- on: the game option lanevolution=1 for everybody in the room; the host gets a window with the rules and the tip about the map size
+local function setEvolution(on)
+	if not S or S.battle.scenario then return end
+	S.battle.modoptions.lanevolution = on and "1" or nil
+	toBattle("SETSCRIPTTAGS game/modoptions/lanevolution=" .. (on and "1" or ""))
+	syncPveGame()
+	log("Evolution", on and "on" or "off")
+	if on then bigPopup(EVO_INFO) end
+end
+
+local function evolutionShown()
+	if S then return evolutionOn() end
+	local l = lobby()
+	return l and l.modoptions and l.modoptions.lanevolution == "1" or false
+end
+
+local function ensureEvolutionUi()
+	if not ui.panel or not Config() then return end
+	local show = lan ~= nil and lan.step == "in" and not scenarioRoom() -- the host switches, a joiner sees the state
+	if not ui.evoButton then
+		if not show or not roomMain() then return end
+		ui.evoButton = Button:New { parent = screen0, x = 5, right = 5, bottom = 5 + (S and 84 or 42), height = 36, caption = "Evolution: off", objectOverrideFont = roomFont(),
+			classname = "option_button", tooltip = EVO_TIP, OnClick = { function() if S then setEvolution(not evolutionOn()) end end } }
+		ui.evoOn = nil
+		log("Evolution button added")
+	end
+	roomPlace(ui.evoButton, 3, show)
+	if not show then pcall(function() ui.evoButton:Dispose() end); ui.evoButton = nil; return end
+	local on = evolutionShown()
+	if on ~= ui.evoOn then
+		ui.evoOn = on
+		ui.evoButton:SetCaption(on and "Evolution: on" or "Evolution: off")
+		ui.evoButton.backgroundColor = on and { 0.15, 0.6, 0.2, 1 } or { 0.3, 0.3, 0.3, 1 }
+		ui.evoButton:Invalidate()
+	end
+end
+
 ---------------------------------------------------------------- per frame
 function widget:Update()
 	ensureScenarioUi()
@@ -2094,6 +2147,12 @@ function widget:Update()
 		end
 	end
 	ensureSlotUi()
+	ensureEvolutionUi()
+	if cfg.evolution == "1" and S and lan and lan.step == "in" and not cfg.evolutionSet and os.clock() > 10 then
+		cfg.evolutionSet = true
+		log("test: Evolution on")
+		setEvolution(true)
+	end
 	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and os.clock() > 14 then
 		cfg.scenarioPicked = true
 		log("test: choosing the scenario", cfg.scenario)
@@ -2293,7 +2352,7 @@ function widget:Update()
 	if cfg.bot and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.botDone and os.clock() > 14 then
 		cfg.botDone = true   -- test: a computer in the room (the Add AI button: lobby:AddAi)
 		log("test: adding the computer", cfg.bot, "to ally team", tostring(cfg.botAlly or 0))
-		log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot .. "1", cfg.bot, tonumber(cfg.botAlly) or 0, "<not-versioned>")))
+		log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot .. "1", cfg.bot, tonumber(cfg.botAlly) or 0, cfg.botVersion or "<not-versioned>")))
 		if cfg.bot2 and cfg.bot2 ~= "" then   -- a second computer (Raptors against Scavengers)
 			log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot2 .. "1", cfg.bot2, tonumber(cfg.bot2Ally) or 1, "<not-versioned>")))
 		end

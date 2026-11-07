@@ -21,6 +21,7 @@ Play with computers in the same network. No account, no server in the cloud.
 
 - **Official maps:** just play, like any room
 - **Custom Scenario:** the host picks a scenario built with the Level Editor. Map and teams are set, all humans play the scenario's team together. The other players get the scenario's game file automatically
+- **Evolution:** the host presses the button **Evolution** (a toggle): every player starts with one weak unit instead of the commander, kills evolve it through 10 stages. Any map, best a small one (size M or smaller). Rules: [Evolution](../LevelEditor/game-modes/evolution.md)
 
 - **Join a running game as a player:** the host types `!latejoin on` in the room chat before the start. Players who come into the room later press **Rejoin** and join a team of the running game (the one with the fewest humans, together with its players as in Copilot). They catch up with the game first.
 - **Raptors against Scavengers:** put a Raptors computer into one team and a Scavengers computer into the other (each with a human player in its team): both play at the same time, each human commands the units of its computer. The game normally refuses this combination (no units spawn and it says "leave the match"); LAN Play plays with a changed copy of the game's files.
@@ -48,7 +49,7 @@ Play with computers in the same network. No account, no server in the cloud.
 
 ## Status
 
-- Tested with two game instances on one computer: Capture the Flag, Reclaim the Fame, Tower Defense, Copilot, scenario transfer, map transfer, version warning
+- Tested with two game instances on one computer: Capture the Flag, Reclaim the Fame, Tower Defense, Evolution, Copilot, scenario transfer, map transfer, version warning
 - Not tested yet: two real computers, three or more players
 
 Technical details: [LAN Play specification](../specs/lan-play.md)
