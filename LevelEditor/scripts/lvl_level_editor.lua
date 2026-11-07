@@ -253,7 +253,6 @@ local td = { open = false, edit = nil, pick = nil, mode = nil, pts = {}, stroke 
 local rst -- restrictions of the level (what the player may not build): LevelEditor/scripts/led_restrictions.lua, created below (data = section restrictions of the level file)
 local ctf -- Capture the Flag page (button CF): LevelEditor/scripts/led_ctf.lua, created below (data = section capture of the level file)
 local rtf -- Reclaim the Fame page (button RF): LevelEditor/scripts/led_rtf.lua, created below (data = section reclaim of the level file)
-local evo -- Evolution page (button EV): LevelEditor/scripts/led_evo.lua, created below (data = section evolution of the level file)
 local ar -- Arena page (button A): LevelEditor/scripts/led_arena.lua, created below (data = section arena of the level file)
 local tm -- Teams (page T and the alliance frames of the team buttons): LevelEditor/scripts/led_teams.lua, created below (data = section teams of the level file)
 
@@ -371,9 +370,6 @@ local function saveLevel(name, quiet)
 	if rtf.data then
 		w("\treclaim = " .. rtf.lua() .. ",\n")
 	end
-	if evo.data then
-		w("\tevolution = " .. evo.lua() .. ",\n")
-	end
 	if ar.data then
 		w("\tarena = " .. ar.lua() .. ",\n")
 	end
@@ -470,7 +466,6 @@ local function load_level(_, _, args)
 	td.data = knownFields(data.towerdefense, td.new(), { "spawn", "goal" })
 	ctf.data = knownFields(data.capture, ctf.new())
 	rtf.data = knownFields(data.reclaim, rtf.new())
-	evo.data = knownFields(data.evolution, evo.new())
 	ar.data = knownFields(data.arena, ar.new(), { "point" })
 	ar.fix()
 	tm.load(data.teams)
@@ -982,7 +977,7 @@ local function searchRects(x1, x2, top, hb)
 end
 
 local function headerRowCount() -- Rows of the header
-	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or evo.open or ar.open or sv.open then
+	if optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or ar.open or sv.open then
 		return 0
 	end
 	-- Place menu: search, sub-tabs, then the rows of the chosen sub-tab
@@ -1019,8 +1014,6 @@ local function basePanelRectRaw()
 		cw, ch = 0, ctf.height()
 	elseif rtf.open then
 		cw, ch = 0, rtf.height()
-	elseif evo.open then
-		cw, ch = 0, evo.height()
 	elseif gen.open then
 		cw, ch = 0, gen.height()
 	elseif sv.open then
@@ -1035,7 +1028,7 @@ local function basePanelRectRaw()
 	local pw = math.min(math.max(cw, math.floor(560 * S)), vsx * 0.5) -- room for the buttons at the top
 	local top = vsy * 0.94 -- top edge of the menu: 94 % of the screen height
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or evo.open or ar.open or sv.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
+	local bottom = math.max((optionsOpen or scenarioOpen or gen.open or td.open or ctf.open or rtf.open or ar.open or sv.open) and vsy * 0.05 or vsy * 0.12, top - hh - ch)
 	local colW = m.HB + 2 * m.PAD -- far right: button column V, O, I, ?
 	return vsx - colW - pw, bottom, vsx - colW, top -- x1, bottom, x2, top
 end
@@ -1085,7 +1078,7 @@ local function headerRectsRaw()
 		}
 		for i, it in ipairs(tops) do
 			rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(5 + i) - m.HB, y1 = sideTop(5 + i), side = true, kind = "top", value = it[1], label = it[2],
-				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not evo.open and not ar.open and not sv.open), tip = it[3] }
+				active = (it[1] == "gen") and gen.open or (it[1] == "place" and not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open and not sv.open), tip = it[3] }
 		end
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = y1 - 2 * (m.HB + 3) - m.HB, y1 = y1 - 2 * (m.HB + 3), side = true, kind = "sv", value = "sv", label = "S", active = sv.open,
 			tip = "Save: the saved levels with Save as new, Save (overwrites) and Load; sorted A-Z or by last use" }
@@ -1106,9 +1099,6 @@ local function headerRectsRaw()
 		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(11) - m.HB, y1 = sideTop(11), side = true, kind = "rtf", value = "rtf", label = "RF", active = rtf.open,
 			tint = rtf.cfg().enabled and (rtf.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Reclaim the Fame is on for this level
 			tip = "Reclaim the Fame: construction units earn points by reclaiming the crystals on the map; the first team at the score limit wins (crystals, factors, score limit, rate)" }
-		rects[#rects + 1] = { x1 = sx1, x2 = sx2, y0 = sideTop(12) - m.HB, y1 = sideTop(12), side = true, kind = "evo", value = "evo", label = "EV", active = evo.open,
-			tint = evo.cfg().enabled and (evo.open and { 0.3, 0.75, 0.4 } or { 0.15, 0.6, 0.2 }) or nil, -- green: Evolution is on for this level
-			tip = "Evolution: every team starts with one weak unit; kills give points and evolve it (10 stages up to a big tier 3 unit); the last alliance standing wins" }
 		local areas = {
 			{ "line", "XL", "XL (experimental): attack along a line.\nSelect armed units, press XL, then drag a line on the map.\nEach unit gets a piece of it (bombers: carpet)." },
 			{ "rect", "XR", "XR (experimental): attack a rectangle.\nSelect armed units, press XR, then drag a rectangle.\nThe units spread over the whole area." },
@@ -1117,7 +1107,7 @@ local function headerRectsRaw()
 			{ "focus", "XF", "XF (experimental): focus attack.\nSelect armed units, press XF, then drag a circle from the center\noutwards. The units kill the visible enemies in it one after the other,\nthe most dangerous first (its damage per second compared with the\ntime it takes to kill it, including the way there; harmless ones last).\nEvery enemy gets as many units as it needs to die in about 3 seconds,\nthe rest goes on to the next one." },
 		}
 		for k, a in ipairs(areas) do
-			local top = sideTop(k <= 3 and 13 + k or 14 + k) -- one button gap before XS: a command of its own
+			local top = sideTop(k <= 3 and 12 + k or 13 + k) -- one button gap before XS: a command of its own
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "area", value = a[1], label = a[2],
 				active = (area ~= nil and area:armed() and area:mode() == a[1]), tip = a[3] }
 		end
@@ -1127,14 +1117,14 @@ local function headerRectsRaw()
 			{ "unfix", "FD", "FD: make buildings destructible again.\nPress FD, then drag a rectangle on the map:\nthe buildings in it can be damaged again.\nCtrl+Z undoes it." },
 		}
 		for k, f in ipairs(fixes) do
-			local top = sideTop(20 + k)
+			local top = sideTop(19 + k)
 			rects[#rects + 1] = { x1 = dx1, x2 = dx2, y0 = top - m.HB, y1 = top, side = true, kind = "del", value = f[1], label = f[2], active = (delMode == f[1]), tip = f[3] }
 		end
 		rects[#rects + 1] = { x1 = gx1, x2 = gx2, y0 = gy1 - m.HB, y1 = gy1, side = true, kind = "gear", value = "gear", label = "O", active = optionsOpen,
 			tip = "Settings: columns and rows, plus level management (load / save)" }
 	end
 	local hh = titleH() + 4 + headerRowCount() * (m.HB + 3) + 2
-	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not evo.open and not ar.open and not sv.open then
+	if not optionsOpen and not scenarioOpen and not gen.open and not td.open and not ctf.open and not rtf.open and not ar.open and not sv.open then
 		local rowTop = y1 - 4 - titleH()
 		for _, r in ipairs(searchRects(x1, x2, rowTop, m.HB)) do
 			rects[#rects + 1] = r
@@ -1412,7 +1402,7 @@ end
 -- Leaving the level (load, save, quit) must not take the state of the test with it.
 local function runningModes(stop)
 	local any = false
-	for _, p in ipairs({ { "tdState", td }, { "ctfState", ctf }, { "rtfState", rtf }, { "evoState", evo } }) do
+	for _, p in ipairs({ { "tdState", td }, { "ctfState", ctf }, { "rtfState", rtf } }) do
 		local s = Spring.GetGameRulesParam(p[1])
 		if s and s ~= "" then
 			any = true
@@ -1463,7 +1453,7 @@ local function drawMenuBody()
 	end
 	gl.Color(1, 1, 1, 1)
 	-- with Tower Defense on (tick box) or its page open the title says so
-	gl.Text(sv.open and "Level Editor - Levels" or ar.open and "Level Editor - Arena" or rtf.open and "Level Editor - Reclaim the Fame" or evo.open and "Level Editor - Evolution" or ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
+	gl.Text(sv.open and "Level Editor - Levels" or ar.open and "Level Editor - Arena" or rtf.open and "Level Editor - Reclaim the Fame" or ctf.open and "Level Editor - Capture the Flag" or ((td.open or td.cfg().enabled) and "Level Editor - Tower Defense" or "Level Editor"), x1 + 8 * S, y1 - 34 * S, 28 * S, "o")
 	local rect = contentRect()
 	if scenarioOpen then
 		if scenarioPage == "teams" then
@@ -1487,10 +1477,6 @@ local function drawMenuBody()
 	end
 	if rtf.open then
 		rtf.draw(rect)
-		return
-	end
-	if evo.open then
-		evo.draw(rect)
 		return
 	end
 	if sv.open then
@@ -1616,11 +1602,6 @@ end
 -- For tests: the Reclaim the Fame page
 function widget:DebugRtf()
 	return rtf
-end
-
--- For tests: the Evolution page
-function widget:DebugEvo()
-	return evo
 end
 
 -- For tests: the Arena page
@@ -1793,10 +1774,10 @@ local function applyHeader0(r)
 	end
 	searchFocus(false)
 	if r.kind == "top" then
-		local tdWas = td.open or ctf.open or rtf.open or evo.open or ar.open or sv.open
+		local tdWas = td.open or ctf.open or rtf.open or ar.open or sv.open
 		ar.finish(true)
 		sv.finish(true)
-		td.open, ctf.open, rtf.open, evo.open, ar.open, sv.open = false, false, false, false, false, false
+		td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 		local pageWas = scenarioOpen or optionsOpen
 		siFinish(true)
 		scenarioOpen, optionsOpen = false, false -- the scenario, AI and settings pages give way to Place and Generate
@@ -1808,15 +1789,14 @@ local function applyHeader0(r)
 		end
 		return
 	end
-	local tdWas, ctfWas, rtfWas, evoWas, arWas, svWas = td.open, ctf.open, rtf.open, evo.open, ar.open, sv.open
+	local tdWas, ctfWas, rtfWas, arWas, svWas = td.open, ctf.open, rtf.open, ar.open, sv.open
 	ctf.finish(true)
 	sv.finish(true)
 	rtf.finish(true)
-	evo.finish(true)
 	ar.finish(true)
 	if r.kind ~= "create" then
 		gen.open, gen.armed, gen.drag = false, false, nil
-		td.open, ctf.open, rtf.open, evo.open, ar.open, sv.open = false, false, false, false, false, false
+		td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 	end
 	uGrid:setFocus(false)
 	fGrid:setFocus(false)
@@ -1850,16 +1830,6 @@ local function applyHeader0(r)
 		armedFeature = false
 		scenarioOpen, optionsOpen = false, false
 		rtf.open = not rtfWas
-		bpGrid.scroll, uGrid.scroll = 0, 0
-		return
-	end
-	if r.kind == "evo" then
-		bpGrid:resetEdit()
-		bpGrid:setArmed(false)
-		armedUnit = false
-		armedFeature = false
-		scenarioOpen, optionsOpen = false, false
-		evo.open = not evoWas
 		bpGrid.scroll, uGrid.scroll = 0, 0
 		return
 	end
@@ -2112,9 +2082,9 @@ end
 -- what was changed on the pages meanwhile stays: the settings of the pages, the teams, the restrictions and the scenario info
 local function reloadBeforePlay()
 	local current = currentLevel
-	local dTd, dCtf, dRtf, dEvo, dAr, dTm, dRst, dScenario, dDirty = td.data, ctf.data, rtf.data, evo.data, ar.data, tm.data, rst.data, si.data, si.dirty
+	local dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty = td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, si.data, si.dirty
 	load_level(nil, nil, { "_beforeplay" })
-	td.data, ctf.data, rtf.data, evo.data, ar.data, tm.data, rst.data, si.data, si.dirty = dTd, dCtf, dRtf, dEvo, dAr, dTm, dRst, dScenario, dDirty
+	td.data, ctf.data, rtf.data, ar.data, tm.data, rst.data, si.data, si.dirty = dTd, dCtf, dRtf, dAr, dTm, dRst, dScenario, dDirty
 	tm.apply() -- the alliances of the changed teams
 	currentLevel = current
 end
@@ -2159,10 +2129,6 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 			rtf.data.enabled = false
 			say("Reclaim the Fame switched off: only one game mode can be on.")
 		end
-		if evo.data and evo.data.enabled then
-			evo.data.enabled = false
-			say("Evolution switched off: only one game mode can be on.")
-		end
 	end,
 	step = function() ledStep() end,
 	led = function(msg) led(msg) end,
@@ -2206,34 +2172,6 @@ rtf = VFS.Include("luaui/Include/led_rtf.lua", nil, VFS.ZIP_FIRST)({
 		if ctf.data and ctf.data.enabled then
 			ctf.data.enabled = false
 			say("Capture the Flag switched off: only one game mode can be on.")
-		end
-		if evo.data and evo.data.enabled then
-			evo.data.enabled = false
-			say("Evolution switched off: only one game mode can be on.")
-		end
-	end,
-	beforePlay = function() saveLevel("_beforeplay", true) end,
-	afterPlay = function()
-		reloadBeforePlay()
-	end,
-})
-
--- Evolution page (LevelEditor/scripts/led_evo.lua): gets the services of the widget
-evo = VFS.Include("luaui/Include/led_evo.lua", nil, VFS.ZIP_FIRST)({
-	Shared = Shared,
-	S = function() return S end,
-	say = function(text) say(text) end,
-	serialize = function(v) return td.lua(v, "\t") end,
-	disarmAll = function() gen.disarmAll() end,
-	restrictStart = function() rst.start() end,
-	restrictStop = function() rst.stop() end,
-	-- the other game modes off when Evolution is switched on (only one game mode)
-	excludeOthers = function()
-		for _, p in ipairs({ { td, "Tower Defense" }, { ctf, "Capture the Flag" }, { rtf, "Reclaim the Fame" } }) do
-			if p[1].data and p[1].data.enabled then
-				p[1].data.enabled = false
-				say(p[2] .. " switched off: only one game mode can be on.")
-			end
 		end
 	end,
 	beforePlay = function() saveLevel("_beforeplay", true) end,
@@ -2345,7 +2283,6 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 	contentRect = contentRect,
 	ctf = ctf,
 	rtf = rtf,
-	evo = evo,
 	rst = rst,
 	armUnit = function(name)
 		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
@@ -2500,9 +2437,6 @@ local function panelPress(mx, my, button)
 		end
 		if rtf.open then
 			return rtf.press(rect, mx, my)
-		end
-		if evo.open then
-			return evo.press(rect, mx, my)
 		end
 		if ar.open then
 			return ar.press(rect, mx, my)
@@ -3113,9 +3047,6 @@ function widget:TextInput(utf8char)
 	if rtf.edit then
 		return rtf.text(utf8char)
 	end
-	if evo.edit then
-		return evo.text(utf8char)
-	end
 	if ar.edit then
 		return ar.text(utf8char)
 	end
@@ -3135,7 +3066,7 @@ function widget:MouseWheel(up, value)
 	rescale()
 	local mx0, my0 = Spring.GetMouseState()
 	-- Ctrl + mouse wheel on the map: choose the next / previous blueprint (the camera does not zoom then)
-	if menuOpen and not collapsed and not inPanel(mx0, my0) and not (scenarioOpen or optionsOpen or gen.open or td.open or ctf.open or rtf.open or evo.open or ar.open or sv.open)
+	if menuOpen and not collapsed and not inPanel(mx0, my0) and not (scenarioOpen or optionsOpen or gen.open or td.open or ctf.open or rtf.open or ar.open or sv.open)
 		and menuMode ~= "units" and menuMode ~= "features" and menuMode ~= "fav" then
 		local _, ctrl = Spring.GetModKeyState()
 		if ctrl and bpGrid:cycle(contentRect(), up) then
@@ -3172,7 +3103,7 @@ function widget:MouseWheel(up, value)
 		td.wheel(up)
 		return true
 	end
-	if ctf.open or rtf.open or evo.open or ar.open then
+	if ctf.open or rtf.open or ar.open then
 		return true
 	end
 	if sv.open then
@@ -3705,7 +3636,7 @@ bpQuickSave = function()
 	menuMode = "bp"
 	optionsOpen = false
 	scenarioOpen = false
-	td.open, ctf.open, rtf.open, evo.open, ar.open, sv.open = false, false, false, false, false, false
+	td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 	bpGrid:scrollTo(contentRect(), bpGrid.selected)
 	return true
 end
@@ -3741,9 +3672,6 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if rtf.edit then
 		return rtf.key(key)
-	end
-	if evo.edit then
-		return evo.key(key)
 	end
 	if ar.edit then
 		return ar.key(key)

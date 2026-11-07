@@ -49,7 +49,6 @@ A level with a game mode on gets that mode's game option and gadget; the modes e
 | Tower Defense | `tdconfig` = base64url of the payload `enemyTeam;0;spawnX;spawnZ;goalX;goalZ;leaks;path;waves;restrict;fog` (team numbers as renumbered: the player is 0, the enemy the first AI team) | `td_waves.lua` | [Tower Defense](tower-defense.md) |
 | Capture the Flag | `ctfconfig` | `ctf_game.lua` | [Capture the Flag](capture-the-flag.md) |
 | Reclaim the Fame | `rtfconfig` (without crystals the scenario is built without the mode, with a note) | `rtf_game.lua` | [Reclaim the Fame](reclaim-the-fame.md) |
-| Evolution | `evoconfig` (computer teams get NullAI, `deathmode = neverend`, no grace period) | `evo_game.lua` | [Evolution](evolution.md) |
 | Restrictions | `restrictions` | `unit_restrictions.lua` | [Restrictions](restrictions.md) |
 
 Tower Defense: a level with only one team gets an extra enemy team without units (the waves belong to it). The start commander of the player is removed when the waves start, so the level needs builders. In the scenario the gadget (`not EDITOR_MODE`) reads `tdconfig` in `GamePreload` and starts the waves at frame 30.

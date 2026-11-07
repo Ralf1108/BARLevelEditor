@@ -217,7 +217,7 @@ function ConvertTo-Table($o) {
     return $o
 }
 
-# ---------------------------------------------------------------- Sections of the level file (towerdefense, restrictions, capture, reclaim, evolution)
+# ---------------------------------------------------------------- Sections of the level file (towerdefense, restrictions, capture, reclaim)
 # Position of the closing brace that belongs to the opening brace at $open
 function Find-CloseBrace([string]$txt, [int]$open) {
     $depth = 0
@@ -323,15 +323,6 @@ function Read-Reclaim([string]$txt) {
               visible = (Get-LuaFlag $body 'visible' $true); statics = (Get-LuaFlag $body 'statics' $false); ground = (Get-LuaFlag $body 'ground' $true); ships = (Get-LuaFlag $body 'ships' $true); air = (Get-LuaFlag $body 'air' $false) }
 }
 
-# Section "evolution" of the level (written by the Level Editor): the settings of the Evolution page. $null when the section is missing or
-# Evolution is off. The player teams are the teams with units. The payload built from it (evoconfig) is read by parse() in evo_game.lua.
-function Read-Evolution([string]$txt) {
-    $body = Get-ModeSection $txt 'evolution'
-    if ($null -eq $body) { return $null }
-    return @{ lives = (Get-LuaNum $body 'lives' 3); respawn = (Get-LuaNum $body 'respawn' 5); wilds = (Get-LuaNum $body 'wilds' 20); wildHp = (Get-LuaNum $body 'wildHp' 10)
-              first = (Get-LuaNum $body 'first' 3); factor = (Get-LuaNum $body 'factor' 160) }
-}
-
 # ---------------------------------------------------------------- Read the level
 # The section teams of the level (page T of the editor): ten rows, team 0 to 9: group (alliance), ai ('' = a human), metal, energy
 function Read-Teams([string]$txt) {
@@ -391,7 +382,6 @@ function Read-LevelFile([string]$path) {
     $level.td = Read-TowerDefense $txt
     $level.ctf = Read-Capture $txt
     $level.rtf = Read-Reclaim $txt
-    $level.evo = Read-Evolution $txt
     $level.rst = Read-Restrictions $txt
     $level.teams = Read-Teams $txt
     return $level
@@ -509,11 +499,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
             if ($td -or $ctf) { throw 'Reclaim the Fame and another game mode (Tower Defense or Capture the Flag) are both on in the level: switch one of them off in the editor (only one game mode can be on).' }
         }
     }
-    $evo = $level.evo
-    if ($evo) {
-        Write-Host "Evolution is on in the level: every team with units plays with one unit, $(if ($evo.lives -gt 0) { "$($evo.lives) lives" } else { 'unlimited lives' }), $($evo.wilds) wild units. Computer teams are steered by the game." -ForegroundColor Cyan
-        if ($td -or $ctf -or $rtf) { throw 'Evolution and another game mode are both on in the level: switch one of them off in the editor (only one game mode can be on).' }
-    }
     # human or AI per team (page T): a human team has no AI, the lobby puts the players into the human teams
     $human = @{}
     foreach ($t in $teamsFound) { $human[[int]$t] = ([int]$t -lt 10 -and $level.teams[[int]$t].ai -eq '') }
@@ -557,8 +542,7 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
                 @('Win condition', $WIN_TXT[$win]), @('Grace period', $(if ($grace -gt 0) { (Format-Minutes $grace) + ' min' } else { 'none' })), @('ID', $sid),
                 @('Tower Defense', $(if ($td) { 'on: {0} waves, {1} waypoints' -f $td.waves.Count, $td.waypoints.Count } else { 'off' })),
                 @('Capture the Flag', $(if ($ctf) { 'on: {0} flag points, {1} collection points' -f $ctf.flags.Count, $ctf.homes.Count } else { 'off' })),
-                @('Reclaim the Fame', $(if ($rtf) { 'on: {0} crystals, {1} points win' -f $crystals.Count, $rtf.score } else { 'off' })),
-                @('Evolution', $(if ($evo) { 'on: {0} lives, {1} wild units' -f $evo.lives, $evo.wilds } else { 'off' })))) {
+                @('Reclaim the Fame', $(if ($rtf) { 'on: {0} crystals, {1} points win' -f $crystals.Count, $rtf.score } else { 'off' })))) {
             $v = [string]$row[1]
             if ($v.Length -gt 90) { $v = $v.Substring(0, 87) + '...' }
             Write-Host ('  {0,-15} {1}' -f $row[0], $v)
@@ -578,14 +562,13 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     foreach ($t in $teamsFound) {
         if (-not $human[[int]$t]) {
             $n = $level.teams[[int]$t].ai
-            if ($td -or $evo) { $n = 'NullAI' }   # (Evolution: evo_game.lua steers the units of the computer teams)
+            if ($td) { $n = 'NullAI' }
             $aiOf[[int]$t] = Get-AiSpec $n   # (bar_common.ps1)
         }
     }
     # The win condition of the scenario info (page I) is the game option deathmode. Tower Defense removes the start commanders when the waves start, so
     # "commanders" could never be met there (the player would lose at once): it runs as "no end" (the waves decide).
-    # Evolution replaces every unit (also the commanders) and decides itself (the last alliance with lives left): always "no end".
-    $winRun = if (($td -and $win -eq 'com') -or $evo) { 'neverend' } else { $win }
+    $winRun = if ($td -and $win -eq 'com') { 'neverend' } else { $win }
     $answers = [ordered]@{}
     $answers['title'] = $title; $answers['author'] = $author; $answers['summary'] = $summary; $answers['briefing'] = $briefing
     $answers['win'] = $win; $answers['grace'] = $grace; $answers['sid'] = $sid
@@ -594,10 +577,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     # units could not leave the spawn point); the saved answer stays in the level
     if ($td -and $grace -gt 0) {
         Write-Host 'Note: no grace period in a Tower Defense scenario (the enemy waves could not leave their start area).' -ForegroundColor Yellow
-        $grace = 0
-    }
-    if ($evo -and $grace -gt 0) {
-        Write-Host 'Note: no grace period in an Evolution scenario (the units come back at random places of the map).' -ForegroundColor Yellow
         $grace = 0
     }
 
@@ -722,10 +701,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
         $plain = (@($rtf.rate, $rtf.score, $rtf.f1, $rtf.f2, $rtf.f3, $(if ($rtf.visible) { '1' } else { '0' }), ($(if ($rtf.statics) { '1' } else { '0' }) + $(if ($rtf.ground) { '1' } else { '0' }) + $(if ($rtf.ships) { '1' } else { '0' }) + $(if ($rtf.air) { '1' } else { '0' }))) -join ';')
         $mods['rtfconfig'] = ConvertTo-Base64Url $plain
     }
-    if ($evo) {
-        # settings for the gadget evo_game.lua (lives;respawn;wilds;wildHp;first;factor); the player teams are the teams with units
-        $mods['evoconfig'] = ConvertTo-Base64Url ((@($evo.lives, $evo.respawn, $evo.wilds, $evo.wildHp, $evo.first, $evo.factor)) -join ';')
-    }
     # indestructible buildings (buildings marked with FX, corridor walls), in every game mode: gadget unit_indestructible.lua, name:x,z,x,z|name:...
     $fixed = @($level.units | Where-Object { $_.fixed })
     if ($fixed.Count -gt 0) {
@@ -779,7 +754,6 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     $winTxt = @{ com = 'destroy the commander'; killall = 'destroy all units'; neverend = 'no end' }[$winRun]
     if ($td) { $winTxt = "Tower Defense: beat all $($td.waves.Count) waves (at most $($td.leaks) enemies may get through)" }
     if ($ctf) { $winTxt = $(if ($ctf.score -gt 0) { "Capture the Flag: the first team that holds $($ctf.score) flags at once wins" } else { 'Capture the Flag: no end' }) }
-    if ($evo) { $winTxt = $(if ($evo.lives -gt 0) { "Evolution: the last alliance with lives left wins ($($evo.lives) lives per team)" } else { 'Evolution: no end (unlimited lives)' }) }
     if ($rtf) { $winTxt = $(if ($rtf.score -gt 0) { "Reclaim the Fame: the first team that reaches $($rtf.score) points by reclaiming crystals wins" } else { 'Reclaim the Fame: no end' }) }
     $readme = New-Object Collections.ArrayList
     [void]$readme.Add($title); [void]$readme.Add('=' * $title.Length); [void]$readme.Add('')

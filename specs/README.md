@@ -12,7 +12,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [level-editor-setup.md](level-editor-setup.md) | setup and removal, the extra game, the start menu (keys 0–8), game start |
 | [teams.md](teams.md) | ten teams, alliances, human / AI, start resources (button T) |
 | [restrictions.md](restrictions.md) | what the player may not build, the R window |
-| [tower-defense.md](tower-defense.md), [capture-the-flag.md](capture-the-flag.md), [reclaim-the-fame.md](reclaim-the-fame.md), [evolution.md](evolution.md) | the four game modes |
+| [tower-defense.md](tower-defense.md), [capture-the-flag.md](capture-the-flag.md), [reclaim-the-fame.md](reclaim-the-fame.md) | the three game modes |
 | [arena.md](arena.md) | the Arena tool (button A) |
 | [scenario-builder.md](scenario-builder.md) | scenario info, the builder, `scenario.txt`, the extra game of the scenarios |
 | [scenario-multiplayer.md](scenario-multiplayer.md) | console lobby, split screen, bundle and map transfer |

@@ -1022,10 +1022,6 @@ return function(td, H)
 				H.rtf.data.enabled = false
 				H.say("Reclaim the Fame switched off: only one game mode can be on.")
 			end
-			if c.enabled and H.evo.data and H.evo.data.enabled then
-				H.evo.data.enabled = false
-				H.say("Evolution switched off: only one game mode can be on.")
-			end
 		elseif k == "tdmat" then
 			td.wall = hit.value
 		elseif k == "tddraw" then
