@@ -17,12 +17,12 @@ end
 -- as chat: !map, !bSet, !nbTeams, !set teamSize, !balance, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room), evolution=1 (the host switches Evolution on, like a click on its button)
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room), evolution=1 (the host switches Evolution on, like a click on Evo), evolutionStage=<n> (test: every player starts on stage n), evolutionClose=<s> (closes the window with its rules then), lanMenu=<s> (opens the menu of the button LAN Play then)
 
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 16, stamp = "2026-11-07 15:40" }
+local LAN_VERSION = { number = 16, stamp = "2026-11-07 17:40" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1875,21 +1875,6 @@ local function roomWindowRect()
 	return 5, 5, math.max(200, math.min(520, col.x - 10)), math.max(200, math.min(640, col.height - 4))
 end
 
-local function roomPlace(btn, row, show)
-	if os.clock() > (ui.roomAt or 0) then ui.roomAt = os.clock() + 1; ui.roomCol = show and roomColumn() or nil end
-	local col = ui.roomCol
-	local mark = "lanButton" .. row -- the controls of the lobby are proxies here: a column is told apart by a field, not by ==
-	if col and col[mark] == nil then
-		-- the buttons are anchored to the bottom end of the column (x, right, bottom; made so in ensureScenarioUi and ensureSlotUi): they follow every size of it by
-		-- themselves, and the advanced options above grow downwards without covering them. Moved into the column once.
-		if btn.parent then btn.parent:RemoveChild(btn) end
-		col:AddChild(btn)
-		col[mark] = true
-	end
-	local vis = show and col ~= nil
-	if btn.visible ~= vis then btn:SetVisibility(vis) end
-end
-
 -- The two lists (scenarios, Copilot) are windows in the same column, below the two buttons (the main window of the room does not draw windows added to it).
 local function roomMain()
 	if os.clock() > (ui.roomAt or 0) then ui.roomAt = os.clock() + 1; ui.roomCol = roomColumn() end
@@ -1913,20 +1898,6 @@ local function toggleScenarioWindow()
 	main.lanScnWin = true
 	fillScenarioList()
 	ui.scnWindow:BringToFront()
-end
-
-local function ensureScenarioUi()
-	if not ui.panel or not Config() then return end
-	local show = (S ~= nil) and lan ~= nil and lan.step == "in"
-	if not ui.scnButton then
-		if not show or not roomMain() then return end
-		local font = roomFont()
-		ui.scnButton = Button:New { parent = screen0, x = 5, right = 5, bottom = 5 + 42, height = 36, caption = "Custom Scenario", objectOverrideFont = font, classname = "action_button",
-			OnClick = { toggleScenarioWindow } }
-		log("Custom Scenario button added")
-	end
-	roomPlace(ui.scnButton, 1, show)
-	if not show then pcall(function() ui.scnButton:Dispose() end); ui.scnButton = nil end
 end
 
 ---------------------------------------------------------------- "Copilot": numbers per human; the same number inside an ally team = one player together
@@ -2056,19 +2027,10 @@ local function toggleSlotWindow(forceShow)
 	ui.slotWindow:BringToFront()
 end
 
+-- a player came or left, changed their team: the list of the Copilot window follows (only when the window is open)
 local function ensureSlotUi()
 	if not ui.panel or not Config() then return end
 	local show = lan ~= nil and lan.step == "in" -- the host and the joiners (a joiner only looks)
-	if not ui.slotButton then
-		if not show or not roomMain() then return end
-		local font = roomFont()
-		ui.slotButton = Button:New { parent = screen0, x = 5, right = 5, bottom = 5, height = 36, caption = "Copilot", objectOverrideFont = font, classname = "action_button", tooltip = COPILOT_TIP,
-			OnClick = { function() toggleSlotWindow() end } }
-		log("Copilot button added")
-	end
-	roomPlace(ui.slotButton, S and 2 or 1, show)
-	if not show then pcall(function() ui.slotButton:Dispose() end); ui.slotButton = nil end
-	-- a player came or left, changed their team: the list follows (only when the window is open)
 	if show and ui.slotWindow and ui.slotWindow.visible and os.clock() > (ui.slotNext or 0) then
 		ui.slotNext = os.clock() + 1
 		local sig = slotSignature()
@@ -2091,6 +2053,7 @@ local function setEvolution(on)
 	toBattle("SETSCRIPTTAGS game/modoptions/lanevolution=" .. (on and "1" or ""))
 	syncPveGame()
 	log("Evolution", on and "on" or "off")
+	say(on and "The game mode Evolution is on: every player starts with one weak unit instead of the commander (best on a map of size M or smaller)." or "The game mode Evolution is off.")
 	if on then bigPopup(EVO_INFO) end
 end
 
@@ -2100,30 +2063,86 @@ local function evolutionShown()
 	return l and l.modoptions and l.modoptions.lanevolution == "1" or false
 end
 
-local function ensureEvolutionUi()
+---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
+-- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
+-- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: on / off; a joiner sees the state). They open their windows
+-- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
+-- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
+-- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
+local function leaveButton()
+	if ui.leaveBtn and os.clock() < (ui.leaveAt or 0) then return ui.leaveBtn end
+	ui.leaveAt = os.clock() + 1
+	local found
+	local function walk(c, depth)
+		if found or c.visible == false then return end -- (only what is shown)
+		local txt = c.caption
+		if type(txt) == "string" and (txt == "Leave Lobby" or txt == "Leave Battle" or txt == "Leave") and c.parent then found = c; return end
+		if depth < 18 and c.children then for _, ch in ipairs(c.children) do walk(ch, depth + 1) end end
+	end
+	walk(screen0, 0)
+	ui.leaveBtn = found
+	return found
+end
+
+local function closeLanMenu()
+	if ui.lanMenu then pcall(function() ui.lanMenu:Dispose() end) end
+	ui.lanMenu, ui.evoMenuBtn = nil, nil
+end
+
+local function evoCaption() return evolutionShown() and "Evolution on" or "Evolution" end
+
+local function openLanMenu()
+	closeLanMenu()
+	local b = ui.lanButton
+	if not b then return end
+	local sx, sy = b:LocalToScreen(0, b.height + 4)
+	local items = {}
+	if S then items[#items + 1] = { caption = "Custom Scenario", tip = "Choose a scenario built with the Level Editor, or the official map", fn = function() closeLanMenu(); toggleScenarioWindow() end } end
+	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
+	if not scenarioRoom() then
+		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
+		items[#items + 1] = { caption = evoCaption(), tip = EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+			fn = function() if S then setEvolution(not evolutionOn()); openLanMenu() end end }
+	end
+	local w = 230
+	ui.lanMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
+		resizable = false, draggable = false, classname = "main_window" }
+	for i, it in ipairs(items) do
+		local btn = Button:New { parent = ui.lanMenu, x = 2, right = 2, y = (i - 1) * 44, height = 40, caption = it.caption, objectOverrideFont = Config():GetFont(2),
+			classname = it.class or "action_button", tooltip = it.tip, OnClick = { function(self) it.fn(self) end } }
+		if it.evo then ui.evoMenuBtn = btn end
+	end
+	ui.lanMenu:BringToFront()
+	log("LAN Play menu opened:", #items, "buttons")
+end
+
+local function ensureLanMenuUi()
 	if not ui.panel or not Config() then return end
-	local show = lan ~= nil and lan.step == "in" and not scenarioRoom() -- the host switches, a joiner sees the state
-	if not ui.evoButton then
-		if not show or not roomMain() then return end
-		ui.evoButton = Button:New { parent = screen0, x = 5, right = 5, bottom = 5 + (S and 84 or 42), height = 36, caption = "Evolution: off", objectOverrideFont = roomFont(),
-			classname = "option_button", tooltip = EVO_TIP, OnClick = { function() if S then setEvolution(not evolutionOn()) end end } }
-		ui.evoOn = nil
-		log("Evolution button added")
+	if not (lan ~= nil and lan.step == "in") then
+		if ui.lanButton then pcall(function() ui.lanButton:Dispose() end); ui.lanButton = nil end
+		closeLanMenu()
+		return
 	end
-	roomPlace(ui.evoButton, 3, show)
-	if not show then pcall(function() ui.evoButton:Dispose() end); ui.evoButton = nil; return end
-	local on = evolutionShown()
-	if on ~= ui.evoOn then
-		ui.evoOn = on
-		ui.evoButton:SetCaption(on and "Evolution: on" or "Evolution: off")
-		ui.evoButton.backgroundColor = on and { 0.15, 0.6, 0.2, 1 } or { 0.3, 0.3, 0.3, 1 }
-		ui.evoButton:Invalidate()
+	local leave = leaveButton()
+	if not leave then
+		if ui.lanButton and ui.lanButton.visible then ui.lanButton:Hide(); closeLanMenu() end
+		return
 	end
+	if not ui.lanButton then
+		ui.lanButton = Button:New { parent = screen0, x = 0, y = 0, width = 140, height = leave.height, caption = "LAN Play", objectOverrideFont = Config():GetFont(2),
+			classname = "action_button", tooltip = "LAN Play: Custom Scenario, Copilot and the game mode Evolution",
+			OnClick = { function() if ui.lanMenu then closeLanMenu() else openLanMenu() end end } }
+		log("LAN Play button added")
+	end
+	if not ui.lanButton.visible then ui.lanButton:Show() end
+	local lx, ly = leave:LocalToScreen(0, 0)
+	local x, y = math.floor(lx - 146), math.floor(ly)
+	if ui.lanButton.x ~= x or ui.lanButton.y ~= y or ui.lanButton.height ~= leave.height then ui.lanButton:SetPos(x, y, 140, leave.height); ui.lanButton:BringToFront() end
+	if ui.evoMenuBtn and ui.evoMenuBtn.caption ~= evoCaption() then ui.evoMenuBtn:SetCaption(evoCaption()) end
 end
 
 ---------------------------------------------------------------- per frame
 function widget:Update()
-	ensureScenarioUi()
 	if ui.leave and ui.back then
 		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Close" then moves to the right of it
 		local want = S ~= nil or lan ~= nil
@@ -2147,11 +2166,24 @@ function widget:Update()
 		end
 	end
 	ensureSlotUi()
-	ensureEvolutionUi()
+	ensureLanMenuUi()
 	if cfg.evolution == "1" and S and lan and lan.step == "in" and not cfg.evolutionSet and os.clock() > 10 then
 		cfg.evolutionSet = true
 		log("test: Evolution on")
+		if tonumber(cfg.evolutionStage) then S.battle.modoptions.lanevolutionstage = cfg.evolutionStage end -- test: every player starts on that stage
 		setEvolution(true)
+	end
+	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and os.clock() > tonumber(cfg.lanMenu) then
+		cfg.lanMenu = nil -- test: the menu of the button LAN Play is opened (a picture of it)
+		local cx, cy = ui.lanButton:LocalToScreen(ui.lanButton.width / 2, ui.lanButton.height / 2)
+		local ok, hit = pcall(function() return screen0:HitTest(cx, cy) end)
+		log("test: the control under the middle of the button LAN Play:", tostring(ok and hit and (hit.caption or hit.text or hit.classname)))
+		openLanMenu()
+	end
+	if tonumber(cfg.evolutionClose) and ui.popup and os.clock() > tonumber(cfg.evolutionClose) then
+		cfg.evolutionClose = nil -- test: the window with the rules is closed (a picture of the room with the button)
+		pcall(function() ui.popup:Dispose() end); ui.popup = nil
+		log("test: window closed")
 	end
 	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and os.clock() > 14 then
 		cfg.scenarioPicked = true
@@ -2192,7 +2224,7 @@ function widget:Update()
 			Spring.Reload(script)
 		end
 	end
-	if cfg.presetTest and S and lan and lan.step == "in" and ui.slotButton then
+	if cfg.presetTest and S and lan and lan.step == "in" and ui.lanButton then
 		-- test: the Option Presets of the lobby: write a preset file, open the real panel (WG.OptionpresetsPanel.ShowPresetPanel), choose the preset in its list, press its
 		-- Load button and write the values of the room into the log (no game is started)
 		cfg.presetAt = cfg.presetAt or (os.clock() + 8)
@@ -2253,7 +2285,7 @@ function widget:Update()
 		lan.inAt = lan.inAt or os.clock()
 		if os.clock() > lan.inAt + tonumber(cfg.leaveAfter) and not lan.leaveSent then lan.leaveSent = true; log("test: pressing Leave in the room (lobby:LeaveBattle)"); WG.BattleRoomWindow.LeaveBattle() end
 	end
-	if cfg.copilot and S and lan and lan.step == "in" and ui.slotButton and not cfg.copilotDone and #humanList() >= 2 then
+	if cfg.copilot and S and lan and lan.step == "in" and ui.lanButton and not cfg.copilotDone and #humanList() >= 2 then
 		cfg.copilotAt = cfg.copilotAt or (os.clock() + 4)
 		if os.clock() > cfg.copilotAt then
 			cfg.copilotDone = true
@@ -2261,7 +2293,7 @@ function widget:Update()
 			cycleSlot(cfg.copilot)
 		end
 	end
-	if cfg.showCopilot and lan and lan.step == "in" and ui.slotButton and not cfg.showDone and os.clock() > (cfg.showAt or 1e9) then
+	if cfg.showCopilot and lan and lan.step == "in" and ui.lanButton and not cfg.showDone and os.clock() > (cfg.showAt or 1e9) then
 		cfg.showDone = true
 		log("test: Copilot list of a joiner:", slotSignature())
 		toggleSlotWindow(true)
@@ -2318,7 +2350,7 @@ function widget:Update()
 		if os.clock() > cfg.dumpAt then
 			cfg.dumpDone = true
 			local col = roomMain()
-			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "buttons at", ui.scnButton and ui.scnButton.y, ui.slotButton and ui.slotButton.y)
+			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "LAN Play button at", ui.lanButton and ui.lanButton.x, ui.lanButton and ui.lanButton.y)
 			for _, ch in ipairs(col and col.children or {}) do
 				log("test:   child", tostring(ch.name), tostring(ch.classname), "y", ch.y, "h", ch.height, "visible", tostring(ch.visible), "caption", tostring(ch.caption or ch.text))
 			end
