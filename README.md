@@ -126,7 +126,7 @@ Details, rules and pictures: [Experimental Attacks](docs/experimental-attacks.md
 - **[Experimental Attacks](docs/experimental-attacks.md)**: area attacks (XL, XR, XC), split attack (XS), focus attack (XF)
 - **[LAN Play](docs/lan-play.md)** and Copilot
 - [Level Editor](LevelEditor/README.md), [Scenario builder](LevelEditor/scenario/README.md), [BluePrinter](BluePrinter/README.md)
-- Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md)
+- Game modes: [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md), [Evolution](LevelEditor/game-modes/evolution.md)
 - Sandbox: [Arena](LevelEditor/sandbox/arena.md)
 - Specifications (for development): [specs](specs/README.md)
 

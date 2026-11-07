@@ -1,11 +1,11 @@
 # Level Editor
 
-Level editor for Beyond All Reason (BAR): place units and buildings on the map with the mouse, create and place blueprints (layouts), save and load levels, build Tower Defense, Capture the Flag or Reclaim the Fame levels, restrict units for the player. The result is a `unitloadout` list for scenarios. This document is the core of the editor (widget, gadget, menus, editing). User view: [Level Editor manual](../LevelEditor/README.md).
+Level editor for Beyond All Reason (BAR): place units and buildings on the map with the mouse, create and place blueprints (layouts), save and load levels, build Tower Defense, Capture the Flag, Reclaim the Fame or Evolution levels, restrict units for the player. The result is a `unitloadout` list for scenarios. This document is the core of the editor (widget, gadget, menus, editing). User view: [Level Editor manual](../LevelEditor/README.md).
 
 Related specifications:
 
 - [Setup, start menu and game start](level-editor-setup.md)
-- Pages: [Tower Defense](tower-defense.md), [Capture the Flag](capture-the-flag.md), [Reclaim the Fame](reclaim-the-fame.md), [Arena](arena.md), [Teams](teams.md), [Restrictions](restrictions.md)
+- Pages: [Tower Defense](tower-defense.md), [Capture the Flag](capture-the-flag.md), [Reclaim the Fame](reclaim-the-fame.md), [Evolution](evolution.md), [Arena](arena.md), [Teams](teams.md), [Restrictions](restrictions.md)
 - [Scenario builder](scenario-builder.md), [Scenarios with several players](scenario-multiplayer.md), [LAN Play](lan-play.md)
 - [Shared code](shared-code.md), sister project [BluePrinter](blueprinter.md)
 
@@ -199,7 +199,7 @@ Top to bottom, with a free slot (one button high) between the groups: **W**, a f
 | `lan_lobby\` | LAN Play: `lan_lobby.lua`, `install_lan_play.ps1` ([LAN Play](lan-play.md)) |
 | `levels\`, `blueprints\` | saved levels; blueprints, `_order.txt`, `_index.txt`, `_trash\` |
 | `game-modes\`, `sandbox\` | user manuals of the game modes and the Arena |
-| `test-data\` | test levels (`ctf_test`, `rtf_test`, `td_test`, `scav_test`; flat map Full Metal Plate 1.7), the LAN Play test tools, `TESTING.md` (what got in the way); not for playing |
+| `test-data\` | test levels (`ctf_test`, `rtf_test`, `td_test`, `evo_test`, `scav_test`; flat map Full Metal Plate 1.7), the LAN Play test tools, `TESTING.md` (what got in the way); not for playing |
 | `%LOCALAPPDATA%\BAR-Level-Editor\` | `Last Map.txt`, `Online Maps Cache.json`, `Scav Units.txt` |
 | `data\games\LevelEditorScenarios_<version>.sdz`, `LevelEditorScenarios.txt`, `data\LevelEditorScenarios` | the extra game of the scenarios, the file with its name, the junction to `scenario\scenarios` |
 
