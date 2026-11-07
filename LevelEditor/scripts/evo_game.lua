@@ -1,24 +1,18 @@
--- Evolution (synchronized part): every player team starts with one weak unit (stage 1 of the ladder of its faction) and nothing else. Kills give
--- experience points; with enough points the unit is replaced by the unit of the next stage (10 stages, the last one a big tier 3 unit). Wild
--- units (stage 1 units of Gaia with little health) walk around the map and give 1 point each; a player unit gives as many points as its stage cost.
--- A destroyed player unit comes back at a random place of the map (on the same stage, the points of the stage are lost) while the team has lives left;
--- the last alliance with a unit or a life left wins. Computer players (teams without a human) are steered by this gadget.
--- Configuration: from the Level Editor with the message "evo|start|<payload>" (stop: "evo|stop"), or from the game option evoconfig (same payload
--- as base64url) for a finished scenario. Payload, fields separated by ";":
---   lives;respawn;wilds;wildHp;first;factor
---   lives   = lives of a team (0 = unlimited: the game does not end), respawn = seconds until a destroyed unit comes back,
---   wilds   = number of wild units on the map (a destroyed one comes back after 10 s at another place), wildHp = their health in percent of the normal,
---   first   = points from stage 1 to stage 2, factor = percent: every further stage needs factor / 100 times the points of the stage before
--- The player teams are the teams that own units when the game starts (their units are removed; the new unit stands where the commander, or the
--- first unit, stood); the faction comes from the name of that unit (arm, cor, leg).
--- State for the display: game rules parameters evoState ("", "running", "won by alliance N"), evoTeams (the player teams), evoLives (the setting);
--- team rules parameters evoStage, evoXp, evoNeed (points to the next stage, 0 on the last), evoLeft (lives left), evoOut (1 = out), evoUnit (the unit,
--- 0 = none), evoSpawn (counts the spawns: the unsynced part points the camera at a new unit), evoName (unit definition name of the stage; the unsynced
--- part shows its translated name, which the synced part does not know).
+-- Evolution (synchronized part), a game mode of LAN Play on any map: the room's button Evolution sets the game option lanevolution=1. Every team
+-- that starts with a commander gets one weak unit instead (stage 1) and nothing else. Kills give points; with enough points the unit is replaced by a
+-- unit of the next stage (10 stages, the last one a big tier 3 unit), of a random faction each time. A destroyed unit comes back after 5 s at a random
+-- place of the map, one stage lower. Wild units (stage 1 units of Gaia with little health) stand around the map; they only shoot back. The game does not
+-- end (unlimited lives). Computer players (teams without a human) are steered by this gadget: their unit attacks only enemies of its own stage or higher
+-- and otherwise only shoots back; the orders of the AI itself are dropped.
+-- Points: from stage s to s + 1 it takes need(s) = round(3 * 1.6^(s - 1)) points (3, 5, 8, 12, 20, 31, 50, 81, 129). A wild unit gives 1 point; a
+-- player unit of stage v gives need(v), times (1 + v - k) when it is above the stage k of the killer.
+-- State for the display: game rules parameters evoState ("" or "running"), evoTeams (the player teams); team rules parameters evoStage, evoXp, evoNeed
+-- (points to the next stage, 0 on the last), evoKills, evoDeaths, evoUnit (the unit, 0 = none), evoSpawn (counts the spawns: the unsynced part points the
+-- camera at a new unit), evoName (unit definition name; shown with its name from NAMES).
 function gadget:GetInfo()
 	return {
 		name = "Evolution",
-		desc = "One unit per team that evolves with every kill; last alliance standing wins",
+		desc = "LAN Play game mode: one unit per team that evolves with every kill",
 		author = "",
 		date = "2026",
 		license = "GNU GPL, v2 or later",
@@ -27,18 +21,27 @@ function gadget:GetInfo()
 	}
 end
 
+local opt = (Spring.GetModOptions() or {}).lanevolution
+if opt ~= "1" and opt ~= 1 then
+	return false -- not an Evolution game: the gadget is not loaded
+end
+
+-- The names of the units of the ladders (the translated names are not known in every Lua state of the game)
+local NAMES = {
+	armpw = "Pawn", armflash = "Blitz", armwar = "Centurion", armzeus = "Welder", armbull = "Bull", armmar = "Marauder", armmeatball = "Meatball",
+	armraz = "Razorback", armthor = "Thor", armbanth = "Titan",
+	corak = "Grunt", corgator = "Incisor", corraid = "Brute", corpyro = "Fiend", correap = "Tiger", corcan = "Sumo", corshiva = "Shiva",
+	corkarg = "Karganeth", cordemon = "Demon", corkorg = "Juggernaut",
+	leghades = "Alaris", legcen = "Phobos", legkark = "Karkinos", leggat = "Decurion", legjav = "Javelin", legaheattank = "Prometheus", leginc = "Incinerator",
+	legkeres = "Keres", legeshotgunmech = "Praetorian", legeheatraymech = "Sol Invictus",
+}
+
 if not gadgetHandler:IsSyncedCode() then
 	-- ---------------------------------------------------------------- unsynced: the score lines, the selection and the camera
 	local lastUnit, lastSpawn = nil, nil
 
 	function gadget:Update()
-		local state = Spring.GetGameRulesParam("evoState")
-		if not state or state == "" then
-			lastUnit, lastSpawn = nil, nil
-			return
-		end
-		local spec = Spring.GetSpectatingState()
-		if spec then
+		if (Spring.GetGameRulesParam("evoState") or "") == "" or Spring.GetSpectatingState() then
 			return
 		end
 		local team = Spring.GetMyTeamID()
@@ -49,11 +52,10 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 		local spawn = Spring.GetTeamRulesParam(team, "evoSpawn")
 		if spawn and spawn ~= lastSpawn then
-			local first = lastSpawn == nil
 			lastSpawn = spawn
 			local x, y, z = Spring.GetUnitPosition(id or -1)
-			if x and (first or spawn > 1) then
-				Spring.SetCameraTarget(x, y, z, 0.5) -- the unit came back somewhere else on the map
+			if x then
+				Spring.SetCameraTarget(x, y, z, 0.5) -- the unit is at a new place of the map
 			end
 		end
 	end
@@ -61,41 +63,34 @@ if not gadgetHandler:IsSyncedCode() then
 	local function teamName(team)
 		local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
 		if isAI then
-			return "AI " .. team
+			local _, name = Spring.GetAIInfo(team)
+			return (name and name ~= "") and name or ("AI " .. team)
 		end
 		local name = leader and Spring.GetPlayerInfo(leader, false)
 		return (name and name ~= "") and name or ("Team " .. team)
 	end
 
 	function gadget:DrawScreen()
-		local state = Spring.GetGameRulesParam("evoState")
-		if not state or state == "" then
+		if (Spring.GetGameRulesParam("evoState") or "") == "" then
 			return
 		end
 		local vsx, vsy = Spring.GetViewGeometry()
-		local lives = Spring.GetGameRulesParam("evoLives") or 0
 		local mine = Spring.GetMyTeamID()
 		local y = vsy - 130
 		gl.Color(1, 0.9, 0.5, 1)
-		gl.Text("Evolution" .. (state ~= "running" and ("   (" .. state .. ")") or ""), vsx * 0.5, y, 20, "co")
+		gl.Text("Evolution", vsx * 0.5, y, 20, "co")
 		for t in tostring(Spring.GetGameRulesParam("evoTeams") or ""):gmatch("%d+") do
 			local team = tonumber(t)
 			y = y - 20
-			local p = function(k) return Spring.GetTeamRulesParam(team, k) or 0 end
-			local text
-			if p("evoOut") == 1 then
-				text = string.format("%s: out (stage %d)", teamName(team), p("evoStage"))
-			else
-				local need = p("evoNeed")
-				local ud = UnitDefNames[Spring.GetTeamRulesParam(team, "evoName") or ""]
-				text = string.format("%s: stage %d/10 %s   %s%s", teamName(team), p("evoStage"), ud and (ud.translatedHumanName or ud.humanName) or "",
-					need > 0 and string.format("points %d/%d", p("evoXp"), need) or "top stage",
-					lives > 0 and string.format("   lives %d", p("evoLeft")) or "")
-			end
-			local r, g, b = Spring.GetTeamColor(team)
+			local function p(k) return Spring.GetTeamRulesParam(team, k) or 0 end
+			local unit = Spring.GetTeamRulesParam(team, "evoName") or ""
+			local need = p("evoNeed")
+			local text = string.format("%s: stage %d/10 %s   %s   kills %d   deaths %d", teamName(team), p("evoStage"), NAMES[unit] or unit,
+				need > 0 and string.format("points %d/%d", p("evoXp"), need) or "top stage", p("evoKills"), p("evoDeaths"))
 			if team == mine then
 				gl.Color(1, 1, 1, 1)
 			else
+				local r, g, b = Spring.GetTeamColor(team)
 				gl.Color(r or 1, g or 1, b or 1, 1)
 			end
 			gl.Text(text, vsx * 0.5, y, 16, "co")
@@ -108,80 +103,74 @@ end
 -- ---------------------------------------------------------------- synced
 local FPS = 30
 local STAGES = 10
+local FIRST, FACTOR = 3, 1.6 -- points from stage 1 to 2, and how much more every further stage costs
+local RESPAWN = 5 * FPS -- frames until a destroyed unit comes back
 local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
-local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
-local EDITOR_MODE = G.EDITOR_MODE
+local WILD_HP = 0.1 -- health of a wild unit (part of the normal)
+local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
+local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
+local RETURN_FIRE, HOLD_POSITION = 1, 0
 
 -- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
--- the biggest walking unit of the faction. A unit missing in the game (an option off) is taken from another faction on the same stage.
+-- the biggest walking unit of the faction. Artillery, units for water and the bomb bots are left out. Every spawn takes a random faction of those
+-- whose unit exists in the game (Legion only with its game option).
 local LADDERS = {
-	arm = { "armpw", "armflash", "armwar", "armzeus", "armbull", "armmar", "armmeatball", "armraz", "armthor", "armbanth" },
-	cor = { "corak", "corgator", "corraid", "corpyro", "correap", "corcan", "corshiva", "corkarg", "cordemon", "corkorg" },
-	leg = { "leghades", "legcen", "legkark", "leggat", "legjav", "legaheattank", "leginc", "legkeres", "legeshotgunmech", "legeheatraymech" },
+	{ "armpw", "armflash", "armwar", "armzeus", "armbull", "armmar", "armmeatball", "armraz", "armthor", "armbanth" },
+	{ "corak", "corgator", "corraid", "corpyro", "correap", "corcan", "corshiva", "corkarg", "cordemon", "corkorg" },
+	{ "leghades", "legcen", "legkark", "leggat", "legjav", "legaheattank", "leginc", "legkeres", "legeshotgunmech", "legeheatraymech" },
 }
-local FACTIONS = { "arm", "cor", "leg" }
 
-local g = nil -- running game: nil = none
-local mode -- messages, game option and start of a finished scenario: G.gameMode, made at the end of this file
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
+local say = G.sayer("Evolution")
+
+local players = {} -- list of player records { team, ally, stage, xp, kills, deaths, unit, spawns, respawnAt, ai, name }
+local byTeam = {} -- team -> player record
 local owner = {} -- unitID -> player record (the unit of a player team)
 local wild = {} -- unitID -> true: wild units
 local removing = {} -- unitID -> true: destroyed by this gadget (no points, no respawn)
+local wildDue = {} -- frames at which a wild unit comes back
+local running = false
 
-local say = G.sayer("Evolution")
-
-local function num(v, lo, hi, default)
-	v = tonumber(v) or default
-	return math.max(lo, math.min(hi, math.floor(v)))
-end
-
-local function parse(payload)
-	local f = G.fields(payload)
-	return {
-		lives = num(f[1], 0, 99, 3), respawn = num(f[2], 0, 600, 5), wilds = num(f[3], 0, 300, 20), wildHp = num(f[4], 1, 100, 10),
-		first = num(f[5], 1, 10000, 3), factor = num(f[6], 100, 400, 160),
-	}
-end
-
--- Points from stage s to stage s + 1 (also for s = 10: the worth of a unit of the top stage)
 local function need(s)
-	return math.max(1, math.floor(g.cfg.first * (g.cfg.factor / 100) ^ (s - 1) + 0.5))
+	return math.max(1, math.floor(FIRST * FACTOR ^ (s - 1) + 0.5))
 end
 
--- The unit name of a stage for a faction (another faction's unit of the same stage if the own one is missing in the game)
-local function stageUnit(fac, s)
-	local own = LADDERS[fac] and LADDERS[fac][s]
-	if own and UnitDefNames[own] then
-		return own
-	end
-	for _, f in ipairs(FACTIONS) do
-		if UnitDefNames[LADDERS[f][s]] then
-			return LADDERS[f][s]
+-- The worth of a kill of a player unit of stage v by a unit of stage k
+local function worth(v, k)
+	return need(v) * math.max(1, 1 + v - k)
+end
+
+-- A unit of the stage, of a random faction whose unit exists in the game
+local function stageUnit(s)
+	local options = {}
+	for _, ladder in ipairs(LADDERS) do
+		if UnitDefNames[ladder[s]] then
+			options[#options + 1] = ladder[s]
 		end
 	end
-	return "armpw"
+	return options[math.random(1, math.max(1, #options))] or "armpw"
+end
+
+local function unitTitle(name)
+	return NAMES[name] or name
 end
 
 local function publish()
-	if not g then
-		Spring.SetGameRulesParam("evoState", "")
-		return
-	end
 	local teams = {}
-	for _, p in ipairs(g.players) do
+	local pub = { public = true }
+	for _, p in ipairs(players) do
 		teams[#teams + 1] = p.team
-		local pub = { public = true }
 		Spring.SetTeamRulesParam(p.team, "evoStage", p.stage, pub)
 		Spring.SetTeamRulesParam(p.team, "evoXp", p.xp, pub)
 		Spring.SetTeamRulesParam(p.team, "evoNeed", p.stage < STAGES and need(p.stage) or 0, pub)
-		Spring.SetTeamRulesParam(p.team, "evoLeft", p.lives, pub)
-		Spring.SetTeamRulesParam(p.team, "evoOut", p.out and 1 or 0, pub)
+		Spring.SetTeamRulesParam(p.team, "evoKills", p.kills, pub)
+		Spring.SetTeamRulesParam(p.team, "evoDeaths", p.deaths, pub)
 		Spring.SetTeamRulesParam(p.team, "evoUnit", p.unit or 0, pub)
 		Spring.SetTeamRulesParam(p.team, "evoSpawn", p.spawns, pub)
-		Spring.SetTeamRulesParam(p.team, "evoName", stageUnit(p.fac, p.stage), pub)
+		Spring.SetTeamRulesParam(p.team, "evoName", p.unitName or "", pub)
 	end
 	Spring.SetGameRulesParam("evoTeams", table.concat(teams, ","))
-	Spring.SetGameRulesParam("evoLives", g.cfg.lives)
-	Spring.SetGameRulesParam("evoState", g.state)
+	Spring.SetGameRulesParam("evoState", running and "running" or "")
 end
 
 -- Can a unit of this kind stand and move at x, z (land, not too steep)? Without TestMoveOrder: not under water
@@ -196,8 +185,10 @@ local function fits(defID, x, z)
 	return y > 0
 end
 
--- A random place for a new unit: of 24 tries the one farthest from the units of the player teams
-local function spawnPoint(defID)
+-- A random place for a new unit. A player's unit (far = true): of 24 tries the one farthest from the units of the players. A wild unit: the first
+-- try at least 600 Elmo from every player unit (spread over the whole map, not only at the edges)
+local WILD_GAP = 600 * 600
+local function spawnPoint(defID, far)
 	local margin = 200
 	local mapX, mapZ = Game.mapSizeX, Game.mapSizeZ
 	local best, bestD = nil, -1
@@ -211,6 +202,9 @@ local function spawnPoint(defID)
 					d = math.min(d, (ux - x) ^ 2 + (uz - z) ^ 2)
 				end
 			end
+			if not far and d >= WILD_GAP then
+				return x, z
+			end
 			if d > bestD then
 				best, bestD = { x, z }, d
 			end
@@ -222,34 +216,30 @@ local function spawnPoint(defID)
 	return mapX / 2, mapZ / 2
 end
 
-local function create(name, x, z, facing, team)
-	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, facing or 0, team)
-	if id then
-		Spring.SetUnitRulesParam(id, "led_nosave", 1, { public = true }) -- a unit of the running game: the editor does not save it
-	end
-	return id
-end
-
--- The unit of a player: at x, z (a random place when nil), the unit of its stage
-local function spawn(p, x, z, facing)
-	local name = stageUnit(p.fac, p.stage)
-	if not x then
-		x, z = spawnPoint(UnitDefNames[name].id)
-		p.spawns = p.spawns + 1 -- (the camera of the player goes to the new place)
-	end
-	local id = create(name, x, z, facing, p.team)
-	p.unit, p.respawnAt = id, nil
-	if id then
-		owner[id] = p
-	end
-	publish()
-end
-
 local function remove(id)
 	if id and Spring.ValidUnitID(id) then
 		removing[id] = true
 		Spring.DestroyUnit(id, false, true) -- no explosion, no wreck
 	end
+end
+
+-- The unit of a player: at x, z (a random place when nil), a unit of its stage. A computer team's unit only shoots back (it attacks what the
+-- gadget chooses).
+local function spawn(p, x, z, facing)
+	local name = stageUnit(p.stage)
+	if not x then
+		x, z = spawnPoint(UnitDefNames[name].id, true)
+		p.spawns = p.spawns + 1 -- (the camera of the player goes to the new place)
+	end
+	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, facing or 0, p.team)
+	p.unit, p.unitName, p.respawnAt = id, name, nil
+	if id then
+		owner[id] = p
+		if p.ai then
+			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
+		end
+	end
+	publish()
 end
 
 -- The unit of the next stage replaces the unit where it stands (full health; the orders are kept)
@@ -264,20 +254,15 @@ local function evolve(p)
 	owner[old] = nil
 	remove(old)
 	spawn(p, x, z, facing)
-	if p.unit then
+	if p.unit and not p.ai then
 		for _, c in ipairs(cmds) do
 			pcall(Spring.GiveOrderToUnit, p.unit, c.id, c.params, { "shift" })
 		end
 	end
-	local name = stageUnit(p.fac, p.stage)
-	local human = UnitDefNames[name].humanName
-	say(string.format("Team %d evolves to stage %d: %s.", p.team, p.stage, (human and human ~= "") and human or name))
+	say(string.format("%s evolves to stage %d: %s.", p.name, p.stage, unitTitle(p.unitName)))
 end
 
 local function gain(p, points)
-	if p.out then
-		return
-	end
 	p.xp = p.xp + points
 	local up = false
 	while p.stage < STAGES and p.xp >= need(p.stage) do
@@ -294,67 +279,25 @@ local function gain(p, points)
 	publish()
 end
 
--- A wild unit: a stage 1 unit of a random faction, of Gaia, with wildHp % of its health, at a random place
+-- A wild unit: a stage 1 unit of a random faction, of Gaia, with WILD_HP of its health, at a random place; it holds its position and only shoots back
 local function spawnWild()
-	local name = stageUnit(FACTIONS[math.random(1, #FACTIONS)], 1)
+	local name = stageUnit(1)
 	local x, z = spawnPoint(UnitDefNames[name].id)
-	local id = create(name, x, z, math.random(0, 3), Spring.GetGaiaTeamID())
+	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, math.random(0, 3), Spring.GetGaiaTeamID())
 	if id then
 		wild[id] = true
 		local _, maxHp = Spring.GetUnitHealth(id)
-		local hp = math.max(1, (maxHp or 100) * g.cfg.wildHp / 100)
+		local hp = math.max(1, (maxHp or 100) * WILD_HP)
 		Spring.SetUnitMaxHealth(id, hp)
 		Spring.SetUnitHealth(id, hp)
+		Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
+		Spring.GiveOrderToUnit(id, CMD_MOVE_STATE, { HOLD_POSITION }, 0)
 	end
 end
 
-local function finish(ally)
-	if g.state ~= "running" then
-		return
-	end
-	g.state = "won by alliance " .. G.allianceName(ally)
-	publish()
-	say("Alliance " .. G.allianceName(ally) .. " is the last one standing: the game is won!")
-	if not EDITOR_MODE then
-		Spring.GameOver({ ally })
-	end
-end
-
--- The last alliance with a unit or a life left wins (only when the game began with two alliances or more)
-local function checkWin()
-	local left, last = {}, nil
-	local n = 0
-	for _, p in ipairs(g.players) do
-		if not p.out and not left[p.ally] then
-			left[p.ally] = true
-			n, last = n + 1, p.ally
-		end
-	end
-	if g.alliances >= 2 and n <= 1 and last then
-		finish(last)
-	end
-end
-
-local function clear()
-	if g then
-		for _, p in ipairs(g.players) do
-			remove(p.unit)
-			Spring.SetTeamRulesParam(p.team, "evoUnit", 0, { public = true })
-		end
-	end
-	for id in pairs(wild) do
-		remove(id)
-	end
-	owner, wild = {}, {}
-	g = nil
-end
-
-local function stop()
-	if g then
-		clear()
-		publish()
-		say("Stopped.")
-	end
+-- The number of wild units: one per 1024 x 1024 Elmo of the map (a map of 16 x 16 has 64), at least 12, at most 100
+local function wildCount()
+	return math.max(12, math.min(100, math.floor(Game.mapSizeX * Game.mapSizeZ / (1024 * 1024) + 0.5)))
 end
 
 -- A team steered by a human: an active player who is not a spectator plays it
@@ -368,48 +311,39 @@ local function hasHuman(team)
 	return false
 end
 
-local function start(cfg)
-	clear()
-	g = { cfg = cfg, state = "running", players = {}, byTeam = {}, wildDue = {}, alliances = 0 }
-	local gaia = Spring.GetGaiaTeamID()
-	local allies = {}
-	for _, team in ipairs(Spring.GetTeamList()) do
-		local units = team ~= gaia and Spring.GetTeamUnits(team) or {}
-		if #units > 0 then
-			local at = units[1]
-			for _, id in ipairs(units) do
-				local ud = UnitDefs[Spring.GetUnitDefID(id)]
-				if ud and ud.customParams and ud.customParams.iscommander then
-					at = id
-					break
-				end
-			end
-			local ud = UnitDefs[Spring.GetUnitDefID(at)]
-			local fac = ud and ud.name:sub(1, 3)
-			if not LADDERS[fac] then
-				local side = tostring(select(5, Spring.GetTeamInfo(team, false)) or ""):lower()
-				fac = side:find("cortex") and "cor" or (side:find("legion") and "leg" or "arm")
-			end
-			local x, _, z = Spring.GetUnitPosition(at)
-			for _, id in ipairs(units) do
-				remove(id)
-			end
-			local p = { team = team, ally = G.allyOf(team), fac = fac, stage = 1, xp = 0, lives = cfg.lives, spawns = 1, ai = not hasHuman(team) }
-			g.players[#g.players + 1] = p
-			g.byTeam[team] = p
-			if not allies[p.ally] then
-				allies[p.ally] = true
-				g.alliances = g.alliances + 1
-			end
-			spawn(p, x, z)
+local function nameOf(team)
+	local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
+	if isAI then
+		local _, name = Spring.GetAIInfo(team)
+		return (name and name ~= "") and name or ("AI " .. team)
+	end
+	local name = leader and Spring.GetPlayerInfo(leader, false)
+	return (name and name ~= "") and name or ("Team " .. team)
+end
+
+-- A team whose commander is there: it becomes a player; its units are removed and its stage 1 unit stands where the commander stood
+local function join(team)
+	local units = Spring.GetTeamUnits(team)
+	local com
+	for _, id in ipairs(units) do
+		local ud = UnitDefs[Spring.GetUnitDefID(id)]
+		if ud and ud.customParams and ud.customParams.iscommander then
+			com = id
+			break
 		end
 	end
-	for _ = 1, cfg.wilds do
-		spawnWild()
+	if not com then
+		return false
 	end
-	publish()
-	say(string.format("Started: %d teams, %d wild units, %s. Kill to evolve (stage 2 after %d points, each stage x%.2f).", #g.players, cfg.wilds,
-		cfg.lives > 0 and (cfg.lives .. " lives") or "unlimited lives", cfg.first, cfg.factor / 100))
+	local x, _, z = Spring.GetUnitPosition(com)
+	for _, id in ipairs(units) do
+		remove(id)
+	end
+	local p = { team = team, ally = select(6, Spring.GetTeamInfo(team, false)), stage = 1, xp = 0, kills = 0, deaths = 0, spawns = 1, ai = not hasHuman(team), name = nameOf(team) }
+	players[#players + 1] = p
+	byTeam[team] = p
+	spawn(p, x, z)
+	return true
 end
 
 local function idle(id)
@@ -417,74 +351,85 @@ local function idle(id)
 	return type(n) == "number" and n == 0
 end
 
--- Computer teams: the unit fights its way to the nearest enemy that is not more than one stage above it, otherwise to the nearest wild unit
+-- Computer teams: the unit attacks the nearest enemy player unit of its own stage or higher (at stage 1 also the wild units, they are stage 1); with
+-- nothing to attack it walks to a random place
 local function steer(p)
 	local x, _, z = Spring.GetUnitPosition(p.unit)
 	if not x then
 		return
 	end
 	local best, bestD = nil, math.huge
-	for id, q in pairs(owner) do
-		if q.ally ~= p.ally and q.stage <= p.stage + 1 then
-			local ux, _, uz = Spring.GetUnitPosition(id)
-			local d = ux and (ux - x) ^ 2 + (uz - z) ^ 2
-			if d and d < bestD then
-				best, bestD = { ux, uz }, d
-			end
-		end
-	end
-	for id in pairs(wild) do
+	local function consider(id)
 		local ux, _, uz = Spring.GetUnitPosition(id)
 		local d = ux and (ux - x) ^ 2 + (uz - z) ^ 2
-		if d and d * 4 < bestD then -- (a wild unit only when it is much closer than an enemy)
-			best, bestD = { ux, uz }, d * 4
+		if d and d < bestD then
+			best, bestD = id, d
+		end
+	end
+	for id, q in pairs(owner) do
+		if q.ally ~= p.ally and q.stage >= p.stage then
+			consider(id)
+		end
+	end
+	if p.stage == 1 then
+		for id in pairs(wild) do
+			consider(id)
 		end
 	end
 	if best then
-		Spring.GiveOrderToUnit(p.unit, CMD.FIGHT, { best[1], Spring.GetGroundHeight(best[1], best[2]), best[2] }, {})
-	end
-end
-
--- Wild units walk to a place up to 1500 Elmo away when they stand still
-local function wander(id)
-	local x, _, z = Spring.GetUnitPosition(id)
-	if x then
-		local tx = math.max(100, math.min(Game.mapSizeX - 100, x + math.random(-1500, 1500)))
-		local tz = math.max(100, math.min(Game.mapSizeZ - 100, z + math.random(-1500, 1500)))
-		Spring.GiveOrderToUnit(id, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, {})
+		-- an attack order needs a target the team sees (or has on the radar): otherwise the unit walks there first
+		if Spring.IsUnitInLos(best, p.ally) or Spring.IsUnitInRadar(best, p.ally) then
+			Spring.GiveOrderToUnit(p.unit, CMD.ATTACK, { best }, 0)
+		else
+			local tx, _, tz = Spring.GetUnitPosition(best)
+			Spring.GiveOrderToUnit(p.unit, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
+		end
+	elseif idle(p.unit) then
+		local tx, tz = math.random(200, Game.mapSizeX - 200), math.random(200, Game.mapSizeZ - 200)
+		Spring.GiveOrderToUnit(p.unit, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
 	end
 end
 
 function gadget:GameFrame(n)
-	mode.gameFrame(n) -- a finished scenario starts at frame G.START_FRAME (led_gadgets.lua)
-	if not g or g.state ~= "running" then
+	if n >= START_AFTER and n <= START_UNTIL and n % 15 == 0 then
+		local gaia = Spring.GetGaiaTeamID()
+		for _, team in ipairs(Spring.GetTeamList()) do
+			if team ~= gaia and not byTeam[team] then
+				local _, _, dead = Spring.GetTeamInfo(team, false)
+				if not dead and join(team) and not running then
+					running = true
+					for _ = 1, wildCount() do
+						spawnWild()
+					end
+					say(string.format("Evolution: kill to evolve (10 stages, a random faction each time); a lost unit comes back 5 s later at another place, one stage lower. %d wild units only shoot back.", wildCount()))
+				end
+			end
+		end
+		publish()
+	end
+	if not running then
 		return
 	end
 	if n % 15 == 0 then
-		for _, p in ipairs(g.players) do
-			if p.respawnAt and n >= p.respawnAt and not p.out then
+		for _, p in ipairs(players) do
+			if p.respawnAt and n >= p.respawnAt then
 				spawn(p)
 			end
 		end
 		local due = {}
-		for _, f in ipairs(g.wildDue) do
+		for _, f in ipairs(wildDue) do
 			if n >= f then
 				spawnWild()
 			else
 				due[#due + 1] = f
 			end
 		end
-		g.wildDue = due
+		wildDue = due
 	end
-	if n % 90 == 0 then
-		for _, p in ipairs(g.players) do
-			if p.ai and p.unit and Spring.ValidUnitID(p.unit) and (idle(p.unit) or n % 270 == 0) then
+	if n % 90 == 45 then
+		for _, p in ipairs(players) do
+			if p.ai and p.unit and Spring.ValidUnitID(p.unit) then
 				steer(p)
-			end
-		end
-		for id in pairs(wild) do
-			if idle(id) then
-				wander(id)
 			end
 		end
 	end
@@ -497,36 +442,42 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 	end
 	local victim, wasWild = owner[unitID], wild[unitID]
 	owner[unitID], wild[unitID] = nil, nil
-	if not g or g.state ~= "running" or not (victim or wasWild) then
+	if not (victim or wasWild) then
 		return
 	end
-	local killer = attackerTeam and g.byTeam[attackerTeam]
+	local killer = attackerTeam and byTeam[attackerTeam]
 	if killer and killer ~= victim and (wasWild or killer.ally ~= victim.ally) then
-		gain(killer, wasWild and 1 or need(victim.stage))
+		if not wasWild then
+			killer.kills = killer.kills + 1
+		end
+		gain(killer, wasWild and 1 or worth(victim.stage, killer.stage))
 	end
 	if wasWild then
-		g.wildDue[#g.wildDue + 1] = Spring.GetGameFrame() + WILD_BACK
+		wildDue[#wildDue + 1] = Spring.GetGameFrame() + WILD_BACK
 		return
 	end
 	victim.unit, victim.xp = nil, 0
-	if g.cfg.lives > 0 then
-		victim.lives = victim.lives - 1
-	end
-	if g.cfg.lives == 0 or victim.lives > 0 then
-		victim.respawnAt = Spring.GetGameFrame() + g.cfg.respawn * FPS
-		say(string.format("Team %d lost its unit: back in %d s at another place%s.", victim.team, g.cfg.respawn,
-			g.cfg.lives > 0 and (" (" .. victim.lives .. " lives left)") or ""))
-	else
-		victim.out = true
-		say(string.format("Team %d has no lives left: out.", victim.team))
-	end
+	victim.deaths = victim.deaths + 1
+	victim.stage = math.max(1, victim.stage - 1)
+	victim.respawnAt = Spring.GetGameFrame() + RESPAWN
 	publish()
-	checkWin()
 end
 
--- The unit of a player cannot destroy itself (it would come back elsewhere at once) and is not given away
-function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID)
-	if cmdID == CMD.SELFD and owner[unitID] then
+-- orders that only switch a state: they stay allowed for every unit
+local STATES = { [CMD_FIRE_STATE] = true, [CMD_MOVE_STATE] = true, [CMD.REPEAT] = true, [CMD.IDLEMODE] = true }
+
+-- The unit of a player cannot destroy itself (it would come back elsewhere at once) and is not given away; the unit of a computer team only takes the
+-- orders of this gadget (the AI of the team would steer it otherwise)
+function gadget:AllowCommand(unitID, unitDefID, unitTeam, cmdID, cmdParams, cmdOptions, cmdTag, playerID, fromSynced, fromLua)
+	local p = owner[unitID]
+	if not p then
+		return true
+	end
+	if cmdID == CMD.SELFD then
+		return false
+	end
+	-- (measured: the orders of BARb come with player 0 and fromSynced true, the orders of this gadget with player -1 and fromLua true)
+	if p.ai and not (fromLua and (playerID or -1) < 0) and not STATES[cmdID] then
 		return false
 	end
 	return true
@@ -536,17 +487,9 @@ function gadget:AllowUnitTransfer(unitID)
 	return not owner[unitID]
 end
 
--- The messages of the editor (evo|start|<payload>, evo|stop) and the game option evoconfig of a finished scenario (the payload as base64url; starts when the units of the scenario exist): G.gameMode of led_gadgets.lua
-mode = G.gameMode({ tag = "evo", option = "evoconfig", state = "evoState", parse = parse, start = start, stop = stop, say = say, handler = gadgetHandler, allowCommand = true })
-
-function gadget:RecvLuaMsg(msg, playerID)
-	return mode.recvLuaMsg(msg, playerID)
-end
-
 function gadget:Initialize()
-	mode.initialize()
-end
-
-function gadget:GamePreload()
-	mode.gamePreload()
+	if gadgetHandler.RegisterAllowCommand then
+		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns
+	end
+	Spring.SetGameRulesParam("evoState", "")
 end
