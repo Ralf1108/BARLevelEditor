@@ -37,6 +37,19 @@ for i, mode in ipairs({ "circle", "split", "focus" }) do
 		W():KeyPress(27, {}, false)
 	end
 end
+-- the gadget registers its AllowCommand only for the three buttons: other orders still pass
+local mover
+steps[160] = function()
+	mover = (Spring.GetSelectedUnits() or {})[1] or (Spring.GetTeamUnits(Spring.GetMyTeamID()) or {})[1]
+	if mover then
+		local x, y, z = Spring.GetUnitPosition(mover)
+		Spring.GiveOrderToUnit(mover, CMD.MOVE, { x + 300, y, z + 300 }, 0)
+	end
+end
+steps[175] = function()
+	local cmd = mover and Spring.GetUnitCurrentCommand(mover)
+	check(cmd == CMD.MOVE, "a move order passes AllowCommand: " .. tostring(cmd))
+end
 steps[180] = function()
 	for _, l in ipairs(lines) do Spring.Echo(l) end
 	Spring.SendCommands("quitforce")

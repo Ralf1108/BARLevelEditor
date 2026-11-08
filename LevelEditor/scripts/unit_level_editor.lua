@@ -1286,6 +1286,12 @@ function gadget:Initialize()
 		for _, unitID in ipairs(Spring.GetAllUnits()) do
 			giveAttackButtons(unitID)
 		end
+		-- AllowCommand (below) only drops the three attack buttons: only their command ids are passed to it, not every order of the game
+		if gadgetHandler.RegisterAllowCommand then
+			for i = 1, #Rules.ATTACK_BUTTONS do
+				gadgetHandler:RegisterAllowCommand(Rules.ATTACK_BUTTONS.base + i)
+			end
+		end
 	end
 	GG.LevelEditor = {
 		place = place, remove = remove, undo = undo, clear = clearAll, load = loadUnit, boom = boom, assign = assignTeam, removeIds = removeIds, generate = generate, feature = placeFeature, clearFeatures = clearFeatures,
