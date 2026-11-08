@@ -8,7 +8,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 ## In short
 
-- **LAN Play** room: the host presses the green button **LAN Play** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (it then reads "Evolution on"); everybody in the room sees it
+- **LAN Play** room: the host presses the green button **LAN Options** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (it then reads "Evolution on"); everybody in the room sees it
 - The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)

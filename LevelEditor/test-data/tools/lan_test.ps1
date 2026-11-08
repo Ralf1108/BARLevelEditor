@@ -13,7 +13,7 @@
 #         evo = Evolution on an official map (-Map, default Comet Catcher Remake 1.8): the host presses the button Evolution, PlayerA, PlayerB and a BARb computer
 #               (-Ai, default BARb) play each other; zz_lantest.lua logs the stages and sends the units of both players into the middle and takes screenshots;
 #               -EvoStage 10: everybody starts on that stage (Armageddon at once; PlayerA chooses the gift Gates of Hell, PlayerB Hell on Earth)
-#         evoroom = one instance, the host's room with Evolution switched on (the window with the rules, closed at 40 s of the lobby; then the menu of the button LAN Play opens) and a BARb computer, no game: pictures with -Shots, -WaitSec ends it
+#         evoroom = one instance, the host's room with Evolution switched on (the window with the rules, closed at 40 s of the lobby; then the menu of the button LAN Options opens) and a BARb computer, no game: pictures with -Shots, -WaitSec ends it
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
 #         pve = the host adds a Raptors computer (-Ai RaptorsAI | ScavengersAI) to its ally team, both players place their start position (a click into the middle of the window, the
 #               widget zz_place.lua points the camera at the start box) and press ready; zz_pve.lua (host) measures the orders of the AI and of the human (lan_pve_hold.lua)

@@ -2069,8 +2069,8 @@ local function evolutionShown()
 	return l and l.modoptions and l.modoptions.lanevolution == "1" or false
 end
 
----------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
--- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
+---------------------------------------------------------------- The button "LAN Options" in the title row of the room and its menu
+-- The room stays as the lobby has it. A green button "LAN Options" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
 -- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: on / off; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
@@ -2119,7 +2119,7 @@ local function openLanMenu()
 		if it.evo then ui.evoMenuBtn = btn end
 	end
 	ui.lanMenu:BringToFront()
-	log("LAN Play menu opened:", #items, "buttons")
+	log("LAN Options menu opened:", #items, "buttons")
 end
 
 local function ensureLanMenuUi()
@@ -2135,15 +2135,15 @@ local function ensureLanMenuUi()
 		return
 	end
 	if not ui.lanButton then
-		ui.lanButton = Button:New { parent = screen0, x = 0, y = 0, width = 140, height = leave.height, caption = "LAN Play", objectOverrideFont = Config():GetFont(2),
-			classname = "action_button", tooltip = "LAN Play: Custom Scenario, Copilot and the game mode Evolution",
+		ui.lanButton = Button:New { parent = screen0, x = 0, y = 0, width = 160, height = leave.height, caption = "LAN Options", objectOverrideFont = Config():GetFont(2),
+			classname = "action_button", tooltip = "LAN Options: Custom Scenario, Copilot and the game mode Evolution",
 			OnClick = { function() if ui.lanMenu then closeLanMenu() else openLanMenu() end end } }
-		log("LAN Play button added")
+		log("LAN Options button added")
 	end
 	if not ui.lanButton.visible then ui.lanButton:Show() end
 	local lx, ly = leave:LocalToScreen(0, 0)
-	local x, y = math.floor(lx - 146), math.floor(ly)
-	if ui.lanButton.x ~= x or ui.lanButton.y ~= y or ui.lanButton.height ~= leave.height then ui.lanButton:SetPos(x, y, 140, leave.height); ui.lanButton:BringToFront() end
+	local x, y = math.floor(lx - 166), math.floor(ly)
+	if ui.lanButton.x ~= x or ui.lanButton.y ~= y or ui.lanButton.height ~= leave.height then ui.lanButton:SetPos(x, y, 160, leave.height); ui.lanButton:BringToFront() end
 	if ui.evoMenuBtn and ui.evoMenuBtn.caption ~= evoCaption() then ui.evoMenuBtn:SetCaption(evoCaption()) end
 end
 
@@ -2356,7 +2356,7 @@ function widget:Update()
 		if os.clock() > cfg.dumpAt then
 			cfg.dumpDone = true
 			local col = roomMain()
-			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "LAN Play button at", ui.lanButton and ui.lanButton.x, ui.lanButton and ui.lanButton.y)
+			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "LAN Options button at", ui.lanButton and ui.lanButton.x, ui.lanButton and ui.lanButton.y)
 			for _, ch in ipairs(col and col.children or {}) do
 				log("test:   child", tostring(ch.name), tostring(ch.classname), "y", ch.y, "h", ch.height, "visible", tostring(ch.visible), "caption", tostring(ch.caption or ch.text))
 			end

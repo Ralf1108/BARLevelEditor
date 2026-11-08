@@ -90,7 +90,7 @@ Play with computers in the same network, no account and no server in the cloud. 
 - **Custom Scenario**: the host picks a scenario built with the Level Editor; map and teams are set and the other players get the scenario's game file automatically
 - **Copilot**: two or more people of a team play **one** player together, for example one fights and one builds
 - **Evolution**: a game mode on any map: every player starts with one weak unit, kills evolve it through 10 stages, stage 10 brings Armageddon, see [Evolution](LevelEditor/game-modes/evolution.md)
-- The buttons of LAN Play (Custom Scenario, Copilot, Evolution) are in the menu of a green button **LAN Play** in the title row of the room
+- The buttons of LAN Play (Custom Scenario, Copilot, Evolution) are in the menu of a green button **LAN Options** in the title row of the room
 - **Play the Scavengers or Raptors yourself**: put a Scavengers or Raptors computer into a team with a human player and the computer stops commanding its units, the humans of the team do (the official game does not allow that); the room tells everybody when this starts and ends
 - **Raptors against Scavengers (as a gimmick)**: a Raptors computer in one team and a Scavengers computer in the other, each with a human player in its team: both hordes spawn and fight each other, each human commands the units of its computer (the official game refuses this combination: nothing spawns)
 - **Rejoin and late join**: a player whose game crashed comes back into the room with the same name and presses Rejoin (same team, catches up); with `!latejoin on` before the start, players who come later can join the running game as players

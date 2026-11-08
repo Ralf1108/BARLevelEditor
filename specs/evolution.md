@@ -4,7 +4,7 @@ A game mode of LAN Play on any map (button **Evolution** in the menu **LAN Play*
 
 ## 1. LAN Play room (`lan_lobby.lua`)
 
-- Button **Evolution** in the menu of the button **LAN Play** (title row of the room, see [LAN Play](lan-play.md); caption "Evolution" / "Evolution on"), not in a scenario room. The host switches it (`setEvolution`): the game option `lanevolution=1` in `S.battle.modoptions` (sent to the room with `SETSCRIPTTAGS game/modoptions/lanevolution=1`, empty when off), and `syncPveGame()` because the mode needs the extra game (`needsExtraGame`). A joiner sees the state from the game options of the room and cannot change it.
+- Button **Evolution** in the menu of the button **LAN Options** (title row of the room, see [LAN Play](lan-play.md); caption "Evolution" / "Evolution on"), not in a scenario room. The host switches it (`setEvolution`): the game option `lanevolution=1` in `S.battle.modoptions` (sent to the room with `SETSCRIPTTAGS game/modoptions/lanevolution=1`, empty when off), and `syncPveGame()` because the mode needs the extra game (`needsExtraGame`). A joiner sees the state from the game options of the room and cannot change it.
 - Switching it on opens a window for the host (`bigPopup(EVO_INFO)`): the rules in short and the tip about the map size (size class M or smaller, up to 16 x 16; the size classes of the lobby: M is mostly 16 x 16).
 - Choosing a scenario switches it off (a scenario has its own rules).
 - Start script (`buildScript`): `lanevolution=1`, `deathmode=neverend` instead of the room's value (the commanders are replaced, the game must not end for that; the mode never ends) and `StartPosType=0` (the start positions of the map: choosing a position would only hold up the start).
