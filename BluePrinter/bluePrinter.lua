@@ -842,20 +842,14 @@ end
 
 -- Row (Shift) or rectangle (Shift+Alt) from the start point to (x, z)
 local function stampList(ud, x, z)
-	local alt = Spring.GetModKeyState()
-	return Shared.stampPositions(ud, rot % 4, stampDrag.x, stampDrag.z, x, z, alt, spacing, 2000)
+	local fx, fz = Shared.unitFootprint(ud, rot % 4)
+	return Shared.dragStamp(fx, fz, stampDrag.x, stampDrag.z, x, z, spacing, 2000)
 end
 
 -- Centers of the blueprint copies (row/rectangle) from the start point to (x, z); blueprint hull plus spacing
 local function bpStampList(bp, x, z)
-	local alt = Spring.GetModKeyState()
 	local fx, fz = Shared.blueprintExtent(bp.units, rot)
-	local raw = Shared.stampPositionsSized(fx, fz, stampDrag.x, stampDrag.z, x, z, alt, spacing, 100)
-	local out = {}
-	for _, p in ipairs(raw) do
-		out[#out + 1] = { x = snap16(p.x), z = snap16(p.z) }
-	end
-	return out
+	return Shared.dragStamp(fx, fz, stampDrag.x, stampDrag.z, x, z, spacing, 100, snap16)
 end
 
 -- What the own builders can build right now (for the display) and which faction they have

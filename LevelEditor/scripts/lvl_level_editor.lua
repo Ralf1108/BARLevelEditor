@@ -1547,13 +1547,8 @@ end
 
 -- Row (Shift) or rectangle (Shift+Alt) from the start point to the mouse pointer, snapped to the grid
 local function stampList(ud, pos)
-	local alt = Spring.GetModKeyState()
-	local raw = Shared.stampPositions(ud, facing, stampDrag.x, stampDrag.z, pos[1], pos[3], alt, spacing, 2000)
-	local out = {}
-	for _, p in ipairs(raw) do
-		out[#out + 1] = { x = snap(p.x), z = snap(p.z) }
-	end
-	return out
+	local fx, fz = Shared.unitFootprint(ud, facing)
+	return Shared.dragStamp(fx, fz, stampDrag.x, stampDrag.z, pos[1], pos[3], spacing, 2000, snap)
 end
 
 local function setSpacing(v)
@@ -1563,27 +1558,15 @@ end
 
 -- Centers of the blueprint copies (row/rectangle) from the start point to pos; blueprint hull plus spacing
 local function bpStampList(bp, pos)
-	local alt = Spring.GetModKeyState()
 	local fx, fz = Shared.blueprintExtent(bp.units, bpRot)
-	local raw = Shared.stampPositionsSized(fx, fz, stampDrag.x, stampDrag.z, pos[1], pos[3], alt, spacing, 100)
-	local out = {}
-	for _, p in ipairs(raw) do
-		out[#out + 1] = { x = snap(p.x), z = snap(p.z) }
-	end
-	return out
+	return Shared.dragStamp(fx, fz, stampDrag.x, stampDrag.z, pos[1], pos[3], spacing, 100, snap)
 end
 
 -- Positions of the feature copies (row/rectangle) from the start point to pos; size from the feature's radius plus spacing
 local function featStampList(name, pos)
-	local alt = Spring.GetModKeyState()
 	local fd = FeatureDefNames[name]
 	local size = math.max(32, 2 * ((fd and fd.radius) or 16))
-	local raw = Shared.stampPositionsSized(size, size, stampDrag.x, stampDrag.z, pos[1], pos[3], alt, spacing, 2000)
-	local out = {}
-	for _, p in ipairs(raw) do
-		out[#out + 1] = { x = snap(p.x), z = snap(p.z) }
-	end
-	return out
+	return Shared.dragStamp(size, size, stampDrag.x, stampDrag.z, pos[1], pos[3], spacing, 2000, snap)
 end
 
 -- Menu input

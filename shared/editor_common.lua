@@ -617,14 +617,26 @@ function M.paintChain(d, x, z, place)
 end
 
 ---------------------------------------------------------------- Drag a row / rectangle (Shift or Shift+Alt)
--- Positions for a stamp from (x0, z0) to (x1, z1). rect = false: row (straight line), true: filled rectangle.
--- The spacing between two units is the footprint (depending on the facing) plus spacing * 16 Elmo.
-function M.stampPositions(ud, facing, x0, z0, x1, z1, rect, spacing, maxN)
+-- Width and depth (Elmo) of the footprint of a unit for a facing (0 to 3)
+function M.unitFootprint(ud, facing)
 	local fx, fz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
 	if (facing or 0) % 2 == 1 then
-		fx, fz = fz, fx
+		return fz, fx
 	end
-	return M.stampPositionsSized(fx, fz, x0, z0, x1, z1, rect, spacing, maxN)
+	return fx, fz
+end
+
+-- The positions of a stamp dragged with Shift from (x0, z0) to (x1, z1): a row, with Alt held a filled rectangle (M.stampPositionsSized with the
+-- width fx and depth fz of one copy); every position is snapped with snap (optional, e.g. to the build grid)
+function M.dragStamp(fx, fz, x0, z0, x1, z1, spacing, maxN, snap)
+	local alt = Spring.GetModKeyState()
+	local pts = M.stampPositionsSized(fx, fz, x0, z0, x1, z1, alt, spacing, maxN)
+	if snap then
+		for _, p in ipairs(pts) do
+			p.x, p.z = snap(p.x), snap(p.z)
+		end
+	end
+	return pts
 end
 
 -- Width and depth (Elmo) of a blueprint after k quarter turns: hull of all units including footprint
@@ -643,7 +655,8 @@ function M.blueprintExtent(units, k)
 	return maxX - minX, maxZ - minZ
 end
 
--- like stampPositions, but with a given width/depth (fx, fz) instead of one unit (also for whole blueprints)
+-- Positions for a stamp from (x0, z0) to (x1, z1) with the width / depth (fx, fz) of one copy (a unit footprint, a blueprint hull, a feature). rect = false:
+-- row (straight line), true: filled rectangle. The distance between two copies is their size plus spacing * 16 Elmo.
 function M.stampPositionsSized(fx, fz, x0, z0, x1, z1, rect, spacing, maxN)
 	local gap = (spacing or 0) * 16
 	local sx, sz = fx + gap, fz + gap

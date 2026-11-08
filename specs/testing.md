@@ -5,7 +5,7 @@ How changes are checked. The details of the test tools and what got in the way a
 ## 1. Principles
 
 - `LevelEditor\test-data\tools\lua_check.py` compiles every Lua file with Lua 5.1 (the Python package lupa brings it as `lupa.lua51`): syntax errors and the limits of 5.1 (200 locals, 60 upvalues per function) are found without the game. It runs nothing; what the code does is checked in the real game. After a change start the real game once and check that the widget loads (`Failed to load: ...` in `infolog.txt`).
-- `LevelEditor\test-data\tools\mock_test.py` runs the mock tests `tools\mock_*.lua` with Lua 5.1 outside the game: each fakes the part of the Spring API that a shared module needs and checks what the module does (`mock_area_attack.lua`: the attacks XL, XR, XC, XS, XF of `shared/area_attack.lua`). The widgets themselves are checked in the game.
+- `LevelEditor\test-data\tools\mock_test.py` runs the mock tests `tools\mock_*.lua` with Lua 5.1 outside the game: each fakes the part of the Spring API that a shared module needs and checks what the module does (`mock_area_attack.lua`: the attacks XL, XR, XC, XS, XF of `shared/area_attack.lua`; `mock_editor_common.lua`: the rows and rectangles of Shift / Shift+Alt and the undo history of the points of a page in `shared/editor_common.lua`). The widgets themselves are checked in the game.
 - Tests run in **sandbox instances** of the game: own write folder, own settings with a framed window, own copy of the extra game, nothing in the user's data folder. They can run next to a running game (`-AlongsideGame`). Long tests run in the background and end the game by themselves (`quitforce`); a killed process loses the log tail. Never kill the user's own `spring.exe`.
 - The test tools find the installation like the setup (`Find-Bar`, remembered in `%LOCALAPPDATA%\BAR-Level-Editor\test_bar_path.txt`; `Resolve-TestData` of `test_common.ps1`); `-Data <BAR\data>` sets it.
 - A game instance needs 8 to 10 GB of RAM: LAN tests run with the host plus one joiner at most.
@@ -28,11 +28,11 @@ How changes are checked. The details of the test tools and what got in the way a
 
 ## 3. What is checked how
 
-- **Shared logic:** the mock tests (`mock_test.py`: the area, split and focus attacks).
+- **Shared logic:** the mock tests (`mock_test.py`: the area, split and focus attacks; rows and rectangles; the undo history of the page points).
 - **Widgets, gadgets and engine:** sandbox games with test widgets that click through the pages and drags (Tower Defense, Capture the Flag, Reclaim the Fame, restrictions, Arena, teams, menu pairs, save, scenario info, export, the command buttons, the BluePrinter plans) and LAN games with two instances (`lan_test.ps1`).
 - **Scripts:** the installers against a dummy game folder (`ensure_installed.ps1`: no stamp, current stamp, changed file); the start menu with real key presses in a console; the scenario builder on copies of the folders.
 - **Screenshots:** how the pictures of the manuals are taken is in `docs/screenshots.md`.
 
 ## 4. Not checkable in the game
 
-Ctrl+click and Alt-drag (the key states cannot be given there; checked by hand); screenshots of the lobby only with `PrintWindow` (`lan_test.ps1 -Shots`).
+Ctrl+click, Shift-drag and Alt-drag (the key states cannot be given there; checked by hand, the positions of the rows also by `mock_editor_common.lua`); screenshots of the lobby only with `PrintWindow` (`lan_test.ps1 -Shots`).
