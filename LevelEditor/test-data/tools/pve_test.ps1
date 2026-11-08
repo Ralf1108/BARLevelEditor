@@ -5,15 +5,17 @@
 #   -Hold 1 | 0                       game option lanpvehold (0 = control run: the AI's orders are not dropped)
 #   -Layout ally | separate           the AI in the ally team of the human, or in an ally team of its own
 #   -Enemy 1                          a third team (NullAI, own ally team) that the Scavengers / Raptors can attack
+#   -Nest                             game option tweakdefs9 = scripts\lan_raptor_nest_defs.lua (prototype: the Raptor Nest; with -Widget zz_nest.lua)
+#   -Widget zz_pve.lua                the test widget (a file in tools)
 param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'pve_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7',
-      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0)
+      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Nest, [string]$Widget = 'zz_pve.lua')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
 $Data = Resolve-TestData $Data   # the data folder of the installation (-Data, otherwise Find-Bar of bar_common.ps1)
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = New-SandboxData $Work $Data @('LuaUI\Config')
-Copy-Item "$tools\zz_pve.lua" "$d\LuaUI\Widgets\"
+Copy-Item "$tools\$Widget" "$d\LuaUI\Widgets\"
 $game = Get-GameVersion $Data
 $sg = Write-ScenarioGame $d $game (Get-ScenarioGameDirs)
 $short = if ($Ai -eq 'Scavengers') { 'ScavengersAI' } else { 'RaptorsAI' }
@@ -26,6 +28,8 @@ if ($Enemy) {
     $allies += "`n`t[allyteam2] { numallies=0; startrectleft=0.4; startrecttop=0; startrectright=0.6; startrectbottom=1; }"
     $enemyTeams = "`n`t[team2] { allyteam=2; teamleader=0; side=Armada; handicap=0; }`n`t[ai1] { shortname=NullAI; team=2; host=0; name=Null2; }"
 } else { $enemyTeams = '' }
+# the game option tweakdefs: the Lua text in base64url without padding (the game's string.base64Decode reads it; = would end the value in the start script)
+$tweak = if ($Nest) { ' tweakdefs9=' + ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $repo 'LevelEditor\scripts\lan_raptor_nest_defs.lua'))).TrimEnd('=').Replace('+', '-').Replace('/', '_')) + ';' } else { '' }
 $script = @"
 [game]
 {
@@ -34,7 +38,7 @@ $allies
 	[team1] { allyteam=$ally1; teamleader=0; side=Armada; handicap=0; }
 	[ai0] { shortname=$short; version=<not-versioned>; team=1; host=0; name=${short}1; }$enemyTeams
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; experimentallegionfaction=1; lanpvehold=$Hold; lanplay=1; forceallunits=1; }
+	[modoptions] { deathmode=neverend; experimentallegionfaction=1; lanpvehold=$Hold; lanplay=1; forceallunits=1;$tweak }
 	ishost=1;
 	hostip=127.0.0.1;
 	hostport=18456;
@@ -49,4 +53,4 @@ $allies
 "@
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
 Write-SandboxSettings "$Work\springsettings.cfg" @(40, 40, 1200, 700) @('Sound = 0', 'MaxSounds = 0')
-Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzpve\]|\[LAN\]|Failed to load|Error' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
+Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzpve\]|\[zznest\]|\[LAN\]|Failed to load|Error|tweakdef' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
