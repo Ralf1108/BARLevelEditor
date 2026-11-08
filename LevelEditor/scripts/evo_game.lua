@@ -51,7 +51,6 @@ local ABILITIES = {
 	{ key = "pulse", name = "Radar Pulse", color = { 1, 0.55, 0.1 }, cost = 250, time = 5, cool = 45, tip = "Your unit sees everything within 2500 Elmo for 5 s" },
 	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
 }
-local CMD_ABILITY = 47610 -- + index of ABILITIES: the order of the button
 
 -- The name of a team: the AI's name or the name of its leader (used by both parts)
 local function teamName(team)
@@ -174,8 +173,9 @@ if not gadgetHandler:IsSyncedCode() then
 
 	-- the symbol of an ability, white lines in a square of radius r around x, y: sprint a double arrow, repair a plus, cloak a crossed out eye, the pulse a dot
 	-- with radar waves, the jammer a zigzag wave
-	function H.icon(key, x, y, r)
-		gl.Color(1, 1, 1, 1)
+	function H.icon(key, x, y, r, alpha)
+		alpha = alpha or 1
+		gl.Color(1, 1, 1, alpha)
 		gl.LineWidth(2)
 		if key == "sprint" then
 			gl.BeginEnd(GL.LINES, function()
@@ -188,8 +188,8 @@ if not gadgetHandler:IsSyncedCode() then
 			end)
 		elseif key == "repair" then
 			local w = 0.28 * r
-			H.box(x - w, y - 0.8 * r, x + w, y + 0.8 * r, w * 0.4, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
-			H.box(x - 0.8 * r, y - w, x + 0.8 * r, y + w, w * 0.4, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+			H.box(x - w, y - 0.8 * r, x + w, y + 0.8 * r, w * 0.4, { 1, 1, 1, alpha }, { 1, 1, 1, alpha })
+			H.box(x - 0.8 * r, y - w, x + 0.8 * r, y + w, w * 0.4, { 1, 1, 1, alpha }, { 1, 1, 1, alpha })
 		elseif key == "cloak" then
 			gl.BeginEnd(GL.LINE_LOOP, function()
 				for k = 0, 15 do
@@ -197,13 +197,13 @@ if not gadgetHandler:IsSyncedCode() then
 					gl.Vertex(x + 0.9 * r * math.cos(a), y + 0.45 * r * math.sin(a))
 				end
 			end)
-			H.disc(x, y, 0.22 * r, { 1, 1, 1, 1 })
+			H.disc(x, y, 0.22 * r, { 1, 1, 1, alpha })
 			gl.BeginEnd(GL.LINES, function()
 				gl.Vertex(x - 0.8 * r, y - 0.8 * r)
 				gl.Vertex(x + 0.8 * r, y + 0.8 * r)
 			end)
 		elseif key == "pulse" then
-			H.disc(x - 0.55 * r, y - 0.55 * r, 0.2 * r, { 1, 1, 1, 1 })
+			H.disc(x - 0.55 * r, y - 0.55 * r, 0.2 * r, { 1, 1, 1, alpha })
 			for _, rr in ipairs({ 0.6, 1.1 }) do
 				gl.BeginEnd(GL.LINE_STRIP, function()
 					for k = 0, 6 do
@@ -270,7 +270,7 @@ if not gadgetHandler:IsSyncedCode() then
 			if a.xp ~= b.xp then return a.xp > b.xp end
 			return a.team < b.team
 		end)
-		local w, rowH, head, pad, gap = math.floor(330 * s), math.floor(34 * s), math.floor(24 * s), math.floor(6 * s), math.floor(3 * s)
+		local w, rowH, head, pad, gap = math.floor(380 * s), math.floor(44 * s), math.floor(28 * s), math.floor(7 * s), math.floor(4 * s)
 		local x2 = math.floor(vsx - 8 * s)
 		local x1 = x2 - w
 		local top = math.floor(vsy - 72 * s)
@@ -283,7 +283,7 @@ if not gadgetHandler:IsSyncedCode() then
 		else
 			gl.Color(0.55, 0.95, 0.7, 1)
 		end
-		gl.Text(hot and "ARMAGEDDON" or "EVOLUTION", x1 + pad * 2, top - head / 2, 15 * s, "vo")
+		gl.Text(hot and "ARMAGEDDON" or "EVOLUTION", x1 + pad * 2, top - head / 2, 17 * s, "vo")
 		if state ~= "running" then
 			gl.Color(1, 0.85, 0.4, 1)
 			gl.Text(state, x2 - pad * 2, top - head / 2, 12 * s, "rvo")
@@ -303,13 +303,13 @@ if not gadgetHandler:IsSyncedCode() then
 			end
 			H.box(x1 + pad, ry1 + 3 * s, x1 + pad + 4 * s, ry2 - 3 * s, 2 * s, { r, g, b, 1 }, { r, g, b, 1 })
 			-- the level badge
-			local bx, br = x1 + pad + 22 * s, rowH * 0.38
+			local bx, br = x1 + pad + 24 * s, rowH * 0.38
 			H.disc(bx, cy, br, out and { 0.25, 0.25, 0.25, 1 } or { r * 0.45, g * 0.45, b * 0.45, 1 })
 			gl.LineWidth(2)
 			H.ring(bx, cy, br, out and { 0.5, 0.5, 0.5, 1 } or { r, g, b, 1 })
 			gl.LineWidth(1)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(out and "-" or tostring(row.stage), bx, cy, 15 * s, "cvo")
+			gl.Text(out and "-" or tostring(row.stage), bx, cy, 18 * s, "cvo")
 			-- the name (first line), the points bar (second line)
 			local nx = bx + br + 8 * s
 			local name = teamName(team)
@@ -317,31 +317,209 @@ if not gadgetHandler:IsSyncedCode() then
 				name = name:sub(1, 13) .. "."
 			end
 			gl.Color(out and 0.55 or 1, out and 0.55 or 1, out and 0.55 or 1, 1)
-			gl.Text(out and (name .. "  (out)") or name, nx, cy + 7 * s, 13 * s, "vo")
-			local px1, px2 = nx, nx + 96 * s
+			gl.Text(out and (name .. "  (out)") or name, nx, cy + 9 * s, 15 * s, "vo")
+			local px1, px2 = nx, nx + 110 * s
 			local frac = out and 0 or (row.need > 0 and math.min(1, row.xp / row.need) or 1)
-			H.box(px1, cy - 12 * s, px2, cy - 3 * s, 4 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
+			H.box(px1, cy - 15 * s, px2, cy - 4 * s, 5 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
 			if frac > 0 then
 				local fill = row.need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
-				H.box(px1 + 1, cy - 11 * s, px1 + 1 + math.max(8 * s, (px2 - px1 - 2) * frac), cy - 4 * s, 3 * s, fill[1], fill[2])
+				H.box(px1 + 1, cy - 14 * s, px1 + 1 + math.max(10 * s, (px2 - px1 - 2) * frac), cy - 5 * s, 4 * s, fill[1], fill[2])
 			end
 			if not out then
 				gl.Color(0.8, 0.85, 0.95, 1)
-				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 5 * s, cy - 7 * s, 10 * s, "vo")
+				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 6 * s, cy - 9 * s, 12 * s, "vo")
 			end
 			-- kills and deaths (first line, right), the abilities (second line, right)
-			local kx = x2 - pad - 84 * s
-			H.crosshair(kx, cy + 7 * s, 6 * s)
+			local kx = x2 - pad - 98 * s
+			H.crosshair(kx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(row.kills), kx + 9 * s, cy + 7 * s, 12 * s, "vo")
-			local dx = kx + 42 * s
-			H.skull(dx, cy + 7 * s, 6 * s)
+			gl.Text(tostring(row.kills), kx + 11 * s, cy + 9 * s, 14 * s, "vo")
+			local dx = kx + 50 * s
+			H.skull(dx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(row.deaths), dx + 9 * s, cy + 7 * s, 12 * s, "vo")
-			H.abilities(team, kx - 7 * s, cy - 8 * s, 13 * s)
+			gl.Text(tostring(row.deaths), dx + 11 * s, cy + 9 * s, 14 * s, "vo")
+			H.abilities(team, kx - 8 * s, cy - 10 * s, 16 * s)
 			y = ry1 - gap
 		end
 		gl.Color(1, 1, 1, 1)
+		return x1, x2, y1, s
+	end
+
+	-- The buttons of the own abilities in the rectangle x1, y1 - x2, y2: five in the order of ABILITIES, each with its color and symbol; grey and pale while the
+	-- team does not have it, dimmed with the seconds while it cools down, a bright border while it works; a click uses it (game message "evo|use|<n>"), the
+	-- mouse over a button shows what it does (above it). H.slots: the rectangles of the buttons for the mouse.
+	H.slots = {}
+	function H.bar(x1, y1, x2, y2, s)
+		local mine = Spring.GetMyTeamID()
+		local have = {}
+		local list = Spring.GetTeamRulesParam(mine, "evoAbilities")
+		if type(list) == "string" then
+			for i, cool, act in list:gmatch("(%d+):(%d+):(%d+)") do
+				have[tonumber(i)] = { cool = tonumber(cool), act = tonumber(act) }
+			end
+		end
+		local energy = Spring.GetTeamResources(mine, "energy") or 0
+		local gap = 6 * s
+		local n = #ABILITIES
+		local bw = (x2 - x1 - (n - 1) * gap) / n
+		local bh = y2 - y1
+		local mx, my = Spring.GetMouseState()
+		local hover, hoverX
+		for i, a in ipairs(ABILITIES) do
+			local bx1 = x1 + (i - 1) * (bw + gap)
+			local bx2, by1, by2 = bx1 + bw, y1, y2
+			local h, c = have[i], a.color
+			local cx, iy = (bx1 + bx2) / 2, by2 - bh * 0.42
+			if not h then
+				H.box(bx1, by1, bx2, by2, 7 * s, { 0.07, 0.07, 0.09, 0.9 }, { 0.12, 0.12, 0.15, 0.9 }, { c[1] * 0.5, c[2] * 0.5, c[3] * 0.5, 0.5 })
+				H.icon(a.key, cx, iy, 14 * s, 0.25)
+				gl.Color(0.5, 0.5, 0.55, 1)
+			else
+				local cooling = h.cool > 0 and h.act == 0
+				local k = cooling and 0.3 or 1
+				local pulse = 0.6 + 0.4 * math.sin(Spring.GetGameFrame() * 0.25)
+				H.box(bx1, by1, bx2, by2, 7 * s, { c[1] * 0.35 * k, c[2] * 0.35 * k, c[3] * 0.35 * k, 0.95 }, { c[1] * 0.85 * k, c[2] * 0.85 * k, c[3] * 0.85 * k, 0.95 },
+					h.act > 0 and { 1, 1, 1, pulse } or { 1, 1, 1, cooling and 0.15 or 0.5 })
+				if cooling then
+					gl.Color(1, 1, 1, 1)
+					gl.Text(tostring(h.cool), cx, iy, 24 * s, "cvo")
+				else
+					H.icon(a.key, cx, iy, 14 * s, 1)
+				end
+				if h.act > 0 then
+					gl.Color(1, 1, 1, 1)
+					gl.Text(tostring(h.act), bx2 - 5 * s, by2 - 9 * s, 12 * s, "rvo")
+				end
+				gl.Color(1, 1, 1, cooling and 0.6 or 1)
+			end
+			gl.Text(a.name, cx, by1 + 11 * s, 12 * s, "cvo")
+			if not (h and h.act > 0) then
+				-- the energy it costs, top right: yellow, red when the energy is short (while it works the seconds left stand there)
+				if energy < a.cost then
+					gl.Color(1, 0.35, 0.3, h and 1 or 0.6)
+				else
+					gl.Color(1, 0.9, 0.35, h and 1 or 0.6)
+				end
+				gl.Text(tostring(a.cost), bx2 - 5 * s, by2 - 9 * s, 11 * s, "rvo")
+			end
+			-- the cooldown, top left
+			gl.Color(0.8, 0.85, 0.95, h and 0.9 or 0.5)
+			gl.Text(a.cool .. " s", bx1 + 5 * s, by2 - 9 * s, 10 * s, "vo")
+			H.slots[i] = { bx1, by1, bx2, by2 }
+			if mx >= bx1 and mx <= bx2 and my >= by1 and my <= by2 then
+				hover, hoverX = i, cx
+			end
+		end
+		if hover then
+			-- the explanation above the button
+			local a, h = ABILITIES[hover], have[hover]
+			local lines = { a.tip, "Cost " .. a.cost .. " energy, cooldown " .. a.cool .. " s",
+				not h and ("Not yet yours: drive over a beacon of this color") or (h.act > 0 and ("Working: " .. h.act .. " s left")) or (h.cool > 0 and ("Ready again in " .. h.cool .. " s"))
+					or (energy < a.cost and "Not enough energy") or "Click to use" }
+			local tw = 0
+			for _, l in ipairs(lines) do
+				tw = math.max(tw, gl.GetTextWidth(l) * 13 * s)
+			end
+			tw = math.max(tw, gl.GetTextWidth(a.name) * 16 * s) + 20 * s
+			local th = 26 * s + #lines * 17 * s
+			local vsx = Spring.GetViewGeometry()
+			local tx1 = math.max(4 * s, math.min(vsx - tw - 4 * s, hoverX - tw / 2))
+			local ty1 = y2 + 22 * s
+			local tx2, ty2 = tx1 + tw, ty1 + th
+			H.box(tx1, ty1, tx2, ty2, 6 * s, { 0.02, 0.03, 0.05, 0.92 }, { 0.08, 0.09, 0.13, 0.92 }, { a.color[1], a.color[2], a.color[3], 0.8 })
+			gl.Color(a.color[1], a.color[2], a.color[3], 1)
+			gl.Text(a.name, tx1 + 10 * s, ty2 - 15 * s, 16 * s, "vo")
+			gl.Color(0.9, 0.92, 0.97, 1)
+			for k, l in ipairs(lines) do
+				gl.Text(l, tx1 + 10 * s, ty2 - 22 * s - k * 17 * s + 4 * s, 13 * s, "vo")
+			end
+		end
+		gl.Color(1, 1, 1, 1)
+	end
+
+	-- The own character at the bottom in the middle (where the game shows the selected units: only one unit is played): a big level badge, the unit, the
+	-- points bar, kills and deaths, the buttons of the abilities. H.area: its rectangle for the mouse.
+	function H.character(s)
+		H.slots, H.area = {}, nil
+		local mine = Spring.GetMyTeamID()
+		if Spring.GetSpectatingState() or not Spring.GetTeamRulesParam(mine, "evoStage") then
+			return
+		end
+		local function p(k) return Spring.GetTeamRulesParam(mine, k) or 0 end
+		local vsx = Spring.GetViewGeometry()
+		local w, h = math.floor(720 * s), math.floor(104 * s)
+		-- docked to the left of the music player and the player list of the game at the bottom right (about 236 at 1080 lines), clear of the order menu
+		-- and the grid of the build menu at the left (up to 45 % of the width): narrower when the screen is small
+		local x2 = math.floor(vsx - 236 * s)
+		local x1 = math.max(math.floor(vsx * 0.45), x2 - w)
+		local y1 = math.floor(8 * s)
+		local y2 = y1 + h
+		local out = p("evoOut") == 1
+		local r, g, b = Spring.GetTeamColor(mine)
+		r, g, b = r or 1, g or 1, b or 1
+		H.box(x1, y1, x2, y2, 10 * s, { 0.03, 0.04, 0.07, 0.85 }, { 0.10, 0.12, 0.18, 0.85 }, { 0.55, 0.65, 0.85, 0.5 })
+		-- level badge
+		local bx, by, br = x1 + 52 * s, (y1 + y2) / 2, 38 * s
+		H.disc(bx, by, br, out and { 0.25, 0.25, 0.25, 1 } or { r * 0.45, g * 0.45, b * 0.45, 1 })
+		gl.LineWidth(3)
+		H.ring(bx, by, br, out and { 0.5, 0.5, 0.5, 1 } or { r, g, b, 1 })
+		gl.LineWidth(1)
+		gl.Color(1, 1, 1, 1)
+		gl.Text(out and "-" or tostring(p("evoStage")), bx, by + 4 * s, 32 * s, "cvo")
+		gl.Color(0.75, 0.8, 0.9, 1)
+		gl.Text("LEVEL", bx, by - 22 * s, 10 * s, "cvo")
+		-- unit, points, kills and deaths
+		local nx = bx + br + 14 * s
+		local unit = Spring.GetTeamRulesParam(mine, "evoName") or ""
+		gl.Color(1, 1, 1, 1)
+		gl.Text(out and "Out" or (NAMES[unit] or unit), nx, y2 - 22 * s, 20 * s, "vo")
+		local need = p("evoNeed")
+		local px1, px2 = nx, nx + 210 * s
+		local frac = out and 0 or (need > 0 and math.min(1, p("evoXp") / need) or 1)
+		local py = (y1 + y2) / 2 - 2 * s
+		H.box(px1, py - 9 * s, px2, py + 9 * s, 9 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
+		if frac > 0 then
+			local fill = need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
+			H.box(px1 + 1, py - 8 * s, px1 + 1 + math.max(16 * s, (px2 - px1 - 2) * frac), py + 8 * s, 8 * s, fill[1], fill[2])
+		end
+		gl.Color(1, 1, 1, 1)
+		gl.Text(out and "" or (need > 0 and string.format("%d / %d points", p("evoXp"), need) or "MAX"), (px1 + px2) / 2, py, 12 * s, "cvo")
+		local ky = y1 + 20 * s
+		H.crosshair(nx + 8 * s, ky, 8 * s)
+		gl.Color(1, 1, 1, 1)
+		gl.Text(tostring(p("evoKills")) .. " kills", nx + 20 * s, ky, 13 * s, "vo")
+		H.skull(nx + 112 * s, ky, 8 * s)
+		gl.Color(1, 1, 1, 1)
+		gl.Text(tostring(p("evoDeaths")) .. " deaths", nx + 124 * s, ky, 13 * s, "vo")
+		-- the abilities
+		H.bar(px2 + 20 * s, y1 + 10 * s, x2 - 10 * s, y2 - 10 * s, s)
+		H.area = { x1, y1, x2, y2 }
+	end
+
+	local function slotAt(x, y)
+		for i, r in pairs(H.slots) do
+			if x >= r[1] and x <= r[3] and y >= r[2] and y <= r[4] then
+				return i
+			end
+		end
+	end
+
+	function gadget:IsAbove(x, y)
+		local r = H.area
+		return r ~= nil and x >= r[1] and x <= r[3] and y >= r[2] and y <= r[4]
+	end
+
+	function gadget:MousePress(x, y, button)
+		local i = slotAt(x, y)
+		if i and button == 1 then
+			Spring.SendLuaRulesMsg("evo|use|" .. i)
+			return true
+		end
+		return gadget:IsAbove(x, y) -- (a click on the bar between the buttons does not reach the map)
+	end
+
+	function gadget:MouseRelease()
+		return false
 	end
 
 	function gadget:DrawScreen()
@@ -351,7 +529,8 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 		local vsx, vsy = Spring.GetViewGeometry()
 		local arma = Spring.GetGameRulesParam("evoArmageddon") or 0
-		H.panel(state, arma)
+		local _, _, _, s = H.panel(state, arma)
+		H.character(s)
 		-- radars being taken: "Taking 3/5" in the color of the taker above the radar
 		for x, z, s, t in tostring(Spring.GetGameRulesParam("evoTaking") or ""):gmatch("(%d+),(%d+),(%d+),(%d+)") do
 			x, z = tonumber(x), tonumber(z)
@@ -464,7 +643,8 @@ local R = {
 	ENERGY_BASE = 5, ENERGY = 3, STORE = 1000,
 	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, CATCH_UP = 0.5,
-	WANDER = 5 * FPS, WANDER_SHARE = 0.3, WANDER_DIST = 700, -- every WANDER frames a part of the idle wild units (not towers) walks to a place nearby
+	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
+	-- STILL = part of the wild units that never walk (towers never do)
 	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
 	-- the towers of a stage per faction (ground targets; anti air, nuclear and anti nuclear buildings left out), ordered by cost
 	TOWERS = {
@@ -735,36 +915,6 @@ function A.publish()
 	end
 end
 
--- the buttons of the player's abilities on its unit (after every spawn and while a cooldown runs: the seconds left in the caption)
-function A.buttons(p)
-	local id = p.unit
-	if not id or not Spring.ValidUnitID(id) then
-		return
-	end
-	local n = Spring.GetGameFrame()
-	for i, a in ipairs(ABILITIES) do
-		local cmd = CMD_ABILITY + i
-		local at = Spring.FindUnitCmdDesc(id, cmd)
-		if p.abilities and p.abilities[i] then
-			local left = math.ceil((((p.cool and p.cool[i]) or 0) - n) / FPS)
-			-- (the order menu of the game shows the translations commands.evo_<key> and commands.evo_<key>_tooltip, which the game widget evo_gift.lua sets
-			-- from the game rule evoAbilityTexts; the seconds of a cooldown are in the panel at the top)
-			local desc = { id = cmd, type = CMDTYPE.ICON, name = a.name, action = "evo_" .. a.key, tooltip = A.tooltip(a), disabled = left > 0 }
-			if at then
-				Spring.EditUnitCmdDesc(id, at, desc)
-			else
-				Spring.InsertUnitCmdDesc(id, desc)
-			end
-		elseif at then
-			Spring.RemoveUnitCmdDesc(id, at)
-		end
-	end
-end
-
-function A.tooltip(a)
-	return a.tip .. "\nCost " .. a.cost .. " energy, cooldown " .. a.cool .. " s"
-end
-
 local function sensor(id, kind, value)
 	pcall(Spring.SetUnitSensorRadius, id, kind, value)
 end
@@ -826,7 +976,6 @@ function A.use(p, i)
 	p.cool = p.cool or {}
 	p.cool[i] = n + a.cool * FPS
 	A.start(p, i)
-	A.buttons(p)
 	A.publish()
 	return true
 end
@@ -871,8 +1020,7 @@ function A.update(n)
 		if p.cool and n % FPS == 0 then
 			for i, f in pairs(p.cool) do
 				if f >= n - 3 * FPS then
-					A.buttons(p) -- (a cooldown runs or ended in the last seconds: the button is enabled again)
-					changed = true
+					changed = true -- (a cooldown runs or ended in the last seconds: the bar shows it)
 					break
 				end
 			end
@@ -892,7 +1040,6 @@ function A.update(n)
 			taker.abilities = taker.abilities or {}
 			taker.abilities[b.kind] = true
 			A.due[#A.due + 1] = n + A.BACK
-			A.buttons(taker)
 			say(string.format("%s found %s.", taker.name, ABILITIES[b.kind].name))
 			changed = true
 		else
@@ -930,7 +1077,6 @@ local function spawn(p, x, z, facing)
 		if p.ai then
 			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
 		end
-		A.buttons(p) -- the abilities stay with the evolved unit
 	end
 	publish()
 end
@@ -1219,7 +1365,7 @@ local function spawnWild(s, tower, x, z, facing)
 	end
 	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, facing or math.random(0, 3), Spring.GetGaiaTeamID())
 	if id then
-		wild[id] = { stage = s, tower = tower }
+		wild[id] = { stage = s, tower = tower, still = tower or math.random() < R.STILL }
 		local _, maxHp = Spring.GetUnitHealth(id)
 		local hp = math.max(1, (maxHp or 100) * WILD_HP)
 		Spring.SetUnitMaxHealth(id, hp)
@@ -1230,10 +1376,11 @@ local function spawnWild(s, tower, x, z, facing)
 	return id
 end
 
--- Every R.WANDER frames: a part (R.WANDER_SHARE) of the idle wild units that are not towers walk to a random place of the land within R.WANDER_DIST
+-- Every R.WANDER frames: a part (R.WANDER_SHARE) of the idle wild units that walk (not the towers and not the R.STILL that stand) go to a random place of the
+-- land within R.WANDER_DIST
 local function wanderWild()
 	for id, w in pairs(wild) do
-		if not w.tower and math.random() < R.WANDER_SHARE and Spring.ValidUnitID(id) then
+		if not w.still and math.random() < R.WANDER_SHARE and Spring.ValidUnitID(id) then
 			local n = Spring.GetUnitCommands(id, 0)
 			local x, _, z = Spring.GetUnitPosition(id)
 			if x and type(n) == "number" and n == 0 then
@@ -1765,14 +1912,16 @@ end
 
 -- The gift of a player on stage 10: "evo|gift|<1..3>" from the game widget evo_gift.lua of that player
 function gadget:RecvLuaMsg(msg, playerID)
-	local n = msg:match("^evo|gift|(%d)$")
-	if not n then
+	local kind, n = msg:match("^evo|(%a+)|(%d)$")
+	if kind ~= "gift" and kind ~= "use" then
 		return false
 	end
 	local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 	local p = team and not spec and byTeam[team]
-	if p then
+	if p and kind == "gift" then
 		giveGift(p, tonumber(n))
+	elseif p then
+		A.use(p, tonumber(n)) -- a button of the bar of abilities (the unsynced part)
 	end
 	return true
 end
@@ -1786,13 +1935,6 @@ function gadget:AllowCommand(unitID, unitDefID, unitTeam, cmdID, cmdParams, cmdO
 	local p = owner[unitID] or summoned[unitID]
 	if not p then
 		return true
-	end
-	if cmdID > CMD_ABILITY and cmdID <= CMD_ABILITY + #ABILITIES then
-		-- the button of an ability: it begins at once (no order in the queue)
-		if owner[unitID] then
-			A.use(owner[unitID], cmdID - CMD_ABILITY)
-		end
-		return false
 	end
 	if cmdID == CMD.SELFD and owner[unitID] then
 		return false
@@ -1828,11 +1970,4 @@ function gadget:Initialize()
 	Spring.SetGameRulesParam("evoNukes", "")
 	Spring.SetGameRulesParam("evoTaking", "")
 	Spring.SetGameRulesParam("evoBeacons", "")
-	-- the names and explanations of the abilities for the order menu ("evo_<key>|name|tooltip" separated by #; the game widget evo_gift.lua sets the
-	-- translations)
-	local texts = {}
-	for _, a in ipairs(ABILITIES) do
-		texts[#texts + 1] = "evo_" .. a.key .. "|" .. a.name .. "|" .. A.tooltip(a)
-	end
-	Spring.SetGameRulesParam("evoAbilityTexts", table.concat(texts, "#"))
 end

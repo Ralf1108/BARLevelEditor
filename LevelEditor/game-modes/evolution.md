@@ -56,7 +56,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Wild units and towers**
 - Units of nobody (Gaia) with a fifth of their health stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
-- They **walk around** the map now and then (the towers stay) and **only shoot back**
+- Most of them **walk around** the map, about one in five stands still (and the towers), and they **only shoot back**
 - They **grow with the weakest player**: a new one has the level of the weakest player who is still in; old ones two or more levels away from it are replaced, one every 3 seconds
 - One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
 
@@ -72,8 +72,8 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Beacons and abilities**
 - Glowing beacons in five colors lie around the map (you see them where your unit sees); drive over one to get its **ability** until your unit dies (evolving keeps it)
-- In the overview at the right every ability has its column with a symbol (a double arrow, a plus, a crossed out eye, radar waves, a zigzag wave)
-- Each ability is a button in the order menu of your unit; it costs energy and then needs a while before it can be used again (the seconds are on the button)
+- Your abilities are the five colored buttons in your panel at the bottom of the screen, always in the same place with a symbol (a double arrow, a plus, a crossed out eye, radar waves, a zigzag wave): grey until you have one, then in its color; click to use it; it costs energy and then needs a while before it can be used again (the seconds are on the button); hold the mouse over a button to read what it does
+- The overview at the right shows the abilities of every player in the same columns
 
 | Color | Ability | What it does | Energy | Cooldown |
 |---|---|---|---|---|
@@ -110,7 +110,7 @@ Chosen by damage per second times health; artillery, units for water and the bom
 ## On the screen
 
 - At the right edge, below the bars of the game: one compact row per team, the highest level on top: level badge, name, points bar, kills, deaths and the abilities (your own row lighter; "out" in Armageddon)
-- The buttons of the abilities explain themselves when you hold the mouse over them
+- At the bottom in the middle: your own unit, big: level, unit, points bar, kills, deaths and the buttons of your abilities
 - After a respawn the camera jumps to your new unit
 
 ## Tips

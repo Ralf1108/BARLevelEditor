@@ -55,7 +55,7 @@ Add-Type -Name Dpi -Namespace W7 -MemberDefinition '[DllImport("user32.dll")] pu
 $wa = [Windows.Forms.Screen]::PrimaryScreen.Bounds
 $qw = [int]($wa.Width / 2) - 16; $qh = [int]($wa.Height / 2) - 80
 $rects = @{ H = @(0, 0, $qw, $qh); J = @(0, [int]($wa.Height / 2), $qw, $qh); K = @([int]($wa.Width / 2), 0, $qw, $qh) }
-$who2 = if ($Mode -in 'page', 'preset', 'evoroom', 'brood') { @('H') } else { @('H', 'J') + $(if ($Clients -ge 2) { 'K' }) }
+$who2 = if ($Mode -in 'page', 'preset', 'evoroom', 'brood' -or ($Mode -eq 'evo' -and $Solo)) { @('H') } else { @('H', 'J') + $(if ($Clients -ge 2) { 'K' }) }
 $names = @{ H = 'PlayerA'; J = 'PlayerB'; K = 'PlayerC' }
 $procs = @{}
 $prev = [SbxWin]::GetForegroundWindow()
@@ -112,7 +112,6 @@ foreach ($who in $who2) {
     "started $who pid $($procs[$who].Id)"
 }
 if ($Mode -eq 'latejoin') { $who2 = @('H') }
-if ($Mode -eq 'evo' -and $Solo) { $who2 = @('H') }   # one instance: the host and the computer
 Add-Type -AssemblyName System.Drawing
 Add-Type @'
 using System; using System.Runtime.InteropServices;
