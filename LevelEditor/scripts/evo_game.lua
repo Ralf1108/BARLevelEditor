@@ -172,24 +172,29 @@ if not gadgetHandler:IsSyncedCode() then
 		H.disc(x + r * 0.3, y + r * 0.1, r * 0.2, { 0.1, 0.1, 0.12, 1 })
 	end
 
-	-- the abilities of a team as small squares in their colors: the first letter, dimmed with the seconds while it cools down, a bright border while it works
+	-- the abilities of a team as small squares in their colors, each in its own column (the order of ABILITIES; an empty frame where the team does not have
+	-- it): the first letter, dimmed with the seconds while it cools down, a bright border while it works
 	function H.abilities(team, x, y, size)
+		local have = {}
 		local list = Spring.GetTeamRulesParam(team, "evoAbilities")
-		if type(list) ~= "string" or list == "" then
-			return x
-		end
-		for i, cool, act in list:gmatch("(%d+):(%d+):(%d+)") do
-			local a = ABILITIES[tonumber(i)]
-			if a then
-				cool, act = tonumber(cool), tonumber(act)
-				local c = a.color
-				local dim = cool > 0 and act == 0 and 0.35 or 1
-				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { c[1] * 0.5 * dim, c[2] * 0.5 * dim, c[3] * 0.5 * dim, 0.95 }, { c[1] * dim, c[2] * dim, c[3] * dim, 0.95 },
-					act > 0 and { 1, 1, 1, 1 } or { 0, 0, 0, 0.6 })
-				gl.Color(1, 1, 1, 1)
-				gl.Text(cool > 0 and act == 0 and tostring(cool) or a.name:sub(1, 1), x + size / 2, y, size * (cool > 0 and act == 0 and 0.5 or 0.62), "cvo")
-				x = x + size * 1.15
+		if type(list) == "string" then
+			for i, cool, act in list:gmatch("(%d+):(%d+):(%d+)") do
+				have[tonumber(i)] = { cool = tonumber(cool), act = tonumber(act) }
 			end
+		end
+		for i, a in ipairs(ABILITIES) do
+			local h = have[i]
+			if h then
+				local c = a.color
+				local dim = h.cool > 0 and h.act == 0 and 0.35 or 1
+				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { c[1] * 0.5 * dim, c[2] * 0.5 * dim, c[3] * 0.5 * dim, 0.95 }, { c[1] * dim, c[2] * dim, c[3] * dim, 0.95 },
+					h.act > 0 and { 1, 1, 1, 1 } or { 0, 0, 0, 0.6 })
+				gl.Color(1, 1, 1, 1)
+				gl.Text(h.cool > 0 and h.act == 0 and tostring(h.cool) or a.name:sub(1, 1), x + size / 2, y, size * (h.cool > 0 and h.act == 0 and 0.5 or 0.62), "cvo")
+			else
+				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { 0.05, 0.05, 0.08, 0.5 }, { 0.08, 0.08, 0.12, 0.5 }, { 0.35, 0.38, 0.48, 0.35 })
+			end
+			x = x + size * 1.15
 		end
 		return x
 	end
