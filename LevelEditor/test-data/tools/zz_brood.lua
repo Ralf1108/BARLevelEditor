@@ -67,7 +67,10 @@ function widget:GameFrame(n)
 		if not x or x < 0 then x, z = Game.mapSizeX * 0.1, Game.mapSizeZ * 0.5 end
 		cx, cz = x, z
 		local def = UnitDefNames.raptor_brood_chamber
-		log("AI team", aiTeam, "commander at", math.floor(cx), math.floor(cz), "tweakdefs9 set:", tostring((Spring.GetModOptions() or {}).tweakdefs9 ~= nil))
+		log("AI team", aiTeam, "commander at", math.floor(cx), math.floor(cz), "tweakdefs set in slot:", (function()
+			for k, v in pairs(Spring.GetModOptions() or {}) do if k:match("^tweakdefs%d*$") and v ~= "" then return k end end
+			return "none"
+		end)())
 		log("raptor_brood_chamber defined:", def ~= nil and "OK" or "FAIL", def and ("factory " .. tostring(def.isFactory) .. " builder " .. tostring(def.isBuilder) .. " options " .. #(def.buildOptions or {})) or "")
 		local hd = UnitDefNames.raptor_land_swarmer_heal_t1_v1
 		local can = false

@@ -82,7 +82,7 @@ foreach ($who in $who2) {
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
-        if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix', 'evo', 'evoroom') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
+        if ($Mode -notin 'cp', 'teams', 'page', 'boss', 'pve', 'preset', 'rejoin', 'latejoin', 'mix', 'evo', 'evoroom', 'brood') { Copy-Item "$sp\bundle_$scn" "$d\LevelEditorScenarios\$scn" -Recurse }
         # the extra game of the scenarios from the files of this repository, as the setup builds it (with the file that names it)
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII

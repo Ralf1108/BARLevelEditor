@@ -22,7 +22,15 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 18, stamp = "2026-11-08 19:25" }
+local LAN_VERSION = { number = 18, stamp = "2026-11-08 20:16" }
+-- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
+-- waits, timeouts and the test automation took minutes instead of seconds)
+local clock = (function()
+	local t0 = Spring.GetTimer()
+	return function()
+		return Spring.DiffTimers(Spring.GetTimer(), t0)
+	end
+end)()
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -686,8 +694,8 @@ end
 local function pveHumanNotice()
 	local l = lobby()
 	if not (S and l and hasPveBot()) and not (S and S.pveHeld and next(S.pveHeld)) then return end
-	if S.pveNoticeAt and os.clock() < S.pveNoticeAt then return end
-	S.pveNoticeAt = os.clock() + 1
+	if S.pveNoticeAt and clock() < S.pveNoticeAt then return end
+	S.pveNoticeAt = clock() + 1
 	local humans, bots = {}, {}
 	for _, c in ipairs(S.conns) do
 		local bs = c.inBattle and c.battleStatus and select(2, pcall(l.ParseBattleStatus, l, c.battleStatus))
@@ -940,7 +948,7 @@ local function updateServer()
 			pcall(function() new:close() end)
 		else
 			S.nextId = S.nextId + 1
-			local c = { sock = new, buf = "", id = S.nextId, t = os.clock() }
+			local c = { sock = new, buf = "", id = S.nextId, t = clock() }
 			S.conns[#S.conns + 1] = c
 			sendLine(c, "TASSERVER 0.38 " .. ((Spring.Utilities and Spring.Utilities.GetEngineVersion and Spring.Utilities.GetEngineVersion()) or "2026.07.04") .. " " .. PORT .. " 0")
 		end
@@ -989,7 +997,7 @@ local function updateServer()
 				end
 			end
 		end
-		if err == "closed" or c.close or (not c.name and not c.serve and not c.mapServe and os.clock() - c.t > 6) then
+		if err == "closed" or c.close or (not c.name and not c.serve and not c.mapServe and clock() - c.t > 6) then
 			if c.mapServe then pcall(function() c.mapServe.fh:close() end) end
 			removeConn(c)
 		end
@@ -1205,7 +1213,7 @@ local function lanConnect(role, ip, name)
 		local okName, myName = pcall(l.GetMyUserName, l)
 		lanWasLoggedIn = okName and type(myName) == "string" and myName ~= ""
 	end
-	lan = { role = role, ip = ip, name = name, step = "connecting", t = os.clock() }
+	lan = { role = role, ip = ip, name = name, step = "connecting", t = clock() }
 	-- the configuration (server address) stays as it is: the lobby saves it when it ends. Only this connection goes to the LAN server.
 	pcall(function() l:Disconnect("LAN play") end)
 	-- the login window sends the login when the server has greeted (OnConnect): do the same here
@@ -1217,7 +1225,7 @@ local function lanConnect(role, ip, name)
 	l:AddListener("OnConnect", onConnect)
 	-- leaving the battle room (the Leave button) ends the LAN game and brings the player back to the LAN Play page
 	lan.leftListener = function(listener, battleID, userName)
-		if lan and userName == l:GetMyUserName() then lan.left = os.clock() end
+		if lan and userName == l:GetMyUserName() then lan.left = clock() end
 	end
 	l:AddListener("OnLeftBattle", lan.leftListener)
 	l:Connect(ip, PORT, name, "lan", 0, "*", "Chobby")
@@ -1294,7 +1302,7 @@ local function startFetch(hash, size)
 	if not ok then finishFetch({ sock = s, hash = hash }, false, "no connection (" .. tostring(e) .. ")"); return end
 	s:settimeout(0)
 	s:send("FETCHGAME " .. hash .. "\n")
-	lan.fetch = { sock = s, hash = hash, size = size, game = lan.syncGame, buf = "", parts = {}, got = 0, total = nil, t = os.clock() }
+	lan.fetch = { sock = s, hash = hash, size = size, game = lan.syncGame, buf = "", parts = {}, got = 0, total = nil, t = clock() }
 	lan.syncPending = true
 	setStatus("Loading the scenario game from the host ...")
 end
@@ -1338,7 +1346,7 @@ local function updateFetch()
 		pcall(VFS.ScanAllDirs)
 		log("the extra game was loaded from the host:", f.total, "bytes; archive present:", tostring(VFS.HasArchive(f.game.name)))
 		finishFetch(f, true)
-	elseif err == "closed" or os.clock() - f.t > 30 then
+	elseif err == "closed" or clock() - f.t > 30 then
 		finishFetch(f, false, err == "closed" and "the host closed the connection" or "timeout")
 	end
 end
@@ -1419,7 +1427,7 @@ local function installDownloadHold()
 		if lan and lan.role == "client" and ft == "map" and not (lan.mapFree and lan.mapFree[n]) then
 			if lan.mapLan == n then return end
 			lan.held = lan.held or {}
-			lan.held[n] = { ft = ft, args = { ... }, t = os.clock() }
+			lan.held[n] = { ft = ft, args = { ... }, t = clock() }
 			log("the online download of the map", n, "is held back until it is known where the map comes from")
 			return
 		end
@@ -1451,7 +1459,7 @@ local function startMapFetch(name, info)
 	local per = math.ceil(blocks / n)
 	local part = "maps/" .. info.file .. ".part"
 	local fh = io.open(part, "wb")
-	lan.mapFetch = { name = name, info = info, part = part, fh = fh, streams = {}, t = os.clock() }
+	lan.mapFetch = { name = name, info = info, part = part, fh = fh, streams = {}, t = clock() }
 	if not fh then finishMap(false, "cannot write " .. part); return end
 	for k = 0, n - 1 do
 		local first = k * per
@@ -1481,7 +1489,7 @@ local function updateMapFetch()
 				chunk = chunk or partial
 				local had = chunk and #chunk > 0
 				if had then
-					f.t = os.clock()
+					f.t = clock()
 					local data = chunk
 					if not s.hdr then
 						-- the server greets every connection first (TASSERVER ...); then comes "BLOCKS <first> <count>" and the bytes
@@ -1529,7 +1537,7 @@ local function updateMapFetch()
 		finishMap(true)
 		return
 	end
-	if os.clock() - f.t > 30 then finishMap(false, "timeout") end
+	if clock() - f.t > 30 then finishMap(false, "timeout") end
 end
 
 -- the official md5 of a map from the list the Level Editor setup saved (games/LevelEditorMapHashes.txt, "<spring name>|<md5>"); nil when there is no list or no entry
@@ -1594,7 +1602,7 @@ local function updateMapSync()
 			if data and #data > 0 then a.buf = a.buf .. data end
 			reply = a.buf:match("MAPINFO ([^\r\n]*)")
 		end
-		if not reply and os.clock() - a.t < 5 then return end
+		if not reply and clock() - a.t < 5 then return end
 		pcall(function() a.sock:close() end)
 		lan.mapAsk = nil
 		local size, hash, file = (reply or ""):match("^(%d+)|([^|]+)|([^|]+)$")
@@ -1615,7 +1623,7 @@ local function updateMapSync()
 		return
 	end
 	for n, h in pairs(lan.held or {}) do
-		if not lan.mapPrompt and os.clock() - h.t > 30 then releaseHeld(n) end   -- nobody decided: the lobby loads it
+		if not lan.mapPrompt and clock() - h.t > 30 then releaseHeld(n) end   -- nobody decided: the lobby loads it
 	end
 	if lan.mapPrompt then return end
 	local l = lobby()
@@ -1625,7 +1633,7 @@ local function updateMapSync()
 	if cfg.noOnline and WG.DownloadHandler and WG.DownloadHandler.CancelDownload then pcall(WG.DownloadHandler.CancelDownload, name, "map") end   -- test: no internet
 	local sock = socket.tcp(); sock:settimeout(0)
 	sock:connect(lan.ip, PORT)
-	lan.mapAsk = { sock = sock, name = name, buf = "", sent = false, t = os.clock() }
+	lan.mapAsk = { sock = sock, name = name, buf = "", sent = false, t = clock() }
 	log("map check: the map", name, "is missing: asking the host")
 end
 
@@ -1637,7 +1645,7 @@ local function updateVersionCheck()
 	if not q then
 		local sock = socket.tcp(); sock:settimeout(0)
 		sock:connect(lan.ip, PORT)
-		lan.verQuery = { sock = sock, buf = "", sent = false, t = os.clock() }
+		lan.verQuery = { sock = sock, buf = "", sent = false, t = clock() }
 		return
 	end
 	local tag
@@ -1652,7 +1660,7 @@ local function updateVersionCheck()
 		if data and #data > 0 then q.buf = q.buf .. data end
 		tag = q.buf:match("LANVER ([^\r\n]*)")
 	end
-	if not tag and os.clock() - q.t < 4 then return end
+	if not tag and clock() - q.t < 4 then return end
 	pcall(function() q.sock:close() end)
 	lan.verChecked = true
 	local mine = versionTag()
@@ -1701,16 +1709,16 @@ local function updateLan()
 	if not l then return end
 	if lan.step == "connecting" then
 		if l.status == "connected" and l.battles and l.battles[1] then
-			lan.step = "joining"; lan.t = os.clock()
+			lan.step = "joining"; lan.t = clock()
 			log("logged in; joining the battle")
 			l:JoinBattle(1)
-		elseif os.clock() - lan.t > 10 then
+		elseif clock() - lan.t > 10 then
 			setStatus("No answer from " .. tostring(lan.ip) .. " (lobby status " .. tostring(l.status) .. ")."); lanStop("no answer")
 		end
 	elseif lan.step == "joining" then
 		if l:GetMyBattleID() == 1 then
 			lan.step = "in"; setStatus("In the LAN battle room of " .. tostring(lan.ip) .. ".")
-		elseif os.clock() - lan.t > 10 then setStatus("Could not join the battle."); lan.step = "failed" end
+		elseif clock() - lan.t > 10 then setStatus("Could not join the battle."); lan.step = "failed" end
 	end
 end
 
@@ -1720,7 +1728,7 @@ local function startScan(quiet)
 	local a, b, c = tostring(me):match("^(%d+)%.(%d+)%.(%d+)%.%d+$")
 	local list = {}
 	if a then for i = 1, 254 do list[#list + 1] = a .. "." .. b .. "." .. c .. "." .. i end else list[1] = "127.0.0.1" end
-	scan = { list = list, next = 1, open = {}, until_ = os.clock() + 8, started = os.clock(), results = {}, quiet = quiet }
+	scan = { list = list, next = 1, open = {}, until_ = clock() + 8, started = clock(), results = {}, quiet = quiet }
 	if not quiet then
 		log("scan from own address", me, "(", #list, "addresses )")
 		setStatus("Searching for games in the network ...")
@@ -1740,11 +1748,11 @@ local function updateCopilotPoll()
 	if S or not lan or lan.step ~= "in" or not lan.ip then return end
 	local p = lan.cop
 	if not p then
-		if os.clock() < (lan.copNext or 0) then return end
-		lan.copNext = os.clock() + 2
+		if clock() < (lan.copNext or 0) then return end
+		lan.copNext = clock() + 2
 		local sock = socket.tcp(); sock:settimeout(0)
 		sock:connect(lan.ip, PORT)
-		lan.cop = { sock = sock, buf = "", sent = false, t = os.clock() }
+		lan.cop = { sock = sock, buf = "", sent = false, t = clock() }
 		return
 	end
 	local drop = false
@@ -1753,14 +1761,14 @@ local function updateCopilotPoll()
 		if w and #w > 0 then
 			local n = p.sock:send("COPILOT\n")
 			if n then p.sent = true else drop = true end
-		elseif os.clock() - p.t > 2 then drop = true end
+		elseif clock() - p.t > 2 then drop = true end
 	else
 		local data, err, partial = p.sock:receive(2048)
 		data = data or partial
 		if data and #data > 0 then p.buf = p.buf .. data end
 		local value = p.buf:match("COPILOT ([^\r\n]*)")
 		if value then lan.copilot = value; drop = true
-		elseif err == "closed" or os.clock() - p.t > 3 then drop = true end
+		elseif err == "closed" or clock() - p.t > 3 then drop = true end
 	end
 	if drop then p.sock:close(); lan.cop = nil end
 end
@@ -1772,7 +1780,7 @@ local function updateScan()
 		scan.next = scan.next + 1
 		local s = socket.tcp(); s:settimeout(0)
 		s:connect(ip, PORT)
-		scan.open[#scan.open + 1] = { sock = s, ip = ip, buf = "", sent = false, t = os.clock() }
+		scan.open[#scan.open + 1] = { sock = s, ip = ip, buf = "", sent = false, t = clock() }
 	end
 	for i = #scan.open, 1, -1 do
 		local o = scan.open[i]
@@ -1782,7 +1790,7 @@ local function updateScan()
 			if w and #w > 0 then
 				local n = o.sock:send("WHO\n")
 				if n then o.sent = true else drop = true end
-			elseif os.clock() - o.t > 2 then drop = true end
+			elseif clock() - o.t > 2 then drop = true end
 		else
 			local data, err, partial = o.sock:receive(2048)
 			data = data or partial
@@ -1791,19 +1799,19 @@ local function updateScan()
 				local name, map, players = l:match("^LANHOST (.-)|(.-)|(%d+)$")
 				if name and not o.done then o.done = true; scan.results[#scan.results + 1] = { ip = o.ip, name = name, map = map, players = players } end
 			end
-			if err == "closed" or os.clock() - o.t > 3 then drop = true end
+			if err == "closed" or clock() - o.t > 3 then drop = true end
 		end
 		if drop then o.sock:close(); table.remove(scan.open, i) end
 	end
-	if (scan.next > #scan.list and #scan.open == 0) or os.clock() > scan.until_ then
+	if (scan.next > #scan.list and #scan.open == 0) or clock() > scan.until_ then
 		for _, o in ipairs(scan.open) do o.sock:close() end
 		local results, quiet = scan.results, scan.quiet
 		found = results
 		updateFoundUi()
-		if not quiet or #results ~= lastFoundCount then log("scan finished:", #results, "game(s) in", string.format("%.1f", os.clock() - scan.started), "s"); for _, f in ipairs(results) do log("found", f.ip, f.name, f.map, f.players) end end
+		if not quiet or #results ~= lastFoundCount then log("scan finished:", #results, "game(s) in", string.format("%.1f", clock() - scan.started), "s"); for _, f in ipairs(results) do log("found", f.ip, f.name, f.map, f.players) end end
 		lastFoundCount = #results
 		if ui.status and not (lan or S) then ui.status:SetText("") end -- the result is shown under the button Find LAN games (list of games or "No LAN game found")
-		nextScanAt = os.clock() + 3 -- the message says: retry in 3 seconds
+		nextScanAt = clock() + 3 -- the message says: retry in 3 seconds
 		scan = nil
 	end
 end
@@ -1820,8 +1828,8 @@ end
 
 local function ensureTab()
 	if not ui.panel then return end
-	if tabCheckAt and os.clock() < tabCheckAt then return end
-	tabCheckAt = os.clock() + 1
+	if tabCheckAt and clock() < tabCheckAt then return end
+	tabCheckAt = clock() + 1
 	local root = WG.Chobby and WG.Chobby.interfaceRoot
 	local sub = root and root.GetSingleplayerSubmenu and root.GetSingleplayerSubmenu()
 	if not sub then return end
@@ -1830,12 +1838,12 @@ local function ensureTab()
 	if not sub.GetTabByName("LAN Play") or not button or not button.parent then
 		if sub.GetTabByName("LAN Play") then pcall(sub.RemoveTab, "LAN Play") end
 		local ok, err = pcall(sub.AddTab, "LAN Play", "LAN Play", ui.panel, nil, 1.5)
-		tabAdded = os.clock(); tabReported = false
+		tabAdded = clock(); tabReported = false
 		tabAddCount = (tabAddCount or 0) + 1
 		if tabAddCount <= 3 then log("tab added to the main menu:", tostring(ok), tostring(err), "indexes: LAN", tostring((sub.GetTabByName("LAN Play"))), "multiplayer", tostring((sub.GetTabByName("multiplayer")))) end
 		return
 	end
-	if not tabReported and tabAdded and os.clock() > tabAdded + 3 then
+	if not tabReported and tabAdded and clock() > tabAdded + 3 then
 		tabReported = true
 		for _, n in ipairs({ "multiplayer_button", "LAN Play_button", "skirmish_button" }) do
 			local c = findByName(screen0, n, 0)
@@ -1852,8 +1860,8 @@ local function autoScan()
 	if scan or S or lan then return end
 	local visible = ui.panel and ui.panel.parent and ui.panel.visible
 	if not visible then nextScanAt = nil; return end
-	if not nextScanAt then nextScanAt = os.clock() end
-	if os.clock() >= nextScanAt then startScan(true) end
+	if not nextScanAt then nextScanAt = clock() end
+	if clock() >= nextScanAt then startScan(true) end
 end
 
 ---------------------------------------------------------------- "Custom Scenario": a button in the menu LAN Play of the room (host only) and a list of the built scenarios
@@ -1912,7 +1920,7 @@ end
 
 -- The two lists (scenarios, Copilot) are windows in the same column, below the two buttons (the main window of the room does not draw windows added to it).
 local function roomMain()
-	if os.clock() > (ui.roomAt or 0) then ui.roomAt = os.clock() + 1; ui.roomCol = roomColumn() end
+	if clock() > (ui.roomAt or 0) then ui.roomAt = clock() + 1; ui.roomCol = roomColumn() end
 	return ui.roomCol
 end
 
@@ -2066,8 +2074,8 @@ end
 local function ensureSlotUi()
 	if not ui.panel or not Config() then return end
 	local show = lan ~= nil and lan.step == "in" -- the host and the joiners (a joiner only looks)
-	if show and ui.slotWindow and ui.slotWindow.visible and os.clock() > (ui.slotNext or 0) then
-		ui.slotNext = os.clock() + 1
+	if show and ui.slotWindow and ui.slotWindow.visible and clock() > (ui.slotNext or 0) then
+		ui.slotNext = clock() + 1
 		local sig = slotSignature()
 		if sig ~= ui.slotSig then ui.slotSig = sig; fillSlotList() end
 	end
@@ -2105,8 +2113,8 @@ end
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
 -- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
 local function leaveButton()
-	if ui.leaveBtn and os.clock() < (ui.leaveAt or 0) then return ui.leaveBtn end
-	ui.leaveAt = os.clock() + 1
+	if ui.leaveBtn and clock() < (ui.leaveAt or 0) then return ui.leaveBtn end
+	ui.leaveAt = clock() + 1
 	local found
 	local function walk(c, depth)
 		if found or c.visible == false then return end -- (only what is shown)
@@ -2190,7 +2198,7 @@ function widget:Update()
 		-- one place under the button Find LAN games shows: the busy indicator while the search runs, "No LAN game found", or nothing (then the list of the games stands there)
 		local frame, text = 0, ""
 		if scan ~= nil then
-			frame = math.floor(os.clock() * 8) % 4 + 1
+			frame = math.floor(clock() * 8) % 4 + 1
 			text = "Searching for LAN games  " .. ({ "|", "/", "-", "\\" })[frame]
 		elseif not (S or lan) and lastFoundCount == 0 then
 			frame, text = -1, "No LAN game found (retry in 3 seconds)"
@@ -2202,37 +2210,37 @@ function widget:Update()
 	end
 	ensureSlotUi()
 	ensureLanMenuUi()
-	if cfg.evolution == "1" and S and lan and lan.step == "in" and not cfg.evolutionSet and os.clock() > 10 then
+	if cfg.evolution == "1" and S and lan and lan.step == "in" and not cfg.evolutionSet and clock() > 10 then
 		cfg.evolutionSet = true
 		log("test: Evolution on")
 		if tonumber(cfg.evolutionStage) then S.battle.modoptions.lanevolutionstage = cfg.evolutionStage end -- test: every player starts on that stage
 		setEvolution(true)
 	end
-	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and os.clock() > tonumber(cfg.lanMenu) then
+	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and clock() > tonumber(cfg.lanMenu) then
 		cfg.lanMenu = nil -- test: the menu of the button LAN Play is opened (a picture of it)
 		local cx, cy = ui.lanButton:LocalToScreen(ui.lanButton.width / 2, ui.lanButton.height / 2)
 		local ok, hit = pcall(function() return screen0:HitTest(cx, cy) end)
 		log("test: the control under the middle of the button LAN Play:", tostring(ok and hit and (hit.caption or hit.text or hit.classname)))
 		openLanMenu()
 	end
-	if tonumber(cfg.evolutionClose) and ui.popup and os.clock() > tonumber(cfg.evolutionClose) then
+	if tonumber(cfg.evolutionClose) and ui.popup and clock() > tonumber(cfg.evolutionClose) then
 		cfg.evolutionClose = nil -- test: the window with the rules is closed (a picture of the room with the button)
 		pcall(function() ui.popup:Dispose() end); ui.popup = nil
 		log("test: window closed")
 	end
-	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and os.clock() > 14 then
+	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and clock() > 14 then
 		cfg.scenarioPicked = true
 		log("test: choosing the scenario", cfg.scenario)
 		selectScenario(cfg.scenario)
 	end
-	if lan and lan.left and os.clock() > lan.left + 0.3 then
+	if lan and lan.left and clock() > lan.left + 0.3 then
 		log("left the battle room: back to the LAN Play page")
 		lanStop("left the room")
 		openLanPage()
 		setStatus("You left the LAN game.")
 	end
-	if returnAt and tabAdded and os.clock() > returnAt then returnAt = nil; log("back from the game: the LAN Play page"); openLanPage() end
-	if not ui.panel and not uiTried and os.clock() > 3 then uiTried = buildUi() or false end
+	if returnAt and tabAdded and clock() > returnAt then returnAt = nil; log("back from the game: the LAN Play page"); openLanPage() end
+	if not ui.panel and not uiTried and clock() > 3 then uiTried = buildUi() or false end
 	ensureTab()
 	autoScan()
 	if S then updateServer() end
@@ -2241,12 +2249,12 @@ function widget:Update()
 	updateCopilotPoll()
 
 	-- test automation
-	if cfg.openTab and tabAdded and not cfg.opened and os.clock() > tabAdded + 2 then
+	if cfg.openTab and tabAdded and not cfg.opened and clock() > tabAdded + 2 then
 		cfg.opened = true
 		local root = WG.Chobby and WG.Chobby.interfaceRoot
 		log("test: opening the LAN Play page:", tostring(pcall(root.OpenSingleplayerTabByName, "LAN Play")))
 	end
-	if cfg.scenarioTest and not cfg.scenDone and os.clock() > 12 then
+	if cfg.scenarioTest and not cfg.scenDone and clock() > 12 then
 		cfg.scenDone = true
 		local dirs = VFS.SubDirs("LevelEditorScenarios/", "*", VFS.RAW) or {}
 		log("test: scenario folders seen through the junction:", #dirs, table.concat(dirs, " "))
@@ -2262,7 +2270,7 @@ function widget:Update()
 	if cfg.presetTest and S and lan and lan.step == "in" and ui.lanButton then
 		-- test: the Option Presets of the lobby: write a preset file, open the real panel (WG.OptionpresetsPanel.ShowPresetPanel), choose the preset in its list, press its
 		-- Load button and write the values of the room into the log (no game is started)
-		cfg.presetAt = cfg.presetAt or (os.clock() + 8)
+		cfg.presetAt = cfg.presetAt or (clock() + 8)
 		local function walk(ctl, fn, depth)
 			if not ctl or (depth or 0) > 30 then return end
 			if fn(ctl) then return ctl end
@@ -2277,7 +2285,7 @@ function widget:Update()
 				"maxunits", tostring(mo.maxunits), "deathmode", tostring(mo.deathmode), "draft_mode", tostring(mo.draft_mode), "raptor_firstwavesboost", tostring(mo.raptor_firstwavesboost))
 			log("test: preset " .. tag .. ": computers", table.concat(lobby().battleAis or {}, ", "))
 		end
-		if not cfg.presetStep and os.clock() > cfg.presetAt then
+		if not cfg.presetStep and clock() > cfg.presetAt then
 			cfg.presetStep = 1
 			dump("before")
 			local f = not cfg.presetName and io.open("optionsPresets.json", "w")   -- presetName: the script put the file of the user into the folder
@@ -2289,8 +2297,8 @@ function widget:Update()
 			else log("test: preset file NOT written") end
 			local ok, err = pcall(WG.OptionpresetsPanel.ShowPresetPanel)
 			log("test: ShowPresetPanel", tostring(ok), tostring(err))
-			cfg.presetAt = os.clock() + 3
-		elseif cfg.presetStep == 1 and os.clock() > cfg.presetAt then
+			cfg.presetAt = clock() + 3
+		elseif cfg.presetStep == 1 and clock() > cfg.presetAt then
 			cfg.presetStep = 2
 			local combo = walk(screen0, function(c) return c.items and c.selectByName and c.Select end)
 			log("test: preset list found:", tostring(combo ~= nil), combo and table.concat(combo.items, ",") or "")
@@ -2302,73 +2310,73 @@ function widget:Update()
 				for _, fn in ipairs(combo.OnSelectName or {}) do pcall(fn, combo, cfg.presetName or "t1") end
 				log("test: preset list: OnSelectName called (", tostring(#(combo.OnSelectName or {})), "listeners)")
 			end
-			cfg.presetAt = os.clock() + 2
-		elseif cfg.presetStep == 2 and os.clock() > cfg.presetAt then
+			cfg.presetAt = clock() + 2
+		elseif cfg.presetStep == 2 and clock() > cfg.presetAt then
 			cfg.presetStep = 3
 			local btn = walk(screen0, function(c) return c.classname == "action_button" and c.caption and tostring(c.caption):lower():find("load", 1, true) and c.OnClick end)
 			log("test: Load button found:", tostring(btn ~= nil))
 			if btn then
 				for _, fn in ipairs(btn.OnClick) do local ok, err = pcall(fn, btn); log("test: Load pressed", tostring(ok), tostring(err)) end
 			end
-			cfg.presetAt = os.clock() + 40
-		elseif cfg.presetStep == 3 and os.clock() > cfg.presetAt then
+			cfg.presetAt = clock() + 40
+		elseif cfg.presetStep == 3 and clock() > cfg.presetAt then
 			cfg.presetStep = 4
 			dump("after")
 		end
 	end
 	if cfg.leaveAfter and lan and lan.step == "in" then
-		lan.inAt = lan.inAt or os.clock()
-		if os.clock() > lan.inAt + tonumber(cfg.leaveAfter) and not lan.leaveSent then lan.leaveSent = true; log("test: pressing Leave in the room (lobby:LeaveBattle)"); WG.BattleRoomWindow.LeaveBattle() end
+		lan.inAt = lan.inAt or clock()
+		if clock() > lan.inAt + tonumber(cfg.leaveAfter) and not lan.leaveSent then lan.leaveSent = true; log("test: pressing Leave in the room (lobby:LeaveBattle)"); WG.BattleRoomWindow.LeaveBattle() end
 	end
 	if cfg.copilot and S and lan and lan.step == "in" and ui.lanButton and not cfg.copilotDone and #humanList() >= 2 then
-		cfg.copilotAt = cfg.copilotAt or (os.clock() + 4)
-		if os.clock() > cfg.copilotAt then
+		cfg.copilotAt = cfg.copilotAt or (clock() + 4)
+		if clock() > cfg.copilotAt then
 			cfg.copilotDone = true
 			log("test: Copilot for", cfg.copilot)
 			cycleSlot(cfg.copilot)
 		end
 	end
-	if cfg.showCopilot and lan and lan.step == "in" and ui.lanButton and not cfg.showDone and os.clock() > (cfg.showAt or 1e9) then
+	if cfg.showCopilot and lan and lan.step == "in" and ui.lanButton and not cfg.showDone and clock() > (cfg.showAt or 1e9) then
 		cfg.showDone = true
 		log("test: Copilot list of a joiner:", slotSignature())
 		toggleSlotWindow(true)
 	end
-	if cfg.showCopilot and lan and lan.step == "in" and not cfg.showAt then cfg.showAt = os.clock() + 30 end
+	if cfg.showCopilot and lan and lan.step == "in" and not cfg.showAt then cfg.showAt = clock() + 30 end
 	-- test: the buttons "N teams" and "N per team" of the room (the same chat commands), then what the lobby knows about the battle and the middle column
 	if cfg.boss and S and lan and lan.step == "in" and #humanList() >= 2 then
 		-- test: the host chooses "Make Boss" for the other player like the menu does (lobby:SayBattle("!boss <name>")), then "Disable Boss"; logs what the lobby shows
 		local l = lobby()
-		cfg.bossAt = cfg.bossAt or (os.clock() + 5)
+		cfg.bossAt = cfg.bossAt or (clock() + 5)
 		local target
 		for _, h in ipairs(humanList()) do if not (S.hostConn and h.name == S.hostConn.name) then target = h.name end end
 		local function shown() local bs = l and target and l.userBattleStatus and l.userBattleStatus[target]; return bs and bs.isBoss end
-		if os.clock() > cfg.bossAt and not cfg.bossStep then
-			cfg.bossStep = 1; log("test: Make Boss", target); l:SayBattle("!boss " .. target); cfg.bossAt = os.clock() + 4
-		elseif cfg.bossStep == 1 and os.clock() > cfg.bossAt then
-			cfg.bossStep = 2; log("test: the lobby shows isBoss for", target, ":", tostring(shown())); log("test: Disable Boss", target); l:SayBattle("!unboss " .. target); cfg.bossAt = os.clock() + 4
-		elseif cfg.bossStep == 2 and os.clock() > cfg.bossAt then
+		if clock() > cfg.bossAt and not cfg.bossStep then
+			cfg.bossStep = 1; log("test: Make Boss", target); l:SayBattle("!boss " .. target); cfg.bossAt = clock() + 4
+		elseif cfg.bossStep == 1 and clock() > cfg.bossAt then
+			cfg.bossStep = 2; log("test: the lobby shows isBoss for", target, ":", tostring(shown())); log("test: Disable Boss", target); l:SayBattle("!unboss " .. target); cfg.bossAt = clock() + 4
+		elseif cfg.bossStep == 2 and clock() > cfg.bossAt then
 			cfg.bossStep = 3; log("test: after Disable Boss the lobby shows isBoss for", target, ":", tostring(shown()))
 		end
 	end
 	if cfg.teams and S and lan and lan.step == "in" and not cfg.teamsDone then
-		cfg.teamsAt = cfg.teamsAt or (os.clock() + 8)
-		if os.clock() > cfg.teamsAt then
+		cfg.teamsAt = cfg.teamsAt or (clock() + 8)
+		if clock() > cfg.teamsAt then
 			cfg.teamsDone = true
 			local col = roomMain()
 			for _, ch in ipairs(col and col.children or {}) do
 				if ch.name == "teamCountSelect" then log("test: team button: ", cfg.teams, "teams"); ch:Select(tonumber(cfg.teams)) end
 			end
-			cfg.sizeAt = os.clock() + 3
-			cfg.teamsCheck = os.clock() + 8
+			cfg.sizeAt = clock() + 3
+			cfg.teamsCheck = clock() + 8
 		end
 	end
-	if cfg.sizeAt and os.clock() > cfg.sizeAt then
+	if cfg.sizeAt and clock() > cfg.sizeAt then
 		cfg.sizeAt = nil
 		for _, ch in ipairs(roomMain() and roomMain().children or {}) do
 			if ch.name == "teamSizeSelect" and cfg.teamSize then log("test: team size button: ", cfg.teamSize, "per team"); ch:Select(tonumber(cfg.teamSize)) end
 		end
 	end
-	if cfg.teamsCheck and os.clock() > cfg.teamsCheck then
+	if cfg.teamsCheck and clock() > cfg.teamsCheck then
 		cfg.teamsCheck = nil
 		local lb = lobby()
 		local bt = lb and lb.myBattleID and lb.battles[lb.myBattleID]
@@ -2381,8 +2389,8 @@ function widget:Update()
 		end
 	end
 	if cfg.dump and lan and lan.step == "in" and not cfg.dumpDone then
-		cfg.dumpAt = cfg.dumpAt or (os.clock() + tonumber(cfg.dump))
-		if os.clock() > cfg.dumpAt then
+		cfg.dumpAt = cfg.dumpAt or (clock() + tonumber(cfg.dump))
+		if clock() > cfg.dumpAt then
 			cfg.dumpDone = true
 			local col = roomMain()
 			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "LAN Options button at", ui.lanButton and ui.lanButton.x, ui.lanButton and ui.lanButton.y)
@@ -2393,7 +2401,7 @@ function widget:Update()
 	end
 	if cfg.clickFirst and not lan and not S and #found > 0 then log("test: click on the first entry"); joinHost(found[1].ip) end
 	local l = lobby()
-	if cfg.auto and not autoStarted and os.clock() > 8 and Config() and l then
+	if cfg.auto and not autoStarted and clock() > 8 and Config() and l then
 		autoStarted = true
 		log("auto:", cfg.auto)
 		if cfg.auto == "host" then startHosting()
@@ -2408,15 +2416,15 @@ function widget:Update()
 	end
 	if cfg.auto == "host" and lan and lan.step == "in" and S and not S.battle.running then
 		if #battleUsers() >= (tonumber(cfg.players) or 2) then
-			S.autoAt = S.autoAt or (os.clock() + (tonumber(cfg.startDelay) or 4))
-			if os.clock() > S.autoAt then
+			S.autoAt = S.autoAt or (clock() + (tonumber(cfg.startDelay) or 4))
+			if clock() > S.autoAt then
 				if cfg.map and S.battle.map ~= cfg.map then l:SelectMap(cfg.map) end
 				log("auto: pressing Start (lobby:StartBattle, the call of the Start button)")
 				l:StartBattle()
 			end
 		end
 	end
-	if cfg.bot and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.botDone and os.clock() > 14 then
+	if cfg.bot and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.botDone and clock() > 14 then
 		cfg.botDone = true   -- test: a computer in the room (the Add AI button: lobby:AddAi)
 		log("test: adding the computer", cfg.bot, "to ally team", tostring(cfg.botAlly or 0))
 		log("test: AddAi ->", tostring(pcall(l.AddAi, l, cfg.bot .. "1", cfg.bot, tonumber(cfg.botAlly) or 0, cfg.botVersion or "<not-versioned>")))
@@ -2483,11 +2491,11 @@ widget.DebugShare = {
 }
 
 function widget:Initialize()
-	math.randomseed(os.time() + math.floor(os.clock() * 1000))
+	math.randomseed(os.time() + math.floor(clock() * 1000))
 	log("loaded; socket:", type(socket))
 	if VFS.LoadFile("lan_return.txt", VFS.RAW) then
 		os.remove("lan_return.txt")
-		returnAt = os.clock() + 4
+		returnAt = clock() + 4
 	end
 	if Config() and not ui.panel then uiTried = buildUi() or false end
 	hookConnect()
