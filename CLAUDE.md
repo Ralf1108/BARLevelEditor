@@ -23,7 +23,7 @@ kept up to date with every change. They are not the manuals: the READMEs and `do
   use raw strings or `chr(92)`, and replace with an `assert` that the old text occurs exactly once.
 - After every patch: look for control characters (`[c for c in set(text) if ord(c) < 32 and c not in '\n\r\t']`) and parse the PowerShell files
   (`[System.Management.Automation.Language.Parser]::ParseFile(...)`). Lua files are compiled with Lua 5.1 by `python LevelEditor\test-data\tools\lua_check.py` (syntax, at most 200 locals and 60 upvalues per
-  function; Python package lupa); what they do is checked in the game.
+  function, a call of a top-level local function above the line that defines it; Python package lupa); what they do is checked in the game.
 - The git warning "LF will be replaced by CRLF" is harmless here.
 
 ## Tests

@@ -403,6 +403,7 @@ local NUKES, NUKE_GAP, NUKE_WARN, NUKE_SAFE = 12, 4 * FPS, 5 * FPS, 1600 -- Gate
 local R = {
 	ENERGY = 10, STORE = 1000,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, CATCH_UP = 0.5,
+	WANDER = 5 * FPS, WANDER_SHARE = 0.3, WANDER_DIST = 700, -- every WANDER frames a part of the idle wild units (not towers) walks to a place nearby
 	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
 	-- the towers of a stage per faction (ground targets; anti air, nuclear and anti nuclear buildings left out), ordered by cost
 	TOWERS = {
@@ -1168,6 +1169,26 @@ local function spawnWild(s, tower, x, z, facing)
 	return id
 end
 
+-- Every R.WANDER frames: a part (R.WANDER_SHARE) of the idle wild units that are not towers walk to a random place of the land within R.WANDER_DIST
+local function wanderWild()
+	for id, w in pairs(wild) do
+		if not w.tower and math.random() < R.WANDER_SHARE and Spring.ValidUnitID(id) then
+			local n = Spring.GetUnitCommands(id, 0)
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x and type(n) == "number" and n == 0 then
+				for _ = 1, 4 do
+					local a, d = math.random() * 2 * math.pi, R.WANDER_DIST * (0.3 + 0.7 * math.random())
+					local tx, tz = x + d * math.cos(a), z + d * math.sin(a)
+					if tx > 64 and tz > 64 and tx < Game.mapSizeX - 64 and tz < Game.mapSizeZ - 64 and onLand(tx, tz) then
+						Spring.GiveOrderToUnit(id, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
 -- Every R.CHECK frames: as many wild units as wildCount() (living ones and those due to come back); a wild unit that is gone without UnitDestroyed is dropped
 local function topUpWild()
 	local n = #wildDue
@@ -1533,6 +1554,9 @@ function gadget:GameFrame(n)
 	end
 	if n % R.CHECK == 0 then
 		topUpWild()
+	end
+	if n % R.WANDER == 75 then
+		wanderWild()
 	end
 	if n % R.UPGRADE == 0 then
 		upgradeWild()
