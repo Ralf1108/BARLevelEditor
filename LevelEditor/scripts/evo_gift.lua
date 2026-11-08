@@ -20,6 +20,38 @@ local GIFTS = {
 }
 
 local sent = nil -- the frame a choice was sent (the window waits for the gadget then)
+local textsSet = false
+
+-- The buttons of the abilities in the order menu of the game: it shows the translations commands.<action> (caption) and commands.<action>_tooltip; the
+-- gadget evo_game.lua puts the texts into the game rule evoAbilityTexts ("evo_<key>|name|tooltip" separated by #). Set for English and the language of the game.
+local function setAbilityTexts()
+	local text = Spring.GetGameRulesParam("evoAbilityTexts")
+	local i18n = BAR and BAR.I18N
+	if type(text) ~= "string" or text == "" or not (i18n and i18n.set) then
+		return false
+	end
+	local langs = { "en" }
+	local cur = Spring.GetConfigString("language", "en")
+	if cur ~= "en" then
+		langs[2] = cur
+	end
+	for record in text:gmatch("[^#]+") do
+		local action, name, tip = record:match("^([^|]+)|([^|]+)|(.*)$")
+		if action then
+			for _, lang in ipairs(langs) do
+				pcall(i18n.set, lang .. ".commands." .. action, name)
+				pcall(i18n.set, lang .. ".commands." .. action .. "_tooltip", tip)
+			end
+		end
+	end
+	return true
+end
+
+function widget:Update()
+	if not textsSet then
+		textsSet = setAbilityTexts()
+	end
+end
 
 function widget:Initialize()
 	local mo = Spring.GetModOptions() or {}

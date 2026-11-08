@@ -194,87 +194,93 @@ if not gadgetHandler:IsSyncedCode() then
 		return x
 	end
 
-	-- the panel: a title line and one row per team (level badge, name and unit, points bar, kills, deaths, abilities), below the resource bars of the game
+	-- the panel at the right edge below the bars of the game: a title line and one compact row per team, the highest level on top (the out players at the
+	-- bottom): team color, level badge, name, points bar, kills, deaths, abilities
 	function H.panel(state, arma)
 		local vsx, vsy = Spring.GetViewGeometry()
 		local s = vsy / 1080 * (Spring.GetConfigFloat("ui_scale", 1) or 1)
-		local teams = {}
+		local rows = {}
 		for t in tostring(Spring.GetGameRulesParam("evoTeams") or ""):gmatch("%d+") do
-			teams[#teams + 1] = tonumber(t)
+			local team = tonumber(t)
+			local function p(k) return Spring.GetTeamRulesParam(team, k) or 0 end
+			rows[#rows + 1] = { team = team, out = p("evoOut") == 1, stage = p("evoStage"), xp = p("evoXp"), need = p("evoNeed"), kills = p("evoKills"), deaths = p("evoDeaths") }
 		end
-		local w, rowH, head, pad = math.floor(700 * s), math.floor(46 * s), math.floor(30 * s), math.floor(8 * s)
-		local x1 = math.floor(vsx * 0.5 - w / 2)
-		local top = math.floor(vsy - 78 * s)
-		local y1 = top - head - #teams * (rowH + 4 * s) - pad
+		table.sort(rows, function(a, b)
+			if a.out ~= b.out then return not a.out end
+			if a.stage ~= b.stage then return a.stage > b.stage end
+			if a.xp ~= b.xp then return a.xp > b.xp end
+			return a.team < b.team
+		end)
+		local w, rowH, head, pad, gap = math.floor(330 * s), math.floor(34 * s), math.floor(24 * s), math.floor(6 * s), math.floor(3 * s)
+		local x2 = math.floor(vsx - 8 * s)
+		local x1 = x2 - w
+		local top = math.floor(vsy - 72 * s)
+		local y1 = top - head - #rows * (rowH + gap) - pad
 		local hot = arma > 0
-		-- the frame of the panel: dark glass, a thin light border (red in Armageddon)
-		H.box(x1, y1, x1 + w, top, 10 * s, { 0.03, 0.04, 0.07, 0.82 }, { 0.10, 0.12, 0.18, 0.82 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.45 })
-		-- title
+		H.box(x1, y1, x2, top, 8 * s, { 0.03, 0.04, 0.07, 0.82 }, { 0.10, 0.12, 0.18, 0.82 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.45 })
 		local pulse = 0.75 + 0.25 * math.sin(Spring.GetGameFrame() * 0.12)
 		if hot then
 			gl.Color(1, 0.3 * pulse, 0.15, 1)
 		else
 			gl.Color(0.55, 0.95, 0.7, 1)
 		end
-		gl.Text(hot and "ARMAGEDDON" or "EVOLUTION", x1 + w / 2, top - head / 2 - 1 * s, 20 * s, "cvo")
+		gl.Text(hot and "ARMAGEDDON" or "EVOLUTION", x1 + pad * 2, top - head / 2, 15 * s, "vo")
 		if state ~= "running" then
 			gl.Color(1, 0.85, 0.4, 1)
-			gl.Text(state, x1 + w - pad * 2, top - head / 2, 15 * s, "rvo")
+			gl.Text(state, x2 - pad * 2, top - head / 2, 12 * s, "rvo")
 		end
 		local mine = Spring.GetMyTeamID()
 		local y = top - head
-		for _, team in ipairs(teams) do
-			local function p(k) return Spring.GetTeamRulesParam(team, k) or 0 end
+		for _, row in ipairs(rows) do
+			local team, out = row.team, row.out
 			local ry2, ry1 = y, y - rowH
 			local cy = (ry1 + ry2) / 2
-			local out = p("evoOut") == 1
 			local r, g, b = Spring.GetTeamColor(team)
 			r, g, b = r or 1, g or 1, b or 1
-			-- the row: own team lighter with a border
 			if team == mine then
-				H.box(x1 + pad, ry1, x1 + w - pad, ry2, 7 * s, { 0.16, 0.2, 0.28, 0.9 }, { 0.24, 0.3, 0.42, 0.9 }, { 0.8, 0.9, 1, 0.7 })
+				H.box(x1 + pad, ry1, x2 - pad, ry2, 6 * s, { 0.16, 0.2, 0.28, 0.9 }, { 0.24, 0.3, 0.42, 0.9 }, { 0.8, 0.9, 1, 0.7 })
 			else
-				H.box(x1 + pad, ry1, x1 + w - pad, ry2, 7 * s, { 0.08, 0.09, 0.13, 0.85 }, { 0.13, 0.15, 0.21, 0.85 })
+				H.box(x1 + pad, ry1, x2 - pad, ry2, 6 * s, { 0.08, 0.09, 0.13, 0.85 }, { 0.13, 0.15, 0.21, 0.85 })
 			end
-			-- the team color stripe and the level badge
-			H.box(x1 + pad, ry1 + 4 * s, x1 + pad + 5 * s, ry2 - 4 * s, 2 * s, { r, g, b, 1 }, { r, g, b, 1 })
-			local bx, br = x1 + pad + 30 * s, rowH * 0.4
+			H.box(x1 + pad, ry1 + 3 * s, x1 + pad + 4 * s, ry2 - 3 * s, 2 * s, { r, g, b, 1 }, { r, g, b, 1 })
+			-- the level badge
+			local bx, br = x1 + pad + 22 * s, rowH * 0.38
 			H.disc(bx, cy, br, out and { 0.25, 0.25, 0.25, 1 } or { r * 0.45, g * 0.45, b * 0.45, 1 })
 			gl.LineWidth(2)
 			H.ring(bx, cy, br, out and { 0.5, 0.5, 0.5, 1 } or { r, g, b, 1 })
 			gl.LineWidth(1)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(out and "-" or tostring(p("evoStage")), bx, cy, 20 * s, "cvo")
-			-- name and unit
-			local nx = bx + br + 10 * s
-			gl.Color(out and 0.55 or 1, out and 0.55 or 1, out and 0.55 or 1, 1)
-			gl.Text(teamName(team), nx, cy + 8 * s, 16 * s, "vo")
-			local unit = Spring.GetTeamRulesParam(team, "evoName") or ""
-			gl.Color(0.7, 0.75, 0.85, 1)
-			gl.Text(out and "out" or ("Level " .. p("evoStage") .. "  " .. (NAMES[unit] or unit)), nx, cy - 10 * s, 12 * s, "vo")
-			-- the points bar
-			local px1, px2 = x1 + w * 0.40, x1 + w * 0.64
-			local need = p("evoNeed")
-			local frac = out and 0 or (need > 0 and math.min(1, p("evoXp") / need) or 1)
-			H.box(px1, cy - 8 * s, px2, cy + 8 * s, 8 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
-			if frac > 0 then
-				local fill = need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
-				H.box(px1 + 1, cy - 7 * s, px1 + 1 + math.max(14 * s, (px2 - px1 - 2) * frac), cy + 7 * s, 7 * s, fill[1], fill[2])
+			gl.Text(out and "-" or tostring(row.stage), bx, cy, 15 * s, "cvo")
+			-- the name (first line), the points bar (second line)
+			local nx = bx + br + 8 * s
+			local name = teamName(team)
+			if #name > 14 then
+				name = name:sub(1, 13) .. "."
 			end
+			gl.Color(out and 0.55 or 1, out and 0.55 or 1, out and 0.55 or 1, 1)
+			gl.Text(out and (name .. "  (out)") or name, nx, cy + 7 * s, 13 * s, "vo")
+			local px1, px2 = nx, nx + 96 * s
+			local frac = out and 0 or (row.need > 0 and math.min(1, row.xp / row.need) or 1)
+			H.box(px1, cy - 12 * s, px2, cy - 3 * s, 4 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
+			if frac > 0 then
+				local fill = row.need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
+				H.box(px1 + 1, cy - 11 * s, px1 + 1 + math.max(8 * s, (px2 - px1 - 2) * frac), cy - 4 * s, 3 * s, fill[1], fill[2])
+			end
+			if not out then
+				gl.Color(0.8, 0.85, 0.95, 1)
+				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 5 * s, cy - 7 * s, 10 * s, "vo")
+			end
+			-- kills and deaths (first line, right), the abilities (second line, right)
+			local kx = x2 - pad - 84 * s
+			H.crosshair(kx, cy + 7 * s, 6 * s)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(out and "" or (need > 0 and string.format("%d / %d", p("evoXp"), need) or "MAX"), (px1 + px2) / 2, cy, 12 * s, "cvo")
-			-- kills and deaths
-			local kx = x1 + w * 0.66
-			H.crosshair(kx, cy, 8 * s)
+			gl.Text(tostring(row.kills), kx + 9 * s, cy + 7 * s, 12 * s, "vo")
+			local dx = kx + 42 * s
+			H.skull(dx, cy + 7 * s, 6 * s)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(p("evoKills")), kx + 12 * s, cy, 15 * s, "vo")
-			local dx = kx + 46 * s
-			H.skull(dx, cy, 8 * s)
-			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(p("evoDeaths")), dx + 12 * s, cy, 15 * s, "vo")
-			-- the abilities
-			H.abilities(team, dx + 44 * s, cy, 22 * s)
-			y = ry1 - 4 * s
+			gl.Text(tostring(row.deaths), dx + 9 * s, cy + 7 * s, 12 * s, "vo")
+			H.abilities(team, kx - 7 * s, cy - 8 * s, 13 * s)
+			y = ry1 - gap
 		end
 		gl.Color(1, 1, 1, 1)
 	end
@@ -379,7 +385,7 @@ local STAGES = 10
 local FIRST, FACTOR = 3, 1.6 -- points from stage 1 to 2, and how much more every further stage costs
 local RESPAWN = 5 * FPS -- frames until a destroyed unit comes back
 local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
-local WILD_HP = 0.1 -- health of a wild unit (part of the normal)
+local WILD_HP = 0.2 -- health of a wild unit (part of the normal): a fight with some damage
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
 local RETURN_FIRE, HOLD_POSITION = 1, 0
@@ -389,13 +395,14 @@ local HELL_UNITS, HEAVEN_UNITS = 8, 8 -- units of the gifts Hell on Earth and He
 local NUKES, NUKE_GAP, NUKE_WARN, NUKE_SAFE = 12, 4 * FPS, 5 * FPS, 1600 -- Gates of Hell: missiles, frames between two, warning ring before, distance to the player's unit
 -- Further rules in one table (Lua 5.1 allows only so many locals):
 --   energy: every player team gets ENERGY per second and a storage of STORE (the commanders are gone; laser weapons need energy)
---   wild units: the stage of a random player who is still in, LOWER = chance of one stage less; TOWER = chance that a wild spawn is a tower; every CHECK frames
---     the number is topped up; every UPGRADE frames one wild unit two or more stages below the lowest player stage is replaced by one of that stage
+--   wild units: the lowest stage of the players who are still in; TOWER = chance that a wild spawn is a tower; TOWER_DAMAGE = part of the damage of a wild
+--     tower; every CHECK frames the number is topped up; every UPGRADE frames one wild unit two or more stages away from that stage is replaced by one of it
+--   catching up: the points of a kill times 1 + CATCH_UP x (the highest stage of the players who are in - the stage of the killer)
 --   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
 --     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
 local R = {
 	ENERGY = 10, STORE = 1000,
-	LOWER = 0.2, TOWER = 0.15, CHECK = 10 * FPS, UPGRADE = 3 * FPS,
+	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, CATCH_UP = 0.5,
 	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
 	-- the towers of a stage per faction (ground targets; anti air, nuclear and anti nuclear buildings left out), ordered by cost
 	TOWERS = {
@@ -678,8 +685,9 @@ function A.buttons(p)
 		local at = Spring.FindUnitCmdDesc(id, cmd)
 		if p.abilities and p.abilities[i] then
 			local left = math.ceil((((p.cool and p.cool[i]) or 0) - n) / FPS)
-			local desc = { id = cmd, type = CMDTYPE.ICON, name = left > 0 and (a.name .. "\n" .. left .. " s") or a.name, action = "evo_" .. a.key,
-				tooltip = a.name .. ": " .. a.tip .. "\nCost " .. a.cost .. " energy, cooldown " .. a.cool .. " s", disabled = left > 0 }
+			-- (the order menu of the game shows the translations commands.evo_<key> and commands.evo_<key>_tooltip, which the game widget evo_gift.lua sets
+			-- from the game rule evoAbilityTexts; the seconds of a cooldown are in the panel at the top)
+			local desc = { id = cmd, type = CMDTYPE.ICON, name = a.name, action = "evo_" .. a.key, tooltip = A.tooltip(a), disabled = left > 0 }
 			if at then
 				Spring.EditUnitCmdDesc(id, at, desc)
 			else
@@ -689,6 +697,10 @@ function A.buttons(p)
 			Spring.RemoveUnitCmdDesc(id, at)
 		end
 	end
+end
+
+function A.tooltip(a)
+	return a.tip .. "\nCost " .. a.cost .. " energy, cooldown " .. a.cool .. " s"
 end
 
 local function sensor(id, kind, value)
@@ -1097,19 +1109,15 @@ local function gain(p, points)
 end
 
 -- A wild unit: a stage 1 unit of a random faction, of Gaia, with WILD_HP of its health, at a random place; it holds its position and only shoots back
--- The stage of a new wild unit: the stage of a random player who is still in, with the chance R.LOWER one less
+-- The stage of a new wild unit: the lowest stage of the players who are still in (the weakest player can always catch up on them)
 local function wildStage()
-	local list = {}
+	local low
 	for _, p in ipairs(players) do
-		if not p.out then
-			list[#list + 1] = p.stage
+		if not p.out and (not low or p.stage < low) then
+			low = p.stage
 		end
 	end
-	local s = list[math.random(1, math.max(1, #list))] or 1
-	if s > 1 and math.random() < R.LOWER then
-		s = s - 1
-	end
-	return s
+	return low or 1
 end
 
 -- A tower of the stage, of a random faction whose tower exists in the game
@@ -1169,19 +1177,12 @@ local function topUpWild()
 	end
 end
 
--- Every R.UPGRADE frames: one wild unit two or more stages below the lowest stage of the players who are still in becomes one of that stage, at its place
+-- Every R.UPGRADE frames: one wild unit two or more stages away from the lowest stage of the players who are still in (below or above: the weakest player
+-- went down after a death) becomes one of that stage, at its place
 local function upgradeWild()
-	local low
-	for _, p in ipairs(players) do
-		if not p.out and (not low or p.stage < low) then
-			low = p.stage
-		end
-	end
-	if not low or low < 3 then
-		return
-	end
+	local low = wildStage()
 	for id, w in pairs(wild) do
-		if w.stage <= low - 2 then
+		if math.abs(w.stage - low) >= 2 then
 			local x, _, z = Spring.GetUnitPosition(id)
 			if x then
 				local facing = Spring.GetUnitBuildFacing(id)
@@ -1600,7 +1601,15 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 		if not wasWild then
 			killer.kills = killer.kills + 1
 		end
-		gain(killer, wasWild and wildWorth(wasWild.stage) or worth(victim.stage, killer.stage))
+		-- catching up: a player below the best one gets more (R.CATCH_UP per stage below it)
+		local best = killer.stage
+		for _, q in ipairs(players) do
+			if not q.out and q.stage > best then
+				best = q.stage
+			end
+		end
+		local base = wasWild and wildWorth(wasWild.stage) or worth(victim.stage, killer.stage)
+		gain(killer, math.floor(base * (1 + R.CATCH_UP * (best - killer.stage)) + 0.5))
 	end
 	if wasWild then
 		wildDue[#wildDue + 1] = Spring.GetGameFrame() + WILD_BACK
@@ -1678,10 +1687,14 @@ function gadget:AllowUnitTransfer(unitID)
 	return not owner[unitID]
 end
 
--- the radars cannot be destroyed (also not by the missiles of Gates of Hell)
-function gadget:UnitPreDamaged(unitID)
+-- the radars cannot be destroyed (also not by the missiles of Gates of Hell); a wild tower does only R.TOWER_DAMAGE of its damage
+function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID)
 	if radars[unitID] then
 		return 0, 0
+	end
+	local w = attackerID and wild[attackerID]
+	if w and w.tower then
+		return damage * R.TOWER_DAMAGE, 1
 	end
 end
 
@@ -1694,4 +1707,11 @@ function gadget:Initialize()
 	Spring.SetGameRulesParam("evoNukes", "")
 	Spring.SetGameRulesParam("evoTaking", "")
 	Spring.SetGameRulesParam("evoBeacons", "")
+	-- the names and explanations of the abilities for the order menu ("evo_<key>|name|tooltip" separated by #; the game widget evo_gift.lua sets the
+	-- translations)
+	local texts = {}
+	for _, a in ipairs(ABILITIES) do
+		texts[#texts + 1] = "evo_" .. a.key .. "|" .. a.name .. "|" .. A.tooltip(a)
+	end
+	Spring.SetGameRulesParam("evoAbilityTexts", table.concat(texts, "#"))
 end

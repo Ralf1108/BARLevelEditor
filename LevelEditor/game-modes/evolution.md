@@ -26,6 +26,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Points**
 - A wild unit or tower: a third of what its level costs (1 for level 1, 2 for level 2, 3, 4, 7, 10, 17, 27, 43, 69): about three of your own level bring you up
+- **Catching up**: who is behind gets more for every kill: half the points more for every level below the best player (on level 1 next to a player on level 5: three times the points)
 - An enemy player of level *v*: the points that level costs (3 for level 1, 5, 8, 12, 20, 31, 50, 81, 129 up to level 9, 206 for level 10)
 - An enemy **above** your level is worth more: times (1 + the levels it is above you). A level 1 unit that kills a level 3 unit gets 8 x 3 = 24 points and jumps to level 4
 - Points to the next level: 3, 5, 8, 12, 20, 31, 50, 81, 129 (every level 1.6 times the one before)
@@ -54,9 +55,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 ![Gates of Hell: red rings where the next missiles come down](../../docs/evolution-gates-of-hell.jpg)
 
 **Wild units and towers**
-- Units of nobody (Gaia) with a tenth of their health stand around the map; about one in seven is a **tower**
+- Units of nobody (Gaia) with a fifth of their health stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
 - They hold their position and **only shoot back**
-- They **grow with the players**: a new one has the level of a random player (sometimes one less); old ones far below the weakest player are replaced by stronger ones, one every 3 seconds
+- They **grow with the weakest player**: a new one has the level of the weakest player who is still in; old ones two or more levels away from it are replaced, one every 3 seconds
 - One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
 
 **Energy**
@@ -106,7 +107,8 @@ Chosen by damage per second times health; artillery, units for water and the bom
 
 ## On the screen
 
-- At the top: one line per team with level, unit, points, kills and deaths (your own line in white; "out" in Armageddon)
+- At the right edge, below the bars of the game: one compact row per team, the highest level on top: level badge, name, points bar, kills, deaths and the abilities (your own row lighter; "out" in Armageddon)
+- The buttons of the abilities explain themselves when you hold the mouse over them
 - After a respawn the camera jumps to your new unit
 
 ## Tips
