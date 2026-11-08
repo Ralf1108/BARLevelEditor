@@ -105,7 +105,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | 9 | Thor | Demon | Praetorian |
 | 10 | Titan | Juggernaut | Sol Invictus |
 
-Chosen by damage per second times health; artillery, units for water and the bomb bots are left out. Legion units only come with the game option for the Legion faction; without it a level picks Armada or Cortex.
+Chosen by damage per second times health; artillery, units for water and the bomb bots are left out. Evolution always plays with the Legion faction and the Extra Units Pack (the host switches both on by itself).
 
 ## On the screen
 

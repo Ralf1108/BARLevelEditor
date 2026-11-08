@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 19, stamp = "2026-11-08 20:43" }
+local LAN_VERSION = { number = 20, stamp = "2026-11-08 21:12" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -1104,8 +1104,12 @@ buildScript = function(myName)
 	-- Evolution replaces the commanders: the game must not end when a commander is gone (the mode itself never ends)
 	local evo = evolutionOn() and extra
 	local brood = broodOption()
-	for k, v in pairs(S.battle.modoptions) do if not (evo and k == "deathmode") and not (brood and k == brood.key) then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
-	if evo then t[#t + 1] = "\t\tdeathmode=neverend;\n" end
+	-- Evolution: the game never ends by a lost commander, and the Legion faction and the Extra Units Pack are always on (more units for the ladders and gifts)
+	local EVO_FORCED = { deathmode = "neverend", experimentallegionfaction = "1", experimentalextraunits = "1" }
+	for k, v in pairs(S.battle.modoptions) do if not (evo and EVO_FORCED[k]) and not (brood and k == brood.key) then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
+	if evo then
+		for _, k in ipairs({ "deathmode", "experimentallegionfaction", "experimentalextraunits" }) do t[#t + 1] = "\t\t" .. k .. "=" .. EVO_FORCED[k] .. ";\n" end
+	end
 	if brood then t[#t + 1] = "\t\t" .. brood.key .. "=" .. brood.value .. ";\n" end
 	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
 	if late then t[#t + 1] = "\t\tlanlatejoin=1;\n" end
