@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 18, stamp = "2026-11-08 20:16" }
+local LAN_VERSION = { number = 19, stamp = "2026-11-08 20:43" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -569,6 +569,8 @@ local function forceCommand(rest)
 	say("There is no player " .. name .. " in the room.")
 end
 
+local syncPveGame -- (defined below; !latejoin calls it: without this declaration the name was a nil global there)
+
 local function autohostCommand(c, msg)
 	local isHost = (c == S.hostConn)
 	local cmd, rest = msg:match("^!(%S+)%s*(.*)$")
@@ -667,7 +669,7 @@ local function needsExtraGame()
 	return hasPveBot() or S.battle.lateJoin or evolutionOn()
 end
 
-local function syncPveGame()
+function syncPveGame() -- (the local declared above autohostCommand)
 	if not S or S.battle.scenario then return end
 	if needsExtraGame() then
 		local own = ownGame()
