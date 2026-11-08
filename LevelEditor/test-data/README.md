@@ -9,6 +9,7 @@ All levels are on the flat map "Full Metal Plate 1.7" (no mountains, no water): 
 | `levels/ctf_test.lua` | Capture the Flag | Armada (west) and Cortex (east) with a commander and three fast units each, three neutral flags in the middle, one collection point per team, 3 flags win |
 | `levels/rtf_test.lua` | Reclaim the Fame | the same bases with four construction bots each, seven crystals in the middle (4 small, 2 medium, 1 large), 2000 points win |
 | `levels/td_test.lua` | Tower Defense | Armada's commander and three LLT in the east, two small waves walk from the west to the goal |
+| `levels/scav_test.lua` | none | twelve Scavenger and Raptor units in the team of the human (see the end of this page) |
 
 Use them in the editor by copying a file to `LevelEditor\levels`, or build a scenario without touching your own levels:
 
@@ -59,6 +60,20 @@ What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 `tools\arena_test.ps1 -Widget zz_cmdbuttons.lua` selects the commander, looks for the three buttons Area / Split / Focus Attack in the command menu (`Spring.GetActiveCmdDescs`), presses each (`Spring.SetActiveCommand`) and checks the mode of the area attack; the screenshot shows the menu. It logs `[zzar] OK` / `[zzar] FAIL` lines.
 
 `tools\arena_test.ps1 -Widget zz_scenario.lua` works the Scenario info page (button I): types a title (Enter accepts), cycles the win condition, types a grace period, switches to the page T and back, and checks the values through `DebugScenario()`. It logs `[zzar] OK` / `[zzar] FAIL` lines. Run it in the background like every test.
+
+## Other test widgets (`tools`)
+
+| Widget | Started with | What it checks |
+| --- | --- | --- |
+| `zz_arena_fight.lua` | `arena_test.ps1 -Widget` | two armies of the Arena after Start: the targets of their weapons, the units left, the queue of one unit |
+| `zz_arena_shots.lua` | `arena_test.ps1 -Shots` | the two pictures of the Arena (three armies) |
+| `zz_features.lua` | `arena_test.ps1 -Widget` | moving a feature (`led\|movefeatures`, what Alt + drag sends), undo and redo |
+| `zz_keep.lua` | `arena_test.ps1 -Widget` | changes of the pages made while the Arena runs stay after Stop |
+| `zz_cycle.lua` | `arena_test.ps1 -Widget` | Ctrl + mouse wheel chooses the next / previous blueprint (`grid:cycle`), also with a search filter |
+| `zz_menu.lua` | `arena_test.ps1 -Widget` | all side buttons switched pairwise (exactly the chosen page is active) |
+| `zz_mem.lua`, `zz_mem_big.lua`, `zz_mem_calls.lua` | `arena_test.ps1 -Widget` | Lua memory allocated per second by the editor (`_big`: with the demo level of 2460 units), and per call-in |
+| `zz_shots_all.lua` | `arena_test.ps1 -Widget` (map Full Metal Plate 1.7) | the pictures of `docs\screenshots.md`, one scene after the other |
+| `zz_bpt.lua`, `zz_bpo.lua`, `zz_bpg.lua` | `bp_test.ps1 -Widget` | BluePrinter plans: select, order, rotate, remove, undo; plans placed on plans and buildings; the ghosts after undo ([TESTING.md](TESTING.md)) |
 
 ## Console lobby test (`tools\console_test.ps1`)
 
