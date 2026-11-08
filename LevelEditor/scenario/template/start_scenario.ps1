@@ -107,14 +107,14 @@ if ($Lobby -and ($HostGame -or $JoinIp)) {
         $hostBundle.Map = Get-HostMap $data $map   # the map archive, for a joiner who has not got the map (the joiner has to ask and the host has to agree)
         if (-not $hostBundle.Map) { Write-Host "Note: the archive of the map '$map' was not found, a joiner without the map has to download it from the internet." -ForegroundColor Yellow }
         $gameDirs = @($hostBundle.Dir)
-        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $null $null 0 $LobbyAutoStart $hostBundle
+        $lobbyRoster = Invoke-HostLobby $teamInfo $Name $LobbyPort $LobbyAutoStart $hostBundle
         if (-not $lobbyRoster) { Write-Host 'The lobby was cancelled.'; exit 0 }
         Save-Mapping $lobbyRoster
         $Mapping = ConvertTo-MappingText $lobbyRoster
         if (-not $PSBoundParameters.ContainsKey('Wait')) { $Wait = 15 }   # everybody is known: the joiners connect at once
         Write-Host "Lobby finished: $Mapping"
     } else {
-        $res = Join-Lobby $JoinIp $LobbyPort $Name 0 $null @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey }
+        $res = Join-Lobby $JoinIp $LobbyPort $Name @{ Data = $data; Downloader = (Join-Path $engineDir.FullName 'pr-downloader.exe'); Auto = $LobbyMapKey }
         switch -Wildcard ($res) {
             'noconnect' { Fail "No lobby of a host found at $($JoinIp):$LobbyPort." }
             'refused*'  { Fail "The host refused you: $($res.Substring(9))" }

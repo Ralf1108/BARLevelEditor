@@ -707,45 +707,27 @@ function Update-LobbyNet($st, $listener) {
     Update-LobbyTransfers $st
 }
 
-function New-LobbyKey([string]$key, [switch]$Shift) {
-    $ch = switch ($key) { 'Enter' { [char]13 } 'Tab' { [char]9 } 'Escape' { [char]27 } default { [char]0 } }
-    return New-Object ConsoleKeyInfo($ch, [ConsoleKey]$key, [bool]$Shift, $false, $false)
-}
-
 # The lobby of the host. Returns the roster (entries Name, Team; host first) when the host starts, $null when the host cancels.
-# $keyFeed (tests): keys (ConsoleKeyInfo) and numbers (wait in milliseconds) are used instead of the keyboard; $dumpFile: the last screen is written
-# there instead of the console (no console needed); $timeoutSec: ends with a cancel after this time
-function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyFeed = $null, [string]$dumpFile = $null, [int]$timeoutSec = 0, [int]$autoStart = 0, $bundle = $null) {
+# $autoStart (tests, automation): starts by itself when this many players are in
+function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, [int]$autoStart = 0, $bundle = $null) {
     $st = New-LobbyState $teamInfo $hostName $port $bundle
     $addr = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress })
     $st.Addr = if ($addr.Count -gt 0) { $addr -join ' / ' } else { '127.0.0.1' }
     $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Any, $port)
     $listener.Start()
     [void](Add-LobbyPlayer $st $hostName $null)
-    $console = -not $dumpFile
-    $feed = @($keyFeed); $fi = 0; $nextFeed = Get-Date
-    $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $autoAt = $null
     try {
-        if ($console) { Clear-Host; [Console]::CursorVisible = $false }
+        Clear-Host; [Console]::CursorVisible = $false
         while (-not $st.Done) {
             Update-LobbyNet $st $listener
-            $k = $null
-            if ($keyFeed) {
-                if ($fi -lt $feed.Count -and (Get-Date) -ge $nextFeed) {
-                    $item = $feed[$fi]; $fi++
-                    if ($item -is [int]) { $nextFeed = (Get-Date).AddMilliseconds($item) } else { $k = $item; $nextFeed = (Get-Date).AddMilliseconds(100) }
-                }
-            } elseif ($console -and [Console]::KeyAvailable) { $k = [Console]::ReadKey($true) }
-            if ($k) { Invoke-LobbyKey $st $k }
-            if ((Get-Date) -gt $until) { $st.Done = 'cancel' }
+            if ([Console]::KeyAvailable) { Invoke-LobbyKey $st ([Console]::ReadKey($true)) }
             if ($autoStart -gt 0 -and $st.Players.Count -ge $autoStart -and -not (Test-LobbyStart $st)) {
-                if (-not $autoAt) { $autoAt = (Get-Date).AddSeconds(2) } elseif ((Get-Date) -gt $autoAt) { $st.Done = 'start' }  # test / automation: starts by itself when this many players are in
+                if (-not $autoAt) { $autoAt = (Get-Date).AddSeconds(2) } elseif ((Get-Date) -gt $autoAt) { $st.Done = 'start' }
             }
             if ($st.Dirty) {
                 $st.Dirty = $false
-                $screen = Get-LobbyLines $st
-                if ($console) { Show-LobbyLines $screen } else { [IO.File]::WriteAllLines($dumpFile, [string[]]$screen.Lines) }
+                Show-LobbyLines (Get-LobbyLines $st)
             }
             Start-Sleep -Milliseconds 40
         }
@@ -753,7 +735,7 @@ function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyF
         foreach ($p in $st.Players) { Send-LobbyLine $p $final }
         if ($st.Done -eq 'start') {
             $script:LobbyPlayers = $st.Players   # the connections stay open: READY and GO follow
-            if ($console) { Clear-Host }
+            Clear-Host
             return @(Get-LobbyRoster $st)
         }
         Start-Sleep -Milliseconds 200
@@ -764,7 +746,7 @@ function Invoke-HostLobby($teamInfo, [string]$hostName, [int]$port = 8453, $keyF
         foreach ($t in @($st.Transfers)) { try { $t.File.Close(); $t.Client.Close() } catch { } }
         # the zips that were made for the joiners
         if ($st.Bundle -and $st.Bundle.Zip) { Remove-Item $st.Bundle.Zip -Force -ErrorAction SilentlyContinue }
-        if ($console) { [Console]::CursorVisible = $true }
+        [Console]::CursorVisible = $true
     }
 }
 
@@ -796,8 +778,7 @@ function Close-Lobby {
 }
 
 # The lobby of a joiner. Returns 'start', 'cancel' (the host cancelled), 'lost' (the host went away), 'left' (Esc), 'refused: <reason>' or 'noconnect'.
-# $dumpFile / $timeoutSec: for tests like above
-function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0, [string]$dumpFile = $null, $mapCtx = $null) {
+function Join-Lobby([string]$ip, [int]$port, [string]$name, $mapCtx = $null) {
     $c = New-Object Net.Sockets.TcpClient
     $ar = $c.BeginConnect($ip, $port, $null, $null)
     if (-not $ar.AsyncWaitHandle.WaitOne(5000)) { $c.Close(); return 'noconnect' }
@@ -806,14 +787,12 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     $script:JoinerLobby = $p; $script:JoinerName = $name
     Send-LobbyLine $p ('VERSION {0}' -f $script:LobbyProtocol)
     Send-LobbyLine $p "HELLO $name"
-    $console = -not $dumpFile
     $status = 'connecting ...'; $team = '-'; $roster = ''; $result = $null; $verText = ''; $verKind = 0
     $dataText = ''; $dataKind = 0; $fetch = $null; $lastPct = -10; $script:BundleDir = $null
     $mapText = ''; $mapKind = 0; $mapState = ''; $mapName = ''; $mapInfo = $null; $mapFetch = $null; $mapKey = $null; $mapAutoUsed = $false; $mapLastPct = -10; $mapChosen = $false; $sameLan = Test-SameLan $ip; $mapOfficial = $null; $mapOfficialNote = ''
-    $until = if ($timeoutSec -gt 0) { (Get-Date).AddSeconds($timeoutSec) } else { [DateTime]::MaxValue }
     $dirty = $true
     try {
-        if ($console) { Clear-Host; [Console]::CursorVisible = $false }
+        Clear-Host; [Console]::CursorVisible = $false
         while (-not $result) {
             foreach ($l in @(Read-LobbyLines $p)) {
                 $dirty = $true
@@ -915,8 +894,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 }
             }
             if (-not $result -and $p.Closed) { $result = 'lost' }
-            if (-not $result -and (Get-Date) -gt $until) { $result = 'left' }
-            if (-not $result -and $console) {
+            if (-not $result) {
                 try {
                     if ([Console]::KeyAvailable) {
                         $kk = [Console]::ReadKey($true).Key.ToString()
@@ -930,8 +908,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
                 $lines = @("Lobby of $($ip):$port - you are $name", '', "Status: $status", "Your team: $team", $verText, $dataText, $(if ($mapState -eq 'prompt') { $mapShown } else { $mapText }))
                 $kinds = @(1, 0, 0, 7, $verKind, $dataKind, $mapKind)
                 $lines += @('', "Players: $who", '', 'Esc = leave'); $kinds += @(0, 0, 0, 2)
-                if ($console) { Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = $kinds }) }
-                else { [IO.File]::WriteAllLines($dumpFile, [string[]]$lines) }
+                Show-LobbyLines ([pscustomobject]@{ Lines = $lines; Kinds = $kinds })
             }
             Start-Sleep -Milliseconds 40
         }
@@ -939,7 +916,7 @@ function Join-Lobby([string]$ip, [int]$port, [string]$name, [int]$timeoutSec = 0
     } finally {
         Close-Fetch $fetch; Close-Fetch $mapFetch
         if ($result -ne 'start') { try { $c.Close() } catch { } }   # after the start the connection stays: READY and GO
-        if ($console) { [Console]::CursorVisible = $true }
+        [Console]::CursorVisible = $true
     }
 }
 
