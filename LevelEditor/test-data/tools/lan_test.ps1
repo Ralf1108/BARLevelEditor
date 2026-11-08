@@ -21,6 +21,8 @@
 #               lines with the values of the room before and after (no game is started: -WaitSec 90)
 #         rejoin = host + joiner place their start positions, the game runs; then the joiner's game is killed and started again (same folder, auto join): does the room offer a rejoin?
 #               (log of the first run: infolog_first.txt of the joiner; use -QuitFrame 60000)
+#         -Solo with evo: one instance, the host and the computer only; zz_evo2.lua checks energy, wild units and towers, the radars (taking, cannot be destroyed, T2)
+#               (best with -EvoStage 5 -QuitFrame 9000)
 #         brood = one instance: the host alone with a Raptors computer in its ally team (the lobby adds the Raptor Brood Chamber, game option tweakdefs<N>); places its start
 #               position, zz_brood.lua has a healer build the chamber and the chamber grow raptors (use -QuitFrame 60000: zz_brood.lua ends the game itself)
 #         mix = Raptors against Scavengers: host (PlayerA) with a Raptors computer in team 1, joiner (PlayerB) with a Scavengers computer in team 2, both place their start position;
@@ -30,7 +32,7 @@
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = '', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play, [string]$Map = 'Comet Catcher Remake 1.8', [switch]$FrontShots, [int]$EvoStage = 0)
+param([string]$Mode = 'ctf', [switch]$Solo, [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = '', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play, [string]$Map = 'Comet Catcher Remake 1.8', [switch]$FrontShots, [int]$EvoStage = 0)
 $sp = $Work
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -68,6 +70,7 @@ foreach ($who in $who2) {
     if (-not $Play) { Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\" }   # -Play: no test widgets, the game is played
     if ($Mode -eq 'mix' -and $who -eq 'H' -and -not $Play) { Copy-Item "$tools\zz_mix.lua" "$d\LuaUI\Widgets\" }
     if ($Mode -in 'pve', 'rejoin', 'mix', 'brood' -or ($Mode -eq 'latejoin' -and $who -eq 'H')) { Copy-Item "$tools\zz_place.lua" "$d\LuaUI\Widgets\" }
+    if ($Mode -eq 'evo' -and $Solo -and $who -eq 'H' -and -not $Play) { Copy-Item "$tools\zz_evo2.lua" "$d\LuaUI\Widgets\" }   # energy, wild units, towers, radars
     if ($Mode -eq 'brood' -and -not $Play) { Copy-Item "$tools\zz_brood.lua" "$d\LuaUI\Widgets\" }   # the Raptor Brood Chamber through the real lobby
     if ($Mode -eq 'pve' -and $who -eq 'H') { Copy-Item "$tools\zz_pve.lua" "$d\LuaUI\Widgets\" }
     [IO.File]::WriteAllText("$d\zz_mode.txt", $Mode); [IO.File]::WriteAllText("$d\zz_quit.txt", "$QuitFrame")
@@ -84,7 +87,7 @@ foreach ($who in $who2) {
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'brood') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'evoroom') { "auto=host`nname=PlayerA`nplayers=99`nmap=$Map`nevolution=1`nevolutionClose=40`nlanMenu=44`nbot=BARb`nbotVersion=stable`nbotAlly=1" } elseif ($Mode -eq 'evo') { "auto=host`nname=PlayerA`nplayers=2`nmap=$Map`nevolution=1$(if ($EvoStage -gt 0) { "`nevolutionStage=$EvoStage" })`nbot=$(if ($Ai -eq 'RaptorsAI') { 'BARb' } else { $Ai })`nbotVersion=stable`nbotAlly=2`nstartDelay=$(if ($Shots) { 70 } else { 25 })" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'brood') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'evoroom') { "auto=host`nname=PlayerA`nplayers=99`nmap=$Map`nevolution=1`nevolutionClose=40`nlanMenu=44`nbot=BARb`nbotVersion=stable`nbotAlly=1" } elseif ($Mode -eq 'evo') { "auto=host`nname=PlayerA`nplayers=$(if ($Solo) { 1 } else { 2 })`nmap=$Map`nevolution=1$(if ($EvoStage -gt 0) { "`nevolutionStage=$EvoStage" })`nbot=$(if ($Ai -eq 'RaptorsAI') { 'BARb' } else { $Ai })`nbotVersion=stable`nbotAlly=2`nstartDelay=$(if ($Shots) { 70 } else { 25 })" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -109,6 +112,7 @@ foreach ($who in $who2) {
     "started $who pid $($procs[$who].Id)"
 }
 if ($Mode -eq 'latejoin') { $who2 = @('H') }
+if ($Mode -eq 'evo' -and $Solo) { $who2 = @('H') }   # one instance: the host and the computer
 Add-Type -AssemblyName System.Drawing
 Add-Type @'
 using System; using System.Runtime.InteropServices;

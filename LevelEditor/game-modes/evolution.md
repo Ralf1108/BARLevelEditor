@@ -25,7 +25,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - The new unit replaces the old one where it stands, with full health; it keeps its orders and is selected again by itself
 
 **Points**
-- A wild unit: **1** point
+- A wild unit or tower: a third of what its stage costs (1 for stage 1, 2 for stage 2, 3, 4, 7, 10, 17, 27, 43, 69): about three of your own stage bring you up
 - An enemy player of stage *v*: the points that stage costs (3 for stage 1, 5, 8, 12, 20, 31, 50, 81, 129 up to stage 9, 206 for stage 10)
 - An enemy **above** your stage is worth more: times (1 + the stages it is above you). A stage 1 unit that kills a stage 3 unit gets 8 x 3 = 24 points and jumps to stage 4
 - Points to the next stage: 3, 5, 8, 12, 20, 31, 50, 81, 129 (every stage 1.6 times the one before)
@@ -51,14 +51,24 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 ![Gates of Hell: red rings where the next missiles come down](../../docs/evolution-gates-of-hell.jpg)
 
-**Wild units**
-- Stage 1 units of nobody (Gaia) with a tenth of their health stand around the map
+**Wild units and towers**
+- Units of nobody (Gaia) with a tenth of their health stand around the map; about one in seven is a **tower**
 - They hold their position and **only shoot back**
-- One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else
+- They **grow with the players**: a new one has the stage of a random player (sometimes one less); old ones far below the weakest player are replaced by stronger ones, one every 3 seconds
+- One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
+
+**Energy**
+- Every player gets **10 energy per second** and can store **1000**: units with laser weapons need it to shoot
+
+**Radars**
+- Radars of nobody stand all over the map, until it is covered; they **cannot be destroyed**
+- Stand next to one with your unit for **5 seconds** ("Taking 3/5" above it) and it is **yours**: you see more of where the others go; an enemy takes it the same way
+- When more than half of the players are on stage 5 or higher, the radars become **T2 radars** one by one (a much larger range)
+- When a player is out, their radars belong to nobody again
 
 **Computer players**
 - Every team without a human is steered by the game (its own AI is switched off for this unit)
-- It attacks only enemies of its **own stage or higher** (at stage 1 also the wild units; in Armageddon everybody) and otherwise only shoots back; with nothing to attack it walks around
+- It attacks only enemies of its **own stage or higher** and wild units of its stage or lower (in Armageddon every enemy) and otherwise only shoots back; with nothing to attack it walks around
 
 ## The ladders
 
@@ -85,5 +95,6 @@ Chosen by damage per second times health; artillery, units for water and the bom
 ## Tips
 
 - Hunt the wild units first, then pick fights with enemies of your stage or above
+- Take the radars near you early: you see the others coming
 - A small map keeps the fights coming: size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata)
 - The game runs in the gadget `evo_game.lua` and the window of the gift in `evo_gift.lua` of the extra game "Level Editor Scenarios" (installed with the Level Editor; a joiner without it gets it from the host)

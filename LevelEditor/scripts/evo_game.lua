@@ -109,6 +109,16 @@ if not gadgetHandler:IsSyncedCode() then
 			end
 			gl.Text(text, vsx * 0.5, y, 16, "co")
 		end
+		-- radars being taken: "Taking 3/5" in the color of the taker above the radar
+		for x, z, s, t in tostring(Spring.GetGameRulesParam("evoTaking") or ""):gmatch("(%d+),(%d+),(%d+),(%d+)") do
+			x, z = tonumber(x), tonumber(z)
+			local sx, sy, onScreen = Spring.WorldToScreenCoords(x, Spring.GetGroundHeight(x, z) + 90, z)
+			if onScreen ~= false and Spring.IsSphereInView(x, Spring.GetGroundHeight(x, z), z, 60) then
+				local r, g, b = Spring.GetTeamColor(tonumber(t))
+				gl.Color(r or 1, g or 1, b or 1, 1)
+				gl.Text(string.format("Taking %d/5", tonumber(s)), sx, sy, 18, "co")
+			end
+		end
 		-- the first 10 seconds of Armageddon: big letters above the middle of the screen (above the window of the gift)
 		if arma > 0 and Spring.GetGameFrame() - arma < 300 then
 			gl.Color(1, 0.25, 0.15, 1)
@@ -156,6 +166,26 @@ local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
 local HELL_UNITS, HEAVEN_UNITS = 8, 8 -- units of the gifts Hell on Earth and Heaven on Earth
 local NUKES, NUKE_GAP, NUKE_WARN, NUKE_SAFE = 12, 4 * FPS, 5 * FPS, 1600 -- Gates of Hell: missiles, frames between two, warning ring before, distance to the player's unit
+-- Further rules in one table (Lua 5.1 allows only so many locals):
+--   energy: every player team gets ENERGY per second and a storage of STORE (the commanders are gone; laser weapons need energy)
+--   wild units: the stage of a random player who is still in, LOWER = chance of one stage less; TOWER = chance that a wild spawn is a tower; every CHECK frames
+--     the number is topped up; every UPGRADE frames one wild unit two or more stages below the lowest player stage is replaced by one of that stage
+--   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
+--     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
+local R = {
+	ENERGY = 10, STORE = 1000,
+	LOWER = 0.2, TOWER = 0.15, CHECK = 10 * FPS, UPGRADE = 3 * FPS,
+	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
+	-- the towers of a stage per faction (ground targets; anti air, nuclear and anti nuclear buildings left out), ordered by cost
+	TOWERS = {
+		{ "armllt", "armbeamer", "armclaw", "armhlt", "armpb", "armguard", "armamb", "armanni", "armanni", "armannit3" },
+		{ "corllt", "corhllt", "cormaw", "corhlt", "corvipe", "corpun", "cortoast", "cordoom", "corbhmth", "cordoomt3" },
+		{ "leglht", "legdtr", "leghive", "legmg", "legapopupdef", "legcluster", "legperdition", "legbastion", "legbastion", "leggatet3" },
+	},
+	RADAR1 = { "armrad", "corrad", "legrad" },
+	RADAR2 = { armrad = "armarad", corrad = "corarad", legrad = "legarad" },
+}
+local radars = {} -- unitID -> { team = owner team (Gaia at first), name, take = { team, frames } while a player takes it }
 
 -- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
 -- the biggest walking unit of the faction. Artillery, units for water and the bomb bots are left out. Every spawn takes a random faction of those
@@ -237,6 +267,12 @@ end
 -- Can a unit of this kind stand and move at x, z (land, not too steep)? Without TestMoveOrder: not under water. objects = false: features and units do not count
 local function fits(defID, x, z, objects)
 	local y = Spring.GetGroundHeight(x, z)
+	local ud = UnitDefs[defID]
+	if ud and ud.isBuilding then
+		-- a building (tower, radar): where it can be built (2 = free; with objects == false also places with a unit or feature in the way)
+		local r = Spring.TestBuildOrder(defID, x, y, z, 0)
+		return y > -5 and (r == 2 or (objects == false and r ~= 0))
+	end
 	if Spring.TestMoveOrder then
 		local ok, res = pcall(Spring.TestMoveOrder, defID, x, y, z, 0, 0, 0, true, objects ~= false, true)
 		if ok then
@@ -574,18 +610,100 @@ local function gain(p, points)
 end
 
 -- A wild unit: a stage 1 unit of a random faction, of Gaia, with WILD_HP of its health, at a random place; it holds its position and only shoots back
-local function spawnWild()
-	local name = stageUnit(1)
-	local x, z = spawnPoint(UnitDefNames[name].id)
-	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, math.random(0, 3), Spring.GetGaiaTeamID())
+-- The stage of a new wild unit: the stage of a random player who is still in, with the chance R.LOWER one less
+local function wildStage()
+	local list = {}
+	for _, p in ipairs(players) do
+		if not p.out then
+			list[#list + 1] = p.stage
+		end
+	end
+	local s = list[math.random(1, math.max(1, #list))] or 1
+	if s > 1 and math.random() < R.LOWER then
+		s = s - 1
+	end
+	return s
+end
+
+-- A tower of the stage, of a random faction whose tower exists in the game
+local function stageTower(s)
+	local options = {}
+	for _, ladder in ipairs(R.TOWERS) do
+		if UnitDefNames[ladder[s]] then
+			options[#options + 1] = ladder[s]
+		end
+	end
+	return options[math.random(1, math.max(1, #options))]
+end
+
+-- The points of a wild unit of stage s: a third of what stage s needs (about three of them for the next stage), at least 1
+local function wildWorth(s)
+	return math.max(1, math.floor(need(s) / 3 + 0.5))
+end
+
+-- A wild unit (Gaia): of stage s (default: wildStage()), a tower with the chance R.TOWER (tower = true / false forces it), at x, z (default: a random place
+-- away from the players)
+local function spawnWild(s, tower, x, z, facing)
+	s = s or wildStage()
+	if tower == nil then
+		tower = math.random() < R.TOWER
+	end
+	local name = tower and stageTower(s) or stageUnit(s)
+	tower = tower and name ~= nil
+	name = name or stageUnit(s)
+	if not x then
+		x, z = spawnPoint(UnitDefNames[name].id)
+	end
+	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, facing or math.random(0, 3), Spring.GetGaiaTeamID())
 	if id then
-		wild[id] = true
+		wild[id] = { stage = s, tower = tower }
 		local _, maxHp = Spring.GetUnitHealth(id)
 		local hp = math.max(1, (maxHp or 100) * WILD_HP)
 		Spring.SetUnitMaxHealth(id, hp)
 		Spring.SetUnitHealth(id, hp)
 		Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
 		Spring.GiveOrderToUnit(id, CMD_MOVE_STATE, { HOLD_POSITION }, 0)
+	end
+	return id
+end
+
+-- Every R.CHECK frames: as many wild units as wildCount() (living ones and those due to come back); a wild unit that is gone without UnitDestroyed is dropped
+local function topUpWild()
+	local n = #wildDue
+	for id in pairs(wild) do
+		if Spring.ValidUnitID(id) and not Spring.GetUnitIsDead(id) then
+			n = n + 1
+		else
+			wild[id] = nil
+		end
+	end
+	for _ = n + 1, wildCount() do
+		spawnWild()
+	end
+end
+
+-- Every R.UPGRADE frames: one wild unit two or more stages below the lowest stage of the players who are still in becomes one of that stage, at its place
+local function upgradeWild()
+	local low
+	for _, p in ipairs(players) do
+		if not p.out and (not low or p.stage < low) then
+			low = p.stage
+		end
+	end
+	if not low or low < 3 then
+		return
+	end
+	for id, w in pairs(wild) do
+		if w.stage <= low - 2 then
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x then
+				local facing = Spring.GetUnitBuildFacing(id)
+				wild[id] = nil
+				remove(id)
+				spawnWild(low, w.tower, x, z, facing)
+				return
+			end
+		end
 	end
 end
 
@@ -678,8 +796,9 @@ local function steer(p)
 		return
 	end
 	local best, bestD = nearest(x, z, owner, function(q) return q.ally ~= p.ally and (armageddon or q.stage >= p.stage) end)
-	if p.stage == 1 and not armageddon then
-		local w, wd = nearest(x, z, wild, function() return true end)
+	if not armageddon then
+		-- wild units of its own stage or lower (they give points)
+		local w, wd = nearest(x, z, wild, function(rec) return rec.stage <= p.stage end)
 		if w and wd < bestD then
 			best = w
 		end
@@ -700,6 +819,175 @@ local function steerSummoned()
 			if target then
 				attackOrWalk(id, p.ally, target)
 			end
+		end
+	end
+end
+
+-- Every second: R.ENERGY energy for every player team that is still in, and a storage of at least R.STORE (the commanders and their storage are gone)
+local function giveEnergy()
+	for _, p in ipairs(players) do
+		if not p.out then
+			local _, store = Spring.GetTeamResources(p.team, "energy")
+			if (store or 0) < R.STORE then
+				Spring.SetTeamResource(p.team, "es", R.STORE)
+			end
+			Spring.AddTeamResource(p.team, "energy", R.ENERGY)
+		end
+	end
+end
+
+-- A radar of the game (Gaia at first): neutral (nobody shoots at it on its own), cannot be destroyed (UnitPreDamaged, and GG.Indestructible of
+-- unit_indestructible.lua against reclaiming)
+local function newRadar(name, x, z, team)
+	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, 0, team)
+	if id then
+		Spring.SetUnitNeutral(id, true)
+		radars[id] = { team = team, name = name }
+		if GG.Indestructible then
+			GG.Indestructible[id] = true
+		end
+	end
+	return id
+end
+
+-- At the start: radars until R.COVER of the land is in their range. Each new one stands in a random cell that no radar reaches yet: they keep their distance
+-- (a circle of the radar's range around each) and cover the land evenly
+local function placeRadars()
+	local kinds = {}
+	for _, name in ipairs(R.RADAR1) do
+		if UnitDefNames[name] then
+			kinds[#kinds + 1] = name
+		end
+	end
+	if not land or #land.cells == 0 or #kinds == 0 then
+		return
+	end
+	local ud = UnitDefNames[kinds[1]]
+	local range = ud.radarDistance or ud.radarRadius or 2100
+	local covered, skip, left, count = {}, {}, #land.cells, 0
+	local goal = math.floor(#land.cells * (1 - R.COVER))
+	local gaia = Spring.GetGaiaTeamID()
+	while left > goal and count < R.MAX_RADARS do
+		local open = {}
+		for _, i in ipairs(land.cells) do
+			if not covered[i] and not skip[i] then
+				open[#open + 1] = i
+			end
+		end
+		if #open == 0 then
+			break
+		end
+		local i = open[math.random(1, #open)]
+		local name = kinds[math.random(1, #kinds)]
+		local px, pz
+		for _ = 1, 8 do
+			local x, z = (i % land.cols + math.random()) * CELL, (math.floor(i / land.cols) + math.random()) * CELL
+			if fits(UnitDefNames[name].id, x, z) then
+				px, pz = x, z
+				break
+			end
+		end
+		if px and newRadar(name, px, pz, gaia) then
+			count = count + 1
+			for _, j in ipairs(land.cells) do
+				if not covered[j] and ((j % land.cols + 0.5) * CELL - px) ^ 2 + ((math.floor(j / land.cols) + 0.5) * CELL - pz) ^ 2 <= range * range then
+					covered[j] = true
+					left = left - 1
+				end
+			end
+		else
+			skip[i] = true
+		end
+	end
+	Spring.Echo(string.format("[Evolution] %d radars (range %d), %d of %d land cells in range", count, range, #land.cells - left, #land.cells))
+end
+
+-- Every half second (step frames): a radar with units of exactly one alliance of players within R.RANGE, not its owner's, is being taken; after R.TAKE frames
+-- it belongs to the team of the unit that began. The progress goes to the game rule evoTaking ("x,z,seconds,team" separated by /) for the display.
+local function takeRadars(step)
+	local gaia = Spring.GetGaiaTeamID()
+	local shown = {}
+	for id, rd in pairs(radars) do
+		local x, _, z = Spring.GetUnitPosition(id)
+		if not x then
+			radars[id] = nil
+		else
+			local here, allies = {}, 0
+			for _, uid in ipairs(Spring.GetUnitsInCylinder(x, z, R.RANGE)) do
+				local p = owner[uid] or summoned[uid]
+				if p and not p.out and not here[p.ally] then
+					here[p.ally] = p
+					allies = allies + 1
+				end
+			end
+			local ownerAlly = rd.team ~= gaia and select(6, Spring.GetTeamInfo(rd.team, false))
+			local taker
+			if allies == 1 then
+				for ally, p in pairs(here) do
+					if ally ~= ownerAlly then
+						taker = p
+					end
+				end
+			end
+			if not taker then
+				rd.take = nil
+			else
+				if not rd.take or rd.take.team ~= taker.team then
+					rd.take = { team = taker.team, frames = 0 }
+				end
+				rd.take.frames = rd.take.frames + step
+				if rd.take.frames >= R.TAKE then
+					Spring.TransferUnit(id, taker.team, false)
+					Spring.SetUnitNeutral(id, true)
+					rd.team, rd.take = taker.team, nil
+					say(taker.name .. " took a radar.")
+				else
+					shown[#shown + 1] = string.format("%d,%d,%d,%d", x, z, math.floor(rd.take.frames / FPS), taker.team)
+				end
+			end
+		end
+	end
+	Spring.SetGameRulesParam("evoTaking", table.concat(shown, "/"))
+end
+
+-- When more than half of the players who are still in are on stage R.T2_STAGE or higher: one radar (every R.UPGRADE frames) becomes the T2 radar of its
+-- faction, at its place, for the same owner
+local function upgradeRadars()
+	local active, high = 0, 0
+	for _, p in ipairs(players) do
+		if not p.out then
+			active = active + 1
+			if p.stage >= R.T2_STAGE then
+				high = high + 1
+			end
+		end
+	end
+	if active == 0 or high * 2 <= active then
+		return
+	end
+	for id, rd in pairs(radars) do
+		local to = R.RADAR2[rd.name]
+		local x, _, z = Spring.GetUnitPosition(id)
+		if to and UnitDefNames[to] and x then
+			radars[id] = nil
+			if GG.Indestructible then
+				GG.Indestructible[id] = nil
+			end
+			remove(id)
+			newRadar(to, x, z, rd.team)
+			return
+		end
+	end
+end
+
+-- The radars of a player who is out go back to Gaia (nobody's)
+local function freeRadars(p)
+	local gaia = Spring.GetGaiaTeamID()
+	for id, rd in pairs(radars) do
+		if rd.team == p.team then
+			Spring.TransferUnit(id, gaia, false)
+			Spring.SetUnitNeutral(id, true)
+			rd.team, rd.take = gaia, nil
 		end
 	end
 end
@@ -728,7 +1016,8 @@ function gadget:GameFrame(n)
 					for _ = 1, wildCount() do
 						spawnWild()
 					end
-					say(string.format("Evolution: kill to evolve (10 stages, a random faction each time); a lost unit comes back 5 s later at another place, one stage lower. %d wild units only shoot back. Stage 10 brings Armageddon.", wildCount()))
+					placeRadars()
+					say(string.format("Evolution: kill to evolve (10 stages, a random faction each time); a lost unit comes back 5 s later at another place, one stage lower. %d wild units and towers only shoot back; they grow with the players. Stand next to a radar for 5 s to take it. Stage 10 brings Armageddon.", wildCount()))
 				end
 			end
 		end
@@ -745,7 +1034,18 @@ function gadget:GameFrame(n)
 	if not running then
 		return
 	end
+	if n % FPS == 0 then
+		giveEnergy()
+	end
+	if n % R.CHECK == 0 then
+		topUpWild()
+	end
+	if n % R.UPGRADE == 0 then
+		upgradeWild()
+		upgradeRadars()
+	end
 	if n % 15 == 0 then
+		takeRadars(15)
 		for _, p in ipairs(players) do
 			if p.respawnAt and n >= p.respawnAt and not p.out then
 				spawn(p)
@@ -792,6 +1092,7 @@ end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
 	summoned[unitID] = nil
+	radars[unitID] = nil
 	if removing[unitID] then
 		removing[unitID] = nil
 		return
@@ -806,7 +1107,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 		if not wasWild then
 			killer.kills = killer.kills + 1
 		end
-		gain(killer, wasWild and 1 or worth(victim.stage, killer.stage))
+		gain(killer, wasWild and wildWorth(wasWild.stage) or worth(victim.stage, killer.stage))
 	end
 	if wasWild then
 		wildDue[#wildDue + 1] = Spring.GetGameFrame() + WILD_BACK
@@ -818,6 +1119,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 		-- no respawn any more: the player is out, the units of its gifts go with it
 		victim.out = true
 		victim.giftAt = nil
+		freeRadars(victim)
 		for id, p in pairs(summoned) do
 			if p == victim then
 				summoned[id] = nil
@@ -873,6 +1175,13 @@ function gadget:AllowUnitTransfer(unitID)
 	return not owner[unitID]
 end
 
+-- the radars cannot be destroyed (also not by the missiles of Gates of Hell)
+function gadget:UnitPreDamaged(unitID)
+	if radars[unitID] then
+		return 0, 0
+	end
+end
+
 function gadget:Initialize()
 	if gadgetHandler.RegisterAllowCommand then
 		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns
@@ -880,4 +1189,5 @@ function gadget:Initialize()
 	Spring.SetGameRulesParam("evoState", "")
 	Spring.SetGameRulesParam("evoArmageddon", 0)
 	Spring.SetGameRulesParam("evoNukes", "")
+	Spring.SetGameRulesParam("evoTaking", "")
 end
