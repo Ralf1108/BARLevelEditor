@@ -4,11 +4,12 @@
 # the starter writes (extra game, widgets, window settings) stays there; the installed game is not changed and must not be running.
 # The starters run in minimized console windows (the lobby draws on a real console; hidden or redirected it fails).
 # The widget zz_lantest.lua logs "[zzlan]" lines into infolog.txt (<work>\barH\data, <work>\barJ\data) and quits the game at the frame in zz_quit.txt (default 4500).
-param([string]$Mode = 'ctf', [int]$WaitSec = 600, [string]$Work = (Join-Path $env:TEMP 'console_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data')
+param([string]$Mode = 'ctf', [int]$WaitSec = 600, [string]$Work = (Join-Path $env:TEMP 'console_test'), [string]$Data = '')
 $ErrorActionPreference = 'Stop'
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $tools 'test_common.ps1')
+$Data = Resolve-TestData $Data   # the data folder of the installation (-Data, otherwise Find-Bar of bar_common.ps1)
 if (Get-Process spring -ErrorAction SilentlyContinue) { 'A game is running: aborted'; return }
 $scn = "${Mode}_test"
 New-Item -ItemType Directory -Force $Work | Out-Null

@@ -10,6 +10,13 @@ public class SbxWin { [DllImport("user32.dll")] public static extern bool SetWin
 '@
 }
 
+# The data folder of the BAR installation for a test: $data when given, otherwise the installation that Find-Bar (bar_common.ps1) finds; the folder found is
+# remembered in %LOCALAPPDATA%\BAR-Level-Editor\test_bar_path.txt
+function Resolve-TestData([string]$data) {
+    if ($data) { return $data }
+    return Join-Path (Find-Bar @() (Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor\test_bar_path.txt')) 'data'
+}
+
 # Makes the folder $root new with a data folder inside and returns the path of the data folder: the folders cache, games, LuaUI\Widgets and $dirs (relative to
 # the data folder), junctions to engine, packages, pool, rapid and maps of the installation $real (-NoMaps: an empty maps folder instead) and the newest archive
 # cache of the installation (so the engine does not scan every archive again). Junctions of an older run are unhooked before the folder is deleted.

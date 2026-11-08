@@ -2,10 +2,11 @@
 # and a test widget from tools\ (-Widget zz_bpfaction.lua). It runs next to a game you are playing: only the test's own process is ever stopped.
 # The widget logs "[zzar]" lines (infolog.txt in <Work>\data) and ends the game itself (quitforce).
 #   -Side Armada | Cortex | Legion   the faction of the player (and its commander)
-param([int]$WaitSec = 240, [string]$Work = (Join-Path $env:TEMP 'bp_test'), [string]$Data = 'C:\Games\Beyond-All-Reason\data', [string]$Map = 'Full Metal Plate 1.7', [string]$Widget = 'zz_bpfaction.lua', [string]$Side = 'Cortex')
+param([int]$WaitSec = 240, [string]$Work = (Join-Path $env:TEMP 'bp_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7', [string]$Widget = 'zz_bpfaction.lua', [string]$Side = 'Cortex')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $tools 'test_common.ps1')
+$Data = Resolve-TestData $Data   # the data folder of the installation (-Data, otherwise Find-Bar of bar_common.ps1)
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = New-SandboxData $Work $Data @('LuaUI\Include', 'LuaUI\Config')
 Copy-Item "$repo\BluePrinter\bluePrinter.lua" "$d\LuaUI\Widgets\"
