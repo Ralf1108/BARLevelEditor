@@ -42,6 +42,17 @@ local NAMES = {
 	legkeres = "Keres", legeshotgunmech = "Praetorian", legeheatraymech = "Sol Invictus",
 }
 
+-- The abilities: a beacon of the color of an ability lies on the map; a player's unit that drives over it gets the ability until it dies (a button in the
+-- order menu: energy cost, time it lasts, cooldown in seconds). Used by both parts (the beacons and the display).
+local ABILITIES = {
+	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
+	{ key = "cloak", name = "Cloak", color = { 0.3, 0.65, 1 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible for 15 s (shooting or an enemy close by shows it)" },
+	{ key = "sprint", name = "Sprint", color = { 1, 0.9, 0.2 }, cost = 200, time = 8, cool = 30, tip = "Your unit is 50 % faster for 8 s" },
+	{ key = "repair", name = "Repair", color = { 0.3, 1, 0.35 }, cost = 500, time = 0, cool = 90, tip = "Heals 30 % of the health of your unit at once" },
+	{ key = "pulse", name = "Radar Pulse", color = { 1, 0.55, 0.1 }, cost = 250, time = 5, cool = 45, tip = "Your unit sees everything within 2500 Elmo for 5 s" },
+}
+local CMD_ABILITY = 47610 -- + index of ABILITIES: the order of the button
+
 -- The name of a team: the AI's name or the name of its leader (used by both parts)
 local function teamName(team)
 	local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
@@ -128,6 +139,49 @@ if not gadgetHandler:IsSyncedCode() then
 			gl.Text("A lost unit does not come back any more. The last one standing wins.", vsx * 0.5, vsy * 0.76 - 82, 24, "co")
 		end
 		gl.Color(1, 1, 1, 1)
+	end
+
+	-- the beacons of the abilities: a column of light in the color of the ability and a pulsing ring on the ground, only where the own team sees
+	-- (a spectator sees all)
+	function gadget:DrawWorld()
+		local text = Spring.GetGameRulesParam("evoBeacons")
+		if not text or text == "" then
+			return
+		end
+		local spec, fullView = Spring.GetSpectatingState()
+		local ally = Spring.GetMyAllyTeamID()
+		local f = Spring.GetGameFrame() + (Spring.GetFrameTimeOffset and Spring.GetFrameTimeOffset() or 0)
+		local pulse = 0.6 + 0.4 * math.sin(f * 0.15)
+		gl.DepthTest(true)
+		gl.Blending(GL.SRC_ALPHA, GL.ONE) -- (adding light)
+		for x, z, k in text:gmatch("(%d+),(%d+),(%d+)") do
+			x, z = tonumber(x), tonumber(z)
+			local a = ABILITIES[tonumber(k)]
+			local y = Spring.GetGroundHeight(x, z)
+			if a and ((spec and fullView) or Spring.IsPosInLos(x, y, z, ally)) and Spring.IsSphereInView(x, y + 100, z, 220) then
+				local r, g, b = a.color[1], a.color[2], a.color[3]
+				-- the column: two crossed quads, bright at the bottom, fading to the top
+				gl.BeginEnd(GL.QUADS, function()
+					for _, d in ipairs({ { 14, 0 }, { 0, 14 } }) do
+						gl.Color(r, g, b, 0.75 * pulse)
+						gl.Vertex(x - d[1], y, z - d[2])
+						gl.Vertex(x + d[1], y, z + d[2])
+						gl.Color(r, g, b, 0)
+						gl.Vertex(x + d[1], y + 320, z + d[2])
+						gl.Vertex(x - d[1], y + 320, z - d[2])
+					end
+				end)
+				gl.LineWidth(3)
+				gl.Color(r, g, b, 0.9 * pulse)
+				gl.DrawGroundCircle(x, y, z, 40 + 10 * pulse, 32)
+				gl.Color(r, g, b, 0.5)
+				gl.DrawGroundCircle(x, y, z, 80, 32)
+			end
+		end
+		gl.Blending(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
+		gl.LineWidth(1)
+		gl.Color(1, 1, 1, 1)
+		gl.DepthTest(false)
 	end
 
 	-- red rings where the next nuclear missiles come down (Gates of Hell)
@@ -397,6 +451,229 @@ local function remove(id)
 	end
 end
 
+-- ---------------------------------------------------------------- abilities and their beacons (one table: Lua 5.1 allows only so many locals and upvalues)
+-- A player record keeps p.abilities (index -> true), p.cool (index -> frame it is ready again) and p.active (index -> { frame it ends, unit }).
+local A = {
+	beacons = {}, -- { x, z, kind = index of ABILITIES }
+	due = {}, -- frames at which a taken beacon lies somewhere else
+	PICK = 80, -- Elmo: a player's unit this near takes a beacon
+	BACK = 45 * FPS, -- frames until a taken beacon comes back somewhere else (a new random color)
+	SPEED = 1.5, HEAL = 0.3, PULSE = 2500, JAM = 500, -- sprint factor, part of the health, sight of the pulse, jammer radius
+}
+
+-- one beacon per 2048 x 2048 Elmo of the land, 5 to 20
+function A.count()
+	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
+	return math.max(5, math.min(20, math.floor(area / (2048 * 2048) + 0.5)))
+end
+
+function A.place()
+	local ref = UnitDefNames.armpw
+	for _ = 1, 10 do
+		local x, z = randomLand()
+		if not ref or fits(ref.id, x, z, false) then
+			A.beacons[#A.beacons + 1] = { x = x, z = z, kind = math.random(1, #ABILITIES) }
+			return
+		end
+	end
+end
+
+-- the beacons for the unsynced part: game rule evoBeacons "x,z,kind" separated by /; the abilities of the players: team rule evoAbilities "index:seconds of
+-- cooldown left:seconds the effect still lasts" separated by ,
+function A.publish()
+	local t = {}
+	for _, b in ipairs(A.beacons) do
+		t[#t + 1] = string.format("%d,%d,%d", b.x, b.z, b.kind)
+	end
+	Spring.SetGameRulesParam("evoBeacons", table.concat(t, "/"))
+	local n = Spring.GetGameFrame()
+	for _, p in ipairs(players) do
+		local list = {}
+		for i in ipairs(ABILITIES) do
+			if p.abilities and p.abilities[i] then
+				local act = p.active and p.active[i]
+				list[#list + 1] = string.format("%d:%d:%d", i, math.max(0, math.ceil((((p.cool and p.cool[i]) or 0) - n) / FPS)), act and math.max(0, math.ceil((act.frame - n) / FPS)) or 0)
+			end
+		end
+		Spring.SetTeamRulesParam(p.team, "evoAbilities", table.concat(list, ","), { public = true })
+	end
+end
+
+-- the buttons of the player's abilities on its unit (after every spawn and while a cooldown runs: the seconds left in the caption)
+function A.buttons(p)
+	local id = p.unit
+	if not id or not Spring.ValidUnitID(id) then
+		return
+	end
+	local n = Spring.GetGameFrame()
+	for i, a in ipairs(ABILITIES) do
+		local cmd = CMD_ABILITY + i
+		local at = Spring.FindUnitCmdDesc(id, cmd)
+		if p.abilities and p.abilities[i] then
+			local left = math.ceil((((p.cool and p.cool[i]) or 0) - n) / FPS)
+			local desc = { id = cmd, type = CMDTYPE.ICON, name = left > 0 and (a.name .. "\n" .. left .. " s") or a.name, action = "evo_" .. a.key,
+				tooltip = a.name .. ": " .. a.tip .. "\nCost " .. a.cost .. " energy, cooldown " .. a.cool .. " s", disabled = left > 0 }
+			if at then
+				Spring.EditUnitCmdDesc(id, at, desc)
+			else
+				Spring.InsertUnitCmdDesc(id, desc)
+			end
+		elseif at then
+			Spring.RemoveUnitCmdDesc(id, at)
+		end
+	end
+end
+
+local function sensor(id, kind, value)
+	pcall(Spring.SetUnitSensorRadius, id, kind, value)
+end
+
+-- the effect of ability i on the player's unit begins / ends
+function A.start(p, i)
+	local id, a = p.unit, ABILITIES[i]
+	local ud = UnitDefs[Spring.GetUnitDefID(id)]
+	if a.key == "jammer" then
+		sensor(id, "radarJammer", A.JAM)
+	elseif a.key == "cloak" then
+		pcall(Spring.SetUnitCloak, id, true, 75)
+		pcall(Spring.SetUnitCloak, id, 1) -- (script cloak: also a unit that cannot cloak by itself)
+	elseif a.key == "sprint" then
+		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
+	elseif a.key == "repair" then
+		local hp, maxHp = Spring.GetUnitHealth(id)
+		Spring.SetUnitHealth(id, math.min(maxHp, hp + maxHp * A.HEAL))
+	elseif a.key == "pulse" then
+		sensor(id, "los", A.PULSE)
+		sensor(id, "airLos", A.PULSE)
+	end
+	if a.time > 0 then
+		p.active = p.active or {}
+		p.active[i] = { frame = Spring.GetGameFrame() + a.time * FPS, unit = id }
+	end
+end
+
+function A.stop(p, i)
+	local act = p.active[i]
+	p.active[i] = nil
+	local id, key = act.unit, ABILITIES[i].key
+	if not Spring.ValidUnitID(id) or Spring.GetUnitIsDead(id) then
+		return
+	end
+	local ud = UnitDefs[Spring.GetUnitDefID(id)]
+	if key == "jammer" then
+		sensor(id, "radarJammer", ud.jammerRadius or 0)
+	elseif key == "cloak" then
+		pcall(Spring.SetUnitCloak, id, false)
+		pcall(Spring.SetUnitCloak, id, 0)
+	elseif key == "sprint" then
+		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed, maxWantedSpeed = ud.speed })
+	elseif key == "pulse" then
+		sensor(id, "los", ud.losRadius or ud.sightDistance or 400)
+		sensor(id, "airLos", ud.airLosRadius or ud.airSightDistance or 400)
+	end
+end
+
+-- ability i of the player: when it has it, it is ready and the team has the energy; true when it began
+function A.use(p, i)
+	local a, n = ABILITIES[i], Spring.GetGameFrame()
+	if not (a and p.abilities and p.abilities[i]) or not p.unit or p.out or ((p.cool and p.cool[i]) or 0) > n then
+		return false
+	end
+	if not Spring.UseTeamResource(p.team, "energy", a.cost) then
+		return false
+	end
+	p.cool = p.cool or {}
+	p.cool[i] = n + a.cool * FPS
+	A.start(p, i)
+	A.buttons(p)
+	A.publish()
+	return true
+end
+
+-- a computer player uses what it has: repair below 40 % health, sprint toward a target that is far, jammer and cloak when it has a target, the pulse when not
+function A.ai(p, target)
+	if not p.abilities or not p.unit then
+		return
+	end
+	local hp, maxHp = Spring.GetUnitHealth(p.unit)
+	local far = false
+	if target then
+		local x, _, z = Spring.GetUnitPosition(p.unit)
+		local tx, _, tz = Spring.GetUnitPosition(target)
+		far = x and tx and (tx - x) ^ 2 + (tz - z) ^ 2 > 600 * 600
+	end
+	for i, a in ipairs(ABILITIES) do
+		if p.abilities[i] then
+			local want = (a.key == "repair" and hp and maxHp and hp < maxHp * 0.4) or (a.key == "sprint" and far) or ((a.key == "jammer" or a.key == "cloak") and target ~= nil)
+				or (a.key == "pulse" and not target)
+			if want then
+				A.use(p, i)
+			end
+		end
+	end
+end
+
+-- the player loses its abilities (its unit died)
+function A.lose(p)
+	p.abilities, p.cool, p.active = {}, {}, {}
+end
+
+-- every 15 frames: effects that end, beacons that are taken or come back, the cooldown in the captions
+function A.update(n)
+	local changed = false
+	for _, p in ipairs(players) do
+		for i, act in pairs(p.active or {}) do
+			if n >= act.frame or act.unit ~= p.unit then
+				A.stop(p, i)
+			end
+		end
+		if p.cool and n % FPS == 0 then
+			for i, f in pairs(p.cool) do
+				if f >= n - FPS then
+					A.buttons(p) -- (a cooldown runs or just ended: the caption shows it)
+					changed = true
+					break
+				end
+			end
+		end
+	end
+	local keep = {}
+	for _, b in ipairs(A.beacons) do
+		local taker
+		for _, uid in ipairs(Spring.GetUnitsInCylinder(b.x, b.z, A.PICK)) do
+			local p = owner[uid]
+			if p and not p.out and not (p.abilities and p.abilities[b.kind]) then
+				taker = p
+				break
+			end
+		end
+		if taker then
+			taker.abilities = taker.abilities or {}
+			taker.abilities[b.kind] = true
+			A.due[#A.due + 1] = n + A.BACK
+			A.buttons(taker)
+			say(string.format("%s found %s.", taker.name, ABILITIES[b.kind].name))
+			changed = true
+		else
+			keep[#keep + 1] = b
+		end
+	end
+	A.beacons = keep
+	local due = {}
+	for _, f in ipairs(A.due) do
+		if n >= f then
+			A.place()
+			changed = true
+		else
+			due[#due + 1] = f
+		end
+	end
+	A.due = due
+	if changed or n % FPS == 0 then
+		A.publish()
+	end
+end
+
 -- The unit of a player: at x, z (a random place when nil), a unit of its stage. A computer team's unit only shoots back (it attacks what the
 -- gadget chooses).
 local function spawn(p, x, z, facing)
@@ -412,6 +689,7 @@ local function spawn(p, x, z, facing)
 		if p.ai then
 			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
 		end
+		A.buttons(p) -- the abilities stay with the evolved unit
 	end
 	publish()
 end
@@ -803,6 +1081,7 @@ local function steer(p)
 			best = w
 		end
 	end
+	A.ai(p, best)
 	if best then
 		attackOrWalk(p.unit, p.ally, best)
 	elseif idle(p.unit) then
@@ -1017,6 +1296,10 @@ function gadget:GameFrame(n)
 						spawnWild()
 					end
 					placeRadars()
+					for _ = 1, A.count() do
+						A.place()
+					end
+					A.publish()
 					say(string.format("Evolution: kill to evolve (10 stages, a random faction each time); a lost unit comes back 5 s later at another place, one stage lower. %d wild units and towers only shoot back; they grow with the players. Stand next to a radar for 5 s to take it. Stage 10 brings Armageddon.", wildCount()))
 				end
 			end
@@ -1046,6 +1329,7 @@ function gadget:GameFrame(n)
 	end
 	if n % 15 == 0 then
 		takeRadars(15)
+		A.update(n)
 		for _, p in ipairs(players) do
 			if p.respawnAt and n >= p.respawnAt and not p.out then
 				spawn(p)
@@ -1115,6 +1399,8 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 	end
 	victim.unit, victim.xp = nil, 0
 	victim.deaths = victim.deaths + 1
+	A.lose(victim) -- the abilities are gone with the unit
+	A.publish()
 	if armageddon then
 		-- no respawn any more: the player is out, the units of its gifts go with it
 		victim.out = true
@@ -1161,6 +1447,13 @@ function gadget:AllowCommand(unitID, unitDefID, unitTeam, cmdID, cmdParams, cmdO
 	if not p then
 		return true
 	end
+	if cmdID > CMD_ABILITY and cmdID <= CMD_ABILITY + #ABILITIES then
+		-- the button of an ability: it begins at once (no order in the queue)
+		if owner[unitID] then
+			A.use(owner[unitID], cmdID - CMD_ABILITY)
+		end
+		return false
+	end
 	if cmdID == CMD.SELFD and owner[unitID] then
 		return false
 	end
@@ -1190,4 +1483,5 @@ function gadget:Initialize()
 	Spring.SetGameRulesParam("evoArmageddon", 0)
 	Spring.SetGameRulesParam("evoNukes", "")
 	Spring.SetGameRulesParam("evoTaking", "")
+	Spring.SetGameRulesParam("evoBeacons", "")
 end

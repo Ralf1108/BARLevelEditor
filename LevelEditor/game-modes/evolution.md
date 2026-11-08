@@ -66,8 +66,23 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - When more than half of the players are on stage 5 or higher, the radars become **T2 radars** one by one (a much larger range)
 - When a player is out, their radars belong to nobody again
 
+**Beacons and abilities**
+- Glowing beacons in five colors lie around the map (you see them where your unit sees); drive over one to get its **ability** until your unit dies (evolving keeps it)
+- Each ability is a button in the order menu of your unit; it costs energy and then needs a while before it can be used again (the seconds are on the button)
+
+| Color | Ability | What it does | Energy | Cooldown |
+|---|---|---|---|---|
+| Violet | Jammer | your unit is hidden from the enemy radar for 20 s | 300 | 60 s |
+| Blue | Cloak | your unit is invisible for 15 s (shooting or an enemy close by shows it) | 400 | 60 s |
+| Yellow | Sprint | 50 % faster for 8 s | 200 | 30 s |
+| Green | Repair | heals 30 % of the health at once | 500 | 90 s |
+| Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
+
+- A taken beacon comes back 45 seconds later somewhere else, in a new color; a beacon of an ability you already have stays for the others
+
 **Computer players**
 - Every team without a human is steered by the game (its own AI is switched off for this unit)
+- It picks up the beacons it drives over and uses its abilities by itself
 - It attacks only enemies of its **own stage or higher** and wild units of its stage or lower (in Armageddon every enemy) and otherwise only shoots back; with nothing to attack it walks around
 
 ## The ladders
