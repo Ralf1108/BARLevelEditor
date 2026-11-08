@@ -64,6 +64,9 @@ function gadget:Initialize()
 		gadgetHandler:RemoveGadget(self)
 		return
 	end
+	if gadgetHandler.RegisterAllowCommand then
+		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns (as in the other gadgets)
+	end
 	Spring.Echo("[LAN] the orders of the Scavengers / Raptors gadgets are dropped (" .. count .. " team(s)); players may command those units")
 end
 

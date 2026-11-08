@@ -85,7 +85,8 @@ end
 function gadget:RecvLuaMsg(msg, playerID)
 	if msg ~= MSG then return end
 	local name, _, spec = Spring.GetPlayerInfo(playerID, false)
-	if not spec then return end
+	-- only an additional player ("~" in front of the name), not a spectator of the start script who sends the message by hand
+	if not spec or type(name) ~= "string" or name:sub(1, 1) ~= "~" then return end
 	local teamID, allyID = chooseTeam()
 	if not teamID then return end
 	Spring.AssignPlayerToTeam(playerID, teamID)
