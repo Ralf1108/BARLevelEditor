@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 16, stamp = "2026-11-07 17:40" }
+local LAN_VERSION = { number = 17, stamp = "2026-11-08 02:05" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -1569,6 +1569,12 @@ local function updateMapSync()
 		pcall(function() a.sock:close() end)
 		lan.mapAsk = nil
 		local size, hash, file = (reply or ""):match("^(%d+)|([^|]+)|([^|]+)$")
+		-- the file name and the size come from the host: only a plain name of a map file (no folder, no ".."), at most MAP_MAX bytes, as the host serves it
+		-- (a name like "../LuaUI/Widgets/x.lua" would write any file of the data folder; the same rule as Test-MapFileName of the console lobby)
+		if size and (tonumber(size) > MAP_MAX or #file > 104 or not file:lower():match("^[%w%._%(%) %-]+%.sd[7z]$") or file:find("..", 1, true)) then
+			log("map check: the host announced a file that is not taken:", file, size)
+			size = nil
+		end
 		if not size then
 			lan.mapFailed = a.name; releaseHeld(a.name)
 			log("map check: the host cannot send the map", a.name, "(" .. tostring(reply) .. ")")
@@ -1821,7 +1827,7 @@ local function autoScan()
 	if os.clock() >= nextScanAt then startScan(true) end
 end
 
----------------------------------------------------------------- "Custom Scenario": a floating button top left (host only, while the LAN battle room is open) and a list of the built scenarios
+---------------------------------------------------------------- "Custom Scenario": a button in the menu LAN Play of the room (host only) and a list of the built scenarios
 local function scenarioMap(name)
 	local text = VFS.LoadFile("LevelEditorScenarios/" .. name .. "/scenario.txt", VFS.RAW) or ""
 	return text:match("[Mm]apname%s*=%s*([^;]+);") or "?"
