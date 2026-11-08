@@ -70,6 +70,8 @@ foreach ($who in $who2) {
     # the lobby (Chobby) puts the window to the full screen in the menu and again when a game starts, unless its window mode is 6 (manual window): lobby and game in this window
     $rc = $rects[$who]; $box = "{ x = $($rc[0]), y = $($rc[1]), width = $($rc[2]), height = $($rc[3]) }"
     Set-Content "$d\LuaMenu\Config\IGL_data.lua" "return { [`"Chili lobby`"] = { loadLocalWidgets = true, lobby_fullscreen = 6, game_fullscreen = 6, manualWindowed = { lobby = $box, game = $box } } }" -Encoding ASCII
+    # the news popup of the lobby (tournaments etc., one per phase with its own "do not notify again") covers the battle room and catches the clicks of the test: switched off (0 = off)
+    Set-Content "$d\LuaMenu\Config\IGL_order.lua" 'return { ["Super Announcement Notifier 1.02"] = 0 }' -Encoding ASCII
     Set-Content "$d\chobby_config.json" '{ "server": { "address": "127.0.0.1", "port": 8200, "protocol": "spring", "serverName": "LOCAL" }, "game": "byar" }' -Encoding ASCII
     if ($who -eq 'H') {
         New-Item -ItemType Directory "$d\LevelEditorScenarios" -Force | Out-Null
