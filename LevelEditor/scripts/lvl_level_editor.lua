@@ -92,17 +92,9 @@ local function editAllowed()
 	return false
 end
 
-local function mouseGround()
-	local mx, my = Spring.GetMouseState()
-	local _, pos = Spring.TraceScreenRay(mx, my, true)
-	if pos then
-		return pos[1], pos[3]
-	end
-end
-
--- Like mouseGround, but says so when the pointer is not over the map
+-- Like Shared.mouseGround, but says so when the pointer is not over the map
 local function mouseOnMap()
-	local x, z = mouseGround()
+	local x, z = Shared.mouseGround()
 	if not x then
 		say("The mouse must be over the map")
 	end
@@ -138,7 +130,7 @@ local function delete()
 	if sendSelected("deleteids") then
 		return true
 	end
-	local x, z = mouseGround()
+	local x, z = Shared.mouseGround()
 	if x then
 		ledStep()
 		led(string.format("led|delete|%d|%d|%d", x, z, 64))
@@ -151,7 +143,7 @@ local function boom()
 	if sendSelected("boomids") then
 		return true
 	end
-	local x, z = mouseGround()
+	local x, z = Shared.mouseGround()
 	if x then
 		ledStep()
 		led(string.format("led|boom|%d|%d|%d", x, z, 80))
@@ -618,191 +610,20 @@ function widget:BlueprintSaved(name)
 	end
 end
 
--- Half width / depth (Elmo) of what is placed: footprint of a unit at a facing, radius of a feature; nil for aircraft (they fly over everything)
-local function halfSize(name, face, isFeature)
-	if isFeature then
-		local fd = FeatureDefNames[name]
-		local rad = math.max(8, (fd and fd.radius) or 16)
-		return rad, rad
-	end
-	local ud = UnitDefNames[name]
-	if not ud or ud.canFly then
-		return nil
-	end
-	local fx, fz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
-	if (face or 0) % 2 == 1 then
-		fx, fz = fz, fx
-	end
-	return fx / 2, fz / 2
-end
-
-local recentPlaced = {} -- { x, z, hx, hz, feature, t }: placed a moment ago, not a unit yet
-
-local function notePlaced(name, x, z, face, isFeature)
-	local hx, hz = halfSize(name, face, isFeature)
-	if hx then
-		recentPlaced[#recentPlaced + 1] = { x = x, z = z, hx = hx, hz = hz, feature = isFeature or false, t = os.clock() }
-	end
-end
-
--- What stands in the way of a unit of this type at (x, z) (ground units and features overlapping its footprint) is added to found;
--- things placed a moment ago (the same blueprint or stroke) are left alone
-local function collectBlockers(name, x, z, face, found, isFeature)
-	local hx, hz = halfSize(name, face, isFeature)
-	if not hx then
-		return
-	end
-	local now = os.clock()
-	local reach = 160
-	for _, id in ipairs(Spring.GetUnitsInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
-		local ud = UnitDefs[Spring.GetUnitDefID(id)]
-		local ux, _, uz = Spring.GetUnitPosition(id)
-		if ud and not ud.canFly and ux then
-			local ufx, ufz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
-			if Shared.headingToFacing(Spring.GetUnitHeading(id) or 0) % 2 == 1 then
-				ufx, ufz = ufz, ufx
-			end
-			if math.abs(ux - x) < hx + ufx / 2 - 1 and math.abs(uz - z) < hz + ufz / 2 - 1 then
-				local mine = false
-				for _, q in ipairs(recentPlaced) do
-					if now - q.t < 2 and math.abs(q.x - ux) < 4 and math.abs(q.z - uz) < 4 then
-						mine = true
-					end
-				end
-				if not mine then
-					found.units[id] = true
-				end
-			end
-		end
-	end
-	for _, fid in ipairs(Spring.GetFeaturesInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
-		local fdef = FeatureDefs[Spring.GetFeatureDefID(fid)]
-		local fx, _, fz = Spring.GetFeaturePosition(fid)
-		local rad = math.max(8, (fdef and fdef.radius) or 16)
-		if fx and math.abs(fx - x) < hx + rad - 1 and math.abs(fz - z) < hz + rad - 1 then
-			found.features[fid] = true
-		end
-	end
-end
-
--- True when something is already there: the footprint would overlap another unit (also one placed a moment ago); a feature also
--- overlaps other features. Units may stand on features (they crush them).
-local function blocked(name, x, z, face, isFeature)
-	local hx, hz = halfSize(name, face, isFeature)
-	if not hx then
-		return false
-	end
-	local now = os.clock()
-	for i = #recentPlaced, 1, -1 do
-		local q = recentPlaced[i]
-		if now - q.t > 2 then
-			table.remove(recentPlaced, i)
-		elseif (isFeature or not q.feature) and math.abs(q.x - x) < hx + q.hx - 1 and math.abs(q.z - z) < hz + q.hz - 1 then
-			return true
-		end
-	end
-	local reach = 160
-	for _, id in ipairs(Spring.GetUnitsInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
-		local ud = UnitDefs[Spring.GetUnitDefID(id)]
-		if ud and not ud.canFly then
-			local ux, _, uz = Spring.GetUnitPosition(id)
-			local ufx, ufz = (ud.xsize or 4) * 8, (ud.zsize or 4) * 8
-			if Shared.headingToFacing(Spring.GetUnitHeading(id) or 0) % 2 == 1 then
-				ufx, ufz = ufz, ufx
-			end
-			if ux and math.abs(ux - x) < hx + ufx / 2 - 1 and math.abs(uz - z) < hz + ufz / 2 - 1 then
-				return true
-			end
-		end
-	end
-	if isFeature then
-		for _, fid in ipairs(Spring.GetFeaturesInRectangle(x - hx - reach, z - hz - reach, x + hx + reach, z + hz + reach)) do
-			local fdef = FeatureDefs[Spring.GetFeatureDefID(fid)]
-			local fx, _, fz = Spring.GetFeaturePosition(fid)
-			local rad = math.max(8, (fdef and fdef.radius) or 16)
-			if fx and math.abs(fx - x) < hx + rad - 1 and math.abs(fz - z) < hz + rad - 1 then
-				return true
-			end
-		end
-	end
-	return false
-end
-
--- Makes room for something at (x, z): with W on what is in the way is deleted (true), with W off the spot must be free
--- (false when it is occupied)
-local function makeRoom(name, x, z, face, isFeature)
-	if not writeOn then
-		return not blocked(name, x, z, face, isFeature)
-	end
-	local found = { units = {}, features = {} }
-	collectBlockers(name, x, z, face, found, isFeature)
-	local ids = {}
-	for id in pairs(found.units) do
-		ids[#ids + 1] = "u" .. id
-	end
-	for fid in pairs(found.features) do
-		ids[#ids + 1] = "f" .. fid
-	end
-	if #ids > 0 then
-		led("led|clearids|" .. table.concat(ids, ",", 1, math.min(#ids, 100)))
-	end
-	return true
-end
-
--- Deletes what collectBlockers found (the same undo step as the placing that follows)
-local function clearBlockers(found)
-	local ids = {}
-	for id in pairs(found.units) do
-		ids[#ids + 1] = "u" .. id
-	end
-	for fid in pairs(found.features) do
-		ids[#ids + 1] = "f" .. fid
-	end
-	for i = 1, #ids, 100 do
-		led("led|clearids|" .. table.concat(ids, ",", i, math.min(#ids, i + 99)))
-	end
-end
-
--- Puts a blueprint unit list with center (cx, cz) into the load queue
--- A blueprint (or the clipboard) is placed as one undo step; noStep = true for rows of several blueprints
--- (there the step is already in front). The units go through the queue with the extra "1" (remember).
-local function placeBlueprintUnits(units, cx, cz, teamOverride, label, k, noStep)
-	local n = 0
-	k = k or 0
-	if not noStep then
-		ledStep()
-	end
-	local found = { units = {}, features = {} } -- W on: what stands in the way is deleted first
-	local skip = {} -- W off: occupied spots are left out
-	for i, u in ipairs(units) do
-		local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
-		local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
-		if writeOn then
-			collectBlockers(tostring(u.name), cx + odx, cz + odz, Shared.headingToFacing(rot), found)
-		else
-			skip[i] = blocked(tostring(u.name), cx + odx, cz + odz, Shared.headingToFacing(rot))
-		end
-	end
-	clearBlockers(found)
-	local skipped = 0
-	for i, u in ipairs(units) do
-		if skip[i] then
-			skipped = skipped + 1
-		else
-			local odx, odz = rotateOffset(tonumber(u.dx) or 0, tonumber(u.dz) or 0, k)
-			local x, z = cx + odx, cz + odz
-			local rot = ((tonumber(u.rot) or 0) + 16384 * k + 32768) % 65536 - 32768
-			notePlaced(tostring(u.name), x, z, Shared.headingToFacing(rot))
-			local y = Spring.GetGroundHeight(x, z) + (tonumber(u.h) or 0)
-			placeQueue[#placeQueue + 1] = string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1%s", tostring(u.name), teamOverride or team,
-				math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), neutralOn and "1" or "0", math.floor(y + 0.5),
-				u.indestructible == true and "|1" or "")
-			n = n + 1
-		end
-	end
-	say(string.format("Placing blueprint '%s': %d units%s%s", label, n, teamOverride and (" for team " .. teamOverride) or "",
-		skipped > 0 and (" (" .. skipped .. " occupied spots left out, switch W on to write over them)") or ""))
-end
+-- Placing (LevelEditor/scripts/led_place.lua): room for what is placed, units placed a moment ago, blueprints and the clipboard
+local pl = VFS.Include("luaui/Include/led_place.lua", nil, VFS.ZIP_FIRST)({
+	Shared = Shared,
+	say = function(text) say(text) end,
+	led = function(msg) led(msg) end,
+	ledStep = function() ledStep() end,
+	queue = function(msg) placeQueue[#placeQueue + 1] = msg end,
+	team = function() return team end,
+	writeOn = function() return writeOn end,
+	neutralOn = function() return neutralOn end,
+	selectedUnits = function() return selectedUnits() end,
+	mouseOnMap = function() return mouseOnMap() end,
+	editAllowed = function() return editAllowed() end,
+})
 
 local function bpCurrent()
 	return BP_LIST[bpGrid.selected]
@@ -821,79 +642,6 @@ gridHooks.select = function(i)
 		recent:add("bp", bp.name)
 	end
 	bpSay()
-end
-
--- Copy/paste: Ctrl+C remembers the selected units (without a selection the one at the mouse pointer),
--- Ctrl+V sets them up again centered at the mouse pointer (with team, rotation and height)
-local clipboard = {}
-
-local function copyUnits()
-	local ids = {}
-	for _, id in ipairs(selectedUnits()) do
-		ids[#ids + 1] = id
-	end
-	if #ids == 0 then
-		local x, z = mouseGround()
-		if x then
-			local best, bestD = nil, 1e9
-			for _, id in ipairs(Spring.GetUnitsInCylinder(x, z, 80)) do
-				local ux, _, uz = Spring.GetUnitPosition(id)
-				local d = (ux - x) ^ 2 + (uz - z) ^ 2
-				if d < bestD and Spring.GetUnitTeam(id) ~= Spring.GetGaiaTeamID() then
-					best, bestD = id, d
-				end
-			end
-			if best then
-				ids[1] = best
-			end
-		end
-	end
-	local list, minX, maxX, minZ, maxZ = {}, nil, nil, nil, nil
-	for _, id in ipairs(ids) do
-		local x, y, z = Spring.GetUnitPosition(id)
-		local defID = Spring.GetUnitDefID(id)
-		if x and defID then
-			list[#list + 1] = { id = id, x = x, y = y, z = z, name = UnitDefs[defID].name }
-			minX, maxX = math.min(minX or x, x), math.max(maxX or x, x)
-			minZ, maxZ = math.min(minZ or z, z), math.max(maxZ or z, z)
-		end
-	end
-	if #list == 0 then
-		say("Nothing to copy: select units first or hold the mouse over a unit.")
-		return true
-	end
-	local cx, cz = (minX + maxX) / 2, (minZ + maxZ) / 2
-	clipboard = {}
-	for _, u in ipairs(list) do
-		clipboard[#clipboard + 1] = {
-			name = u.name,
-			dx = u.x - cx,
-			dz = u.z - cz,
-			h = u.y - Spring.GetGroundHeight(u.x, u.z),
-			rot = Spring.GetUnitHeading(u.id),
-			team = Spring.GetUnitTeam(u.id),
-			neutral = Spring.GetUnitNeutral(u.id),
-			indestructible = Spring.GetUnitRulesParam(u.id, "indestructible") == 1,
-		}
-	end
-	say(string.format("%d units copied. Paste at the cursor with Ctrl+V.", #clipboard))
-	return true
-end
-
-local function pasteUnits()
-	if not editAllowed() then
-		return true
-	end
-	if #clipboard == 0 then
-		say("The clipboard is empty. Copy with Ctrl+C first.")
-		return true
-	end
-	local cx, cz = mouseOnMap()
-	if not cx then
-		return true
-	end
-	placeBlueprintUnits(clipboard, cx, cz, nil, "Copy")
-	return true
 end
 
 -- Ctrl+D: create the builders of all factions (as at the start) again at the mouse pointer, for the current team
@@ -1690,13 +1438,7 @@ end
 
 area = Shared.newAreaAttack({
 	say = say,
-	mouseGround = function()
-		local mx, my = Spring.GetMouseState()
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		if pos then
-			return pos[1], pos[3]
-		end
-	end,
+	mouseGround = Shared.mouseGround,
 	inPanel = function(mx, my) return widget:IsAbove(mx, my) end,
 	onArm = function()
 		-- ends the other modes that use the left mouse button on the map
@@ -2255,9 +1997,9 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 	led = led,
 	ledStep = ledStep,
 	load_level = load_level,
-	makeRoom = makeRoom,
+	makeRoom = pl.makeRoom,
 	mazeUnitName = mazeUnitName,
-	notePlaced = notePlaced,
+	notePlaced = pl.notePlaced,
 	placed = placed,
 	saveLevel = saveLevel,
 	say = say,
@@ -2329,7 +2071,7 @@ local function paintPlace(kind, x, z)
 	else
 		x, z = snap(x), snap(z)
 	end
-	if not makeRoom(name, x, z, face, isF) then
+	if not pl.makeRoom(name, x, z, face, isF) then
 		return false
 	end
 	if isF then
@@ -2337,7 +2079,7 @@ local function paintPlace(kind, x, z)
 	else
 		led(string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, x, z, facing, neutralOn and 1 or 0))
 	end
-	notePlaced(name, x, z, face, isF)
+	pl.notePlaced(name, x, z, face, isF)
 	if isF then
 		recent:add("feature", name)
 	end
@@ -2347,7 +2089,7 @@ end
 -- Left mouse button pressed with an armed unit or feature: one is placed, more while the mouse moves (one undo step for the stroke)
 local function paintStart(kind, pos)
 	ledStep()
-	local hx, hz = halfSize(kind == "feature" and armedFeature or unitName, facing, kind == "feature")
+	local hx, hz = pl.halfSize(kind == "feature" and armedFeature or unitName, facing, kind == "feature")
 	local gap = spacing * 16
 	paint = { kind = kind, x = pos[1], z = pos[3], sx = math.max(16, (hx or 8) * 2 + gap), sz = math.max(16, (hz or 8) * 2 + gap) }
 	if paintPlace(kind, pos[1], pos[3]) then
@@ -2813,7 +2555,7 @@ function widget:MousePress(mx, my, button)
 				if shift then
 					stampDrag = { x = snap(pos[1]), z = snap(pos[3]), bp = true } -- Row/rectangle of blueprints
 				else
-					placeBlueprintUnits(bp.units, pos[1], pos[3], nil, bp.name, bpRot)
+					pl.placeBlueprintUnits(bp.units, pos[1], pos[3], nil, bp.name, bpRot)
 				end
 			end
 			return true
@@ -2967,9 +2709,9 @@ function widget:MouseRelease(mx, my, button)
 			ledStep()
 			local n = 0
 			for _, p in ipairs(list) do
-				if makeRoom(armedFeature, p.x, p.z, 0, true) then
+				if pl.makeRoom(armedFeature, p.x, p.z, 0, true) then
 					led(string.format("led|feature|%s|%d|%d|%d", armedFeature, p.x, p.z, rot))
-					notePlaced(armedFeature, p.x, p.z, 0, true)
+					pl.notePlaced(armedFeature, p.x, p.z, 0, true)
 					n = n + 1
 				end
 			end
@@ -2983,7 +2725,7 @@ function widget:MouseRelease(mx, my, button)
 			stampDrag = nil
 			ledStep()
 			for _, p in ipairs(list) do
-				placeBlueprintUnits(bp.units, p.x, p.z, nil, bp.name, bpRot, true)
+				pl.placeBlueprintUnits(bp.units, p.x, p.z, nil, bp.name, bpRot, true)
 			end
 			say(string.format("%d x blueprint '%s' placed", #list, bp.name))
 		elseif ud and pos and canEdit() and not drag0.bp and not drag0.feat then
@@ -2993,9 +2735,9 @@ function widget:MouseRelease(mx, my, button)
 			ledStep()
 			local n = 0
 			for _, p in ipairs(list) do
-				if makeRoom(unitName, p.x, p.z, facing) then
+				if pl.makeRoom(unitName, p.x, p.z, facing) then
 					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, p.x, p.z, facing, neutralOn and 1 or 0)
-					notePlaced(unitName, p.x, p.z, facing)
+					pl.notePlaced(unitName, p.x, p.z, facing)
 					n = n + 1
 				end
 			end
@@ -3797,12 +3539,12 @@ end
 ctrlEdit = function(key, shift, isRepeat)
 	local act
 	if key == 99 and not shift then
-		act = copyUnits
+		act = pl.copyUnits
 	elseif key == 118 and not shift then
-		act = pasteUnits
+		act = pl.pasteUnits
 	elseif key == 120 and not shift then
 		act = function()
-			copyUnits()
+			pl.copyUnits()
 			return delete()
 		end
 	elseif key == 115 and not shift then
