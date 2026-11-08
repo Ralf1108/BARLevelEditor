@@ -31,6 +31,7 @@ $items = @(
     @{ Path = (Join-Path $data 'LevelEditorBlueprints'); Text = 'Junction data\LevelEditorBlueprints (the blueprints themselves stay in blueprints)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LevelEditorScenarios'); Text = 'Junction data\LevelEditorScenarios (the built scenarios themselves stay in scenario\scenarios)'; Kind = 'junction' },
     @{ Path = (Join-Path $data 'LuaMenu\Widgets\lan_lobby.lua'); Text = 'LAN Play widget for the lobby (data\LuaMenu\Widgets\lan_lobby.lua)'; Kind = 'file' },
+    @{ Path = (Join-Path $data 'LuaMenu\Config\lan_raptor_brood.txt'); Text = 'Raptor Brood Chamber of LAN Play (data\LuaMenu\Config\lan_raptor_brood.txt)'; Kind = 'file' },
     @{ Path = (Join-Path $data 'LuaUI\Widgets\shared_start.lua'); Text = 'Game widget of LAN Play and the scenarios (data\LuaUI\Widgets\shared_start.lua)'; Kind = 'file' },
     @{ Path = (Join-Path $desktop 'BAR Level Editor.lnk'); Text = 'Desktop shortcut "BAR Level Editor"'; Kind = 'file' },
     @{ Path = (Join-Path $root 'start_level_editor.bat'); Text = 'start_level_editor.bat'; Kind = 'file' },

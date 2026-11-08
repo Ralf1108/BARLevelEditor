@@ -1,6 +1,7 @@
 # Installs (or removes) LAN Play for the lobby of Beyond All Reason.
 #   1. copies lan_lobby.lua to <data>\LuaMenu\Widgets\ (only when it differs) and the little game widget shared_start.lua (a game in which two humans
 #      control one team does not start by itself; the host's copy starts it) to <data>\LuaUI\Widgets\
+#      and raptor_brood_defs.lua as <data>\LuaMenu\Config\lan_raptor_brood.txt (the Raptor Brood Chamber: the host puts it into the start script as game option tweakdefs<N>)
 #   2. sets ["Chili lobby"].loadLocalWidgets = true in <data>\LuaMenu\Config\IGL_data.lua (only when it is not set; the file is saved next to itself first)
 # The widget only adds the entry "LAN Play" to the main menu; it changes nothing as long as LAN Play is not used (the normal Multiplayer works as before).
 # Run by install_editor.ps1 (the Level Editor setup). The game and the launcher must not run: the lobby writes IGL_data.lua when it ends and would
@@ -20,6 +21,7 @@ $cfg = Join-Path $cfgDir 'IGL_data.lua'
 $widget = Join-Path $widgetDir 'lan_lobby.lua'
 $gameWidgetDir = Join-Path $data 'LuaUI\Widgets'
 $gameWidget = Join-Path $gameWidgetDir 'shared_start.lua'
+$brood = Join-Path $cfgDir 'lan_raptor_brood.txt'
 New-Item -ItemType Directory -Force $widgetDir, $cfgDir | Out-Null
 
 function Set-LocalWidgets([bool]$on) {
@@ -41,7 +43,7 @@ function Set-LocalWidgets([bool]$on) {
 }
 
 if ($Uninstall) {
-    foreach ($f in @($widget, $gameWidget)) { if (Test-Path $f) { Remove-Item $f -Force } }
+    foreach ($f in @($widget, $gameWidget, $brood)) { if (Test-Path $f) { Remove-Item $f -Force } }
     Set-LocalWidgets $false
     Write-Host "LAN Play removed from $data (loadLocalWidgets = false)." -ForegroundColor Green
     exit 0
@@ -54,6 +56,8 @@ if (Test-Path $gsrc) {
     New-Item -ItemType Directory -Force $gameWidgetDir | Out-Null
     if (-not (Test-Path $gameWidget) -or (Get-FileHash $gsrc).Hash -ne (Get-FileHash $gameWidget).Hash) { Copy-Item $gsrc $gameWidget -Force; Write-Host 'Game widget shared_start.lua copied.' }
 }
+$bsrc = Join-Path $PSScriptRoot 'raptor_brood_defs.lua'
+if ((Test-Path $bsrc) -and (-not (Test-Path $brood) -or (Get-FileHash $bsrc).Hash -ne (Get-FileHash $brood).Hash)) { Copy-Item $bsrc $brood -Force; Write-Host 'Raptor Brood Chamber definition copied.' }
 Set-LocalWidgets $true
 Write-Host "LAN Play installed in $data." -ForegroundColor Green
 Write-Host 'Start the game as usual: the main menu has the entry "LAN Play" below Multiplayer.'

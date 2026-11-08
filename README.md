@@ -92,6 +92,7 @@ Play with computers in the same network, no account and no server in the cloud. 
 - **Evolution**: a game mode on any map: every player starts with one weak unit, kills evolve it through 10 stages, stage 10 brings Armageddon, see [Evolution](LevelEditor/game-modes/evolution.md)
 - The buttons of LAN Play (Custom Scenario, Copilot, Evolution) are in the menu of a green button **LAN Options** in the title row of the room
 - **Play the Scavengers or Raptors yourself**: put a Scavengers or Raptors computer into a team with a human player and the computer stops commanding its units, the humans of the team do (the official game does not allow that); the room tells everybody when this starts and ends
+- **Raptor Brood Chamber**: with a Raptors computer in the room the Raptor healers can build a brood chamber that grows raptors like a factory
 - **Raptors against Scavengers (as a gimmick)**: a Raptors computer in one team and a Scavengers computer in the other, each with a human player in its team: both hordes spawn and fight each other, each human commands the units of its computer (the official game refuses this combination: nothing spawns)
 - **Rejoin and late join**: a player whose game crashed comes back into the room with the same name and presses Rejoin (same team, catches up); with `!latejoin on` before the start, players who come later can join the running game as players
 - A missing map is fetched from the host over the network and checked against the list of official maps; different versions of LAN Play are reported with a warning

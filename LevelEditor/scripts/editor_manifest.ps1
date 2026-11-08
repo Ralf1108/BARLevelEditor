@@ -41,7 +41,7 @@ function Get-ScenarioGameDirs { return @((Get-EditorFolder 'scripts'), (Get-Edit
 # Further files whose change has to run the setup again: the setup itself and what the LAN Play setup copies
 $StampExtraFiles = @(
     @('scripts', 'install_editor.ps1'), @('scripts', 'editor_manifest.ps1'), @('shared', 'bar_common.ps1'),
-    @('lan', 'lan_lobby.lua'), @('lan', 'install_lan_play.ps1'))
+    @('lan', 'lan_lobby.lua'), @('lan', 'raptor_brood_defs.lua'), @('lan', 'install_lan_play.ps1'))
 
 # The entries of LevelEditorMod.sdz: @(path in the archive, full path of the source)
 function Get-EditorGameEntries {

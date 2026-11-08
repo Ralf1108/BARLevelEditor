@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 17, stamp = "2026-11-08 02:05" }
+local LAN_VERSION = { number = 18, stamp = "2026-11-08 19:25" }
 local HOSTNAME = "LANHost" -- the user that is the founder of the battle (the autohost)
 local cfg = {}
 for line in string.gmatch(VFS.LoadFile("lanlobby_cfg.txt", VFS.RAW) or "", "[^\r\n]+") do
@@ -625,6 +625,33 @@ local function hasPveBot()
 	return false
 end
 
+-- A Raptors AI in the room: the healers of the Raptors can build a "Raptor Brood Chamber" (a factory of raptors). Its definition is Lua text for BAR's game option
+-- tweakdefs<N> (raptor_brood_defs.lua, copied by install_lan_play.ps1 to LuaMenu/Config/lan_raptor_brood.txt); the host writes it into the start script in base64url
+-- without padding (= would end the value there), in the highest slot the room does not use. nil without a Raptors computer or without the file.
+local function broodOption()
+	local raptors = false
+	for _, bot in ipairs(S.battle.bots) do if (bot.lib or ""):lower():find("raptor", 1, true) then raptors = true end end
+	if not raptors then return nil end
+	local text = VFS.LoadFile("LuaMenu/Config/lan_raptor_brood.txt", VFS.RAW)
+	if not text or text == "" then return nil end
+	local key
+	for i = 29, 1, -1 do
+		local v = S.battle.modoptions["tweakdefs" .. i]
+		if v == nil or v == "" then key = "tweakdefs" .. i; break end
+	end
+	if not key then return nil end
+	local abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+	local out = {}
+	for i = 1, #text, 3 do
+		local a, b, c = text:byte(i, i + 2)
+		local n = a * 65536 + (b or 0) * 256 + (c or 0)
+		local q = { math.floor(n / 262144) % 64, math.floor(n / 4096) % 64, math.floor(n / 64) % 64, n % 64 }
+		local count = c and 4 or (b and 3 or 2)
+		for j = 1, count do out[#out + 1] = abc:sub(q[j] + 1, q[j] + 1) end
+	end
+	return { key = key, value = table.concat(out) }
+end
+
 -- "late join" (!latejoin on, chosen before the start) also needs the extra game: its gadget lan_latejoin.lua puts a player who comes into the running game into a team;
 -- so does the game mode Evolution (the button Evolution of the room: the game option lanevolution=1, gadget evo_game.lua)
 local function evolutionOn() return S.battle.modoptions.lanevolution == "1" end
@@ -1066,8 +1093,10 @@ buildScript = function(myName)
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
 	-- Evolution replaces the commanders: the game must not end when a commander is gone (the mode itself never ends)
 	local evo = evolutionOn() and extra
-	for k, v in pairs(S.battle.modoptions) do if not (evo and k == "deathmode") then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
+	local brood = broodOption()
+	for k, v in pairs(S.battle.modoptions) do if not (evo and k == "deathmode") and not (brood and k == brood.key) then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
 	if evo then t[#t + 1] = "\t\tdeathmode=neverend;\n" end
+	if brood then t[#t + 1] = "\t\t" .. brood.key .. "=" .. brood.value .. ";\n" end
 	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
 	if late then t[#t + 1] = "\t\tlanlatejoin=1;\n" end
 	t[#t + 1] = "\t\tlanplay=1;\n" -- the game widget shared_start.lua acts only in LAN Play games and scenarios

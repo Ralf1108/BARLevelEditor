@@ -94,6 +94,7 @@ The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen o
 - `scripts\led_teams.lua` - the Teams page of the widget (button T: human or AI, alliance, start resources; loaded by the widget)
 - `scripts\unit_indestructible.lua` - gadget of the buildings marked with FX (also used by scenarios)
 - `scripts\lan_latejoin.lua`, `scripts\lan_pve_hold.lua` - gadgets of LAN Play (late join; Scavengers / Raptors played by humans)
+- `lan_lobby\raptor_brood_defs.lua` - the Raptor Brood Chamber of LAN Play (game option tweakdefs: the Raptor healers can build a chamber that grows raptors)
 - `scripts\led_arena.lua` - the Arena page of the widget (loaded by the widget); manual: `sandbox\arena.md`
 - `scripts\led_save.lua` - the Save page of the widget (button S: the list of the saved levels; loaded by the widget)
 - `scripts\led_gen.lua` - the Generate page of the widget (button G: state and layout; loaded by the widget)

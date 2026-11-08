@@ -5,10 +5,10 @@
 #   -Hold 1 | 0                       game option lanpvehold (0 = control run: the AI's orders are not dropped)
 #   -Layout ally | separate           the AI in the ally team of the human, or in an ally team of its own
 #   -Enemy 1                          a third team (NullAI, own ally team) that the Scavengers / Raptors can attack
-#   -Nest                             game option tweakdefs9 = scripts\lan_raptor_nest_defs.lua (prototype: the Raptor Nest; with -Widget zz_nest.lua)
+#   -Brood                            game option tweakdefs9 = lan_lobby\raptor_brood_defs.lua (the Raptor Brood Chamber, as the LAN lobby sets it; with -Widget zz_brood.lua)
 #   -Widget zz_pve.lua                the test widget (a file in tools)
 param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'pve_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7',
-      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Nest, [string]$Widget = 'zz_pve.lua')
+      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [string]$Widget = 'zz_pve.lua')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
@@ -29,7 +29,7 @@ if ($Enemy) {
     $enemyTeams = "`n`t[team2] { allyteam=2; teamleader=0; side=Armada; handicap=0; }`n`t[ai1] { shortname=NullAI; team=2; host=0; name=Null2; }"
 } else { $enemyTeams = '' }
 # the game option tweakdefs: the Lua text in base64url without padding (the game's string.base64Decode reads it; = would end the value in the start script)
-$tweak = if ($Nest) { ' tweakdefs9=' + ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $repo 'LevelEditor\scripts\lan_raptor_nest_defs.lua'))).TrimEnd('=').Replace('+', '-').Replace('/', '_')) + ';' } else { '' }
+$tweak = if ($Brood) { ' tweakdefs9=' + ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $repo 'LevelEditor\lan_lobby\raptor_brood_defs.lua'))).TrimEnd('=').Replace('+', '-').Replace('/', '_')) + ';' } else { '' }
 $script = @"
 [game]
 {
@@ -53,4 +53,4 @@ $allies
 "@
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
 Write-SandboxSettings "$Work\springsettings.cfg" @(40, 40, 1200, 700) @('Sound = 0', 'MaxSounds = 0')
-Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzpve\]|\[zznest\]|\[LAN\]|Failed to load|Error|tweakdef' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
+Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzpve\]|\[zzbrood\]|\[LAN\]|Failed to load|Error|tweakdef' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"

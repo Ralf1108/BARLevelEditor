@@ -21,6 +21,8 @@
 #               lines with the values of the room before and after (no game is started: -WaitSec 90)
 #         rejoin = host + joiner place their start positions, the game runs; then the joiner's game is killed and started again (same folder, auto join): does the room offer a rejoin?
 #               (log of the first run: infolog_first.txt of the joiner; use -QuitFrame 60000)
+#         brood = one instance: the host alone with a Raptors computer in its ally team (the lobby adds the Raptor Brood Chamber, game option tweakdefs<N>); places its start
+#               position, zz_brood.lua has a healer build the chamber and the chamber grow raptors (use -QuitFrame 60000: zz_brood.lua ends the game itself)
 #         mix = Raptors against Scavengers: host (PlayerA) with a Raptors computer in team 1, joiner (PlayerB) with a Scavengers computer in team 2, both place their start position;
 #               zz_mix.lua (host, not with -Play) speeds the game up and logs units, distances and deaths of both computers. -Play: a game to play (no test widgets, no speed-up, no end by itself)
 #         page = one instance, the LAN Play page opened and left alone (pictures of the page with -Shots, -WaitSec 60 ends it)
@@ -51,7 +53,7 @@ Add-Type -Name Dpi -Namespace W7 -MemberDefinition '[DllImport("user32.dll")] pu
 $wa = [Windows.Forms.Screen]::PrimaryScreen.Bounds
 $qw = [int]($wa.Width / 2) - 16; $qh = [int]($wa.Height / 2) - 80
 $rects = @{ H = @(0, 0, $qw, $qh); J = @(0, [int]($wa.Height / 2), $qw, $qh); K = @([int]($wa.Width / 2), 0, $qw, $qh) }
-$who2 = if ($Mode -in 'page', 'preset', 'evoroom') { @('H') } else { @('H', 'J') + $(if ($Clients -ge 2) { 'K' }) }
+$who2 = if ($Mode -in 'page', 'preset', 'evoroom', 'brood') { @('H') } else { @('H', 'J') + $(if ($Clients -ge 2) { 'K' }) }
 $names = @{ H = 'PlayerA'; J = 'PlayerB'; K = 'PlayerC' }
 $procs = @{}
 $prev = [SbxWin]::GetForegroundWindow()
@@ -60,11 +62,13 @@ foreach ($who in $who2) {
     $sbx = "$sp\sbx_$who"
     $d = New-SandboxData $sbx $real @('LuaMenu\Config', 'LuaMenu\Widgets', 'LevelEditor') -NoMaps:($NoMap -and $who -ne 'H')
     Copy-Item "$repo\LevelEditor\lan_lobby\lan_lobby.lua" "$d\LuaMenu\Widgets\"
+    Copy-Item "$repo\LevelEditor\lan_lobby\raptor_brood_defs.lua" "$d\LuaMenu\Config\lan_raptor_brood.txt"   # as install_lan_play.ps1 does
     if ($who -ne 'H' -and $Lobby -eq 'other') { Add-Content "$d\LuaMenu\Widgets\lan_lobby.lua" "`n-- another version for the version test" -Encoding ASCII }
     Copy-Item "$repo\LevelEditor\scenario\template\shared_start.lua" "$d\LuaUI\Widgets\"
     if (-not $Play) { Copy-Item "$tools\zz_lantest.lua" "$d\LuaUI\Widgets\" }   # -Play: no test widgets, the game is played
     if ($Mode -eq 'mix' -and $who -eq 'H' -and -not $Play) { Copy-Item "$tools\zz_mix.lua" "$d\LuaUI\Widgets\" }
-    if ($Mode -in 'pve', 'rejoin', 'mix' -or ($Mode -eq 'latejoin' -and $who -eq 'H')) { Copy-Item "$tools\zz_place.lua" "$d\LuaUI\Widgets\" }
+    if ($Mode -in 'pve', 'rejoin', 'mix', 'brood' -or ($Mode -eq 'latejoin' -and $who -eq 'H')) { Copy-Item "$tools\zz_place.lua" "$d\LuaUI\Widgets\" }
+    if ($Mode -eq 'brood' -and -not $Play) { Copy-Item "$tools\zz_brood.lua" "$d\LuaUI\Widgets\" }   # the Raptor Brood Chamber through the real lobby
     if ($Mode -eq 'pve' -and $who -eq 'H') { Copy-Item "$tools\zz_pve.lua" "$d\LuaUI\Widgets\" }
     [IO.File]::WriteAllText("$d\zz_mode.txt", $Mode); [IO.File]::WriteAllText("$d\zz_quit.txt", "$QuitFrame")
     # the lobby (Chobby) puts the window to the full screen in the menu and again when a game starts, unless its window mode is 6 (manual window): lobby and game in this window
@@ -80,7 +84,7 @@ foreach ($who in $who2) {
         $sg = Write-ScenarioGame $d (Get-GameVersion $real) (Get-ScenarioGameDirs)
         Set-Content "$d\games\$ScenarioGamePointer" @($sg.File, $sg.Name) -Encoding ASCII
         $sg0 = $sg; $hostData = $d
-        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'evoroom') { "auto=host`nname=PlayerA`nplayers=99`nmap=$Map`nevolution=1`nevolutionClose=40`nlanMenu=44`nbot=BARb`nbotVersion=stable`nbotAlly=1" } elseif ($Mode -eq 'evo') { "auto=host`nname=PlayerA`nplayers=2`nmap=$Map`nevolution=1$(if ($EvoStage -gt 0) { "`nevolutionStage=$EvoStage" })`nbot=$(if ($Ai -eq 'RaptorsAI') { 'BARb' } else { $Ai })`nbotVersion=stable`nbotAlly=2`nstartDelay=$(if ($Shots) { 70 } else { 25 })" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
+        $auto = if ($Mode -eq 'boss') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nboss=1`nstartDelay=600" } elseif ($Mode -eq 'page') { "openTab=1`nname=PlayerA" } elseif ($Mode -eq 'teams') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nteams=3`nteamSize=2`ndump=14`nstartDelay=600" } elseif ($Mode -eq 'preset') { "auto=host`nname=PlayerA`nplayers=99`nmap=Hooked 1.1`npresetTest=1$(if ($PresetName) { "`npresetName=$PresetName" })" } elseif ($Mode -eq 'mix') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nbot2=ScavengersAI`nbot2Ally=1`nstartDelay=25" } elseif ($Mode -eq 'latejoin') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nlateJoin=1`nstartDelay=25" } elseif ($Mode -eq 'rejoin') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nstartDelay=25" } elseif ($Mode -eq 'pve') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`nbot=$Ai`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'brood') { "auto=host`nname=PlayerA`nplayers=1`nmap=Full Metal Plate 1.7`nbot=RaptorsAI`nbotAlly=0`nstartDelay=25" } elseif ($Mode -eq 'evoroom') { "auto=host`nname=PlayerA`nplayers=99`nmap=$Map`nevolution=1`nevolutionClose=40`nlanMenu=44`nbot=BARb`nbotVersion=stable`nbotAlly=1" } elseif ($Mode -eq 'evo') { "auto=host`nname=PlayerA`nplayers=2`nmap=$Map`nevolution=1$(if ($EvoStage -gt 0) { "`nevolutionStage=$EvoStage" })`nbot=$(if ($Ai -eq 'RaptorsAI') { 'BARb' } else { $Ai })`nbotVersion=stable`nbotAlly=2`nstartDelay=$(if ($Shots) { 70 } else { 25 })" } elseif ($Mode -eq 'cp') { "auto=host`nname=PlayerA`nplayers=2`nmap=Full Metal Plate 1.7`ncopilot=PlayerB`nstartDelay=14" } else { "auto=host`nname=PlayerA`nplayers=$($Clients + 1)`nscenario=$scn" }
     } else {
         $auto = "auto=join`nname=$($names[$who])`nip=127.0.0.1`nautoAccept=1$(if ($NoMap -and -not $KeepOnline) { "`nnoOnline=1" })"
         if ($MapList -eq 'official') { Update-MapHashes $d }
@@ -167,7 +171,7 @@ while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not
             $who2 = @('H', 'J'); $killedAt = Get-Date; 'latejoin test: PlayerB started (the game of PlayerA runs)'
         }
     }
-    if ($Mode -in 'pve', 'rejoin', 'latejoin', 'mix') {
+    if ($Mode -in 'pve', 'rejoin', 'latejoin', 'mix', 'brood') {
         # click the middle of the window (the widget points the camera at the start position) until the widget logs "placed"; in the draft mode the players place one after the other
         foreach ($who in $who2) {
             $dd = "$sp\sbx_$who\data"
