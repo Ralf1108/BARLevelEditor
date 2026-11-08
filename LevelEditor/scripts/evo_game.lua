@@ -45,11 +45,11 @@ local NAMES = {
 -- The abilities: a beacon of the color of an ability lies on the map; a player's unit that drives over it gets the ability until it dies (a button in the
 -- order menu: energy cost, time it lasts, cooldown in seconds). Used by both parts (the beacons and the display).
 local ABILITIES = {
-	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
-	{ key = "cloak", name = "Cloak", color = { 0.3, 0.65, 1 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible for 15 s (shooting or an enemy close by shows it)" },
 	{ key = "sprint", name = "Sprint", color = { 1, 0.9, 0.2 }, cost = 200, time = 8, cool = 30, tip = "Your unit is 50 % faster for 8 s" },
 	{ key = "repair", name = "Repair", color = { 0.3, 1, 0.35 }, cost = 500, time = 0, cool = 90, tip = "Heals 30 % of the health of your unit at once" },
+	{ key = "cloak", name = "Cloak", color = { 0.3, 0.65, 1 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible for 15 s (shooting or an enemy close by shows it)" },
 	{ key = "pulse", name = "Radar Pulse", color = { 1, 0.55, 0.1 }, cost = 250, time = 5, cool = 45, tip = "Your unit sees everything within 2500 Elmo for 5 s" },
+	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
 }
 local CMD_ABILITY = 47610 -- + index of ABILITIES: the order of the button
 
@@ -172,8 +172,58 @@ if not gadgetHandler:IsSyncedCode() then
 		H.disc(x + r * 0.3, y + r * 0.1, r * 0.2, { 0.1, 0.1, 0.12, 1 })
 	end
 
+	-- the symbol of an ability, white lines in a square of radius r around x, y: sprint a double arrow, repair a plus, cloak a crossed out eye, the pulse a dot
+	-- with radar waves, the jammer a zigzag wave
+	function H.icon(key, x, y, r)
+		gl.Color(1, 1, 1, 1)
+		gl.LineWidth(2)
+		if key == "sprint" then
+			gl.BeginEnd(GL.LINES, function()
+				for _, dx in ipairs({ -0.55, 0.15 }) do
+					gl.Vertex(x + (dx) * r, y + 0.7 * r)
+					gl.Vertex(x + (dx + 0.55) * r, y)
+					gl.Vertex(x + (dx + 0.55) * r, y)
+					gl.Vertex(x + (dx) * r, y - 0.7 * r)
+				end
+			end)
+		elseif key == "repair" then
+			local w = 0.28 * r
+			H.box(x - w, y - 0.8 * r, x + w, y + 0.8 * r, w * 0.4, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+			H.box(x - 0.8 * r, y - w, x + 0.8 * r, y + w, w * 0.4, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+		elseif key == "cloak" then
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for k = 0, 15 do
+					local a = k / 16 * 2 * math.pi
+					gl.Vertex(x + 0.9 * r * math.cos(a), y + 0.45 * r * math.sin(a))
+				end
+			end)
+			H.disc(x, y, 0.22 * r, { 1, 1, 1, 1 })
+			gl.BeginEnd(GL.LINES, function()
+				gl.Vertex(x - 0.8 * r, y - 0.8 * r)
+				gl.Vertex(x + 0.8 * r, y + 0.8 * r)
+			end)
+		elseif key == "pulse" then
+			H.disc(x - 0.55 * r, y - 0.55 * r, 0.2 * r, { 1, 1, 1, 1 })
+			for _, rr in ipairs({ 0.6, 1.1 }) do
+				gl.BeginEnd(GL.LINE_STRIP, function()
+					for k = 0, 6 do
+						local a = k / 6 * math.pi / 2
+						gl.Vertex(x - 0.55 * r + rr * r * math.cos(a), y - 0.55 * r + rr * r * math.sin(a))
+					end
+				end)
+			end
+		elseif key == "jammer" then
+			gl.BeginEnd(GL.LINE_STRIP, function()
+				for k = 0, 6 do
+					gl.Vertex(x + (-0.9 + k * 0.3) * r, y + (k % 2 == 0 and -0.45 or 0.45) * r)
+				end
+			end)
+		end
+		gl.LineWidth(1)
+	end
+
 	-- the abilities of a team as small squares in their colors, each in its own column (the order of ABILITIES; an empty frame where the team does not have
-	-- it): the first letter, dimmed with the seconds while it cools down, a bright border while it works
+	-- it): its symbol, dimmed with the seconds while it cools down, a bright border while it works
 	function H.abilities(team, x, y, size)
 		local have = {}
 		local list = Spring.GetTeamRulesParam(team, "evoAbilities")
@@ -189,8 +239,12 @@ if not gadgetHandler:IsSyncedCode() then
 				local dim = h.cool > 0 and h.act == 0 and 0.35 or 1
 				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { c[1] * 0.5 * dim, c[2] * 0.5 * dim, c[3] * 0.5 * dim, 0.95 }, { c[1] * dim, c[2] * dim, c[3] * dim, 0.95 },
 					h.act > 0 and { 1, 1, 1, 1 } or { 0, 0, 0, 0.6 })
-				gl.Color(1, 1, 1, 1)
-				gl.Text(h.cool > 0 and h.act == 0 and tostring(h.cool) or a.name:sub(1, 1), x + size / 2, y, size * (h.cool > 0 and h.act == 0 and 0.5 or 0.62), "cvo")
+				if h.cool > 0 and h.act == 0 then
+					gl.Color(1, 1, 1, 1)
+					gl.Text(tostring(h.cool), x + size / 2, y, size * 0.5, "cvo")
+				else
+					H.icon(a.key, x + size / 2, y, size * 0.36)
+				end
 			else
 				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { 0.05, 0.05, 0.08, 0.5 }, { 0.08, 0.08, 0.12, 0.5 }, { 0.35, 0.38, 0.48, 0.35 })
 			end

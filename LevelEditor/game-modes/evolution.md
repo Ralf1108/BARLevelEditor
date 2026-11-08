@@ -71,15 +71,16 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Beacons and abilities**
 - Glowing beacons in five colors lie around the map (you see them where your unit sees); drive over one to get its **ability** until your unit dies (evolving keeps it)
+- In the overview at the right every ability has its column with a symbol (a double arrow, a plus, a crossed out eye, radar waves, a zigzag wave)
 - Each ability is a button in the order menu of your unit; it costs energy and then needs a while before it can be used again (the seconds are on the button)
 
 | Color | Ability | What it does | Energy | Cooldown |
 |---|---|---|---|---|
-| Violet | Jammer | your unit is hidden from the enemy radar for 20 s | 300 | 60 s |
-| Blue | Cloak | your unit is invisible for 15 s (shooting or an enemy close by shows it) | 400 | 60 s |
 | Yellow | Sprint | 50 % faster for 8 s | 200 | 30 s |
 | Green | Repair | heals 30 % of the health at once | 500 | 90 s |
+| Blue | Cloak | your unit is invisible for 15 s (shooting or an enemy close by shows it) | 400 | 60 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
+| Violet | Jammer | your unit is hidden from the enemy radar for 20 s | 300 | 60 s |
 
 - A taken beacon comes back 45 seconds later somewhere else, in a new color; a beacon of an ability you already have stays for the others
 
