@@ -2074,10 +2074,10 @@ local function ensureSlotUi()
 end
 
 ---------------------------------------------------------------- "Evolution": a game mode on any map (gadget evo_game.lua of the extra game)
-local EVO_TIP = "Evolution: every player starts with one weak unit instead of the commander. Kills give points, points evolve the unit (10 stages up to a tier 3 giant). " ..
-	"A lost unit comes back 5 s later somewhere else, one stage lower. Wild units stand around and only shoot back. The host switches it on or off."
+local EVO_TIP = "Evolution: every player starts with one weak unit instead of the commander. Kills give points, points evolve the unit (10 levels up to a tier 3 giant). " ..
+	"A lost unit comes back 5 s later somewhere else, one level lower. Wild units stand around and only shoot back. The host switches it on or off."
 local EVO_INFO = "Evolution is on.\n\nEvery player (and every computer player) starts with one weak unit instead of the commander; kills give points and evolve it, " ..
-	"10 stages up to a tier 3 giant, a random faction each time. A lost unit comes back 5 s later somewhere else, one stage lower. The game does not end by itself.\n\n" ..
+	"10 levels up to a tier 3 giant, a random faction each time. A lost unit comes back 5 s later somewhere else, one level lower. The game does not end by itself.\n\n" ..
 	"Tip: choose a map of size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata): everybody walks with a single unit, " ..
 	"on a big map you hardly meet."
 

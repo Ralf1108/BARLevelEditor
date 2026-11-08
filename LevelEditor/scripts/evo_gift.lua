@@ -3,8 +3,8 @@
 -- own team may choose; a click on a gift (or the key 1, 2, 3) sends "evo|gift|<n>". Without a choice the gadget gives a random gift after 30 s.
 function widget:GetInfo()
 	return {
-		name = "Evolution: gift of stage 10",
-		desc = "Choose the gift of stage 10 in an Evolution game of LAN Play",
+		name = "Evolution: gift of level 10",
+		desc = "Choose the gift of level 10 in an Evolution game of LAN Play",
 		author = "",
 		date = "2026",
 		license = "GNU GPL, v2 or later",
@@ -68,7 +68,7 @@ function widget:DrawScreen()
 	gl.Color(0.05, 0.02, 0.02, 0.88)
 	gl.Rect(x1, y1, x2, y2)
 	gl.Color(1, 0.3, 0.15, 1)
-	gl.Text("Stage 10! Choose your gift", (x1 + x2) / 2, y2 - 50 * s, 34 * s, "co")
+	gl.Text("Level 10! Choose your gift", (x1 + x2) / 2, y2 - 50 * s, 34 * s, "co")
 	for i, b in ipairs(buttons) do
 		local over = mx >= b.x1 and mx <= b.x2 and my >= b.y1 and my <= b.y2
 		gl.Color(over and 0.55 or 0.35, 0.08, 0.05, 0.95)

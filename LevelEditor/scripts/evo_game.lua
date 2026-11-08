@@ -88,38 +88,205 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 	end
 
+	-- ---------------------------------------------------------------- the panel at the top (drawn with plain shapes: rounded boxes, badges, bars, symbols)
+	local H = {}
+
+	-- the outline of a box with round corners (a list of points, counterclockwise)
+	function H.outline(x1, y1, x2, y2, r)
+		local pts = {}
+		for _, c in ipairs({ { x2 - r, y2 - r, 0 }, { x1 + r, y2 - r, 90 }, { x1 + r, y1 + r, 180 }, { x2 - r, y1 + r, 270 } }) do
+			for k = 0, 4 do
+				local a = math.rad(c[3] + k * 22.5)
+				pts[#pts + 1] = { c[1] + r * math.cos(a), c[2] + r * math.sin(a) }
+			end
+		end
+		return pts
+	end
+
+	-- a box with round corners, color `bottom` below fading to `top` above (r, g, b, a); `line`: a border in that color
+	function H.box(x1, y1, x2, y2, r, bottom, top, line)
+		local pts = H.outline(x1, y1, x2, y2, r)
+		local function col(y)
+			local t = (y - y1) / math.max(1, y2 - y1)
+			gl.Color(bottom[1] + (top[1] - bottom[1]) * t, bottom[2] + (top[2] - bottom[2]) * t, bottom[3] + (top[3] - bottom[3]) * t, bottom[4] + (top[4] - bottom[4]) * t)
+		end
+		gl.BeginEnd(GL.TRIANGLE_FAN, function()
+			col((y1 + y2) / 2)
+			gl.Vertex((x1 + x2) / 2, (y1 + y2) / 2)
+			for _, p in ipairs(pts) do
+				col(p[2])
+				gl.Vertex(p[1], p[2])
+			end
+			col(pts[1][2])
+			gl.Vertex(pts[1][1], pts[1][2])
+		end)
+		if line then
+			gl.Color(line[1], line[2], line[3], line[4])
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for _, p in ipairs(pts) do
+					gl.Vertex(p[1], p[2])
+				end
+			end)
+		end
+	end
+
+	function H.disc(x, y, r, c)
+		gl.Color(c[1], c[2], c[3], c[4] or 1)
+		gl.BeginEnd(GL.TRIANGLE_FAN, function()
+			gl.Vertex(x, y)
+			for k = 0, 24 do
+				local a = k / 24 * 2 * math.pi
+				gl.Vertex(x + r * math.cos(a), y + r * math.sin(a))
+			end
+		end)
+	end
+
+	function H.ring(x, y, r, c)
+		gl.Color(c[1], c[2], c[3], c[4] or 1)
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			for k = 0, 23 do
+				local a = k / 24 * 2 * math.pi
+				gl.Vertex(x + r * math.cos(a), y + r * math.sin(a))
+			end
+		end)
+	end
+
+	-- the symbol of kills: a crosshair
+	function H.crosshair(x, y, r)
+		gl.LineWidth(2)
+		H.ring(x, y, r * 0.7, { 1, 0.45, 0.35, 1 })
+		gl.BeginEnd(GL.LINES, function()
+			for _, d in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+				gl.Vertex(x + d[1] * r * 0.35, y + d[2] * r * 0.35)
+				gl.Vertex(x + d[1] * r, y + d[2] * r)
+			end
+		end)
+		gl.LineWidth(1)
+	end
+
+	-- the symbol of deaths: a small skull
+	function H.skull(x, y, r)
+		H.disc(x, y + r * 0.15, r * 0.75, { 0.85, 0.85, 0.85, 1 })
+		H.box(x - r * 0.4, y - r * 0.8, x + r * 0.4, y - r * 0.2, r * 0.15, { 0.85, 0.85, 0.85, 1 }, { 0.85, 0.85, 0.85, 1 })
+		H.disc(x - r * 0.3, y + r * 0.1, r * 0.2, { 0.1, 0.1, 0.12, 1 })
+		H.disc(x + r * 0.3, y + r * 0.1, r * 0.2, { 0.1, 0.1, 0.12, 1 })
+	end
+
+	-- the abilities of a team as small squares in their colors: the first letter, dimmed with the seconds while it cools down, a bright border while it works
+	function H.abilities(team, x, y, size)
+		local list = Spring.GetTeamRulesParam(team, "evoAbilities")
+		if type(list) ~= "string" or list == "" then
+			return x
+		end
+		for i, cool, act in list:gmatch("(%d+):(%d+):(%d+)") do
+			local a = ABILITIES[tonumber(i)]
+			if a then
+				cool, act = tonumber(cool), tonumber(act)
+				local c = a.color
+				local dim = cool > 0 and act == 0 and 0.35 or 1
+				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { c[1] * 0.5 * dim, c[2] * 0.5 * dim, c[3] * 0.5 * dim, 0.95 }, { c[1] * dim, c[2] * dim, c[3] * dim, 0.95 },
+					act > 0 and { 1, 1, 1, 1 } or { 0, 0, 0, 0.6 })
+				gl.Color(1, 1, 1, 1)
+				gl.Text(cool > 0 and act == 0 and tostring(cool) or a.name:sub(1, 1), x + size / 2, y, size * (cool > 0 and act == 0 and 0.5 or 0.62), "cvo")
+				x = x + size * 1.15
+			end
+		end
+		return x
+	end
+
+	-- the panel: a title line and one row per team (level badge, name and unit, points bar, kills, deaths, abilities), below the resource bars of the game
+	function H.panel(state, arma)
+		local vsx, vsy = Spring.GetViewGeometry()
+		local s = vsy / 1080 * (Spring.GetConfigFloat("ui_scale", 1) or 1)
+		local teams = {}
+		for t in tostring(Spring.GetGameRulesParam("evoTeams") or ""):gmatch("%d+") do
+			teams[#teams + 1] = tonumber(t)
+		end
+		local w, rowH, head, pad = math.floor(700 * s), math.floor(46 * s), math.floor(30 * s), math.floor(8 * s)
+		local x1 = math.floor(vsx * 0.5 - w / 2)
+		local top = math.floor(vsy - 78 * s)
+		local y1 = top - head - #teams * (rowH + 4 * s) - pad
+		local hot = arma > 0
+		-- the frame of the panel: dark glass, a thin light border (red in Armageddon)
+		H.box(x1, y1, x1 + w, top, 10 * s, { 0.03, 0.04, 0.07, 0.82 }, { 0.10, 0.12, 0.18, 0.82 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.45 })
+		-- title
+		local pulse = 0.75 + 0.25 * math.sin(Spring.GetGameFrame() * 0.12)
+		if hot then
+			gl.Color(1, 0.3 * pulse, 0.15, 1)
+		else
+			gl.Color(0.55, 0.95, 0.7, 1)
+		end
+		gl.Text(hot and "ARMAGEDDON" or "EVOLUTION", x1 + w / 2, top - head / 2 - 1 * s, 20 * s, "cvo")
+		if state ~= "running" then
+			gl.Color(1, 0.85, 0.4, 1)
+			gl.Text(state, x1 + w - pad * 2, top - head / 2, 15 * s, "rvo")
+		end
+		local mine = Spring.GetMyTeamID()
+		local y = top - head
+		for _, team in ipairs(teams) do
+			local function p(k) return Spring.GetTeamRulesParam(team, k) or 0 end
+			local ry2, ry1 = y, y - rowH
+			local cy = (ry1 + ry2) / 2
+			local out = p("evoOut") == 1
+			local r, g, b = Spring.GetTeamColor(team)
+			r, g, b = r or 1, g or 1, b or 1
+			-- the row: own team lighter with a border
+			if team == mine then
+				H.box(x1 + pad, ry1, x1 + w - pad, ry2, 7 * s, { 0.16, 0.2, 0.28, 0.9 }, { 0.24, 0.3, 0.42, 0.9 }, { 0.8, 0.9, 1, 0.7 })
+			else
+				H.box(x1 + pad, ry1, x1 + w - pad, ry2, 7 * s, { 0.08, 0.09, 0.13, 0.85 }, { 0.13, 0.15, 0.21, 0.85 })
+			end
+			-- the team color stripe and the level badge
+			H.box(x1 + pad, ry1 + 4 * s, x1 + pad + 5 * s, ry2 - 4 * s, 2 * s, { r, g, b, 1 }, { r, g, b, 1 })
+			local bx, br = x1 + pad + 30 * s, rowH * 0.4
+			H.disc(bx, cy, br, out and { 0.25, 0.25, 0.25, 1 } or { r * 0.45, g * 0.45, b * 0.45, 1 })
+			gl.LineWidth(2)
+			H.ring(bx, cy, br, out and { 0.5, 0.5, 0.5, 1 } or { r, g, b, 1 })
+			gl.LineWidth(1)
+			gl.Color(1, 1, 1, 1)
+			gl.Text(out and "-" or tostring(p("evoStage")), bx, cy, 20 * s, "cvo")
+			-- name and unit
+			local nx = bx + br + 10 * s
+			gl.Color(out and 0.55 or 1, out and 0.55 or 1, out and 0.55 or 1, 1)
+			gl.Text(teamName(team), nx, cy + 8 * s, 16 * s, "vo")
+			local unit = Spring.GetTeamRulesParam(team, "evoName") or ""
+			gl.Color(0.7, 0.75, 0.85, 1)
+			gl.Text(out and "out" or ("Level " .. p("evoStage") .. "  " .. (NAMES[unit] or unit)), nx, cy - 10 * s, 12 * s, "vo")
+			-- the points bar
+			local px1, px2 = x1 + w * 0.40, x1 + w * 0.64
+			local need = p("evoNeed")
+			local frac = out and 0 or (need > 0 and math.min(1, p("evoXp") / need) or 1)
+			H.box(px1, cy - 8 * s, px2, cy + 8 * s, 8 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
+			if frac > 0 then
+				local fill = need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
+				H.box(px1 + 1, cy - 7 * s, px1 + 1 + math.max(14 * s, (px2 - px1 - 2) * frac), cy + 7 * s, 7 * s, fill[1], fill[2])
+			end
+			gl.Color(1, 1, 1, 1)
+			gl.Text(out and "" or (need > 0 and string.format("%d / %d", p("evoXp"), need) or "MAX"), (px1 + px2) / 2, cy, 12 * s, "cvo")
+			-- kills and deaths
+			local kx = x1 + w * 0.66
+			H.crosshair(kx, cy, 8 * s)
+			gl.Color(1, 1, 1, 1)
+			gl.Text(tostring(p("evoKills")), kx + 12 * s, cy, 15 * s, "vo")
+			local dx = kx + 46 * s
+			H.skull(dx, cy, 8 * s)
+			gl.Color(1, 1, 1, 1)
+			gl.Text(tostring(p("evoDeaths")), dx + 12 * s, cy, 15 * s, "vo")
+			-- the abilities
+			H.abilities(team, dx + 44 * s, cy, 22 * s)
+			y = ry1 - 4 * s
+		end
+		gl.Color(1, 1, 1, 1)
+	end
+
 	function gadget:DrawScreen()
 		local state = Spring.GetGameRulesParam("evoState") or ""
 		if state == "" then
 			return
 		end
 		local vsx, vsy = Spring.GetViewGeometry()
-		local mine = Spring.GetMyTeamID()
-		local y = vsy - 130
 		local arma = Spring.GetGameRulesParam("evoArmageddon") or 0
-		gl.Color(1, 0.9, 0.5, 1)
-		gl.Text("Evolution" .. (arma > 0 and "   -   ARMAGEDDON" or "") .. (state ~= "running" and ("   (" .. state .. ")") or ""), vsx * 0.5, y, 20, "co")
-		for t in tostring(Spring.GetGameRulesParam("evoTeams") or ""):gmatch("%d+") do
-			local team = tonumber(t)
-			y = y - 20
-			local function p(k) return Spring.GetTeamRulesParam(team, k) or 0 end
-			local unit = Spring.GetTeamRulesParam(team, "evoName") or ""
-			local need = p("evoNeed")
-			local text
-			if p("evoOut") == 1 then
-				text = string.format("%s: out   kills %d   deaths %d", teamName(team), p("evoKills"), p("evoDeaths"))
-			else
-				text = string.format("%s: stage %d/10 %s   %s   kills %d   deaths %d", teamName(team), p("evoStage"), NAMES[unit] or unit,
-					need > 0 and string.format("points %d/%d", p("evoXp"), need) or "top stage", p("evoKills"), p("evoDeaths"))
-			end
-			if team == mine then
-				gl.Color(1, 1, 1, 1)
-			else
-				local r, g, b = Spring.GetTeamColor(team)
-				gl.Color(r or 1, g or 1, b or 1, 1)
-			end
-			gl.Text(text, vsx * 0.5, y, 16, "co")
-		end
+		H.panel(state, arma)
 		-- radars being taken: "Taking 3/5" in the color of the taker above the radar
 		for x, z, s, t in tostring(Spring.GetGameRulesParam("evoTaking") or ""):gmatch("(%d+),(%d+),(%d+),(%d+)") do
 			x, z = tonumber(x), tonumber(z)
@@ -135,7 +302,7 @@ if not gadgetHandler:IsSyncedCode() then
 			gl.Color(1, 0.25, 0.15, 1)
 			gl.Text("ARMAGEDDON IS HERE", vsx * 0.5, vsy * 0.76, 56, "co")
 			gl.Color(1, 0.85, 0.6, 1)
-			gl.Text(tostring(Spring.GetGameRulesParam("evoHero") or "") .. " reached stage 10. The fog of war is gone: everybody sees everybody.", vsx * 0.5, vsy * 0.76 - 50, 24, "co")
+			gl.Text(tostring(Spring.GetGameRulesParam("evoHero") or "") .. " reached level 10. The fog of war is gone: everybody sees everybody.", vsx * 0.5, vsy * 0.76 - 50, 24, "co")
 			gl.Text("A lost unit does not come back any more. The last one standing wins.", vsx * 0.5, vsy * 0.76 - 82, 24, "co")
 		end
 		gl.Color(1, 1, 1, 1)
@@ -728,7 +895,7 @@ local function startArmageddon(p)
 	end
 	armaFrame, hero = Spring.GetGameFrame(), p.name
 	publish()
-	say("Armageddon is here! " .. p.name .. " reached stage 10. The fog of war is gone: everybody sees everybody.")
+	say("Armageddon is here! " .. p.name .. " reached level 10. The fog of war is gone: everybody sees everybody.")
 	say("From now on a lost unit does not come back. The last one standing wins.")
 end
 
@@ -836,7 +1003,7 @@ local function reachTop(p)
 	if not armageddon then
 		startArmageddon(p)
 	else
-		say(p.name .. " reached stage 10 as well.")
+		say(p.name .. " reached level 10 as well.")
 	end
 	p.giftAt = Spring.GetGameFrame()
 	if p.ai then
@@ -861,7 +1028,7 @@ local function evolve(p)
 			pcall(Spring.GiveOrderToUnit, p.unit, c.id, c.params, { "shift" })
 		end
 	end
-	say(string.format("%s evolves to stage %d: %s.", p.name, p.stage, unitTitle(p.unitName)))
+	say(string.format("%s evolves to level %d: %s.", p.name, p.stage, unitTitle(p.unitName)))
 end
 
 local function gain(p, points)
@@ -1300,7 +1467,7 @@ function gadget:GameFrame(n)
 						A.place()
 					end
 					A.publish()
-					say(string.format("Evolution: kill to evolve (10 stages, a random faction each time); a lost unit comes back 5 s later at another place, one stage lower. %d wild units and towers only shoot back; they grow with the players. Stand next to a radar for 5 s to take it. Stage 10 brings Armageddon.", wildCount()))
+					say(string.format("Evolution: kill to evolve (10 levels, a random faction each time); a lost unit comes back 5 s later at another place, one level lower. %d wild units and towers only shoot back; they grow with the players. Stand next to a radar for 5 s to take it; drive over a glowing beacon to get an ability. Level 10 brings Armageddon.", wildCount()))
 				end
 			end
 		end
