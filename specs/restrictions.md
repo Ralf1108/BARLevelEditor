@@ -37,7 +37,7 @@ Synced; in the extra game `LevelEditorMod.sdz` and in every scenario package wit
 - Input: message `rst|start|name,name,...` (only with cheats or in the editor game), or at frame 5 the game option `restrictions` (base64url of the same payload, read in `GamePreload`).
 - It turns the names into a set of unitDefIDs and
   - tells `GG.BuildBlocking.AddBlockedUnit(unitDefID, team, "level_restrictions")` of BAR for every team except Gaia (BAR then greys the units out in the build menu and refuses the build order itself; `rst|stop` removes the block),
-  - refuses build orders itself in `AllowCommand` (cmdID < 0; builders and factories; also orders inserted into a queue with `CMD.INSERT`). Without `GG.BuildBlocking` only this part works.
+  - refuses build orders itself in `AllowCommand` (cmdID < 0; builders and factories; also orders inserted into a queue with `CMD.INSERT`, which the handler of the game unpacks; registered for `CMD.BUILD` only, so no other order passes through it). Without `GG.BuildBlocking` only this part works.
 - It holds for every team, also for computer players (they do not know it and may get stuck trying; accepted). Only a human team gets the message "Not allowed in this level: name (reason)" (`Spring.SendMessageToTeam`), at most once per unit type every 5 seconds; refused orders of AI teams and Gaia stay silent.
 - The editor sends `rst|start` when a Tower Defense or Capture the Flag test starts and `rst|stop` when it stops; the Reclaim the Fame start does the same. In the editor itself nothing is blocked.
 

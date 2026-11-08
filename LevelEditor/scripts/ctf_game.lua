@@ -143,22 +143,13 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 	end
 
+	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the line of the score board (G.scoreLine)
 	function gadget:DrawScreen()
-		local state = Spring.GetGameRulesParam("ctfState")
-		if not state or state == "" then
+		local text = G.scoreLine("ctf", "Capture the Flag")
+		if not text then
 			return
 		end
 		local vsx, vsy = Spring.GetViewGeometry()
-		local target = Spring.GetGameRulesParam("ctfTarget") or 0
-		local parts = {}
-		for t in tostring(Spring.GetGameRulesParam("ctfTeams") or ""):gmatch("%d+") do
-			local lost = (("," .. tostring(Spring.GetGameRulesParam("ctfOut") or "") .. ","):find("," .. t .. ",", 1, true)) and " (lost)" or ""
-			parts[#parts + 1] = string.format("Alliance %s: %d%s%s", (tonumber(t) >= 100 and ("group " .. (tonumber(t) - 100)) or t), Spring.GetGameRulesParam("ctfScore" .. t) or 0, target > 0 and ("/" .. target) or "", lost)
-		end
-		local text = "Capture the Flag   " .. table.concat(parts, "   ")
-		if state ~= "running" then
-			text = text .. "   (" .. state .. ")"
-		end
 		gl.Color(1, 0.9, 0.5, 1)
 		gl.Text(text, vsx * 0.5, vsy - 130, 20, "co")
 		gl.Color(1, 1, 1, 1)
@@ -208,24 +199,9 @@ end
 
 local allyOf = G.allyOf
 
+-- the score board: ctfState, ctfTarget, ctfTeams, ctfScore<alliance>, ctfOut (G.publishScores)
 local function publish()
-	if not g then
-		Spring.SetGameRulesParam("ctfState", "")
-		return
-	end
-	local teams = {}
-	for _, ally in ipairs(g.allies) do
-		teams[#teams + 1] = ally
-		Spring.SetGameRulesParam("ctfScore" .. ally, g.score[ally] or 0)
-	end
-	Spring.SetGameRulesParam("ctfState", g.state)
-	Spring.SetGameRulesParam("ctfTarget", g.cfg.score)
-	Spring.SetGameRulesParam("ctfTeams", table.concat(teams, ","))
-	local out = {}
-	for t in pairs(g.out) do
-		out[#out + 1] = t
-	end
-	Spring.SetGameRulesParam("ctfOut", table.concat(out, ","))
+	G.publishScores("ctf", g, g and g.allies)
 end
 
 -- A unit that marks a flag or a collection point: neutral (nobody attacks it), indestructible, not saved by the editor
@@ -342,13 +318,7 @@ end
 
 -- The units of an alliance blow up (flags and collection points stay)
 local function blowUp(ally)
-	for _, team in ipairs(G.teamsOfAlliance(ally)) do
-		for _, id in ipairs(Spring.GetTeamUnits(team)) do
-			if not protected[id] then
-				Spring.DestroyUnit(id, true, false)
-			end
-		end
-	end
+	G.blowUp(ally, protected)
 end
 
 -- The level is won: every alliance that is not the winner loses (its units blow up, also when nobody had lost all flags)
@@ -664,16 +634,5 @@ end
 
 -- The messages of the editor (ctf|start|<payload>, ctf|stop) and the game option ctfconfig of a finished scenario (the payload as base64url; starts when the units of the scenario exist): G.gameMode of led_gadgets.lua
 mode = G.gameMode({ tag = "ctf", option = "ctfconfig", state = "ctfState", parse = parse, start = start, stop = stop, say = say, startFail = "Cannot start: place at least one collection point and one flag point first.",
-	handler = gadgetHandler, allowCommand = true })
-
-function gadget:RecvLuaMsg(msg, playerID)
-	return mode.recvLuaMsg(msg, playerID)
-end
-
-function gadget:Initialize()
-	mode.initialize()
-end
-
-function gadget:GamePreload()
-	mode.gamePreload()
-end
+	handler = gadgetHandler, allowCommand = { CMD.RECLAIM, CMD.CAPTURE, CMD.LOAD_UNITS, CMD.SELFD } })
+mode.install(gadget) -- RecvLuaMsg, Initialize, GamePreload

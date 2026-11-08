@@ -131,23 +131,16 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 	end
 
+	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the line of the score board (G.scoreLine)
+	local function rate(a)
+		return string.format(" (+%.1f/s)", Spring.GetGameRulesParam("rtfRate" .. a) or 0)
+	end
 	function gadget:DrawScreen()
-		local state = Spring.GetGameRulesParam("rtfState")
-		if not state or state == "" then
+		local text = G.scoreLine("rtf", "Reclaim the Fame", rate)
+		if not text then
 			return
 		end
 		local vsx, vsy = Spring.GetViewGeometry()
-		local target = Spring.GetGameRulesParam("rtfTarget") or 0
-		local parts = {}
-		for a in tostring(Spring.GetGameRulesParam("rtfTeams") or ""):gmatch("%d+") do
-			local lost = (("," .. tostring(Spring.GetGameRulesParam("rtfOut") or "") .. ","):find("," .. a .. ",", 1, true)) and " (lost)" or ""
-			parts[#parts + 1] = string.format("Alliance %s: %d%s (+%.1f/s)%s", (tonumber(a) >= 100 and ("group " .. (tonumber(a) - 100)) or a), Spring.GetGameRulesParam("rtfScore" .. a) or 0, target > 0 and ("/" .. target) or "",
-				Spring.GetGameRulesParam("rtfRate" .. a) or 0, lost)
-		end
-		local text = "Reclaim the Fame   " .. table.concat(parts, "   ")
-		if state ~= "running" then
-			text = text .. "   (" .. state .. ")"
-		end
 		gl.Color(1, 0.85, 0.3, 1)
 		gl.Text(text, vsx * 0.5, vsy - 175, 20, "co") -- lower than the line of Capture the Flag: the chat lines at the top would cover it
 		gl.Color(1, 1, 1, 1)
@@ -187,25 +180,12 @@ end
 
 local allyOf = G.allyOf
 
+-- the score board: rtfState, rtfTarget, rtfTeams, rtfScore<alliance>, rtfOut (G.publishScores) and rtfRate<alliance> (points per second)
+local function publishRate(a)
+	Spring.SetGameRulesParam("rtfRate" .. a, g.rate[a] or 0)
+end
 local function publish()
-	if not g then
-		Spring.SetGameRulesParam("rtfState", "")
-		return
-	end
-	local teams = {}
-	for _, a in ipairs(g.teams) do
-		teams[#teams + 1] = a
-		Spring.SetGameRulesParam("rtfScore" .. a, math.floor(g.score[a] or 0))
-		Spring.SetGameRulesParam("rtfRate" .. a, g.rate[a] or 0)
-	end
-	Spring.SetGameRulesParam("rtfState", g.state)
-	Spring.SetGameRulesParam("rtfTarget", g.cfg.score)
-	Spring.SetGameRulesParam("rtfTeams", table.concat(teams, ","))
-	local out = {}
-	for a in pairs(g.out) do
-		out[#out + 1] = a
-	end
-	Spring.SetGameRulesParam("rtfOut", table.concat(out, ","))
+	G.publishScores("rtf", g, g and g.teams, publishRate)
 end
 
 local function clear()
@@ -231,13 +211,7 @@ local function stop()
 	end
 end
 
-local function blowUp(ally)
-	for _, t in ipairs(G.teamsOfAlliance(ally)) do
-		for _, id in ipairs(Spring.GetTeamUnits(t)) do
-			Spring.DestroyUnit(id, true, false)
-		end
-	end
-end
+local blowUp = G.blowUp
 
 -- The level is won: every ally team that is not the winner loses (its units blow up)
 local function finish(ally)
@@ -414,15 +388,4 @@ end
 -- The messages of the editor (rtf|start|<payload>, rtf|stop) and the game option rtfconfig of a finished scenario (the payload as base64url; starts when the features of the scenario exist): G.gameMode of led_gadgets.lua
 mode = G.gameMode({ tag = "rtf", option = "rtfconfig", state = "rtfState", parse = parse, start = start, stop = stop, say = say,
 	handler = gadgetHandler, allowCommand = false })
-
-function gadget:RecvLuaMsg(msg, playerID)
-	return mode.recvLuaMsg(msg, playerID)
-end
-
-function gadget:Initialize()
-	mode.initialize()
-end
-
-function gadget:GamePreload()
-	mode.gamePreload()
-end
+mode.install(gadget) -- RecvLuaMsg, Initialize, GamePreload

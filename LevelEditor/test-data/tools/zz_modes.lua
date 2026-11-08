@@ -23,6 +23,21 @@ steps[300] = function()
 	W():DebugCtf().toggle()
 	log("ctf started")
 end
+-- a reclaim order on a flag is refused (AllowCommand of ctf_game.lua, registered for RECLAIM, CAPTURE, LOAD_UNITS, SELFD only)
+local reclaimer
+steps[360] = function()
+	local flag = tonumber(tostring(Spring.GetGameRulesParam("ctfFlagIds") or ""):match("^(%d+):"))
+	for _, id in ipairs(Spring.GetTeamUnits(Spring.GetMyTeamID()) or {}) do
+		local ud = UnitDefs[Spring.GetUnitDefID(id)]
+		if ud and ud.canReclaim and id ~= flag then reclaimer = id break end
+	end
+	log("reclaim a flag: flag", tostring(flag), "unit", tostring(reclaimer))
+	if flag and reclaimer then Spring.GiveOrderToUnit(reclaimer, CMD.RECLAIM, { flag }, 0) end
+end
+steps[390] = function()
+	local cmd = reclaimer and Spring.GetUnitCurrentCommand(reclaimer)
+	log("reclaim order on a flag refused:", tostring(cmd), ok(reclaimer ~= nil and cmd ~= CMD.RECLAIM))
+end
 steps[420] = function()
 	log("ctfState:", tostring(Spring.GetGameRulesParam("ctfState")), "alliances:", tostring(Spring.GetGameRulesParam("ctfTeams")),
 		ok(Spring.GetGameRulesParam("ctfState") == "running" and tostring(Spring.GetGameRulesParam("ctfTeams")) == "103"))
@@ -57,6 +72,31 @@ steps[1300] = function()
 	log("td payload begins:", payload and payload:sub(1, 12) or tostring(err), "(enemy;player)", ok(payload and payload:match("^1;0;") ~= nil))
 	td.toggle()
 	log("td started")
+end
+-- build orders while Tower Defense runs (AllowCommand of td_waves.lua, registered for build orders only): a factory is refused, a tower passes
+local builder
+local function builderOrder(name)
+	local x, y, z = Spring.GetUnitPosition(builder)
+	Spring.GiveOrderToUnit(builder, -UnitDefNames[name].id, { x - 300, y, z, 0 }, 0)
+end
+steps[1330] = function()
+	Spring.SendLuaRulesMsg("led|place|armck|" .. Spring.GetMyTeamID() .. "|7500|5700|0")
+end
+steps[1360] = function()
+	for _, id in ipairs(Spring.GetTeamUnits(Spring.GetMyTeamID()) or {}) do
+		if UnitDefs[Spring.GetUnitDefID(id)].name == "armck" then builder = id end
+	end
+	log("builder placed:", tostring(builder), ok(builder ~= nil))
+	if builder then builderOrder("armlab") end
+end
+steps[1375] = function()
+	local cmd = builder and Spring.GetUnitCurrentCommand(builder)
+	log("factory refused:", tostring(cmd), ok(builder ~= nil and cmd ~= -UnitDefNames.armlab.id))
+	if builder then builderOrder("armllt") end
+end
+steps[1390] = function()
+	local cmd = builder and Spring.GetUnitCurrentCommand(builder)
+	log("tower passes:", tostring(cmd), ok(builder ~= nil and cmd == -UnitDefNames.armllt.id))
 end
 steps[1420] = function()
 	log("tdState:", tostring(Spring.GetGameRulesParam("tdState")), ok(Spring.GetGameRulesParam("tdState") == "running"))

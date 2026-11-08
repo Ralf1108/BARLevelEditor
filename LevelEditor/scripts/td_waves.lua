@@ -370,16 +370,5 @@ end
 
 -- The messages of the editor (tdw|start|<payload>, tdw|stop) and the game option tdconfig of a finished scenario (the payload as base64url; the waves start when the units of the scenario exist): G.gameMode of led_gadgets.lua
 mode = G.gameMode({ tag = "tdw", option = "tdconfig", state = "tdState", parse = parse, start = start, stop = stop, say = say, startFail = "Cannot start: set spawn point, goal and at least one wave first.",
-	handler = gadgetHandler, allowCommand = true })
-
-function gadget:RecvLuaMsg(msg, playerID)
-	return mode.recvLuaMsg(msg, playerID)
-end
-
-function gadget:Initialize()
-	mode.initialize()
-end
-
-function gadget:GamePreload()
-	mode.gamePreload()
-end
+	handler = gadgetHandler, allowCommand = { CMD.BUILD } }) -- build orders only (also inserted ones: the handler of the game unpacks CMD.INSERT)
+mode.install(gadget) -- RecvLuaMsg, Initialize, GamePreload

@@ -92,6 +92,8 @@ end
 
 function gadget:Initialize()
 	if gadgetHandler.RegisterAllowCommand then
-		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns
+		for _, id in ipairs({ CMD.RECLAIM, CMD.CAPTURE, CMD.SELFD }) do
+			gadgetHandler:RegisterAllowCommand(id) -- only the orders that AllowCommand looks at reach it
+		end
 	end
 end

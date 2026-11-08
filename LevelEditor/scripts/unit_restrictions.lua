@@ -103,7 +103,7 @@ end
 
 function gadget:Initialize()
 	if gadgetHandler.RegisterAllowCommand then
-		gadgetHandler:RegisterAllowCommand(CMD.ANY) -- build orders: otherwise the engine registers it and warns
+		gadgetHandler:RegisterAllowCommand(CMD.BUILD) -- build orders only (also inserted ones: the handler of the game unpacks CMD.INSERT)
 	end
 end
 

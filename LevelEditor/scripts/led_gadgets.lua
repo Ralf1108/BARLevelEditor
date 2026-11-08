@@ -135,8 +135,8 @@ end
 -- What every game mode gadget (td_waves, ctf_game, rtf_game) does the same way: the messages "<tag>|start|<payload>" and "<tag>|stop" of the editor,
 -- the game option of a finished scenario (read in GamePreload; started at frame START_FRAME, when the units and features of the scenario exist) and the
 -- empty state parameter at the start. m = { tag, option (name of the game option), state (name of the game rules parameter), parse(payload) -> cfg or nil,
--- start(cfg), stop(), say, startFail (text when the editor's payload is not usable; optional), handler (gadgetHandler), allowCommand (true: the gadget has
--- an AllowCommand) }. The gadget calls from its call-ins: mode.initialize(), mode.gamePreload(), mode.recvLuaMsg(msg, playerID), mode.gameFrame(n).
+-- start(cfg), stop(), say, startFail (text when the editor's payload is not usable; optional), handler (gadgetHandler), allowCommand (the gadget has an
+-- AllowCommand: the list of the command ids it wants, CMD.BUILD = every build order; true = every command) }. mode.install(gadget) sets the call-ins RecvLuaMsg, Initialize and GamePreload of the gadget; its GameFrame calls mode.gameFrame(n).
 G.START_FRAME = 30
 function G.gameMode(m)
 	local pending = nil -- configuration of a finished scenario waiting for the start
@@ -154,7 +154,10 @@ function G.gameMode(m)
 	local mode = {}
 	function mode.initialize()
 		if m.allowCommand and m.handler.RegisterAllowCommand then
-			m.handler:RegisterAllowCommand(CMD.ANY) -- otherwise the engine registers it and warns
+			-- only these commands reach the AllowCommand of the gadget (without it the engine registers every command and warns)
+			for _, id in ipairs(m.allowCommand == true and { CMD.ANY } or m.allowCommand) do
+				m.handler:RegisterAllowCommand(id)
+			end
 		end
 		Spring.SetGameRulesParam(m.state, "")
 	end
@@ -174,7 +177,74 @@ function G.gameMode(m)
 			m.start(cfg)
 		end
 	end
+	function mode.install(gadget)
+		function gadget:RecvLuaMsg(msg, playerID)
+			return mode.recvLuaMsg(msg, playerID)
+		end
+		function gadget:Initialize()
+			mode.initialize()
+		end
+		function gadget:GamePreload()
+			mode.gamePreload()
+		end
+	end
 	return mode
+end
+
+-- The units of an alliance blow up (keep: unitID -> true for units that stay, e.g. the flags of Capture the Flag)
+function G.blowUp(alliance, keep)
+	for _, team in ipairs(G.teamsOfAlliance(alliance)) do
+		for _, id in ipairs(Spring.GetTeamUnits(team)) do
+			if not (keep and keep[id]) then
+				Spring.DestroyUnit(id, true, false)
+			end
+		end
+	end
+end
+
+-- The score board of a game of alliances (ctf_game, rtf_game) as game rules parameters with the prefix p: <p>State, <p>Target (score that wins, 0 = none),
+-- <p>Teams (the alliances "a,b,..."), <p>Score<alliance> and <p>Out (the alliances that lost). g = nil: no game (<p>State ""); otherwise g.state, g.cfg.score,
+-- g.score[alliance], g.out[alliance]; perAlliance(alliance): more parameters of an alliance (optional)
+function G.publishScores(p, g, alliances, perAlliance)
+	if not g then
+		Spring.SetGameRulesParam(p .. "State", "")
+		return
+	end
+	for _, a in ipairs(alliances) do
+		Spring.SetGameRulesParam(p .. "Score" .. a, math.floor(g.score[a] or 0))
+		if perAlliance then
+			perAlliance(a)
+		end
+	end
+	Spring.SetGameRulesParam(p .. "State", g.state)
+	Spring.SetGameRulesParam(p .. "Target", g.cfg.score)
+	Spring.SetGameRulesParam(p .. "Teams", table.concat(alliances, ","))
+	local out = {}
+	for a in pairs(g.out) do
+		out[#out + 1] = a
+	end
+	Spring.SetGameRulesParam(p .. "Out", table.concat(out, ","))
+end
+
+-- The line of the score board for the screen (unsynced part): "<title>   Alliance 0: 3/5   Alliance group 1: 2/5 (lost)   (won by ...)"; nil when no game
+-- runs. extra(alliance): text after the score of an alliance (optional, e.g. the rate)
+function G.scoreLine(p, title, extra)
+	local state = Spring.GetGameRulesParam(p .. "State")
+	if not state or state == "" then
+		return nil
+	end
+	local target = Spring.GetGameRulesParam(p .. "Target") or 0
+	local out = "," .. tostring(Spring.GetGameRulesParam(p .. "Out") or "") .. ","
+	local parts = {}
+	for a in tostring(Spring.GetGameRulesParam(p .. "Teams") or ""):gmatch("%d+") do
+		parts[#parts + 1] = string.format("Alliance %s: %d%s%s%s", G.allianceName(a), Spring.GetGameRulesParam(p .. "Score" .. a) or 0, target > 0 and ("/" .. target) or "",
+			extra and extra(a) or "", out:find("," .. a .. ",", 1, true) and " (lost)" or "")
+	end
+	local text = title .. "   " .. table.concat(parts, "   ")
+	if state ~= "running" then
+		text = text .. "   (" .. state .. ")"
+	end
+	return text
 end
 
 -- The text of a game option of a finished scenario (written as base64url by the scenario builder); nil when it is not set
