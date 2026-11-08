@@ -1,4 +1,4 @@
-function widget:GetInfo() return { name = "zz menu", desc = "temporary: menu switching", layer = 1000000, enabled = true } end
+function widget:GetInfo() return { name = "zz menu", desc = "test only: menu switching", layer = 1000000, enabled = true } end
 local function log(t) Spring.Echo("zz: " .. t) end
 local function W() return WG.LevelEditorWidget end
 local function allRects()

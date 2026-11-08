@@ -1541,10 +1541,8 @@ local function drawMenu()
 	drawMenuBody()
 	rst.drawWindow() -- the list of the restricted units (button R), left of the menu
 	tm.drawMenu() -- the menu of the alliance colors on top of everything (it can open over the panel: the Alliance cell of the page T)
-	if not collapsed or true then
-		local mx, my = Spring.GetMouseState()
-		Shared.drawTip((headerRects()), mx, my)
-	end
+	local mx, my = Spring.GetMouseState()
+	Shared.drawTip((headerRects()), mx, my)
 end
 
 -- Row (Shift) or rectangle (Shift+Alt) from the start point to the mouse pointer, snapped to the grid

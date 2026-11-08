@@ -1,4 +1,4 @@
-function widget:GetInfo() return { name = "zz bpo", desc = "temporary: plans on plans and buildings", layer = 1000001, enabled = true } end
+function widget:GetInfo() return { name = "zz bpo", desc = "test only: plans on plans and buildings", layer = 1000001, enabled = true } end
 local function log(t) Spring.Echo("zz: " .. t) end
 local function chk(ok, msg) log((ok and "PASS " or "FAIL ") .. msg) end
 local function W() return WG.BluePrinterWidget end

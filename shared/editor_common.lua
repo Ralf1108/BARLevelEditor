@@ -6,8 +6,11 @@ local M = {}
 
 ---------------------------------------------------------------- Dimensions (ui_scale)
 M.S = 1
-M.m = { TILE = 190, LABEL = 138, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
 local BASE = { TILE = 190, LABEL = 138, PAD = 8, UCELL = 284, UICON = 270, UPAD = 7, HB = 58, XSIZE = 52 }
+M.m = {} -- the dimensions at the factor M.S (a copy of BASE at 1)
+for k, v in pairs(BASE) do
+	M.m[k] = v
+end
 
 -- Recompute all dimensions from the base value (cheap, can be called on every draw/click). The base values are designed for 4K
 -- (height 2160); the factor is ui_scale times screen height / 2160, so the menu grows and shrinks with the
@@ -3425,8 +3428,8 @@ end
 ---------------------------------------------------------------- Page layout (the pages TD, CF, RF and A of the Level Editor)
 -- Rows of buttons and labels from the top of rect downwards. L.rects, L.labels: what the page draws; L.x1, L.x2: the inner edges; L.y: the current
 -- height (the page may move it on: L.y = L.y - 6 * S); L.gap: room between two buttons of a row.
--- L.line(items, after): a row of buttons; it.w = relative width (default 1), it.fs = font size (default 22·S), the fields kind, value, label, active,
--- field, row, tint, icon, tip are taken into the rect; after = room below the row (default 6·S). L.head(text): a heading. L.note(text, color): a small line.
+-- L.line(items, after): a row of buttons; it.w = relative width (default 1), it.fs = font size (default 22*S), the fields kind, value, label, active,
+-- field, row, tint, icon, tip are taken into the rect; after = room below the row (default 6*S). L.head(text): a heading. L.note(text, color): a small line.
 local PAGE_FIELDS = { "kind", "value", "label", "active", "field", "row", "tint", "icon", "tip" }
 function M.newPageLayout(rect, S)
 	local m = M.m

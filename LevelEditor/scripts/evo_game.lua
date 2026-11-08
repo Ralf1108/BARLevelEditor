@@ -1,4 +1,4 @@
--- Evolution (synchronized part), a game mode of LAN Play on any map: the room's button Evo (menu LAN Play) sets the game option lanevolution=1. Every
+-- Evolution (synchronized part), a game mode of LAN Play on any map: the button Evolution of the room (menu LAN Play) sets the game option lanevolution=1. Every
 -- team that starts with a commander gets one weak unit instead (stage 1) and nothing else. Kills give points; with enough points the unit is replaced by a
 -- unit of the next stage (10 stages, the last one a big tier 3 unit), of a random faction each time. A destroyed unit comes back after 5 s at a random
 -- place, one stage lower. Every unit spawns on the land the commanders stand on (one connected piece of land: everybody can reach everybody). Wild units
@@ -42,6 +42,17 @@ local NAMES = {
 	legkeres = "Keres", legeshotgunmech = "Praetorian", legeheatraymech = "Sol Invictus",
 }
 
+-- The name of a team: the AI's name or the name of its leader (used by both parts)
+local function teamName(team)
+	local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
+	if isAI then
+		local _, name = Spring.GetAIInfo(team)
+		return (name and name ~= "") and name or ("AI " .. team)
+	end
+	local name = leader and Spring.GetPlayerInfo(leader, false)
+	return (name and name ~= "") and name or ("Team " .. team)
+end
+
 if not gadgetHandler:IsSyncedCode() then
 	-- ---------------------------------------------------------------- unsynced: the score lines, Armageddon, the missile targets, the selection and the camera
 	local lastUnit, lastSpawn = nil, nil
@@ -64,16 +75,6 @@ if not gadgetHandler:IsSyncedCode() then
 				Spring.SetCameraTarget(x, y, z, 0.5) -- the unit is at a new place of the map
 			end
 		end
-	end
-
-	local function teamName(team)
-		local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
-		if isAI then
-			local _, name = Spring.GetAIInfo(team)
-			return (name and name ~= "") and name or ("AI " .. team)
-		end
-		local name = leader and Spring.GetPlayerInfo(leader, false)
-		return (name and name ~= "") and name or ("Team " .. team)
 	end
 
 	function gadget:DrawScreen()
@@ -605,16 +606,6 @@ local function hasHuman(team)
 	return false
 end
 
-local function nameOf(team)
-	local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
-	if isAI then
-		local _, name = Spring.GetAIInfo(team)
-		return (name and name ~= "") and name or ("AI " .. team)
-	end
-	local name = leader and Spring.GetPlayerInfo(leader, false)
-	return (name and name ~= "") and name or ("Team " .. team)
-end
-
 local function commanderOf(team)
 	for _, id in ipairs(Spring.GetTeamUnits(team)) do
 		local ud = UnitDefs[Spring.GetUnitDefID(id)]
@@ -635,7 +626,7 @@ local function join(team)
 	for _, id in ipairs(Spring.GetTeamUnits(team)) do
 		remove(id)
 	end
-	local p = { team = team, ally = select(6, Spring.GetTeamInfo(team, false)), stage = startStage, xp = 0, kills = 0, deaths = 0, spawns = 1, ai = not hasHuman(team), name = nameOf(team) }
+	local p = { team = team, ally = select(6, Spring.GetTeamInfo(team, false)), stage = startStage, xp = 0, kills = 0, deaths = 0, spawns = 1, ai = not hasHuman(team), name = teamName(team) }
 	players[#players + 1] = p
 	byTeam[team] = p
 	if onLand(x, z) then

@@ -1,4 +1,4 @@
-function widget:GetInfo() return { name = "zz bpg", desc = "temporary: ghosts after undo", layer = 1000001, enabled = true } end
+function widget:GetInfo() return { name = "zz bpg", desc = "test only: ghosts after undo", layer = 1000001, enabled = true } end
 local function log(t) Spring.Echo("zz: " .. t) end
 local function W() return WG.BluePrinterWidget end
 local cid, cx, cy, cz
