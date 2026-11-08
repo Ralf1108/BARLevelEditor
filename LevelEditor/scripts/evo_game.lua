@@ -808,8 +808,8 @@ function A.update(n)
 		end
 		if p.cool and n % FPS == 0 then
 			for i, f in pairs(p.cool) do
-				if f >= n - FPS then
-					A.buttons(p) -- (a cooldown runs or just ended: the caption shows it)
+				if f >= n - 3 * FPS then
+					A.buttons(p) -- (a cooldown runs or ended in the last seconds: the button is enabled again)
 					changed = true
 					break
 				end
@@ -1109,6 +1109,12 @@ local function gain(p, points)
 end
 
 -- A wild unit: a stage 1 unit of a random faction, of Gaia, with WILD_HP of its health, at a random place; it holds its position and only shoots back
+-- The number of wild units: one per 1024 x 1024 Elmo of the land (a map of 16 x 16 without water has 64), at least 12, at most 100
+local function wildCount()
+	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
+	return math.max(12, math.min(100, math.floor(area / (1024 * 1024) + 0.5)))
+end
+
 -- The stage of a new wild unit: the lowest stage of the players who are still in (the weakest player can always catch up on them)
 local function wildStage()
 	local low
@@ -1195,11 +1201,6 @@ local function upgradeWild()
 	end
 end
 
--- The number of wild units: one per 1024 x 1024 Elmo of the land (a map of 16 x 16 without water has 64), at least 12, at most 100
-local function wildCount()
-	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
-	return math.max(12, math.min(100, math.floor(area / (1024 * 1024) + 0.5)))
-end
 
 -- A team steered by a human: an active player who is not a spectator plays it
 local function hasHuman(team)
