@@ -31,9 +31,7 @@ function New-SandboxData([string]$root, [string]$real, [string[]]$dirs = @(), [s
 function Get-SandboxLobby([string]$real) {
     $f = Join-Path $real 'rapid\repos-cdn.beyondallreason.dev\byar-chobby\versions.gz'
     if (-not (Test-Path $f)) { throw "No lobby package found ($f): start BAR once." }
-    Add-Type -AssemblyName System.IO.Compression
-    $fs = [IO.File]::OpenRead($f)
-    try { $text = (New-Object IO.StreamReader((New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)))).ReadToEnd() } finally { $fs.Close() }
+    $text = [Text.Encoding]::UTF8.GetString((Read-GzBytes $f))
     $first = $null
     foreach ($line in ($text -split "`n")) {
         $p = $line.Trim().Split(',')

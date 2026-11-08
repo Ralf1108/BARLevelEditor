@@ -54,15 +54,31 @@ function Get-Engine($data) {
     return $engineDir
 }
 
+# The bytes of a gzip file
+function Read-GzBytes([string]$file) {
+    Add-Type -AssemblyName System.IO.Compression
+    $fs = [IO.File]::OpenRead($file)
+    try {
+        $gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
+        $ms = New-Object IO.MemoryStream; $gz.CopyTo($ms); $gz.Close()
+        return , $ms.ToArray()
+    } finally { $fs.Close() }
+}
+
+# The list of the game versions of rapid (versions.gz: lines "tag,package md5,,name"), read once per data folder; $null when it is not there
+$script:VersionsText = @{}
+function Get-VersionsText([string]$data) {
+    if (-not $script:VersionsText.ContainsKey($data)) {
+        $file = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
+        $script:VersionsText[$data] = if (Test-Path $file) { [Text.Encoding]::UTF8.GetString((Read-GzBytes $file)) } else { $null }
+    }
+    return $script:VersionsText[$data]
+}
+
 # Version of the installed official game (byar:test, otherwise byar:stable; the first one whose package is installed)
 function Get-GameVersion($data) {
-    Add-Type -AssemblyName System.IO.Compression
-    $versionsFile = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
-    if (-not (Test-Path $versionsFile)) { Fail 'No game data found (rapid\...\byar\versions.gz). Please start BAR once and let a game load.' }
-    $fs = [IO.File]::OpenRead($versionsFile)
-    $gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
-    $sr = New-Object IO.StreamReader($gz)
-    $text = $sr.ReadToEnd(); $sr.Close(); $fs.Close()
+    $text = Get-VersionsText $data
+    if ($null -eq $text) { Fail 'No game data found (rapid\...\byar\versions.gz). Please start BAR once and let a game load.' }
     $game = $null; $fallback = $null
     foreach ($tag in @('byar:test', 'byar:stable')) {
         foreach ($line in ($text -split "`n")) {
@@ -218,21 +234,15 @@ $ScenarioGameDerived = @(
 # The text of a file of the installed game ($game = its name, as Get-GameVersion gives it): the package list (.sdp of rapid: gzip of records name length, name, md5,
 # crc, size) names the md5 of the file, the file itself lies in pool\xx\<rest of the md5>.gz. $null when it is not found.
 function Get-GameFileText([string]$data, [string]$game, [string]$path) {
-    Add-Type -AssemblyName System.IO.Compression
-    function Read-Gz([string]$file) {
-        $fs = [IO.File]::OpenRead($file); $gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
-        $ms = New-Object IO.MemoryStream; $gz.CopyTo($ms); $gz.Close(); $fs.Close(); return , $ms.ToArray()
-    }
-    $versionsFile = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
-    if (-not (Test-Path $versionsFile)) { return $null }
-    $text = [Text.Encoding]::UTF8.GetString((Read-Gz $versionsFile))
+    $text = Get-VersionsText $data
+    if ($null -eq $text) { return $null }
     $hash = $null
     foreach ($line in ($text -split "`n")) {
         $f = $line.Trim().Split(',')
         if ($f.Count -ge 4 -and $f[3] -eq $game -and (Test-Path (Join-Path $data ('packages\' + $f[1] + '.sdp')))) { $hash = $f[1]; break }
     }
     if (-not $hash) { return $null }
-    $d = Read-Gz (Join-Path $data ('packages\' + $hash + '.sdp'))
+    $d = Read-GzBytes (Join-Path $data ('packages\' + $hash + '.sdp'))
     $want = [Text.Encoding]::UTF8.GetBytes($path)
     $i = 0
     while ($i -lt $d.Length) {
@@ -244,7 +254,7 @@ function Get-GameFileText([string]$data, [string]$game, [string]$path) {
                 $md5 = -join ($d[($i + 1 + $n)..($i + 16 + $n)] | ForEach-Object { $_.ToString('x2') })
                 $pool = Join-Path $data ('pool\' + $md5.Substring(0, 2) + '\' + $md5.Substring(2) + '.gz')
                 if (-not (Test-Path $pool)) { return $null }
-                return [Text.Encoding]::UTF8.GetString((Read-Gz $pool))
+                return [Text.Encoding]::UTF8.GetString((Read-GzBytes $pool))
             }
         }
         $i += 1 + $n + 24
