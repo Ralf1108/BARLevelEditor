@@ -4,6 +4,7 @@ local function chk(ok, msg) log((ok and "PASS " or "FAIL ") .. msg) end
 local function W() return WG.BluePrinterWidget end
 local function st() return W():DebugState() end
 local cx, cz, cy, cid, rotBefore, delN
+local SOLAR, WIND = "armsolar", "armwin" -- set to the faction of the commander at frame 30 (its builder cannot build the buildings of another faction)
 local gs = 3
 local function gi() return #st().plans - gs + 1 end
 local function names(s)
@@ -47,26 +48,28 @@ local function at(f, fn) steps[#steps + 1] = { f = f, fn = fn } end
 at(30, function()
 	cid = Spring.GetTeamUnits(Spring.GetMyTeamID())[1]
 	cx, cy, cz = Spring.GetUnitPosition(cid)
+	local pre = UnitDefs[Spring.GetUnitDefID(cid)].name:sub(1, 3)
+	if UnitDefNames[pre .. "solar"] and UnitDefNames[pre .. "win"] then SOLAR, WIND = pre .. "solar", pre .. "win" end
 	Spring.SetCameraState({ name = "spring", px = cx + 400, py = cy, pz = cz, dist = 1800, rx = 2.5, ry = 0, rz = 0, fov = 45 })
-	log("commander at " .. math.floor(cx) .. "," .. math.floor(cz) .. " walking: " .. tostring(W() ~= nil))
+	log("commander at " .. math.floor(cx) .. "," .. math.floor(cz) .. " walking: " .. tostring(W() ~= nil) .. " buildings " .. SOLAR .. " " .. WIND)
 end)
 at(50, function()
 	-- plan 1 is far away, 2..5 are near the commander: the queue order must choose 1, the nearest rule 2..5
 	W():DebugSetAuto(false)
 	W():DebugSetQueue(false)
-	local fx, fz = spot("armsolar", cx + 800, cz + 100)
-	W():DebugAdd("armsolar", fx, fz, 0)
-	for i = 0, 3 do local nx, nz = spot("armwin", cx + 150 + i * 150, cz + 250) W():DebugAdd("armwin", nx, nz, 0) end
-	local bx, bz = spot("armsolar", cx + 300, cz - 350)
+	local fx, fz = spot(SOLAR, cx + 800, cz + 100)
+	W():DebugAdd(SOLAR, fx, fz, 0)
+	for i = 0, 3 do local nx, nz = spot(WIND, cx + 150 + i * 150, cz + 250) W():DebugAdd(WIND, nx, nz, 0) end
+	local bx, bz = spot(SOLAR, cx + 300, cz - 350)
 	local pts = { { bx, bz } }
 	for k = 1, 2 do
-		local nx, nz = spot("armsolar", bx + k * 110, bz)
+		local nx, nz = spot(SOLAR, bx + k * 110, bz)
 		local fresh = true
 		for _, p in ipairs(pts) do if math.abs(p[1] - nx) < 70 and math.abs(p[2] - nz) < 70 then fresh = false end end
 		if fresh then pts[#pts + 1] = { nx, nz } end
 	end
 	local units = {}
-	for _, p in ipairs(pts) do units[#units + 1] = { name = "armsolar", dx = p[1] - bx, dz = p[2] - bz, rot = 0 } end
+	for _, p in ipairs(pts) do units[#units + 1] = { name = SOLAR, dx = p[1] - bx, dz = p[2] - bz, rot = 0 } end
 	gs = #units
 	W():DebugAddBlueprint(units, bx, bz)
 	local s = st()
