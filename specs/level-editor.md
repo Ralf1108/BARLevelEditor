@@ -15,7 +15,7 @@ Related specifications:
 - No names or private matters of persons in code, texts or file names.
 - **No backward compatibility:** old fields in level files are dropped when loading (`knownFields`, section 10); old names and formats are not read.
 - **Parts:** the widget `lvl_level_editor.lua` (controls, menu, saving and loading); the gadget `unit_level_editor.lua` (places, deletes, blows up, build mode, orders for units of other teams); the shared code `editor_common.lua` and `bar_rules.lua`; the pages and games `td_waves.lua` + `led_td.lua`, `ctf_game.lua` + `led_ctf.lua`, `rtf_game.lua` + `led_rtf.lua`, `led_arena.lua`, `led_teams.lua`, `led_save.lua` (the Save page), `led_gen.lua` (the Generate page), `led_scenario.lua` (the Scenario info page), `led_export.lua` (the export buttons of the settings page), `unit_restrictions.lua` + `led_restrictions.lua`, `unit_indestructible.lua` (the buildings marked with FX), `led_gadgets.lua` (what the gadgets share). Texts of the help board: `help_texts.lua`.
-- **Lua limit:** a function has at most 200 local variables, `lvl_level_editor.lua` has 167 at top level (count the names declared by `^local` lines). New things go into a page module or into an existing table. A load error shows as `Failed to load: lvl_level_editor.lua` in `infolog.txt`. The mock tests do not detect engine limits (also at most 60 upvalues per function: the Generate state lives in one table `gen`).
+- **Lua limit:** a function has at most 200 local variables, `lvl_level_editor.lua` has 167 at top level (count the names declared by `^local` lines). New things go into a page module or into an existing table. A load error shows as `Failed to load: lvl_level_editor.lua` in `infolog.txt`. `lua_check.py` finds the limits without the game (also at most 60 upvalues per function: the Generate state lives in one table `gen`).
 
 ## 2. Controls
 
@@ -213,7 +213,7 @@ See [Testing](testing.md). Short: every Lua file is compiled with Lua 5.1 (`test
 
 ## 14. Known limitations and open points
 
-- The look of the menu was mostly checked with mocks and screenshots; acceptance happens in the game.
+- The look of the menu is checked with screenshots of sandbox games; acceptance happens in the game.
 - LAN Play: see [LAN Play](lan-play.md), "Tests and findings".
 - All side buttons were switched pairwise in a sandbox game (56 pairs, each time exactly the chosen page active; `test-data\tools\zz_menu.lua`). G does not close on a second click (leave with P). Esc closes the help board; the Place button closes the I, O and T pages.
 - No AI can be given to a team during the game ([Teams](teams.md)).

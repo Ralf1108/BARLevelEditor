@@ -115,4 +115,4 @@ Widget functions for test widgets, without effect in normal use: `widget:DebugLa
 
 - Only buildings; plans for mobile units (for example "build in the next factory") are a possible later step. Automatic rebuilding and repair are open.
 - Whether auto-build is allowed in ranked or tournament games depends on their rules.
-- The mock tests do not detect engine limits (at most 60 upvalues per function): after a change start the game once and check the log.
+- `lua_check.py` finds the engine limits (at most 200 locals and 60 upvalues per function); after a change start the game once and check the log.

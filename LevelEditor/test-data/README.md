@@ -29,9 +29,13 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 
 What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
+## Mock tests (`tools\mock_test.py`)
+
+`python tools\mock_test.py [name]` runs the mock tests `tools\mock_*.lua` with Lua 5.1 (Python package lupa, like `lua_check.py`) without the game: each fakes the part of the Spring API that a shared module needs and checks what it does. `mock_area_attack.lua` drags the attacks of `shared\area_attack.lua` on a flat fake map: XS spreads the tanks over the enemies and never targets own, allied or Gaia units, a turret only takes targets in its range, XF takes the dangerous targets first, plans again when a target died, leaves a unit alone that the player stopped and ends when the enemies are dead; XL, XR and XC give every unit its own ground target in the shape, bombers form up first and anti-air units stay out.
+
 ## Shared parts of the test tools (`tools\test_common.ps1`)
 
-`arena_test.ps1`, `bp_test.ps1`, `pve_test.ps1`, `lan_test.ps1` and `console_test.ps1` dot-source `test_common.ps1`: `New-SandboxData` (a new sandbox data folder with junctions to the game files of the installation and its archive cache; `-NoMaps` = an empty maps folder), `Write-SandboxSettings` (window size and position, other settings lines), `Start-SandboxProcess` / `Push-SandboxWindow` (the game window stays behind the other windows), `Invoke-SandboxGame` (start, wait until the game ends itself, close it after the time limit, print the matching log lines) and `Get-SandboxLobby` (the name of the installed lobby package for `--menu`). `arena_test.ps1` builds the extra game with `Write-EditorGame` of `editor_manifest.ps1`, as the setup does.
+`arena_test.ps1`, `bp_test.ps1`, `pve_test.ps1`, `lan_test.ps1` and `console_test.ps1` dot-source `test_common.ps1`: `New-SandboxData` (a new sandbox data folder with junctions to the game files of the installation and its archive cache; `-NoMaps` = an empty maps folder), `Write-SandboxSettings` (window size and position, other settings lines), `Start-SandboxProcess` / `Push-SandboxWindow` (the game window stays behind the other windows), `Invoke-SandboxGame` (start, wait until the game ends itself, close it after the time limit, print the matching log lines), `Resolve-TestData` (the data folder of the installation: `-Data` or `Find-Bar`) and `Get-SandboxLobby` (the name of the installed lobby package for `--menu`). `arena_test.ps1` builds the extra game with `Write-EditorGame` of `editor_manifest.ps1`, as the setup does.
 
 ## Arena test (`tools`)
 

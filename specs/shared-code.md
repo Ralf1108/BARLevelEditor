@@ -167,4 +167,4 @@ The hover block of a **blueprint** shows name, the sums of metal, energy and hea
 
 ## 14. Tests
 
-Checked in the real game (compiling under Lua 5.1, building the unit catalog, sorting, damage per shot) and with mocks for `Spring`, `gl`, `VFS` and `UnitDefs` (clicking, dragging, renaming, deleting, settings, mouse wheel, 3D preview, rotating). The mocks do not detect engine limits. Before every hand-over check both widgets and run both installations again ([Testing](testing.md)).
+Checked in the real game (compiling under Lua 5.1, building the unit catalog, sorting, damage per shot) and in sandbox games with test widgets (clicking, dragging, renaming, deleting, settings, mouse wheel, 3D preview, rotating); the attacks of `area_attack.lua` also with the mock test `mock_area_attack.lua` (`mock_test.py`). Engine limits are found by `lua_check.py`. Before every hand-over check both widgets and run both installations again ([Testing](testing.md)).
