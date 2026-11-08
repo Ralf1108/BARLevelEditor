@@ -61,7 +61,8 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
 
 **Energy**
-- Every player gets **5 energy per second for every level** (at least 10: level 8 gets 40) and can store **1000**: units with laser weapons need it to shoot, the abilities cost it
+- Every player gets **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000**: units with laser weapons need it to shoot, the abilities cost it
+- **More energy**: solar collectors and wind turbines of nobody stand around the map; they cannot be destroyed. Stand next to one for 5 seconds ("Taking 3/5") and its energy is yours (a solar collector about 20 per second, a wind turbine as much as the wind gives); an enemy takes it the same way
 
 **Radars**
 - Radars of nobody stand all over the map, until it is covered; they **cannot be destroyed**

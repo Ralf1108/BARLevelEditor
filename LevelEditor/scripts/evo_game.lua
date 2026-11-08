@@ -453,14 +453,16 @@ local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random o
 local HELL_UNITS, HEAVEN_UNITS = 8, 8 -- units of the gifts Hell on Earth and Heaven on Earth
 local NUKES, NUKE_GAP, NUKE_WARN, NUKE_SAFE = 12, 4 * FPS, 5 * FPS, 1600 -- Gates of Hell: missiles, frames between two, warning ring before, distance to the player's unit
 -- Further rules in one table (Lua 5.1 allows only so many locals):
---   energy: every player team gets ENERGY per second and level (at least ENERGY_MIN) and a storage of STORE (the commanders are gone; laser weapons need energy)
+--   energy: every player team gets ENERGY_BASE + ENERGY per level per second and a storage of STORE (the commanders are gone; laser weapons need energy);
+--     more comes from the solar collectors and wind turbines (GENERATORS, one per GEN_AREA x GEN_AREA Elmo of the land, GEN_MIN to GEN_MAX), taken like the radars
 --   wild units: the lowest stage of the players who are still in; TOWER = chance that a wild spawn is a tower; TOWER_DAMAGE = part of the damage of a wild
 --     tower; every CHECK frames the number is topped up; every UPGRADE frames one wild unit two or more stages away from that stage is replaced by one of it
 --   catching up: the points of a kill times 1 + CATCH_UP x (the highest stage of the players who are in - the stage of the killer)
 --   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
 --     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
 local R = {
-	ENERGY = 5, ENERGY_MIN = 10, STORE = 1000,
+	ENERGY_BASE = 5, ENERGY = 3, STORE = 1000,
+	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.3, WANDER_DIST = 700, -- every WANDER frames a part of the idle wild units (not towers) walks to a place nearby
 	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
@@ -1393,7 +1395,7 @@ local function steerSummoned()
 	end
 end
 
--- Every second: R.ENERGY energy per level (at least R.ENERGY_MIN) for every player team that is still in, and a storage of at least R.STORE (the commanders and their storage are gone)
+-- Every second: R.ENERGY_BASE + R.ENERGY per level for every player team that is still in, and a storage of at least R.STORE (the commanders and their storage are gone)
 local function giveEnergy()
 	for _, p in ipairs(players) do
 		if not p.out then
@@ -1401,7 +1403,7 @@ local function giveEnergy()
 			if (store or 0) < R.STORE then
 				Spring.SetTeamResource(p.team, "es", R.STORE)
 			end
-			Spring.AddTeamResource(p.team, "energy", math.max(R.ENERGY_MIN, R.ENERGY * p.stage))
+			Spring.AddTeamResource(p.team, "energy", R.ENERGY_BASE + R.ENERGY * p.stage)
 		end
 	end
 end
@@ -1510,7 +1512,7 @@ local function takeRadars(step)
 					Spring.TransferUnit(id, taker.team, false)
 					Spring.SetUnitNeutral(id, true)
 					rd.team, rd.take = taker.team, nil
-					say(taker.name .. " took a radar.")
+					say(taker.name .. " took " .. (rd.name:find("solar", 1, true) and "a solar collector" or (rd.name:find("win", 1, true) and "a wind turbine" or "a radar")) .. ".")
 				else
 					shown[#shown + 1] = string.format("%d,%d,%d,%d", x, z, math.floor(rd.take.frames / FPS), taker.team)
 				end
@@ -1551,6 +1553,40 @@ local function upgradeRadars()
 end
 
 -- The radars of a player who is out go back to Gaia (nobody's)
+-- At the start: neutral solar collectors and wind turbines of level 1 (a random faction each) at random places of the land, at least 300 Elmo apart; they
+-- cannot be destroyed and are taken like the radars (the same table radars): then they give their energy to the team that took them
+local function placeGenerators()
+	local kinds = {}
+	for _, name in ipairs(R.GENERATORS) do
+		if UnitDefNames[name] then
+			kinds[#kinds + 1] = name
+		end
+	end
+	if not land or #land.cells == 0 or #kinds == 0 then
+		return
+	end
+	local area = #land.cells * CELL * CELL
+	local want = math.max(R.GEN_MIN, math.min(R.GEN_MAX, math.floor(area / (R.GEN_AREA * R.GEN_AREA) + 0.5)))
+	local placed, gaia = {}, Spring.GetGaiaTeamID()
+	for _ = 1, want * 10 do
+		if #placed >= want then
+			break
+		end
+		local name = kinds[math.random(1, #kinds)]
+		local x, z = randomLand()
+		local free = fits(UnitDefNames[name].id, x, z)
+		for _, q in ipairs(placed) do
+			if free and (q[1] - x) ^ 2 + (q[2] - z) ^ 2 < 300 * 300 then
+				free = false
+			end
+		end
+		if free and newRadar(name, x, z, gaia) then
+			placed[#placed + 1] = { x, z }
+		end
+	end
+	Spring.Echo(string.format("[Evolution] %d solar collectors and wind turbines", #placed))
+end
+
 local function freeRadars(p)
 	local gaia = Spring.GetGaiaTeamID()
 	for id, rd in pairs(radars) do
@@ -1587,6 +1623,7 @@ function gadget:GameFrame(n)
 						spawnWild()
 					end
 					placeRadars()
+					placeGenerators()
 					for _ = 1, A.count() do
 						A.place()
 					end
