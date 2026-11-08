@@ -899,6 +899,47 @@ local function startArmageddon(p)
 	say("From now on a lost unit does not come back. The last one standing wins.")
 end
 
+-- Enemies of each other: not the same alliance and not allied for the time being (the alliance against level 10, setCoalition)
+local function enemies(p, q)
+	return p.ally ~= q.ally and not Spring.AreTeamsAllied(p.team, q.team)
+end
+
+-- The alliance against level 10: as long as a player on level 10 is in, every alliance without such a player is allied with every other one of them
+-- (Spring.SetAlly both ways); when no player on level 10 is left, everybody is on their own again. Called when a player reaches level 10 and when one is out.
+-- The game is still won by the last alliance of the start (checkWin): when the players on level 10 are gone, the others fight each other.
+local coalitionOn = false
+local function setCoalition()
+	local top, names = {}, {}
+	for _, p in ipairs(players) do
+		if not p.out and p.stage >= STAGES then
+			top[p.ally] = true
+			names[#names + 1] = p.name
+		end
+	end
+	local on = #names > 0
+	local list, seen, pairsAllied = {}, {}, 0
+	for _, p in ipairs(players) do
+		if not seen[p.ally] then
+			seen[p.ally] = true
+			list[#list + 1] = p.ally
+		end
+	end
+	for i = 1, #list do
+		for j = i + 1, #list do
+			local together = on and not top[list[i]] and not top[list[j]]
+			pairsAllied = pairsAllied + (together and 1 or 0)
+			pcall(Spring.SetAlly, list[i], list[j], together)
+			pcall(Spring.SetAlly, list[j], list[i], together)
+		end
+	end
+	if on and pairsAllied > 0 then
+		say("Everybody else is allied now against " .. table.concat(names, ", ") .. " (level 10)!")
+	elseif coalitionOn then
+		say("Nobody on level 10 is left: the alliance is over, everybody fights on their own again.")
+	end
+	coalitionOn = on and pairsAllied > 0
+end
+
 -- ---------------------------------------------------------------- the gifts of stage 10
 -- Hell on Earth: strong ground units (stages 6 to 8, random factions) rise at random places of the land, far from the enemies
 local function giftHell(p)
@@ -1005,6 +1046,7 @@ local function reachTop(p)
 	else
 		say(p.name .. " reached level 10 as well.")
 	end
+	setCoalition() -- the others ally against the players on level 10
 	p.giftAt = Spring.GetGameFrame()
 	if p.ai then
 		giveGift(p, math.random(1, 3))
@@ -1240,7 +1282,7 @@ local function steer(p)
 	if not x then
 		return
 	end
-	local best, bestD = nearest(x, z, owner, function(q) return q.ally ~= p.ally and (armageddon or q.stage >= p.stage) end)
+	local best, bestD = nearest(x, z, owner, function(q) return enemies(p, q) and (armageddon or q.stage >= p.stage) end)
 	if not armageddon then
 		-- wild units of its own stage or lower (they give points)
 		local w, wd = nearest(x, z, wild, function(rec) return rec.stage <= p.stage end)
@@ -1261,7 +1303,7 @@ local function steerSummoned()
 	for id, p in pairs(summoned) do
 		if p.ai and Spring.ValidUnitID(id) then
 			local x, _, z = Spring.GetUnitPosition(id)
-			local target = x and nearest(x, z, owner, function(q) return q.ally ~= p.ally end)
+			local target = x and nearest(x, z, owner, function(q) return enemies(p, q) end)
 			if target then
 				attackOrWalk(id, p.ally, target)
 			end
@@ -1554,7 +1596,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 		return
 	end
 	local killer = attackerTeam and byTeam[attackerTeam]
-	if killer and killer ~= victim and (wasWild or killer.ally ~= victim.ally) then
+	if killer and killer ~= victim and (wasWild or enemies(killer, victim)) then
 		if not wasWild then
 			killer.kills = killer.kills + 1
 		end
@@ -1573,6 +1615,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 		victim.out = true
 		victim.giftAt = nil
 		freeRadars(victim)
+		setCoalition() -- (when the last player on level 10 is out, the alliance against level 10 ends)
 		for id, p in pairs(summoned) do
 			if p == victim then
 				summoned[id] = nil

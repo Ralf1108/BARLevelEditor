@@ -38,7 +38,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - The first player on level 10 brings Armageddon: a message to everybody, big letters on the screen
 - The **fog of war is gone**: everybody sees everybody
 - From now on a lost unit **does not come back**: that player is out
-- The **last one standing wins** (allies together); others may still reach level 10 in the meantime
+- **Everybody else allies against level 10**: as long as a player on level 10 is in, all the others are allied with each other and hunt that player together
+- When nobody on level 10 is left, the alliance is over and everybody fights on their own again (a new player on level 10 brings it back)
+- The **last one standing wins** (allies of the start together); others may still reach level 10 in the meantime
 
 ![Armageddon: the banner and the window of the gift](../../docs/evolution-armageddon.jpg)
 
