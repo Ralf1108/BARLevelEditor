@@ -3496,6 +3496,63 @@ function M.numberField(page, maxLen, apply, disown)
 	end
 end
 
+-- The point on the ground under the mouse pointer: x, z (nil when the pointer is not over the map)
+function M.mouseGround()
+	local mx, my = Spring.GetMouseState()
+	local _, pos = Spring.TraceScreenRay(mx, my, true)
+	if pos then
+		return pos[1], pos[3]
+	end
+end
+
+-- A ring on the ground around (x, z) with the radius r, n segments (default 40), 8 Elmo above the ground; color and line width are set by the caller
+function M.groundRing(x, z, r, n)
+	n = n or 40
+	gl.BeginEnd(GL.LINE_LOOP, function()
+		for i = 0, n - 1 do
+			local a = i / n * 2 * math.pi
+			local px, pz = x + math.cos(a) * r, z + math.sin(a) * r
+			gl.Vertex(px, Spring.GetGroundHeight(px, pz) + 8, pz)
+		end
+	end)
+end
+
+-- Is (mx, my) inside a window w = { x1, x2, y0, top } (false for w = nil)?
+function M.inWindow(w, mx, my)
+	return w ~= nil and mx >= w.x1 and mx <= w.x2 and my >= w.y0 and my <= w.top
+end
+
+-- The undo history of the points of a page (TD route, CF points, Arena): the editor gadget keeps the steps (message "led|<tag>|<before>|<after>") and after
+-- an undo or redo gives the state back in the game rules parameters led_<tag> (text) and led_<tag>_n (counter).
+-- o = { tag, state = fn() -> text, apply = fn(text), default (the text of an empty state), step = fn() (opens a new step of the history), led = fn(message) }.
+-- Returns h: h.commit(before) (a new step when the state differs from before), h.note(before) (the same in the step that is open), h.poll() (every frame: takes
+-- over the state after an undo or redo)
+function M.newPointHistory(o)
+	local h, seen = {}, nil
+	function h.note(before)
+		local after = o.state()
+		if after ~= before then
+			o.led("led|" .. o.tag .. "|" .. before .. "|" .. after)
+		end
+	end
+	function h.commit(before)
+		if o.state() ~= before then
+			o.step()
+			h.note(before)
+		end
+	end
+	function h.poll()
+		local n = Spring.GetGameRulesParam("led_" .. o.tag .. "_n")
+		if seen == nil then
+			seen = n or 0
+		elseif n and n ~= seen then
+			seen = n
+			o.apply(Spring.GetGameRulesParam("led_" .. o.tag) or o.default)
+		end
+	end
+	return h
+end
+
 ---------------------------------------------------------------- Settings (gear): columns and rows
 -- blocks = { { title = "Blueprints", keys = { { "bpCols", "Columns" }, { "bpRows", "Rows" } } }, ... }
 -- actions (optional) = { { label = "Export", tip = "...", fn = function() return "message" end }, ... }: wide buttons under the blocks; the message that fn returns

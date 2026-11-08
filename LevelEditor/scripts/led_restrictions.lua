@@ -122,8 +122,7 @@ return function(host)
 	end
 
 	function rst.winAt(mx, my)
-		local w = rst.winRect()
-		return w ~= nil and mx >= w.x1 and mx <= w.x2 and my >= w.y0 and my <= w.top
+		return host.Shared.inWindow(rst.winRect(), mx, my)
 	end
 
 	local function closeRect(w)

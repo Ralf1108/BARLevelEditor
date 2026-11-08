@@ -64,38 +64,23 @@ return function(host)
 		c.homes, c.flags = pointsFrom(h or ""), pointsFrom(f or "")
 	end
 
-	-- Notes a change of the points as a step of the undo history (before = ctf.state() from before the change)
-	function ctf.commit(before)
-		local after = ctf.state()
-		if after ~= before then
-			host.step()
-			host.led("led|ctfpts|" .. before .. "|" .. after)
-		end
-	end
-
-	-- Undo / redo from the gadget: take over the new state (called every frame)
-	function ctf.poll()
-		local n = Spring.GetGameRulesParam("led_ctfpts_n")
-		if ctf.seen == nil then
-			ctf.seen = n or 0
-		elseif n and n ~= ctf.seen then
-			ctf.seen = n
-			ctf.applyState(Spring.GetGameRulesParam("led_ctfpts") or "-;-")
-		end
-	end
+	-- The undo history of the points (Shared.newPointHistory): ctf.commit(before) notes a change as a step (before = ctf.state() from before the change),
+	-- ctf.poll() takes over the state after an undo or redo (called every frame)
+	local history = Shared.newPointHistory({ tag = "ctfpts", state = ctf.state, apply = ctf.applyState, default = "-;-",
+		step = function() host.step() end, led = function(msg) host.led(msg) end })
+	ctf.commit, ctf.poll = history.commit, history.poll
 
 	-- The point (collection or flag point) next to the mouse pointer: list, index; nil if none
 	function ctf.pointAt()
-		local mx, my = Spring.GetMouseState()
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		if not pos then
+		local gx, gz = Shared.mouseGround()
+		if not gx then
 			return nil
 		end
 		local c = ctf.cfg()
 		local best, list, bestD = nil, nil, DELETE_RADIUS ^ 2
 		for _, l in ipairs({ c.homes, c.flags }) do
 			for i, p in ipairs(l) do
-				local d = (p.x - pos[1]) ^ 2 + (p.z - pos[3]) ^ 2
+				local d = (p.x - gx) ^ 2 + (p.z - gz) ^ 2
 				if d <= bestD then
 					best, list, bestD = i, l, d
 				end
@@ -318,10 +303,9 @@ return function(host)
 		if not d then
 			return
 		end
-		local mx, my = Spring.GetMouseState()
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		if pos then
-			d.point.x, d.point.z = math.floor(pos[1]), math.floor(pos[3])
+		local gx, gz = Shared.mouseGround()
+		if gx then
+			d.point.x, d.point.z = math.floor(gx), math.floor(gz)
 		end
 	end
 
@@ -416,13 +400,7 @@ return function(host)
 			end
 			gl.LineWidth(width)
 			gl.Color(cr or 1, cg or 1, cb or 1, 1)
-			gl.BeginEnd(GL.LINE_LOOP, function()
-				for i = 0, 39 do
-					local a = i / 40 * 2 * math.pi
-					local x, z = p.x + math.cos(a) * r, p.z + math.sin(a) * r
-					gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
-				end
-			end)
+			Shared.groundRing(p.x, p.z, r, 40)
 		end
 		local hotList, hotI
 		if ctf.open then

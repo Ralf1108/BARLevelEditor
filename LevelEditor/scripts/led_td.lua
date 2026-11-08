@@ -209,25 +209,11 @@ return function(td, H)
 		end
 	end
 
-	-- Notes a change of the route as a step of the undo history (before = td.routeState() from before the change)
-	function td.commit(before)
-		local after = td.routeState()
-		if after ~= before then
-			H.ledStep()
-			H.led("led|tdroute|" .. before .. "|" .. after)
-		end
-	end
-
-	-- Undo / redo from the gadget: take over the new state
-	function td.pollRoute()
-		local n = Spring.GetGameRulesParam("led_tdroute_n")
-		if td.routeSeen == nil then
-			td.routeSeen = n or 0
-		elseif n and n ~= td.routeSeen then
-			td.routeSeen = n
-			td.applyRoute(Spring.GetGameRulesParam("led_tdroute") or "-;-;-")
-		end
-	end
+	-- The undo history of the route (Shared.newPointHistory): td.commit(before) notes a change as a step (before = td.routeState() from before the change),
+	-- td.pollRoute() takes over the state after an undo or redo (called every frame)
+	local history = H.Shared.newPointHistory({ tag = "tdroute", state = td.routeState, apply = td.applyRoute, default = "-;-;-",
+		step = function() H.ledStep() end, led = function(msg) H.led(msg) end })
+	td.commit, td.pollRoute = history.commit, history.poll
 
 	-- A new waypoint (x, z) goes into the route: onto a drawn line between two points of it (spawn point, waypoints, goal) it is
 	-- inserted there, otherwise behind the nearest point of the route (spawn point or waypoint)
@@ -283,14 +269,13 @@ return function(td, H)
 
 	-- Index of the waypoint under the mouse pointer (or nil)
 	function td.waypointAt()
-		local mx, my = Spring.GetMouseState()
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		if not pos then
+		local gx, gz = H.Shared.mouseGround()
+		if not gx then
 			return nil
 		end
 		local best, bd = nil, 64 ^ 2
 		for i, p in ipairs(td.cfg().waypoints or {}) do
-			local d = (p[1] - pos[1]) ^ 2 + (p[2] - pos[3]) ^ 2
+			local d = (p[1] - gx) ^ 2 + (p[2] - gz) ^ 2
 			if d < bd then
 				best, bd = i, d
 			end
@@ -304,13 +289,12 @@ return function(td, H)
 		if i then
 			return i
 		end
-		local mx, my = Spring.GetMouseState()
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
+		local gx, gz = H.Shared.mouseGround()
 		local c = td.cfg()
-		if pos then
+		if gx then
 			for _, k in ipairs({ "spawn", "goal" }) do
 				local p, r = c[k], k == "spawn" and 64 or td.GOAL_RADIUS
-				if p and (p[1] - pos[1]) ^ 2 + (p[2] - pos[3]) ^ 2 <= r ^ 2 then
+				if p and (p[1] - gx) ^ 2 + (p[2] - gz) ^ 2 <= r ^ 2 then
 					return k
 				end
 			end
@@ -1117,13 +1101,7 @@ return function(td, H)
 		gl.LineWidth(3)
 		local function circle(p, r, cr, cg, cb)
 			gl.Color(cr, cg, cb, 1)
-			gl.BeginEnd(GL.LINE_LOOP, function()
-				for i = 0, 31 do
-					local a = i / 32 * 2 * math.pi
-					local x, z = p[1] + math.cos(a) * r, p[2] + math.sin(a) * r
-					gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
-				end
-			end)
+			H.Shared.groundRing(p[1], p[2], r, 32)
 		end
 		local function polyline(list, cr, cg, cb, extra)
 			gl.Color(cr, cg, cb, 1)

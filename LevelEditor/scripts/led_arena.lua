@@ -9,7 +9,6 @@
 return function(host)
 	local Shared = host.Shared
 	local ar = { open = false, edit = nil, pick = nil, data = nil, notice = nil, spent = {}, spentAt = -10 }
-	local pollState -- below
 	local ROWS = 10 -- one row per team 0 .. 9
 	-- A team that gets a row: it exists in the game and is not Gaia
 	local function hasTeam(t)
@@ -97,38 +96,12 @@ return function(host)
 		end
 	end
 
-	-- Notes a change of the point or the armies as a step of the undo history (before = ar.state() from before the change)
-	function ar.commit(before)
-		local after = ar.state()
-		if after ~= before then
-			host.step()
-			host.led("led|arenastate|" .. before .. "|" .. after)
-		end
-	end
-
-	-- The same without a new step: for the actions that opened their step before their units (Generate, Clear, moving the setup)
-	function ar.noteState(before)
-		local after = ar.state()
-		if after ~= before then
-			host.led("led|arenastate|" .. before .. "|" .. after)
-		end
-	end
-
-	-- Undo / redo from the gadget: take over the new state (called every frame)
-	pollState = function()
-		local n = Spring.GetGameRulesParam("led_arenastate_n")
-		if ar.seen == nil then
-			ar.seen = n or 0
-		elseif n and n ~= ar.seen then
-			ar.seen = n
-			ar.applyState(Spring.GetGameRulesParam("led_arenastate") or "-;-")
-		end
-	end
-
-	local function ground(mx, my)
-		local _, pos = Spring.TraceScreenRay(mx, my, true)
-		return pos
-	end
+	-- The undo history of the point and the armies (Shared.newPointHistory): ar.commit(before) notes a change as a step (before = ar.state() from before the
+	-- change), ar.noteState(before) the same without a new step (for the actions that opened their step before their units: Generate, Clear, moving the setup);
+	-- history.poll() takes over the state after an undo or redo (every frame, in ar.poll)
+	local history = Shared.newPointHistory({ tag = "arenastate", state = ar.state, apply = ar.applyState, default = "-;-",
+		step = function() host.step() end, led = function(msg) host.led(msg) end })
+	ar.commit, ar.noteState = history.commit, history.note
 
 	-- Is the Arena Point within POINT_R of the mouse pointer?
 	function ar.pointAt()
@@ -136,9 +109,8 @@ return function(host)
 		if not c.point then
 			return false
 		end
-		local mx, my = Spring.GetMouseState()
-		local pos = ground(mx, my)
-		return pos ~= nil and (c.point.x - pos[1]) ^ 2 + (c.point.z - pos[3]) ^ 2 <= POINT_R ^ 2
+		local gx, gz = Shared.mouseGround()
+		return gx ~= nil and (c.point.x - gx) ^ 2 + (c.point.z - gz) ^ 2 <= POINT_R ^ 2
 	end
 
 	-- Arms a click on the map: "point" (sets or moves the Arena Point) or "gen" (Generate); the same button again ends it
@@ -213,11 +185,10 @@ return function(host)
 		if not ar.drag then
 			return
 		end
-		local mx, my = Spring.GetMouseState()
-		local pos = ground(mx, my)
-		if pos then
+		local gx, gz = Shared.mouseGround()
+		if gx then
 			local p = ar.cfg(true).point
-			p.x, p.z = math.floor(pos[1]), math.floor(pos[3])
+			p.x, p.z = math.floor(gx), math.floor(gz)
 		end
 	end
 
@@ -587,9 +558,12 @@ return function(host)
 		local ghost
 		if ar.pick then
 			local mx, my = Spring.GetMouseState()
-			local pos = (not ar.winAt(mx, my)) and ground(mx, my) or nil
-			if pos then
-				ghost = { x = pos[1], z = pos[3] }
+			local gx, gz
+			if not ar.winAt(mx, my) then
+				gx, gz = Shared.mouseGround()
+			end
+			if gx then
+				ghost = { x = gx, z = gz }
 			end
 		end
 		if not p and not ghost then
@@ -600,13 +574,7 @@ return function(host)
 			at = at or p
 			gl.LineWidth(width)
 			gl.Color(1, 0.1, 0.1, alpha)
-			gl.BeginEnd(GL.LINE_LOOP, function()
-				for i = 0, 63 do
-					local a = i / 64 * 2 * math.pi
-					local x, z = at.x + math.cos(a) * r, at.z + math.sin(a) * r
-					gl.Vertex(x, Spring.GetGroundHeight(x, z) + 8, z)
-				end
-			end)
+			Shared.groundRing(at.x, at.z, r, 64)
 		end
 		if ghost then
 			circle(POINT_R, 7, 0.5, ghost)
@@ -730,8 +698,7 @@ return function(host)
 	end
 
 	function ar.winAt(mx, my)
-		local w = ar.winRect()
-		return w ~= nil and mx >= w.x1 and mx <= w.x2 and my >= w.y0 and my <= w.top
+		return Shared.inWindow(ar.winRect(), mx, my)
 	end
 
 	-- Buttons of the window, its list area and its labels
@@ -821,7 +788,7 @@ return function(host)
 	end
 
 	function ar.poll()
-		pollState()
+		history.poll()
 		local now = os.clock()
 		if now - ar.spentAt < 0.5 then
 			return
