@@ -355,7 +355,7 @@ function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams)
 	end
 	local cfg, ud = td.cfg, UnitDefs[defID]
 	local why
-	if ud and not ud.canMove then
+	if ud and (ud.isFactory or not ud.canMove) then -- (a factory has canMove for its rally point: it is a structure too, and not allowed)
 		local cls = buildClass(ud)
 		if not (cls == "tower" or (cls == "economy" and cfg.restrict == "economy") or (cls == "radar" and cfg.fog)) then
 			why = cls == "radar" and "no radars without fog of war" or (cfg.restrict == "economy" and "only towers and economy structures may be built" or "only towers may be built")
