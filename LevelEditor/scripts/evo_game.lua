@@ -978,7 +978,8 @@ local STAGES = 10
 local FIRST, FACTOR = 3, 1.6 -- points from stage 1 to 2, and how much more every further stage costs
 local RESPAWN = 5 * FPS -- frames until a destroyed unit comes back
 local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
-local WILD_HP = 0.2 -- health of a wild unit (part of the normal): a fight with some damage
+local REGEN, REGEN_STEP, REGEN_WAIT = 0.002, 30, 150 -- the unit of a player regenerates 0.2 % of its health per second (1 % in 5 s), 5 s after the last damage
+local WILD_HP = 0.3 -- health of a wild unit (part of the normal): a fight with some damage
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
 local EXP_STEP = 0.1 -- the experience of the unit (the game's own: more health, damage, reload) for a kill of a player unit, minus it for a death
@@ -1960,12 +1961,12 @@ local function topUpWild()
 	end
 end
 
--- Every R.UPGRADE frames: one wild unit two or more stages away from the lowest stage of the players who are still in (below or above: the weakest player
+-- Every R.UPGRADE frames: one wild unit above the lowest stage of the players who are still in, or two or more below it (the weakest player
 -- went down after a death) becomes one of that stage, at its place
 local function upgradeWild()
 	local low = wildStage()
 	for id, w in pairs(wild) do
-		if math.abs(w.stage - low) >= 2 then
+		if w.stage > low or low - w.stage >= 2 then -- (above the weakest player at all: he must have a chance; below: two or more)
 			local x, _, z = Spring.GetUnitPosition(id)
 			if x then
 				local facing = Spring.GetUnitBuildFacing(id)
@@ -2378,6 +2379,18 @@ function gadget:GameFrame(n)
 		upgradeWild()
 		upgradeRadars()
 	end
+	if n % REGEN_STEP == 0 then
+		-- the units regenerate: REGEN of the health every REGEN_STEP frames, not for REGEN_WAIT frames after the last damage
+		for _, p in ipairs(players) do
+			local id = p.unit
+			if id and not p.out and n - (p.hurtAt or -REGEN_WAIT) >= REGEN_WAIT and Spring.ValidUnitID(id) and not Spring.GetUnitIsDead(id) then
+				local hp, maxHp = Spring.GetUnitHealth(id)
+				if hp and maxHp and hp < maxHp then
+					Spring.SetUnitHealth(id, math.min(maxHp, hp + maxHp * REGEN))
+				end
+			end
+		end
+	end
 	if n % 15 == 0 then
 		takeRadars(15)
 		A.update(n)
@@ -2624,6 +2637,10 @@ end
 
 -- the radars cannot be destroyed (also not by the missiles of Gates of Hell); a wild tower does only R.TOWER_DAMAGE of its damage
 function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID)
+	local hurt = owner[unitID]
+	if hurt and damage > 0 then
+		hurt.hurtAt = Spring.GetGameFrame() -- (the regeneration waits REGEN_WAIT after the last hit)
+	end
 	if radars[unitID] then
 		return 0, 0
 	end
