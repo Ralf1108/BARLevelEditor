@@ -136,6 +136,10 @@ The table shows one unit of each faction per level as an example (the help windo
 
 `start_evolution.bat` in the folder LevelEditor starts at once a game of you against one SimpleAI on Hooked 1.1 with the debug mode on. Another map or computer player: `start_evolution.bat "Comet Catcher Remake 1.8" SimpleDefenderAI`.
 
+**Players on levels 8 and 9**
+- A player on level 8 or 9 shows on the **radar and the minimap of everybody** (also in the fog of war), so the others can team up against it; the chat says so when it begins
+- Not while that player is cloaked (the power-up Cloak hides it), and from Armageddon on there is no fog of war anyway
+
 ## Tips
 
 - Hunt the wild units first, then pick fights with enemies of your level or above

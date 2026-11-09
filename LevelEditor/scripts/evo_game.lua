@@ -1123,7 +1123,7 @@ local R = {
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
 	-- STILL = part of the wild units that never walk (towers never do)
-	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 6, MAX_RADARS = 60,
+	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 6, REVEAL_STAGE = 8, MAX_RADARS = 60,
 	-- the towers of a stage per faction (ground targets; anti air, nuclear and anti nuclear buildings left out), ordered by cost
 	TOWERS = {
 		{ "armllt", "armbeamer", "armclaw", "armhlt", "armpb", "armguard", "armamb", "armanni", "armanni", "armannit3" },
@@ -2157,6 +2157,46 @@ local function generatorsOn() -- every second: the solar collectors and wind tur
 		end
 	end
 end
+-- On the levels R.REVEAL_STAGE to 9 the unit of a player shows on the radar and the minimap of every other ally team (the others can ally against it); not while
+-- the power-up Cloak hides it, not in Armageddon (no fog of war then). Every second; the radar and "contact" bits of the line of sight state (2 + 8) are set by Lua.
+local function revealTop()
+	for _, p in ipairs(players) do
+		local id = p.unit
+		local cloaked = false
+		for i, a in ipairs(ABILITIES) do
+			if a.key == "cloak" and p.active and p.active[i] then
+				cloaked = true
+			end
+		end
+		if not cloaked then
+			local want = id and not p.out and not armageddon and p.stage >= R.REVEAL_STAGE and p.stage < STAGES
+			if want or (p.onRadar and id) then
+				local mine = Spring.GetUnitAllyTeam(id)
+				for _, a in ipairs(Spring.GetAllyTeamList()) do
+					if a ~= mine then
+						pcall(Spring.SetUnitLosMask, id, a, want and 10 or 0)
+						if want then
+							pcall(Spring.SetUnitLosState, id, a, 10)
+						end
+					end
+				end
+			end
+			if want and FOLLOW_AI and Spring.GetGameFrame() % (5 * FPS) == 0 then
+				for _, a in ipairs(Spring.GetAllyTeamList()) do
+					if a ~= Spring.GetUnitAllyTeam(id) then
+						Spring.Echo("[Evolution] test: " .. p.name .. " (level " .. p.stage .. ") on the radar of ally team " .. a .. ": " .. tostring(Spring.IsUnitInRadar(id, a)))
+					end
+				end
+			end
+			if want and not p.onRadar then
+				p.onRadar = true
+				say(p.name .. " is on level " .. p.stage .. " and shows on the radar of everybody now: ally against it!")
+			elseif not want then
+				p.onRadar = nil
+			end
+		end
+	end
+end
 local function noCloak() -- the cloak order of those units is switched off every second (the game switches it on after the creation)
 	for id in pairs(cloakers) do
 		local st = Spring.ValidUnitID(id) and Spring.GetUnitStates(id)
@@ -2636,6 +2676,7 @@ function gadget:GameFrame(n)
 	if n % FPS == 0 then
 		noCloak()
 		generatorsOn()
+		revealTop()
 	end
 	if n % 15 == 0 then
 		takeRadars(15)
