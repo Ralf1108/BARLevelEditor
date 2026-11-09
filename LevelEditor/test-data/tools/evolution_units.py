@@ -81,6 +81,8 @@ for u in units:
 
 # artillery and rocket launchers are no candidates either (the notes of the rule of thumb and of the name)
 units = [u for u in units if "artillery" not in u["note"]]
+# water units, units without a ground weapon, the Epic and Archaic variants and the Tumbleweeds are no candidates
+units = [u for u in units if u["type"] != "Sea" and u["dps"] > 0 and not re.match(r"(Epic|Archaic) ", u["human"]) and "Tumbleweed" not in u["human"]]
 rows = sorted(units, key=lambda u: (u["level"] == "", u["level"] if u["level"] != "" else 0, u["fac"], u["score"]))
 head = ["Level", "On ladder", "Faction", "Name", "Unit", "Type", "Tech", "DPS", "Health", "Metal", "Speed", "Range", "Note"]
 def cells(u):
@@ -97,7 +99,7 @@ with open(out, "w", encoding="utf-8-sig", newline="") as fh:
 nl = "\r\n"
 tab = ["# Evolution: unit candidates", "",
        "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
-       "Every mobile ground and water unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get: the level whose current units (column *On ladder*) have the closest damage per second times health. Left out: Scavenger and Raptor units, constructors, aircraft, artillery and rocket launchers, mine layers, commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
+       "Every mobile ground unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get: the level whose current units (column *On ladder*) have the closest damage per second times health. Left out: Scavenger and Raptor units, constructors, aircraft, water units, units without a ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery and rocket launchers, mine layers, the Epic and Archaic variants, Tumbleweeds, commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
        "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
 for u in rows:
     tab.append("| " + " | ".join(str(c) for c in cells(u)) + " |")
