@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 27, stamp = "2026-11-09 15:00" }
+local LAN_VERSION = { number = 28, stamp = "2026-11-09 16:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -591,10 +591,22 @@ end
 
 local syncPveGame -- (defined below; !latejoin calls it: without this declaration the name was a nil global there)
 
+-- the players (not spectators) who have not pressed Ready, without the one named (the boss who presses Start)
+local function notReadyPlayers(except)
+	local l = lobby()
+	local out = {}
+	for _, c in ipairs(battleUsers()) do
+		local bs = c.battleStatus and l and l:ParseBattleStatus(c.battleStatus)
+		if bs and not bs.isSpectator and not bs.isReady and c.name ~= except then out[#out + 1] = c.name end
+	end
+	return out
+end
+
 local function autohostCommand(c, msg)
 	local isHost = (c == S.hostConn)
 	local cmd, rest = msg:match("^!(%S+)%s*(.*)$")
 	cmd = (cmd or ""):lower()
+	log("autohost: command", msg, "from", c.name, isHost and "(host)" or (isBoss(c.name) and "(boss)" or "(no boss)"))
 	if not (isHost or isBoss(c.name)) then say("Only the host or a boss can use !" .. cmd); return end
 	if cmd == "boss" or cmd == "unboss" then
 		local who = playerNamed(rest ~= "" and rest or c.name)
@@ -639,8 +651,17 @@ local function autohostCommand(c, msg)
 		updateBattleInfo()
 		say(spadsState().locked)
 	elseif cmd == "force" then forceCommand(rest)
-	elseif cmd == "cv" and rest:lower():match("^start") then startGameNow()
-	elseif cmd == "start" then startGameNow()
+	elseif (cmd == "cv" and rest:lower():match("^start")) or cmd == "start" then
+		-- the host starts when it wants; a boss only when every player has pressed Ready (the vote of a normal room)
+		if not isHost then
+			local waiting = notReadyPlayers(c.name)
+			if #waiting > 0 then
+				say("The game cannot start yet: everybody has to press Ready first. Not ready: " .. table.concat(waiting, ", ") .. ".")
+				log("autohost: start by the boss", c.name, "refused, not ready:", table.concat(waiting, ","))
+				return
+			end
+		end
+		startGameNow()
 	else log("autohost: ignored command", msg) end
 end
 
