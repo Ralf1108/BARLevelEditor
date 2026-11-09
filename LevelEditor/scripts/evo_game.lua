@@ -58,7 +58,7 @@ local GIFT_NAMES = { "Hell on Earth", "Heaven on Earth", "Gates of Hell" }
 -- order menu: energy cost, time it lasts, cooldown in seconds). Used by both parts (the beacons and the display).
 local ABILITIES = {
 	{ key = "sprint", name = "Sprint", color = { 0.3, 0.65, 1 }, cost = 200, time = 8, cool = 30, tip = "Your unit is 50 % faster for 8 s" },
-	{ key = "repair", name = "Repair", color = { 0.3, 1, 0.35 }, cost = 500, time = 0, cool = 90, tip = "Heals 30 % of the health of your unit at once" },
+	{ key = "repair", name = "Repair", color = { 0.3, 1, 0.35 }, cost = 500, time = 0, cool = 90, tip = "Heals 20 % of the health of your unit at once" },
 	{ key = "pulse", name = "Radar Pulse", color = { 1, 0.55, 0.1 }, cost = 250, time = 5, cool = 45, tip = "Your unit sees everything within 2500 Elmo for 5 s" },
 	{ key = "cloak", name = "Cloak", color = { 1, 0.9, 0.2 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible to the enemy for 15 s (until it fires)" },
 	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
@@ -399,16 +399,11 @@ if not gadgetHandler:IsSyncedCode() then
 			gl.Color(out and 0.55 or 1, out and 0.55 or 1, out and 0.55 or 1, 1)
 			gl.Text(name, nx, cy + 9 * s, 15 * s, "vo")
 			local px1, px2 = nx, nx + 84 * s
-			-- the experience bar (the bonus of the unit that is kept), not the points: when the others level up stays their secret
+			-- no bars here: the points now and for the next level, then the experience bonus of the unit
 			local exp = Spring.GetTeamRulesParam(team, "evoExp") or 0
-			local frac = out and 0 or exp / (exp + 1)
-			H.box(px1, cy - 15 * s, px2, cy - 4 * s, 5 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
-			if frac > 0 then
-				H.box(px1 + 1, cy - 14 * s, px1 + 1 + math.max(10 * s, (px2 - px1 - 2) * frac), cy - 5 * s, 4 * s, { 0.3, 0.2, 0.6, 1 }, { 0.65, 0.5, 1, 1 })
-			end
 			if not out then
 				gl.Color(0.8, 0.85, 0.95, 1)
-				gl.Text(string.format("XP %.1f", exp), px2 + 5 * s, cy - 9 * s, 11 * s, "vo")
+				gl.Text((row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX") .. "   XP " .. string.format("%.1f", exp), nx, cy - 9 * s, 12 * s, "vo")
 			end
 			H.crosshair(kx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
@@ -620,51 +615,76 @@ if not gadgetHandler:IsSyncedCode() then
 		H.bar(px2 + 20 * s, y1 + 10 * s, x2 - 10 * s, y2 - 10 * s, s)
 		-- debug mode (game option lanevodebug, the menu of the room): three buttons above the panel
 		H.dbg = nil
-		if (Spring.GetModOptions() or {}).lanevodebug == "1" then
+		H.dbgShow = nil
+		if (Spring.GetModOptions() or {}).lanevodebug == "1" and not H.dbgHidden then
 			H.dbg = {}
-			local bw, bh = 132 * s, 30 * s
+			local bh = 30 * s
 			local by1, by2 = y2 + 6 * s, y2 + 6 * s + bh
-			local specs = { { "Armageddon", { 0.35, 0.12, 0.1 }, { 0.6, 0.25, 0.15 } }, { "Level Up", { 0.08, 0.35, 0.12 }, { 0.2, 0.65, 0.3 }, "up" },
-				{ "Level Down", { 0.4, 0.08, 0.08 }, { 0.75, 0.2, 0.2 }, "down" } }
+			-- label, width, colors (below, above), arrow, "XP" text: the buttons 1 to 5; then one per power-up (the buttons 6 to 10)
+			local specs = { { "Armageddon", 124, { 0.35, 0.12, 0.1 }, { 0.6, 0.25, 0.15 } }, { "Level Up", 100, { 0.08, 0.35, 0.12 }, { 0.2, 0.65, 0.3 }, "up" },
+				{ "Level Down", 108, { 0.4, 0.08, 0.08 }, { 0.75, 0.2, 0.2 }, "down" }, { "XP", 66, { 0.08, 0.35, 0.12 }, { 0.2, 0.65, 0.3 }, "up", true },
+				{ "XP", 66, { 0.4, 0.08, 0.08 }, { 0.75, 0.2, 0.2 }, "down", true } }
 			local bx = x1
 			for i, sp in ipairs(specs) do
+				local bw = sp[2] * s
 				H.dbg[i] = { bx, by1, bx + bw, by2 }
-				H.box(bx, by1, bx + bw, by2, 5 * s, { sp[2][1], sp[2][2], sp[2][3], 0.95 }, { sp[3][1], sp[3][2], sp[3][3], 0.95 }, { 1, 1, 1, 0.8 }, 2)
+				H.box(bx, by1, bx + bw, by2, 5 * s, { sp[3][1], sp[3][2], sp[3][3], 0.95 }, { sp[4][1], sp[4][2], sp[4][3], 0.95 }, { 1, 1, 1, 0.8 }, 2)
 				gl.Color(1, 1, 1, 1)
-				if sp[4] then
+				if sp[5] then
 					-- an arrow up or down at the left of the label
-					local ax, ay, q = bx + 16 * s, (by1 + by2) / 2, 7 * s
+					local ax, ay, q = bx + 14 * s, (by1 + by2) / 2, 6 * s
 					gl.BeginEnd(GL.TRIANGLES, function()
-						if sp[4] == "up" then
+						if sp[5] == "up" then
 							gl.Vertex(ax - q, ay - q * 0.7); gl.Vertex(ax + q, ay - q * 0.7); gl.Vertex(ax, ay + q * 0.9)
 						else
 							gl.Vertex(ax - q, ay + q * 0.7); gl.Vertex(ax + q, ay + q * 0.7); gl.Vertex(ax, ay - q * 0.9)
 						end
 					end)
-					gl.Text(sp[1], bx + 30 * s, (by1 + by2) / 2, 14 * s, "vo")
+					gl.Text(sp[1], bx + 26 * s, (by1 + by2) / 2, 14 * s, "vo")
 				else
 					H.atom(bx + 17 * s, (by1 + by2) / 2, 9 * s)
 					gl.Text(sp[1], bx + 32 * s, (by1 + by2) / 2, 14 * s, "vo")
 				end
 				bx = bx + bw + 8 * s
 			end
-			-- the power-ups: a button in the color of each gives it at once (the buttons 4 to 8)
+			-- the power-ups: a button in the color of each gives it at once
 			bx = bx + 6 * s
 			for i, a in ipairs(ABILITIES) do
 				local c = a.color
-				H.dbg[3 + i] = { bx, by1, bx + bh, by2 }
+				H.dbg[5 + i] = { bx, by1, bx + bh, by2 }
 				H.box(bx, by1, bx + bh, by2, 5 * s, { c[1] * 0.4, c[2] * 0.4, c[3] * 0.4, 1 }, { c[1], c[2], c[3], 1 }, { 1, 1, 1, 0.6 }, 2)
 				H.icon(a.key, bx + bh / 2, (by1 + by2) / 2, 10 * s, 1)
 				bx = bx + bh + 6 * s
 			end
+			-- the star: random level, power-ups, experience, kills and deaths for every player (the button 11); then "Hide" takes the debug buttons away for a picture
+			H.dbg[11] = { bx, by1, bx + bh, by2 }
+			H.box(bx, by1, bx + bh, by2, 5 * s, { 0.35, 0.28, 0.02, 1 }, { 0.85, 0.7, 0.1, 1 }, { 1, 1, 1, 0.8 }, 2)
+			gl.Color(1, 0.95, 0.5, 1)
+			gl.BeginEnd(GL.TRIANGLE_FAN, function()
+				local cx, cy, r = bx + bh / 2, (by1 + by2) / 2, 11 * s
+				gl.Vertex(cx, cy)
+				for i = 0, 10 do
+					local a = math.rad(90 + i * 36)
+					local rr = (i % 2 == 0) and r or r * 0.42
+					gl.Vertex(cx + rr * math.cos(a), cy + rr * math.sin(a))
+				end
+			end)
+			bx = bx + bh + 6 * s
+			H.dbgHide = { bx, by1, bx + 50 * s, by2 }
+			H.box(bx, by1, bx + 50 * s, by2, 5 * s, { 0.15, 0.15, 0.2, 1 }, { 0.3, 0.3, 0.4, 1 }, { 1, 1, 1, 0.6 }, 2)
+			gl.Color(1, 1, 1, 1)
+			gl.Text("Hide", bx + 25 * s, (by1 + by2) / 2, 13 * s, "cvo")
 			y2 = y2 + 40 * s
+		elseif H.dbgHidden and (Spring.GetModOptions() or {}).lanevodebug == "1" then
+			H.dbgShow = { x1, y2 + 6 * s, x1 + 24 * s, y2 + 6 * s + 30 * s } -- (hidden: a click on this spot brings the debug buttons back)
 		end
 		H.area = { x1, y1, x2, y2 }
 	end
 
 	-- The help: for every level the units of the three factions (picture and name), at the bottom what Armageddon brings. Open at the start of the game
 	-- (for 40 s), the button ? at the title of the overview opens and closes it; H.helpArea: its rectangle for the mouse.
-	H.helpOpen = true
+	-- (a picture for the manual, game option lanevoshot, has no help window except the picture of the help itself)
+	H.helpOpen = (Spring.GetModOptions() or {}).lanevoshot == nil or (Spring.GetModOptions() or {}).lanevoshot == "help"
 	function H.help(s, vsx, vsy)
 		H.helpArea, H.helpClose = nil, nil
 		if not H.helpOpen or Spring.GetGameFrame() > 40 * 30 and not H.helpPinned then
@@ -804,6 +824,14 @@ if not gadgetHandler:IsSyncedCode() then
 	end
 
 	function gadget:MousePress(x, y, button)
+		if button == 1 and H.dbgHide and H.dbg and inside(H.dbgHide, x, y) then
+			H.dbgHidden = true
+			return true
+		end
+		if button == 1 and H.dbgShow and inside(H.dbgShow, x, y) then
+			H.dbgHidden = false
+			return true
+		end
 		if button == 1 and H.dbg then
 			for i, r in ipairs(H.dbg) do
 				if inside(r, x, y) then
@@ -1188,7 +1216,7 @@ local A = {
 	due = {}, -- frames at which a taken beacon lies somewhere else
 	PICK = 80, -- Elmo: a player's unit this near takes a beacon
 	BACK = 45 * FPS, -- frames until a taken beacon comes back somewhere else (a new random color)
-	SPEED = 1.5, HEAL = 0.3, PULSE = 2500, JAM = 500, -- sprint factor, part of the health, sight of the pulse, jammer radius
+	SPEED = 1.5, HEAL = 0.2, PULSE = 2500, JAM = 500, -- sprint factor, part of the health, sight of the pulse, jammer radius
 }
 
 -- one beacon per 2048 x 2048 Elmo of the land, 5 to 20
@@ -2466,9 +2494,30 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 end
 
 -- The gift of a player on stage 10: "evo|gift|<1..3>" from the game widget evo_gift.lua of that player
+-- debug mode (the star button) and the test hook: random values for every player that is in (level 1 to 9 with its unit, points, power-ups, experience, kills
+-- and deaths), so the overview can be photographed
+local function randomize()
+	for _, q in ipairs(players) do
+		if not q.out and q.unit and Spring.ValidUnitID(q.unit) then
+			q.stage, q.xp = math.random(1, STAGES - 1), 0
+			q.xp = math.random(0, math.max(0, need(q.stage) - 1))
+			q.exp = math.random(0, 15) / 10
+			q.kills, q.deaths = math.random(0, 14), math.random(0, 9)
+			q.abilities = {}
+			for i = 1, #ABILITIES do
+				q.abilities[i] = math.random() < 0.5
+			end
+			evolve(q)
+			Spring.SetUnitExperience(q.unit or -1, q.exp)
+		end
+	end
+	A.publish()
+	publish()
+end
+
 local test = {} -- (test only)
 function gadget:RecvLuaMsg(msg, playerID)
-	local kind, n = msg:match("^evo|(%a+)|(%d)$")
+	local kind, n = msg:match("^evo|(%a+)|(%d+)$")
 	if kind == "test" and (Spring.GetModOptions() or {}).lanevotest == "1" then
 		-- test only (game option lanevotest=1): "evo|test|1" gives the player all abilities, "evo|test|2" logs whether its unit is cloaked
 		local _, _, _, team = Spring.GetPlayerInfo(playerID, false)
@@ -2477,6 +2526,10 @@ function gadget:RecvLuaMsg(msg, playerID)
 			p.abilities = {}
 			for i = 1, #ABILITIES do p.abilities[i] = true end
 			A.publish()
+		elseif p and n == "5" then
+			randomize()
+		elseif p and p.unit and n == "4" then
+			gain(p, 1000000) -- (level 10 at once: Armageddon, for the pictures of the manual)
 		elseif p and p.unit and n == "3" then
 			-- an enemy unit next to the player's unit sees it (or not, when it is hidden)
 			local x, _, z = Spring.GetUnitPosition(p.unit)
@@ -2496,14 +2549,20 @@ function gadget:RecvLuaMsg(msg, playerID)
 		return true
 	end
 	if kind == "debug" and (Spring.GetModOptions() or {}).lanevodebug == "1" then
-		-- debug mode: 1 = Armageddon (level 10 at once), 2 = one level up (level 10 brings Armageddon), 3 = one level down (not below 1), 4 to 8 = that power-up
+		-- debug mode: 1 = Armageddon (level 10 at once), 2 = one level up (level 10 brings Armageddon), 3 = one level down (not below 1), 4 = XP up, 5 = XP down (0.1 each), 6 to 10 = that power-up
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 		local p = team and not spec and byTeam[team]
 		if p and not p.out and p.unit then
-			if tonumber(n) >= 4 and ABILITIES[tonumber(n) - 3] then
+			if n == "11" then
+				randomize() -- (the star button)
+			elseif tonumber(n) >= 6 and ABILITIES[tonumber(n) - 5] then
 				p.abilities = p.abilities or {}
-				p.abilities[tonumber(n) - 3] = true -- (the power-up buttons of the debug mode)
+				p.abilities[tonumber(n) - 5] = true -- (the power-up buttons of the debug mode)
 				A.publish()
+			elseif n == "4" or n == "5" then
+				p.exp = math.max(0, (p.exp or 0) + (n == "4" and EXP_STEP or -EXP_STEP)) -- (XP up / down)
+				Spring.SetUnitExperience(p.unit, p.exp)
+				publish()
 			elseif n == "1" or n == "2" then
 				if p.stage < STAGES then
 					gain(p, n == "1" and 1000000 or need(p.stage))

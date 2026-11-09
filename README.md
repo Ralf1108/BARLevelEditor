@@ -48,10 +48,10 @@ Three modes of a level, each with its own page, a test run and export as a scena
 
 | [Tower Defense](LevelEditor/game-modes/tower-defense.md) | [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md) | [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md) | [Evolution](LevelEditor/game-modes/evolution.md) |
 |---|---|---|---|
-| [![Tower Defense page](docs/level-editor-tower-defense.jpg)](LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)](LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)](LevelEditor/game-modes/reclaim-the-fame.md) | [![Armageddon: the gift of level 10](docs/evolution-armageddon.jpg)](LevelEditor/game-modes/evolution.md) |
+| [![Tower Defense page](docs/level-editor-tower-defense.jpg)](LevelEditor/game-modes/tower-defense.md) | [![Capture the Flag page](docs/level-editor-capture-the-flag.jpg)](LevelEditor/game-modes/capture-the-flag.md) | [![Reclaim the Fame page](docs/level-editor-reclaim-the-fame.jpg)](LevelEditor/game-modes/reclaim-the-fame.md) | [![Evolution in the game](docs/evolution-game.jpg)](LevelEditor/game-modes/evolution.md) |
 | Waves walk along a route you build; the player builds towers | Carry flags to your collection point and earn metal | Reclaim crystals for points; first at the score limit wins | One unit each; kills evolve it through 10 levels up to a tier 3 giant; level 10 brings Armageddon (LAN Play: **LAN Play** > **Evolution** in the room, any map) |
-| ![Demo level Serpentine](docs/demo-tower-defense.jpg) | ![Demo level Crossroads](docs/demo-capture-the-flag.jpg) | ![Demo level Crystal Fields](docs/demo-reclaim-the-fame.jpg) | ![Evolution in the game](docs/evolution-game.jpg) |
-| Demo level *Serpentine* | Demo level *Crossroads* | Demo level *Crystal Fields* | PlayerA on level 4 (Welder), *Comet Catcher Remake* |
+| ![Demo level Serpentine](docs/demo-tower-defense.jpg) | ![Demo level Crossroads](docs/demo-capture-the-flag.jpg) | ![Demo level Crystal Fields](docs/demo-reclaim-the-fame.jpg) | ![Armageddon: the gift of level 10](docs/evolution-armageddon.jpg) |
+| Demo level *Serpentine* | Demo level *Crossroads* | Demo level *Crystal Fields* | Armageddon: the gift of level 10, *Comet Catcher Remake* |
 
 One demo level per mode comes with the editor (`LevelEditor\levels\demo_*.lua`, flat metal map Full Metal Plate): load it with start menu key `2`.
 

@@ -2,7 +2,7 @@
 
 [LAN Play](../../docs/lan-play.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)
 
-![Evolution in the game](../../docs/evolution-game.jpg)
+![Evolution in the game: the overview of seven players at the right, your own panel with the abilities at the bottom](../../docs/evolution-game.jpg)
 
 Every player starts with **one weak unit** instead of the commander. Kills give **points**, and enough points **evolve** the unit into a stronger one: 10 levels, from a Pawn up to a tier 3 giant. A lost unit comes back somewhere else, one level lower. The first unit on level 10 brings **Armageddon**: no more fog of war, no more coming back, the last one standing wins. A mode of **LAN Play** on any map: no level, no editor needed.
 
@@ -12,11 +12,11 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)
-- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off** (a green button when on, red when off; off is the default), **Unit multiplier** (1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map) and **Debug mode** (On / Off: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down) and one small button per power-up that gives it at once) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
+- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off** (a green button when on, red when off; off is the default), **Unit multiplier** (1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map) and **Debug mode** (On / Off: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down) XP Up / XP Down, one small button per power-up that gives it at once, a star that gives every player random values for a picture, and Hide) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
 
-![The menu LAN Play of the room with Evolution on](../../docs/evolution-room.jpg)
+![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Auto-aim and Debug mode](../../docs/evolution-room.jpg)
 
-![Evolution: two players and a computer player on level 2](../../docs/evolution-fight.jpg)
+![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
 ## Rules
 
@@ -83,7 +83,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | Color | Ability | What it does | Energy | Cooldown |
 |---|---|---|---|---|
 | Blue | Sprint | 50 % faster for 8 s | 200 | 30 s |
-| Green | Repair | heals 30 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 90 s |
+| Green | Repair | heals 20 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 90 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
 | Yellow | Cloak | your unit is invisible to the enemy for 15 s (even right next to it); when it fires it is seen and the cloak ends | 400 | 60 s |
 | Violet | Jammer | your unit is hidden from the enemy radar and sonar and jams radar for 20 s | 300 | 60 s |
@@ -115,9 +115,8 @@ Chosen by damage per second times health; artillery, units for water and the bom
 
 ## On the screen
 
-- At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, kills, deaths and points bar, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
+- At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, the points now and needed for the next level ("4/12") and the experience ("XP 0.3"), a column with kills above deaths, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
 - At the bottom in the middle: your own unit, big: level, unit, points bar, a violet **XP bar** (the experience bonus you keep: +0.1 per kill of a player, -0.1 per death), kills, deaths and the buttons of your abilities
-- The overview at the right shows the XP bar of everybody, not the points: when the others level up stays hidden
 - After a respawn the camera jumps to your new unit
 - At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel

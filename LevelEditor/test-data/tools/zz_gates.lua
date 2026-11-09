@@ -12,6 +12,9 @@ local seen = {}
 function widget:GameFrame(f)
 	local me = Spring.GetMyTeamID()
 	if f == 5 then Spring.SendCommands("setmaxspeed 10", "setminspeed 10") end
+	if f == 20 then for _ = 1, 3 do Spring.SendLuaRulesMsg("evo|debug|4") end end
+	if f == 25 then log("XP after 3 x XP up:", tostring(Spring.GetTeamRulesParam(me, "evoExp"))); Spring.SendLuaRulesMsg("evo|debug|5") end
+	if f == 28 then log("XP after XP down:", tostring(Spring.GetTeamRulesParam(me, "evoExp"))) end
 	if f == 30 then Spring.SendLuaRulesMsg("evo|debug|3"); log("level after Level Down at 1:", tostring(level(me))) end
 	if f == 60 then Spring.SendLuaRulesMsg("evo|debug|2") end
 	if f == 90 then log("level after Level Up:", tostring(level(me))); Spring.SendLuaRulesMsg("evo|debug|3") end
