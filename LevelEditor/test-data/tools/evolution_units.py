@@ -45,6 +45,9 @@ def kind(u):
     if c == "vehicles" or u["move"].startswith(("tank", "atank", "htank", "mtank", "vehicle", "epicveh")): return "Vehicle"
     return c.capitalize() or u["move"]
 
+# left out by hand (the name of the unit: the reason)
+MANUAL = {"corjugg": "too slow (speed 17)", "corban": "missile launcher"}
+
 def why(u):
     """why a unit is not included in Evolution (empty: it is included)"""
     r = []
@@ -65,6 +68,7 @@ def why(u):
         r.append("artillery / rocket launcher")
     if not r and u["dps"] * u["hp"] < 10000: r.append("scout: DPS x health below 10000")
     if not r and u["dps"] < 40: r.append("weak support: DPS below 40")
+    if not r and u["name"] in MANUAL: r.append(MANUAL[u["name"]])
     return ", ".join(r)
 
 for u in units:
@@ -145,6 +149,7 @@ tab = ["# Evolution: unit candidates", "",
        "- Left out: units without a ground weapon (radar, jammers, spies, anti air, crawling bombs)",
        "- Left out: artillery and rocket launchers (the description says so, or the main weapon is a cannon or missile of 1000 Elmo or more)",
        "- Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight",
+       "- Left out by hand: Behemoth (too slow) and Banisher (missile launcher)",
        "- *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on",
        "- *Included*: the 30 units that were in the game before (the number is their level); the others are new candidates", "",
        "**How the level is found**", "",

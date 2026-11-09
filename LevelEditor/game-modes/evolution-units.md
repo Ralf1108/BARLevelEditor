@@ -12,6 +12,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 - Left out: units without a ground weapon (radar, jammers, spies, anti air, crawling bombs)
 - Left out: artillery and rocket launchers (the description says so, or the main weapon is a cannon or missile of 1000 Elmo or more)
 - Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight
+- Left out by hand: Behemoth (too slow) and Banisher (missile launcher)
 - *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on
 - *Included*: the 30 units that were in the game before (the number is their level); the others are new candidates
 
@@ -79,7 +80,6 @@ The selection of the units that can appear in Evolution (the candidates) and the
 | 4 |  | Armada | Gunslinger | armmav | Bot | 2 | 265 | 1800 | 477000 | 650 | 50 | 365 |  |  |
 | 4 |  | Armada | Turtle | armcroc | Vehicle | 2 | 141 | 5000 | 703000 | 750 | 54 | 480 |  |  |
 | 4 | 4 | Cortex | Fiend | corpyro | Bot | 2 | 240 | 1060 | 254400 | 200 | 83 | 230 |  |  |
-| 4 |  | Cortex | Banisher | corban | Vehicle | 2 | 133 | 2500 | 333250 | 1000 | 54 | 800 |  |  |
 | 4 |  | Cortex | Alligator | corseal | Vehicle | 2 | 129 | 2600 | 335140 | 480 | 72 | 440 |  |  |
 | 4 |  | Cortex | Salamander | corsala | Vehicle | 2 | 164 | 2100 | 343560 | 350 | 72 | 340 |  |  |
 | 4 |  | Cortex | Duck | coramph | Bot | 2 | 174 | 2350 | 408900 | 330 | 56 | 400 |  |  |
@@ -124,7 +124,6 @@ The selection of the units that can appear in Evolution (the candidates) and the
 | 9 | 9 | Legion | Praetorian | legeshotgunmech | Bot | 3 | 1233 | 22000 | 27132600 | 7000 | 72 | 700 |  |  |
 | 9 |  | Legion | Mukade | legpede | Bot | 3 | 1174 | 28000 | 32863600 | 5500 | 51 | 850 | yes | included only with the option Long range |
 | 10 | 10 | Armada | Titan | armbanth | Bot | 3 | 1450 | 69000 | 100050000 | 13500 | 46 | 860 |  |  |
-| 10 |  | Cortex | Behemoth | corjugg | Bot | 3 | 821 | 335000 | 275169000 | 20000 | 17 | 550 |  |  |
 | 10 | 10 | Cortex | Juggernaut | corkorg | Bot | 3 | 4220 | 149000 | 628809800 | 29000 | 37 | 950 |  |  |
 | 10 |  | Legion | Apollyon | legapollyon | Vehicle | 3 | 4298 | 56000 | 240660000 | 15000 | 38 | 1200 | yes | included only with the option Long range |
 | 10 | 10 | Legion | Sol Invictus | legeheatraymech | Bot | 3 | 2680 | 110000 | 294800000 | 23500 | 40 | 800 |  |  |
@@ -370,6 +369,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Legion | Assist Drone | legassistdrone | Air | 1 | 0 | 335 | 0 | 1 | 210 | 0 |  | drone, constructor, aircraft |
 |  |  | Armada | Nexus | armdronecarry | Sea | 2 | 0 | 3500 | 0 | 1700 | 63 | 0 |  | drone, water unit |
 |  |  | Cortex | Disperser | cordronecarry | Sea | 2 | 0 | 3500 | 0 | 1700 | 63 | 0 |  | drone, water unit |
+|  |  | Cortex | Banisher | corban | Vehicle | 2 | 133 | 2500 | 333250 | 1000 | 54 | 800 |  | missile launcher |
 |  |  | Armada | Archangel | armaak | Bot | 2 | 0 | 2200 | 0 | 520 | 47 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
 |  |  | Armada | Assimilator | armassimilator | Bot | 3 | 0 | 7500 | 0 | 2500 | 60 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
 |  |  | Armada | Compass | armmark | Bot | 2 | 0 | 355 | 0 | 100 | 41 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
@@ -409,6 +409,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Cortex | Rascal | corfav | Vehicle | 1 | 32 | 90 | 2862 | 26 | 153 | 180 |  | scout: DPS x health below 10000 |
 |  |  | Legion | Goblin | leggob | Bot | 1 | 27 | 200 | 5340 | 30 | 75 | 261 |  | scout: DPS x health below 10000 |
 |  |  | Legion | Wheelie | legscout | Vehicle | 1 | 24 | 75 | 1770 | 23 | 160 | 169 |  | scout: DPS x health below 10000 |
+|  |  | Cortex | Behemoth | corjugg | Bot | 3 | 821 | 335000 | 275169000 | 20000 | 17 | 550 |  | too slow (speed 17) |
 |  |  | Armada | Barracuda | armsubk | Sea | 2 | 175 | 2350 | 411250 | 950 | 81 | 400 |  | water unit |
 |  |  | Armada | Bermuda | armsjam | Sea | 2 | 0 | 1350 | 0 | 310 | 45 | 0 |  | water unit |
 |  |  | Armada | Corsair | armroy | Sea | 1 | 259 | 3700 | 959780 | 880 | 67 | 700 |  | water unit |
