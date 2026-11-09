@@ -8,7 +8,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 ## In short
 
-- **LAN Play** room: the host presses the green button **LAN Options** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (a submenu with the green / red button On / Off opens); everybody in the room sees it
+- **LAN Play** room: the host presses the green button **LAN Play** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (a submenu with the green / red button On / Off opens); everybody in the room sees it
 - The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)
@@ -48,9 +48,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **The gift of level 10**
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
-  - **Hell on Earth**: 8 tier 3 units rise all over the map and one more every 10 seconds; they are yours
-  - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; they are yours
-  - **Gates of Hell**: nuclear missiles that never stop and get worse: more and more of them, faster and faster. First they come down far from the enemy human players (never around computer players; the circle starts at 2000 Elmo), then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
+  - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
+  - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
+  - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20; the rings warn everybody 5 seconds before), then missiles that never stop and get worse: more and more of them, faster and faster. First they come down far from the enemy human players (never around computer players; the circle starts at 2000 Elmo), then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
 ![Gates of Hell: red rings where the next missiles come down](../../docs/evolution-gates-of-hell.jpg)

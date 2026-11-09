@@ -719,7 +719,7 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.Color(0.85, 0.88, 0.95, 1)
 		gl.Text("No fog of war, no respawn, the last one standing wins.", rx, fy - 28 * s, 11.5 * s, "vo")
 		gl.Text("The first one on level 10 chooses a gift:", rx, fy - 44 * s, 11.5 * s, "vo")
-		local gifts = { { "Hell on Earth", "8 tier 3 units, then one more every 10 s. Yours." }, { "Heaven on Earth", "8 Dragons come down around your unit. Yours." },
+		local gifts = { { "Hell on Earth", "8 tier 3 units; a lost one is replaced. Yours." }, { "Heaven on Earth", "8 Dragons around you, lost ones replaced. Yours." },
 			{ "Gates of Hell", "Missiles without end, ever closer to the enemies." } }
 		for g, gift in ipairs(gifts) do
 			local gy = fy - 62 * s - (g - 1) * 18 * s
@@ -907,7 +907,7 @@ local NO_AIM = (Spring.GetModOptions() or {}).lanevoaim == "0" -- the game optio
 local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
-local HELL_UNITS, HEAVEN_UNITS, HELL_GAP = 8, 8, 10 * FPS -- units of the gifts Hell on Earth and Heaven on Earth; Hell on Earth: one more every 10 s
+local HELL_UNITS, HEAVEN_UNITS, HELL_GAP, HEAVEN_GAP = 8, 8, 30 * FPS, 30 * FPS -- units of the gifts Hell on Earth and Heaven on Earth; one more of each every 30 s
 local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before a missile, distance to the units of the player who chose it
 -- Further rules in one table (Lua 5.1 allows only so many locals):
 --   energy: every player team gets ENERGY_BASE + ENERGY per level per second and a storage of STORE (the commanders are gone; laser weapons need energy);
@@ -1470,38 +1470,61 @@ end
 
 -- ---------------------------------------------------------------- the gifts of stage 10
 -- Hell on Earth: strong ground units (stages 6 to 8, random factions) rise at random places of the land, far from the enemies
-local hells = {} -- { p, nextAt }: the players whose Hell on Earth runs
+local hells = {} -- { p, nextAt, pending }: the players whose Hell on Earth runs
+local hellOf = {} -- unitID -> the record in hells (to replace a unit that dies)
 -- one random tier 3 unit (levels 8 to 10 of a random faction) somewhere on the land, the player's own
-local function hellUnit(p)
+local function hellUnit(g)
 	local name = stageUnit(math.random(8, 10))
 	local x, z = spawnPoint(UnitDefNames[name].id, false, 900)
-	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, math.random(0, 3), p.team)
+	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, math.random(0, 3), g.p.team)
 	if id then
-		summoned[id] = p
+		summoned[id] = g.p
+		hellOf[id] = g
 	end
 end
 
--- Hell on Earth: HELL_UNITS tier 3 units at once, then one more every HELL_GAP frames (until the game is won or the player is out)
+-- Hell on Earth: HELL_UNITS tier 3 units at once; a unit that is lost is replaced by a new one somewhere (it never ends), and one more comes every
+-- HELL_GAP frames (until the game is won or the player is out)
 local function giftHell(p)
+	local g = { p = p, nextAt = Spring.GetGameFrame() + HELL_GAP, pending = 0 }
+	hells[#hells + 1] = g
 	for _ = 1, HELL_UNITS do
-		hellUnit(p)
+		hellUnit(g)
 	end
-	hells[#hells + 1] = { p = p, nextAt = Spring.GetGameFrame() + HELL_GAP }
 end
 
 local function hellStep(n)
 	for i = #hells, 1, -1 do
-		local h = hells[i]
-		if finished or h.p.out then
+		local g = hells[i]
+		if finished or g.p.out then
 			table.remove(hells, i)
-		elseif n >= h.nextAt then
-			h.nextAt = n + HELL_GAP
-			hellUnit(h.p)
+		else
+			while g.pending > 0 do
+				g.pending = g.pending - 1
+				hellUnit(g)
+			end
+			if n >= g.nextAt then
+				g.nextAt = n + HELL_GAP
+				hellUnit(g)
+			end
 		end
 	end
 end
 
 -- Heaven on Earth: Dragons come down on a hexagon round the player's unit
+local heavens = {} -- { p, nextAt, pending, options }: the players whose Heaven on Earth runs
+local heavenOf = {} -- unitID -> the record in heavens
+local function dragon(g, x, z)
+	x, z = math.max(50, math.min(Game.mapSizeX - 50, x)), math.max(50, math.min(Game.mapSizeZ - 50, z))
+	local id = Spring.CreateUnit(g.options[math.random(1, #g.options)], x, Spring.GetGroundHeight(x, z) + 300, z, 0, g.p.team)
+	if id then
+		summoned[id] = g.p
+		heavenOf[id] = g
+	end
+end
+
+-- Heaven on Earth: HEAVEN_UNITS Dragons evenly spread on a hexagon round the unit (corners at 0, 60, 120 ... degrees, 320 Elmo from the unit); a lost one is
+-- replaced by a new one near the player's unit, and one more comes at a random place every HEAVEN_GAP frames
 local function giftHeaven(p)
 	local options = {}
 	for _, n in ipairs(GUNSHIPS) do
@@ -1513,29 +1536,74 @@ local function giftHeaven(p)
 	if not x or #options == 0 then
 		return giftHell(p)
 	end
+	local g = { p = p, nextAt = Spring.GetGameFrame() + HEAVEN_GAP, pending = 0, options = options }
+	heavens[#heavens + 1] = g
 	for i = 1, HEAVEN_UNITS do
-		-- the Dragons stand evenly spread on a hexagon round the unit (corners at 0, 60, 120 ... degrees, 320 Elmo from the unit)
 		local e = (i - 1) / HEAVEN_UNITS * 6
 		local k, f = math.floor(e), e - math.floor(e)
 		local a1, a2 = math.rad(k * 60), math.rad((k + 1) * 60)
 		local hx = math.cos(a1) * (1 - f) + math.cos(a2) * f
 		local hz = math.sin(a1) * (1 - f) + math.sin(a2) * f
-		local ux = math.max(50, math.min(Game.mapSizeX - 50, x + hx * 320))
-		local uz = math.max(50, math.min(Game.mapSizeZ - 50, z + hz * 320))
-		local id = Spring.CreateUnit(options[math.random(1, #options)], ux, Spring.GetGroundHeight(ux, uz) + 300, uz, 0, p.team)
-		if id then
-			summoned[id] = p
+		dragon(g, x + hx * 320, z + hz * 320)
+	end
+end
+
+local function heavenStep(n)
+	for i = #heavens, 1, -1 do
+		local g = heavens[i]
+		if finished or g.p.out then
+			table.remove(heavens, i)
+		else
+			local x, _, z = Spring.GetUnitPosition(g.p.unit or -1)
+			while g.pending > 0 and x do
+				g.pending = g.pending - 1
+				local a = math.random() * 2 * math.pi
+				dragon(g, x + math.cos(a) * 320, z + math.sin(a) * 320) -- (a new one near the player)
+			end
+			if n >= g.nextAt then
+				g.nextAt = n + HEAVEN_GAP
+				local rx, rz = randomLand()
+				dragon(g, rx, rz)
+			end
 		end
 	end
 end
 
 -- Gates of Hell: missiles at a growing rate (see gatesStep); a red ring warns NUKE_WARN frames before each one
 local gates = {} -- { p, start, nextAt }: the players whose Gates of Hell run
+local GATES_PER_PLAYER = 10 -- the first barrage: this many missiles per player (not per map size), all at once
 local function giftGates(p)
-	gates[#gates + 1] = { p = p, start = Spring.GetGameFrame(), nextAt = Spring.GetGameFrame() }
+	local now = Spring.GetGameFrame()
+	gates[#gates + 1] = { p = p, start = now, nextAt = now + 10 * FPS }
+	-- the first barrage: at once (all after the warning time) at random places of the land, only not near the units of the player who chose the gate or of
+	-- his alliance; the others see the rings and know what is coming
+	local safe = {}
+	for _, q in ipairs(players) do
+		if q.ally == p.ally and q.unit and Spring.ValidUnitID(q.unit) then
+			local ux, _, uz = Spring.GetUnitPosition(q.unit)
+			if ux then
+				safe[#safe + 1] = { ux, uz }
+			end
+		end
+	end
+	for _ = 1, math.max(20, GATES_PER_PLAYER * #players) do
+		for _ = 1, 30 do
+			local x, z = randomLand()
+			local free = true
+			for _, s in ipairs(safe) do
+				if (s[1] - x) ^ 2 + (s[2] - z) ^ 2 < NUKE_SAFE ^ 2 then
+					free = false
+				end
+			end
+			if free then
+				nukes[#nukes + 1] = { frame = now + NUKE_WARN, x = math.floor(x), z = math.floor(z), p = p }
+				break
+			end
+		end
+	end
 end
 
--- Gates of Hell never ends and gets worse: a volley every `interval` (from 5 s down to 1.2 s over four minutes) of 1 + t/45 s missiles (at most 8). Half of
+-- Gates of Hell never ends and gets worse (after the first barrage of giftGates): a volley every `interval` (from 10 s at the start down to 3 s over four minutes) of 1 + t/45 s missiles (at most 8). Half of
 -- the missiles of a volley follow the enemy players: first far from their unit (2000 Elmo, 12 Elmo less per second down to 120; only human players, never the computer players), so they come closer and
 -- closer; the other half land at random places of the land, so more and more of the map is covered. Never within NUKE_SAFE Elmo of a unit of the player
 -- who chose the gate or of his alliance.
@@ -1546,7 +1614,7 @@ local function gatesStep(n)
 			table.remove(gates, gi)
 		elseif n >= g.nextAt then
 			local t = (n - g.start) / FPS
-			g.nextAt = n + math.floor(math.max(1.2, 5 - t / 60) * FPS)
+			g.nextAt = n + math.floor(math.max(3, 10 - 7 * t / 240) * FPS) -- 10 s at the start, 3 s after four minutes
 			local safe = {}
 			for _, q in ipairs(players) do
 				if q.ally == g.p.ally and q.unit and Spring.ValidUnitID(q.unit) then
@@ -2244,13 +2312,14 @@ function gadget:GameFrame(n)
 		-- Gates of Hell: new volleys, launch what is due, show the rings of the next ones
 		gatesStep(n)
 		hellStep(n)
+		heavenStep(n)
 		local left, rings = {}, {}
 		for _, nk in ipairs(nukes) do
 			if n >= nk.frame then
 				launch(nk)
 			else
 				left[#left + 1] = nk
-				if nk.frame - n <= NUKE_WARN and #rings < 60 then
+				if nk.frame - n <= NUKE_WARN and #rings < 250 then
 					rings[#rings + 1] = nk.x .. "," .. nk.z
 				end
 			end
@@ -2272,6 +2341,14 @@ end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
 	summoned[unitID] = nil
+	if hellOf[unitID] then
+		hellOf[unitID].pending = hellOf[unitID].pending + 1 -- (a lost unit of Hell on Earth is replaced)
+		hellOf[unitID] = nil
+	end
+	if heavenOf[unitID] then
+		heavenOf[unitID].pending = heavenOf[unitID].pending + 1
+		heavenOf[unitID] = nil
+	end
 	radars[unitID] = nil
 	if removing[unitID] then
 		removing[unitID] = nil
