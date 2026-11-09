@@ -779,6 +779,9 @@ if not gadgetHandler:IsSyncedCode() then
 		if H.helpArea and inside(H.helpArea, x, y) then
 			return true
 		end
+		if H.helpArea and not (H.helpBtn and inside(H.helpBtn, x, y)) then
+			H.helpOpen = false -- a click outside the help closes it (the click itself goes on to the game)
+		end
 		if button == 1 and inside(H.toggle, x, y) then
 			H.hidden = not H.hidden
 			return true
