@@ -2142,7 +2142,7 @@ end
 
 ---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
 -- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
--- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier and Auto-aim; a joiner sees the state). They open their windows
+-- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
 -- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
@@ -2173,11 +2173,9 @@ local function closeLanMenu()
 end
 
 -- The settings of Evolution (the submenu of the button Evolution; the host only): On (green) / Off (red), Unit multiplier (1x to 10x: the wild units and towers on the map
--- times that number, game option lanevomult) and Auto-aim (on: the units shoot at what they see as in the game; off: only at what the player orders, game option
--- lanevoaim=0, the players aim themselves with the order Attack)
+-- times that number, game option lanevomult)
 local EVO_MULTS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }
 local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" end
-local function evoAim() return not (S and S.battle.modoptions.lanevoaim == "0") end
 local function setEvoOption(key, value)
 	if not S then return end
 	S.battle.modoptions[key] = value
@@ -2202,9 +2200,6 @@ local function openEvoMenu()
 				setEvoOption("lanevomult", nxt ~= "1" and nxt or nil)
 				openEvoMenu()
 			end },
-		{ caption = "Auto-aim: " .. (evoAim() and "On" or "Off"), class = evoAim() and "action_button" or "negative_button",
-			tip = "Auto-aim " .. (evoAim() and "on: the units shoot at what they see, as usual." or "off: the units do not shoot by themselves, the players have to aim with the order Attack (more like a deathmatch).") .. " Click to change.",
-			fn = function() setEvoOption("lanevoaim", evoAim() and "0" or nil); openEvoMenu() end },
 		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
 			tip = "Debug mode " .. (S.battle.modoptions.lanevodebug == "1" and "on" or "off") .. ": extra buttons above the own panel in the game for testing (Armageddon, Level Up / Down, XP Up / Down, power-ups, a star for random values, Hide). Click to change.",
 			fn = function() setEvoOption("lanevodebug", S.battle.modoptions.lanevodebug == "1" and nil or "1"); openEvoMenu() end },
@@ -2232,7 +2227,7 @@ local function openLanMenu()
 	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
-		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Auto-aim, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 	end
 	local w = 230
@@ -2333,8 +2328,8 @@ function widget:Update()
 		openLanMenu()
 	end
 	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
-		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Auto-aim) is opened, with 2x and no auto-aim set (a picture of it)
-		setEvoOption("lanevomult", "2"); setEvoOption("lanevoaim", "0")
+		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Debug mode) is opened, with 2x set (a picture of it)
+		setEvoOption("lanevomult", "2")
 		openEvoMenu()
 	end
 	if tonumber(cfg.evolutionClose) and ui.popup and clock() > tonumber(cfg.evolutionClose) then

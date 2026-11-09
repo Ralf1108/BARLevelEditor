@@ -15,10 +15,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - **Evolution** in the menu opens a small menu of its own with the settings (hold the mouse over a button for its explanation):
   - **On / Off**: a green button when on, red when off; off is the default
   - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
-  - **Auto-aim**: off means the units do not shoot by themselves; you aim with the order Attack (A) and lead your shots, more like a deathmatch
   - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
-![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Auto-aim and Debug mode](../../docs/evolution-room.jpg)
+![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier and Debug mode](../../docs/evolution-room.jpg)
 
 ![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
@@ -129,6 +128,5 @@ Chosen by damage per second times health; artillery, units for water and the bom
 
 - Hunt the wild units first, then pick fights with enemies of your level or above
 - Take the radars near you early: you see the others coming
-- Without auto-aim (see the settings) you have to aim yourself: keep moving and lead your shots
 - A small map keeps the fights coming: size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata)
 - The game runs in the gadget `evo_game.lua` and the window of the gift in `evo_gift.lua` of the extra game "Level Editor Scenarios" (installed with the Level Editor; a joiner without it gets it from the host)

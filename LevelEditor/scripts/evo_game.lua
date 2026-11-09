@@ -982,7 +982,6 @@ local WILD_HP = 0.2 -- health of a wild unit (part of the normal): a fight with 
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
 local EXP_STEP = 0.1 -- the experience of the unit (the game's own: more health, damage, reload) for a kill of a player unit, minus it for a death
-local NO_AIM = (Spring.GetModOptions() or {}).lanevoaim == "0" -- the game option of the room: no auto-aim, the players aim themselves
 local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
@@ -1469,8 +1468,6 @@ local function spawn(p, x, z, facing)
 		end
 		if p.ai then
 			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
-		elseif NO_AIM then
-			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { 0 }, 0) -- hold fire: the player aims with the order Attack
 		end
 	end
 	publish()
@@ -2613,9 +2610,6 @@ function gadget:AllowCommand(unitID, unitDefID, unitTeam, cmdID, cmdParams, cmdO
 	end
 	if cmdID == CMD.SELFD and owner[unitID] then
 		return false
-	end
-	if NO_AIM and cmdID == CMD_FIRE_STATE and owner[unitID] and not p.ai and (cmdParams[1] or 0) ~= 0 and not (fromLua and (playerID or -1) < 0) then
-		return false -- (auto-aim off: the fire state stays on hold fire)
 	end
 	-- (measured: the orders of BARb come with player 0 and fromSynced true, the orders of this gadget with player -1 and fromLua true)
 	if p.ai and not (fromLua and (playerID or -1) < 0) and not STATES[cmdID] then
