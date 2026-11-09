@@ -2,21 +2,16 @@
 
 [Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)
 
-Every mobile ground unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get: the level whose current units (column *On ladder*) have the closest damage per second times health. Left out: Scavenger and Raptor units, constructors, aircraft, water units, units without a ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery and rocket launchers, mine layers, the Epic and Archaic variants, Tumbleweeds, commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).
+Every mobile ground unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get: the level whose current units (column *On ladder*) have the closest damage per second times health. Left out: Scavenger and Raptor units, constructors, aircraft, water units, units without a ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery and rocket launchers, mine layers, the Epic and Archaic variants, Tumbleweeds, the scouts (DPS times health below 10000), commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).
 
 | Level | On ladder | Faction | Name | Unit | Type | Tech | DPS | Health | Metal | Speed | Range | Note |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 |  | Armada | Tick | armflea | Bot | 1 | 40 | 60 | 21 | 132 | 140 |  |
-| 1 |  | Armada | Rover | armfav | Vehicle | 1 | 35 | 105 | 31 | 168 | 180 |  |
 | 1 |  | Armada | Seeker | armsh | Hover | 1 | 60 | 290 | 85 | 114 | 230 |  |
 | 1 |  | Armada | Whistler | armsam | Vehicle | 1 | 26 | 820 | 150 | 55 | 550 |  |
 | 1 | 1 | Armada | Pawn | armpw | Bot | 1 | 90 | 370 | 54 | 87 | 180 |  |
-| 1 |  | Cortex | Rascal | corfav | Vehicle | 1 | 32 | 90 | 26 | 153 | 180 |  |
 | 1 |  | Cortex | Goon | corsh | Hover | 1 | 60 | 255 | 75 | 110 | 230 |  |
 | 1 | 1 | Cortex | Grunt | corak | Bot | 1 | 74 | 280 | 43 | 81 | 215 |  |
 | 1 |  | Cortex | Lasher | cormist | Vehicle | 1 | 25 | 860 | 155 | 52 | 575 |  |
-| 1 |  | Legion | Wheelie | legscout | Vehicle | 1 | 24 | 75 | 23 | 160 | 169 |  |
-| 1 |  | Legion | Goblin | leggob | Bot | 1 | 27 | 200 | 30 | 75 | 261 |  |
 | 1 |  | Legion | Glaucus | legsh | Hover | 1 | 60 | 220 | 60 | 102 | 260 |  |
 | 1 |  | Legion | Satyr | leglob | Bot | 1 | 30 | 550 | 60 | 51 | 400 |  |
 | 1 | 1 | Legion | Alaris | leghades | Vehicle | 1 | 42 | 425 | 65 | 99 | 211 |  |
