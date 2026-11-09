@@ -79,9 +79,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 |---|---|---|---|---|
 | Yellow | Sprint | 50 % faster for 8 s | 200 | 30 s |
 | Green | Repair | heals 30 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 90 s |
-| Blue | Cloak | your unit is invisible for 15 s (shooting or an enemy close by shows it) | 400 | 60 s |
+| Blue | Cloak | your unit is invisible to the enemy for 15 s (even right next to it, even when it shoots) | 400 | 60 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
-| Violet | Jammer | your unit is hidden from the enemy radar for 20 s | 300 | 60 s |
+| Violet | Jammer | your unit is hidden from the enemy radar and sonar and jams radar for 20 s | 300 | 60 s |
 
 - A taken beacon comes back 45 seconds later somewhere else, in a new color; a beacon of an ability you already have stays for the others
 

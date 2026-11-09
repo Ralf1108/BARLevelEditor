@@ -993,19 +993,32 @@ local function sensor(id, kind, value)
 	pcall(Spring.SetUnitSensorRadius, id, kind, value)
 end
 
+-- Cloak for every unit: the engine cloaks only a unit whose definition can cloak (checked: SetUnitCloak does nothing for the others), so the unit is also
+-- hidden by forcing its line of sight state to nothing (mask 15 = los, radar, previous los, contradar) for every other ally team
+function A.hide(id, on)
+	local mine = Spring.GetUnitAllyTeam(id)
+	for _, a in ipairs(Spring.GetAllyTeamList()) do
+		if a ~= mine then
+			pcall(Spring.SetUnitLosMask, id, a, on and 15 or 0)
+			if on then
+				pcall(Spring.SetUnitLosState, id, a, 0)
+			end
+		end
+	end
+end
+
 -- the effect of ability i on the player's unit begins / ends
 function A.start(p, i)
 	local id, a = p.unit, ABILITIES[i]
 	local ud = UnitDefs[Spring.GetUnitDefID(id)]
 	if a.key == "jammer" then
 		sensor(id, "radarJammer", A.JAM)
+		pcall(Spring.SetUnitStealth, id, true) -- (invisible to radar and sonar)
+		pcall(Spring.SetUnitSonarStealth, id, true)
 	elseif a.key == "cloak" then
 		pcall(Spring.SetUnitCloak, id, true, 75)
 		pcall(Spring.SetUnitCloak, id, 1) -- (script cloak: also a unit that cannot cloak by itself)
-		-- a unit whose definition cannot cloak may stay visible: it is at least invisible to radar and sonar, and does not show as a blip
-		pcall(Spring.SetUnitStealth, id, true)
-		pcall(Spring.SetUnitSonarStealth, id, true)
-		pcall(Spring.SetUnitSensorRadius, id, "radarJammer", 0)
+		A.hide(id, true)
 	elseif a.key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
 	elseif a.key == "repair" then
@@ -1031,11 +1044,12 @@ function A.stop(p, i)
 	local ud = UnitDefs[Spring.GetUnitDefID(id)]
 	if key == "jammer" then
 		sensor(id, "radarJammer", ud.jammerRadius or 0)
+		pcall(Spring.SetUnitStealth, id, ud.stealth or false)
+		pcall(Spring.SetUnitSonarStealth, id, ud.sonarStealth or false)
 	elseif key == "cloak" then
 		pcall(Spring.SetUnitCloak, id, false)
 		pcall(Spring.SetUnitCloak, id, 0)
-		pcall(Spring.SetUnitStealth, id, ud.stealth or false)
-		pcall(Spring.SetUnitSonarStealth, id, ud.sonarStealth or false)
+		A.hide(id, false)
 	elseif key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed, maxWantedSpeed = ud.speed })
 	elseif key == "pulse" then
@@ -2005,8 +2019,34 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 end
 
 -- The gift of a player on stage 10: "evo|gift|<1..3>" from the game widget evo_gift.lua of that player
+local test = {} -- (test only)
 function gadget:RecvLuaMsg(msg, playerID)
 	local kind, n = msg:match("^evo|(%a+)|(%d)$")
+	if kind == "test" and (Spring.GetModOptions() or {}).lanevotest == "1" then
+		-- test only (game option lanevotest=1): "evo|test|1" gives the player all abilities, "evo|test|2" logs whether its unit is cloaked
+		local _, _, _, team = Spring.GetPlayerInfo(playerID, false)
+		local p = team and byTeam[team]
+		if p and n == "1" then
+			p.abilities = {}
+			for i = 1, #ABILITIES do p.abilities[i] = true end
+			A.publish()
+		elseif p and p.unit and n == "3" then
+			-- an enemy unit next to the player's unit sees it (or not, when it is hidden)
+			local x, _, z = Spring.GetUnitPosition(p.unit)
+			for _, q in ipairs(players) do
+				if q.ally ~= p.ally then
+					test.spy = Spring.CreateUnit("armpw", x + 120, Spring.GetGroundHeight(x + 120, z), z, 0, q.team)
+					test.spyAlly = Spring.GetTeamAllyTeamID(q.team)
+					break
+				end
+			end
+		elseif p and p.unit then
+			local ud = UnitDefs[Spring.GetUnitDefID(p.unit)]
+			local los = test.spy and Spring.GetUnitLosState(p.unit, test.spyAlly, false)
+			Spring.Echo("[Evolution] test: spy " .. tostring(test.spy) .. " sees " .. (los and ("los " .. tostring(los.los) .. " radar " .. tostring(los.radar)) or "?") .. " | " .. ud.name .. " canCloak " .. tostring(ud.canCloak) .. " cloaked " .. tostring(Spring.GetUnitIsCloaked(p.unit)) .. " stealth " .. tostring(Spring.GetUnitStealth and Spring.GetUnitStealth(p.unit)))
+		end
+		return true
+	end
 	if kind ~= "gift" and kind ~= "use" then
 		return false
 	end

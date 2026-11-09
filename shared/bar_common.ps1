@@ -77,6 +77,7 @@ function Get-VersionsText([string]$data) {
 
 # Version of the installed official game (byar:test, otherwise byar:stable; the first one whose package is installed)
 function Get-GameVersion($data) {
+    if ($env:BAR_GAME_VERSION) { return $env:BAR_GAME_VERSION }   # forced (tests): when the lobby has announced a newer game that is not downloaded yet
     $text = Get-VersionsText $data
     if ($null -eq $text) { Fail 'No game data found (rapid\...\byar\versions.gz). Please start BAR once and let a game load.' }
     $game = $null; $fallback = $null
