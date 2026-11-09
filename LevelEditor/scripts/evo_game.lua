@@ -1113,7 +1113,7 @@ local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before 
 --   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
 --     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
 local R = {
-	ENERGY_BASE = 5, ENERGY = 3, STORE = LONG_RANGE and 2000 or 1000, -- (2000 only with the option Long range: its beam weapons cost up to 1500 per shot)
+	ENERGY_BASE = 5, ENERGY = 3, GIFT_ENERGY = 1000, STORE = LONG_RANGE and 2000 or 1000, -- (2000 only with the option Long range: its beam weapons cost up to 1500 per shot)
 	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
@@ -1940,7 +1940,7 @@ end
 -- Three sayings for every gift, one of them (at random) goes to the chat when the gift is chosen
 local GIFT_SAYINGS = {
 	{ "The earth cracks open and the dead things climb out. Run!", "Hell has no more room: it sends its giants to walk the land.", "Something enormous is breathing below your feet." },
-	{ "The sky tears apart and the hosts of heaven fall like a hammer.", "A gleam in the clouds, then the thunder of a hundred wings. Too late to pray!", "The angels have come, and they are in a bad mood." },
+	{ "Look to the sky: the dragons have come, flying fortresses with heavy lasers.", "The sky tears apart and the hosts of heaven fall like a hammer.", "A shadow slides over the land, and the gunships are right behind it." },
 	{ "The gates of Hell are open and the fire never stops.", "Look up. Every missile you see has your name on it.", "Doomsday has no end: the sky burns and there is no shelter." },
 }
 local function giveGift(p, n)
@@ -1957,6 +1957,9 @@ local function giveGift(p, n)
 		giftHeaven(p)
 	else
 		giftGates(p)
+	end
+	if n <= 2 then
+		p.giftEnergy = true -- (the heavy lasers of the units of the gift need energy: +R.GIFT_ENERGY per second for good)
 	end
 	publish()
 end
@@ -2348,7 +2351,7 @@ local function giveEnergy()
 			if (store or 0) < R.STORE then
 				Spring.SetTeamResource(p.team, "es", R.STORE)
 			end
-			Spring.AddTeamResource(p.team, "energy", R.ENERGY_BASE + R.ENERGY * p.stage)
+			Spring.AddTeamResource(p.team, "energy", R.ENERGY_BASE + R.ENERGY * p.stage + (p.giftEnergy and R.GIFT_ENERGY or 0))
 		end
 	end
 end

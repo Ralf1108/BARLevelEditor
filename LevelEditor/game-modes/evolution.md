@@ -61,6 +61,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
   - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
   - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20); the red rings warn everybody 5 seconds before where each one comes down. Then the missiles never stop and get worse: every human enemy has missiles of his own that follow him (one at first, two after two minutes, then one more every two minutes), the volleys come every 10 seconds at first and every 3 seconds after four minutes. They start 2000 Elmo from the enemy and come closer and closer, until there is no way out; computer players are not followed. Your own unit and your allies are never hit
+- **Hell on Earth** and **Heaven on Earth** also give you **+1000 energy per second** for good: the heavy lasers of their units need it to fire without a pause
 - When a gift is chosen, the chat gets "<name> chose ..." and one of three sayings of that gift, picked at random (for example "Look up. Every missile you see has your name on it.")
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
