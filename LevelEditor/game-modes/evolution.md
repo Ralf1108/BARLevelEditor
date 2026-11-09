@@ -22,7 +22,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 **Your unit**
 - Every team starts with one level 1 unit where its commander would stand; all other units are gone
 - Every new unit is of a **random faction** (Armada, Cortex or Legion): a Pawn can become a Brute and then a Karkinos
-- The new unit replaces the old one where it stands, with full health; it keeps its orders and is selected again by itself
+- The new unit replaces the old one where it stands; it has the health fraction of the old unit plus 20 % (not a full heal); it keeps its orders and is selected again by itself
 
 **Points**
 - A wild unit or tower: a third of what its level costs (1 for level 1, 2 for level 2, 3, 4, 7, 10, 17, 27, 43, 69): about three of your own level bring you up
@@ -78,7 +78,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | Color | Ability | What it does | Energy | Cooldown |
 |---|---|---|---|---|
 | Yellow | Sprint | 50 % faster for 8 s | 200 | 30 s |
-| Green | Repair | heals 30 % of the health at once | 500 | 90 s |
+| Green | Repair | heals 30 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 90 s |
 | Blue | Cloak | your unit is invisible for 15 s (shooting or an enemy close by shows it) | 400 | 60 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
 | Violet | Jammer | your unit is hidden from the enemy radar for 20 s | 300 | 60 s |

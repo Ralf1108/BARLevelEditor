@@ -103,7 +103,7 @@ if not gadgetHandler:IsSyncedCode() then
 	end
 
 	-- a box with round corners, color `bottom` below fading to `top` above (r, g, b, a); `line`: a border in that color
-	function H.box(x1, y1, x2, y2, r, bottom, top, line)
+	function H.box(x1, y1, x2, y2, r, bottom, top, line, width)
 		local pts = H.outline(x1, y1, x2, y2, r)
 		local function col(y)
 			local t = (y - y1) / math.max(1, y2 - y1)
@@ -121,11 +121,13 @@ if not gadgetHandler:IsSyncedCode() then
 		end)
 		if line then
 			gl.Color(line[1], line[2], line[3], line[4])
+			gl.LineWidth(width or 1)
 			gl.BeginEnd(GL.LINE_LOOP, function()
 				for _, p in ipairs(pts) do
 					gl.Vertex(p[1], p[2])
 				end
 			end)
+			gl.LineWidth(1)
 		end
 	end
 
@@ -255,9 +257,16 @@ if not gadgetHandler:IsSyncedCode() then
 
 	-- the panel at the right edge below the bars of the game: a title line and one compact row per team, the highest level on top (the out players at the
 	-- bottom): team color, level badge, name, points bar, kills, deaths, abilities
+	-- the scale of everything drawn here: 1 at 1920 x 1080, smaller with a smaller window (by the smaller of width and height), times the UI scale of the game
+	function H.scale()
+		local vsx, vsy = Spring.GetViewGeometry()
+		return math.min(vsx / 1920, vsy / 1080) * (Spring.GetConfigFloat("ui_scale", 1) or 1)
+	end
+
 	function H.panel(state, arma)
 		local vsx, vsy = Spring.GetViewGeometry()
-		local s = vsy / 1080 * (Spring.GetConfigFloat("ui_scale", 1) or 1)
+		local base = H.scale()
+		local s = base * 1.2 -- (the overview is 20 % larger than the rest)
 		local rows = {}
 		for t in tostring(Spring.GetGameRulesParam("evoTeams") or ""):gmatch("%d+") do
 			local team = tonumber(t)
@@ -273,7 +282,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local w, rowH, head, pad, gap = math.floor(380 * s), math.floor(44 * s), math.floor(28 * s), math.floor(7 * s), math.floor(4 * s)
 		local x2 = math.floor(vsx - 8 * s)
 		local x1 = x2 - w
-		local top = math.floor(vsy - 72 * s)
+		local top = math.floor(vsy - 72 * base)
 		local y1 = top - head - #rows * (rowH + gap) - pad
 		local hot = arma > 0
 		H.box(x1, y1, x2, top, 8 * s, { 0.03, 0.04, 0.07, 0.82 }, { 0.10, 0.12, 0.18, 0.82 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.45 })
@@ -342,7 +351,7 @@ if not gadgetHandler:IsSyncedCode() then
 			y = ry1 - gap
 		end
 		gl.Color(1, 1, 1, 1)
-		return x1, x2, y1, s
+		return x1, x2, y1, base
 	end
 
 	-- The buttons of the own abilities in the rectangle x1, y1 - x2, y2: five in the order of ABILITIES, each with its color and symbol; grey and pale while the
@@ -360,6 +369,14 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 		local energy = Spring.GetTeamResources(mine, "energy") or 0
 		local gap = 6 * s
+		local fw = math.max(2, 4 * s) -- the thickness of the frames
+		local hp, maxHp = 0, 0
+		local unit = Spring.GetTeamRulesParam(mine, "evoUnit")
+		if unit and unit > 0 and Spring.ValidUnitID(unit) then
+			hp, maxHp = Spring.GetUnitHealth(unit)
+			hp, maxHp = hp or 0, maxHp or 0
+		end
+		local healthy = maxHp > 0 and hp >= maxHp - 0.5 -- (Repair is not needed now)
 		local n = #ABILITIES
 		local bw = (x2 - x1 - (n - 1) * gap) / n
 		local bh = y2 - y1
@@ -371,7 +388,7 @@ if not gadgetHandler:IsSyncedCode() then
 			local h, c = have[i], a.color
 			local cx, iy = (bx1 + bx2) / 2, by2 - bh * 0.42
 			if not h then
-				H.box(bx1, by1, bx2, by2, 7 * s, { 0.07, 0.07, 0.09, 0.9 }, { 0.12, 0.12, 0.15, 0.9 }, { c[1] * 0.5, c[2] * 0.5, c[3] * 0.5, 0.5 })
+				H.box(bx1, by1, bx2, by2, 7 * s, { 0.07, 0.07, 0.09, 0.9 }, { 0.12, 0.12, 0.15, 0.9 }, { c[1] * 0.7, c[2] * 0.7, c[3] * 0.7, 0.8 }, fw)
 				H.icon(a.key, cx, iy, 14 * s, 0.25)
 				gl.Color(0.5, 0.5, 0.55, 1)
 			else
@@ -379,7 +396,7 @@ if not gadgetHandler:IsSyncedCode() then
 				local k = cooling and 0.3 or 1
 				local pulse = 0.6 + 0.4 * math.sin(Spring.GetGameFrame() * 0.25)
 				H.box(bx1, by1, bx2, by2, 7 * s, { c[1] * 0.35 * k, c[2] * 0.35 * k, c[3] * 0.35 * k, 0.95 }, { c[1] * 0.85 * k, c[2] * 0.85 * k, c[3] * 0.85 * k, 0.95 },
-					h.act > 0 and { 1, 1, 1, pulse } or { 1, 1, 1, cooling and 0.15 or 0.5 })
+					h.act > 0 and { 1, 1, 1, pulse } or { c[1], c[2], c[3], cooling and 0.55 or 1 }, fw)
 				if cooling then
 					gl.Color(1, 1, 1, 1)
 					gl.Text(tostring(h.cool), cx, iy, 24 * s, "cvo")
@@ -393,6 +410,11 @@ if not gadgetHandler:IsSyncedCode() then
 				gl.Color(1, 1, 1, cooling and 0.6 or 1)
 			end
 			gl.Text(a.name, cx, by1 + 11 * s, 12 * s, "cvo")
+			if a.key == "repair" and h and healthy and h.act == 0 and h.cool == 0 then
+				-- (not greyed: marked, a click does nothing now)
+				gl.Color(0.6, 1, 0.7, 1)
+				gl.Text("not needed", cx, by1 + 24 * s, 10 * s, "cvo")
+			end
 			if not (h and h.act > 0) then
 				-- the energy it costs, top right: yellow, red when the energy is short (while it works the seconds left stand there)
 				if energy < a.cost then
@@ -415,7 +437,7 @@ if not gadgetHandler:IsSyncedCode() then
 			local a, h = ABILITIES[hover], have[hover]
 			local lines = { a.tip, "Cost " .. a.cost .. " energy, cooldown " .. a.cool .. " s",
 				not h and ("Not yet yours: drive over a beacon of this color") or (h.act > 0 and ("Working: " .. h.act .. " s left")) or (h.cool > 0 and ("Ready again in " .. h.cool .. " s"))
-					or (energy < a.cost and "Not enough energy") or "Click to use" }
+					or (a.key == "repair" and healthy and "Not needed now: full health") or (energy < a.cost and "Not enough energy") or "Click to use" }
 			local tw = 0
 			for _, l in ipairs(lines) do
 				tw = math.max(tw, gl.GetTextWidth(l) * 13 * s)
@@ -448,9 +470,9 @@ if not gadgetHandler:IsSyncedCode() then
 		local function p(k) return Spring.GetTeamRulesParam(mine, k) or 0 end
 		local vsx = Spring.GetViewGeometry()
 		local w, h = math.floor(720 * s), math.floor(104 * s)
-		-- docked to the left of the music player and the player list of the game at the bottom right (about 236 at 1080 lines), clear of the order menu
+		-- docked well to the left of the music player and the player list of the game at the bottom right (about 330 at 1080 lines), clear of the order menu
 		-- and the grid of the build menu at the left (up to 45 % of the width): narrower when the screen is small
-		local x2 = math.floor(vsx - 236 * s)
+		local x2 = math.floor(vsx - 330 * s)
 		local x1 = math.max(math.floor(vsx * 0.45), x2 - w)
 		local y1 = math.floor(8 * s)
 		local y2 = y1 + h
@@ -928,6 +950,10 @@ function A.start(p, i)
 	elseif a.key == "cloak" then
 		pcall(Spring.SetUnitCloak, id, true, 75)
 		pcall(Spring.SetUnitCloak, id, 1) -- (script cloak: also a unit that cannot cloak by itself)
+		-- a unit whose definition cannot cloak may stay visible: it is at least invisible to radar and sonar, and does not show as a blip
+		pcall(Spring.SetUnitStealth, id, true)
+		pcall(Spring.SetUnitSonarStealth, id, true)
+		pcall(Spring.SetUnitSensorRadius, id, "radarJammer", 0)
 	elseif a.key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
 	elseif a.key == "repair" then
@@ -956,6 +982,8 @@ function A.stop(p, i)
 	elseif key == "cloak" then
 		pcall(Spring.SetUnitCloak, id, false)
 		pcall(Spring.SetUnitCloak, id, 0)
+		pcall(Spring.SetUnitStealth, id, ud.stealth or false)
+		pcall(Spring.SetUnitSonarStealth, id, ud.sonarStealth or false)
 	elseif key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed, maxWantedSpeed = ud.speed })
 	elseif key == "pulse" then
@@ -969,6 +997,12 @@ function A.use(p, i)
 	local a, n = ABILITIES[i], Spring.GetGameFrame()
 	if not (a and p.abilities and p.abilities[i]) or not p.unit or p.out or ((p.cool and p.cool[i]) or 0) > n then
 		return false
+	end
+	if a.key == "repair" then
+		local hp, maxHp = Spring.GetUnitHealth(p.unit)
+		if not hp or hp >= maxHp - 0.5 then
+			return false -- full health: nothing happens, no energy is spent
+		end
 	end
 	if not Spring.UseTeamResource(p.team, "energy", a.cost) then
 		return false
@@ -1282,9 +1316,17 @@ local function evolve(p)
 	end
 	local facing = Spring.GetUnitBuildFacing(old) or 0
 	local cmds = Spring.GetUnitCommands(old, 16) or {}
+	local ohp, omax = Spring.GetUnitHealth(old)
 	owner[old] = nil
 	remove(old)
 	spawn(p, x, z, facing)
+	if p.unit and ohp and omax and omax > 0 then
+		-- level up: 20 % of the new unit's health come back, not a full heal (the health fraction of the old unit plus 20 %)
+		local _, nmax = Spring.GetUnitHealth(p.unit)
+		if nmax then
+			Spring.SetUnitHealth(p.unit, math.min(nmax, nmax * (ohp / omax + 0.2)))
+		end
+	end
 	if p.unit and not p.ai then
 		for _, c in ipairs(cmds) do
 			pcall(Spring.GiveOrderToUnit, p.unit, c.id, c.params, { "shift" })
