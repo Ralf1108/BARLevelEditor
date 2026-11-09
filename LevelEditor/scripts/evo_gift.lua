@@ -15,7 +15,7 @@ end
 
 local GIFTS = {
 	{ "Hell on Earth", "Strong ground units rise", "all over the map. Yours." },
-	{ "Heaven on Earth", "Gunships come down", "around your unit. Yours." },
+	{ "Heaven on Earth", "Dragons come down", "around your unit. Yours." },
 	{ "Gates of Hell", "Nuclear missiles rain down,", "far from you. Red rings warn." },
 }
 

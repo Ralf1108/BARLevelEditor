@@ -7,7 +7,7 @@
 -- Armageddon: the first unit on stage 10 ends the fog of war for everybody, and from then on a lost unit does not come back; the last alliance standing
 -- wins. Every player who reaches stage 10 chooses a gift (window of the game widget evo_gift.lua, message "evo|gift|<n>"; a computer player chooses at
 -- once, a human after 30 s at the latest): 1 Hell on Earth (strong ground units rise all over the map, they belong to the player), 2 Heaven on Earth
--- (gunships come down around the player's unit), 3 Gates of Hell (nuclear missiles rain on the map, far from the player's unit).
+-- (Dragons come down around the player's unit), 3 Gates of Hell (nuclear missiles rain on the map, far from the player's unit).
 -- Points: from stage s to s + 1 it takes need(s) = round(3 * 1.6^(s - 1)) points (3, 5, 8, 12, 20, 31, 50, 81, 129). A wild unit gives 1 point; a
 -- player unit of stage v gives need(v), times (1 + v - k) when it is above the stage k of the killer.
 -- Test only: the game option lanevolutionstage=<n> lets every player start on stage n.
@@ -42,13 +42,25 @@ local NAMES = {
 	legkeres = "Keres", legeshotgunmech = "Praetorian", legeheatraymech = "Sol Invictus",
 }
 
+-- (used by both parts: the ladders and the help window)
+-- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
+-- the biggest walking unit of the faction. Artillery, units for water and the bomb bots are left out. Every spawn takes a random faction of those
+-- whose unit exists in the game (Legion only with its game option).
+local LADDERS = {
+	{ "armpw", "armflash", "armwar", "armzeus", "armbull", "armmar", "armmeatball", "armraz", "armthor", "armbanth" },
+	{ "corak", "corgator", "corraid", "corpyro", "correap", "corcan", "corshiva", "corkarg", "cordemon", "corkorg" },
+	{ "leghades", "legcen", "legkark", "leggat", "legjav", "legaheattank", "leginc", "legkeres", "legeshotgunmech", "legeheatraymech" },
+}
+local GUNSHIPS = { "corcrw" } -- Heaven on Earth: the Dragon (without it in the game: Hell on Earth)
+local GIFT_NAMES = { "Hell on Earth", "Heaven on Earth", "Gates of Hell" }
+
 -- The abilities: a beacon of the color of an ability lies on the map; a player's unit that drives over it gets the ability until it dies (a button in the
 -- order menu: energy cost, time it lasts, cooldown in seconds). Used by both parts (the beacons and the display).
 local ABILITIES = {
-	{ key = "sprint", name = "Sprint", color = { 1, 0.9, 0.2 }, cost = 200, time = 8, cool = 30, tip = "Your unit is 50 % faster for 8 s" },
+	{ key = "sprint", name = "Sprint", color = { 0.3, 0.65, 1 }, cost = 200, time = 8, cool = 30, tip = "Your unit is 50 % faster for 8 s" },
 	{ key = "repair", name = "Repair", color = { 0.3, 1, 0.35 }, cost = 500, time = 0, cool = 90, tip = "Heals 30 % of the health of your unit at once" },
-	{ key = "cloak", name = "Cloak", color = { 0.3, 0.65, 1 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible for 15 s (shooting or an enemy close by shows it)" },
 	{ key = "pulse", name = "Radar Pulse", color = { 1, 0.55, 0.1 }, cost = 250, time = 5, cool = 45, tip = "Your unit sees everything within 2500 Elmo for 5 s" },
+	{ key = "cloak", name = "Cloak", color = { 1, 0.9, 0.2 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible to the enemy for 15 s (until it fires)" },
 	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
 }
 
@@ -312,6 +324,13 @@ if not gadgetHandler:IsSyncedCode() then
 		local tx2 = x2 - pad
 		local tx1, ty1, ty2 = tx2 - tb, top - head + 4 * s, top - 4 * s
 		H.toggle = { tx1, ty1, tx2, ty2 }
+		-- the button ? left of it: the help of the levels
+		local hx2 = tx1 - 6 * s
+		H.helpBtn = { hx2 - tb, ty1, hx2, ty2 }
+		H.box(hx2 - tb, ty1, hx2, ty2, 4 * s, { 0.12, 0.15, 0.22, 0.95 }, { 0.22, 0.27, 0.38, 0.95 }, { 0.7, 0.8, 1, 0.8 }, 2)
+		gl.Color(0.9, 0.95, 1, 1)
+		gl.Text("?", hx2 - tb / 2, (ty1 + ty2) / 2, 16 * s, "cvo")
+		local stx = hx2 - tb - 6 * s
 		H.box(tx1, ty1, tx2, ty2, 4 * s, { 0.12, 0.15, 0.22, 0.95 }, { 0.22, 0.27, 0.38, 0.95 }, { 0.7, 0.8, 1, 0.8 }, 2)
 		gl.Color(0.9, 0.95, 1, 1)
 		gl.BeginEnd(GL.TRIANGLES, function()
@@ -321,7 +340,7 @@ if not gadgetHandler:IsSyncedCode() then
 		end)
 		if state ~= "running" then
 			gl.Color(1, 0.85, 0.4, 1)
-			gl.Text(state, tx1 - pad, top - head / 2, 12 * s, "rvo")
+			gl.Text(state, stx - pad, top - head / 2, 12 * s, "rvo")
 		end
 		local mine = Spring.GetMyTeamID()
 		local y = top - head
@@ -365,16 +384,17 @@ if not gadgetHandler:IsSyncedCode() then
 				gl.Color(0.8, 0.85, 0.95, 1)
 				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 6 * s, cy - 9 * s, 12 * s, "vo")
 			end
-			-- kills and deaths (first line, right), the abilities (second line, right)
-			local kx = rx2 - 98 * s
+			-- like the own panel: the status at the left (kills and deaths in the first line after the name), the abilities as large squares at the right
+			local kx = nx + 112 * s
 			H.crosshair(kx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(tostring(row.kills), kx + 11 * s, cy + 9 * s, 14 * s, "vo")
-			local dx = kx + 50 * s
+			local dx = kx + 46 * s
 			H.skull(dx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(tostring(row.deaths), dx + 11 * s, cy + 9 * s, 14 * s, "vo")
-			H.abilities(team, kx - 8 * s, cy - 10 * s, 16 * s)
+			local asize = rowH * 0.66
+			H.abilities(team, rx2 - 5 * asize * 1.15 - 2 * s, cy, asize)
 			y = ry1 - gap
 		end
 		if scrolling then
@@ -564,6 +584,88 @@ if not gadgetHandler:IsSyncedCode() then
 		H.area = { x1, y1, x2, y2 }
 	end
 
+	-- The help: for every level the units of the three factions (picture and name), at the bottom what Armageddon brings. Open at the start of the game
+	-- (for 40 s), the button ? at the title of the overview opens and closes it; H.helpArea: its rectangle for the mouse.
+	H.helpOpen = true
+	function H.help(s, vsx, vsy)
+		H.helpArea, H.helpClose = nil, nil
+		if not H.helpOpen or Spring.GetGameFrame() > 40 * 30 and not H.helpPinned then
+			return
+		end
+		local W, rowH = math.min(vsx - 20, math.floor(1060 * s)), math.floor(50 * s)
+		local head, foot = math.floor(92 * s), math.floor(142 * s)
+		local Hh = head + 10 * rowH + foot
+		local x1 = math.floor((vsx - W) / 2)
+		local y1 = math.floor((vsy - Hh) / 2)
+		local x2, y2 = x1 + W, y1 + Hh
+		H.box(x1, y1, x2, y2, 12 * s, { 0.02, 0.03, 0.06, 0.94 }, { 0.08, 0.10, 0.16, 0.94 }, { 0.55, 0.65, 0.85, 0.7 }, 2)
+		gl.Color(0.55, 0.95, 0.7, 1)
+		gl.Text("EVOLUTION: the levels", x1 + 24 * s, y2 - 26 * s, 24 * s, "vo")
+		gl.Color(0.8, 0.85, 0.95, 1)
+		gl.Text("Kill to level up. Your unit becomes one of a random faction of the next level.", x1 + 24 * s, y2 - 52 * s, 13 * s, "vo")
+		-- the close button
+		local cb = 28 * s
+		H.helpClose = { x2 - cb - 14 * s, y2 - cb - 12 * s, x2 - 14 * s, y2 - 12 * s }
+		H.box(H.helpClose[1], H.helpClose[2], H.helpClose[3], H.helpClose[4], 5 * s, { 0.3, 0.1, 0.1, 0.95 }, { 0.5, 0.18, 0.18, 0.95 }, { 1, 0.8, 0.8, 0.9 }, 2)
+		gl.Color(1, 1, 1, 1)
+		gl.Text("X", (H.helpClose[1] + H.helpClose[3]) / 2, (H.helpClose[2] + H.helpClose[4]) / 2, 16 * s, "cvo")
+		local labels = { "Armada", "Cortex", "Legion" }
+		local cx0, cw = x1 + 84 * s, (W - 84 * s - 16 * s) / 3
+		local top = y2 - head
+		for c, label in ipairs(labels) do
+			gl.Color(0.7, 0.8, 1, 1)
+			gl.Text(label, cx0 + (c - 1) * cw + 4 * s, top + 8 * s, 14 * s, "vo")
+		end
+		for lv = 1, 10 do
+			local ry2 = top - (lv - 1) * rowH
+			local ry1 = ry2 - rowH + 3 * s
+			H.box(x1 + 12 * s, ry1, x2 - 12 * s, ry2 - 3 * s, 6 * s, { 0.07, 0.08, 0.12, 0.9 }, { 0.12, 0.14, 0.20, 0.9 })
+			local by = (ry1 + ry2 - 3 * s) / 2
+			H.disc(x1 + 44 * s, by, 18 * s, { 0.12, 0.2, 0.45, 1 })
+			gl.LineWidth(2)
+			H.ring(x1 + 44 * s, by, 18 * s, { 0.5, 0.65, 1, 1 })
+			gl.LineWidth(1)
+			gl.Color(1, 1, 1, 1)
+			gl.Text(tostring(lv), x1 + 44 * s, by, 18 * s, "cvo")
+			for c, ladder in ipairs(LADDERS) do
+				local name = ladder[lv]
+				local def = UnitDefNames[name]
+				if def then
+					local px = cx0 + (c - 1) * cw
+					local ps = rowH - 10 * s
+					gl.Color(1, 1, 1, 1)
+					gl.Texture("#" .. def.id)
+					gl.TexRect(px, by - ps / 2, px + ps, by + ps / 2)
+					gl.Texture(false)
+					gl.Color(0.5, 0.55, 0.7, 0.8)
+					gl.LineWidth(1)
+					gl.BeginEnd(GL.LINE_LOOP, function()
+						gl.Vertex(px, by - ps / 2); gl.Vertex(px + ps, by - ps / 2); gl.Vertex(px + ps, by + ps / 2); gl.Vertex(px, by + ps / 2)
+					end)
+					gl.Color(1, 1, 1, 1)
+					gl.Text(NAMES[name] or name, px + ps + 8 * s, by, 15 * s, "vo")
+				end
+			end
+		end
+		-- Armageddon
+		local fy = y1 + foot - 10 * s
+		gl.Color(1, 0.4, 0.25, 1)
+		gl.Text("Level 10 brings ARMAGEDDON", x1 + 24 * s, fy - 8 * s, 18 * s, "vo")
+		gl.Color(0.85, 0.88, 0.95, 1)
+		gl.Text("No fog of war, no respawn, the last one standing wins. The first one on level 10 chooses a gift:", x1 + 24 * s, fy - 32 * s, 13 * s, "vo")
+		local gifts = { { "Hell on Earth", "8 strong ground units rise all over the map. Yours." }, { "Heaven on Earth", "8 Dragons come down around your unit. Yours." },
+			{ "Gates of Hell", "12 nuclear missiles rain down, rings warn first." } }
+		for g, gift in ipairs(gifts) do
+			local gx = x1 + 24 * s + (g - 1) * ((W - 48 * s) / 3)
+			gl.Color(1, 0.8, 0.4, 1)
+			gl.Text(gift[1], gx, fy - 58 * s, 15 * s, "vo")
+			gl.Color(0.8, 0.84, 0.92, 1)
+			gl.Text(gift[2], gx, fy - 78 * s, 11 * s, "vo")
+		end
+		H.helpArea = { x1, y1, x2, y2 }
+		gl.Color(1, 1, 1, 1)
+	end
+
 	local function slotAt(x, y)
 		for i, r in pairs(H.slots) do
 			if x >= r[1] and x <= r[3] and y >= r[2] and y <= r[4] then
@@ -577,7 +679,7 @@ if not gadgetHandler:IsSyncedCode() then
 	end
 
 	function gadget:IsAbove(x, y)
-		return inside(H.area, x, y) or inside(H.area2, x, y)
+		return inside(H.area, x, y) or inside(H.area2, x, y) or inside(H.helpArea, x, y)
 	end
 
 	-- the mouse wheel over the overview scrolls its rows (only when some are out of view)
@@ -591,6 +693,18 @@ if not gadgetHandler:IsSyncedCode() then
 	end
 
 	function gadget:MousePress(x, y, button)
+		if button == 1 and H.helpClose and inside(H.helpClose, x, y) then
+			H.helpOpen = false
+			return true
+		end
+		if button == 1 and H.helpBtn and not H.hidden and inside(H.helpBtn, x, y) then
+			H.helpOpen = not H.helpOpen
+			H.helpPinned = H.helpOpen
+			return true
+		end
+		if H.helpArea and inside(H.helpArea, x, y) then
+			return true
+		end
 		if button == 1 and inside(H.toggle, x, y) then
 			H.hidden = not H.hidden
 			return true
@@ -616,6 +730,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local arma = Spring.GetGameRulesParam("evoArmageddon") or 0
 		local _, _, _, s = H.panel(state, arma)
 		H.character(s)
+		H.help(s, vsx, vsy)
 		-- radars being taken: "Taking 3/5" in the color of the taker above the radar
 		for x, z, s, t in tostring(Spring.GetGameRulesParam("evoTaking") or ""):gmatch("(%d+),(%d+),(%d+),(%d+)") do
 			x, z = tonumber(x), tonumber(z)
@@ -711,6 +826,7 @@ local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
 local WILD_HP = 0.2 -- health of a wild unit (part of the normal): a fight with some damage
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
+local NO_AIM = (Spring.GetModOptions() or {}).lanevoaim == "0" -- the game option of the room: no auto-aim, the players aim themselves
 local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
@@ -741,17 +857,6 @@ local R = {
 	RADAR2 = { armrad = "armarad", corrad = "corarad", legrad = "legarad" },
 }
 local radars = {} -- unitID -> { team = owner team (Gaia at first), name, take = { team, frames } while a player takes it }
-
--- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
--- the biggest walking unit of the faction. Artillery, units for water and the bomb bots are left out. Every spawn takes a random faction of those
--- whose unit exists in the game (Legion only with its game option).
-local LADDERS = {
-	{ "armpw", "armflash", "armwar", "armzeus", "armbull", "armmar", "armmeatball", "armraz", "armthor", "armbanth" },
-	{ "corak", "corgator", "corraid", "corpyro", "correap", "corcan", "corshiva", "corkarg", "cordemon", "corkorg" },
-	{ "leghades", "legcen", "legkark", "leggat", "legjav", "legaheattank", "leginc", "legkeres", "legeshotgunmech", "legeheatraymech" },
-}
-local GUNSHIPS = { "armbrawl", "armblade", "armkam", "corape", "corcrw" } -- Heaven on Earth (those that exist in the game)
-local GIFT_NAMES = { "Hell on Earth", "Heaven on Earth", "Gates of Hell" }
 
 local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
 local say = G.sayer("Evolution")
@@ -1126,6 +1231,19 @@ function A.update(n)
 		for i, act in pairs(p.active or {}) do
 			if n >= act.frame or act.unit ~= p.unit then
 				A.stop(p, i)
+			elseif ABILITIES[i].key == "cloak" then
+				-- firing shows the unit: a weapon whose reload began since the last look ends the cloak
+				local since = act.seen or act.frame - ABILITIES[i].time * FPS
+				act.seen = n
+				local ud = UnitDefs[Spring.GetUnitDefID(act.unit)]
+				for w = 1, #(ud and ud.weapons or {}) do
+					local r = Spring.GetUnitWeaponState(act.unit, w, "reloadFrame")
+					if r and r > since then
+						A.stop(p, i)
+						say(p.name .. " is seen: the cloak ends when the unit fires.")
+						break
+					end
+				end
 			end
 		end
 		if p.cool and n % FPS == 0 then
@@ -1187,6 +1305,8 @@ local function spawn(p, x, z, facing)
 		owner[id] = p
 		if p.ai then
 			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
+		elseif NO_AIM then
+			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { 0 }, 0) -- hold fire: the player aims with the order Attack
 		end
 	end
 	publish()
@@ -1284,7 +1404,7 @@ local function giftHell(p)
 	end
 end
 
--- Heaven on Earth: gunships come down around the player's unit
+-- Heaven on Earth: Dragons come down around the player's unit
 local function giftHeaven(p)
 	local options = {}
 	for _, n in ipairs(GUNSHIPS) do
@@ -1439,7 +1559,8 @@ end
 -- The number of wild units: one per 1024 x 1024 Elmo of the land (a map of 16 x 16 without water has 64), at least 12, at most 100
 local function wildCount()
 	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
-	return math.max(12, math.min(100, math.floor(area / (1024 * 1024) + 0.5)))
+	local mult = math.max(1, math.min(4, tonumber((Spring.GetModOptions() or {}).lanevomult) or 1)) -- the unit multiplier of the room (1 - 4)
+	return math.floor(math.max(12, math.min(100, math.floor(area / (1024 * 1024) + 0.5))) * mult)
 end
 
 -- The stage of a new wild unit: the lowest stage of the players who are still in (the weakest player can always catch up on them)
@@ -2073,6 +2194,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 				if q.ally ~= p.ally then
 					test.spy = Spring.CreateUnit("armpw", x + 120, Spring.GetGroundHeight(x + 120, z), z, 0, q.team)
 					test.spyAlly = Spring.GetTeamAllyTeamID(q.team)
+					Spring.SetGameRulesParam("evoTestSpy", test.spy or 0, { public = true })
 					break
 				end
 			end
@@ -2108,6 +2230,9 @@ function gadget:AllowCommand(unitID, unitDefID, unitTeam, cmdID, cmdParams, cmdO
 	end
 	if cmdID == CMD.SELFD and owner[unitID] then
 		return false
+	end
+	if NO_AIM and cmdID == CMD_FIRE_STATE and owner[unitID] and not p.ai and (cmdParams[1] or 0) ~= 0 and not (fromLua and (playerID or -1) < 0) then
+		return false -- (auto-aim off: the fire state stays on hold fire)
 	end
 	-- (measured: the orders of BARb come with player 0 and fromSynced true, the orders of this gadget with player -1 and fromLua true)
 	if p.ai and not (fromLua and (playerID or -1) < 0) and not STATES[cmdID] then

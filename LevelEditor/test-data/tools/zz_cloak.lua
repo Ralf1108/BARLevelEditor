@@ -7,13 +7,19 @@ local function unit() return Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evo
 
 function widget:GameFrame(f)
 	if f == 60 then Spring.SendLuaRulesMsg("evo|test|1"); Spring.SendLuaRulesMsg("evo|test|3") end
-	if f == 90 or f == 150 or f == 240 then
+	if f == 90 or f == 150 or f == 240 or f == 330 then
 		log("frame", f, "unit", tostring(unit()), "cloaked", tostring(Spring.GetUnitIsCloaked(unit() or -1)), "abilities", tostring(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoAbilities")))
 		Spring.SendLuaRulesMsg("evo|test|2")
 	end
 	if f == 120 then
 		log("using Cloak")
-		Spring.SendLuaRulesMsg("evo|use|3")
+		Spring.SendLuaRulesMsg("evo|use|4")
 	end
-	if f == 300 then Spring.SendCommands("quitforce") end
+	if f == 180 then
+		-- the cloaked unit attacks the enemy next to it: the cloak must end (a hidden unit that fires is seen)
+		local spy = Spring.GetGameRulesParam("evoTestSpy") or 0
+		log("ordering Attack on", tostring(spy))
+		if unit() and spy > 0 then Spring.GiveOrderToUnit(unit(), CMD.ATTACK, { spy }, 0) end
+	end
+	if f == 400 then Spring.SendCommands("quitforce") end
 end

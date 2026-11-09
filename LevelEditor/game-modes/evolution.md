@@ -12,6 +12,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)
+- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off**, **Unit multiplier** (1x to 4x: so many times the normal number of wild units and towers, a denser map) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
 
 ![The menu LAN Play of the room with Evolution on](../../docs/evolution-room.jpg)
 
@@ -48,7 +49,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 **The gift of level 10**
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
   - **Hell on Earth**: 8 strong ground units rise all over the map; they are yours
-  - **Heaven on Earth**: 8 gunships come down around your unit; they are yours
+  - **Heaven on Earth**: 8 Dragons (heavy gunships) come down around your unit; they are yours
   - **Gates of Hell**: 12 nuclear missiles rain on the map, one every 4 seconds, far from your unit; red rings warn 5 seconds before where they come down
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
@@ -72,15 +73,15 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Beacons and abilities**
 - Glowing beacons in five colors lie around the map (you see them where your unit sees); drive over one to get its **ability** until your unit dies (evolving keeps it)
-- Your abilities are the five colored buttons in your panel at the bottom of the screen, always in the same place with a symbol (a double arrow, a plus, a crossed out eye, radar waves, a zigzag wave): grey until you have one, then in its color; click to use it; it costs energy and then needs a while before it can be used again (a grey fill runs down the button like a status bar and the number at the top left counts the seconds down); hold the mouse over a button to read what it does
+- Your abilities are the five colored buttons in your panel at the bottom of the screen, always in the same place with a symbol (a double arrow, a plus, radar waves, a crossed out eye, a zigzag wave): grey until you have one, then in its color; click to use it; it costs energy and then needs a while before it can be used again (a grey fill runs down the button like a status bar and the number at the top left counts the seconds down); hold the mouse over a button to read what it does
 - The overview at the right shows which abilities every player has (the symbols only, no cooldowns). The button at its top right hides and shows the list; with many players it stops above the music player and scrolls with the mouse wheel (the highest level is always on top)
 
 | Color | Ability | What it does | Energy | Cooldown |
 |---|---|---|---|---|
-| Yellow | Sprint | 50 % faster for 8 s | 200 | 30 s |
+| Blue | Sprint | 50 % faster for 8 s | 200 | 30 s |
 | Green | Repair | heals 30 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 90 s |
-| Blue | Cloak | your unit is invisible to the enemy for 15 s (even right next to it, even when it shoots) | 400 | 60 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
+| Yellow | Cloak | your unit is invisible to the enemy for 15 s (even right next to it); when it fires it is seen and the cloak ends | 400 | 60 s |
 | Violet | Jammer | your unit is hidden from the enemy radar and sonar and jams radar for 20 s | 300 | 60 s |
 
 - A taken beacon comes back 45 seconds later somewhere else, in a new color; a beacon of an ability you already have stays for the others
@@ -110,9 +111,11 @@ Chosen by damage per second times health; artillery, units for water and the bom
 
 ## On the screen
 
-- At the right edge, below the bars of the game: one compact row per team, the highest level on top: level badge, name, points bar, kills, deaths and the abilities (your own row lighter; "out" in Armageddon)
+- At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, kills, deaths and points bar, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
 - At the bottom in the middle: your own unit, big: level, unit, points bar, kills, deaths and the buttons of your abilities
 - After a respawn the camera jumps to your new unit
+- At the start of the game (for 40 seconds) a **help window** shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it
+- The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
 
 ## Tips
 

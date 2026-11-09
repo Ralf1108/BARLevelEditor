@@ -4,6 +4,7 @@ function widget:GetInfo() return { name = "zz evoshot", desc = "test only: a pic
 local function log(...) Spring.Echo("[zzevoshot] " .. table.concat({ ... }, " ")) end
 
 function widget:GameFrame(f)
+	if f == 100 then Spring.SendLuaRulesMsg("evo|test|1") end -- (only with -EvoTest: all abilities, to see the buttons)
 	if f == 600 or f == 870 then
 		local id = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoUnit")
 		local x, y, z = Spring.GetUnitPosition(id or -1)
