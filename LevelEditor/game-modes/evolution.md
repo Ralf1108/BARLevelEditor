@@ -139,3 +139,390 @@ Chosen by damage per second times health; artillery, units for water and the bom
 - Take the radars near you early: you see the others coming
 - A small map keeps the fights coming: size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata)
 - The game runs in the gadget `evo_game.lua` and the window of the gift in `evo_gift.lua` of the extra game "Level Editor Scenarios" (installed with the Level Editor; a joiner without it gets it from the host)
+
+## Unit candidates
+
+Every mobile unit of Armada, Cortex and Legion with the level it would get in Evolution: the level whose current units (column *On ladder*) have the closest damage per second times health. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv) (made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game).
+
+| Level | On ladder | Faction | Name | Unit | Type | Tech | DPS | Health | Metal | Speed | Range | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 |  | Armada | Groundhog | armmlv | Vehicle | 1 | 5 | 335 | 57 | 75 | 220 | builder |
+| 1 |  | Armada | Tick | armflea | Bot | 1 | 40 | 60 | 21 | 132 | 140 |  |
+| 1 |  | Armada | Rover | armfav | Vehicle | 1 | 35 | 105 | 31 | 168 | 180 |  |
+| 1 |  | Armada | Seeker | armsh | Hover | 1 | 60 | 290 | 85 | 114 | 230 |  |
+| 1 |  | Armada | Whistler | armsam | Vehicle | 1 | 26 | 820 | 150 | 55 | 550 | artillery / rocket? |
+| 1 |  | Armada | Banshee | armkam | Air | 1 | 39 | 560 | 135 | 185 | 350 | air |
+| 1 |  | Armada | Shellshocker | armart | Vehicle | 1 | 42 | 620 | 135 | 54 | 710 | artillery / rocket? |
+| 1 |  | Armada | Possum | armmh | Hover | 1 | 50 | 530 | 175 | 64 | 710 | artillery / rocket? |
+| 1 |  | Armada | Rocketeer | armrock | Bot | 1 | 41 | 720 | 120 | 51 | 475 | artillery / rocket (name) |
+| 1 | 1 | Armada | Pawn | armpw | Bot | 1 | 90 | 370 | 54 | 87 | 180 |  |
+| 1 |  | Cortex | Trapper | cormlv | Vehicle | 1 | 5 | 450 | 65 | 69 | 220 | builder |
+| 1 |  | Cortex | Rascal | corfav | Vehicle | 1 | 32 | 90 | 26 | 153 | 180 |  |
+| 1 |  | Cortex | Goon | corsh | Hover | 1 | 60 | 255 | 75 | 110 | 230 |  |
+| 1 | 1 | Cortex | Grunt | corak | Bot | 1 | 74 | 280 | 43 | 81 | 215 |  |
+| 1 |  | Cortex | Herring | corpt | Sea | 1 | 24 | 890 | 210 | 69 | 650 | artillery / rocket?, water |
+| 1 |  | Cortex | Lasher | cormist | Vehicle | 1 | 25 | 860 | 155 | 52 | 575 | artillery / rocket? |
+| 1 |  | Cortex | Aggravator | corstorm | Bot | 1 | 41 | 740 | 110 | 48 | 475 |  |
+| 1 |  | Cortex | Wolverine | corwolv | Vehicle | 1 | 42 | 750 | 170 | 48 | 710 | artillery / rocket? |
+| 1 |  | Cortex | Mangonel | cormh | Hover | 1 | 61 | 550 | 200 | 64 | 700 | artillery / rocket? |
+| 1 |  | Cortex | Disgruntler | cords | Air | 1 | 60 | 680 | 1000 | 234 | 1280 | air |
+| 1 |  | Legion | Sapper | legmlv | Vehicle | 1 | 5 | 210 | 52 | 69 | 220 | builder |
+| 1 |  | Legion | Wheelie | legscout | Vehicle | 1 | 24 | 75 | 23 | 160 | 169 |  |
+| 1 |  | Legion | Goblin | leggob | Bot | 1 | 27 | 200 | 30 | 75 | 261 |  |
+| 1 |  | Legion | Martyr | legkam | Air | 1 | 44 | 160 | 65 | 220 | 500 | air |
+| 1 |  | Legion | Glaucus | legsh | Hover | 1 | 60 | 220 | 60 | 102 | 260 |  |
+| 1 |  | Legion | Satyr | leglob | Bot | 1 | 30 | 550 | 60 | 51 | 400 |  |
+| 1 | 1 | Legion | Alaris | leghades | Vehicle | 1 | 42 | 425 | 65 | 99 | 211 |  |
+| 1 |  | Legion | Barrage | legbar | Vehicle | 1 | 12 | 1500 | 250 | 41 | 535 |  |
+| 1 |  | Legion | Salacia | legmh | Hover | 1 | 53 | 520 | 190 | 70 | 700 | artillery / rocket? |
+| 1 |  | Legion | Lance | legrail | Vehicle | 1 | 27 | 1100 | 240 | 47 | 650 |  |
+| 1 |  | Legion | Phoenix | legphoenix | Air | 2 | 18 | 2000 | 450 | 270 | 950 | air, artillery / rocket? |
+| 1 |  | Legion | Ballista | legbal | Bot | 1 | 46 | 900 | 160 | 44 | 460 |  |
+| 1 |  | Legion | Hippocampus | legnavyscout | Sea | 1 | 60 | 700 | 120 | 97 | 351 | water |
+| 2 |  | Armada | Torpedo Ship | armtorps | Sea | 1 | 46 | 940 | 300 | 90 | 300 | water |
+| 2 |  | Armada | Skater | armpt | Sea | 1 | 66 | 780 | 150 | 93 | 300 | artillery / rocket?, water |
+| 2 |  | Armada | Mace | armham | Bot | 1 | 60 | 1000 | 130 | 46 | 380 |  |
+| 2 |  | Armada | Stormbringer | armthund | Air | 1 | 92 | 670 | 150 | 250 | 1280 | air |
+| 2 | 2 | Armada | Blitz | armflash | Vehicle | 1 | 90 | 730 | 110 | 101 | 180 |  |
+| 2 |  | Armada | Sabre | armsaber | Air | 1 | 67 | 1010 | 210 | 157 | 425 | air |
+| 2 |  | Armada | Eel | armsub | Sea | 1 | 86 | 840 | 440 | 66 | 500 | water |
+| 2 |  | Armada | Sprinter | armfast | Bot | 2 | 120 | 690 | 160 | 111 | 230 |  |
+| 2 |  | Armada | Janus | armjanus | Vehicle | 1 | 88 | 1030 | 240 | 54 | 380 |  |
+| 2 |  | Armada | Mauser | armmart | Vehicle | 2 | 86 | 1070 | 320 | 60 | 820 | artillery / rocket? |
+| 2 |  | Armada | Gremlin | armgremlin | Vehicle | 2 | 88 | 1060 | 230 | 71 | 220 |  |
+| 2 |  | Armada | Hound | armfido | Bot | 2 | 77 | 1200 | 285 | 69 | 650 |  |
+| 2 |  | Armada | Pincer | armpincer | Vehicle | 1 | 77 | 1340 | 200 | 63 | 305 |  |
+| 2 |  | Armada | Crocodile | armanac | Hover | 1 | 70 | 1530 | 270 | 70 | 370 |  |
+| 2 |  | Armada | Platypus | armamph | Hover | 2 | 109 | 1170 | 260 | 90 | 275 |  |
+| 2 |  | Armada | Dolphin | armdecade | Sea | 1 | 135 | 970 | 175 | 105 | 280 | water |
+| 2 |  | Cortex | Supporter | coresupp | Sea | 1 | 91 | 480 | 100 | 110 | 280 | water |
+| 2 |  | Cortex | Sheldon | cormort | Bot | 2 | 66 | 940 | 400 | 50 | 850 | artillery / rocket? |
+| 2 |  | Cortex | Whirlwind | corshad | Air | 1 | 93 | 680 | 150 | 234 | 1280 | air |
+| 2 |  | Cortex | Arbiter | corhrk | Bot | 2 | 106 | 610 | 600 | 54 | 1210 | artillery / rocket? |
+| 2 |  | Cortex | Thug | corthud | Bot | 1 | 60 | 1100 | 140 | 45 | 380 |  |
+| 2 |  | Cortex | Cutlass | corcut | Air | 1 | 72 | 1010 | 230 | 152 | 430 | air |
+| 2 |  | Cortex | Torch | cortorch | Vehicle | 1 | 116 | 650 | 220 | 141 | 280 |  |
+| 2 | 2 | Cortex | Incisor | corgator | Vehicle | 1 | 94 | 820 | 120 | 85 | 230 |  |
+| 2 |  | Cortex | Monsoon | corseap | Air | 1 | 86 | 1000 | 230 | 200 | 600 | air |
+| 2 |  | Cortex | Quaker | cormart | Vehicle | 2 | 84 | 1200 | 400 | 58 | 800 | artillery / rocket? |
+| 2 |  | Cortex | Garpike | corgarp | Vehicle | 1 | 77 | 1420 | 220 | 59 | 305 |  |
+| 2 |  | Cortex | Onager | coronager | Sea | 2 | 80 | 1400 | 950 | 58 | 600 | artillery / rocket?, water |
+| 2 |  | Cortex | Cayman | corsnap | Hover | 1 | 70 | 1720 | 300 | 67 | 370 |  |
+| 2 |  | Legion | Cleaver | legamcluster | Vehicle | 2 | 42 | 1250 | 460 | 44 | 930 | artillery / rocket? |
+| 2 |  | Legion | Belcher | legbart | Bot | 2 | 30 | 1780 | 550 | 60 | 625 |  |
+| 2 |  | Legion | Ketea | legnavysub | Sea | 1 | 93 | 600 | 320 | 57 | 400 | water |
+| 2 |  | Legion | Ladon | legsptorpgunship | Air | 1 | 62 | 900 | 190 | 220 | 460 | air |
+| 2 |  | Legion | Wildfire | legnap | Air | 2 | 20 | 2900 | 420 | 215 | 1280 | air |
+| 2 |  | Legion | Nereus | legner | Hover | 1 | 61 | 1100 | 220 | 76 | 370 |  |
+| 2 |  | Legion | Enyo | legspsurfacegunship | Air | 1 | 57 | 1200 | 270 | 148 | 400 | air |
+| 2 | 2 | Legion | Phobos | legcen | Bot | 1 | 107 | 840 | 140 | 90 | 180 |  |
+| 2 |  | Legion | Cetus | legamphtank | Vehicle | 1 | 77 | 1340 | 200 | 63 | 305 |  |
+| 2 |  | Legion | Helios | leghelios | Vehicle | 1 | 104 | 1000 | 160 | 75 | 320 |  |
+| 2 |  | Legion | Quickshot | legmrv | Vehicle | 2 | 120 | 970 | 210 | 135 | 240 |  |
+| 2 |  | Legion | Thanatos | leghrk | Bot | 2 | 112 | 1200 | 750 | 45 | 1200 | artillery / rocket? |
+| 3 |  | Armada | Ambassador | armmerl | Vehicle | 2 | 111 | 1300 | 920 | 33 | 1300 | artillery / rocket? |
+| 3 |  | Armada | Sharpshooter | armsnipe | Bot | 2 | 250 | 580 | 680 | 33 | 900 | artillery / rocket? |
+| 3 |  | Armada | Stout | armstump | Vehicle | 1 | 81 | 1800 | 225 | 75 | 350 |  |
+| 3 |  | Armada | Puffin | armseap | Air | 1 | 114 | 1300 | 290 | 210 | 600 | air |
+| 3 |  | Armada | Jaguar | armlatnk | Vehicle | 2 | 147 | 1060 | 330 | 90 | 300 |  |
+| 3 |  | Armada | Excalibur | armexcalibur | Sea | 2 | 133 | 1200 | 900 | 60 | 600 | water |
+| 3 |  | Armada | Tsunami | armsb | Air | 1 | 143 | 1170 | 240 | 267 | 1280 | air |
+| 3 |  | Armada | Roughneck | armbrawl | Air | 2 | 107 | 1780 | 310 | 161 | 380 | air |
+| 3 |  | Armada | Blizzard | armpnix | Air | 2 | 190 | 1130 | 230 | 258 | 1280 | air |
+| 3 |  | Armada | Recluse | armsptk | Bot | 2 | 161 | 1390 | 400 | 47 | 575 |  |
+| 3 |  | Armada | Seadragon | armseadragon | Sea | 2 | 100 | 2400 | 8000 | 48 | 720 | artillery / rocket?, water |
+| 3 |  | Armada | Ellysaw | armpship | Sea | 1 | 117 | 2150 | 380 | 81 | 470 | water |
+| 3 | 3 | Armada | Centurion | armwar | Bot | 1 | 183 | 1590 | 270 | 45 | 325 |  |
+| 3 |  | Cortex | Dam Buster | corsb | Air | 1 | 150 | 940 | 200 | 240 | 1280 | air |
+| 3 |  | Cortex | Orca | corsub | Sea | 1 | 137 | 1060 | 580 | 57 | 500 | water |
+| 3 |  | Cortex | Pounder | corlevlr | Vehicle | 1 | 106 | 1400 | 220 | 40 | 315 |  |
+| 3 |  | Cortex | Archaic Karkinos | corkark | Bot | 1 | 118 | 1280 | 280 | 42 | 360 |  |
+| 3 |  | Cortex | Negotiator | corvroc | Vehicle | 2 | 113 | 1400 | 880 | 33 | 1310 | artillery / rocket? |
+| 3 | 3 | Cortex | Brute | corraid | Vehicle | 1 | 81 | 2000 | 235 | 72 | 350 |  |
+| 3 |  | Cortex | Wasp | corape | Air | 2 | 111 | 1560 | 370 | 159 | 410 | air |
+| 3 | 4 | Cortex | Fiend | corpyro | Bot | 2 | 240 | 1060 | 200 | 83 | 230 |  |
+| 3 |  | Cortex | Predator | corshark | Sea | 2 | 159 | 1610 | 730 | 84 | 400 | water |
+| 3 |  | Cortex | Desolator | cordesolator | Sea | 2 | 106 | 2600 | 9000 | 45 | 750 | artillery / rocket?, water |
+| 3 |  | Cortex | Riptide | corpship | Sea | 1 | 120 | 2350 | 420 | 83 | 480 | water |
+| 3 |  | Cortex | Angler | cortitan | Air | 2 | 150 | 1960 | 410 | 279 | 400 | air |
+| 3 |  | Legion | Infestor | leginfestor | Bot | 2 | 120 | 1200 | 250 | 54 | 300 | builder |
+| 3 |  | Legion | Boreas | legavroc | Vehicle | 2 | 111 | 1300 | 920 | 33 | 1300 | artillery / rocket? |
+| 3 |  | Legion | Pyrphoros | legspbomber | Air | 1 | 150 | 1170 | 240 | 267 | 1280 | air |
+| 3 |  | Legion | Inferno | leginf | Vehicle | 2 | 51 | 3650 | 1700 | 38 | 1200 | artillery / rocket? |
+| 3 |  | Legion | Gladiator | legaskirmtank | Vehicle | 2 | 105 | 2500 | 450 | 65 | 600 |  |
+| 3 |  | Legion | Arquebus | legsrail | Bot | 2 | 121 | 2200 | 750 | 42 | 850 |  |
+| 3 |  | Legion | Octeres | legnavyartyship | Sea | 1 | 60 | 4500 | 1450 | 45 | 960 | artillery / rocket?, water |
+| 4 |  | Armada | Cormorant | armlance | Air | 2 | 188 | 1920 | 400 | 285 | 400 | air |
+| 4 |  | Armada | Longbow | armmship | Sea | 2 | 108 | 3350 | 2000 | 63 | 1550 | artillery / rocket?, water |
+| 4 |  | Armada | Barracuda | armsubk | Sea | 2 | 175 | 2350 | 950 | 81 | 400 | water |
+| 4 | 4 | Armada | Welder | armzeus | Bot | 2 | 129 | 3500 | 350 | 48 | 280 |  |
+| 4 |  | Armada | Gunslinger | armmav | Bot | 2 | 265 | 1800 | 650 | 50 | 365 |  |
+| 4 |  | Armada | Hornet | armblade | Air | 2 | 168 | 3000 | 1250 | 204 | 420 | air |
+| 4 |  | Armada | Maelstrom | armlship | Sea | 2 | 250 | 2200 | 570 | 99 | 400 | artillery / rocket?, water |
+| 4 |  | Armada | Trident | armtrident | Sea | 2 | 170 | 3400 | 1050 | 68 | 600 | artillery / rocket?, water |
+| 4 |  | Armada | Turtle | armcroc | Vehicle | 2 | 141 | 5000 | 750 | 54 | 480 | artillery / rocket? |
+| 4 |  | Cortex | Forge | corforge | Vehicle | 2 | 158 | 2000 | 330 | 50 | 410 | builder |
+| 4 |  | Cortex | Banisher | corban | Vehicle | 2 | 133 | 2500 | 1000 | 54 | 800 | artillery / rocket? |
+| 4 |  | Cortex | Alligator | corseal | Vehicle | 2 | 129 | 2600 | 480 | 72 | 440 |  |
+| 4 |  | Cortex | Salamander | corsala | Vehicle | 2 | 164 | 2100 | 350 | 72 | 340 |  |
+| 4 |  | Cortex | Commando | cormando | Bot | 2 | 200 | 1800 | 1200 | 75 | 300 | builder |
+| 4 |  | Cortex | Hailstorm | corhurc | Air | 2 | 238 | 1520 | 310 | 248 | 1280 | air |
+| 4 |  | Cortex | Duck | coramph | Bot | 2 | 174 | 2350 | 330 | 56 | 400 |  |
+| 4 |  | Cortex | Messenger | cormship | Sea | 2 | 138 | 3350 | 2000 | 61 | 1550 | artillery / rocket?, water |
+| 4 |  | Cortex | Deadeye | cordeadeye | Bot | 2 | 208 | 2700 | 1050 | 40 | 850 |  |
+| 4 |  | Cortex | Arrow Storm | corarch | Sea | 2 | 156 | 3900 | 1000 | 60 | 870 | artillery / rocket?, water |
+| 4 |  | Cortex | Sentinel | corsentinel | Sea | 2 | 170 | 3800 | 1350 | 63 | 600 | artillery / rocket?, water |
+| 4 | 3 | Legion | Karkinos | legkark | Bot | 1 | 189 | 1725 | 310 | 42 | 360 |  |
+| 4 |  | Legion | Phalanx | legshot | Bot | 2 | 105 | 3350 | 470 | 44 | 280 |  |
+| 4 |  | Legion | Stronghold | legstronghold | Air | 2 | 150 | 2600 | 550 | 160 | 450 | air |
+| 4 |  | Legion | Aesacus | legatorpbomber | Air | 2 | 214 | 1900 | 480 | 290 | 400 | air |
+| 4 |  | Legion | Architeuthis | leganavybattlesub | Sea | 2 | 180 | 2350 | 1100 | 72 | 600 | water |
+| 4 |  | Legion | Hoplite | legstr | Bot | 2 | 240 | 1780 | 355 | 84 | 280 |  |
+| 4 |  | Legion | Leocampus | leganavyantiswarm | Sea | 2 | 191 | 2300 | 500 | 105 | 350 | artillery / rocket?, water |
+| 4 | 4 | Legion | Decurion | leggat | Vehicle | 1 | 180 | 2550 | 300 | 45 | 361 |  |
+| 4 |  | Legion | Argonaut | legnavyfrigate | Sea | 1 | 215 | 2600 | 370 | 72 | 460 | water |
+| 4 |  | Legion | Syracusia | legnavydestro | Sea | 1 | 171 | 3800 | 875 | 58 | 700 | artillery / rocket?, water |
+| 5 |  | Armada | Serpent | armserp | Sea | 2 | 206 | 3550 | 1800 | 45 | 800 | artillery / rocket?, water |
+| 5 |  | Armada | Epic Liche | armlichet4 | Air | 3 | 79 | 10000 | 18000 | 180 | 800 | air |
+| 5 |  | Armada | Fatboy | armfboy | Bot | 2 | 114 | 7800 | 1400 | 30 | 700 | artillery / rocket? |
+| 5 |  | Armada | Corsair | armroy | Sea | 1 | 259 | 3700 | 880 | 67 | 700 | artillery / rocket?, water |
+| 5 | 5 | Armada | Bull | armbull | Vehicle | 2 | 246 | 4650 | 950 | 62 | 460 |  |
+| 5 |  | Armada | Liche | armliche | Air | 2 | 625 | 2300 | 2200 | 295 | 250 | air |
+| 5 |  | Armada | Starlight | armmanni | Vehicle | 2 | 532 | 2800 | 1200 | 42 | 950 |  |
+| 5 |  | Armada | Lunchbox | armlunchbox | Bot | 3 | 158 | 10000 | 3300 | 33 | 1325 | artillery / rocket? |
+| 5 | 6 | Armada | Marauder | armmar | Bot | 3 | 336 | 4900 | 970 | 95 | 350 |  |
+| 5 |  | Armada | units.names.armprowl | armprowl | Vehicle | 3 | 336 | 4900 | 970 | 95 | 350 |  |
+| 5 |  | Armada | Lunkhead | armlun | Hover | 3 | 318 | 5300 | 1150 | 50 | 575 |  |
+| 5 | 5 | Cortex | Tiger | correap | Vehicle | 2 | 150 | 5300 | 690 | 69 | 410 |  |
+| 5 |  | Cortex | Kraken | corssub | Sea | 2 | 206 | 3900 | 1900 | 39 | 850 | artillery / rocket?, water |
+| 5 |  | Cortex | Leviathan | corslrpc | Sea | 3 | 125 | 7200 | 8000 | 33 | 4950 | artillery / rocket?, water |
+| 5 |  | Cortex | Brimstone | corfship | Sea | 2 | 375 | 2700 | 630 | 93 | 450 | artillery / rocket?, water |
+| 5 |  | Cortex | Termite | cortermite | Bot | 2 | 331 | 3100 | 540 | 50 | 340 |  |
+| 5 |  | Cortex | Oppressor | corroy | Sea | 1 | 272 | 3950 | 960 | 62 | 710 | artillery / rocket?, water |
+| 5 |  | Cortex | Heat Tiger | corftiger | Vehicle | 2 | 207 | 5300 | 665 | 71 | 410 |  |
+| 5 |  | Cortex | Cataphract | corsok | Hover | 3 | 279 | 4200 | 950 | 45 | 725 | artillery / rocket? |
+| 5 |  | Cortex | Tremor | cortrem | Vehicle | 2 | 400 | 3000 | 1850 | 41 | 1470 | artillery / rocket? |
+| 5 |  | Cortex | Poison Arrow | corparrow | Vehicle | 2 | 206 | 6300 | 1050 | 51 | 575 |  |
+| 5 |  | Cortex | Halberd | corhal | Hover | 1 | 344 | 4350 | 640 | 45 | 300 |  |
+| 5 |  | Cortex | Siegebreaker | corsiegebreaker | Vehicle | 2 | 500 | 3000 | 1100 | 54 | 910 |  |
+| 5 |  | Cortex | Laser Tiger | corgatreap | Vehicle | 2 | 326 | 5000 | 1400 | 69 | 620 |  |
+| 5 |  | Legion | Triton | legfloat | Hover | 2 | 205 | 3500 | 650 | 55 | 550 |  |
+| 5 |  | Legion | Medusa | legmed | Vehicle | 2 | 250 | 3000 | 1500 | 39 | 1000 | artillery / rocket? |
+| 5 |  | Legion | Sphyrna | leganavyheavysub | Sea | 2 | 206 | 3900 | 1900 | 39 | 850 | artillery / rocket?, water |
+| 5 |  | Legion | Ultor | leganavymissileship | Sea | 2 | 300 | 3350 | 2000 | 61 | 1550 | artillery / rocket?, water |
+| 5 |  | Legion | Cardea | legcar | Hover | 1 | 280 | 3600 | 550 | 51 | 321 |  |
+| 5 |  | Legion | Charybdis | legehovertank | Hover | 3 | 221 | 4900 | 1350 | 63 | 500 |  |
+| 5 |  | Legion | Pilum | legbunk | Bot | 3 | 158 | 9400 | 1500 | 82 | 650 |  |
+| 6 |  | Armada | Vanguard | armvang | Bot | 3 | 316 | 8500 | 3300 | 33 | 1450 | artillery / rocket? |
+| 6 |  | Armada | Paladin | armcrus | Sea | 2 | 482 | 5600 | 1000 | 60 | 500 | water |
+| 6 |  | Armada | Epic Skater | armptt2 | Sea | 2 | 450 | 6700 | 2500 | 72 | 600 | artillery / rocket?, water |
+| 6 |  | Cortex | Tzar | corgol | Vehicle | 2 | 257 | 7800 | 1650 | 39 | 650 |  |
+| 6 | 6 | Cortex | Sumo | corcan | Bot | 2 | 344 | 6000 | 560 | 38 | 275 |  |
+| 6 |  | Cortex | Buccaneer | corcrus | Sea | 2 | 532 | 6200 | 1000 | 54 | 500 | water |
+| 6 |  | Cortex | Catapult | corcat | Bot | 3 | 600 | 6100 | 4900 | 48 | 1350 | artillery / rocket? |
+| 6 | 5 | Legion | Javelin | legjav | Bot | 3 | 360 | 7200 | 1200 | 68 | 450 |  |
+| 6 |  | Legion | Thalassa | leganavycruiser | Sea | 2 | 485 | 5600 | 900 | 57 | 500 | water |
+| 6 |  | Legion | Myrmidon | legeallterrainmech | Bot | 3 | 300 | 9200 | 3950 | 33 | 1100 | artillery / rocket? |
+| 6 |  | Legion | Astraeus | legelrpcmech | Bot | 3 | 167 | 17000 | 11000 | 25 | 3100 | artillery / rocket? |
+| 6 |  | Legion | Telchine | legamph | Bot | 2 | 1107 | 2750 | 600 | 48 | 600 |  |
+| 7 |  | Armada | Tumbleweed | armvader | Bot | 2 | 10000 | 445 | 65 | 84 | 1 |  |
+| 7 | 7 | Armada | Meatball | armmeatball | Bot | 3 | 667 | 8000 | 3000 | 30 | 800 | artillery / rocket? |
+| 7 |  | Armada | Dreadnought | armbats | Sea | 2 | 600 | 9800 | 3300 | 58 | 880 | artillery / rocket?, water |
+| 7 | 7 | Cortex | Shiva | corshiva | Bot | 3 | 407 | 9400 | 1700 | 48 | 800 | artillery / rocket? |
+| 7 | 8 | Cortex | Karganeth | corkarg | Bot | 3 | 600 | 12500 | 2500 | 45 | 600 | artillery / rocket? |
+| 7 | 6 | Legion | Prometheus | legaheattank | Vehicle | 2 | 750 | 5700 | 1050 | 52 | 450 |  |
+| 8 |  | Armada | Epic Recluse | armsptkt4 | Bot | 3 | 300 | 28000 | 7500 | 36 | 1000 | artillery / rocket? |
+| 8 | 8 | Armada | Razorback | armraz | Bot | 3 | 1050 | 13300 | 3800 | 69 | 475 |  |
+| 8 |  | Armada | Epic Dolphin | armdecadet3 | Sea | 3 | 1050 | 14400 | 8000 | 69 | 1300 | artillery / rocket?, water |
+| 8 |  | Cortex | Mammoth | corsumo | Bot | 2 | 503 | 15600 | 2200 | 23 | 650 |  |
+| 8 |  | Cortex | Despot | corbats | Sea | 2 | 659 | 12000 | 3400 | 53 | 950 | artillery / rocket?, water |
+| 8 |  | Cortex | Archaic Dragon | corcrw | Air | 2 | 476 | 16700 | 5100 | 115 | 575 | air |
+| 8 |  | Cortex | Dragon | corcrwh | Air | 2 | 630 | 16700 | 5100 | 115 | 575 | air, artillery / rocket? |
+| 8 |  | Cortex | Epic Grunt | corakt4 | Bot | 1 | 1000 | 11100 | 6000 | 84 | 600 |  |
+| 8 |  | Cortex | Black Prince | corprince | Sea | 2 | 722 | 25000 | 13500 | 54 | 3200 | artillery / rocket?, water |
+| 8 | 7 | Legion | Incinerator | leginc | Bot | 2 | 990 | 9000 | 2300 | 24 | 725 |  |
+| 8 |  | Legion | Scylla | leganavybattleship | Sea | 2 | 875 | 10350 | 2900 | 25 | 750 | artillery / rocket?, water |
+| 8 |  | Legion | Tyrannus | legfort | Air | 2 | 555 | 16700 | 5600 | 93 | 915 | air, artillery / rocket? |
+| 8 |  | Legion | Corinth | leganavyartyship | Sea | 2 | 434 | 22000 | 13000 | 48 | 2100 | artillery / rocket?, water |
+| 8 | 8 | Legion | Keres | legkeres | Vehicle | 3 | 535 | 21000 | 2600 | 48 | 481 |  |
+| 8 |  | Legion | Daedalus | legerailtank | Vehicle | 3 | 800 | 16500 | 6500 | 61 | 1000 |  |
+| 8 |  | Legion | Epic Goblin | leggobt3 | Bot | 1 | 1120 | 15800 | 5300 | 78 | 475 |  |
+| 9 |  | Armada | Epic Pawn | armpwt4 | Bot | 3 | 1200 | 16700 | 8000 | 84 | 450 |  |
+| 9 |  | Armada | Epic Ellysaw | armpshipt3 | Sea | 3 | 2198 | 13900 | 6500 | 81 | 475 | water |
+| 9 |  | Armada | Epic Serpent | armserpt3 | Sea | 3 | 1375 | 26500 | 15000 | 45 | 800 | artillery / rocket?, water |
+| 9 | 9 | Armada | Thor | armthor | Vehicle | 3 | 968 | 56000 | 9000 | 54 | 540 | artillery / rocket? |
+| 9 |  | Armada | Epoch | armepoch | Sea | 2 | 1246 | 50000 | 20000 | 54 | 2450 | artillery / rocket?, water |
+| 9 |  | Armada | Flying Epoch | armfepocht4 | Air | 3 | 1246 | 67000 | 25000 | 36 | 2450 | air, artillery / rocket? |
+| 9 |  | Cortex | Thermite | corthermite | Bot | 3 | 1400 | 15000 | 3500 | 42 | 900 |  |
+| 9 | 9 | Cortex | Demon | cordemon | Bot | 3 | 1440 | 18000 | 6000 | 63 | 500 | artillery / rocket? |
+| 9 |  | Cortex | Black Hydra | corblackhy | Sea | 2 | 1304 | 53000 | 21000 | 50 | 2550 | artillery / rocket?, water |
+| 9 |  | Cortex | Flying Black Hydra | corfblackhyt4 | Air | 3 | 1304 | 67000 | 25000 | 36 | 2550 | air, artillery / rocket? |
+| 9 | 9 | Legion | Praetorian | legeshotgunmech | Bot | 3 | 1233 | 22000 | 7000 | 72 | 700 | artillery / rocket? |
+| 9 |  | Legion | Mukade | legpede | Bot | 3 | 1174 | 28000 | 5500 | 51 | 850 | artillery / rocket? |
+| 10 | 10 | Armada | Titan | armbanth | Bot | 3 | 1450 | 69000 | 13500 | 46 | 860 | artillery / rocket? |
+| 10 |  | Armada | Epic Stormbringer | armthundt4 | Air | 3 | 6300 | 16700 | 15000 | 368 | 2480 | air |
+| 10 |  | Armada | Ratte | armrattet4 | Vehicle | 3 | 4000 | 83000 | 25000 | 24 | 1000 | artillery / rocket? |
+| 10 |  | Armada | Epic Tumbleweed | armvadert4 | Bot | 3 | 220000 | 67000 | 15000 | 20 | 47 |  |
+| 10 |  | Cortex | Epic Karganeth | corkarganetht4 | Bot | 3 | 1909 | 50000 | 12000 | 30 | 750 | artillery / rocket? |
+| 10 |  | Cortex | Epic Dragon | corcrwt4 | Air | 3 | 4400 | 22000 | 15000 | 115 | 625 | air, artillery / rocket? |
+| 10 |  | Cortex | Adjudicator | coresuppt3 | Sea | 3 | 2750 | 89000 | 30000 | 75 | 900 | water |
+| 10 |  | Cortex | Behemoth | corjugg | Bot | 3 | 821 | 335000 | 20000 | 17 | 550 |  |
+| 10 |  | Cortex | Epic Tzar | corgolt4 | Vehicle | 3 | 3653 | 83000 | 25000 | 24 | 1000 | artillery / rocket? |
+| 10 |  | Cortex | Vesuvius | corves | Vehicle | 3 | 3484 | 100000 | 30000 | 24 | 1000 | artillery / rocket? |
+| 10 | 10 | Cortex | Juggernaut | corkorg | Bot | 3 | 4220 | 149000 | 29000 | 37 | 950 | artillery / rocket? |
+| 10 |  | Legion | Neptune | leganavyflagship | Sea | 2 | 3047 | 48000 | 16000 | 63 | 1000 | artillery / rocket?, water |
+| 10 |  | Legion | Apollyon | legapollyon | Vehicle | 3 | 4298 | 56000 | 15000 | 38 | 1200 | artillery / rocket? |
+| 10 | 10 | Legion | Sol Invictus | legeheatraymech | Bot | 3 | 2680 | 110000 | 23500 | 40 | 800 | artillery / rocket? |
+| 10 |  | Legion | Archaic Sol Invictus | legeheatraymech_old | Bot | 3 | 3960 | 110000 | 27000 | 40 | 800 | artillery / rocket? |
+| 10 |  | Legion | Epic Tyrannus | legfortt4 | Air | 3 | 2880 | 167000 | 56000 | 30 | 1200 | air, artillery / rocket? |
+|  |  | Armada | Archangel | armaak | Bot | 2 | 0 | 2200 | 520 | 47 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Armada | Dragonslayer | armaas | Sea | 2 | 0 | 3900 | 1000 | 63 | 0 | artillery / rocket?, no ground weapon, water |
+|  |  | Armada | Advanced Construction Aircraft | armaca | Air | 2 | 0 | 200 | 340 | 192 | 0 | air, builder, no ground weapon |
+|  |  | Armada | Advanced Construction Bot | armack | Bot | 2 | 0 | 930 | 430 | 33 | 0 | builder, no ground weapon |
+|  |  | Armada | Advanced Construction Sub | armacsub | Sea | 2 | 0 | 1110 | 700 | 72 | 0 | builder, no ground weapon, water |
+|  |  | Armada | Advanced Construction Vehicle | armacv | Vehicle | 2 | 0 | 2050 | 550 | 53 | 0 | builder, no ground weapon |
+|  |  | Armada | Sweeper | armah | Hover | 1 | 0 | 1070 | 230 | 89 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Armada | Haven | armantiship | Sea | 2 | 0 | 5000 | 1400 | 63 | 0 | artillery / rocket?, builder, no ground weapon, water |
+|  |  | Armada | Smuggler | armaser | Bot | 2 | 0 | 340 | 78 | 37 | 0 | no ground weapon |
+|  |  | Armada | Assimilator | armassimilator | Bot | 3 | 0 | 7500 | 2500 | 60 | 0 | no ground weapon |
+|  |  | Armada | Stork | armatlas | Air | 1 | 0 | 265 | 68 | 207 | 0 | air, no ground weapon |
+|  |  | Armada | Oracle | armawac | Air | 2 | 0 | 890 | 175 | 317 | 0 | air, no ground weapon |
+|  |  | Armada | Beaver | armbeaver | Vehicle | 1 | 0 | 1030 | 150 | 42 | 0 | builder, no ground weapon |
+|  |  | Armada | Construction Aircraft | armca | Air | 1 | 0 | 156 | 110 | 136 | 0 | air, builder, no ground weapon |
+|  |  | Armada | Haven | armcarry | Sea | 2 | 0 | 5000 | 1400 | 63 | 0 | artillery / rocket?, builder, no ground weapon, water |
+|  |  | Armada | Construction Hovercraft | armch | Hover | 1 | 0 | 1440 | 200 | 67 | 0 | builder, no ground weapon |
+|  |  | Armada | Construction Bot | armck | Bot | 1 | 0 | 760 | 110 | 36 | 0 | builder, no ground weapon |
+|  |  | Armada | Consul | armconsul | Vehicle | 2 | 0 | 1080 | 250 | 78 | 0 | builder, no ground weapon |
+|  |  | Armada | Construction Ship | armcs | Sea | 1 | 0 | 1040 | 200 | 65 | 0 | builder, no ground weapon, water |
+|  |  | Armada | Construction Seaplane | armcsa | Air | 1 | 0 | 405 | 150 | 124 | 0 | air, builder, no ground weapon |
+|  |  | Armada | Construction Vehicle | armcv | Vehicle | 1 | 0 | 1380 | 135 | 54 | 0 | builder, no ground weapon |
+|  |  | Armada | Abductor | armdfly | Air | 2 | 0 | 1170 | 320 | 210 | 0 | air, no ground weapon |
+|  |  | Armada | Butler | armfark | Bot | 2 | 0 | 335 | 210 | 75 | 0 | builder, no ground weapon |
+|  |  | Armada | Firefly | armfify | Air | 1 | 0 | 83 | 58 | 208 | 0 | air, builder, no ground weapon |
+|  |  | Armada | Falcon | armfig | Air | 1 | 0 | 167 | 73 | 289 | 0 | air, no ground weapon |
+|  |  | Armada | Experimental Construction Aircraft | armhaca | Air | 3 | 0 | 1405 | 1000 | 192 | 0 | air, builder, no ground weapon |
+|  |  | Armada | Butler | armhack | Bot | 3 | 0 | 1335 | 1260 | 75 | 0 | builder, no ground weapon |
+|  |  | Armada | Voyager | armhacs | Sea | 3 | 0 | 2460 | 1140 | 66 | 0 | builder, no ground weapon, water |
+|  |  | Armada | Consul | armhacv | Vehicle | 3 | 0 | 2080 | 1300 | 85 | 0 | builder, no ground weapon |
+|  |  | Armada | Highwind | armhawk | Air | 2 | 0 | 370 | 150 | 358 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Armada | Osprey | armhvytrans | Air | 1 | 0 | 630 | 190 | 110 | 0 | air, no ground weapon |
+|  |  | Armada | Umbra | armjam | Vehicle | 2 | 0 | 510 | 105 | 43 | 0 | no ground weapon |
+|  |  | Armada | Crossbow | armjeth | Bot | 1 | 0 | 630 | 125 | 56 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Armada | Compass | armmark | Bot | 2 | 0 | 355 | 100 | 41 | 0 | no ground weapon |
+|  |  | Armada | Voyager | armmls | Sea | 2 | 0 | 1460 | 190 | 66 | 0 | builder, no ground weapon, water |
+|  |  | Armada | Blink | armpeep | Air | 1 | 0 | 89 | 52 | 375 | 0 | air, no ground weapon |
+|  |  | Armada | Grim Reaper | armrecl | Sea | 1 | 0 | 420 | 240 | 66 | 0 | builder, no ground weapon, water |
+|  |  | Armada | Lazarus | armrectr | Bot | 1 | 0 | 220 | 130 | 78 | 0 | builder, no ground weapon |
+|  |  | Armada | Satellite | armsat | Air | 2 | 0 | 780 | 4000 | 30 | 0 | air, no ground weapon |
+|  |  | Armada | Umbrella | armscab | Bot | 2 | 0 | 870 | 1150 | 51 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Armada | Prophet | armseer | Vehicle | 2 | 0 | 980 | 125 | 57 | 0 | no ground weapon |
+|  |  | Armada | Horizon | armsehak | Air | 1 | 0 | 580 | 125 | 338 | 0 | air, no ground weapon |
+|  |  | Armada | Cyclone | armsfig | Air | 1 | 0 | 220 | 90 | 311 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Armada | Cyclone | armsfig2 | Air | 1 | 0 | 220 | 90 | 311 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Armada | Bermuda | armsjam | Sea | 2 | 0 | 1350 | 310 | 45 | 0 | no ground weapon, water |
+|  |  | Armada | Webber | armspid | Bot | 2 | 0 | 1110 | 250 | 72 | 0 | builder, no ground weapon |
+|  |  | Armada | Ghost | armspy | Bot | 2 | 0 | 300 | 135 | 65 | 0 | builder, no ground weapon |
+|  |  | Armada | Stiletto | armstil | Air | 2 | 0 | 1880 | 460 | 300 | 0 | air, no ground weapon |
+|  |  | Armada | Shredder | armyork | Vehicle | 2 | 0 | 2600 | 450 | 71 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Armada | Zapper | armzapper | Vehicle | 1 | 0 | 150 | 80 | 168 | 0 | no ground weapon |
+|  |  | Cortex | Manticore | coraak | Bot | 2 | 0 | 3200 | 650 | 35 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Cortex | Advanced Construction Aircraft | coraca | Air | 2 | 0 | 205 | 360 | 182 | 0 | air, builder, no ground weapon |
+|  |  | Cortex | Advanced Construction Bot | corack | Bot | 2 | 0 | 1000 | 470 | 33 | 0 | builder, no ground weapon |
+|  |  | Cortex | Advanced Construction Sub | coracsub | Sea | 2 | 0 | 1110 | 700 | 65 | 0 | builder, no ground weapon, water |
+|  |  | Cortex | Advanced Construction Vehicle | coracv | Vehicle | 2 | 0 | 2150 | 580 | 50 | 0 | builder, no ground weapon |
+|  |  | Cortex | Birdeater | corah | Hover | 1 | 0 | 1120 | 250 | 89 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Cortex | Oasis | corantiship | Sea | 2 | 0 | 5000 | 1400 | 63 | 0 | artillery / rocket?, builder, no ground weapon, water |
+|  |  | Cortex | Condor | corawac | Air | 2 | 0 | 990 | 180 | 321 | 0 | air, no ground weapon |
+|  |  | Cortex | Shuriken | corbw | Air | 1 | 0 | 83 | 58 | 270 | 0 | air, no ground weapon |
+|  |  | Cortex | Construction Aircraft | corca | Air | 1 | 0 | 161 | 115 | 131 | 0 | air, builder, no ground weapon |
+|  |  | Cortex | Oasis | corcarry | Sea | 2 | 0 | 5000 | 1400 | 60 | 0 | artillery / rocket?, builder, no ground weapon, water |
+|  |  | Cortex | Construction Hovercraft | corch | Hover | 1 | 0 | 1490 | 190 | 61 | 0 | builder, no ground weapon |
+|  |  | Cortex | Construction Bot | corck | Bot | 1 | 0 | 820 | 120 | 35 | 0 | builder, no ground weapon |
+|  |  | Cortex | Trasher | corcrash | Bot | 1 | 0 | 640 | 125 | 53 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Cortex | Construction Ship | corcs | Sea | 1 | 0 | 1080 | 200 | 60 | 0 | builder, no ground weapon, water |
+|  |  | Cortex | Construction Seaplane | corcsa | Air | 1 | 0 | 435 | 140 | 140 | 0 | air, builder, no ground weapon |
+|  |  | Cortex | Construction Vehicle | corcv | Vehicle | 1 | 0 | 1430 | 145 | 51 | 0 | builder, no ground weapon |
+|  |  | Cortex | Obscurer | coreter | Vehicle | 2 | 0 | 580 | 105 | 41 | 0 | no ground weapon |
+|  |  | Cortex | Twitcher | corfast | Bot | 2 | 0 | 830 | 210 | 90 | 0 | builder, no ground weapon |
+|  |  | Cortex | Finch | corfink | Air | 1 | 0 | 100 | 51 | 360 | 0 | air, no ground weapon |
+|  |  | Cortex | Experimental Construction Aircraft | corhaca | Air | 3 | 0 | 1435 | 1040 | 182 | 0 | air, builder, no ground weapon |
+|  |  | Cortex | Twitcher | corhack | Bot | 3 | 0 | 1830 | 1260 | 85 | 0 | builder, no ground weapon |
+|  |  | Cortex | Pathfinder | corhacs | Sea | 3 | 0 | 2600 | 1180 | 55 | 0 | builder, no ground weapon, water |
+|  |  | Cortex | Printer | corhacv | Vehicle | 3 | 0 | 3125 | 1520 | 60 | 0 | builder, no ground weapon |
+|  |  | Cortex | Watcher | corhunt | Air | 1 | 0 | 730 | 130 | 324 | 0 | air, no ground weapon |
+|  |  | Cortex | Hephaestus | corhvytrans | Air | 1 | 0 | 800 | 190 | 100 | 0 | air, no ground weapon |
+|  |  | Cortex | Saviour | cormabm | Vehicle | 2 | 0 | 870 | 1250 | 51 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Cortex | Epic Commando | cormandot4 | Bot | 2 | 0 | 9600 | 6700 | 60 | 0 | builder, no ground weapon |
+|  |  | Cortex | Pathfinder | cormls | Sea | 2 | 0 | 1600 | 200 | 58 | 0 | builder, no ground weapon, water |
+|  |  | Cortex | Muskrat | cormuskrat | Vehicle | 1 | 0 | 1110 | 170 | 41 | 0 | builder, no ground weapon |
+|  |  | Cortex | Graverobber | cornecro | Bot | 1 | 0 | 220 | 130 | 78 | 0 | builder, no ground weapon |
+|  |  | Cortex | Phantom | corphantom | Vehicle | 2 | 0 | 1400 | 300 | 72 | 0 | no ground weapon |
+|  |  | Cortex | Printer | corprinter | Vehicle | 2 | 0 | 5125 | 330 | 50 | 0 | builder, no ground weapon |
+|  |  | Cortex | Death Cavalry | correcl | Sea | 1 | 0 | 420 | 240 | 66 | 0 | builder, no ground weapon, water |
+|  |  | Cortex | Bedbug | corroach | Bot | 2 | 0 | 620 | 69 | 76 | 0 | no ground weapon |
+|  |  | Cortex | Satellite | corsat | Air | 2 | 0 | 780 | 4000 | 30 | 0 | air, no ground weapon |
+|  |  | Cortex | Skyhook | corseah | Air | 2 | 0 | 2200 | 370 | 185 | 0 | air, no ground weapon |
+|  |  | Cortex | Fury | corsent | Vehicle | 2 | 0 | 2700 | 470 | 69 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Cortex | Bat | corsfig | Air | 1 | 0 | 220 | 90 | 316 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Cortex | Bat | corsfig2 | Air | 1 | 0 | 220 | 90 | 316 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Cortex | Phantasm | corsjam | Sea | 2 | 0 | 1450 | 280 | 40 | 0 | no ground weapon, water |
+|  |  | Cortex | Skuttle | corsktl | Bot | 2 | 0 | 355 | 755 | 84 | 0 | no ground weapon |
+|  |  | Cortex | Deceiver | corspec | Bot | 2 | 0 | 350 | 75 | 35 | 0 | no ground weapon |
+|  |  | Cortex | Spectre | corspy | Bot | 2 | 0 | 450 | 150 | 62 | 0 | builder, no ground weapon |
+|  |  | Cortex | Printer | corvac | Vehicle | 2 | 0 | 3000 | 370 | 50 | 0 | builder, no ground weapon |
+|  |  | Cortex | units.names.corvacct | corvacct | Vehicle | 2 | 0 | 5125 | 1 | 50 | 0 | builder, no ground weapon |
+|  |  | Cortex | Hercules | corvalk | Air | 1 | 0 | 280 | 74 | 198 | 0 | air, no ground weapon |
+|  |  | Cortex | Nighthawk | corvamp | Air | 2 | 0 | 290 | 145 | 379 | 0 | air, no ground weapon |
+|  |  | Cortex | Valiant | corveng | Air | 1 | 0 | 156 | 73 | 298 | 0 | air, no ground weapon |
+|  |  | Cortex | Augur | corvoyr | Bot | 2 | 0 | 390 | 99 | 38 | 0 | no ground weapon |
+|  |  | Cortex | Omen | corvrad | Vehicle | 2 | 0 | 570 | 100 | 50 | 0 | no ground weapon |
+|  |  | Legion | Toxotai | legaabot | Bot | 1 | 0 | 610 | 120 | 55 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Legion | Advanced Construction Aircraft | legaca | Air | 2 | 0 | 195 | 330 | 203 | 0 | air, builder, no ground weapon |
+|  |  | Legion | Proteus | legaceb | Bot | 2 | 0 | 830 | 310 | 75 | 0 | builder, no ground weapon |
+|  |  | Legion | Advanced Construction Bot | legack | Bot | 2 | 0 | 860 | 410 | 36 | 0 | builder, no ground weapon |
+|  |  | Legion | Advanced Construction Vehicle | legacv | Vehicle | 2 | 0 | 1950 | 530 | 56 | 0 | builder, no ground weapon |
+|  |  | Legion | Aquilon | legadvaabot | Bot | 2 | 0 | 2400 | 750 | 35 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Legion | Aceso | legafcv | Vehicle | 2 | 0 | 450 | 200 | 110 | 0 | builder, no ground weapon |
+|  |  | Legion | Ajax | legafigdef | Air | 2 | 0 | 480 | 180 | 270 | 0 | air, no ground weapon |
+|  |  | Legion | Alpheus | legah | Hover | 1 | 0 | 1120 | 210 | 89 | 0 | no ground weapon |
+|  |  | Legion | Tiresias | legajamk | Bot | 2 | 0 | 350 | 75 | 35 | 0 | no ground weapon |
+|  |  | Legion | Notus | leganavyaaship | Sea | 2 | 0 | 3900 | 1000 | 57 | 0 | artillery / rocket?, no ground weapon, water |
+|  |  | Legion | Hecate | leganavyantinukecarrier | Sea | 2 | 0 | 5000 | 1600 | 63 | 0 | artillery / rocket?, no ground weapon, water |
+|  |  | Legion | Advanced Construction Submarine | leganavyconsub | Sea | 2 | 0 | 1110 | 700 | 65 | 0 | builder, no ground weapon, water |
+|  |  | Legion | Artifex | leganavyengineer | Sea | 2 | 0 | 1600 | 200 | 58 | 0 | builder, no ground weapon, water |
+|  |  | Legion | Dolus | leganavyradjamship | Sea | 2 | 0 | 1700 | 450 | 42 | 0 | no ground weapon, water |
+|  |  | Legion | Euclid | legaradk | Bot | 2 | 0 | 390 | 99 | 38 | 0 | no ground weapon |
+|  |  | Legion | Eidolon | legaspy | Bot | 2 | 0 | 300 | 125 | 63 | 0 | builder, no ground weapon |
+|  |  | Legion | Hippotes | legatrans | Air | 1 | 0 | 800 | 190 | 100 | 0 | air, no ground weapon |
+|  |  | Legion | Hera | legavantinuke | Vehicle | 2 | 0 | 720 | 1100 | 58 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Legion | Cicero | legavjam | Vehicle | 2 | 0 | 510 | 105 | 41 | 0 | no ground weapon |
+|  |  | Legion | Pheme | legavrad | Vehicle | 2 | 0 | 980 | 125 | 57 | 0 | no ground weapon |
+|  |  | Legion | Legion Construction Aircraft | legca | Air | 1 | 0 | 151 | 100 | 139 | 0 | air, builder, no ground weapon |
+|  |  | Legion | Construction Hovercraft | legch | Hover | 1 | 0 | 1390 | 185 | 73 | 0 | builder, no ground weapon |
+|  |  | Legion | Blindfold | legcib | Air | 1 | 0 | 600 | 100 | 300 | 0 | air, no ground weapon |
+|  |  | Legion | Legion Construction Bot | legck | Bot | 1 | 0 | 700 | 100 | 39 | 0 | builder, no ground weapon |
+|  |  | Legion | Legion Construction Vehicle | legcv | Vehicle | 1 | 0 | 1330 | 125 | 57 | 0 | builder, no ground weapon |
+|  |  | Legion | Noctua | legfig | Air | 1 | 0 | 220 | 40 | 270 | 0 | air, no ground weapon |
+|  |  | Legion | Experimental Construction Aircraft | leghaca | Air | 2 | 0 | 435 | 960 | 218 | 0 | air, builder, no ground weapon |
+|  |  | Legion | Proteus | leghack | Bot | 2 | 0 | 830 | 1240 | 75 | 0 | builder, no ground weapon |
+|  |  | Legion | Aceso | leghacv | Vehicle | 2 | 0 | 450 | 800 | 110 | 0 | builder, no ground weapon |
+|  |  | Legion | Legionnaire | legionnaire | Air | 2 | 0 | 480 | 180 | 270 | 0 | air, no ground weapon |
+|  |  | Legion | Aeolus | leglts | Air | 1 | 0 | 265 | 68 | 207 | 0 | air, no ground weapon |
+|  |  | Legion | Harbinger | legmineb | Air | 2 | 0 | 1110 | 300 | 210 | 0 | air, no ground weapon |
+|  |  | Legion | Mosquito | legmos | Air | 1 | 0 | 415 | 110 | 165 | 0 | air, no ground weapon |
+|  |  | Legion | Epic Mosquito | legmost3 | Air | 1 | 0 | 9000 | 3000 | 130 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Legion | Iapetus | legnavyaaship | Sea | 1 | 0 | 1200 | 250 | 60 | 0 | artillery / rocket?, no ground weapon, water |
+|  |  | Legion | Construction Ship | legnavyconship | Sea | 1 | 0 | 1080 | 180 | 71 | 0 | builder, no ground weapon, water |
+|  |  | Legion | Dionysus | legnavyrezsub | Sea | 1 | 0 | 420 | 240 | 67 | 0 | builder, no ground weapon, water |
+|  |  | Legion | Otter | legotter | Vehicle | 1 | 0 | 950 | 150 | 44 | 0 | builder, no ground weapon |
+|  |  | Legion | Zagreus | legrezbot | Bot | 1 | 0 | 220 | 130 | 78 | 0 | builder, no ground weapon |
+|  |  | Legion | Snapper | legsnapper | Bot | 2 | 0 | 550 | 60 | 81 | 0 | no ground weapon |
+|  |  | Legion | Hecatoncheir | legspcarrier | Air | 1 | 0 | 1500 | 250 | 93 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Legion | Construction Seaplane | legspcon | Air | 1 | 0 | 405 | 150 | 124 | 0 | air, builder, no ground weapon |
+|  |  | Legion | Astrapios | legspfighter | Air | 1 | 0 | 220 | 90 | 311 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Legion | Okeanos | legspradarsonarplane | Air | 1 | 0 | 580 | 125 | 338 | 0 | air, no ground weapon |
+|  |  | Legion | Epic Arquebus | legsrailt4 | Bot | 3 | 0 | 40000 | 15000 | 21 | 0 | no ground weapon |
+|  |  | Legion | Mantis | legvcarry | Vehicle | 2 | 0 | 1400 | 450 | 45 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Legion | Venator | legvenator | Air | 2 | 0 | 210 | 110 | 450 | 0 | air, artillery / rocket?, no ground weapon |
+|  |  | Legion | Charon | legvflak | Vehicle | 2 | 0 | 2700 | 470 | 70 | 0 | artillery / rocket?, no ground weapon |
+|  |  | Legion | Whisper | legwhisper | Air | 2 | 0 | 990 | 210 | 321 | 0 | air, no ground weapon |
