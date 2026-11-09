@@ -2,7 +2,7 @@
 
 [Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)
 
-Every mobile ground unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included in Evolution*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. Left out: Scavenger and Raptor units, constructors, aircraft, water units, units without a ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery and rocket launchers, mine layers, the Epic and Archaic variants, Tumbleweeds, the scouts (DPS times health below 10000) and the weak support vehicles (DPS below 40), commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).
+Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is **not** included has no level, and the last column says why. The included units come first, sorted by level. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included in Evolution*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).
 
 **The ranges of the levels** (DPS x health): a unit gets the level whose range holds its score; the borders lie in the middle (geometric mean) between the reference scores of two levels.
 
@@ -21,7 +21,7 @@ Every mobile ground unit of Armada, Cortex and Legion that may be used for Evolu
 
 Telchine is the one exception (set to level 7 by hand).
 
-| Level (DPS x health) | Included in Evolution | Faction | Name | Unit | Type | Tech | DPS | Health | Score | Metal | Speed | Range | Long range | Note |
+| Level (DPS x health) | Included in Evolution | Faction | Name | Unit | Type | Tech | DPS | Health | Score | Metal | Speed | Range | Long range | Note (why not included) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 |  | Armada | Seeker | armsh | Hover | 1 | 60 | 290 | 17400 | 85 | 114 | 230 |  |  |
 | 1 | 1 | Armada | Pawn | armpw | Bot | 1 | 90 | 370 | 33300 | 54 | 87 | 180 |  |  |
@@ -47,7 +47,7 @@ Telchine is the one exception (set to level 7 by hand).
 | 2 |  | Legion | Cetus | legamphtank | Vehicle | 1 | 77 | 1340 | 103582 | 200 | 63 | 305 |  |  |
 | 2 |  | Legion | Helios | leghelios | Vehicle | 1 | 104 | 1000 | 103800 | 160 | 75 | 320 |  |  |
 | 2 |  | Legion | Quickshot | legmrv | Vehicle | 2 | 120 | 970 | 116400 | 210 | 135 | 240 |  |  |
-| 3 |  | Armada | Sharpshooter | armsnipe | Bot | 2 | 250 | 580 | 145000 | 680 | 33 | 900 | yes |  |
+| 3 |  | Armada | Sharpshooter | armsnipe | Bot | 2 | 250 | 580 | 145000 | 680 | 33 | 900 | yes | included only with the option Long range |
 | 3 |  | Armada | Stout | armstump | Vehicle | 1 | 81 | 1800 | 145440 | 225 | 75 | 350 |  |  |
 | 3 |  | Armada | Jaguar | armlatnk | Vehicle | 2 | 147 | 1060 | 155502 | 330 | 90 | 300 |  |  |
 | 3 | 3 | Armada | Centurion | armwar | Bot | 1 | 183 | 1590 | 291447 | 270 | 45 | 325 |  |  |
@@ -55,7 +55,7 @@ Telchine is the one exception (set to level 7 by hand).
 | 3 | 3 | Cortex | Brute | corraid | Vehicle | 1 | 81 | 2000 | 161600 | 235 | 72 | 350 |  |  |
 | 3 | 4 | Cortex | Fiend | corpyro | Bot | 2 | 240 | 1060 | 254400 | 200 | 83 | 230 |  |  |
 | 3 |  | Legion | Gladiator | legaskirmtank | Vehicle | 2 | 105 | 2500 | 262500 | 450 | 65 | 600 |  |  |
-| 3 |  | Legion | Arquebus | legsrail | Bot | 2 | 121 | 2200 | 267080 | 750 | 42 | 850 | yes |  |
+| 3 |  | Legion | Arquebus | legsrail | Bot | 2 | 121 | 2200 | 267080 | 750 | 42 | 850 | yes | included only with the option Long range |
 | 4 | 4 | Armada | Welder | armzeus | Bot | 2 | 129 | 3500 | 452900 | 350 | 48 | 280 |  |  |
 | 4 |  | Armada | Gunslinger | armmav | Bot | 2 | 265 | 1800 | 477000 | 650 | 50 | 365 |  |  |
 | 4 |  | Armada | Turtle | armcroc | Vehicle | 2 | 141 | 5000 | 703000 | 750 | 54 | 480 |  |  |
@@ -63,14 +63,14 @@ Telchine is the one exception (set to level 7 by hand).
 | 4 |  | Cortex | Alligator | corseal | Vehicle | 2 | 129 | 2600 | 335140 | 480 | 72 | 440 |  |  |
 | 4 |  | Cortex | Salamander | corsala | Vehicle | 2 | 164 | 2100 | 343560 | 350 | 72 | 340 |  |  |
 | 4 |  | Cortex | Duck | coramph | Bot | 2 | 174 | 2350 | 408900 | 330 | 56 | 400 |  |  |
-| 4 |  | Cortex | Deadeye | cordeadeye | Bot | 2 | 208 | 2700 | 562950 | 1050 | 40 | 850 | yes |  |
+| 4 |  | Cortex | Deadeye | cordeadeye | Bot | 2 | 208 | 2700 | 562950 | 1050 | 40 | 850 | yes | included only with the option Long range |
 | 4 | 3 | Legion | Karkinos | legkark | Bot | 1 | 189 | 1725 | 325852 | 310 | 42 | 360 |  |  |
 | 4 |  | Legion | Phalanx | legshot | Bot | 2 | 105 | 3350 | 351750 | 470 | 44 | 280 |  |  |
 | 4 |  | Legion | Hoplite | legstr | Bot | 2 | 240 | 1780 | 427200 | 355 | 84 | 280 |  |  |
 | 4 | 4 | Legion | Decurion | leggat | Vehicle | 1 | 180 | 2550 | 459000 | 300 | 45 | 361 |  |  |
 | 5 |  | Armada | Fatboy | armfboy | Bot | 2 | 114 | 7800 | 891540 | 1400 | 30 | 700 |  |  |
 | 5 | 5 | Armada | Bull | armbull | Vehicle | 2 | 246 | 4650 | 1141575 | 950 | 62 | 460 |  |  |
-| 5 |  | Armada | Starlight | armmanni | Vehicle | 2 | 532 | 2800 | 1489320 | 1200 | 42 | 950 | yes |  |
+| 5 |  | Armada | Starlight | armmanni | Vehicle | 2 | 532 | 2800 | 1489320 | 1200 | 42 | 950 | yes | included only with the option Long range |
 | 5 | 6 | Armada | Marauder | armmar | Bot | 3 | 336 | 4900 | 1644930 | 970 | 95 | 350 |  |  |
 | 5 |  | Armada | units.names.armprowl | armprowl | Vehicle | 3 | 336 | 4900 | 1644930 | 970 | 95 | 350 |  |  |
 | 5 |  | Armada | Lunkhead | armlun | Hover | 3 | 318 | 5300 | 1685930 | 1150 | 50 | 575 |  |  |
@@ -80,7 +80,7 @@ Telchine is the one exception (set to level 7 by hand).
 | 5 |  | Cortex | Cataphract | corsok | Hover | 3 | 279 | 4200 | 1172640 | 950 | 45 | 725 |  |  |
 | 5 |  | Cortex | Poison Arrow | corparrow | Vehicle | 2 | 206 | 6300 | 1295280 | 1050 | 51 | 575 |  |  |
 | 5 |  | Cortex | Halberd | corhal | Hover | 1 | 344 | 4350 | 1495530 | 640 | 45 | 300 |  |  |
-| 5 |  | Cortex | Siegebreaker | corsiegebreaker | Vehicle | 2 | 500 | 3000 | 1500000 | 1100 | 54 | 910 | yes |  |
+| 5 |  | Cortex | Siegebreaker | corsiegebreaker | Vehicle | 2 | 500 | 3000 | 1500000 | 1100 | 54 | 910 | yes | included only with the option Long range |
 | 5 |  | Cortex | Laser Tiger | corgatreap | Vehicle | 2 | 326 | 5000 | 1631500 | 1400 | 69 | 620 |  |  |
 | 5 |  | Legion | Triton | legfloat | Hover | 2 | 205 | 3500 | 717500 | 650 | 55 | 550 |  |  |
 | 5 |  | Legion | Cardea | legcar | Hover | 1 | 280 | 3600 | 1008000 | 550 | 51 | 321 |  |  |
@@ -98,14 +98,359 @@ Telchine is the one exception (set to level 7 by hand).
 | 8 |  | Cortex | Mammoth | corsumo | Bot | 2 | 503 | 15600 | 7851480 | 2200 | 23 | 650 |  |  |
 | 8 | 7 | Legion | Incinerator | leginc | Bot | 2 | 990 | 9000 | 8910000 | 2300 | 24 | 725 |  |  |
 | 8 | 8 | Legion | Keres | legkeres | Vehicle | 3 | 535 | 21000 | 11241300 | 2600 | 48 | 481 |  |  |
-| 8 |  | Legion | Daedalus | legerailtank | Vehicle | 3 | 800 | 16500 | 13200000 | 6500 | 61 | 1000 | yes |  |
+| 8 |  | Legion | Daedalus | legerailtank | Vehicle | 3 | 800 | 16500 | 13200000 | 6500 | 61 | 1000 | yes | included only with the option Long range |
 | 9 | 9 | Armada | Thor | armthor | Vehicle | 3 | 968 | 56000 | 54191200 | 9000 | 54 | 540 |  |  |
-| 9 |  | Cortex | Thermite | corthermite | Bot | 3 | 1400 | 15000 | 21000000 | 3500 | 42 | 900 | yes |  |
+| 9 |  | Cortex | Thermite | corthermite | Bot | 3 | 1400 | 15000 | 21000000 | 3500 | 42 | 900 | yes | included only with the option Long range |
 | 9 | 9 | Cortex | Demon | cordemon | Bot | 3 | 1440 | 18000 | 25920000 | 6000 | 63 | 500 |  |  |
 | 9 | 9 | Legion | Praetorian | legeshotgunmech | Bot | 3 | 1233 | 22000 | 27132600 | 7000 | 72 | 700 |  |  |
-| 9 |  | Legion | Mukade | legpede | Bot | 3 | 1174 | 28000 | 32863600 | 5500 | 51 | 850 | yes |  |
+| 9 |  | Legion | Mukade | legpede | Bot | 3 | 1174 | 28000 | 32863600 | 5500 | 51 | 850 | yes | included only with the option Long range |
 | 10 | 10 | Armada | Titan | armbanth | Bot | 3 | 1450 | 69000 | 100050000 | 13500 | 46 | 860 |  |  |
 | 10 |  | Cortex | Behemoth | corjugg | Bot | 3 | 821 | 335000 | 275169000 | 20000 | 17 | 550 |  |  |
 | 10 | 10 | Cortex | Juggernaut | corkorg | Bot | 3 | 4220 | 149000 | 628809800 | 29000 | 37 | 950 |  |  |
-| 10 |  | Legion | Apollyon | legapollyon | Vehicle | 3 | 4298 | 56000 | 240660000 | 15000 | 38 | 1200 | yes |  |
+| 10 |  | Legion | Apollyon | legapollyon | Vehicle | 3 | 4298 | 56000 | 240660000 | 15000 | 38 | 1200 | yes | included only with the option Long range |
 | 10 | 10 | Legion | Sol Invictus | legeheatraymech | Bot | 3 | 2680 | 110000 | 294800000 | 23500 | 40 | 800 |  |  |
+|  |  | Armada | Epic Pawn | armpwt4 | Bot | 3 | 1200 | 16700 | 20040000 | 8000 | 84 | 450 |  | Epic / Archaic variant |
+|  |  | Armada | Epic Recluse | armsptkt4 | Bot | 3 | 300 | 28000 | 8400000 | 7500 | 36 | 1000 |  | Epic / Archaic variant |
+|  |  | Cortex | Archaic Karkinos | corkark | Bot | 1 | 118 | 1280 | 151040 | 280 | 42 | 360 |  | Epic / Archaic variant |
+|  |  | Cortex | Epic Grunt | corakt4 | Bot | 1 | 1000 | 11100 | 11100000 | 6000 | 84 | 600 |  | Epic / Archaic variant |
+|  |  | Cortex | Epic Karganeth | corkarganetht4 | Bot | 3 | 1909 | 50000 | 95455000 | 12000 | 30 | 750 |  | Epic / Archaic variant |
+|  |  | Cortex | Epic Tzar | corgolt4 | Vehicle | 3 | 3653 | 83000 | 303182400 | 25000 | 24 | 1000 |  | Epic / Archaic variant |
+|  |  | Legion | Archaic Sol Invictus | legeheatraymech_old | Bot | 3 | 3960 | 110000 | 435600000 | 27000 | 40 | 800 |  | Epic / Archaic variant |
+|  |  | Legion | Epic Arquebus | legsrailt4 | Bot | 3 | 0 | 40000 | 0 | 15000 | 21 | 0 |  | Epic / Archaic variant |
+|  |  | Legion | Epic Goblin | leggobt3 | Bot | 1 | 1120 | 15800 | 17696000 | 5300 | 78 | 475 |  | Epic / Archaic variant |
+|  |  | Armada | Epic Tumbleweed | armvadert4 | Bot | 3 | 220000 | 67000 | 14740000000 | 15000 | 20 | 47 |  | Epic / Archaic variant, Tumbleweed |
+|  |  | Armada | Tumbleweed | armvader | Bot | 2 | 10000 | 445 | 4450000 | 65 | 84 | 1 |  | Tumbleweed |
+|  |  | Armada | Abductor | armdfly | Air | 2 | 0 | 1170 | 0 | 320 | 210 | 0 |  | aircraft |
+|  |  | Armada | Banshee | armkam | Air | 1 | 39 | 560 | 21616 | 135 | 185 | 350 |  | aircraft |
+|  |  | Armada | Blink | armpeep | Air | 1 | 0 | 89 | 0 | 52 | 375 | 0 |  | aircraft |
+|  |  | Armada | Blizzard | armpnix | Air | 2 | 190 | 1130 | 214700 | 230 | 258 | 1280 |  | aircraft |
+|  |  | Armada | Cormorant | armlance | Air | 2 | 188 | 1920 | 360000 | 400 | 285 | 400 |  | aircraft |
+|  |  | Armada | Cyclone | armsfig | Air | 1 | 0 | 220 | 0 | 90 | 311 | 0 |  | aircraft |
+|  |  | Armada | Cyclone | armsfig2 | Air | 1 | 0 | 220 | 0 | 90 | 311 | 0 |  | aircraft |
+|  |  | Armada | Falcon | armfig | Air | 1 | 0 | 167 | 0 | 73 | 289 | 0 |  | aircraft |
+|  |  | Armada | Flying Epoch | armfepocht4 | Air | 3 | 1246 | 67000 | 83508800 | 25000 | 36 | 2450 |  | aircraft |
+|  |  | Armada | Highwind | armhawk | Air | 2 | 0 | 370 | 0 | 150 | 358 | 0 |  | aircraft |
+|  |  | Armada | Horizon | armsehak | Air | 1 | 0 | 580 | 0 | 125 | 338 | 0 |  | aircraft |
+|  |  | Armada | Hornet | armblade | Air | 2 | 168 | 3000 | 502800 | 1250 | 204 | 420 |  | aircraft |
+|  |  | Armada | Liche | armliche | Air | 2 | 625 | 2300 | 1437500 | 2200 | 295 | 250 |  | aircraft |
+|  |  | Armada | Oracle | armawac | Air | 2 | 0 | 890 | 0 | 175 | 317 | 0 |  | aircraft |
+|  |  | Armada | Osprey | armhvytrans | Air | 1 | 0 | 630 | 0 | 190 | 110 | 0 |  | aircraft |
+|  |  | Armada | Puffin | armseap | Air | 1 | 114 | 1300 | 148200 | 290 | 210 | 600 |  | aircraft |
+|  |  | Armada | Roughneck | armbrawl | Air | 2 | 107 | 1780 | 189926 | 310 | 161 | 380 |  | aircraft |
+|  |  | Armada | Sabre | armsaber | Air | 1 | 67 | 1010 | 67367 | 210 | 157 | 425 |  | aircraft |
+|  |  | Armada | Satellite | armsat | Air | 2 | 0 | 780 | 0 | 4000 | 30 | 0 |  | aircraft |
+|  |  | Armada | Stiletto | armstil | Air | 2 | 0 | 1880 | 0 | 460 | 300 | 0 |  | aircraft |
+|  |  | Armada | Stork | armatlas | Air | 1 | 0 | 265 | 0 | 68 | 207 | 0 |  | aircraft |
+|  |  | Armada | Stormbringer | armthund | Air | 1 | 92 | 670 | 61439 | 150 | 250 | 1280 |  | aircraft |
+|  |  | Armada | Tsunami | armsb | Air | 1 | 143 | 1170 | 167193 | 240 | 267 | 1280 |  | aircraft |
+|  |  | Cortex | Angler | cortitan | Air | 2 | 150 | 1960 | 294000 | 410 | 279 | 400 |  | aircraft |
+|  |  | Cortex | Bat | corsfig | Air | 1 | 0 | 220 | 0 | 90 | 316 | 0 |  | aircraft |
+|  |  | Cortex | Bat | corsfig2 | Air | 1 | 0 | 220 | 0 | 90 | 316 | 0 |  | aircraft |
+|  |  | Cortex | Condor | corawac | Air | 2 | 0 | 990 | 0 | 180 | 321 | 0 |  | aircraft |
+|  |  | Cortex | Cutlass | corcut | Air | 1 | 72 | 1010 | 73023 | 230 | 152 | 430 |  | aircraft |
+|  |  | Cortex | Dam Buster | corsb | Air | 1 | 150 | 940 | 141000 | 200 | 240 | 1280 |  | aircraft |
+|  |  | Cortex | Disgruntler | cords | Air | 1 | 60 | 680 | 40800 | 1000 | 234 | 1280 |  | aircraft |
+|  |  | Cortex | Dragon | corcrwh | Air | 2 | 630 | 16700 | 10521000 | 5100 | 115 | 575 |  | aircraft |
+|  |  | Cortex | Finch | corfink | Air | 1 | 0 | 100 | 0 | 51 | 360 | 0 |  | aircraft |
+|  |  | Cortex | Flying Black Hydra | corfblackhyt4 | Air | 3 | 1304 | 67000 | 87381400 | 25000 | 36 | 2550 |  | aircraft |
+|  |  | Cortex | Hailstorm | corhurc | Air | 2 | 238 | 1520 | 361608 | 310 | 248 | 1280 |  | aircraft |
+|  |  | Cortex | Hephaestus | corhvytrans | Air | 1 | 0 | 800 | 0 | 190 | 100 | 0 |  | aircraft |
+|  |  | Cortex | Hercules | corvalk | Air | 1 | 0 | 280 | 0 | 74 | 198 | 0 |  | aircraft |
+|  |  | Cortex | Monsoon | corseap | Air | 1 | 86 | 1000 | 85500 | 230 | 200 | 600 |  | aircraft |
+|  |  | Cortex | Nighthawk | corvamp | Air | 2 | 0 | 290 | 0 | 145 | 379 | 0 |  | aircraft |
+|  |  | Cortex | Satellite | corsat | Air | 2 | 0 | 780 | 0 | 4000 | 30 | 0 |  | aircraft |
+|  |  | Cortex | Shuriken | corbw | Air | 1 | 0 | 83 | 0 | 58 | 270 | 0 |  | aircraft |
+|  |  | Cortex | Skyhook | corseah | Air | 2 | 0 | 2200 | 0 | 370 | 185 | 0 |  | aircraft |
+|  |  | Cortex | Valiant | corveng | Air | 1 | 0 | 156 | 0 | 73 | 298 | 0 |  | aircraft |
+|  |  | Cortex | Wasp | corape | Air | 2 | 111 | 1560 | 173004 | 370 | 159 | 410 |  | aircraft |
+|  |  | Cortex | Watcher | corhunt | Air | 1 | 0 | 730 | 0 | 130 | 324 | 0 |  | aircraft |
+|  |  | Cortex | Whirlwind | corshad | Air | 1 | 93 | 680 | 63444 | 150 | 234 | 1280 |  | aircraft |
+|  |  | Legion | Aeolus | leglts | Air | 1 | 0 | 265 | 0 | 68 | 207 | 0 |  | aircraft |
+|  |  | Legion | Aesacus | legatorpbomber | Air | 2 | 214 | 1900 | 407170 | 480 | 290 | 400 |  | aircraft |
+|  |  | Legion | Ajax | legafigdef | Air | 2 | 0 | 480 | 0 | 180 | 270 | 0 |  | aircraft |
+|  |  | Legion | Astrapios | legspfighter | Air | 1 | 0 | 220 | 0 | 90 | 311 | 0 |  | aircraft |
+|  |  | Legion | Blindfold | legcib | Air | 1 | 0 | 600 | 0 | 100 | 300 | 0 |  | aircraft |
+|  |  | Legion | Enyo | legspsurfacegunship | Air | 1 | 57 | 1200 | 68520 | 270 | 148 | 400 |  | aircraft |
+|  |  | Legion | Harbinger | legmineb | Air | 2 | 0 | 1110 | 0 | 300 | 210 | 0 |  | aircraft |
+|  |  | Legion | Hecatoncheir | legspcarrier | Air | 1 | 0 | 1500 | 0 | 250 | 93 | 0 |  | aircraft |
+|  |  | Legion | Hippotes | legatrans | Air | 1 | 0 | 800 | 0 | 190 | 100 | 0 |  | aircraft |
+|  |  | Legion | Ladon | legsptorpgunship | Air | 1 | 62 | 900 | 55980 | 190 | 220 | 460 |  | aircraft |
+|  |  | Legion | Legionnaire | legionnaire | Air | 2 | 0 | 480 | 0 | 180 | 270 | 0 |  | aircraft |
+|  |  | Legion | Martyr | legkam | Air | 1 | 44 | 160 | 7040 | 65 | 220 | 500 |  | aircraft |
+|  |  | Legion | Mosquito | legmos | Air | 1 | 0 | 415 | 0 | 110 | 165 | 0 |  | aircraft |
+|  |  | Legion | Noctua | legfig | Air | 1 | 0 | 220 | 0 | 40 | 270 | 0 |  | aircraft |
+|  |  | Legion | Okeanos | legspradarsonarplane | Air | 1 | 0 | 580 | 0 | 125 | 338 | 0 |  | aircraft |
+|  |  | Legion | Phoenix | legphoenix | Air | 2 | 18 | 2000 | 36200 | 450 | 270 | 950 |  | aircraft |
+|  |  | Legion | Pyrphoros | legspbomber | Air | 1 | 150 | 1170 | 175500 | 240 | 267 | 1280 |  | aircraft |
+|  |  | Legion | Stronghold | legstronghold | Air | 2 | 150 | 2600 | 390000 | 550 | 160 | 450 |  | aircraft |
+|  |  | Legion | Tyrannus | legfort | Air | 2 | 555 | 16700 | 9273510 | 5600 | 93 | 915 |  | aircraft |
+|  |  | Legion | Venator | legvenator | Air | 2 | 0 | 210 | 0 | 110 | 450 | 0 |  | aircraft |
+|  |  | Legion | Whisper | legwhisper | Air | 2 | 0 | 990 | 0 | 210 | 321 | 0 |  | aircraft |
+|  |  | Legion | Wildfire | legnap | Air | 2 | 20 | 2900 | 58000 | 420 | 215 | 1280 |  | aircraft |
+|  |  | Armada | Epic Liche | armlichet4 | Air | 3 | 79 | 10000 | 792000 | 18000 | 180 | 800 |  | aircraft, Epic / Archaic variant |
+|  |  | Armada | Epic Stormbringer | armthundt4 | Air | 3 | 6300 | 16700 | 105210000 | 15000 | 368 | 2480 |  | aircraft, Epic / Archaic variant |
+|  |  | Cortex | Archaic Dragon | corcrw | Air | 2 | 476 | 16700 | 7957550 | 5100 | 115 | 575 |  | aircraft, Epic / Archaic variant |
+|  |  | Cortex | Epic Dragon | corcrwt4 | Air | 3 | 4400 | 22000 | 96800000 | 15000 | 115 | 625 |  | aircraft, Epic / Archaic variant |
+|  |  | Legion | Epic Mosquito | legmost3 | Air | 1 | 0 | 9000 | 0 | 3000 | 130 | 0 |  | aircraft, Epic / Archaic variant |
+|  |  | Legion | Epic Tyrannus | legfortt4 | Air | 3 | 2880 | 167000 | 480960000 | 56000 | 30 | 1200 |  | aircraft, Epic / Archaic variant |
+|  |  | Armada | Ambassador | armmerl | Vehicle | 2 | 111 | 1300 | 144430 | 920 | 33 | 1300 |  | artillery / rocket launcher |
+|  |  | Armada | Hound | armfido | Bot | 2 | 77 | 1200 | 92760 | 285 | 69 | 650 |  | artillery / rocket launcher |
+|  |  | Armada | Janus | armjanus | Vehicle | 1 | 88 | 1030 | 90640 | 240 | 54 | 380 |  | artillery / rocket launcher |
+|  |  | Armada | Lunchbox | armlunchbox | Bot | 3 | 158 | 10000 | 1581000 | 3300 | 33 | 1325 |  | artillery / rocket launcher |
+|  |  | Armada | Mauser | armmart | Vehicle | 2 | 86 | 1070 | 91699 | 320 | 60 | 820 |  | artillery / rocket launcher |
+|  |  | Armada | Possum | armmh | Hover | 1 | 50 | 530 | 26500 | 175 | 64 | 710 |  | artillery / rocket launcher |
+|  |  | Armada | Ratte | armrattet4 | Vehicle | 3 | 4000 | 83000 | 332000000 | 25000 | 24 | 1000 |  | artillery / rocket launcher |
+|  |  | Armada | Recluse | armsptk | Bot | 2 | 161 | 1390 | 223373 | 400 | 47 | 575 |  | artillery / rocket launcher |
+|  |  | Armada | Rocketeer | armrock | Bot | 1 | 41 | 720 | 29736 | 120 | 51 | 475 |  | artillery / rocket launcher |
+|  |  | Armada | Shellshocker | armart | Vehicle | 1 | 42 | 620 | 26226 | 135 | 54 | 710 |  | artillery / rocket launcher |
+|  |  | Armada | Vanguard | armvang | Bot | 3 | 316 | 8500 | 2688550 | 3300 | 33 | 1450 |  | artillery / rocket launcher |
+|  |  | Cortex | Aggravator | corstorm | Bot | 1 | 41 | 740 | 30562 | 110 | 48 | 475 |  | artillery / rocket launcher |
+|  |  | Cortex | Arbiter | corhrk | Bot | 2 | 106 | 610 | 64843 | 600 | 54 | 1210 |  | artillery / rocket launcher |
+|  |  | Cortex | Catapult | corcat | Bot | 3 | 600 | 6100 | 3660000 | 4900 | 48 | 1350 |  | artillery / rocket launcher |
+|  |  | Cortex | Mangonel | cormh | Hover | 1 | 61 | 550 | 33605 | 200 | 64 | 700 |  | artillery / rocket launcher |
+|  |  | Cortex | Negotiator | corvroc | Vehicle | 2 | 113 | 1400 | 158620 | 880 | 33 | 1310 |  | artillery / rocket launcher |
+|  |  | Cortex | Quaker | cormart | Vehicle | 2 | 84 | 1200 | 100800 | 400 | 58 | 800 |  | artillery / rocket launcher |
+|  |  | Cortex | Sheldon | cormort | Bot | 2 | 66 | 940 | 61664 | 400 | 50 | 850 |  | artillery / rocket launcher |
+|  |  | Cortex | Tremor | cortrem | Vehicle | 2 | 400 | 3000 | 1200000 | 1850 | 41 | 1470 |  | artillery / rocket launcher |
+|  |  | Cortex | Vesuvius | corves | Vehicle | 3 | 3484 | 100000 | 348440000 | 30000 | 24 | 1000 |  | artillery / rocket launcher |
+|  |  | Cortex | Wolverine | corwolv | Vehicle | 1 | 42 | 750 | 31725 | 170 | 48 | 710 |  | artillery / rocket launcher |
+|  |  | Legion | Astraeus | legelrpcmech | Bot | 3 | 167 | 17000 | 2833900 | 11000 | 25 | 3100 |  | artillery / rocket launcher |
+|  |  | Legion | Ballista | legbal | Bot | 1 | 46 | 900 | 40950 | 160 | 44 | 460 |  | artillery / rocket launcher |
+|  |  | Legion | Barrage | legbar | Vehicle | 1 | 12 | 1500 | 18000 | 250 | 41 | 535 |  | artillery / rocket launcher |
+|  |  | Legion | Boreas | legavroc | Vehicle | 2 | 111 | 1300 | 144430 | 920 | 33 | 1300 |  | artillery / rocket launcher |
+|  |  | Legion | Cleaver | legamcluster | Vehicle | 2 | 42 | 1250 | 52125 | 460 | 44 | 930 |  | artillery / rocket launcher |
+|  |  | Legion | Inferno | leginf | Vehicle | 2 | 51 | 3650 | 187610 | 1700 | 38 | 1200 |  | artillery / rocket launcher |
+|  |  | Legion | Medusa | legmed | Vehicle | 2 | 250 | 3000 | 750000 | 1500 | 39 | 1000 |  | artillery / rocket launcher |
+|  |  | Legion | Myrmidon | legeallterrainmech | Bot | 3 | 300 | 9200 | 2760000 | 3950 | 33 | 1100 |  | artillery / rocket launcher |
+|  |  | Legion | Thanatos | leghrk | Bot | 2 | 112 | 1200 | 135000 | 750 | 45 | 1200 |  | artillery / rocket launcher |
+|  |  | Armada | Armada Commander Level 10 | armdecomlvl10 | commanderbot | 1 | 8790 | 6600 | 58014000 | 11000 | 38 | 500 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 2 | armdecomlvl2 | commanderbot | 1 | 1660 | 3000 | 4980000 | 3000 | 38 | 300 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 3 | armdecomlvl3 | commanderbot | 1 | 2492 | 3450 | 8598435 | 4000 | 38 | 450 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 4 | armdecomlvl4 | commanderbot | 1 | 5200 | 3900 | 20280000 | 5000 | 38 | 450 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 5 | armdecomlvl5 | commanderbot | 1 | 2896 | 4350 | 12599340 | 6000 | 38 | 475 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 6 | armdecomlvl6 | commanderbot | 1 | 3750 | 4800 | 18000000 | 7000 | 38 | 475 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 7 | armdecomlvl7 | commanderbot | 1 | 4710 | 5250 | 24727500 | 8000 | 38 | 500 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 8 | armdecomlvl8 | commanderbot | 1 | 5660 | 5700 | 32262000 | 9000 | 38 | 500 |  | commander, constructor |
+|  |  | Armada | Armada Commander Level 9 | armdecomlvl9 | commanderbot | 1 | 7307 | 6150 | 44936205 | 10000 | 38 | 500 |  | commander, constructor |
+|  |  | Armada | Commander | armdecom | Bot | 2 | 250 | 3700 | 925000 | 770 | 38 | 300 |  | commander, constructor |
+|  |  | Cortex | Commander | cordecom | Bot | 2 | 250 | 3700 | 925000 | 750 | 38 | 300 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 10 | cordecomlvl10 | commanderbot | 1 | 10167 | 10000 | 101667000 | 11000 | 47 | 870 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 2 | cordecomlvl2 | commanderbot | 1 | 830 | 3000 | 2490000 | 3000 | 38 | 300 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 3 | cordecomlvl3 | commanderbot | 1 | 1803 | 3000 | 5409000 | 4000 | 38 | 450 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 4 | cordecomlvl4 | commanderbot | 1 | 3267 | 4000 | 13066800 | 5000 | 38 | 550 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 5 | cordecomlvl5 | commanderbot | 1 | 3512 | 5000 | 17562000 | 6000 | 39 | 620 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 6 | cordecomlvl6 | commanderbot | 1 | 4262 | 6000 | 25572600 | 7000 | 41 | 730 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 7 | cordecomlvl7 | commanderbot | 1 | 5370 | 7000 | 37590000 | 8000 | 42 | 730 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 8 | cordecomlvl8 | commanderbot | 1 | 6635 | 8000 | 53080000 | 9000 | 44 | 800 |  | commander, constructor |
+|  |  | Cortex | Cortex Commander Level 9 | cordecomlvl9 | commanderbot | 1 | 8301 | 9000 | 74707200 | 10000 | 45 | 870 |  | commander, constructor |
+|  |  | Legion | Legion Commander | legdecom | Bot | 2 | 344 | 3700 | 1272060 | 750 | 38 | 300 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 10 | legdecomlvl10 | commanderbot | 1 | 6333 | 11000 | 69666300 | 11000 | 50 | 950 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 2 | legdecomlvl2 | commanderbot | 1 | 531 | 3000 | 1593900 | 3000 | 38 | 350 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 3 | legdecomlvl3 | commanderbot | 1 | 658 | 4000 | 2633200 | 4000 | 38 | 500 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 4 | legdecomlvl4 | commanderbot | 1 | 1005 | 5000 | 5025500 | 5000 | 38 | 550 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 5 | legdecomlvl5 | commanderbot | 1 | 1560 | 6000 | 9361200 | 6000 | 40 | 620 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 6 | legdecomlvl6 | commanderbot | 1 | 2108 | 7000 | 14754600 | 7000 | 42 | 730 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 7 | legdecomlvl7 | commanderbot | 1 | 2843 | 8000 | 22743200 | 8000 | 44 | 730 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 8 | legdecomlvl8 | commanderbot | 1 | 3848 | 9000 | 34633800 | 9000 | 46 | 800 |  | commander, constructor |
+|  |  | Legion | Legion Commander Level 9 | legdecomlvl9 | commanderbot | 1 | 4977 | 10000 | 49773000 | 10000 | 48 | 870 |  | commander, constructor |
+|  |  | Armada | Epic Commander - Final Boss | armcomboss | scavcommanderbot | 4 | 0 | 2800000 | 0 | 10000000 | 15 | 0 |  | commander, constructor, Epic / Archaic variant |
+|  |  | Cortex | Epic Commander - Final Boss | corcomboss | scavcommanderbot | 4 | 12000 | 300000 | 3600000000 | 300000 | 15 | 1250 |  | commander, constructor, Epic / Archaic variant |
+|  |  | Armada | Advanced Construction Bot | armack | Bot | 2 | 0 | 930 | 0 | 430 | 33 | 0 |  | constructor |
+|  |  | Armada | Advanced Construction Vehicle | armacv | Vehicle | 2 | 0 | 2050 | 0 | 550 | 53 | 0 |  | constructor |
+|  |  | Armada | Beaver | armbeaver | Vehicle | 1 | 0 | 1030 | 0 | 150 | 42 | 0 |  | constructor |
+|  |  | Armada | Butler | armfark | Bot | 2 | 0 | 335 | 0 | 210 | 75 | 0 |  | constructor |
+|  |  | Armada | Butler | armhack | Bot | 3 | 0 | 1335 | 0 | 1260 | 75 | 0 |  | constructor |
+|  |  | Armada | Construction Bot | armck | Bot | 1 | 0 | 760 | 0 | 110 | 36 | 0 |  | constructor |
+|  |  | Armada | Construction Hovercraft | armch | Hover | 1 | 0 | 1440 | 0 | 200 | 67 | 0 |  | constructor |
+|  |  | Armada | Construction Vehicle | armcv | Vehicle | 1 | 0 | 1380 | 0 | 135 | 54 | 0 |  | constructor |
+|  |  | Armada | Consul | armconsul | Vehicle | 2 | 0 | 1080 | 0 | 250 | 78 | 0 |  | constructor |
+|  |  | Armada | Consul | armhacv | Vehicle | 3 | 0 | 2080 | 0 | 1300 | 85 | 0 |  | constructor |
+|  |  | Armada | Ghost | armspy | Bot | 2 | 0 | 300 | 0 | 135 | 65 | 0 |  | constructor |
+|  |  | Armada | Groundhog | armmlv | Vehicle | 1 | 5 | 335 | 1675 | 57 | 75 | 220 |  | constructor |
+|  |  | Armada | Lazarus | armrectr | Bot | 1 | 0 | 220 | 0 | 130 | 78 | 0 |  | constructor |
+|  |  | Armada | Webber | armspid | Bot | 2 | 0 | 1110 | 0 | 250 | 72 | 0 |  | constructor |
+|  |  | Cortex | Advanced Construction Bot | corack | Bot | 2 | 0 | 1000 | 0 | 470 | 33 | 0 |  | constructor |
+|  |  | Cortex | Advanced Construction Vehicle | coracv | Vehicle | 2 | 0 | 2150 | 0 | 580 | 50 | 0 |  | constructor |
+|  |  | Cortex | Commando | cormando | Bot | 2 | 200 | 1800 | 360000 | 1200 | 75 | 300 |  | constructor |
+|  |  | Cortex | Construction Bot | corck | Bot | 1 | 0 | 820 | 0 | 120 | 35 | 0 |  | constructor |
+|  |  | Cortex | Construction Hovercraft | corch | Hover | 1 | 0 | 1490 | 0 | 190 | 61 | 0 |  | constructor |
+|  |  | Cortex | Construction Vehicle | corcv | Vehicle | 1 | 0 | 1430 | 0 | 145 | 51 | 0 |  | constructor |
+|  |  | Cortex | Forge | corforge | Vehicle | 2 | 158 | 2000 | 315000 | 330 | 50 | 410 |  | constructor |
+|  |  | Cortex | Graverobber | cornecro | Bot | 1 | 0 | 220 | 0 | 130 | 78 | 0 |  | constructor |
+|  |  | Cortex | Muskrat | cormuskrat | Vehicle | 1 | 0 | 1110 | 0 | 170 | 41 | 0 |  | constructor |
+|  |  | Cortex | Printer | corhacv | Vehicle | 3 | 0 | 3125 | 0 | 1520 | 60 | 0 |  | constructor |
+|  |  | Cortex | Printer | corprinter | Vehicle | 2 | 0 | 5125 | 0 | 330 | 50 | 0 |  | constructor |
+|  |  | Cortex | Printer | corvac | Vehicle | 2 | 0 | 3000 | 0 | 370 | 50 | 0 |  | constructor |
+|  |  | Cortex | Spectre | corspy | Bot | 2 | 0 | 450 | 0 | 150 | 62 | 0 |  | constructor |
+|  |  | Cortex | Trapper | cormlv | Vehicle | 1 | 5 | 450 | 2250 | 65 | 69 | 220 |  | constructor |
+|  |  | Cortex | Twitcher | corfast | Bot | 2 | 0 | 830 | 0 | 210 | 90 | 0 |  | constructor |
+|  |  | Cortex | Twitcher | corhack | Bot | 3 | 0 | 1830 | 0 | 1260 | 85 | 0 |  | constructor |
+|  |  | Cortex | units.names.corvacct | corvacct | Vehicle | 2 | 0 | 5125 | 0 | 1 | 50 | 0 |  | constructor |
+|  |  | Legion | Aceso | legafcv | Vehicle | 2 | 0 | 450 | 0 | 200 | 110 | 0 |  | constructor |
+|  |  | Legion | Aceso | leghacv | Vehicle | 2 | 0 | 450 | 0 | 800 | 110 | 0 |  | constructor |
+|  |  | Legion | Advanced Construction Bot | legack | Bot | 2 | 0 | 860 | 0 | 410 | 36 | 0 |  | constructor |
+|  |  | Legion | Advanced Construction Vehicle | legacv | Vehicle | 2 | 0 | 1950 | 0 | 530 | 56 | 0 |  | constructor |
+|  |  | Legion | Construction Hovercraft | legch | Hover | 1 | 0 | 1390 | 0 | 185 | 73 | 0 |  | constructor |
+|  |  | Legion | Eidolon | legaspy | Bot | 2 | 0 | 300 | 0 | 125 | 63 | 0 |  | constructor |
+|  |  | Legion | Infestor | leginfestor | Bot | 2 | 120 | 1200 | 144000 | 250 | 54 | 300 |  | constructor |
+|  |  | Legion | Legion Construction Bot | legck | Bot | 1 | 0 | 700 | 0 | 100 | 39 | 0 |  | constructor |
+|  |  | Legion | Legion Construction Vehicle | legcv | Vehicle | 1 | 0 | 1330 | 0 | 125 | 57 | 0 |  | constructor |
+|  |  | Legion | Otter | legotter | Vehicle | 1 | 0 | 950 | 0 | 150 | 44 | 0 |  | constructor |
+|  |  | Legion | Proteus | legaceb | Bot | 2 | 0 | 830 | 0 | 310 | 75 | 0 |  | constructor |
+|  |  | Legion | Proteus | leghack | Bot | 2 | 0 | 830 | 0 | 1240 | 75 | 0 |  | constructor |
+|  |  | Legion | Sapper | legmlv | Vehicle | 1 | 5 | 210 | 1050 | 52 | 69 | 220 |  | constructor |
+|  |  | Legion | Zagreus | legrezbot | Bot | 1 | 0 | 220 | 0 | 130 | 78 | 0 |  | constructor |
+|  |  | Cortex | Epic Commando | cormandot4 | Bot | 2 | 0 | 9600 | 0 | 6700 | 60 | 0 |  | constructor, Epic / Archaic variant |
+|  |  | Armada | Advanced Construction Aircraft | armaca | Air | 2 | 0 | 200 | 0 | 340 | 192 | 0 |  | constructor, aircraft |
+|  |  | Armada | Construction Aircraft | armca | Air | 1 | 0 | 156 | 0 | 110 | 136 | 0 |  | constructor, aircraft |
+|  |  | Armada | Construction Seaplane | armcsa | Air | 1 | 0 | 405 | 0 | 150 | 124 | 0 |  | constructor, aircraft |
+|  |  | Armada | Experimental Construction Aircraft | armhaca | Air | 3 | 0 | 1405 | 0 | 1000 | 192 | 0 |  | constructor, aircraft |
+|  |  | Armada | Firefly | armfify | Air | 1 | 0 | 83 | 0 | 58 | 208 | 0 |  | constructor, aircraft |
+|  |  | Cortex | Advanced Construction Aircraft | coraca | Air | 2 | 0 | 205 | 0 | 360 | 182 | 0 |  | constructor, aircraft |
+|  |  | Cortex | Construction Aircraft | corca | Air | 1 | 0 | 161 | 0 | 115 | 131 | 0 |  | constructor, aircraft |
+|  |  | Cortex | Construction Seaplane | corcsa | Air | 1 | 0 | 435 | 0 | 140 | 140 | 0 |  | constructor, aircraft |
+|  |  | Cortex | Experimental Construction Aircraft | corhaca | Air | 3 | 0 | 1435 | 0 | 1040 | 182 | 0 |  | constructor, aircraft |
+|  |  | Legion | Advanced Construction Aircraft | legaca | Air | 2 | 0 | 195 | 0 | 330 | 203 | 0 |  | constructor, aircraft |
+|  |  | Legion | Construction Seaplane | legspcon | Air | 1 | 0 | 405 | 0 | 150 | 124 | 0 |  | constructor, aircraft |
+|  |  | Legion | Experimental Construction Aircraft | leghaca | Air | 2 | 0 | 435 | 0 | 960 | 218 | 0 |  | constructor, aircraft |
+|  |  | Legion | Legion Construction Aircraft | legca | Air | 1 | 0 | 151 | 0 | 100 | 139 | 0 |  | constructor, aircraft |
+|  |  | Armada | Advanced Construction Sub | armacsub | Sea | 2 | 0 | 1110 | 0 | 700 | 72 | 0 |  | constructor, water unit |
+|  |  | Armada | Construction Ship | armcs | Sea | 1 | 0 | 1040 | 0 | 200 | 65 | 0 |  | constructor, water unit |
+|  |  | Armada | Grim Reaper | armrecl | Sea | 1 | 0 | 420 | 0 | 240 | 66 | 0 |  | constructor, water unit |
+|  |  | Armada | Haven | armantiship | Sea | 2 | 0 | 5000 | 0 | 1400 | 63 | 0 |  | constructor, water unit |
+|  |  | Armada | Haven | armcarry | Sea | 2 | 0 | 5000 | 0 | 1400 | 63 | 0 |  | constructor, water unit |
+|  |  | Armada | Voyager | armhacs | Sea | 3 | 0 | 2460 | 0 | 1140 | 66 | 0 |  | constructor, water unit |
+|  |  | Armada | Voyager | armmls | Sea | 2 | 0 | 1460 | 0 | 190 | 66 | 0 |  | constructor, water unit |
+|  |  | Cortex | Advanced Construction Sub | coracsub | Sea | 2 | 0 | 1110 | 0 | 700 | 65 | 0 |  | constructor, water unit |
+|  |  | Cortex | Construction Ship | corcs | Sea | 1 | 0 | 1080 | 0 | 200 | 60 | 0 |  | constructor, water unit |
+|  |  | Cortex | Death Cavalry | correcl | Sea | 1 | 0 | 420 | 0 | 240 | 66 | 0 |  | constructor, water unit |
+|  |  | Cortex | Oasis | corantiship | Sea | 2 | 0 | 5000 | 0 | 1400 | 63 | 0 |  | constructor, water unit |
+|  |  | Cortex | Oasis | corcarry | Sea | 2 | 0 | 5000 | 0 | 1400 | 60 | 0 |  | constructor, water unit |
+|  |  | Cortex | Pathfinder | corhacs | Sea | 3 | 0 | 2600 | 0 | 1180 | 55 | 0 |  | constructor, water unit |
+|  |  | Cortex | Pathfinder | cormls | Sea | 2 | 0 | 1600 | 0 | 200 | 58 | 0 |  | constructor, water unit |
+|  |  | Legion | Advanced Construction Submarine | leganavyconsub | Sea | 2 | 0 | 1110 | 0 | 700 | 65 | 0 |  | constructor, water unit |
+|  |  | Legion | Artifex | leganavyengineer | Sea | 2 | 0 | 1600 | 0 | 200 | 58 | 0 |  | constructor, water unit |
+|  |  | Legion | Construction Ship | legnavyconship | Sea | 1 | 0 | 1080 | 0 | 180 | 71 | 0 |  | constructor, water unit |
+|  |  | Legion | Dionysus | legnavyrezsub | Sea | 1 | 0 | 420 | 0 | 240 | 67 | 0 |  | constructor, water unit |
+|  |  | Armada | Nexus Terra | armdronecarryland | Vehicle | 3 | 0 | 3500 | 0 | 1700 | 30 | 0 |  | drone |
+|  |  | Armada | Attack Drone | armdrone | Air | 1 | 18 | 450 | 8235 | 25 | 330 | 350 |  | drone, aircraft |
+|  |  | Armada | Attack Drone | armdroneold | Air | 1 | 17 | 400 | 6680 | 55 | 225 | 350 |  | drone, aircraft |
+|  |  | Armada | Depth Charge Drone | armtdrone | Air | 1 | 36 | 300 | 10740 | 30 | 330 | 200 |  | drone, aircraft |
+|  |  | Cortex | Attack Drone | cordrone | Air | 1 | 45 | 675 | 30375 | 30 | 315 | 360 |  | drone, aircraft |
+|  |  | Cortex | Attack Drone | cordroneold | Air | 1 | 17 | 166 | 2772 | 29 | 281 | 360 |  | drone, aircraft |
+|  |  | Cortex | Depth Charge Drone | cortdrone | Air | 1 | 42 | 450 | 19125 | 40 | 315 | 200 |  | drone, aircraft |
+|  |  | Cortex | Disperser Omni | cordronecarryair | Air | 3 | 0 | 3500 | 0 | 1700 | 35 | 0 |  | drone, aircraft |
+|  |  | Legion | Legion Drone | legdrone | Air | 1 | 27 | 325 | 8678 | 15 | 281 | 300 |  | drone, aircraft |
+|  |  | Legion | Legion Heavy Drone | legheavydrone | Air | 1 | 125 | 1650 | 206250 | 90 | 181 | 430 |  | drone, aircraft |
+|  |  | Legion | Legion Heavy Drone | legheavydronesmall | Air | 1 | 125 | 1650 | 206250 | 90 | 181 | 430 |  | drone, aircraft |
+|  |  | Armada | Assist Vehicle | armassistdrone_land | Vehicle | 1 | 0 | 2000 | 0 | 1 | 38 | 0 |  | drone, constructor |
+|  |  | Cortex | Assist Vehicle | corassistdrone_land | Vehicle | 1 | 0 | 2000 | 0 | 1 | 38 | 0 |  | drone, constructor |
+|  |  | Legion | Assist Vehicle | legassistdrone_land | Vehicle | 1 | 0 | 2000 | 0 | 1 | 38 | 0 |  | drone, constructor |
+|  |  | Armada | Assist Drone | armassistdrone | Air | 1 | 0 | 335 | 0 | 1 | 210 | 0 |  | drone, constructor, aircraft |
+|  |  | Cortex | Assist Drone | corassistdrone | Air | 1 | 0 | 335 | 0 | 1 | 210 | 0 |  | drone, constructor, aircraft |
+|  |  | Legion | Assist Drone | legassistdrone | Air | 1 | 0 | 335 | 0 | 1 | 210 | 0 |  | drone, constructor, aircraft |
+|  |  | Armada | Nexus | armdronecarry | Sea | 2 | 0 | 3500 | 0 | 1700 | 63 | 0 |  | drone, water unit |
+|  |  | Cortex | Disperser | cordronecarry | Sea | 2 | 0 | 3500 | 0 | 1700 | 63 | 0 |  | drone, water unit |
+|  |  | Armada | Archangel | armaak | Bot | 2 | 0 | 2200 | 0 | 520 | 47 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Assimilator | armassimilator | Bot | 3 | 0 | 7500 | 0 | 2500 | 60 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Compass | armmark | Bot | 2 | 0 | 355 | 0 | 100 | 41 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Crossbow | armjeth | Bot | 1 | 0 | 630 | 0 | 125 | 56 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Prophet | armseer | Vehicle | 2 | 0 | 980 | 0 | 125 | 57 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Shredder | armyork | Vehicle | 2 | 0 | 2600 | 0 | 450 | 71 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Smuggler | armaser | Bot | 2 | 0 | 340 | 0 | 78 | 37 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Sweeper | armah | Hover | 1 | 0 | 1070 | 0 | 230 | 89 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Umbra | armjam | Vehicle | 2 | 0 | 510 | 0 | 105 | 43 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Umbrella | armscab | Bot | 2 | 0 | 870 | 0 | 1150 | 51 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Zapper | armzapper | Vehicle | 1 | 0 | 150 | 0 | 80 | 168 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Augur | corvoyr | Bot | 2 | 0 | 390 | 0 | 99 | 38 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Bedbug | corroach | Bot | 2 | 0 | 620 | 0 | 69 | 76 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Birdeater | corah | Hover | 1 | 0 | 1120 | 0 | 250 | 89 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Deceiver | corspec | Bot | 2 | 0 | 350 | 0 | 75 | 35 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Fury | corsent | Vehicle | 2 | 0 | 2700 | 0 | 470 | 69 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Manticore | coraak | Bot | 2 | 0 | 3200 | 0 | 650 | 35 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Obscurer | coreter | Vehicle | 2 | 0 | 580 | 0 | 105 | 41 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Omen | corvrad | Vehicle | 2 | 0 | 570 | 0 | 100 | 50 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Phantom | corphantom | Vehicle | 2 | 0 | 1400 | 0 | 300 | 72 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Saviour | cormabm | Vehicle | 2 | 0 | 870 | 0 | 1250 | 51 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Skuttle | corsktl | Bot | 2 | 0 | 355 | 0 | 755 | 84 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Cortex | Trasher | corcrash | Bot | 1 | 0 | 640 | 0 | 125 | 53 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Alpheus | legah | Hover | 1 | 0 | 1120 | 0 | 210 | 89 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Aquilon | legadvaabot | Bot | 2 | 0 | 2400 | 0 | 750 | 35 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Charon | legvflak | Vehicle | 2 | 0 | 2700 | 0 | 470 | 70 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Cicero | legavjam | Vehicle | 2 | 0 | 510 | 0 | 105 | 41 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Euclid | legaradk | Bot | 2 | 0 | 390 | 0 | 99 | 38 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Hera | legavantinuke | Vehicle | 2 | 0 | 720 | 0 | 1100 | 58 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Mantis | legvcarry | Vehicle | 2 | 0 | 1400 | 0 | 450 | 45 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Pheme | legavrad | Vehicle | 2 | 0 | 980 | 0 | 125 | 57 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Snapper | legsnapper | Bot | 2 | 0 | 550 | 0 | 60 | 81 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Tiresias | legajamk | Bot | 2 | 0 | 350 | 0 | 75 | 35 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Legion | Toxotai | legaabot | Bot | 1 | 0 | 610 | 0 | 120 | 55 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Rover | armfav | Vehicle | 1 | 35 | 105 | 3675 | 31 | 168 | 180 |  | scout: DPS x health below 10000 |
+|  |  | Armada | Tick | armflea | Bot | 1 | 40 | 60 | 2400 | 21 | 132 | 140 |  | scout: DPS x health below 10000 |
+|  |  | Cortex | Rascal | corfav | Vehicle | 1 | 32 | 90 | 2862 | 26 | 153 | 180 |  | scout: DPS x health below 10000 |
+|  |  | Legion | Goblin | leggob | Bot | 1 | 27 | 200 | 5340 | 30 | 75 | 261 |  | scout: DPS x health below 10000 |
+|  |  | Legion | Wheelie | legscout | Vehicle | 1 | 24 | 75 | 1770 | 23 | 160 | 169 |  | scout: DPS x health below 10000 |
+|  |  | Armada | Barracuda | armsubk | Sea | 2 | 175 | 2350 | 411250 | 950 | 81 | 400 |  | water unit |
+|  |  | Armada | Bermuda | armsjam | Sea | 2 | 0 | 1350 | 0 | 310 | 45 | 0 |  | water unit |
+|  |  | Armada | Corsair | armroy | Sea | 1 | 259 | 3700 | 959780 | 880 | 67 | 700 |  | water unit |
+|  |  | Armada | Dolphin | armdecade | Sea | 1 | 135 | 970 | 130950 | 175 | 105 | 280 |  | water unit |
+|  |  | Armada | Dragonslayer | armaas | Sea | 2 | 0 | 3900 | 0 | 1000 | 63 | 0 |  | water unit |
+|  |  | Armada | Dreadnought | armbats | Sea | 2 | 600 | 9800 | 5880000 | 3300 | 58 | 880 |  | water unit |
+|  |  | Armada | Eel | armsub | Sea | 1 | 86 | 840 | 71820 | 440 | 66 | 500 |  | water unit |
+|  |  | Armada | Ellysaw | armpship | Sea | 1 | 117 | 2150 | 250905 | 380 | 81 | 470 |  | water unit |
+|  |  | Armada | Epoch | armepoch | Sea | 2 | 1246 | 50000 | 62320000 | 20000 | 54 | 2450 |  | water unit |
+|  |  | Armada | Excalibur | armexcalibur | Sea | 2 | 133 | 1200 | 159960 | 900 | 60 | 600 |  | water unit |
+|  |  | Armada | Longbow | armmship | Sea | 2 | 108 | 3350 | 362805 | 2000 | 63 | 1550 |  | water unit |
+|  |  | Armada | Maelstrom | armlship | Sea | 2 | 250 | 2200 | 550000 | 570 | 99 | 400 |  | water unit |
+|  |  | Armada | Paladin | armcrus | Sea | 2 | 482 | 5600 | 2699200 | 1000 | 60 | 500 |  | water unit |
+|  |  | Armada | Seadragon | armseadragon | Sea | 2 | 100 | 2400 | 240000 | 8000 | 48 | 720 |  | water unit |
+|  |  | Armada | Serpent | armserp | Sea | 2 | 206 | 3550 | 732365 | 1800 | 45 | 800 |  | water unit |
+|  |  | Armada | Skater | armpt | Sea | 1 | 66 | 780 | 51090 | 150 | 93 | 300 |  | water unit |
+|  |  | Armada | Torpedo Ship | armtorps | Sea | 1 | 46 | 940 | 42770 | 300 | 90 | 300 |  | water unit |
+|  |  | Armada | Trident | armtrident | Sea | 2 | 170 | 3400 | 578000 | 1050 | 68 | 600 |  | water unit |
+|  |  | Cortex | Adjudicator | coresuppt3 | Sea | 3 | 2750 | 89000 | 244750000 | 30000 | 75 | 900 |  | water unit |
+|  |  | Cortex | Arrow Storm | corarch | Sea | 2 | 156 | 3900 | 609570 | 1000 | 60 | 870 |  | water unit |
+|  |  | Cortex | Black Hydra | corblackhy | Sea | 2 | 1304 | 53000 | 69122600 | 21000 | 50 | 2550 |  | water unit |
+|  |  | Cortex | Black Prince | corprince | Sea | 2 | 722 | 25000 | 18055000 | 13500 | 54 | 3200 |  | water unit |
+|  |  | Cortex | Brimstone | corfship | Sea | 2 | 375 | 2700 | 1012500 | 630 | 93 | 450 |  | water unit |
+|  |  | Cortex | Buccaneer | corcrus | Sea | 2 | 532 | 6200 | 3297160 | 1000 | 54 | 500 |  | water unit |
+|  |  | Cortex | Desolator | cordesolator | Sea | 2 | 106 | 2600 | 276380 | 9000 | 45 | 750 |  | water unit |
+|  |  | Cortex | Despot | corbats | Sea | 2 | 659 | 12000 | 7906800 | 3400 | 53 | 950 |  | water unit |
+|  |  | Cortex | Herring | corpt | Sea | 1 | 24 | 890 | 20915 | 210 | 69 | 650 |  | water unit |
+|  |  | Cortex | Kraken | corssub | Sea | 2 | 206 | 3900 | 804570 | 1900 | 39 | 850 |  | water unit |
+|  |  | Cortex | Leviathan | corslrpc | Sea | 3 | 125 | 7200 | 900000 | 8000 | 33 | 4950 |  | water unit |
+|  |  | Cortex | Messenger | cormship | Sea | 2 | 138 | 3350 | 460625 | 2000 | 61 | 1550 |  | water unit |
+|  |  | Cortex | Onager | coronager | Sea | 2 | 80 | 1400 | 112000 | 950 | 58 | 600 |  | water unit |
+|  |  | Cortex | Oppressor | corroy | Sea | 1 | 272 | 3950 | 1075980 | 960 | 62 | 710 |  | water unit |
+|  |  | Cortex | Orca | corsub | Sea | 1 | 137 | 1060 | 145008 | 580 | 57 | 500 |  | water unit |
+|  |  | Cortex | Phantasm | corsjam | Sea | 2 | 0 | 1450 | 0 | 280 | 40 | 0 |  | water unit |
+|  |  | Cortex | Predator | corshark | Sea | 2 | 159 | 1610 | 256151 | 730 | 84 | 400 |  | water unit |
+|  |  | Cortex | Riptide | corpship | Sea | 1 | 120 | 2350 | 282000 | 420 | 83 | 480 |  | water unit |
+|  |  | Cortex | Sentinel | corsentinel | Sea | 2 | 170 | 3800 | 646000 | 1350 | 63 | 600 |  | water unit |
+|  |  | Cortex | Supporter | coresupp | Sea | 1 | 91 | 480 | 43728 | 100 | 110 | 280 |  | water unit |
+|  |  | Legion | Architeuthis | leganavybattlesub | Sea | 2 | 180 | 2350 | 423000 | 1100 | 72 | 600 |  | water unit |
+|  |  | Legion | Argonaut | legnavyfrigate | Sea | 1 | 215 | 2600 | 560040 | 370 | 72 | 460 |  | water unit |
+|  |  | Legion | Corinth | leganavyartyship | Sea | 2 | 434 | 22000 | 9559000 | 13000 | 48 | 2100 |  | water unit |
+|  |  | Legion | Dolus | leganavyradjamship | Sea | 2 | 0 | 1700 | 0 | 450 | 42 | 0 |  | water unit |
+|  |  | Legion | Hecate | leganavyantinukecarrier | Sea | 2 | 0 | 5000 | 0 | 1600 | 63 | 0 |  | water unit |
+|  |  | Legion | Hippocampus | legnavyscout | Sea | 1 | 60 | 700 | 42000 | 120 | 97 | 351 |  | water unit |
+|  |  | Legion | Iapetus | legnavyaaship | Sea | 1 | 0 | 1200 | 0 | 250 | 60 | 0 |  | water unit |
+|  |  | Legion | Ketea | legnavysub | Sea | 1 | 93 | 600 | 55980 | 320 | 57 | 400 |  | water unit |
+|  |  | Legion | Leocampus | leganavyantiswarm | Sea | 2 | 191 | 2300 | 439070 | 500 | 105 | 350 |  | water unit |
+|  |  | Legion | Neptune | leganavyflagship | Sea | 2 | 3047 | 48000 | 146241600 | 16000 | 63 | 1000 |  | water unit |
+|  |  | Legion | Notus | leganavyaaship | Sea | 2 | 0 | 3900 | 0 | 1000 | 57 | 0 |  | water unit |
+|  |  | Legion | Octeres | legnavyartyship | Sea | 1 | 60 | 4500 | 268650 | 1450 | 45 | 960 |  | water unit |
+|  |  | Legion | Scylla | leganavybattleship | Sea | 2 | 875 | 10350 | 9056250 | 2900 | 25 | 750 |  | water unit |
+|  |  | Legion | Sphyrna | leganavyheavysub | Sea | 2 | 206 | 3900 | 804570 | 1900 | 39 | 850 |  | water unit |
+|  |  | Legion | Syracusia | legnavydestro | Sea | 1 | 171 | 3800 | 649040 | 875 | 58 | 700 |  | water unit |
+|  |  | Legion | Thalassa | leganavycruiser | Sea | 2 | 485 | 5600 | 2716000 | 900 | 57 | 500 |  | water unit |
+|  |  | Legion | Ultor | leganavymissileship | Sea | 2 | 300 | 3350 | 1005000 | 2000 | 61 | 1550 |  | water unit |
+|  |  | Armada | Epic Dolphin | armdecadet3 | Sea | 3 | 1050 | 14400 | 15120000 | 8000 | 69 | 1300 |  | water unit, Epic / Archaic variant |
+|  |  | Armada | Epic Ellysaw | armpshipt3 | Sea | 3 | 2198 | 13900 | 30550810 | 6500 | 81 | 475 |  | water unit, Epic / Archaic variant |
+|  |  | Armada | Epic Serpent | armserpt3 | Sea | 3 | 1375 | 26500 | 36437500 | 15000 | 45 | 800 |  | water unit, Epic / Archaic variant |
+|  |  | Armada | Epic Skater | armptt2 | Sea | 2 | 450 | 6700 | 3015000 | 2500 | 72 | 600 |  | water unit, Epic / Archaic variant |
+|  |  | Armada | Whistler | armsam | Vehicle | 1 | 26 | 820 | 21156 | 150 | 55 | 550 |  | weak support: DPS below 40 |
+|  |  | Cortex | Lasher | cormist | Vehicle | 1 | 25 | 860 | 21672 | 155 | 52 | 575 |  | weak support: DPS below 40 |
+|  |  | Legion | Belcher | legbart | Bot | 2 | 30 | 1780 | 53400 | 550 | 60 | 625 |  | weak support: DPS below 40 |
+|  |  | Legion | Lance | legrail | Vehicle | 1 | 27 | 1100 | 29370 | 240 | 47 | 650 |  | weak support: DPS below 40 |
+|  |  | Legion | Satyr | leglob | Bot | 1 | 30 | 550 | 16500 | 60 | 51 | 400 |  | weak support: DPS below 40 |

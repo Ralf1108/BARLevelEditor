@@ -31,10 +31,8 @@ for line in open(log, encoding="utf-8", errors="replace"):
     if len(f) < 13:
         continue
     name, fac, human, tech, dps, aa, hp, metal, speed, rng, move, flags, weapons = f[:13]
-    if name.endswith("_scav") or move in ("commanderbot", "scavcommanderbot") or "drone" in name:
-        continue   # (the Scavenger copies, the commanders and the drones are no candidates)
-    if re.search(r"scav|raptor", name + " " + human, re.I) or "fly" in flags or "builder" in flags or re.search(r"mine ?layer|minesweeper|mine", human, re.I):
-        continue   # (Scavengers, Raptors, aircraft, constructors, mine layers)
+    if re.search(r"scav|raptor", name + " " + human, re.I):
+        continue   # (the Scavenger and Raptor copies are not listed at all)
     units.append(dict(name=name, fac=FACTION[fac], human=human, tech=tech, dps=float(dps), aa=float(aa), hp=float(hp), metal=float(metal),
                       speed=float(speed), range=float(rng), move=move, flags=flags, weapons=weapons))
 
@@ -47,24 +45,32 @@ def kind(u):
     if c == "vehicles" or u["move"].startswith(("tank", "atank", "htank", "mtank", "vehicle", "epicveh")): return "Vehicle"
     return c.capitalize() or u["move"]
 
-def note(u):
-    n = []
+def why(u):
+    """why a unit is not included in Evolution (empty: it is included)"""
+    r = []
     ws = [w.split(":") for w in u["weapons"].split()]
     main = max([w for w in ws if w[0] != "StarburstLauncher"] or ws, key=lambda w: float(w[2])) if ws else None   # (the weapon with the most damage per second; Starburst launchers are stockpiled missiles)
-    if "fly" in u["flags"]: n.append("air")
-    if kind(u) == "Sea": n.append("water")
-    if "builder" in u["flags"]: n.append("builder")
-    if u["dps"] <= 0: n.append("no ground weapon")
+    if u["move"] in ("commanderbot", "scavcommanderbot"): r.append("commander")
+    if "drone" in u["name"]: r.append("drone")
+    if "builder" in u["flags"]: r.append("constructor")
+    if "fly" in u["flags"]: r.append("aircraft")
+    if kind(u) == "Sea": r.append("water unit")
+    if re.search(r"mine ?layer|minesweeper|mine", u["human"], re.I): r.append("mine layer")
+    if re.match(r"(Epic|Archaic) ", u["human"]): r.append("Epic / Archaic variant")
+    if "Tumbleweed" in u["human"]: r.append("Tumbleweed")
+    if u["dps"] <= 0 and not r: r.append("no ground weapon (radar, jammer, spy, anti air, crawling bomb)")
     # artillery / rocket launcher: the description of the unit says so, or its main weapon reaches 1000 Elmo or more
     desc = cats.get(u["name"], {}).get("description", "")
-    if re.search(r"artillery|rocket|missile launcher|mortar|howitzer|mlrs", desc + " " + u["human"], re.I) or (main and main[0] in ("Cannon", "MissileLauncher") and float(main[1]) >= 1000):
-        n.append("artillery / rocket")
-    return ", ".join(sorted(set(n)))
+    if not r and (re.search(r"artillery|rocket|missile launcher|mortar|howitzer|mlrs", desc + " " + u["human"], re.I) or (main and main[0] in ("Cannon", "MissileLauncher") and float(main[1]) >= 1000)):
+        r.append("artillery / rocket launcher")
+    if not r and u["dps"] * u["hp"] < 10000: r.append("scout: DPS x health below 10000")
+    if not r and u["dps"] < 40: r.append("weak support: DPS below 40")
+    return ", ".join(r)
 
 for u in units:
     u["type"] = kind(u)
     u["score"] = u["dps"] * u["hp"]
-    u["note"] = note(u)
+    u["note"] = why(u)
     u["ladder"] = ladder.get(u["name"], "")
 
 # the reference score of every level: the geometric mean of the ladder units of the three factions
@@ -83,15 +89,13 @@ def long_range(u):
     main = max(ws, key=lambda w: float(w[2])) if ws else None
     return not u["ladder"] and u["range"] >= 850 and main is not None and main[0] != "MissileLauncher"
 for u in units:
-    u["level"] = OVERRIDE.get(u["name"], level(u))
-    u["long"] = "yes" if long_range(u) else ""
-
-# artillery and rocket launchers are no candidates either (the notes of the rule of thumb and of the name)
-units = [u for u in units if "artillery" not in u["note"]]
-# water units, units without a ground weapon, the Epic and Archaic variants and the Tumbleweeds are no candidates
-units = [u for u in units if u["type"] != "Sea" and u["dps"] > 0 and not re.match(r"(Epic|Archaic) ", u["human"]) and "Tumbleweed" not in u["human"] and u["score"] >= 10000 and u["dps"] >= 40]   # (below 10000 DPS x health: the scouts, no chance in a fight)
-rows = sorted(units, key=lambda u: (u["level"] == "", u["level"] if u["level"] != "" else 0, u["fac"], u["score"]))
-head = ["Level (DPS x health)", "Included in Evolution", "Faction", "Name", "Unit", "Type", "Tech", "DPS", "Health", "Score", "Metal", "Speed", "Range", "Long range", "Note"]
+    incl = not u["note"]
+    u["level"] = OVERRIDE.get(u["name"], level(u)) if incl else ""
+    u["long"] = "yes" if incl and long_range(u) else ""
+    if u["long"]: u["note"] = "included only with the option Long range"
+included = [u for u in units if u["level"] != ""]
+rows = sorted(included, key=lambda u: (u["level"], u["fac"], u["score"])) + sorted([u for u in units if u["level"] == ""], key=lambda u: (u["note"], u["fac"], u["human"]))
+head = ["Level (DPS x health)", "Included in Evolution", "Faction", "Name", "Unit", "Type", "Tech", "DPS", "Health", "Score", "Metal", "Speed", "Range", "Long range", "Note (why not included)"]
 def cells(u):
     return [u["level"], u["ladder"], u["fac"], u["human"], u["name"], u["type"], u["tech"], round(u["dps"]), round(u["hp"]), round(u["score"]), round(u["metal"]), round(u["speed"]), round(u["range"]), u["long"], u["note"]]
 
@@ -106,7 +110,7 @@ with open(out, "w", encoding="utf-8-sig", newline="") as fh:
 nl = "\r\n"
 tab = ["# Evolution: unit candidates", "",
        "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
-       "Every mobile ground unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included in Evolution*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. Left out: Scavenger and Raptor units, constructors, aircraft, water units, units without a ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery and rocket launchers, mine layers, the Epic and Archaic variants, Tumbleweeds, the scouts (DPS times health below 10000) and the weak support vehicles (DPS below 40), commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
+       "Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is **not** included has no level, and the last column says why. The included units come first, sorted by level. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included in Evolution*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
        "**The ranges of the levels** (DPS x health): a unit gets the level whose range holds its score; the borders lie in the middle (geometric mean) between the reference scores of two levels.", "",
        "| Level | Reference (3 units in the game) | From | To |", "|---|---|---|---|"]
 edge = {l: math.sqrt(ref[l] * ref[l + 1]) for l in range(1, 10)}
@@ -126,4 +130,4 @@ if marker in t:
     t = t[:t.index(marker)].rstrip() + nl
 t = t.rstrip() + nl + nl + marker + nl + nl + "The table of all units that can be used for Evolution, with their type, tech level, damage per second and the level they would get: [Unit candidates](evolution-units.md) (also as [evolution_units.csv](evolution_units.csv) for Excel)." + nl
 open(md, "w", encoding="utf-8", newline="").write(t)
-print(len(rows), "units; level counts:", {l: sum(1 for u in rows if u["level"] == l) for l in range(1, 11)})
+print(len(included), "included of", len(rows), "units; level counts:", {l: sum(1 for u in included if u["level"] == l) for l in range(1, 11)})
