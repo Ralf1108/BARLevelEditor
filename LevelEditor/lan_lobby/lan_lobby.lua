@@ -2149,10 +2149,10 @@ local function closeLanMenu()
 	ui.lanMenu, ui.evoMenuBtn = nil, nil
 end
 
--- The settings of Evolution (the submenu of the button Evolution; the host only): On / Off, Unit multiplier (1 to 4: the wild units and towers on the map
+-- The settings of Evolution (the submenu of the button Evolution; the host only): On (green) / Off (red), Unit multiplier (1x to 10x: the wild units and towers on the map
 -- times that number, game option lanevomult) and Auto-aim (on: the units shoot at what they see as in the game; off: only at what the player orders, game option
 -- lanevoaim=0, the players aim themselves with the order Attack)
-local EVO_MULTS = { "1", "2", "3", "4" }
+local EVO_MULTS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }
 local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" end
 local function evoAim() return not (S and S.battle.modoptions.lanevoaim == "0") end
 local function setEvoOption(key, value)
@@ -2169,9 +2169,9 @@ local function openEvoMenu()
 	local sx, sy = b:LocalToScreen(b.width + 4, 0)
 	local on = evolutionOn()
 	local items = {
-		{ caption = "Evolution: " .. (on and "On" or "Off"), class = on and "action_button" or "option_button", tip = EVO_TIP,
+		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = EVO_TIP,
 			fn = function() setEvolution(not evolutionOn()); openEvoMenu() end },
-		{ caption = "Unit multiplier: " .. evoMult() .. "x", tip = "How many wild units and towers stand on the map: 1x is the normal number, 2x twice as many (a denser map). Click to change (1 - 4).",
+		{ caption = "Unit multiplier: " .. evoMult() .. "x", tip = "How many wild units and towers stand on the map: 1x is the normal number, 2x twice as many (a denser map). Click to change (1x - 10x).",
 			fn = function()
 				local cur = evoMult()
 				local nxt = EVO_MULTS[1]
@@ -2179,7 +2179,7 @@ local function openEvoMenu()
 				setEvoOption("lanevomult", nxt ~= "1" and nxt or nil)
 				openEvoMenu()
 			end },
-		{ caption = "Auto-aim: " .. (evoAim() and "On" or "Off"), class = evoAim() and "action_button" or "option_button",
+		{ caption = "Auto-aim: " .. (evoAim() and "On" or "Off"), class = evoAim() and "action_button" or "negative_button",
 			tip = "Off: the units do not shoot by themselves, the players have to aim with the order Attack (more like a deathmatch).",
 			fn = function() setEvoOption("lanevoaim", evoAim() and "0" or nil); openEvoMenu() end },
 	}
@@ -2194,7 +2194,7 @@ local function openEvoMenu()
 	log("Evolution menu opened:", #items, "buttons")
 end
 
-local function evoCaption() return evolutionShown() and "Evolution on" or "Evolution" end
+local function evoCaption() return "Evolution" end
 
 local function openLanMenu()
 	closeLanMenu()
