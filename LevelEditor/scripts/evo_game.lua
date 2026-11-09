@@ -1118,7 +1118,7 @@ local R = {
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
 	-- STILL = part of the wild units that never walk (towers never do)
-	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
+	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 6, MAX_RADARS = 60,
 	-- the towers of a stage per faction (ground targets; anti air, nuclear and anti nuclear buildings left out), ordered by cost
 	TOWERS = {
 		{ "armllt", "armbeamer", "armclaw", "armhlt", "armpb", "armguard", "armamb", "armanni", "armanni", "armannit3" },
@@ -1126,8 +1126,14 @@ local R = {
 		{ "leglht", "legdtr", "leghive", "legmg", "legapopupdef", "legcluster", "legperdition", "legbastion", "legbastion", "leggatet3" },
 	},
 	RADAR1 = { "armrad", "corrad", "legrad" },
-	RADAR2 = { armrad = "armarad", corrad = "corarad", legrad = "legarad" },
+	-- the T2 version of a radar, a solar collector and a wind turbine (they change when the first player is on stage T2_STAGE; back when nobody is)
+	RADAR2 = { armrad = "armarad", corrad = "corarad", legrad = "legarad", armsolar = "armadvsol", corsolar = "coradvsol", legsolar = "legadvsol",
+		armwin = "armwint2", corwin = "corwint2", legwin = "legwint2" },
 }
+R.BACK1 = {} -- T2 name -> T1 name
+for t1, t2 in pairs(R.RADAR2) do
+	R.BACK1[t2] = t1
+end
 local radars = {} -- unitID -> { team = owner team (Gaia at first), name, take = { team, frames } while a player takes it }
 
 local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
@@ -2393,7 +2399,7 @@ local function takeRadars(step)
 					Spring.TransferUnit(id, taker.team, false)
 					Spring.SetUnitNeutral(id, true)
 					rd.team, rd.take = taker.team, nil
-					say(taker.name .. " took " .. (rd.name:find("solar", 1, true) and "a solar collector" or (rd.name:find("win", 1, true) and "a wind turbine" or "a radar")) .. ".")
+					say(taker.name .. " took " .. ((rd.name:find("sol", 1, true)) and "a solar collector" or (rd.name:find("win", 1, true) and "a wind turbine" or "a radar")) .. ".")
 				else
 					shown[#shown + 1] = string.format("%d,%d,%d,%d", x, z, math.floor(rd.take.frames / FPS), taker.team)
 				end
@@ -2403,31 +2409,29 @@ local function takeRadars(step)
 	Spring.SetGameRulesParam("evoTaking", table.concat(shown, "/"))
 end
 
--- When more than half of the players who are still in are on stage R.T2_STAGE or higher: one radar (every R.UPGRADE frames) becomes the T2 radar of its
--- faction, at its place, for the same owner
+-- As soon as one player who is still in is on stage R.T2_STAGE or higher the radars, solar collectors and wind turbines become the T2 versions (every R.UPGRADE
+-- frames one, at its place, for the same owner); when no player is on that stage any more they go back to T1. Only a building that no player sees (see
+-- watched) is changed.
 local function upgradeRadars()
-	local active, high = 0, 0
+	local high = false
 	for _, p in ipairs(players) do
-		if not p.out then
-			active = active + 1
-			if p.stage >= R.T2_STAGE then
-				high = high + 1
-			end
+		if not p.out and p.stage >= R.T2_STAGE then
+			high = true
 		end
 	end
-	if active == 0 or high * 2 <= active then
-		return
-	end
 	for id, rd in pairs(radars) do
-		local to = R.RADAR2[rd.name]
+		local to = high and R.RADAR2[rd.name] or (not high and R.BACK1[rd.name])
 		local x, _, z = Spring.GetUnitPosition(id)
-		if to and UnitDefNames[to] and x then
+		if to and UnitDefNames[to] and x and not watched(id, x, z) then
 			radars[id] = nil
 			if GG.Indestructible then
 				GG.Indestructible[id] = nil
 			end
 			remove(id)
 			newRadar(to, x, z, rd.team)
+			if FOLLOW_AI then
+				Spring.Echo("[Evolution] test: building " .. rd.name .. " -> " .. to)
+			end
 			return
 		end
 	end

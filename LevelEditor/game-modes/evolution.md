@@ -80,7 +80,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 **Radars**
 - Radars of nobody stand all over the map, until it is covered; they **cannot be destroyed**
 - Stand next to one with your unit for **5 seconds** ("Taking 3/5" above it) and it is **yours**: you see more of where the others go; an enemy takes it the same way
-- When more than half of the players are on level 5 or higher, the radars become **T2 radars** one by one (a much larger range)
+- As soon as the first player reaches **level 6**, the radars, solar collectors and wind turbines become their **T2 versions** one by one (a much larger range, more energy); when no player is on level 6 or higher any more, they go back. A building is only changed when no player sees it (in the fog of war), like the wild units
 - When a player is out, their radars belong to nobody again
 
 **Beacons and abilities**
