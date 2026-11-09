@@ -2131,7 +2131,7 @@ local function setEvolution(on)
 	syncPveGame()
 	log("Evolution", on and "on" or "off")
 	say(on and "The game mode Evolution is on: every player starts with one weak unit instead of the commander (best on a map of size M or smaller)." or "The game mode Evolution is off.")
-	if on then bigPopup(EVO_INFO) end
+	if on then for line in EVO_INFO:gmatch("[^\n]+") do say(line) end end -- (the rules go into the chat of the room, for everybody; no message window)
 end
 
 local function evolutionShown()
@@ -2295,17 +2295,6 @@ end
 ---------------------------------------------------------------- per frame
 function widget:Update()
 	closeMenusOnOutsideClick()
-	-- a joiner gets the window with the rules of Evolution too when the host switches it on (once; again after it was switched off and on)
-	if lan and lan.role == "client" then
-		local l = lobby()
-		local on = l and l.modoptions and l.modoptions.lanevolution == "1"
-		if on and not lan.evoShown then
-			lan.evoShown = true
-			bigPopup(EVO_INFO)
-		elseif not on then
-			lan.evoShown = nil
-		end
-	end
 	if ui.leave and ui.back then
 		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Close" then moves to the right of it
 		local want = S ~= nil or lan ~= nil
