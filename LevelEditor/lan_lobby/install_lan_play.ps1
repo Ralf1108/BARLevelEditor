@@ -59,6 +59,10 @@ if (Test-Path $gsrc) {
 $bsrc = Join-Path $PSScriptRoot 'raptor_brood_defs.lua'
 if ((Test-Path $bsrc) -and (-not (Test-Path $brood) -or (Get-FileHash $bsrc).Hash -ne (Get-FileHash $brood).Hash)) { Copy-Item $bsrc $brood -Force; Write-Host 'Raptor Brood Chamber definition copied.' }
 Set-LocalWidgets $true
-Write-Host "LAN Play installed in $data." -ForegroundColor Green
+# the version of the widget that is installed (LAN_VERSION at the top of lan_lobby.lua: number, date and time)
+$ver = ''
+$m = [regex]::Match((Get-Content $src -Raw), 'LAN_VERSION\s*=\s*\{\s*number\s*=\s*(\d+)\s*,\s*stamp\s*=\s*"([^"]+)"')
+if ($m.Success) { $ver = " version $($m.Groups[1].Value) ($($m.Groups[2].Value))" }
+Write-Host "LAN Play$ver installed in $data." -ForegroundColor Green
 Write-Host 'Start the game as usual: the main menu has the entry "LAN Play" below Multiplayer.'
 exit 0
