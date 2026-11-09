@@ -46,7 +46,7 @@ def kind(u):
     return c.capitalize() or u["move"]
 
 # left out by hand (the name of the unit: the reason)
-MANUAL = {"corban": "missile launcher", "armprowl": "same values as the Marauder (a duplicate)"}
+MANUAL = {"corban": "missile launcher", "armprowl": "same values as the Marauder (a duplicate)", "armsh": "very weak hovercraft", "corsh": "very weak hovercraft", "legsh": "very weak hovercraft"}
 
 def why(u):
     """why a unit is not included in Evolution (empty: it is included)"""
@@ -152,7 +152,7 @@ tab = ["# Evolution: unit candidates", "",
        "- Left out: artillery and rocket launchers (the description says so, the main weapon is a cannon or missile of 1000 Elmo or more, or the main weapon is a rocket without homing: Salacia, Rocketeer, Aggravator; homing missiles for 1:1 fights stay, like Karganeth and Torch; the units of the first version are kept)",
        "- Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight",
        "- Left out: units that are too slow (speed below 31: Behemoth, Mammoth, Fatboy)",
-       "- Left out by hand: Banisher (missile launcher), Prowler (same values as the Marauder)",
+       "- Left out by hand: Banisher (missile launcher), Prowler (same values as the Marauder), the very weak hovercraft Seeker, Goon and Glaucus",
        "- *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on",
        "- *Included*: the 30 units that were in the game before (the number is their level); the others are new candidates", "",
        "**How the level is found**", "",

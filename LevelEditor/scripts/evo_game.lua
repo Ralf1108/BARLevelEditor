@@ -46,7 +46,7 @@ local NAMES = {
 -- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution-units.md: change the table, not this block)
 -- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range
 local POOL = {
-	[1] = { { "armpw", "armsh" }, { "corak", "corsh" }, { "leghades", "legsh" } },
+	[1] = { { "armpw" }, { "corak" }, { "leghades" } },
 	[2] = { { "armamph", "armanac", "armfast", "armflash", "armgremlin", "armham", "armpincer" }, { "corgarp", "corgator", "corsnap", "corthud", "cortorch" }, { "legamphtank", "legcen", "leghelios", "legmrv", "legner" } },
 	[3] = { { "armlatnk", "armstump", "armwar" }, { "corlevlr", "corraid" }, { "legaskirmtank", "legkark" } },
 	[4] = { { "armcroc", "armmav", "armzeus" }, { "coramph", "corpyro", "corsala", "corseal", "corsok" }, { "legehovertank", "leggat", "legshot", "legstr" } },
@@ -84,7 +84,6 @@ for name, title in pairs({
 	armpincer = "Pincer",
 	armpw = "Pawn",
 	armraz = "Razorback",
-	armsh = "Seeker",
 	armsnipe = "Sharpshooter",
 	armstump = "Stout",
 	armthor = "Thor",
@@ -110,7 +109,6 @@ for name, title in pairs({
 	correap = "Tiger",
 	corsala = "Salamander",
 	corseal = "Alligator",
-	corsh = "Goon",
 	corshiva = "Shiva",
 	corsiegebreaker = "Siegebreaker",
 	corsnap = "Cayman",
@@ -142,7 +140,6 @@ for name, title in pairs({
 	legmrv = "Quickshot",
 	legner = "Nereus",
 	legpede = "Mukade",
-	legsh = "Glaucus",
 	legshot = "Phalanx",
 	legsrail = "Arquebus",
 	legstr = "Hoplite",
@@ -1118,7 +1115,7 @@ local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before 
 local R = {
 	ENERGY_BASE = 5, ENERGY = 3, STORE = 1000,
 	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
-	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, CATCH_UP = 0.5,
+	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
 	-- STILL = part of the wild units that never walk (towers never do)
 	COVER = 0.95, RANGE = 200, TAKE = 5 * FPS, T2_STAGE = 5, MAX_RADARS = 60,
@@ -2100,18 +2097,42 @@ local function topUpWild()
 	end
 end
 
+-- (not a unit that a player sees or that is within R.SAFE Elmo of a player's unit)
 -- Every R.UPGRADE frames: one wild unit above the lowest stage of the players who are still in, or two or more below it (the weakest player
 -- went down after a death) becomes one of that stage, at its place
+-- A wild unit that a player can see, or that stands within R.SAFE Elmo of a player's unit, is left as it is (no change of level in the middle of a fight)
+local function watched(id, x, z)
+	for _, p in ipairs(players) do
+		if not p.out and p.unit then
+			if Spring.IsUnitInLos(id, p.ally) then
+				return true
+			end
+			local ux, _, uz = Spring.GetUnitPosition(p.unit)
+			if ux and (ux - x) ^ 2 + (uz - z) ^ 2 < R.SAFE * R.SAFE then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local wildSwapped, wildKept = 0, 0 -- (counted for the test: replaced, and left as they are because a player sees them)
 local function upgradeWild()
 	local low = wildStage()
 	for id, w in pairs(wild) do
 		if w.stage > low or low - w.stage >= 2 then -- (above the weakest player at all: he must have a chance; below: two or more)
 			local x, _, z = Spring.GetUnitPosition(id)
-			if x then
+			if x and watched(id, x, z) then
+				wildKept = wildKept + 1
+			elseif x then
 				local facing = Spring.GetUnitBuildFacing(id)
 				wild[id] = nil
 				remove(id)
 				spawnWild(low, w.tower, x, z, facing)
+				wildSwapped = wildSwapped + 1
+				if FOLLOW_AI then
+					Spring.Echo(string.format("[Evolution] test: wild units replaced %d, left as they are because a player sees them %d", wildSwapped, wildKept))
+				end
 				return
 			end
 		end

@@ -28,7 +28,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Your unit**
 - Every team starts with one level 1 unit where its commander would stand; all other units are gone
-- Every new unit is of a **random faction** (Armada, Cortex or Legion) and a random unit of it for the level: a Pawn can become a Brute and then a Karkinos; every level has a number of units (80 in all, see the [unit table](evolution-units.md))
+- Every new unit is of a **random faction** (Armada, Cortex or Legion) and a random unit of it for the level: a Pawn can become a Brute and then a Karkinos; every level has a number of units (77 in all, see the [unit table](evolution-units.md))
 - The new unit replaces the old one where it stands; it has the health fraction of the old unit plus 20 % (not a full heal); it keeps its orders and is selected again by itself
 
 **Points**
@@ -67,7 +67,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 **Wild units and towers**
 - Units of nobody (Gaia) with only 10 % of their health on level 1 (30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8; the health bar shows it) stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
 - Most of them **walk around** the map, about one in five stands still (and the towers), and they **only shoot back**
-- They **grow with the weakest player**: a new one has the level of the weakest player who is still in; one above it is replaced at once by one of its level (so the weakest player always has a chance), one two or more levels below it too, one every 3 seconds
+- They **grow with the weakest player**: a new one has the level of the weakest player who is still in; one above it is replaced by one of its level (so the weakest player always has a chance), one two or more levels below it too, one every 3 seconds; **a unit that a player sees, or that is within 900 Elmo of a player's unit, is never changed** (no change of level in the middle of a fight)
 - One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
 
 **Regeneration**
@@ -119,7 +119,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | 9 | Thor | Demon | Praetorian |
 | 10 | Titan | Juggernaut | Sol Invictus |
 
-The table shows one unit of each faction per level as an example (the help window of the game does the same). **All** the units that can appear on a level (80 in all: bots, vehicles and hovercraft; nine more with the option Long range) are in the [unit table](evolution-units.md), sorted by their damage per second times health; artillery, rocket launchers, aircraft, water units, constructors, scouts and units without a ground weapon are left out. Evolution always plays with the Legion faction and the Extra Units Pack (the host switches both on by itself).
+The table shows one unit of each faction per level as an example (the help window of the game does the same). **All** the units that can appear on a level (77 in all: bots, vehicles and hovercraft; nine more with the option Long range) are in the [unit table](evolution-units.md), sorted by their damage per second times health; artillery, rocket launchers, aircraft, water units, constructors, scouts and units without a ground weapon are left out. Evolution always plays with the Legion faction and the Extra Units Pack (the host switches both on by itself).
 
 ## On the screen
 

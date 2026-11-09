@@ -13,7 +13,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 - Left out: artillery and rocket launchers (the description says so, the main weapon is a cannon or missile of 1000 Elmo or more, or the main weapon is a rocket without homing: Salacia, Rocketeer, Aggravator; homing missiles for 1:1 fights stay, like Karganeth and Torch; the units of the first version are kept)
 - Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight
 - Left out: units that are too slow (speed below 31: Behemoth, Mammoth, Fatboy)
-- Left out by hand: Banisher (missile launcher), Prowler (same values as the Marauder)
+- Left out by hand: Banisher (missile launcher), Prowler (same values as the Marauder), the very weak hovercraft Seeker, Goon and Glaucus
 - *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on
 - *Included*: the 30 units that were in the game before (the number is their level); the others are new candidates
 
@@ -44,11 +44,8 @@ The selection of the units that can appear in Evolution (the candidates) and the
 
 | Level | Included | Faction | Name | Unit | Type | Tech | DPS | Health | Score | Metal | Speed | Range | Long range | Note (why not included) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 |  | Armada | Seeker | armsh | Hover | 1 | 60 | 290 | 17400 | 85 | 114 | 230 |  |  |
 | 1 | 1 | Armada | Pawn | armpw | Bot | 1 | 90 | 370 | 33300 | 54 | 87 | 180 |  |  |
-| 1 |  | Cortex | Goon | corsh | Hover | 1 | 60 | 255 | 15300 | 75 | 110 | 230 |  |  |
 | 1 | 1 | Cortex | Grunt | corak | Bot | 1 | 74 | 280 | 20720 | 43 | 81 | 215 |  |  |
-| 1 |  | Legion | Glaucus | legsh | Hover | 1 | 60 | 220 | 13200 | 60 | 102 | 260 |  |  |
 | 1 | 1 | Legion | Alaris | leghades | Vehicle | 1 | 42 | 425 | 17722 | 65 | 99 | 211 |  |  |
 | 2 |  | Armada | Mace | armham | Bot | 1 | 60 | 1000 | 60000 | 130 | 46 | 380 |  |  |
 | 2 | 2 | Armada | Blitz | armflash | Vehicle | 1 | 90 | 730 | 65700 | 110 | 101 | 180 |  |  |
@@ -411,6 +408,9 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Armada | Fatboy | armfboy | Bot | 2 | 114 | 7800 | 891540 | 1400 | 30 | 700 |  | too slow (speed below 31) |
 |  |  | Cortex | Behemoth | corjugg | Bot | 3 | 821 | 335000 | 275169000 | 20000 | 17 | 550 |  | too slow (speed below 31) |
 |  |  | Cortex | Mammoth | corsumo | Bot | 2 | 503 | 15600 | 7851480 | 2200 | 23 | 650 |  | too slow (speed below 31) |
+|  |  | Armada | Seeker | armsh | Hover | 1 | 60 | 290 | 17400 | 85 | 114 | 230 |  | very weak hovercraft |
+|  |  | Cortex | Goon | corsh | Hover | 1 | 60 | 255 | 15300 | 75 | 110 | 230 |  | very weak hovercraft |
+|  |  | Legion | Glaucus | legsh | Hover | 1 | 60 | 220 | 13200 | 60 | 102 | 260 |  | very weak hovercraft |
 |  |  | Armada | Barracuda | armsubk | Sea | 2 | 0 | 2350 | 0 | 950 | 81 | 0 |  | water unit |
 |  |  | Armada | Bermuda | armsjam | Sea | 2 | 0 | 1350 | 0 | 310 | 45 | 0 |  | water unit |
 |  |  | Armada | Corsair | armroy | Sea | 1 | 147 | 3700 | 543530 | 880 | 67 | 700 |  | water unit |
