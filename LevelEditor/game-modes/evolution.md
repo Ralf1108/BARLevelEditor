@@ -16,7 +16,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
   - **On / Off**: a green button when on, red when off; off is the default
   - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
   - **Auto-aim**: off means the units do not shoot by themselves; you aim with the order Attack (A) and lead your shots, more like a deathmatch
-  - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once, a star that gives every player random values (for a picture) and Hide
+  - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
 ![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Auto-aim and Debug mode](../../docs/evolution-room.jpg)
 

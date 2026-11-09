@@ -2557,7 +2557,11 @@ function gadget:RecvLuaMsg(msg, playerID)
 				randomize() -- (the star button)
 			elseif tonumber(n) >= 6 and ABILITIES[tonumber(n) - 5] then
 				p.abilities = p.abilities or {}
-				p.abilities[tonumber(n) - 5] = true -- (the power-up buttons of the debug mode)
+				local ai = tonumber(n) - 5 -- (the power-up buttons of the debug mode: the ability, and when it is there already, ready again: no cooldown)
+				p.abilities[ai] = true
+				if p.cool then
+					p.cool[ai] = nil
+				end
 				A.publish()
 			elseif n == "4" or n == "5" then
 				p.exp = math.max(0, (p.exp or 0) + (n == "4" and EXP_STEP or -EXP_STEP)) -- (XP up / down)
