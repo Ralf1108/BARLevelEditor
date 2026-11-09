@@ -9,10 +9,14 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 ## In short
 
 - **LAN Play** room: the host presses the green button **LAN Play** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (a submenu with the green / red button On / Off opens); everybody in the room sees it
-- The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
+- Everybody in the room gets a window with the rules when the host switches it on (the host also a tip: a map of size **M or smaller**, up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)
-- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off** (a green button when on, red when off; off is the default), **Unit multiplier** (1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map) and **Debug mode** (On / Off: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down) XP Up / XP Down, one small button per power-up that gives it at once, a star that gives every player random values for a picture, and Hide) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
+- **Evolution** in the menu opens a small menu of its own with the settings (hold the mouse over a button for its explanation):
+  - **On / Off**: a green button when on, red when off; off is the default
+  - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
+  - **Auto-aim**: off means the units do not shoot by themselves; you aim with the order Attack (A) and lead your shots, more like a deathmatch
+  - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once, a star that gives every player random values (for a picture) and Hide
 
 ![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Auto-aim and Debug mode](../../docs/evolution-room.jpg)
 
@@ -54,10 +58,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
   - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
-  - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20; the rings warn everybody 5 seconds before), then missiles that never stop and get worse (every human enemy has missiles of his own that follow him: one at first, two after two minutes, then one more every two minutes, and the volleys come faster and faster): more and more of them, faster and faster. First they come down far from the enemy human players (never around computer players; the circle starts at 2000 Elmo), then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
+  - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20); the red rings warn everybody 5 seconds before where each one comes down. Then the missiles never stop and get worse: every human enemy has missiles of his own that follow him (one at first, two after two minutes, then one more every two minutes), the volleys come every 10 seconds at first and every 3 seconds after four minutes. They start 2000 Elmo from the enemy and come closer and closer, until there is no way out; computer players are not followed. Your own unit and your allies are never hit
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
-![Gates of Hell: red rings where the next missiles come down](../../docs/evolution-gates-of-hell.jpg)
 
 **Wild units and towers**
 - Units of nobody (Gaia) with a fifth of their health stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
@@ -116,7 +119,8 @@ Chosen by damage per second times health; artillery, units for water and the bom
 ## On the screen
 
 - At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, the points now and needed for the next level ("4/12") and the experience ("XP 0.3"), a column with kills above deaths, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
-- At the bottom in the middle: your own unit, big: level, unit, points bar, a violet **XP bar** (the experience bonus you keep: +0.1 per kill of a player, -0.1 per death), kills, deaths and the buttons of your abilities
+- At the bottom, left of the music player: your own unit, big: level, unit, points bar, a violet **XP bar** (the experience bonus you keep: +0.1 per kill of a player, -0.1 per death), kills, deaths and the buttons of your abilities
+- Everything scales with the size of the window
 - After a respawn the camera jumps to your new unit
 - At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
@@ -125,5 +129,6 @@ Chosen by damage per second times health; artillery, units for water and the bom
 
 - Hunt the wild units first, then pick fights with enemies of your level or above
 - Take the radars near you early: you see the others coming
+- Without auto-aim (see the settings) you have to aim yourself: keep moving and lead your shots
 - A small map keeps the fights coming: size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata)
 - The game runs in the gadget `evo_game.lua` and the window of the gift in `evo_gift.lua` of the extra game "Level Editor Scenarios" (installed with the Level Editor; a joiner without it gets it from the host)
