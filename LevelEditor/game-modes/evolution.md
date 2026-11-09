@@ -49,7 +49,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 **The gift of level 10**
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
   - **Hell on Earth**: 8 strong ground units rise all over the map; they are yours
-  - **Heaven on Earth**: 8 Dragons (heavy gunships) come down around your unit; they are yours
+  - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; they are yours
   - **Gates of Hell**: 12 nuclear missiles rain on the map, one every 4 seconds, far from your unit; red rings warn 5 seconds before where they come down
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
@@ -114,7 +114,7 @@ Chosen by damage per second times health; artillery, units for water and the bom
 - At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, kills, deaths and points bar, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
 - At the bottom in the middle: your own unit, big: level, unit, points bar, kills, deaths and the buttons of your abilities
 - After a respawn the camera jumps to your new unit
-- At the start of the game (for 40 seconds) a **help window** shows every level with the units of the three factions (picture and name) and what Armageddon brings; it also explains the power-ups; the button **?** at the title of the overview opens and closes it
+- At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
 
 ## Tips

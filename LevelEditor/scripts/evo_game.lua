@@ -593,16 +593,16 @@ if not gadgetHandler:IsSyncedCode() then
 			return
 		end
 		local W, rowH = math.min(vsx - 20, math.floor(1060 * s)), math.floor(50 * s)
-		local head, foot, abil = math.floor(92 * s), math.floor(142 * s), math.floor(142 * s)
-		local Hh = head + 10 * rowH + abil + foot
+		local head, foot, abil, uh = math.floor(70 * s), math.floor(142 * s), math.floor(146 * s), math.floor(46 * s)
+		local Hh = head + abil + uh + 10 * rowH + foot
 		local x1 = math.floor((vsx - W) / 2)
 		local y1 = math.floor((vsy - Hh) / 2)
 		local x2, y2 = x1 + W, y1 + Hh
 		H.box(x1, y1, x2, y2, 12 * s, { 0.02, 0.03, 0.06, 0.94 }, { 0.08, 0.10, 0.16, 0.94 }, { 0.55, 0.65, 0.85, 0.7 }, 2)
 		gl.Color(0.55, 0.95, 0.7, 1)
-		gl.Text("EVOLUTION: the levels", x1 + 24 * s, y2 - 26 * s, 24 * s, "vo")
+		gl.Text("EVOLUTION: help", x1 + 24 * s, y2 - 26 * s, 24 * s, "vo")
 		gl.Color(0.8, 0.85, 0.95, 1)
-		gl.Text("Kill to level up. Your unit becomes one of a random faction of the next level.", x1 + 24 * s, y2 - 52 * s, 13 * s, "vo")
+		gl.Text("Kill to level up. Your unit becomes one of a random faction of the next level.", x1 + 24 * s, y2 - 50 * s, 13 * s, "vo")
 		-- the close button
 		local cb = 28 * s
 		H.helpClose = { x2 - cb - 14 * s, y2 - cb - 12 * s, x2 - 14 * s, y2 - 12 * s }
@@ -611,7 +611,9 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.Text("X", (H.helpClose[1] + H.helpClose[3]) / 2, (H.helpClose[2] + H.helpClose[4]) / 2, 16 * s, "cvo")
 		local labels = { "Armada", "Cortex", "Legion" }
 		local cx0, cw = x1 + 84 * s, (W - 84 * s - 16 * s) / 3
-		local top = y2 - head
+		local top = y2 - head - abil - uh
+		gl.Color(0.55, 0.95, 0.7, 1)
+		gl.Text("UNITS: the levels, in the three factions", x1 + 24 * s, top + 32 * s, 16 * s, "vo")
 		for c, label in ipairs(labels) do
 			gl.Color(0.7, 0.8, 1, 1)
 			gl.Text(label, cx0 + (c - 1) * cw + 4 * s, top + 8 * s, 14 * s, "vo")
@@ -648,9 +650,11 @@ if not gadgetHandler:IsSyncedCode() then
 			end
 		end
 		-- the power-ups: a beacon of the color lies on the map, a unit that drives over it has the ability until it dies
-		local ay = top - 10 * rowH - 4 * s
+		local ay = y2 - head - 2 * s
 		gl.Color(0.55, 0.95, 0.7, 1)
-		gl.Text("POWER-UPS: drive over a glowing beacon on the map to get one; you keep it until your unit dies. Click its button at the bottom to use it.", x1 + 24 * s, ay - 10 * s, 13 * s, "vo")
+		gl.Text("POWER-UPS", x1 + 24 * s, ay - 10 * s, 16 * s, "vo")
+		gl.Color(0.8, 0.85, 0.95, 1)
+		gl.Text("Drive over a glowing beacon on the map to get one; you keep it until your unit dies. Click its button at the bottom to use it.", x1 + 140 * s, ay - 10 * s, 12 * s, "vo")
 		local aw = (W - 48 * s) / 3
 		for i, a in ipairs(ABILITIES) do
 			local col, rw = (i - 1) % 3, math.floor((i - 1) / 3)
@@ -1420,7 +1424,7 @@ local function giftHell(p)
 	end
 end
 
--- Heaven on Earth: Dragons come down around the player's unit
+-- Heaven on Earth: Dragons come down on a hexagon round the player's unit
 local function giftHeaven(p)
 	local options = {}
 	for _, n in ipairs(GUNSHIPS) do
@@ -1433,9 +1437,14 @@ local function giftHeaven(p)
 		return giftHell(p)
 	end
 	for i = 1, HEAVEN_UNITS do
-		local a = i / HEAVEN_UNITS * 2 * math.pi
-		local ux = math.max(50, math.min(Game.mapSizeX - 50, x + math.cos(a) * 250))
-		local uz = math.max(50, math.min(Game.mapSizeZ - 50, z + math.sin(a) * 250))
+		-- the Dragons stand evenly spread on a hexagon round the unit (corners at 0, 60, 120 ... degrees, 320 Elmo from the unit)
+		local e = (i - 1) / HEAVEN_UNITS * 6
+		local k, f = math.floor(e), e - math.floor(e)
+		local a1, a2 = math.rad(k * 60), math.rad((k + 1) * 60)
+		local hx = math.cos(a1) * (1 - f) + math.cos(a2) * f
+		local hz = math.sin(a1) * (1 - f) + math.sin(a2) * f
+		local ux = math.max(50, math.min(Game.mapSizeX - 50, x + hx * 320))
+		local uz = math.max(50, math.min(Game.mapSizeZ - 50, z + hz * 320))
 		local id = Spring.CreateUnit(options[math.random(1, #options)], ux, Spring.GetGroundHeight(ux, uz) + 300, uz, 0, p.team)
 		if id then
 			summoned[id] = p
