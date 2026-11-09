@@ -2287,7 +2287,7 @@ local function closeMenusOnOutsideClick()
 		local ok, x, y = pcall(function() return c:LocalToScreen(0, 0) end)
 		return ok and x and cx >= x and cx <= x + c.width and cy >= y and cy <= y + c.height
 	end
-	if inside(ui.lanMenu) or inside(ui.evoMenu) or inside(ui.lanButton) or inside(ui.evoMenuBtn) then return end
+	if inside(ui.lanMenu) or inside(ui.evoMenu) or inside(ui.lanButton) or inside(ui.evoMenuBtn) or inside(ui.popup) then return end -- (also the window with the rules: its OK leaves the menu open)
 	log("menus closed by a click outside")
 	closeLanMenu()
 end
