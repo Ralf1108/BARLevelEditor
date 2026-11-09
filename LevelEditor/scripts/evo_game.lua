@@ -238,15 +238,9 @@ if not gadgetHandler:IsSyncedCode() then
 			local h = have[i]
 			if h then
 				local c = a.color
-				local dim = h.cool > 0 and h.act == 0 and 0.35 or 1
-				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { c[1] * 0.5 * dim, c[2] * 0.5 * dim, c[3] * 0.5 * dim, 0.95 }, { c[1] * dim, c[2] * dim, c[3] * dim, 0.95 },
-					h.act > 0 and { 1, 1, 1, 1 } or { 0, 0, 0, 0.6 })
-				if h.cool > 0 and h.act == 0 then
-					gl.Color(1, 1, 1, 1)
-					gl.Text(tostring(h.cool), x + size / 2, y, size * 0.5, "cvo")
-				else
-					H.icon(a.key, x + size / 2, y, size * 0.36)
-				end
+				-- only the symbol: that a team has the ability, not its cooldown or state
+				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { c[1] * 0.5, c[2] * 0.5, c[3] * 0.5, 0.95 }, { c[1], c[2], c[3], 0.95 }, { 0, 0, 0, 0.6 })
+				H.icon(a.key, x + size / 2, y, size * 0.36)
 			else
 				H.box(x, y - size / 2, x + size, y + size / 2, size * 0.2, { 0.05, 0.05, 0.08, 0.5 }, { 0.08, 0.08, 0.12, 0.5 }, { 0.35, 0.38, 0.48, 0.35 })
 			end
@@ -266,7 +260,7 @@ if not gadgetHandler:IsSyncedCode() then
 	function H.panel(state, arma)
 		local vsx, vsy = Spring.GetViewGeometry()
 		local base = H.scale()
-		local s = base * 1.2 -- (the overview is 20 % larger than the rest)
+		local s = base * 1.26 -- (the overview is 26 % larger than the rest: 20 % plus 5 %)
 		local rows = {}
 		for t in tostring(Spring.GetGameRulesParam("evoTeams") or ""):gmatch("%d+") do
 			local team = tonumber(t)
@@ -283,7 +277,13 @@ if not gadgetHandler:IsSyncedCode() then
 		local x2 = math.floor(vsx - 8 * s)
 		local x1 = x2 - w
 		local top = math.floor(vsy - 72 * base)
-		local y1 = top - head - #rows * (rowH + gap) - pad
+		-- as many rows as fit above the music player (140 at 1080 lines from the bottom); more teams: a scroll bar and the mouse wheel (the highest level is on top)
+		local maxRows = math.max(1, math.floor((top - head - pad - 140 * base) / (rowH + gap)))
+		local shown = H.hidden and 0 or math.min(#rows, maxRows)
+		H.scroll = math.max(0, math.min(H.scroll or 0, #rows - shown))
+		local scrolling = shown > 0 and #rows > shown
+		local rx2 = x2 - pad - (scrolling and 9 * s or 0)
+		local y1 = top - head - (shown > 0 and (shown * (rowH + gap) + pad) or 0)
 		local hot = arma > 0
 		H.box(x1, y1, x2, top, 8 * s, { 0.03, 0.04, 0.07, 0.82 }, { 0.10, 0.12, 0.18, 0.82 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.45 })
 		local pulse = 0.75 + 0.25 * math.sin(Spring.GetGameFrame() * 0.12)
@@ -293,22 +293,38 @@ if not gadgetHandler:IsSyncedCode() then
 			gl.Color(0.55, 0.95, 0.7, 1)
 		end
 		gl.Text(hot and "ARMAGEDDON" or "EVOLUTION", x1 + pad * 2, top - head / 2, 17 * s, "vo")
+		-- the button at the right of the title line: hides / shows the list
+		local tb = head - 8 * s
+		local tx2 = x2 - pad
+		local tx1, ty1, ty2 = tx2 - tb, top - head + 4 * s, top - 4 * s
+		H.toggle = { tx1, ty1, tx2, ty2 }
+		H.box(tx1, ty1, tx2, ty2, 4 * s, { 0.12, 0.15, 0.22, 0.95 }, { 0.22, 0.27, 0.38, 0.95 }, { 0.7, 0.8, 1, 0.8 }, 2)
+		gl.Color(0.9, 0.95, 1, 1)
+		gl.BeginEnd(GL.TRIANGLES, function()
+			local cx, cy2, q = (tx1 + tx2) / 2, (ty1 + ty2) / 2, tb * 0.25
+			if H.hidden then -- (down: show)
+				gl.Vertex(cx - q, cy2 + q * 0.5); gl.Vertex(cx + q, cy2 + q * 0.5); gl.Vertex(cx, cy2 - q * 0.7)
+			else -- (up: hide)
+				gl.Vertex(cx - q, cy2 - q * 0.5); gl.Vertex(cx + q, cy2 - q * 0.5); gl.Vertex(cx, cy2 + q * 0.7)
+			end
+		end)
 		if state ~= "running" then
 			gl.Color(1, 0.85, 0.4, 1)
-			gl.Text(state, x2 - pad * 2, top - head / 2, 12 * s, "rvo")
+			gl.Text(state, tx1 - pad, top - head / 2, 12 * s, "rvo")
 		end
 		local mine = Spring.GetMyTeamID()
 		local y = top - head
-		for _, row in ipairs(rows) do
+		for ri = H.scroll + 1, H.scroll + shown do
+			local row = rows[ri]
 			local team, out = row.team, row.out
 			local ry2, ry1 = y, y - rowH
 			local cy = (ry1 + ry2) / 2
 			local r, g, b = Spring.GetTeamColor(team)
 			r, g, b = r or 1, g or 1, b or 1
 			if team == mine then
-				H.box(x1 + pad, ry1, x2 - pad, ry2, 6 * s, { 0.16, 0.2, 0.28, 0.9 }, { 0.24, 0.3, 0.42, 0.9 }, { 0.8, 0.9, 1, 0.7 })
+				H.box(x1 + pad, ry1, rx2, ry2, 6 * s, { 0.16, 0.2, 0.28, 0.9 }, { 0.24, 0.3, 0.42, 0.9 }, { 0.8, 0.9, 1, 0.7 })
 			else
-				H.box(x1 + pad, ry1, x2 - pad, ry2, 6 * s, { 0.08, 0.09, 0.13, 0.85 }, { 0.13, 0.15, 0.21, 0.85 })
+				H.box(x1 + pad, ry1, rx2, ry2, 6 * s, { 0.08, 0.09, 0.13, 0.85 }, { 0.13, 0.15, 0.21, 0.85 })
 			end
 			H.box(x1 + pad, ry1 + 3 * s, x1 + pad + 4 * s, ry2 - 3 * s, 2 * s, { r, g, b, 1 }, { r, g, b, 1 })
 			-- the level badge
@@ -339,7 +355,7 @@ if not gadgetHandler:IsSyncedCode() then
 				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 6 * s, cy - 9 * s, 12 * s, "vo")
 			end
 			-- kills and deaths (first line, right), the abilities (second line, right)
-			local kx = x2 - pad - 98 * s
+			local kx = rx2 - 98 * s
 			H.crosshair(kx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(tostring(row.kills), kx + 11 * s, cy + 9 * s, 14 * s, "vo")
@@ -350,6 +366,18 @@ if not gadgetHandler:IsSyncedCode() then
 			H.abilities(team, kx - 8 * s, cy - 10 * s, 16 * s)
 			y = ry1 - gap
 		end
+		if scrolling then
+			-- the scroll bar: a track at the right edge of the rows and a handle (its size = the share of the rows that is visible)
+			local tr1, tr2 = y1 + pad, top - head
+			local bx1, bx2 = x2 - pad - 6 * s, x2 - pad
+			H.box(bx1, tr1, bx2, tr2, 3 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 })
+			local len = tr2 - tr1
+			local hl = math.max(16 * s, len * shown / #rows)
+			local hy2 = tr2 - (len - hl) * H.scroll / math.max(1, #rows - shown)
+			H.box(bx1, hy2 - hl, bx2, hy2, 3 * s, { 0.45, 0.55, 0.8, 1 }, { 0.65, 0.75, 0.95, 1 })
+		end
+		H.area2 = { x1, y1, x2, top }
+		H.pageRows = #rows - shown
 		gl.Color(1, 1, 1, 1)
 		return x1, x2, y1, base
 	end
@@ -397,11 +425,12 @@ if not gadgetHandler:IsSyncedCode() then
 				local pulse = 0.6 + 0.4 * math.sin(Spring.GetGameFrame() * 0.25)
 				H.box(bx1, by1, bx2, by2, 7 * s, { c[1] * 0.35 * k, c[2] * 0.35 * k, c[3] * 0.35 * k, 0.95 }, { c[1] * 0.85 * k, c[2] * 0.85 * k, c[3] * 0.85 * k, 0.95 },
 					h.act > 0 and { 1, 1, 1, pulse } or { c[1], c[2], c[3], cooling and 0.55 or 1 }, fw)
+				H.icon(a.key, cx, iy, 14 * s, cooling and 0.45 or 1)
 				if cooling then
-					gl.Color(1, 1, 1, 1)
-					gl.Text(tostring(h.cool), cx, iy, 24 * s, "cvo")
-				else
-					H.icon(a.key, cx, iy, 14 * s, 1)
+					-- the cooldown as a grey fill that runs down like a status bar (full at the start, empty when ready)
+					local top2 = by1 + (by2 - by1) * math.min(1, h.cool / a.cool)
+					H.box(bx1 + 2, by1 + 2, bx2 - 2, math.max(by1 + 6 * s, top2), 6 * s, { 0.25, 0.25, 0.28, 0.8 }, { 0.38, 0.38, 0.42, 0.8 })
+					H.icon(a.key, cx, iy, 14 * s, 0.35)
 				end
 				if h.act > 0 then
 					gl.Color(1, 1, 1, 1)
@@ -425,8 +454,14 @@ if not gadgetHandler:IsSyncedCode() then
 				gl.Text(tostring(a.cost), bx2 - 5 * s, by2 - 9 * s, 11 * s, "rvo")
 			end
 			-- the cooldown, top left
-			gl.Color(0.8, 0.85, 0.95, h and 0.9 or 0.5)
-			gl.Text(a.cool .. " s", bx1 + 5 * s, by2 - 9 * s, 10 * s, "vo")
+			if h and h.act == 0 and h.cool > 0 then
+				-- while it cools down the number counts down here, from the cooldown to 0, then the normal text is back
+				gl.Color(1, 1, 1, 1)
+				gl.Text(h.cool .. " s", bx1 + 5 * s, by2 - 9 * s, 12 * s, "vo")
+			else
+				gl.Color(0.8, 0.85, 0.95, h and 0.9 or 0.5)
+				gl.Text(a.cool .. " s", bx1 + 5 * s, by2 - 9 * s, 10 * s, "vo")
+			end
 			H.slots[i] = { bx1, by1, bx2, by2 }
 			if mx >= bx1 and mx <= bx2 and my >= by1 and my <= by2 then
 				hover, hoverX = i, cx
@@ -526,18 +561,35 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 	end
 
-	function gadget:IsAbove(x, y)
-		local r = H.area
+	local function inside(r, x, y)
 		return r ~= nil and x >= r[1] and x <= r[3] and y >= r[2] and y <= r[4]
 	end
 
+	function gadget:IsAbove(x, y)
+		return inside(H.area, x, y) or inside(H.area2, x, y)
+	end
+
+	-- the mouse wheel over the overview scrolls its rows (only when some are out of view)
+	function gadget:MouseWheel(up, value)
+		local x, y = Spring.GetMouseState()
+		if inside(H.area2, x, y) and (H.pageRows or 0) > 0 then
+			H.scroll = (H.scroll or 0) + (up and -1 or 1)
+			return true
+		end
+		return false
+	end
+
 	function gadget:MousePress(x, y, button)
+		if button == 1 and inside(H.toggle, x, y) then
+			H.hidden = not H.hidden
+			return true
+		end
 		local i = slotAt(x, y)
 		if i and button == 1 then
 			Spring.SendLuaRulesMsg("evo|use|" .. i)
 			return true
 		end
-		return gadget:IsAbove(x, y) -- (a click on the bar between the buttons does not reach the map)
+		return gadget:IsAbove(x, y) and true -- (a click on the bar between the buttons does not reach the map)
 	end
 
 	function gadget:MouseRelease()
