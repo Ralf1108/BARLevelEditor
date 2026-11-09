@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 22, stamp = "2026-11-09 09:10" }
+local LAN_VERSION = { number = 23, stamp = "2026-11-09 11:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -348,16 +348,32 @@ local function startboxOptions(map, n)
 end
 
 -- keep the options for the current map and number of teams; broadcast = false only stores them (a joiner gets the stored options with the others)
+-- the number of ally teams the start boxes are made for: the teams of the room (!nbTeams), or more when people or computers sit in a higher team (the room lets
+-- them choose any team)
+local function boxTeams()
+	local l = lobby()
+	local n = S.battle.nbTeams
+	if not l then return n end
+	local function see(st)
+		local ok, o = pcall(l.ParseBattleStatus, l, st)
+		if ok and type(o) == "table" and not o.isSpectator and o.allyNumber + 1 > n then n = o.allyNumber + 1 end
+	end
+	for _, c in ipairs(battleUsers()) do if c.battleStatus then see(c.battleStatus) end end
+	for _, bot in ipairs(S.battle.bots) do see(bot.status) end
+	return math.min(n, MAX_TEAMS)
+end
+
 local function applyStartboxes(broadcast)
 	if not S then return end
 	local b = S.battle
-	local key = b.map .. "|" .. b.nbTeams
+	local n = boxTeams()
+	local key = b.map .. "|" .. n
 	if b.boxKey == key then return end
 	b.boxKey = key
-	local set, override, source = startboxOptions(b.map, b.nbTeams)
+	local set, override, source = startboxOptions(b.map, n)
 	b.modoptions.mapmetadata_startboxes_set, b.modoptions.mapmetadata_startbox_override = set, override
 	if broadcast then tag("mapmetadata_startboxes_set", set); tag("mapmetadata_startbox_override", override) end
-	log("start boxes for", b.map, b.nbTeams, "teams:", source, "(set " .. #set .. " bytes, override " .. #override .. " bytes)")
+	log("start boxes for", b.map, n, "teams:", source, "(set " .. #set .. " bytes, override " .. #override .. " bytes)")
 end
 
 -- people and computers play in ally teams 0 .. nbTeams-1, one after the other (host first, then the other humans, then the computers)
@@ -944,6 +960,10 @@ end
 
 local function updateServer()
 	pveHumanNotice()
+	if S.battle and not S.battle.running and not S.battle.scenario and clock() > (S.boxCheckAt or 0) then
+		S.boxCheckAt = clock() + 1
+		applyStartboxes(true) -- (the start boxes follow the teams the players sit in: made again when their number changes)
+	end
 	local new = S.srv:accept()
 	while new do
 		new:settimeout(0)
