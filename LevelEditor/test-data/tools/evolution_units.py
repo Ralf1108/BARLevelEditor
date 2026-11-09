@@ -1,4 +1,4 @@
-"""Makes the table of the unit candidates of Evolution (the end of LevelEditor/game-modes/evolution.md and evolution_units.csv).
+"""Makes the table of the unit candidates of Evolution (LevelEditor/game-modes/evolution-units.md and evolution_units.csv).
 
 Input: the lines "[zzunit] ..." that tools/zz_unitdump.lua writes into the infolog of a sandbox run (pve_test.ps1 -Widget zz_unitdump.lua), and
 shared/unit_categories/unit_categories.json (type of a unit: bots, vehicles, hover, air, sea). The level of a unit: the Evolution level whose
@@ -33,6 +33,8 @@ for line in open(log, encoding="utf-8", errors="replace"):
     name, fac, human, tech, dps, aa, hp, metal, speed, rng, move, flags, weapons = f[:13]
     if name.endswith("_scav") or move in ("commanderbot", "scavcommanderbot") or "drone" in name:
         continue   # (the Scavenger copies, the commanders and the drones are no candidates)
+    if re.search(r"scav|raptor", name + " " + human, re.I) or "fly" in flags or "builder" in flags or re.search(r"mine ?layer|minesweeper|mine", human, re.I):
+        continue   # (Scavengers, Raptors, aircraft, constructors, mine layers)
     units.append(dict(name=name, fac=FACTION[fac], human=human, tech=tech, dps=float(dps), aa=float(aa), hp=float(hp), metal=float(metal),
                       speed=float(speed), range=float(rng), move=move, flags=flags, weapons=weapons))
 
@@ -47,14 +49,16 @@ def kind(u):
 
 def note(u):
     n = []
-    types = [w.split(":")[0] for w in u["weapons"].split()]
-    longest = max([float(w.split(":")[1]) for w in u["weapons"].split()] or [0])
+    ws = [w.split(":") for w in u["weapons"].split()]
+    main = max([w for w in ws if w[0] != "StarburstLauncher"] or ws, key=lambda w: float(w[2])) if ws else None   # (the weapon with the most damage per second; Starburst launchers are stockpiled missiles)
     if "fly" in u["flags"]: n.append("air")
     if kind(u) == "Sea": n.append("water")
     if "builder" in u["flags"]: n.append("builder")
     if u["dps"] <= 0: n.append("no ground weapon")
-    if any(t in ("StarburstLauncher",) for t in types) or (longest >= 700 and any(t in ("Cannon", "MissileLauncher", "TorpedoLauncher") for t in types)): n.append("artillery / rocket?")
-    if re.search(r"artillery|rocket|missile launcher|mobile mortar|howitzer|mlrs", u["human"], re.I): n.append("artillery / rocket (name)")
+    # artillery / rocket launcher: the description of the unit says so, or its main weapon reaches 1000 Elmo or more
+    desc = cats.get(u["name"], {}).get("description", "")
+    if re.search(r"artillery|rocket|missile launcher|mortar|howitzer|mlrs", desc + " " + u["human"], re.I) or (main and main[0] in ("Cannon", "MissileLauncher") and float(main[1]) >= 1000):
+        n.append("artillery / rocket")
     return ", ".join(sorted(set(n)))
 
 for u in units:
@@ -75,6 +79,8 @@ def level(u):
 for u in units:
     u["level"] = level(u)
 
+# artillery and rocket launchers are no candidates either (the notes of the rule of thumb and of the name)
+units = [u for u in units if "artillery" not in u["note"]]
 rows = sorted(units, key=lambda u: (u["level"] == "", u["level"] if u["level"] != "" else 0, u["fac"], u["score"]))
 head = ["Level", "On ladder", "Faction", "Name", "Unit", "Type", "Tech", "DPS", "Health", "Metal", "Speed", "Range", "Note"]
 def cells(u):
@@ -87,18 +93,20 @@ with open(out, "w", encoding="utf-8-sig", newline="") as fh:
     for u in rows:
         fh.write(";".join(str(c) for c in cells(u)) + "\r\n")
 
-# the table at the end of the manual
+# the table in a file of its own: game-modes/evolution-units.md; the manual links to it at its end
+nl = "\r\n"
+tab = ["# Evolution: unit candidates", "",
+       "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
+       "Every mobile ground and water unit of Armada, Cortex and Legion that may be used for Evolution, with the level it would get: the level whose current units (column *On ladder*) have the closest damage per second times health. Left out: Scavenger and Raptor units, constructors, aircraft, artillery and rocket launchers, mine layers, commanders and drones. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
+       "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+for u in rows:
+    tab.append("| " + " | ".join(str(c) for c in cells(u)) + " |")
+open(os.path.join(repo, "LevelEditor", "game-modes", "evolution-units.md"), "w", encoding="utf-8", newline="").write(nl.join(tab) + nl)
 md = os.path.join(repo, "LevelEditor", "game-modes", "evolution.md")
 t = open(md, encoding="utf-8", newline="").read()
-nl = "\r\n" if "\r\n" in t else "\n"
 marker = "## Unit candidates"
 if marker in t:
     t = t[:t.index(marker)].rstrip() + nl
-lines = [marker, "",
-         "Every mobile unit of Armada, Cortex and Legion with the level it would get in Evolution: the level whose current units (column *On ladder*) have the closest damage per second times health. DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv) (made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game).", "",
-         "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
-for u in rows:
-    lines.append("| " + " | ".join(str(c) for c in cells(u)) + " |")
-t = t.rstrip() + nl + nl + nl.join(lines) + nl
+t = t.rstrip() + nl + nl + marker + nl + nl + "The table of all units that can be used for Evolution, with their type, tech level, damage per second and the level they would get: [Unit candidates](evolution-units.md) (also as [evolution_units.csv](evolution_units.csv) for Excel)." + nl
 open(md, "w", encoding="utf-8", newline="").write(t)
 print(len(rows), "units; level counts:", {l: sum(1 for u in rows if u["level"] == l) for l in range(1, 11)})
