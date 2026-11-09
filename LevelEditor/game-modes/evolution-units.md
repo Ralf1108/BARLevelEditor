@@ -10,7 +10,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 - Candidates: bots, vehicles and hovercraft with a ground weapon; they have a level in the table
 - Left out (the last column says why): constructors, aircraft, water units, commanders, drones, mine layers, Epic and Archaic variants, Tumbleweeds
 - Left out: units without a ground weapon (radar, jammers, spies, anti air, crawling bombs)
-- Left out: artillery and rocket launchers (the description says so, or the main weapon is a cannon or missile of 1000 Elmo or more)
+- Left out: artillery and rocket launchers (the description says so, the main weapon is a cannon or missile of 1000 Elmo or more, or the main weapon is a missile or rocket weapon: Salacia, Torch; the units of the first version are kept)
 - Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight
 - Left out by hand: Behemoth (too slow) and Banisher (missile launcher)
 - *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on
@@ -49,7 +49,6 @@ The selection of the units that can appear in Evolution (the candidates) and the
 | 1 | 1 | Cortex | Grunt | corak | Bot | 1 | 74 | 280 | 20720 | 43 | 81 | 215 |  |  |
 | 1 |  | Legion | Glaucus | legsh | Hover | 1 | 60 | 220 | 13200 | 60 | 102 | 260 |  |  |
 | 1 | 1 | Legion | Alaris | leghades | Vehicle | 1 | 42 | 425 | 17722 | 65 | 99 | 211 |  |  |
-| 1 |  | Legion | Salacia | legmh | Hover | 1 | 53 | 520 | 27716 | 190 | 70 | 700 |  |  |
 | 2 |  | Armada | Mace | armham | Bot | 1 | 60 | 1000 | 60000 | 130 | 46 | 380 |  |  |
 | 2 | 2 | Armada | Blitz | armflash | Vehicle | 1 | 90 | 730 | 65700 | 110 | 101 | 180 |  |  |
 | 2 |  | Armada | Sprinter | armfast | Bot | 2 | 120 | 690 | 82800 | 160 | 111 | 230 |  |  |
@@ -58,7 +57,6 @@ The selection of the units that can appear in Evolution (the candidates) and the
 | 2 |  | Armada | Crocodile | armanac | Hover | 1 | 70 | 1530 | 107100 | 270 | 70 | 370 |  |  |
 | 2 |  | Armada | Platypus | armamph | Hover | 2 | 109 | 1170 | 127647 | 260 | 90 | 275 |  |  |
 | 2 |  | Cortex | Thug | corthud | Bot | 1 | 60 | 1100 | 66000 | 140 | 45 | 380 |  |  |
-| 2 |  | Cortex | Torch | cortorch | Vehicle | 1 | 116 | 650 | 75335 | 220 | 141 | 280 |  |  |
 | 2 | 2 | Cortex | Incisor | corgator | Vehicle | 1 | 94 | 820 | 76916 | 120 | 85 | 230 |  |  |
 | 2 |  | Cortex | Garpike | corgarp | Vehicle | 1 | 77 | 1420 | 109766 | 220 | 59 | 305 |  |  |
 | 2 |  | Cortex | Cayman | corsnap | Hover | 1 | 70 | 1720 | 120400 | 300 | 67 | 370 |  |  |
@@ -369,7 +367,6 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Legion | Assist Drone | legassistdrone | Air | 1 | 0 | 335 | 0 | 1 | 210 | 0 |  | drone, constructor, aircraft |
 |  |  | Armada | Nexus | armdronecarry | Sea | 2 | 0 | 3500 | 0 | 1700 | 63 | 0 |  | drone, water unit |
 |  |  | Cortex | Disperser | cordronecarry | Sea | 2 | 0 | 3500 | 0 | 1700 | 63 | 0 |  | drone, water unit |
-|  |  | Cortex | Banisher | corban | Vehicle | 2 | 133 | 2500 | 333250 | 1000 | 54 | 800 |  | missile launcher |
 |  |  | Armada | Archangel | armaak | Bot | 2 | 0 | 2200 | 0 | 520 | 47 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
 |  |  | Armada | Assimilator | armassimilator | Bot | 3 | 0 | 7500 | 0 | 2500 | 60 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
 |  |  | Armada | Compass | armmark | Bot | 2 | 0 | 355 | 0 | 100 | 41 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
@@ -404,6 +401,11 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Legion | Snapper | legsnapper | Bot | 2 | 0 | 550 | 0 | 60 | 81 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
 |  |  | Legion | Tiresias | legajamk | Bot | 2 | 0 | 350 | 0 | 75 | 35 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
 |  |  | Legion | Toxotai | legaabot | Bot | 1 | 0 | 610 | 0 | 120 | 55 | 0 |  | no ground weapon (radar, jammer, spy, anti air, crawling bomb) |
+|  |  | Armada | Whistler | armsam | Vehicle | 1 | 26 | 820 | 21156 | 150 | 55 | 550 |  | rocket launcher (mainly a missile weapon) |
+|  |  | Cortex | Banisher | corban | Vehicle | 2 | 133 | 2500 | 333250 | 1000 | 54 | 800 |  | rocket launcher (mainly a missile weapon) |
+|  |  | Cortex | Lasher | cormist | Vehicle | 1 | 25 | 860 | 21672 | 155 | 52 | 575 |  | rocket launcher (mainly a missile weapon) |
+|  |  | Cortex | Torch | cortorch | Vehicle | 1 | 116 | 650 | 75335 | 220 | 141 | 280 |  | rocket launcher (mainly a missile weapon) |
+|  |  | Legion | Salacia | legmh | Hover | 1 | 53 | 520 | 27716 | 190 | 70 | 700 |  | rocket launcher (mainly a missile weapon) |
 |  |  | Armada | Rover | armfav | Vehicle | 1 | 35 | 105 | 3675 | 31 | 168 | 180 |  | scout: DPS x health below 10000 |
 |  |  | Armada | Tick | armflea | Bot | 1 | 40 | 60 | 2400 | 21 | 132 | 140 |  | scout: DPS x health below 10000 |
 |  |  | Cortex | Rascal | corfav | Vehicle | 1 | 32 | 90 | 2862 | 26 | 153 | 180 |  | scout: DPS x health below 10000 |
@@ -469,8 +471,6 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Armada | Epic Ellysaw | armpshipt3 | Sea | 3 | 2198 | 13900 | 30550810 | 6500 | 81 | 475 |  | water unit, Epic / Archaic variant |
 |  |  | Armada | Epic Serpent | armserpt3 | Sea | 3 | 1375 | 26500 | 36437500 | 15000 | 45 | 800 |  | water unit, Epic / Archaic variant |
 |  |  | Armada | Epic Skater | armptt2 | Sea | 2 | 450 | 6700 | 3015000 | 2500 | 72 | 600 |  | water unit, Epic / Archaic variant |
-|  |  | Armada | Whistler | armsam | Vehicle | 1 | 26 | 820 | 21156 | 150 | 55 | 550 |  | weak support: DPS below 40 |
-|  |  | Cortex | Lasher | cormist | Vehicle | 1 | 25 | 860 | 21672 | 155 | 52 | 575 |  | weak support: DPS below 40 |
 |  |  | Legion | Belcher | legbart | Bot | 2 | 30 | 1780 | 53400 | 550 | 60 | 625 |  | weak support: DPS below 40 |
 |  |  | Legion | Lance | legrail | Vehicle | 1 | 27 | 1100 | 29370 | 240 | 47 | 650 |  | weak support: DPS below 40 |
 |  |  | Legion | Satyr | leglob | Bot | 1 | 30 | 550 | 16500 | 60 | 51 | 400 |  | weak support: DPS below 40 |

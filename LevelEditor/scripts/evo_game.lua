@@ -46,8 +46,8 @@ local NAMES = {
 -- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution-units.md: change the table, not this block)
 -- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range
 local POOL = {
-	[1] = { { "armpw", "armsh" }, { "corak", "corsh" }, { "leghades", "legmh", "legsh" } },
-	[2] = { { "armamph", "armanac", "armfast", "armflash", "armgremlin", "armham", "armpincer" }, { "corgarp", "corgator", "corsnap", "corthud", "cortorch" }, { "legamphtank", "legcen", "leghelios", "legmrv", "legner" } },
+	[1] = { { "armpw", "armsh" }, { "corak", "corsh" }, { "leghades", "legsh" } },
+	[2] = { { "armamph", "armanac", "armfast", "armflash", "armgremlin", "armham", "armpincer" }, { "corgarp", "corgator", "corsnap", "corthud" }, { "legamphtank", "legcen", "leghelios", "legmrv", "legner" } },
 	[3] = { { "armlatnk", "armstump", "armwar" }, { "corlevlr", "corraid" }, { "legaskirmtank", "legkark" } },
 	[4] = { { "armcroc", "armmav", "armzeus" }, { "coramph", "corpyro", "corsala", "corseal" }, { "leggat", "legshot", "legstr" } },
 	[5] = { { "armbull", "armfboy", "armlun", "armprowl" }, { "corftiger", "corgatreap", "corhal", "corparrow", "correap", "corsok", "cortermite" }, { "legbunk", "legcar", "legehovertank", "legfloat", "legjav" } },
@@ -121,7 +121,6 @@ for name, title in pairs({
 	cortermite = "Termite",
 	corthermite = "Thermite",
 	corthud = "Thug",
-	cortorch = "Torch",
 	legaheattank = "Prometheus",
 	legamph = "Telchine",
 	legamphtank = "Cetus",
@@ -142,7 +141,6 @@ for name, title in pairs({
 	legjav = "Javelin",
 	legkark = "Karkinos",
 	legkeres = "Keres",
-	legmh = "Salacia",
 	legmrv = "Quickshot",
 	legner = "Nereus",
 	legpede = "Mukade",
