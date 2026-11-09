@@ -12,7 +12,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)
-- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off** (a green button when on, red when off; off is the default), **Unit multiplier** (1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
+- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off** (a green button when on, red when off; off is the default), **Unit multiplier** (1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map) and **Debug mode** (On / Off: three extra buttons above your panel in the game for testing: Armageddon, Level Up, Level Down) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
 
 ![The menu LAN Play of the room with Evolution on](../../docs/evolution-room.jpg)
 
@@ -50,7 +50,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
   - **Hell on Earth**: 8 strong ground units rise all over the map; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; they are yours
-  - **Gates of Hell**: 12 nuclear missiles rain on the map, one every 4 seconds, far from your unit; red rings warn 5 seconds before where they come down
+  - **Gates of Hell**: nuclear missiles that never stop and get worse: more and more of them, faster and faster. First they come down far from the enemy players, then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
 ![Gates of Hell: red rings where the next missiles come down](../../docs/evolution-gates-of-hell.jpg)

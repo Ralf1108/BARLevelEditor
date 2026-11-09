@@ -2182,6 +2182,9 @@ local function openEvoMenu()
 		{ caption = "Auto-aim: " .. (evoAim() and "On" or "Off"), class = evoAim() and "action_button" or "negative_button",
 			tip = "Off: the units do not shoot by themselves, the players have to aim with the order Attack (more like a deathmatch).",
 			fn = function() setEvoOption("lanevoaim", evoAim() and "0" or nil); openEvoMenu() end },
+		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
+			tip = "On: three buttons above the own panel in the game (Armageddon, Level Up, Level Down) for testing.",
+			fn = function() setEvoOption("lanevodebug", S.battle.modoptions.lanevodebug == "1" and nil or "1"); openEvoMenu() end },
 	}
 	local w = 270
 	ui.evoMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,

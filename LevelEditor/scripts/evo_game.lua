@@ -7,7 +7,7 @@
 -- Armageddon: the first unit on stage 10 ends the fog of war for everybody, and from then on a lost unit does not come back; the last alliance standing
 -- wins. Every player who reaches stage 10 chooses a gift (window of the game widget evo_gift.lua, message "evo|gift|<n>"; a computer player chooses at
 -- once, a human after 30 s at the latest): 1 Hell on Earth (strong ground units rise all over the map, they belong to the player), 2 Heaven on Earth
--- (Dragons come down around the player's unit), 3 Gates of Hell (nuclear missiles rain on the map, far from the player's unit).
+-- (Dragons come down around the player's unit), 3 Gates of Hell (nuclear missiles that never stop and come ever closer to the enemies).
 -- Points: from stage s to s + 1 it takes need(s) = round(3 * 1.6^(s - 1)) points (3, 5, 8, 12, 20, 31, 50, 81, 129). A wild unit gives 1 point; a
 -- player unit of stage v gives need(v), times (1 + v - k) when it is above the stage k of the killer.
 -- Test only: the game option lanevolutionstage=<n> lets every player start on stage n.
@@ -528,7 +528,7 @@ if not gadgetHandler:IsSyncedCode() then
 	-- The own character at the bottom in the middle (where the game shows the selected units: only one unit is played): a big level badge, the unit, the
 	-- points bar, kills and deaths, the buttons of the abilities. H.area: its rectangle for the mouse.
 	function H.character(s)
-		H.slots, H.area = {}, nil
+		H.slots, H.area, H.dbg = {}, nil, nil
 		local mine = Spring.GetMyTeamID()
 		if Spring.GetSpectatingState() or not Spring.GetTeamRulesParam(mine, "evoStage") then
 			return
@@ -581,6 +581,22 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.Text(tostring(p("evoDeaths")) .. " deaths", nx + 124 * s, ky, 13 * s, "vo")
 		-- the abilities
 		H.bar(px2 + 20 * s, y1 + 10 * s, x2 - 10 * s, y2 - 10 * s, s)
+		-- debug mode (game option lanevodebug, the menu of the room): three buttons above the panel
+		H.dbg = nil
+		if (Spring.GetModOptions() or {}).lanevodebug == "1" then
+			H.dbg = {}
+			local bw, bh = 130 * s, 28 * s
+			for i, label in ipairs({ "Armageddon", "Level Up", "Level Down" }) do
+				local bx = x1 + (i - 1) * (bw + 8 * s)
+				H.dbg[i] = { bx, y2 + 6 * s, bx + bw, y2 + 6 * s + bh }
+				H.box(bx, y2 + 6 * s, bx + bw, y2 + 6 * s + bh, 5 * s, { 0.35, 0.12, 0.1, 0.95 }, { 0.6, 0.25, 0.15, 0.95 }, { 1, 0.7, 0.5, 0.9 }, 2)
+				gl.Color(1, 1, 1, 1)
+				gl.Text(label, bx + bw / 2, y2 + 6 * s + bh / 2, 14 * s, "cvo")
+			end
+			gl.Color(1, 0.7, 0.5, 1)
+			gl.Text("DEBUG", x1 + 3 * (bw + 8 * s) + 6 * s, y2 + 6 * s + bh / 2, 12 * s, "vo")
+			y2 = y2 + 40 * s
+		end
 		H.area = { x1, y1, x2, y2 }
 	end
 
@@ -674,7 +690,7 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.Color(0.85, 0.88, 0.95, 1)
 		gl.Text("No fog of war, no respawn, the last one standing wins. The first one on level 10 chooses a gift:", x1 + 24 * s, fy - 32 * s, 13 * s, "vo")
 		local gifts = { { "Hell on Earth", "8 strong ground units rise all over the map. Yours." }, { "Heaven on Earth", "8 Dragons come down around your unit. Yours." },
-			{ "Gates of Hell", "12 nuclear missiles rain down, rings warn first." } }
+			{ "Gates of Hell", "Missiles without end, ever closer to the enemies." } }
 		for g, gift in ipairs(gifts) do
 			local gx = x1 + 24 * s + (g - 1) * ((W - 48 * s) / 3)
 			gl.Color(1, 0.8, 0.4, 1)
@@ -713,6 +729,14 @@ if not gadgetHandler:IsSyncedCode() then
 	end
 
 	function gadget:MousePress(x, y, button)
+		if button == 1 and H.dbg then
+			for i, r in ipairs(H.dbg) do
+				if inside(r, x, y) then
+					Spring.SendLuaRulesMsg("evo|debug|" .. i)
+					return true
+				end
+			end
+		end
 		if button == 1 and H.helpClose and inside(H.helpClose, x, y) then
 			H.helpOpen = false
 			return true
@@ -851,7 +875,7 @@ local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
 local HELL_UNITS, HEAVEN_UNITS = 8, 8 -- units of the gifts Hell on Earth and Heaven on Earth
-local NUKES, NUKE_GAP, NUKE_WARN, NUKE_SAFE = 12, 4 * FPS, 5 * FPS, 1600 -- Gates of Hell: missiles, frames between two, warning ring before, distance to the player's unit
+local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before a missile, distance to the units of the player who chose it
 -- Further rules in one table (Lua 5.1 allows only so many locals):
 --   energy: every player team gets ENERGY_BASE + ENERGY per level per second and a storage of STORE (the commanders are gone; laser weapons need energy);
 --     more comes from the solar collectors and wind turbines (GENERATORS, one per GEN_AREA x GEN_AREA Elmo of the land, GEN_MIN to GEN_MAX), taken like the radars
@@ -1452,20 +1476,70 @@ local function giftHeaven(p)
 	end
 end
 
--- Gates of Hell: NUKES nuclear missiles, one every NUKE_GAP frames, at random places of the land at least NUKE_SAFE Elmo from the player's unit; a red
--- ring warns NUKE_WARN frames before
+-- Gates of Hell: missiles at a growing rate (see gatesStep); a red ring warns NUKE_WARN frames before each one
+local gates = {} -- { p, start, nextAt }: the players whose Gates of Hell run
 local function giftGates(p)
-	local first = Spring.GetGameFrame() + NUKE_WARN
-	for k = 1, NUKES do
-		local x, z
-		for _ = 1, 30 do
-			x, z = randomLand()
-			local px, _, pz = Spring.GetUnitPosition(p.unit or -1)
-			if not px or (px - x) ^ 2 + (pz - z) ^ 2 >= NUKE_SAFE ^ 2 then
-				break
+	gates[#gates + 1] = { p = p, start = Spring.GetGameFrame(), nextAt = Spring.GetGameFrame() }
+end
+
+-- Gates of Hell never ends and gets worse: a volley every `interval` (from 5 s down to 1.2 s over four minutes) of 1 + t/45 s missiles (at most 8). Half of
+-- the missiles of a volley follow the enemy players: first far from their unit (2200 Elmo, 12 Elmo less per second down to 120), so they come closer and
+-- closer; the other half land at random places of the land, so more and more of the map is covered. Never within NUKE_SAFE Elmo of a unit of the player
+-- who chose the gate or of his alliance.
+local function gatesStep(n)
+	for gi = #gates, 1, -1 do
+		local g = gates[gi]
+		if finished or g.p.out then
+			table.remove(gates, gi)
+		elseif n >= g.nextAt then
+			local t = (n - g.start) / FPS
+			g.nextAt = n + math.floor(math.max(1.2, 5 - t / 60) * FPS)
+			local safe = {}
+			for _, q in ipairs(players) do
+				if q.ally == g.p.ally and q.unit and Spring.ValidUnitID(q.unit) then
+					local ux, _, uz = Spring.GetUnitPosition(q.unit)
+					if ux then
+						safe[#safe + 1] = { ux, uz }
+					end
+				end
+			end
+			local targets = {}
+			for _, q in ipairs(players) do
+				if enemies(g.p, q) and not q.out and q.unit and Spring.ValidUnitID(q.unit) then
+					targets[#targets + 1] = q
+				end
+			end
+			local function ok(x, z)
+				for _, s in ipairs(safe) do
+					if (s[1] - x) ^ 2 + (s[2] - z) ^ 2 < NUKE_SAFE ^ 2 then
+						return false
+					end
+				end
+				return x > 100 and z > 100 and x < Game.mapSizeX - 100 and z < Game.mapSizeZ - 100
+			end
+			local count = math.min(8, 1 + math.floor(t / 45))
+			for k = 1, count do
+				local x, z
+				for _ = 1, 20 do
+					if k % 2 == 1 and #targets > 0 then
+						local q = targets[math.random(1, #targets)]
+						local qx, _, qz = Spring.GetUnitPosition(q.unit)
+						local d = math.max(120, 2200 - t * 12) + math.random() * 200
+						local a = math.random() * 2 * math.pi
+						x, z = qx + math.cos(a) * d, qz + math.sin(a) * d
+					else
+						x, z = randomLand()
+					end
+					if ok(x, z) then
+						break
+					end
+					x = nil
+				end
+				if x then
+					nukes[#nukes + 1] = { frame = n + NUKE_WARN + (k - 1) * 20, x = math.floor(x), z = math.floor(z), p = g.p }
+				end
 			end
 		end
-		nukes[#nukes + 1] = { frame = first + (k - 1) * NUKE_GAP, x = math.floor(x), z = math.floor(z), p = p }
 	end
 end
 
@@ -1487,7 +1561,6 @@ local function launch(nk)
 	local y = Spring.GetGroundHeight(nk.x, nk.z)
 	local src = (nk.p.unit and Spring.ValidUnitID(nk.p.unit)) and nk.p.unit or -1 -- (the kills count for the player)
 	local ok, id = pcall(Spring.SpawnProjectile, wd, { pos = { nk.x, y + 2500, nk.z }, ["end"] = { nk.x, y, nk.z }, speed = { 0, -30, 0 }, owner = src, team = nk.p.team, ttl = 900 })
-	Spring.Echo(string.format("[Evolution] missile at %d,%d: projectile %s", nk.x, nk.z, tostring(ok and id)))
 	if not ok or not id then
 		-- (no projectile: the explosion itself)
 		pcall(Spring.SpawnExplosion, nk.x, y, nk.z, 0, 0, 0, { weaponDef = wd, owner = src })
@@ -2115,14 +2188,15 @@ function gadget:GameFrame(n)
 			end
 		end
 		wildDue = due
-		-- Gates of Hell: launch what is due, show the rings of the next ones
+		-- Gates of Hell: new volleys, launch what is due, show the rings of the next ones
+		gatesStep(n)
 		local left, rings = {}, {}
 		for _, nk in ipairs(nukes) do
 			if n >= nk.frame then
 				launch(nk)
 			else
 				left[#left + 1] = nk
-				if nk.frame - n <= NUKE_WARN then
+				if nk.frame - n <= NUKE_WARN and #rings < 60 then
 					rings[#rings + 1] = nk.x .. "," .. nk.z
 				end
 			end
@@ -2227,6 +2301,23 @@ function gadget:RecvLuaMsg(msg, playerID)
 			local ud = UnitDefs[Spring.GetUnitDefID(p.unit)]
 			local los = test.spy and Spring.GetUnitLosState(p.unit, test.spyAlly, false)
 			Spring.Echo("[Evolution] test: spy " .. tostring(test.spy) .. " sees " .. (los and ("los " .. tostring(los.los) .. " radar " .. tostring(los.radar)) or "?") .. " | " .. ud.name .. " canCloak " .. tostring(ud.canCloak) .. " cloaked " .. tostring(Spring.GetUnitIsCloaked(p.unit)) .. " stealth " .. tostring(Spring.GetUnitStealth and Spring.GetUnitStealth(p.unit)))
+		end
+		return true
+	end
+	if kind == "debug" and (Spring.GetModOptions() or {}).lanevodebug == "1" then
+		-- debug mode: 1 = Armageddon (level 10 at once), 2 = one level up (level 10 brings Armageddon), 3 = one level down (not below 1)
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local p = team and not spec and byTeam[team]
+		if p and not p.out and p.unit then
+			if n == "1" or n == "2" then
+				if p.stage < STAGES then
+					gain(p, n == "1" and 1000000 or need(p.stage))
+				end
+			elseif p.stage > 1 then
+				p.stage, p.xp = p.stage - 1, 0
+				evolve(p)
+				publish()
+			end
 		end
 		return true
 	end

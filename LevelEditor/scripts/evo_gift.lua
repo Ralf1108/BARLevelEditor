@@ -16,7 +16,7 @@ end
 local GIFTS = {
 	{ "Hell on Earth", "Strong ground units rise", "all over the map. Yours." },
 	{ "Heaven on Earth", "Dragons come down", "around your unit. Yours." },
-	{ "Gates of Hell", "Nuclear missiles rain down,", "far from you. Red rings warn." },
+	{ "Gates of Hell", "Nuclear missiles without end,", "ever closer to the enemies." },
 }
 
 local sent = nil -- the frame a choice was sent (the window waits for the gadget then)
