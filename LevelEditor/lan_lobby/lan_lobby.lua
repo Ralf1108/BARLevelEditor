@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 25, stamp = "2026-11-09 13:40" }
+local LAN_VERSION = { number = 26, stamp = "2026-11-09 14:10" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -2176,9 +2176,9 @@ end
 -- times that number, game option lanevomult)
 local EVO_MULTS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }
 local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" end
--- Unit health (10 % to 100 %, default 50 %: the health the wild units start with, game option lanevohp) and Regeneration (On / Off, default on; lanevoregen=0 for off)
-local EVO_HPS = { "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" }
-local function evoHp() return (S and S.battle.modoptions.lanevohp) or "50" end
+-- Unit health (Auto = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8, or one value from 10 % to 100 % for all levels: the health the wild units start with, game option lanevohp) and Regeneration (On / Off, default on; lanevoregen=0 for off)
+local EVO_HPS = { "auto", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" }
+local function evoHp() return (S and S.battle.modoptions.lanevohp) or "auto" end
 local function evoRegen() return not (S and S.battle.modoptions.lanevoregen == "0") end
 local function setEvoOption(key, value)
 	if not S then return end
@@ -2204,12 +2204,12 @@ local function openEvoMenu()
 				setEvoOption("lanevomult", nxt ~= "1" and nxt or nil)
 				openEvoMenu()
 			end },
-		{ caption = "Unit health: " .. evoHp() .. " %", tip = "The health the wild units (Gaia) start with, as a part of their normal health (the health bar shows it): 50 % is the default, 100 % full health, down to 10 %. Click to step through the values.",
+		{ caption = "Unit health: " .. (evoHp() == "auto" and "Auto" or (evoHp() .. " %")), tip = "The health the wild units (Gaia) start with, as a part of their normal health (the health bar shows it): Auto (the default) = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8; or one value for all levels from 10 % to 100 %. Click to step through the values.",
 			fn = function()
 				local cur = evoHp()
 				local nxt = EVO_HPS[1]
 				for i, v in ipairs(EVO_HPS) do if v == cur then nxt = EVO_HPS[i % #EVO_HPS + 1] end end
-				setEvoOption("lanevohp", nxt ~= "50" and nxt or nil)
+				setEvoOption("lanevohp", nxt ~= "auto" and nxt or nil)
 				openEvoMenu()
 			end },
 		{ caption = "Regeneration: " .. (evoRegen() and "On" or "Off"), class = evoRegen() and "action_button" or "negative_button",

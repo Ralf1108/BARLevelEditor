@@ -979,7 +979,15 @@ local FIRST, FACTOR = 3, 1.6 -- points from stage 1 to 2, and how much more ever
 local RESPAWN = 5 * FPS -- frames until a destroyed unit comes back
 local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
 local REGEN, REGEN_STEP, REGEN_WAIT = 0.002, 30, 150 -- the unit of a player regenerates 0.2 % of its health per second (1 % in 5 s), 5 s after the last damage
-local WILD_HP = math.max(0.1, math.min(1, (tonumber((Spring.GetModOptions() or {}).lanevohp) or 50) / 100)) -- the health of a wild unit at the start (part of the normal maximum: the bar shows it; game option lanevohp 10 - 100, default 50)
+-- the health of a wild unit at the start (part of the normal maximum: the bar shows it): by its level 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8;
+-- the game option lanevohp (10 - 100) sets one value for all levels
+local WILD_HP_FIXED = tonumber((Spring.GetModOptions() or {}).lanevohp)
+local function wildHp(stage)
+	if WILD_HP_FIXED then
+		return math.max(0.1, math.min(1, WILD_HP_FIXED / 100))
+	end
+	return stage >= 8 and 0.5 or (stage >= 5 and 0.4 or (stage >= 2 and 0.3 or 0.1))
+end
 local REGEN_ON = (Spring.GetModOptions() or {}).lanevoregen ~= "0" -- game option lanevoregen=0: the units of the players do not regenerate
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
@@ -1869,7 +1877,7 @@ local function gain(p, points)
 	publish()
 end
 
--- A wild unit: a stage 1 unit of a random faction, of Gaia, with WILD_HP of its health, at a random place; it holds its position and only shoots back
+-- A wild unit: a stage 1 unit of a random faction, of Gaia, with wildHp(stage) of its health, at a random place; it holds its position and only shoots back
 -- The number of wild units: one per 1024 x 1024 Elmo of the land (a map of 16 x 16 without water has 64), at least 12, at most 100
 local function wildCount()
 	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
@@ -1921,7 +1929,7 @@ local function spawnWild(s, tower, x, z, facing)
 	if id then
 		wild[id] = { stage = s, tower = tower, still = tower or math.random() < R.STILL }
 		local _, maxHp = Spring.GetUnitHealth(id)
-		Spring.SetUnitHealth(id, math.max(1, (maxHp or 100) * WILD_HP)) -- (the maximum stays: the health bar shows the fraction)
+		Spring.SetUnitHealth(id, math.max(1, (maxHp or 100) * wildHp(s))) -- (the maximum stays: the health bar shows the fraction)
 		Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
 		Spring.GiveOrderToUnit(id, CMD_MOVE_STATE, { HOLD_POSITION }, 0)
 	end

@@ -15,7 +15,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - **Evolution** in the menu opens a small menu of its own with the settings (hold the mouse over a button for its explanation):
   - **On / Off**: a green button when on, red when off; off is the default
   - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
-  - **Unit health**: the health the wild units start with, from 10 % to 100 % in steps of 10, click to step through; 50 % is the default (the health bar of a wild unit shows it)
+  - **Unit health**: the health the wild units start with, click to step through: **Auto** (the default) is 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7 and 50 % from level 8 (a stronger level starts with more); or one value from 10 % to 100 % for all levels (the health bar of a wild unit shows it)
   - **Regeneration**: On (default) or Off: whether the units of the players heal by themselves (1 % of the health every 5 seconds, starting 5 seconds after the last damage; the tooltip tells the rate)
   - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
@@ -64,7 +64,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 
 **Wild units and towers**
-- Units of nobody (Gaia) with half of their health (the health bar shows 50 %) stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
+- Units of nobody (Gaia) with only 10 % of their health on level 1 (30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8; the health bar shows it) stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
 - Most of them **walk around** the map, about one in five stands still (and the towers), and they **only shoot back**
 - They **grow with the weakest player**: a new one has the level of the weakest player who is still in; one above it is replaced at once by one of its level (so the weakest player always has a chance), one two or more levels below it too, one every 3 seconds
 - One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
