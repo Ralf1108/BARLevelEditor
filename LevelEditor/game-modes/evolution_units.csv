@@ -29,25 +29,24 @@
 3;3;Armada;Centurion;armwar;Bot;1;183;1590;291447;270;45;325;;
 3;;Cortex;Pounder;corlevlr;Vehicle;1;106;1400;147840;220;40;315;;
 3;3;Cortex;Brute;corraid;Vehicle;1;81;2000;161600;235;72;350;;
-3;4;Cortex;Fiend;corpyro;Bot;2;240;1060;254400;200;83;230;;
 3;;Legion;Gladiator;legaskirmtank;Vehicle;2;105;2500;262500;450;65;600;;
 3;;Legion;Arquebus;legsrail;Bot;2;121;2200;267080;750;42;850;yes;included only with the option Long range
+3;3;Legion;Karkinos;legkark;Bot;1;189;1725;325852;310;42;360;;
 4;4;Armada;Welder;armzeus;Bot;2;129;3500;452900;350;48;280;;
 4;;Armada;Gunslinger;armmav;Bot;2;265;1800;477000;650;50;365;;
 4;;Armada;Turtle;armcroc;Vehicle;2;141;5000;703000;750;54;480;;
+4;4;Cortex;Fiend;corpyro;Bot;2;240;1060;254400;200;83;230;;
 4;;Cortex;Banisher;corban;Vehicle;2;133;2500;333250;1000;54;800;;
 4;;Cortex;Alligator;corseal;Vehicle;2;129;2600;335140;480;72;440;;
 4;;Cortex;Salamander;corsala;Vehicle;2;164;2100;343560;350;72;340;;
 4;;Cortex;Duck;coramph;Bot;2;174;2350;408900;330;56;400;;
 4;;Cortex;Deadeye;cordeadeye;Bot;2;208;2700;562950;1050;40;850;yes;included only with the option Long range
-4;3;Legion;Karkinos;legkark;Bot;1;189;1725;325852;310;42;360;;
 4;;Legion;Phalanx;legshot;Bot;2;105;3350;351750;470;44;280;;
 4;;Legion;Hoplite;legstr;Bot;2;240;1780;427200;355;84;280;;
 4;4;Legion;Decurion;leggat;Vehicle;1;180;2550;459000;300;45;361;;
 5;;Armada;Fatboy;armfboy;Bot;2;114;7800;891540;1400;30;700;;
 5;5;Armada;Bull;armbull;Vehicle;2;246;4650;1141575;950;62;460;;
 5;;Armada;Starlight;armmanni;Vehicle;2;532;2800;1489320;1200;42;950;yes;included only with the option Long range
-5;6;Armada;Marauder;armmar;Bot;3;336;4900;1644930;970;95;350;;
 5;;Armada;units.names.armprowl;armprowl;Vehicle;3;336;4900;1644930;970;95;350;;
 5;;Armada;Lunkhead;armlun;Hover;3;318;5300;1685930;1150;50;575;;
 5;5;Cortex;Tiger;correap;Vehicle;2;150;5300;795000;690;69;410;;
@@ -62,17 +61,18 @@
 5;;Legion;Cardea;legcar;Hover;1;280;3600;1008000;550;51;321;;
 5;;Legion;Charybdis;legehovertank;Hover;3;221;4900;1081920;1350;63;500;;
 5;;Legion;Pilum;legbunk;Bot;3;158;9400;1488020;1500;82;650;;
+5;5;Legion;Javelin;legjav;Bot;3;360;7200;2592000;1200;68;450;;
+6;6;Armada;Marauder;armmar;Bot;3;336;4900;1644930;970;95;350;;
 6;;Cortex;Tzar;corgol;Vehicle;2;257;7800;2005380;1650;39;650;;
 6;6;Cortex;Sumo;corcan;Bot;2;344;6000;2062800;560;38;275;;
-6;5;Legion;Javelin;legjav;Bot;3;360;7200;2592000;1200;68;450;;
+6;6;Legion;Prometheus;legaheattank;Vehicle;2;750;5700;4275000;1050;52;450;;
 7;7;Armada;Meatball;armmeatball;Bot;3;667;8000;5333600;3000;30;800;;
 7;7;Cortex;Shiva;corshiva;Bot;3;407;9400;3826740;1700;48;800;;
-7;8;Cortex;Karganeth;corkarg;Bot;3;600;12500;7500000;2500;45;600;;
 7;;Legion;Telchine;legamph;Bot;2;1107;2750;3043425;600;48;600;;
-7;6;Legion;Prometheus;legaheattank;Vehicle;2;750;5700;4275000;1050;52;450;;
+7;7;Legion;Incinerator;leginc;Bot;2;990;9000;8910000;2300;24;725;;
 8;8;Armada;Razorback;armraz;Bot;3;1050;13300;13965000;3800;69;475;;
+8;8;Cortex;Karganeth;corkarg;Bot;3;600;12500;7500000;2500;45;600;;
 8;;Cortex;Mammoth;corsumo;Bot;2;503;15600;7851480;2200;23;650;;
-8;7;Legion;Incinerator;leginc;Bot;2;990;9000;8910000;2300;24;725;;
 8;8;Legion;Keres;legkeres;Vehicle;3;535;21000;11241300;2600;48;481;;
 8;;Legion;Daedalus;legerailtank;Vehicle;3;800;16500;13200000;6500;61;1000;yes;included only with the option Long range
 9;9;Armada;Thor;armthor;Vehicle;3;968;56000;54191200;9000;54;540;;

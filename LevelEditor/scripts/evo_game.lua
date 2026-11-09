@@ -43,9 +43,119 @@ local NAMES = {
 	armsnipe = "Sharpshooter", legsrail = "Arquebus", cordeadeye = "Deadeye", armmanni = "Starlight", corsiegebreaker = "Siegebreaker",
 	legerailtank = "Daedalus", corthermite = "Thermite", legpede = "Mukade", legapollyon = "Apollyon",
 }
--- The units with a long range (an extra of the game option lanevolong=1, the room's button Long range: lasers, plasma and rail guns of 850 Elmo or more, no
--- missiles) that come in addition to the ladder on their level (table: game-modes/evolution-units.md, column Long range)
-local LONG = { [3] = { "armsnipe", "legsrail" }, [4] = { "cordeadeye" }, [5] = { "armmanni", "corsiegebreaker" }, [8] = { "legerailtank" }, [9] = { "corthermite", "legpede" }, [10] = { "legapollyon" } }
+-- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution-units.md: change the table, not this block)
+-- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range
+local POOL = {
+	[1] = { { "armpw", "armsh" }, { "corak", "corsh" }, { "leghades", "legmh", "legsh" } },
+	[2] = { { "armamph", "armanac", "armfast", "armflash", "armgremlin", "armham", "armpincer" }, { "corgarp", "corgator", "corsnap", "corthud", "cortorch" }, { "legamphtank", "legcen", "leghelios", "legmrv", "legner" } },
+	[3] = { { "armlatnk", "armstump", "armwar" }, { "corlevlr", "corraid" }, { "legaskirmtank", "legkark" } },
+	[4] = { { "armcroc", "armmav", "armzeus" }, { "coramph", "corban", "corpyro", "corsala", "corseal" }, { "leggat", "legshot", "legstr" } },
+	[5] = { { "armbull", "armfboy", "armlun", "armprowl" }, { "corftiger", "corgatreap", "corhal", "corparrow", "correap", "corsok", "cortermite" }, { "legbunk", "legcar", "legehovertank", "legfloat", "legjav" } },
+	[6] = { { "armmar" }, { "corcan", "corgol" }, { "legaheattank" } },
+	[7] = { { "armmeatball" }, { "corshiva" }, { "legamph", "leginc" } },
+	[8] = { { "armraz" }, { "corkarg", "corsumo" }, { "legkeres" } },
+	[9] = { { "armthor" }, { "cordemon" }, { "legeshotgunmech" } },
+	[10] = { { "armbanth" }, { "corjugg", "corkorg" }, { "legeheatraymech" } },
+}
+local POOL_LONG = {
+	[3] = { { "armsnipe" }, {}, { "legsrail" } },
+	[4] = { {}, { "cordeadeye" }, {} },
+	[5] = { { "armmanni" }, { "corsiegebreaker" }, {} },
+	[8] = { {}, {}, { "legerailtank" } },
+	[9] = { {}, { "corthermite" }, { "legpede" } },
+	[10] = { {}, {}, { "legapollyon" } },
+}
+for name, title in pairs({
+	armamph = "Platypus",
+	armanac = "Crocodile",
+	armbanth = "Titan",
+	armbull = "Bull",
+	armcroc = "Turtle",
+	armfast = "Sprinter",
+	armfboy = "Fatboy",
+	armflash = "Blitz",
+	armgremlin = "Gremlin",
+	armham = "Mace",
+	armlatnk = "Jaguar",
+	armlun = "Lunkhead",
+	armmanni = "Starlight",
+	armmar = "Marauder",
+	armmav = "Gunslinger",
+	armmeatball = "Meatball",
+	armpincer = "Pincer",
+	armprowl = "Prowler",
+	armpw = "Pawn",
+	armraz = "Razorback",
+	armsh = "Seeker",
+	armsnipe = "Sharpshooter",
+	armstump = "Stout",
+	armthor = "Thor",
+	armwar = "Centurion",
+	armzeus = "Welder",
+	corak = "Grunt",
+	coramph = "Duck",
+	corban = "Banisher",
+	corcan = "Sumo",
+	cordeadeye = "Deadeye",
+	cordemon = "Demon",
+	corftiger = "Heat Tiger",
+	corgarp = "Garpike",
+	corgator = "Incisor",
+	corgatreap = "Laser Tiger",
+	corgol = "Tzar",
+	corhal = "Halberd",
+	corjugg = "Behemoth",
+	corkarg = "Karganeth",
+	corkorg = "Juggernaut",
+	corlevlr = "Pounder",
+	corparrow = "Poison Arrow",
+	corpyro = "Fiend",
+	corraid = "Brute",
+	correap = "Tiger",
+	corsala = "Salamander",
+	corseal = "Alligator",
+	corsh = "Goon",
+	corshiva = "Shiva",
+	corsiegebreaker = "Siegebreaker",
+	corsnap = "Cayman",
+	corsok = "Cataphract",
+	corsumo = "Mammoth",
+	cortermite = "Termite",
+	corthermite = "Thermite",
+	corthud = "Thug",
+	cortorch = "Torch",
+	legaheattank = "Prometheus",
+	legamph = "Telchine",
+	legamphtank = "Cetus",
+	legapollyon = "Apollyon",
+	legaskirmtank = "Gladiator",
+	legbunk = "Pilum",
+	legcar = "Cardea",
+	legcen = "Phobos",
+	legeheatraymech = "Sol Invictus",
+	legehovertank = "Charybdis",
+	legerailtank = "Daedalus",
+	legeshotgunmech = "Praetorian",
+	legfloat = "Triton",
+	leggat = "Decurion",
+	leghades = "Alaris",
+	leghelios = "Helios",
+	leginc = "Incinerator",
+	legjav = "Javelin",
+	legkark = "Karkinos",
+	legkeres = "Keres",
+	legmh = "Salacia",
+	legmrv = "Quickshot",
+	legner = "Nereus",
+	legpede = "Mukade",
+	legsh = "Glaucus",
+	legshot = "Phalanx",
+	legsrail = "Arquebus",
+	legstr = "Hoplite",
+}) do
+	NAMES[name] = title
+end
+-- END POOL
 local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
 
 -- (used by both parts: the ladders and the help window)
@@ -1057,18 +1167,31 @@ end
 
 -- A unit of the stage, of a random faction whose unit exists in the game
 local function stageUnit(s)
-	local options = {}
-	for _, ladder in ipairs(LADDERS) do
-		if UnitDefNames[ladder[s]] then
-			options[#options + 1] = ladder[s]
+	-- a random faction of those that have a unit on this level, then a random unit of it (every faction has the same chance, whatever its number of units)
+	local pools = {}
+	for f = 1, 3 do
+		local list = {}
+		for _, name in ipairs((POOL[s] or {})[f] or {}) do
+			list[#list + 1] = name
+		end
+		for _, name in ipairs(LONG_RANGE and (POOL_LONG[s] or {})[f] or {}) do
+			list[#list + 1] = name -- (the option Long range adds the units with a long range)
+		end
+		local present = {}
+		for _, name in ipairs(list) do
+			if UnitDefNames[name] then
+				present[#present + 1] = name
+			end
+		end
+		if #present > 0 then
+			pools[#pools + 1] = present
 		end
 	end
-	for _, name in ipairs(LONG_RANGE and LONG[s] or {}) do
-		if UnitDefNames[name] then
-			options[#options + 1] = name
-		end
+	if #pools == 0 then
+		return "armpw"
 	end
-	return options[math.random(1, math.max(1, #options))] or "armpw"
+	local pool = pools[math.random(1, #pools)]
+	return pool[math.random(1, #pool)]
 end
 
 local function unitTitle(name)

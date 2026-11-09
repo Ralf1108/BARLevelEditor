@@ -90,7 +90,7 @@ def long_range(u):
     return not u["ladder"] and u["range"] >= 850 and main is not None and main[0] != "MissileLauncher"
 for u in units:
     incl = not u["note"]
-    u["level"] = OVERRIDE.get(u["name"], level(u)) if incl else ""
+    u["level"] = (u["ladder"] or OVERRIDE.get(u["name"]) or level(u)) if incl else ""   # (a unit that is in the game keeps its level)
     u["long"] = "yes" if incl and long_range(u) else ""
     if u["long"]: u["note"] = "included only with the option Long range"
 included = [u for u in units if u["level"] != ""]
@@ -98,6 +98,33 @@ rows = sorted(included, key=lambda u: (u["level"], u["fac"], u["score"])) + sort
 head = ["Level", "Included", "Faction", "Name", "Unit", "Type", "Tech", "DPS", "Health", "Score", "Metal", "Speed", "Range", "Long range", "Note (why not included)"]
 def cells(u):
     return [u["level"], u["ladder"], u["fac"], u["human"], u["name"], u["type"], u["tech"], round(u["dps"]), round(u["hp"]), round(u["score"]), round(u["metal"]), round(u["speed"]), round(u["range"]), u["long"], u["note"]]
+
+# the lists of evo_game.lua (between "-- BEGIN POOL" and "-- END POOL"): per level the candidates of Armada, Cortex and Legion; the units with a long range
+# separately (they join with the game option Long range); the names for the chat
+FIX = {"armprowl": "Prowler"}   # (this unit has no translated name in the game)
+def pool(kindlong):
+    out = ["{"]
+    for l in range(1, 11):
+        lists = []
+        for fac in ("Armada", "Cortex", "Legion"):
+            names = sorted(u["name"] for u in included if u["level"] == l and u["fac"] == fac and bool(u["long"]) == kindlong)
+            lists.append("{ " + ", ".join('"%s"' % n for n in names) + " }" if names else "{}")
+        if any(x != "{}" for x in lists):
+            out.append("\t[%d] = { %s }," % (l, ", ".join(lists)))
+    out.append("}")
+    return "\n".join(out)
+gen = ["-- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution-units.md: change the table, not this block)",
+       "-- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range",
+       "local POOL = " + pool(False), "local POOL_LONG = " + pool(True),
+       "for name, title in pairs({"]
+for u in sorted(included, key=lambda u: u["name"]):
+    gen.append('\t%s = "%s",' % (u["name"], FIX.get(u["name"], u["human"])))
+gen += ["}) do", "\tNAMES[name] = title", "end", "-- END POOL"]
+evo = os.path.join(repo, "LevelEditor", "scripts", "evo_game.lua")
+src = open(evo, encoding="utf-8", newline="").read()
+enl = "\r\n" if "\r\n" in src else "\n"
+a = src.index("-- BEGIN POOL"); b = src.index("-- END POOL") + len("-- END POOL")
+open(evo, "w", encoding="utf-8", newline="").write(src[:a] + enl.join(gen) + src[b:])
 
 # the csv for Excel (semicolons, UTF-8 with BOM)
 out = os.path.join(repo, "LevelEditor", "game-modes", "evolution_units.csv")
@@ -110,7 +137,7 @@ with open(out, "w", encoding="utf-8-sig", newline="") as fh:
 nl = "\r\n"
 tab = ["# Evolution: unit candidates", "",
        "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
-       "Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is left out has no level, and the last column (Note) says why. The candidates (the units that can be used) come first, sorted by level; the column *Included* tells which of them are in the game already. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
+       "Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is left out has no level, and the last column (Note) says why. The candidates (the units that can be used) come first, sorted by level; the column *Included* tells which of them are in the game already. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). The 30 units that are in the game already keep their level (column *Included*); the others get the level of their score. One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
        "**The ranges of the levels** (DPS x health): a unit gets the level whose range holds its score; the borders lie in the middle (geometric mean) between the reference scores of two levels.", "",
        "| Level | Reference (3 units in the game) | From | To |", "|---|---|---|---|"]
 edge = {l: math.sqrt(ref[l] * ref[l + 1]) for l in range(1, 10)}

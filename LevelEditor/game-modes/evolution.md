@@ -28,7 +28,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Your unit**
 - Every team starts with one level 1 unit where its commander would stand; all other units are gone
-- Every new unit is of a **random faction** (Armada, Cortex or Legion): a Pawn can become a Brute and then a Karkinos
+- Every new unit is of a **random faction** (Armada, Cortex or Legion) and a random unit of it for the level: a Pawn can become a Brute and then a Karkinos; every level has a number of units (86 in all, see the [unit table](evolution-units.md))
 - The new unit replaces the old one where it stands; it has the health fraction of the old unit plus 20 % (not a full heal); it keeps its orders and is selected again by itself
 
 **Points**
@@ -104,7 +104,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - It also takes radars, solar collectors and wind turbines: it goes to the nearest one that is not its own and stands next to it until it is taken (unless an enemy is close), but it does not hold more than its share
 - It attacks only enemies of its **own level or higher** and wild units of its level or lower (in Armageddon every enemy) and otherwise only shoots back; with nothing to attack it walks around
 
-## The ladders
+## The units of the levels
 
 | Level | Armada | Cortex | Legion |
 |---|---|---|---|
@@ -119,7 +119,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | 9 | Thor | Demon | Praetorian |
 | 10 | Titan | Juggernaut | Sol Invictus |
 
-Chosen by damage per second times health; artillery, units for water and the bomb bots are left out. Evolution always plays with the Legion faction and the Extra Units Pack (the host switches both on by itself).
+The table shows one unit of each faction per level as an example (the help window of the game does the same). **All** the units that can appear on a level (86 in all: bots, vehicles and hovercraft; nine more with the option Long range) are in the [unit table](evolution-units.md), sorted by their damage per second times health; artillery, rocket launchers, aircraft, water units, constructors, scouts and units without a ground weapon are left out. Evolution always plays with the Legion faction and the Extra Units Pack (the host switches both on by itself).
 
 ## On the screen
 
