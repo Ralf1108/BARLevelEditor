@@ -37,5 +37,6 @@ $script = @"
 $file = Join-Path $repo 'LevelEditor\evolution_script_installed.txt'
 [IO.File]::WriteAllText($file, $script, (New-Object Text.UTF8Encoding $false))
 Write-Host "Evolution on $Map against $($spec.Short)$(if ($DebugMode) { ', debug mode on' }) ..." -ForegroundColor Cyan
-& $exe --write-dir $Data $file
-if ($LASTEXITCODE -ne 0) { Write-Host "The game ended with an error, see $Data\infolog.txt" -ForegroundColor Yellow; exit 1 }
+# (spring.exe is a window application: "&" does not wait for it and $LASTEXITCODE stays empty, so Start-Process -Wait)
+$proc = Start-Process -FilePath $exe -ArgumentList @('--write-dir', "`"$Data`"", "`"$file`"") -Wait -PassThru
+if ($proc.ExitCode -ne 0) { Write-Host "The game ended with an error, see $Data\infolog.txt" -ForegroundColor Yellow; exit 1 }
