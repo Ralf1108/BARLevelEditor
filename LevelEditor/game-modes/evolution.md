@@ -127,6 +127,10 @@ Chosen by damage per second times health; artillery, units for water and the bom
 - At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
 
+## Quick start for testing
+
+`start_evolution.bat` in the folder LevelEditor starts at once a game of you against one SimpleAI on Hooked 1.1 with the debug mode on. Another map or computer player: `start_evolution.bat "Comet Catcher Remake 1.8" SimpleDefenderAI`.
+
 ## Tips
 
 - Hunt the wild units first, then pick fights with enemies of your level or above
