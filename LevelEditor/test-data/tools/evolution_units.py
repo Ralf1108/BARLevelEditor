@@ -137,24 +137,30 @@ with open(out, "w", encoding="utf-8-sig", newline="") as fh:
 nl = "\r\n"
 tab = ["# Evolution: unit candidates", "",
        "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
-       "Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is left out has no level, and the last column (Note) says why. The candidates (the units that can be used) come first, sorted by level; the column *Included* tells which of them are in the game already. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). The 30 units that are in the game already keep their level (column *Included*); the others get the level of their score. One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).", "",
-       "**The ranges of the levels** (DPS x health): a unit gets the level whose range holds its score; the borders lie in the middle (geometric mean) between the reference scores of two levels.", "",
+       "The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.", "",
+       "**Which units are candidates**", "",
+       "- Looked at: every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed)",
+       "- Candidates: bots, vehicles and hovercraft with a ground weapon; they have a level in the table",
+       "- Left out (the last column says why): constructors, aircraft, water units, commanders, drones, mine layers, Epic and Archaic variants, Tumbleweeds",
+       "- Left out: units without a ground weapon (radar, jammers, spies, anti air, crawling bombs)",
+       "- Left out: artillery and rocket launchers (the description says so, or the main weapon is a cannon or missile of 1000 Elmo or more)",
+       "- Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight",
+       "- *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on",
+       "- *Included*: the 30 units that were in the game before (the number is their level); the others are new candidates", "",
+       "**How the level is found**", "",
+       "- *Score* = DPS x health (the strength in a fight of one against one)",
+       "- DPS: against the default armor, without anti air, paralyzers, the D-gun and stockpile weapons",
+       "- The 30 units of the first version (column *Included*) keep their level and are the yardstick: the score of a level is the geometric mean of its three units",
+       "- A new unit gets the level whose score is closest to its own (on a logarithmic scale): the ranges are in the table below",
+       "- One manual change: Telchine on level 7 (1107 DPS but only 2750 health)", "",
+       "**The ranges of the levels** (DPS x health)", "",
        "| Level | Reference (3 units in the game) | From | To |", "|---|---|---|---|"]
 edge = {l: math.sqrt(ref[l] * ref[l + 1]) for l in range(1, 10)}
 for l in range(1, 11):
     lo = "0" if l == 1 else f"{edge[l - 1]:,.0f}"
     hi = "no limit" if l == 10 else f"{edge[l]:,.0f}"
     tab.append(f"| {l} | {ref[l]:,.0f} | {lo} | {hi} |")
-tab += ["", "Telchine is the one exception (set to level 7 by hand).", "",
-        "**The units that are in Evolution now** (column *Included*; the level of the table below can differ: it is the level the unit would get by its score):", "",
-        "| Level | Armada | Cortex | Legion |", "|---|---|---|---|"]
-nowin = {}
-for u in units:
-    if u["ladder"]:
-        nowin[(u["ladder"], u["fac"])] = u
-for l in range(1, 11):
-    tab.append("| %d | %s |" % (l, " | ".join(("%s (%s)" % (nowin[(l, f)]["human"], nowin[(l, f)]["name"])) if (l, f) in nowin else "" for f in ("Armada", "Cortex", "Legion"))))
-tab += ["", "**All units:**", "",
+tab += ["", "**All units** (the candidates first, sorted by level; then the units that are left out, the last column says why)", "",
         "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
 for u in rows:
     tab.append("| " + " | ".join(str(c) for c in cells(u)) + " |")
