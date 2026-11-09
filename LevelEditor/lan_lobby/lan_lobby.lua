@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 23, stamp = "2026-11-09 11:00" }
+local LAN_VERSION = { number = 24, stamp = "2026-11-09 12:30" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -302,12 +302,14 @@ local function barManager(fields)
 	toBattle('SAIDBATTLEEX ' .. HOSTNAME .. ' * BarManager|{"BattleStateChanged":{' .. table.concat(parts, ",") .. '}}')
 end
 
--- rectangles (0 to 200 on both axes: left, top, right, bottom) for a map without boxes of its own: 20 % of the map on each side for two teams, corners for
--- four, otherwise round the middle
+-- rectangles (0 to 200 on both axes: left, top, right, bottom): 20 % of the map on each side for two teams, corners for four, otherwise one box per team evenly
+-- spread round the middle
 local function generatedBoxes(n)
 	if n <= 2 then return { { 0, 0, 40, 200 }, { 160, 0, 200, 200 } } end
 	if n == 4 then return { { 0, 0, 64, 64 }, { 136, 136, 200, 200 }, { 136, 0, 200, 64 }, { 0, 136, 64, 200 } } end
-	local boxes, half = {}, (n <= 4) and 32 or 24
+	-- one box per team, evenly spread on a circle round the middle; the more teams, the smaller the boxes (their size follows the distance of neighbours)
+	local boxes = {}
+	local half = math.max(8, math.min(32, math.floor(72 * math.sin(math.pi / n) * 0.85)))
 	for i = 1, n do
 		local a = math.pi + (i - 1) * 2 * math.pi / n
 		local cx, cz = 100 + 72 * math.cos(a), 100 + 72 * math.sin(a)
@@ -322,7 +324,8 @@ local function startboxOptions(map, n)
 	local cf = Config()
 	local msb = cf and cf.gameConfig and cf.gameConfig.mapStartBoxes
 	if not msb then return "0", "0", "none" end
-	if cf.gameConfig.useDefaultStartBoxes and msb.loadStartboxesSet and msb.encodeStartboxesSetModoption then
+	-- the arrangement of the map only for two teams (the maps are made for that); for more teams one box per team, spread evenly (see generatedBoxes)
+	if n <= 2 and cf.gameConfig.useDefaultStartBoxes and msb.loadStartboxesSet and msb.encodeStartboxesSetModoption then
 		local ok, set = pcall(msb.loadStartboxesSet, map, n)
 		if ok and set then
 			local ok2, enc = pcall(msb.encodeStartboxesSetModoption, set)
@@ -330,7 +333,7 @@ local function startboxOptions(map, n)
 		end
 	end
 	local rects, source
-	if msb.savedBoxes and msb.selectStartBoxesForAllyTeamCount then
+	if n <= 2 and msb.savedBoxes and msb.selectStartBoxesForAllyTeamCount then
 		local ok, sel = pcall(msb.selectStartBoxesForAllyTeamCount, msb.savedBoxes[map], n)
 		if ok and sel then
 			rects, source = {}, "saved boxes"
