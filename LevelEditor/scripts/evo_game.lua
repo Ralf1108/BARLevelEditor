@@ -1113,7 +1113,7 @@ local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before 
 --   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
 --     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
 local R = {
-	ENERGY_BASE = 5, ENERGY = 3, STORE = 1000,
+	ENERGY_BASE = 5, ENERGY = 3, STORE = LONG_RANGE and 2000 or 1000, -- (2000 only with the option Long range: its beam weapons cost up to 1500 per shot)
 	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
@@ -1435,6 +1435,11 @@ function A.start(p, i)
 		pcall(Spring.SetUnitCloak, id, true, 75)
 		pcall(Spring.SetUnitCloak, id, 1) -- (script cloak: also a unit that cannot cloak by itself)
 		A.hide(id, true)
+		if not p.ai then
+			-- a human player: hold fire while cloaked (a unit that fires is seen at once); fire at will again when the cloak is over
+			p.holdFire = true
+			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { 0 }, 0)
+		end
 	elseif a.key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
 	elseif a.key == "repair" then
@@ -1447,6 +1452,14 @@ function A.start(p, i)
 	if a.time > 0 then
 		p.active = p.active or {}
 		p.active[i] = { frame = Spring.GetGameFrame() + a.time * FPS, unit = id }
+		if a.key == "cloak" then
+			-- the reload frames of the weapons now: only a shot after the start shows the unit (a shot just before it must not end the cloak)
+			local base = {}
+			for w = 1, #(ud and ud.weapons or {}) do
+				base[w] = Spring.GetUnitWeaponState(id, w, "reloadFrame") or 0
+			end
+			p.active[i].base = base
+		end
 	end
 end
 
@@ -1468,6 +1481,10 @@ function A.stop(p, i)
 		pcall(Spring.SetUnitCloak, id, false)
 		pcall(Spring.SetUnitCloak, id, 0)
 		A.hide(id, false)
+		if p.holdFire then
+			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { 2 }, 0) -- (2 = fire at will)
+			p.holdFire = nil
+		end
 	elseif key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed, maxWantedSpeed = ud.speed })
 	elseif key == "pulse" then
@@ -1537,12 +1554,10 @@ function A.update(n)
 				A.stop(p, i)
 			elseif ABILITIES[i].key == "cloak" then
 				-- firing shows the unit: a weapon whose reload began since the last look ends the cloak
-				local since = act.seen or act.frame - ABILITIES[i].time * FPS
-				act.seen = n
 				local ud = UnitDefs[Spring.GetUnitDefID(act.unit)]
 				for w = 1, #(ud and ud.weapons or {}) do
 					local r = Spring.GetUnitWeaponState(act.unit, w, "reloadFrame")
-					if r and r > since then
+					if r and r > ((act.base or {})[w] or 1e9) then
 						A.stop(p, i)
 						say(p.name .. " is seen: the cloak ends when the unit fires.")
 						break
@@ -1922,6 +1937,12 @@ local function launch(nk)
 	end
 end
 
+-- Three sayings for every gift, one of them (at random) goes to the chat when the gift is chosen
+local GIFT_SAYINGS = {
+	{ "The earth cracks open and the dead things climb out. Run!", "Hell has no more room: it sends its giants to walk the land.", "Something enormous is breathing below your feet." },
+	{ "The sky tears apart and the hosts of heaven fall like a hammer.", "A gleam in the clouds, then the thunder of a hundred wings. Too late to pray!", "The angels have come, and they are in a bad mood." },
+	{ "The gates of Hell are open and the fire never stops.", "Look up. Every missile you see has your name on it.", "Doomsday has no end: the sky burns and there is no shelter." },
+}
 local function giveGift(p, n)
 	if not p.giftAt then
 		return
@@ -1929,6 +1950,7 @@ local function giveGift(p, n)
 	n = (n >= 1 and n <= 3) and n or math.random(1, 3)
 	p.giftAt = nil
 	say(p.name .. " chose " .. GIFT_NAMES[n] .. "!")
+	say(GIFT_SAYINGS[n][math.random(1, #GIFT_SAYINGS[n])])
 	if n == 1 then
 		giftHell(p)
 	elseif n == 2 then
@@ -2106,6 +2128,42 @@ end
 -- (not a unit that a player sees or that is within R.SAFE Elmo of a player's unit)
 -- Every R.UPGRADE frames: one wild unit above the lowest stage of the players who are still in, or two or more below it (the weakest player
 -- went down after a death) becomes one of that stage, at its place
+local cloakers = {} -- unitID -> true: units that can cloak by themselves (see gadget:UnitCreated)
+local function generatorsOn() -- every second: the solar collectors and wind turbines are on (a player can switch them off, but they come back on)
+	for id, rd in pairs(radars) do
+		if rd.name:find("sol", 1, true) or rd.name:find("win", 1, true) then
+			local st = Spring.ValidUnitID(id) and Spring.GetUnitStates(id)
+			if st and st.active == false then
+				Spring.GiveOrderToUnit(id, CMD.ONOFF, { 1 }, 0)
+			end
+		end
+	end
+end
+local function noCloak() -- the cloak order of those units is switched off every second (the game switches it on after the creation)
+	for id in pairs(cloakers) do
+		local st = Spring.ValidUnitID(id) and Spring.GetUnitStates(id)
+		if not st then
+			cloakers[id] = nil
+		elseif st.cloak then
+			local p = owner[id]
+			local power = false
+			for i, a in ipairs(ABILITIES) do
+				if a.key == "cloak" and p and p.active and p.active[i] then
+					power = true -- (the power-up Cloak works: leave it)
+				end
+			end
+			if not power then
+				Spring.GiveOrderToUnit(id, CMD.CLOAK, { 0 }, 0)
+				pcall(Spring.SetUnitCloak, id, false) -- (the order alone did not switch it off in the test)
+				if FOLLOW_AI then
+					local st2 = Spring.GetUnitStates(id)
+					Spring.Echo("[Evolution] test: cloak order off for " .. id .. ", state now " .. tostring(st2 and st2.cloak))
+				end
+			end
+		end
+	end
+end
+
 -- A wild unit that a player can see, or that stands within R.SAFE Elmo of a player's unit, is left as it is (no change of level in the middle of a fight)
 local function watched(id, x, z)
 	for _, p in ipairs(players) do
@@ -2557,6 +2615,10 @@ function gadget:GameFrame(n)
 			end
 		end
 	end
+	if n % FPS == 0 then
+		noCloak()
+		generatorsOn()
+	end
 	if n % 15 == 0 then
 		takeRadars(15)
 		A.update(n)
@@ -2782,7 +2844,23 @@ local STATES = { [CMD_FIRE_STATE] = true, [CMD_MOVE_STATE] = true, [CMD.REPEAT] 
 
 -- The unit of a player cannot destroy itself (it would come back elsewhere at once) and is not given away; the units of a computer team only take the
 -- orders of this gadget (the AI of the team would steer them otherwise)
+-- A unit that can cloak by itself (Gremlin, Sharpshooter) does not: cloaking is only the power-up (the cloak order of the unit is switched off, again and again
+-- every second because the game switches it on after the creation, and the order cannot be switched on; the power-up uses SetUnitCloak and is not affected)
+function gadget:UnitCreated(unitID, unitDefID, unitTeam)
+	local ud = UnitDefs[unitDefID]
+	if ud and ud.canCloak then
+		cloakers[unitID] = true
+		Spring.GiveOrderToUnit(unitID, CMD.CLOAK, { 0 }, 0)
+	end
+end
+
 function gadget:AllowCommand(unitID, unitDefID, unitTeam, cmdID, cmdParams, cmdOptions, cmdTag, playerID, fromSynced, fromLua)
+	if cmdID == CMD.CLOAK and (cmdParams[1] or 0) ~= 0 and not fromLua then
+		return false
+	end
+	if cmdID == CMD.ONOFF and radars[unitID] and (cmdParams[1] or 1) == 0 then
+		return false -- (the solar collectors and wind turbines stay on)
+	end
 	local p = owner[unitID] or summoned[unitID]
 	if not p then
 		return true

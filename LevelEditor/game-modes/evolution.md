@@ -61,6 +61,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
   - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
   - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20); the red rings warn everybody 5 seconds before where each one comes down. Then the missiles never stop and get worse: every human enemy has missiles of his own that follow him (one at first, two after two minutes, then one more every two minutes), the volleys come every 10 seconds at first and every 3 seconds after four minutes. They start 2000 Elmo from the enemy and come closer and closer, until there is no way out; computer players are not followed. Your own unit and your allies are never hit
+- When a gift is chosen, the chat gets "<name> chose ..." and one of three sayings of that gift, picked at random (for example "Look up. Every missile you see has your name on it.")
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
 
@@ -74,7 +75,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - Your unit regenerates **1 % of its health every 5 seconds**, but only when it has not been hit for 5 seconds
 
 **Energy**
-- Every player gets **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000**: units with laser weapons need it to shoot, the abilities cost it
+- Every player gets **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000** (**2000** with the option Long range, whose beam weapons cost up to 1500 per shot): units with laser weapons need it to shoot, the abilities cost it; the rest has to come from the solar collectors and wind turbines below
 - **More energy**: solar collectors and wind turbines of nobody stand around the map; they cannot be destroyed. Stand next to one for 5 seconds ("Taking 3/5") and its energy is yours (a solar collector about 20 per second, a wind turbine as much as the wind gives); an enemy takes it the same way
 
 **Radars**
@@ -93,7 +94,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | Blue | Sprint | 50 % faster for 8 s | 200 | 30 s |
 | Green | Repair | heals 20 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 60 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
-| Yellow | Cloak | your unit is invisible to the enemy for 15 s (even right next to it); when it fires it is seen and the cloak ends | 400 | 60 s |
+| Yellow | Cloak | your unit is invisible to the enemy for 15 s (even right next to it); when it fires it is seen and the cloak ends; during the cloak your unit is on Hold Fire and goes back to Fire at Will afterwards | 400 | 60 s |
 | Violet | Jammer | your unit is hidden from the enemy radar and sonar and jams radar for 20 s | 300 | 60 s |
 
 - At the start there are 2 to 6 beacons of every color, more on a bigger map and with more players; a taken beacon comes back 45 seconds later somewhere else, in the same color; a beacon of an ability you already have stays for the others

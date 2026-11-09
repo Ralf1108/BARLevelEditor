@@ -1,7 +1,7 @@
 function widget:GetInfo() return { name = "zz unit dump", desc = "test only: every mobile Armada, Cortex and Legion unit with its numbers", layer = 0, enabled = true } end
 -- Test widget of pve_test.ps1 -Widget zz_unitdump.lua: one line "[zzunit] ..." (fields separated by ;) per mobile unit of Armada, Cortex and Legion with or without
 -- weapons: name; faction; human name; tech level; dps against the default armor (without anti air, paralyzers, stockpile weapons, the D-gun); dps of the anti air weapons;
--- health; metal cost; speed; longest range; move class; flags (fly, builder, water, commander); the weapons as type:range:dps:trajectoryHeight:highTrajectory:minRange:tracks.
+-- health; metal cost; speed; longest range; move class; flags (fly, builder, water, commander); the weapons as type:range:dps:trajectoryHeight:highTrajectory:minRange:tracks:energy per shot:energy per second.
 -- Then the game ends (quitforce). Used by evolution_units.py to make the table of the unit candidates of Evolution.
 local done = false
 function widget:GameFrame(f)
@@ -25,12 +25,16 @@ function widget:GameFrame(f)
 					if not wd.paralyzer and wd.type ~= "DGun" and wd.type ~= "TorpedoLauncher" and not wd.stockpile and dmg > 1 or isAA then
 						if isAA then aa = aa + d else dps = dps + d; range = math.max(range, tonumber(wd.range) or 0) end
 					end
-					ws[#ws + 1] = string.format("%s:%.0f:%.0f:%s:%s:%s:%s", tostring(wd.type), tonumber(wd.range) or 0, d, tostring(wd.trajectoryHeight), tostring(wd.highTrajectory), tostring(wd.minRange), tostring(wd.tracks))
+					ws[#ws + 1] = string.format("%s:%.0f:%.0f:%s:%s:%s:%s:%.0f:%.1f", tostring(wd.type), tonumber(wd.range) or 0, d, tostring(wd.trajectoryHeight), tostring(wd.highTrajectory), tostring(wd.minRange), tostring(wd.tracks), tonumber(wd.energyCost) or 0, (reload > 0) and ((tonumber(wd.energyCost) or 0) * n / reload) or 0)
 				end
 			end
 			local flags = {}
 			if ud.canFly then flags[#flags + 1] = "fly" end
 			if ud.isBuilder then flags[#flags + 1] = "builder" end
+			if ud.canCloak then flags[#flags + 1] = "cloak" end
+			if ud.initCloaked then flags[#flags + 1] = "initcloaked" end
+			if ud.stealth then flags[#flags + 1] = "stealth" end
+			if ud.sonarStealth then flags[#flags + 1] = "sonarstealth" end
 			if (ud.minWaterDepth or 0) > 0 then flags[#flags + 1] = "water" end
 			Spring.Echo(string.format("[zzunit] %s;%s;%s;%s;%.1f;%.1f;%.0f;%.0f;%.0f;%.0f;%s;%s;%s", ud.name, ud.name:sub(1, 3), ud.translatedHumanName or ud.humanName or "",
 				tostring(ud.customParams.techlevel or "?"), dps, aa, ud.health, ud.metalCost, ud.speed, range, ud.moveDef and ud.moveDef.name or "-", table.concat(flags, ","), table.concat(ws, " ")))
