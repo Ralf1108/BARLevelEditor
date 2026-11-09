@@ -93,7 +93,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | Yellow | Cloak | your unit is invisible to the enemy for 15 s (even right next to it); when it fires it is seen and the cloak ends | 400 | 60 s |
 | Violet | Jammer | your unit is hidden from the enemy radar and sonar and jams radar for 20 s | 300 | 60 s |
 
-- A taken beacon comes back 45 seconds later somewhere else, in a new color; a beacon of an ability you already have stays for the others
+- At the start there are 2 to 6 beacons of every color, more on a bigger map and with more players; a taken beacon comes back 45 seconds later somewhere else, in the same color; a beacon of an ability you already have stays for the others
 
 **Computer players**
 - Every team without a human is steered by the game (its own AI is switched off for this unit)

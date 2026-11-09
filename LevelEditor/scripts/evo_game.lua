@@ -1225,20 +1225,23 @@ local A = {
 }
 
 -- one beacon per 2048 x 2048 Elmo of the land, 5 to 20
+-- beacons of every ability at the start: one per 3000 x 3000 Elmo of the land and at least one per two players, 2 to 6 of each kind
 function A.count()
 	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
-	return math.max(5, math.min(20, math.floor(area / (2048 * 2048) + 0.5)))
+	return math.max(2, math.min(6, math.max(math.floor(area / (3000 * 3000) + 0.5), math.ceil((#Spring.GetTeamList() - 1) / 2)))) -- (all teams but Gaia: the players are not all joined yet)
 end
 
-function A.place()
+-- a beacon of the ability kind at a random place of the land; false when no free place was found
+function A.place(kind)
 	local ref = UnitDefNames.armpw
 	for _ = 1, 10 do
 		local x, z = randomLand()
 		if not ref or fits(ref.id, x, z, false) then
-			A.beacons[#A.beacons + 1] = { x = x, z = z, kind = math.random(1, #ABILITIES) }
-			return
+			A.beacons[#A.beacons + 1] = { x = x, z = z, kind = kind }
+			return true
 		end
 	end
+	return false
 end
 
 -- the beacons for the unsynced part: game rule evoBeacons "x,z,kind" separated by /; the abilities of the players: team rule evoAbilities "index:seconds of
@@ -1429,7 +1432,7 @@ function A.update(n)
 		if taker then
 			taker.abilities = taker.abilities or {}
 			taker.abilities[b.kind] = true
-			A.due[#A.due + 1] = n + A.BACK
+			A.due[#A.due + 1] = { n + A.BACK, b.kind } -- (the same kind comes back somewhere else)
 			say(string.format("%s found %s.", taker.name, ABILITIES[b.kind].name))
 			changed = true
 		else
@@ -1438,12 +1441,13 @@ function A.update(n)
 	end
 	A.beacons = keep
 	local due = {}
-	for _, f in ipairs(A.due) do
-		if n >= f then
-			A.place()
+	for _, d in ipairs(A.due) do
+		if n < d[1] then
+			due[#due + 1] = d
+		elseif A.place(d[2]) then
 			changed = true
 		else
-			due[#due + 1] = f
+			due[#due + 1] = { n + 5 * FPS, d[2] } -- (no free place: again in 5 s)
 		end
 	end
 	A.due = due
@@ -2345,8 +2349,10 @@ function gadget:GameFrame(n)
 					end
 					placeRadars()
 					placeGenerators()
-					for _ = 1, A.count() do
-						A.place()
+					for kind = 1, #ABILITIES do
+						for _ = 1, A.count() do
+							A.place(kind)
+						end
 					end
 					A.publish()
 					say(string.format("Evolution: kill to evolve (10 levels, a random faction each time); a lost unit comes back 5 s later at another place, one level lower. %d wild units and towers only shoot back; they grow with the players. Stand next to a radar for 5 s to take it; drive over a glowing beacon to get an ability. Level 10 brings Armageddon.", wildCount()))
