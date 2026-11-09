@@ -14,7 +14,7 @@ function widget:GetInfo()
 end
 
 local GIFTS = {
-	{ "Hell on Earth", "Strong ground units rise", "all over the map. Yours." },
+	{ "Hell on Earth", "8 tier 3 units rise, then one", "more every 10 s. Yours." },
 	{ "Heaven on Earth", "Dragons come down", "around your unit. Yours." },
 	{ "Gates of Hell", "Nuclear missiles without end,", "ever closer to the enemies." },
 }

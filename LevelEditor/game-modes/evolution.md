@@ -48,7 +48,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **The gift of level 10**
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
-  - **Hell on Earth**: 8 strong ground units rise all over the map; they are yours
+  - **Hell on Earth**: 8 tier 3 units rise all over the map and one more every 10 seconds; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; they are yours
   - **Gates of Hell**: nuclear missiles that never stop and get worse: more and more of them, faster and faster. First they come down far from the enemy human players (never around computer players; the circle starts at 2000 Elmo), then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
 - What the gift kills counts for you; when you are out, the units of your gift blow up

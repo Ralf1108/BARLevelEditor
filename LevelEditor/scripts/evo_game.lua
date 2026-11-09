@@ -285,7 +285,7 @@ if not gadgetHandler:IsSyncedCode() then
 			if a.xp ~= b.xp then return a.xp > b.xp end
 			return a.team < b.team
 		end)
-		local w, rowH, head, pad, gap = math.floor(456 * s), math.floor(44 * s), math.floor(28 * s), math.floor(7 * s), math.floor(4 * s)
+		local w, rowH, head, pad, gap = math.floor(410 * s), math.floor(44 * s), math.floor(28 * s), math.floor(7 * s), math.floor(4 * s)
 		local x2 = math.floor(vsx - 8 * s)
 		local x1 = x2 - w
 		local top = math.floor(vsy - 72 * base)
@@ -385,11 +385,11 @@ if not gadgetHandler:IsSyncedCode() then
 				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 6 * s, cy - 9 * s, 12 * s, "vo")
 			end
 			-- like the own panel: the status at the left (kills and deaths in the first line after the name), the abilities as large squares at the right
-			local kx = nx + 112 * s
+			local kx = nx + 102 * s
 			H.crosshair(kx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(tostring(row.kills), kx + 11 * s, cy + 9 * s, 14 * s, "vo")
-			local dx = kx + 46 * s
+			local dx = kx + 42 * s
 			H.skull(dx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(tostring(row.deaths), dx + 11 * s, cy + 9 * s, 14 * s, "vo")
@@ -719,7 +719,7 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.Color(0.85, 0.88, 0.95, 1)
 		gl.Text("No fog of war, no respawn, the last one standing wins.", rx, fy - 28 * s, 11.5 * s, "vo")
 		gl.Text("The first one on level 10 chooses a gift:", rx, fy - 44 * s, 11.5 * s, "vo")
-		local gifts = { { "Hell on Earth", "8 strong ground units rise all over the map. Yours." }, { "Heaven on Earth", "8 Dragons come down around your unit. Yours." },
+		local gifts = { { "Hell on Earth", "8 tier 3 units, then one more every 10 s. Yours." }, { "Heaven on Earth", "8 Dragons come down around your unit. Yours." },
 			{ "Gates of Hell", "Missiles without end, ever closer to the enemies." } }
 		for g, gift in ipairs(gifts) do
 			local gy = fy - 62 * s - (g - 1) * 18 * s
@@ -907,7 +907,7 @@ local NO_AIM = (Spring.GetModOptions() or {}).lanevoaim == "0" -- the game optio
 local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
-local HELL_UNITS, HEAVEN_UNITS = 8, 8 -- units of the gifts Hell on Earth and Heaven on Earth
+local HELL_UNITS, HEAVEN_UNITS, HELL_GAP = 8, 8, 10 * FPS -- units of the gifts Hell on Earth and Heaven on Earth; Hell on Earth: one more every 10 s
 local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before a missile, distance to the units of the player who chose it
 -- Further rules in one table (Lua 5.1 allows only so many locals):
 --   energy: every player team gets ENERGY_BASE + ENERGY per level per second and a storage of STORE (the commanders are gone; laser weapons need energy);
@@ -1470,13 +1470,33 @@ end
 
 -- ---------------------------------------------------------------- the gifts of stage 10
 -- Hell on Earth: strong ground units (stages 6 to 8, random factions) rise at random places of the land, far from the enemies
+local hells = {} -- { p, nextAt }: the players whose Hell on Earth runs
+-- one random tier 3 unit (levels 8 to 10 of a random faction) somewhere on the land, the player's own
+local function hellUnit(p)
+	local name = stageUnit(math.random(8, 10))
+	local x, z = spawnPoint(UnitDefNames[name].id, false, 900)
+	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, math.random(0, 3), p.team)
+	if id then
+		summoned[id] = p
+	end
+end
+
+-- Hell on Earth: HELL_UNITS tier 3 units at once, then one more every HELL_GAP frames (until the game is won or the player is out)
 local function giftHell(p)
 	for _ = 1, HELL_UNITS do
-		local name = stageUnit(math.random(6, 8))
-		local x, z = spawnPoint(UnitDefNames[name].id, false, 900)
-		local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, math.random(0, 3), p.team)
-		if id then
-			summoned[id] = p
+		hellUnit(p)
+	end
+	hells[#hells + 1] = { p = p, nextAt = Spring.GetGameFrame() + HELL_GAP }
+end
+
+local function hellStep(n)
+	for i = #hells, 1, -1 do
+		local h = hells[i]
+		if finished or h.p.out then
+			table.remove(hells, i)
+		elseif n >= h.nextAt then
+			h.nextAt = n + HELL_GAP
+			hellUnit(h.p)
 		end
 	end
 end
@@ -2223,6 +2243,7 @@ function gadget:GameFrame(n)
 		wildDue = due
 		-- Gates of Hell: new volleys, launch what is due, show the rings of the next ones
 		gatesStep(n)
+		hellStep(n)
 		local left, rings = {}, {}
 		for _, nk in ipairs(nukes) do
 			if n >= nk.frame then
