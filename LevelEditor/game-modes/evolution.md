@@ -80,7 +80,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 **Beacons and abilities**
 - Glowing beacons in five colors lie around the map (you see them where your unit sees); drive over one to get its **ability** until your unit dies (evolving keeps it)
-- Your abilities are the five colored buttons in your panel at the bottom of the screen, always in the same place with a symbol (a double arrow, a plus, radar waves, a crossed out eye, a zigzag wave): grey until you have one, then in its color; click to use it; it costs energy and then needs a while before it can be used again (a grey fill runs down the button like a status bar and the number at the top left counts the seconds down); hold the mouse over a button to read what it does
+- Your abilities are the five colored buttons in your panel at the bottom of the screen, always in the same place with a symbol (a double arrow, a plus, radar waves, a crossed out eye, a zigzag wave): grey until you have one, then in its color; click to use it; it costs energy and then needs a while before it can be used again (while an ability works, a fill in its color runs down the button and the number at the top left counts the seconds it lasts; when it is over, the cooldown starts: a grey fill runs down and the number counts the seconds down); hold the mouse over a button to read what it does
 - The overview at the right shows which abilities every player has (the symbols only, no cooldowns). The button at its top right hides and shows the list; with many players it stops above the music player and scrolls with the mouse wheel (the highest level is always on top)
 
 | Color | Ability | What it does | Energy | Cooldown |

@@ -481,8 +481,10 @@ if not gadgetHandler:IsSyncedCode() then
 					H.icon(a.key, cx, iy, 14 * s, 0.35)
 				end
 				if h.act > 0 then
-					gl.Color(1, 1, 1, 1)
-					gl.Text(tostring(h.act), bx2 - 5 * s, by2 - 9 * s, 12 * s, "rvo")
+					-- the time the effect still lasts: a bright fill in the color of the ability runs down like the cooldown (full at the start)
+					local top3 = by1 + (by2 - by1) * math.min(1, h.act / a.time)
+					H.box(bx1 + 2, by1 + 2, bx2 - 2, math.max(by1 + 6 * s, top3), 6 * s, { c[1], c[2], c[3], 0.45 }, { c[1], c[2], c[3], 0.7 })
+					H.icon(a.key, cx, iy, 14 * s, 1)
 				end
 				gl.Color(1, 1, 1, cooling and 0.6 or 1)
 			end
@@ -508,7 +510,10 @@ if not gadgetHandler:IsSyncedCode() then
 				gl.Text(tostring(a.cost), bx2 - 5 * s, by2 - 9 * s, 11 * s, "rvo")
 			end
 			-- the cooldown, top left
-			if h and h.act == 0 and h.cool > 0 then
+			if h and h.act > 0 then
+				gl.Color(1, 1, 1, 1)
+				gl.Text(h.act .. " s", bx1 + 5 * s, by2 - 9 * s, 12 * s, "vo") -- (the effect: the seconds left count down here too)
+			elseif h and h.cool > 0 then
 				-- while it cools down the number counts down here, from the cooldown to 0, then the normal text is back
 				gl.Color(1, 1, 1, 1)
 				gl.Text(h.cool .. " s", bx1 + 5 * s, by2 - 9 * s, 12 * s, "vo")
@@ -1305,6 +1310,8 @@ end
 function A.stop(p, i)
 	local act = p.active[i]
 	p.active[i] = nil
+	p.cool = p.cool or {}
+	p.cool[i] = Spring.GetGameFrame() + ABILITIES[i].cool * FPS -- the cooldown begins when the effect is over
 	local id, key = act.unit, ABILITIES[i].key
 	if not Spring.ValidUnitID(id) or Spring.GetUnitIsDead(id) then
 		return
@@ -1329,7 +1336,7 @@ end
 -- ability i of the player: when it has it, it is ready and the team has the energy; true when it began
 function A.use(p, i)
 	local a, n = ABILITIES[i], Spring.GetGameFrame()
-	if not (a and p.abilities and p.abilities[i]) or not p.unit or p.out or ((p.cool and p.cool[i]) or 0) > n then
+	if not (a and p.abilities and p.abilities[i]) or not p.unit or p.out or ((p.cool and p.cool[i]) or 0) > n or (p.active and p.active[i]) then
 		return false
 	end
 	if a.key == "repair" then
@@ -1342,7 +1349,9 @@ function A.use(p, i)
 		return false
 	end
 	p.cool = p.cool or {}
-	p.cool[i] = n + a.cool * FPS
+	if a.time <= 0 then
+		p.cool[i] = n + a.cool * FPS -- (an effect that lasts: the cooldown starts when it ends, see A.stop)
+	end
 	A.start(p, i)
 	A.publish()
 	return true
