@@ -585,16 +585,40 @@ if not gadgetHandler:IsSyncedCode() then
 		H.dbg = nil
 		if (Spring.GetModOptions() or {}).lanevodebug == "1" then
 			H.dbg = {}
-			local bw, bh = 130 * s, 28 * s
-			for i, label in ipairs({ "Armageddon", "Level Up", "Level Down" }) do
-				local bx = x1 + (i - 1) * (bw + 8 * s)
-				H.dbg[i] = { bx, y2 + 6 * s, bx + bw, y2 + 6 * s + bh }
-				H.box(bx, y2 + 6 * s, bx + bw, y2 + 6 * s + bh, 5 * s, { 0.35, 0.12, 0.1, 0.95 }, { 0.6, 0.25, 0.15, 0.95 }, { 1, 0.7, 0.5, 0.9 }, 2)
+			local bw, bh = 120 * s, 30 * s
+			local by1, by2 = y2 + 6 * s, y2 + 6 * s + bh
+			local specs = { { "Armageddon", { 0.35, 0.12, 0.1 }, { 0.6, 0.25, 0.15 } }, { "Level Up", { 0.08, 0.35, 0.12 }, { 0.2, 0.65, 0.3 }, "up" },
+				{ "Level Down", { 0.4, 0.08, 0.08 }, { 0.75, 0.2, 0.2 }, "down" } }
+			local bx = x1
+			for i, sp in ipairs(specs) do
+				H.dbg[i] = { bx, by1, bx + bw, by2 }
+				H.box(bx, by1, bx + bw, by2, 5 * s, { sp[2][1], sp[2][2], sp[2][3], 0.95 }, { sp[3][1], sp[3][2], sp[3][3], 0.95 }, { 1, 1, 1, 0.8 }, 2)
 				gl.Color(1, 1, 1, 1)
-				gl.Text(label, bx + bw / 2, y2 + 6 * s + bh / 2, 14 * s, "cvo")
+				if sp[4] then
+					-- an arrow up or down at the left of the label
+					local ax, ay, q = bx + 16 * s, (by1 + by2) / 2, 7 * s
+					gl.BeginEnd(GL.TRIANGLES, function()
+						if sp[4] == "up" then
+							gl.Vertex(ax - q, ay - q * 0.7); gl.Vertex(ax + q, ay - q * 0.7); gl.Vertex(ax, ay + q * 0.9)
+						else
+							gl.Vertex(ax - q, ay + q * 0.7); gl.Vertex(ax + q, ay + q * 0.7); gl.Vertex(ax, ay - q * 0.9)
+						end
+					end)
+					gl.Text(sp[1], bx + 30 * s, (by1 + by2) / 2, 14 * s, "vo")
+				else
+					gl.Text(sp[1], bx + bw / 2, (by1 + by2) / 2, 14 * s, "cvo")
+				end
+				bx = bx + bw + 8 * s
 			end
-			gl.Color(1, 0.7, 0.5, 1)
-			gl.Text("DEBUG", x1 + 3 * (bw + 8 * s) + 6 * s, y2 + 6 * s + bh / 2, 12 * s, "vo")
+			-- the power-ups: a button in the color of each gives it at once (the buttons 4 to 8)
+			bx = bx + 6 * s
+			for i, a in ipairs(ABILITIES) do
+				local c = a.color
+				H.dbg[3 + i] = { bx, by1, bx + bh, by2 }
+				H.box(bx, by1, bx + bh, by2, 5 * s, { c[1] * 0.4, c[2] * 0.4, c[3] * 0.4, 1 }, { c[1], c[2], c[3], 1 }, { 1, 1, 1, 0.6 }, 2)
+				H.icon(a.key, bx + bh / 2, (by1 + by2) / 2, 10 * s, 1)
+				bx = bx + bh + 6 * s
+			end
 			y2 = y2 + 40 * s
 		end
 		H.area = { x1, y1, x2, y2 }
@@ -608,10 +632,15 @@ if not gadgetHandler:IsSyncedCode() then
 		if not H.helpOpen or Spring.GetGameFrame() > 40 * 30 and not H.helpPinned then
 			return
 		end
-		local W, rowH = math.min(vsx - 20, math.floor(1060 * s)), math.floor(50 * s)
-		local head, foot, abil, uh = math.floor(70 * s), math.floor(142 * s), math.floor(146 * s), math.floor(46 * s)
-		local Hh = head + abil + uh + 10 * rowH + foot
-		local x1 = math.floor((vsx - W) / 2)
+		-- two columns: at the left the units of the ten levels, at the right the power-ups and Armageddon; the window sits right of the minimap
+		local L, R = math.floor(700 * s), math.floor(500 * s)
+		local rowH, head = math.floor(44 * s), math.floor(64 * s)
+		local uh = math.floor(46 * s)
+		local W, Hh = L + R + math.floor(46 * s), head + uh + 10 * rowH + math.floor(14 * s)
+		local x1 = math.floor(math.max(vsx * 0.26, (vsx - W) / 2))
+		if x1 + W > vsx - 8 then
+			x1 = math.max(8, vsx - 8 - W)
+		end
 		local y1 = math.floor((vsy - Hh) / 2)
 		local x2, y2 = x1 + W, y1 + Hh
 		H.box(x1, y1, x2, y2, 12 * s, { 0.02, 0.03, 0.06, 0.94 }, { 0.08, 0.10, 0.16, 0.94 }, { 0.55, 0.65, 0.85, 0.7 }, 2)
@@ -625,11 +654,12 @@ if not gadgetHandler:IsSyncedCode() then
 		H.box(H.helpClose[1], H.helpClose[2], H.helpClose[3], H.helpClose[4], 5 * s, { 0.3, 0.1, 0.1, 0.95 }, { 0.5, 0.18, 0.18, 0.95 }, { 1, 0.8, 0.8, 0.9 }, 2)
 		gl.Color(1, 1, 1, 1)
 		gl.Text("X", (H.helpClose[1] + H.helpClose[3]) / 2, (H.helpClose[2] + H.helpClose[4]) / 2, 16 * s, "cvo")
+		-- the units (left)
 		local labels = { "Armada", "Cortex", "Legion" }
-		local cx0, cw = x1 + 84 * s, (W - 84 * s - 16 * s) / 3
-		local top = y2 - head - abil - uh
+		local cx0, cw = x1 + 78 * s, (L - 66 * s) / 3
+		local top = y2 - head - uh
 		gl.Color(0.55, 0.95, 0.7, 1)
-		gl.Text("UNITS: the levels, in the three factions", x1 + 24 * s, top + 32 * s, 16 * s, "vo")
+		gl.Text("UNITS: the levels, in the three factions", x1 + 24 * s, top + 30 * s, 16 * s, "vo")
 		for c, label in ipairs(labels) do
 			gl.Color(0.7, 0.8, 1, 1)
 			gl.Text(label, cx0 + (c - 1) * cw + 4 * s, top + 8 * s, 14 * s, "vo")
@@ -637,14 +667,14 @@ if not gadgetHandler:IsSyncedCode() then
 		for lv = 1, 10 do
 			local ry2 = top - (lv - 1) * rowH
 			local ry1 = ry2 - rowH + 3 * s
-			H.box(x1 + 12 * s, ry1, x2 - 12 * s, ry2 - 3 * s, 6 * s, { 0.07, 0.08, 0.12, 0.9 }, { 0.12, 0.14, 0.20, 0.9 })
+			H.box(x1 + 12 * s, ry1, x1 + 12 * s + L, ry2 - 3 * s, 6 * s, { 0.07, 0.08, 0.12, 0.9 }, { 0.12, 0.14, 0.20, 0.9 })
 			local by = (ry1 + ry2 - 3 * s) / 2
-			H.disc(x1 + 44 * s, by, 18 * s, { 0.12, 0.2, 0.45, 1 })
+			H.disc(x1 + 40 * s, by, 16 * s, { 0.12, 0.2, 0.45, 1 })
 			gl.LineWidth(2)
-			H.ring(x1 + 44 * s, by, 18 * s, { 0.5, 0.65, 1, 1 })
+			H.ring(x1 + 40 * s, by, 16 * s, { 0.5, 0.65, 1, 1 })
 			gl.LineWidth(1)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(lv), x1 + 44 * s, by, 18 * s, "cvo")
+			gl.Text(tostring(lv), x1 + 40 * s, by, 16 * s, "cvo")
 			for c, ladder in ipairs(LADDERS) do
 				local name = ladder[lv]
 				local def = UnitDefNames[name]
@@ -661,42 +691,42 @@ if not gadgetHandler:IsSyncedCode() then
 						gl.Vertex(px, by - ps / 2); gl.Vertex(px + ps, by - ps / 2); gl.Vertex(px + ps, by + ps / 2); gl.Vertex(px, by + ps / 2)
 					end)
 					gl.Color(1, 1, 1, 1)
-					gl.Text(NAMES[name] or name, px + ps + 8 * s, by, 15 * s, "vo")
+					gl.Text(NAMES[name] or name, px + ps + 8 * s, by, 14 * s, "vo")
 				end
 			end
 		end
-		-- the power-ups: a beacon of the color lies on the map, a unit that drives over it has the ability until it dies
+		-- the power-ups (right, top): a beacon of the color lies on the map, a unit that drives over it has the ability until it dies
+		local rx = x1 + 12 * s + L + 22 * s
 		local ay = y2 - head - 2 * s
 		gl.Color(0.55, 0.95, 0.7, 1)
-		gl.Text("POWER-UPS", x1 + 24 * s, ay - 10 * s, 16 * s, "vo")
+		gl.Text("POWER-UPS", rx, ay - 10 * s, 16 * s, "vo")
 		gl.Color(0.8, 0.85, 0.95, 1)
-		gl.Text("Drive over a glowing beacon on the map to get one; you keep it until your unit dies. Click its button at the bottom to use it.", x1 + 140 * s, ay - 10 * s, 12 * s, "vo")
-		local aw = (W - 48 * s) / 3
+		gl.Text("Drive over a glowing beacon; you keep it until your unit dies.", rx + 120 * s, ay - 10 * s, 11 * s, "vo")
 		for i, a in ipairs(ABILITIES) do
-			local col, rw = (i - 1) % 3, math.floor((i - 1) / 3)
-			local ax, byy = x1 + 24 * s + col * aw, ay - 34 * s - rw * 52 * s
+			local byy = ay - 32 * s - (i - 1) * 44 * s
 			local c = a.color
-			H.box(ax, byy - 36 * s, ax + 36 * s, byy, 6 * s, { c[1] * 0.4, c[2] * 0.4, c[3] * 0.4, 1 }, { c[1], c[2], c[3], 1 }, { 1, 1, 1, 0.5 }, 2)
-			H.icon(a.key, ax + 18 * s, byy - 18 * s, 13 * s, 1)
+			H.box(rx, byy - 34 * s, rx + 34 * s, byy, 6 * s, { c[1] * 0.4, c[2] * 0.4, c[3] * 0.4, 1 }, { c[1], c[2], c[3], 1 }, { 1, 1, 1, 0.5 }, 2)
+			H.icon(a.key, rx + 17 * s, byy - 17 * s, 12 * s, 1)
 			gl.Color(c[1], c[2], c[3], 1)
-			gl.Text(a.name .. "   (" .. a.cost .. " energy, " .. a.cool .. " s cooldown)", ax + 46 * s, byy - 10 * s, 13 * s, "vo")
+			gl.Text(a.name .. "   (" .. a.cost .. " energy, " .. a.cool .. " s cooldown)", rx + 44 * s, byy - 9 * s, 13 * s, "vo")
 			gl.Color(0.82, 0.86, 0.94, 1)
-			gl.Text(a.tip, ax + 46 * s, byy - 28 * s, 10.5 * s, "vo")
+			gl.Text(a.tip, rx + 44 * s, byy - 26 * s, 10.5 * s, "vo")
 		end
-		-- Armageddon
-		local fy = y1 + foot - 10 * s
+		-- Armageddon (right, bottom)
+		local fy = ay - 32 * s - 5 * 44 * s - 14 * s
 		gl.Color(1, 0.4, 0.25, 1)
-		gl.Text("Level 10 brings ARMAGEDDON", x1 + 24 * s, fy - 8 * s, 18 * s, "vo")
+		gl.Text("Level 10 brings ARMAGEDDON", rx, fy - 8 * s, 16 * s, "vo")
 		gl.Color(0.85, 0.88, 0.95, 1)
-		gl.Text("No fog of war, no respawn, the last one standing wins. The first one on level 10 chooses a gift:", x1 + 24 * s, fy - 32 * s, 13 * s, "vo")
+		gl.Text("No fog of war, no respawn, the last one standing wins.", rx, fy - 28 * s, 11.5 * s, "vo")
+		gl.Text("The first one on level 10 chooses a gift:", rx, fy - 44 * s, 11.5 * s, "vo")
 		local gifts = { { "Hell on Earth", "8 strong ground units rise all over the map. Yours." }, { "Heaven on Earth", "8 Dragons come down around your unit. Yours." },
 			{ "Gates of Hell", "Missiles without end, ever closer to the enemies." } }
 		for g, gift in ipairs(gifts) do
-			local gx = x1 + 24 * s + (g - 1) * ((W - 48 * s) / 3)
+			local gy = fy - 62 * s - (g - 1) * 18 * s
 			gl.Color(1, 0.8, 0.4, 1)
-			gl.Text(gift[1], gx, fy - 58 * s, 15 * s, "vo")
+			gl.Text(gift[1], rx, gy, 12 * s, "vo")
 			gl.Color(0.8, 0.84, 0.92, 1)
-			gl.Text(gift[2], gx, fy - 78 * s, 11 * s, "vo")
+			gl.Text(gift[2], rx + 118 * s, gy, 10.5 * s, "vo")
 		end
 		H.helpArea = { x1, y1, x2, y2 }
 		gl.Color(1, 1, 1, 1)
@@ -1483,7 +1513,7 @@ local function giftGates(p)
 end
 
 -- Gates of Hell never ends and gets worse: a volley every `interval` (from 5 s down to 1.2 s over four minutes) of 1 + t/45 s missiles (at most 8). Half of
--- the missiles of a volley follow the enemy players: first far from their unit (2200 Elmo, 12 Elmo less per second down to 120), so they come closer and
+-- the missiles of a volley follow the enemy players: first far from their unit (2000 Elmo, 12 Elmo less per second down to 120; only human players, never the computer players), so they come closer and
 -- closer; the other half land at random places of the land, so more and more of the map is covered. Never within NUKE_SAFE Elmo of a unit of the player
 -- who chose the gate or of his alliance.
 local function gatesStep(n)
@@ -1505,7 +1535,7 @@ local function gatesStep(n)
 			end
 			local targets = {}
 			for _, q in ipairs(players) do
-				if enemies(g.p, q) and not q.out and q.unit and Spring.ValidUnitID(q.unit) then
+				if enemies(g.p, q) and not q.ai and not q.out and q.unit and Spring.ValidUnitID(q.unit) then -- (only human players are followed, not the computer players)
 					targets[#targets + 1] = q
 				end
 			end
@@ -1524,7 +1554,7 @@ local function gatesStep(n)
 					if k % 2 == 1 and #targets > 0 then
 						local q = targets[math.random(1, #targets)]
 						local qx, _, qz = Spring.GetUnitPosition(q.unit)
-						local d = math.max(120, 2200 - t * 12) + math.random() * 200
+						local d = math.max(120, 2000 - t * 12) + math.random() * 200
 						local a = math.random() * 2 * math.pi
 						x, z = qx + math.cos(a) * d, qz + math.sin(a) * d
 					else
@@ -2305,11 +2335,15 @@ function gadget:RecvLuaMsg(msg, playerID)
 		return true
 	end
 	if kind == "debug" and (Spring.GetModOptions() or {}).lanevodebug == "1" then
-		-- debug mode: 1 = Armageddon (level 10 at once), 2 = one level up (level 10 brings Armageddon), 3 = one level down (not below 1)
+		-- debug mode: 1 = Armageddon (level 10 at once), 2 = one level up (level 10 brings Armageddon), 3 = one level down (not below 1), 4 to 8 = that power-up
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 		local p = team and not spec and byTeam[team]
 		if p and not p.out and p.unit then
-			if n == "1" or n == "2" then
+			if tonumber(n) >= 4 and ABILITIES[tonumber(n) - 3] then
+				p.abilities = p.abilities or {}
+				p.abilities[tonumber(n) - 3] = true -- (the power-up buttons of the debug mode)
+				A.publish()
+			elseif n == "1" or n == "2" then
 				if p.stage < STAGES then
 					gain(p, n == "1" and 1000000 or need(p.stage))
 				end
