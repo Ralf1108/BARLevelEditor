@@ -2,7 +2,7 @@
 
 [Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)
 
-Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is **not** included has no level, and the last column says why. The included units come first, sorted by level. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included in Evolution*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).
+Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed) with the level it would get in Evolution; a unit that is **not** included has no level, and the last column says why. The included units come first, sorted by level. **How the level is found:** *Score* = DPS times health (the strength in a fight of one against one). The units that are in the game now (column *Included*: the unit is in the game already, the number is its level there; the current ladder of `evo_game.lua`, three per level) are the yardstick: the score of a level is the geometric mean of its three ladder units, and a unit gets the level whose score is closest to its own (on a logarithmic scale). One manual change: Telchine on level 7. Long range = yes: laser, plasma and rail gun units of 850 Elmo or more (no missiles) that only join when the option Long range of the room is on. The reasons for leaving a unit out: commander, drone, constructor, aircraft, water unit, mine layer, Epic / Archaic variant, Tumbleweed, no ground weapon (radar, jammers, spies, anti air, crawling bombs), artillery / rocket launcher, scout (DPS times health below 10000), weak support (DPS below 40). DPS: against the default armor, without anti air, paralyzers and the D-gun. Also as a table for Excel: [evolution_units.csv](evolution_units.csv). Both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game (`zz_unitdump.lua`).
 
 **The ranges of the levels** (DPS x health): a unit gets the level whose range holds its score; the borders lie in the middle (geometric mean) between the reference scores of two levels.
 
@@ -21,7 +21,24 @@ Every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies 
 
 Telchine is the one exception (set to level 7 by hand).
 
-| Level (DPS x health) | Included in Evolution | Faction | Name | Unit | Type | Tech | DPS | Health | Score | Metal | Speed | Range | Long range | Note (why not included) |
+**The units that are in Evolution now** (column *Included*; the level of the table below can differ: it is the level the unit would get by its score):
+
+| Level | Armada | Cortex | Legion |
+|---|---|---|---|
+| 1 | Pawn (armpw) | Grunt (corak) | Alaris (leghades) |
+| 2 | Blitz (armflash) | Incisor (corgator) | Phobos (legcen) |
+| 3 | Centurion (armwar) | Brute (corraid) | Karkinos (legkark) |
+| 4 | Welder (armzeus) | Fiend (corpyro) | Decurion (leggat) |
+| 5 | Bull (armbull) | Tiger (correap) | Javelin (legjav) |
+| 6 | Marauder (armmar) | Sumo (corcan) | Prometheus (legaheattank) |
+| 7 | Meatball (armmeatball) | Shiva (corshiva) | Incinerator (leginc) |
+| 8 | Razorback (armraz) | Karganeth (corkarg) | Keres (legkeres) |
+| 9 | Thor (armthor) | Demon (cordemon) | Praetorian (legeshotgunmech) |
+| 10 | Titan (armbanth) | Juggernaut (corkorg) | Sol Invictus (legeheatraymech) |
+
+**All units:**
+
+| Level | Included | Faction | Name | Unit | Type | Tech | DPS | Health | Score | Metal | Speed | Range | Long range | Note (why not included) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 |  | Armada | Seeker | armsh | Hover | 1 | 60 | 290 | 17400 | 85 | 114 | 230 |  |  |
 | 1 | 1 | Armada | Pawn | armpw | Bot | 1 | 90 | 370 | 33300 | 54 | 87 | 180 |  |  |
