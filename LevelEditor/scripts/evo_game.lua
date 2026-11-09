@@ -593,8 +593,8 @@ if not gadgetHandler:IsSyncedCode() then
 			return
 		end
 		local W, rowH = math.min(vsx - 20, math.floor(1060 * s)), math.floor(50 * s)
-		local head, foot = math.floor(92 * s), math.floor(142 * s)
-		local Hh = head + 10 * rowH + foot
+		local head, foot, abil = math.floor(92 * s), math.floor(142 * s), math.floor(142 * s)
+		local Hh = head + 10 * rowH + abil + foot
 		local x1 = math.floor((vsx - W) / 2)
 		local y1 = math.floor((vsy - Hh) / 2)
 		local x2, y2 = x1 + W, y1 + Hh
@@ -646,6 +646,22 @@ if not gadgetHandler:IsSyncedCode() then
 					gl.Text(NAMES[name] or name, px + ps + 8 * s, by, 15 * s, "vo")
 				end
 			end
+		end
+		-- the power-ups: a beacon of the color lies on the map, a unit that drives over it has the ability until it dies
+		local ay = top - 10 * rowH - 4 * s
+		gl.Color(0.55, 0.95, 0.7, 1)
+		gl.Text("POWER-UPS: drive over a glowing beacon on the map to get one; you keep it until your unit dies. Click its button at the bottom to use it.", x1 + 24 * s, ay - 10 * s, 13 * s, "vo")
+		local aw = (W - 48 * s) / 3
+		for i, a in ipairs(ABILITIES) do
+			local col, rw = (i - 1) % 3, math.floor((i - 1) / 3)
+			local ax, byy = x1 + 24 * s + col * aw, ay - 34 * s - rw * 52 * s
+			local c = a.color
+			H.box(ax, byy - 36 * s, ax + 36 * s, byy, 6 * s, { c[1] * 0.4, c[2] * 0.4, c[3] * 0.4, 1 }, { c[1], c[2], c[3], 1 }, { 1, 1, 1, 0.5 }, 2)
+			H.icon(a.key, ax + 18 * s, byy - 18 * s, 13 * s, 1)
+			gl.Color(c[1], c[2], c[3], 1)
+			gl.Text(a.name .. "   (" .. a.cost .. " energy, " .. a.cool .. " s cooldown)", ax + 46 * s, byy - 10 * s, 13 * s, "vo")
+			gl.Color(0.82, 0.86, 0.94, 1)
+			gl.Text(a.tip, ax + 46 * s, byy - 28 * s, 10.5 * s, "vo")
 		end
 		-- Armageddon
 		local fy = y1 + foot - 10 * s
@@ -1559,7 +1575,7 @@ end
 -- The number of wild units: one per 1024 x 1024 Elmo of the land (a map of 16 x 16 without water has 64), at least 12, at most 100
 local function wildCount()
 	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
-	local mult = math.max(1, math.min(4, tonumber((Spring.GetModOptions() or {}).lanevomult) or 1)) -- the unit multiplier of the room (1 - 4)
+	local mult = math.max(1, math.min(10, tonumber((Spring.GetModOptions() or {}).lanevomult) or 1)) -- the unit multiplier of the room (1 - 10)
 	return math.floor(math.max(12, math.min(100, math.floor(area / (1024 * 1024) + 0.5))) * mult)
 end
 

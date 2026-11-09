@@ -8,11 +8,11 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 ## In short
 
-- **LAN Play** room: the host presses the green button **LAN Options** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (it then reads "Evolution on"); everybody in the room sees it
+- **LAN Play** room: the host presses the green button **LAN Options** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (a submenu with the green / red button On / Off opens); everybody in the room sees it
 - The host gets a window with the rules and a tip: a map of size **M or smaller** (up to 16 x 16)
 - Start the game as usual: humans and computer players all play
 - The start positions of the map are used (nobody has to place one)
-- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off**, **Unit multiplier** (1x to 4x: so many times the normal number of wild units and towers, a denser map) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
+- **Evolution** in the menu opens a small menu of its own with the settings: **On / Off** (a green button when on, red when off; off is the default), **Unit multiplier** (1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map) and **Auto-aim** (off: the units do not shoot by themselves, you aim with the order Attack (A) and lead your shots, more like a deathmatch)
 
 ![The menu LAN Play of the room with Evolution on](../../docs/evolution-room.jpg)
 
@@ -114,7 +114,7 @@ Chosen by damage per second times health; artillery, units for water and the bom
 - At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, kills, deaths and points bar, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
 - At the bottom in the middle: your own unit, big: level, unit, points bar, kills, deaths and the buttons of your abilities
 - After a respawn the camera jumps to your new unit
-- At the start of the game (for 40 seconds) a **help window** shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it
+- At the start of the game (for 40 seconds) a **help window** shows every level with the units of the three factions (picture and name) and what Armageddon brings; it also explains the power-ups; the button **?** at the title of the overview opens and closes it
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
 
 ## Tips
