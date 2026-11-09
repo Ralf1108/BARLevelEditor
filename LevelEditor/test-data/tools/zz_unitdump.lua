@@ -1,7 +1,7 @@
 function widget:GetInfo() return { name = "zz unit dump", desc = "test only: every mobile Armada, Cortex and Legion unit with its numbers", layer = 0, enabled = true } end
 -- Test widget of pve_test.ps1 -Widget zz_unitdump.lua: one line "[zzunit] ..." (fields separated by ;) per mobile unit of Armada, Cortex and Legion with or without
 -- weapons: name; faction; human name; tech level; dps against the default armor (without anti air, paralyzers, stockpile weapons, the D-gun); dps of the anti air weapons;
--- health; metal cost; speed; longest range; move class; flags (fly, builder, water, commander); the weapons as type:range:damage x projectiles x salvo / reload.
+-- health; metal cost; speed; longest range; move class; flags (fly, builder, water, commander); the weapons as type:range:dps:trajectoryHeight:highTrajectory:minRange:tracks.
 -- Then the game ends (quitforce). Used by evolution_units.py to make the table of the unit candidates of Evolution.
 local done = false
 function widget:GameFrame(f)
@@ -22,10 +22,10 @@ function widget:GameFrame(f)
 					local reload = tonumber(wd.reload) or 0
 					local isAA = dv > dmg
 					local d = (reload > 0) and (math.max(dmg, dv) * n / reload) or 0
-					if not wd.paralyzer and wd.type ~= "DGun" and not wd.stockpile and dmg > 1 or isAA then
+					if not wd.paralyzer and wd.type ~= "DGun" and wd.type ~= "TorpedoLauncher" and not wd.stockpile and dmg > 1 or isAA then
 						if isAA then aa = aa + d else dps = dps + d; range = math.max(range, tonumber(wd.range) or 0) end
 					end
-					ws[#ws + 1] = string.format("%s:%.0f:%.0f", tostring(wd.type), tonumber(wd.range) or 0, d)
+					ws[#ws + 1] = string.format("%s:%.0f:%.0f:%s:%s:%s:%s", tostring(wd.type), tonumber(wd.range) or 0, d, tostring(wd.trajectoryHeight), tostring(wd.highTrajectory), tostring(wd.minRange), tostring(wd.tracks))
 				end
 			end
 			local flags = {}

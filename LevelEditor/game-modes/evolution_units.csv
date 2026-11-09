@@ -13,6 +13,7 @@
 2;;Armada;Crocodile;armanac;Hover;1;70;1530;107100;270;70;370;;
 2;;Armada;Platypus;armamph;Hover;2;109;1170;127647;260;90;275;;
 2;;Cortex;Thug;corthud;Bot;1;60;1100;66000;140;45;380;;
+2;;Cortex;Torch;cortorch;Vehicle;1;116;650;75335;220;141;280;;
 2;2;Cortex;Incisor;corgator;Vehicle;1;94;820;76916;120;85;230;;
 2;;Cortex;Garpike;corgarp;Vehicle;1;77;1420;109766;220;59;305;;
 2;;Cortex;Cayman;corsnap;Hover;1;70;1720;120400;300;67;370;;
@@ -34,29 +35,27 @@
 4;;Armada;Gunslinger;armmav;Bot;2;265;1800;477000;650;50;365;;
 4;;Armada;Turtle;armcroc;Vehicle;2;141;5000;703000;750;54;480;;
 4;4;Cortex;Fiend;corpyro;Bot;2;240;1060;254400;200;83;230;;
+4;;Cortex;Duck;coramph;Bot;2;132;2350;311140;330;56;300;;
 4;;Cortex;Alligator;corseal;Vehicle;2;129;2600;335140;480;72;440;;
 4;;Cortex;Salamander;corsala;Vehicle;2;164;2100;343560;350;72;340;;
-4;;Cortex;Duck;coramph;Bot;2;174;2350;408900;330;56;400;;
 4;;Cortex;Deadeye;cordeadeye;Bot;2;208;2700;562950;1050;40;850;yes;included only with the option Long range
+4;;Cortex;Cataphract;corsok;Hover;3;167;4200;700140;950;45;725;;
 4;;Legion;Phalanx;legshot;Bot;2;105;3350;351750;470;44;280;;
 4;;Legion;Hoplite;legstr;Bot;2;240;1780;427200;355;84;280;;
 4;4;Legion;Decurion;leggat;Vehicle;1;180;2550;459000;300;45;361;;
-5;;Armada;Fatboy;armfboy;Bot;2;114;7800;891540;1400;30;700;;
+4;;Legion;Charybdis;legehovertank;Hover;3;108;4900;530670;1350;63;500;;
+5;;Armada;Lunkhead;armlun;Hover;3;206;5300;1089680;1150;50;575;;
 5;5;Armada;Bull;armbull;Vehicle;2;246;4650;1141575;950;62;460;;
 5;;Armada;Starlight;armmanni;Vehicle;2;532;2800;1489320;1200;42;950;yes;included only with the option Long range
-5;;Armada;units.names.armprowl;armprowl;Vehicle;3;336;4900;1644930;970;95;350;;
-5;;Armada;Lunkhead;armlun;Hover;3;318;5300;1685930;1150;50;575;;
 5;5;Cortex;Tiger;correap;Vehicle;2;150;5300;795000;690;69;410;;
 5;;Cortex;Termite;cortermite;Bot;2;331;3100;1027030;540;50;340;;
 5;;Cortex;Heat Tiger;corftiger;Vehicle;2;207;5300;1097630;665;71;410;;
-5;;Cortex;Cataphract;corsok;Hover;3;279;4200;1172640;950;45;725;;
 5;;Cortex;Poison Arrow;corparrow;Vehicle;2;206;6300;1295280;1050;51;575;;
 5;;Cortex;Halberd;corhal;Hover;1;344;4350;1495530;640;45;300;;
 5;;Cortex;Siegebreaker;corsiegebreaker;Vehicle;2;500;3000;1500000;1100;54;910;yes;included only with the option Long range
 5;;Cortex;Laser Tiger;corgatreap;Vehicle;2;326;5000;1631500;1400;69;620;;
 5;;Legion;Triton;legfloat;Hover;2;205;3500;717500;650;55;550;;
 5;;Legion;Cardea;legcar;Hover;1;280;3600;1008000;550;51;321;;
-5;;Legion;Charybdis;legehovertank;Hover;3;221;4900;1081920;1350;63;500;;
 5;;Legion;Pilum;legbunk;Bot;3;158;9400;1488020;1500;82;650;;
 5;5;Legion;Javelin;legjav;Bot;3;360;7200;2592000;1200;68;450;;
 6;6;Armada;Marauder;armmar;Bot;3;336;4900;1644930;970;95;350;;
@@ -65,11 +64,10 @@
 6;6;Legion;Prometheus;legaheattank;Vehicle;2;750;5700;4275000;1050;52;450;;
 7;7;Armada;Meatball;armmeatball;Bot;3;667;8000;5333600;3000;30;800;;
 7;7;Cortex;Shiva;corshiva;Bot;3;407;9400;3826740;1700;48;800;;
-7;;Legion;Telchine;legamph;Bot;2;1107;2750;3043425;600;48;600;;
+7;;Legion;Telchine;legamph;Bot;2;990;2750;2722500;600;48;450;;
 7;7;Legion;Incinerator;leginc;Bot;2;990;9000;8910000;2300;24;725;;
 8;8;Armada;Razorback;armraz;Bot;3;1050;13300;13965000;3800;69;475;;
 8;8;Cortex;Karganeth;corkarg;Bot;3;600;12500;7500000;2500;45;600;;
-8;;Cortex;Mammoth;corsumo;Bot;2;503;15600;7851480;2200;23;650;;
 8;8;Legion;Keres;legkeres;Vehicle;3;535;21000;11241300;2600;48;481;;
 8;;Legion;Daedalus;legerailtank;Vehicle;3;800;16500;13200000;6500;61;1000;yes;included only with the option Long range
 9;9;Armada;Thor;armthor;Vehicle;3;968;56000;54191200;9000;54;540;;
@@ -96,7 +94,7 @@
 ;;Armada;Banshee;armkam;Air;1;39;560;21616;135;185;350;;aircraft
 ;;Armada;Blink;armpeep;Air;1;0;89;0;52;375;0;;aircraft
 ;;Armada;Blizzard;armpnix;Air;2;190;1130;214700;230;258;1280;;aircraft
-;;Armada;Cormorant;armlance;Air;2;188;1920;360000;400;285;400;;aircraft
+;;Armada;Cormorant;armlance;Air;2;0;1920;0;400;285;0;;aircraft
 ;;Armada;Cyclone;armsfig;Air;1;0;220;0;90;311;0;;aircraft
 ;;Armada;Cyclone;armsfig2;Air;1;0;220;0;90;311;0;;aircraft
 ;;Armada;Falcon;armfig;Air;1;0;167;0;73;289;0;;aircraft
@@ -107,7 +105,7 @@
 ;;Armada;Liche;armliche;Air;2;625;2300;1437500;2200;295;250;;aircraft
 ;;Armada;Oracle;armawac;Air;2;0;890;0;175;317;0;;aircraft
 ;;Armada;Osprey;armhvytrans;Air;1;0;630;0;190;110;0;;aircraft
-;;Armada;Puffin;armseap;Air;1;114;1300;148200;290;210;600;;aircraft
+;;Armada;Puffin;armseap;Air;1;0;1300;0;290;210;0;;aircraft
 ;;Armada;Roughneck;armbrawl;Air;2;107;1780;189926;310;161;380;;aircraft
 ;;Armada;Sabre;armsaber;Air;1;67;1010;67367;210;157;425;;aircraft
 ;;Armada;Satellite;armsat;Air;2;0;780;0;4000;30;0;;aircraft
@@ -115,7 +113,7 @@
 ;;Armada;Stork;armatlas;Air;1;0;265;0;68;207;0;;aircraft
 ;;Armada;Stormbringer;armthund;Air;1;92;670;61439;150;250;1280;;aircraft
 ;;Armada;Tsunami;armsb;Air;1;143;1170;167193;240;267;1280;;aircraft
-;;Cortex;Angler;cortitan;Air;2;150;1960;294000;410;279;400;;aircraft
+;;Cortex;Angler;cortitan;Air;2;0;1960;0;410;279;0;;aircraft
 ;;Cortex;Bat;corsfig;Air;1;0;220;0;90;316;0;;aircraft
 ;;Cortex;Bat;corsfig2;Air;1;0;220;0;90;316;0;;aircraft
 ;;Cortex;Condor;corawac;Air;2;0;990;0;180;321;0;;aircraft
@@ -128,7 +126,7 @@
 ;;Cortex;Hailstorm;corhurc;Air;2;238;1520;361608;310;248;1280;;aircraft
 ;;Cortex;Hephaestus;corhvytrans;Air;1;0;800;0;190;100;0;;aircraft
 ;;Cortex;Hercules;corvalk;Air;1;0;280;0;74;198;0;;aircraft
-;;Cortex;Monsoon;corseap;Air;1;86;1000;85500;230;200;600;;aircraft
+;;Cortex;Monsoon;corseap;Air;1;0;1000;0;230;200;0;;aircraft
 ;;Cortex;Nighthawk;corvamp;Air;2;0;290;0;145;379;0;;aircraft
 ;;Cortex;Satellite;corsat;Air;2;0;780;0;4000;30;0;;aircraft
 ;;Cortex;Shuriken;corbw;Air;1;0;83;0;58;270;0;;aircraft
@@ -138,7 +136,7 @@
 ;;Cortex;Watcher;corhunt;Air;1;0;730;0;130;324;0;;aircraft
 ;;Cortex;Whirlwind;corshad;Air;1;93;680;63444;150;234;1280;;aircraft
 ;;Legion;Aeolus;leglts;Air;1;0;265;0;68;207;0;;aircraft
-;;Legion;Aesacus;legatorpbomber;Air;2;214;1900;407170;480;290;400;;aircraft
+;;Legion;Aesacus;legatorpbomber;Air;2;0;1900;0;480;290;0;;aircraft
 ;;Legion;Ajax;legafigdef;Air;2;0;480;0;180;270;0;;aircraft
 ;;Legion;Astrapios;legspfighter;Air;1;0;220;0;90;311;0;;aircraft
 ;;Legion;Blindfold;legcib;Air;1;0;600;0;100;300;0;;aircraft
@@ -146,7 +144,7 @@
 ;;Legion;Harbinger;legmineb;Air;2;0;1110;0;300;210;0;;aircraft
 ;;Legion;Hecatoncheir;legspcarrier;Air;1;0;1500;0;250;93;0;;aircraft
 ;;Legion;Hippotes;legatrans;Air;1;0;800;0;190;100;0;;aircraft
-;;Legion;Ladon;legsptorpgunship;Air;1;62;900;55980;190;220;460;;aircraft
+;;Legion;Ladon;legsptorpgunship;Air;1;0;900;0;190;220;0;;aircraft
 ;;Legion;Legionnaire;legionnaire;Air;2;0;480;0;180;270;0;;aircraft
 ;;Legion;Martyr;legkam;Air;1;44;160;7040;65;220;500;;aircraft
 ;;Legion;Mosquito;legmos;Air;1;0;415;0;110;165;0;;aircraft
@@ -215,16 +213,16 @@
 ;;Cortex;Cortex Commander Level 7;cordecomlvl7;commanderbot;1;5370;7000;37590000;8000;42;730;;commander, constructor
 ;;Cortex;Cortex Commander Level 8;cordecomlvl8;commanderbot;1;6635;8000;53080000;9000;44;800;;commander, constructor
 ;;Cortex;Cortex Commander Level 9;cordecomlvl9;commanderbot;1;8301;9000;74707200;10000;45;870;;commander, constructor
-;;Legion;Legion Commander;legdecom;Bot;2;344;3700;1272060;750;38;300;;commander, constructor
-;;Legion;Legion Commander Level 10;legdecomlvl10;commanderbot;1;6333;11000;69666300;11000;50;950;;commander, constructor
-;;Legion;Legion Commander Level 2;legdecomlvl2;commanderbot;1;531;3000;1593900;3000;38;350;;commander, constructor
-;;Legion;Legion Commander Level 3;legdecomlvl3;commanderbot;1;658;4000;2633200;4000;38;500;;commander, constructor
-;;Legion;Legion Commander Level 4;legdecomlvl4;commanderbot;1;1005;5000;5025500;5000;38;550;;commander, constructor
-;;Legion;Legion Commander Level 5;legdecomlvl5;commanderbot;1;1560;6000;9361200;6000;40;620;;commander, constructor
-;;Legion;Legion Commander Level 6;legdecomlvl6;commanderbot;1;2108;7000;14754600;7000;42;730;;commander, constructor
-;;Legion;Legion Commander Level 7;legdecomlvl7;commanderbot;1;2843;8000;22743200;8000;44;730;;commander, constructor
-;;Legion;Legion Commander Level 8;legdecomlvl8;commanderbot;1;3848;9000;34633800;9000;46;800;;commander, constructor
-;;Legion;Legion Commander Level 9;legdecomlvl9;commanderbot;1;4977;10000;49773000;10000;48;870;;commander, constructor
+;;Legion;Legion Commander;legdecom;Bot;2;219;3700;809560;750;38;300;;commander, constructor
+;;Legion;Legion Commander Level 10;legdecomlvl10;commanderbot;1;4333;11000;47666300;11000;50;950;;commander, constructor
+;;Legion;Legion Commander Level 2;legdecomlvl2;commanderbot;1;375;3000;1125000;3000;38;300;;commander, constructor
+;;Legion;Legion Commander Level 3;legdecomlvl3;commanderbot;1;450;4000;1800000;4000;38;350;;commander, constructor
+;;Legion;Legion Commander Level 4;legdecomlvl4;commanderbot;1;693;5000;3463000;5000;38;550;;commander, constructor
+;;Legion;Legion Commander Level 5;legdecomlvl5;commanderbot;1;935;6000;5611200;6000;40;620;;commander, constructor
+;;Legion;Legion Commander Level 6;legdecomlvl6;commanderbot;1;1358;7000;9504600;7000;42;730;;commander, constructor
+;;Legion;Legion Commander Level 7;legdecomlvl7;commanderbot;1;1718;8000;13743200;8000;44;730;;commander, constructor
+;;Legion;Legion Commander Level 8;legdecomlvl8;commanderbot;1;2536;9000;22821300;9000;46;800;;commander, constructor
+;;Legion;Legion Commander Level 9;legdecomlvl9;commanderbot;1;3227;10000;32273000;10000;48;870;;commander, constructor
 ;;Armada;Epic Commander - Final Boss;armcomboss;scavcommanderbot;4;0;2800000;0;10000000;15;0;;commander, constructor, Epic / Archaic variant
 ;;Cortex;Epic Commander - Final Boss;corcomboss;scavcommanderbot;4;12000;300000;3600000000;300000;15;1250;;commander, constructor, Epic / Archaic variant
 ;;Armada;Advanced Construction Bot;armack;Bot;2;0;930;0;430;33;0;;constructor
@@ -307,10 +305,10 @@
 ;;Armada;Nexus Terra;armdronecarryland;Vehicle;3;0;3500;0;1700;30;0;;drone
 ;;Armada;Attack Drone;armdrone;Air;1;18;450;8235;25;330;350;;drone, aircraft
 ;;Armada;Attack Drone;armdroneold;Air;1;17;400;6680;55;225;350;;drone, aircraft
-;;Armada;Depth Charge Drone;armtdrone;Air;1;36;300;10740;30;330;200;;drone, aircraft
+;;Armada;Depth Charge Drone;armtdrone;Air;1;0;300;0;30;330;0;;drone, aircraft
 ;;Cortex;Attack Drone;cordrone;Air;1;45;675;30375;30;315;360;;drone, aircraft
 ;;Cortex;Attack Drone;cordroneold;Air;1;17;166;2772;29;281;360;;drone, aircraft
-;;Cortex;Depth Charge Drone;cortdrone;Air;1;42;450;19125;40;315;200;;drone, aircraft
+;;Cortex;Depth Charge Drone;cortdrone;Air;1;0;450;0;40;315;0;;drone, aircraft
 ;;Cortex;Disperser Omni;cordronecarryair;Air;3;0;3500;0;1700;35;0;;drone, aircraft
 ;;Legion;Legion Drone;legdrone;Air;1;27;325;8678;15;281;300;;drone, aircraft
 ;;Legion;Legion Heavy Drone;legheavydrone;Air;1;125;1650;206250;90;181;430;;drone, aircraft
@@ -323,6 +321,7 @@
 ;;Legion;Assist Drone;legassistdrone;Air;1;0;335;0;1;210;0;;drone, constructor, aircraft
 ;;Armada;Nexus;armdronecarry;Sea;2;0;3500;0;1700;63;0;;drone, water unit
 ;;Cortex;Disperser;cordronecarry;Sea;2;0;3500;0;1700;63;0;;drone, water unit
+;;Cortex;Banisher;corban;Vehicle;2;133;2500;333250;1000;54;800;;missile launcher
 ;;Armada;Archangel;armaak;Bot;2;0;2200;0;520;47;0;;no ground weapon (radar, jammer, spy, anti air, crawling bomb)
 ;;Armada;Assimilator;armassimilator;Bot;3;0;7500;0;2500;60;0;;no ground weapon (radar, jammer, spy, anti air, crawling bomb)
 ;;Armada;Compass;armmark;Bot;2;0;355;0;100;41;0;;no ground weapon (radar, jammer, spy, anti air, crawling bomb)
@@ -357,76 +356,77 @@
 ;;Legion;Snapper;legsnapper;Bot;2;0;550;0;60;81;0;;no ground weapon (radar, jammer, spy, anti air, crawling bomb)
 ;;Legion;Tiresias;legajamk;Bot;2;0;350;0;75;35;0;;no ground weapon (radar, jammer, spy, anti air, crawling bomb)
 ;;Legion;Toxotai;legaabot;Bot;1;0;610;0;120;55;0;;no ground weapon (radar, jammer, spy, anti air, crawling bomb)
-;;Armada;Whistler;armsam;Vehicle;1;26;820;21156;150;55;550;;rocket launcher (mainly a missile weapon)
-;;Cortex;Banisher;corban;Vehicle;2;133;2500;333250;1000;54;800;;rocket launcher (mainly a missile weapon)
-;;Cortex;Lasher;cormist;Vehicle;1;25;860;21672;155;52;575;;rocket launcher (mainly a missile weapon)
-;;Cortex;Torch;cortorch;Vehicle;1;116;650;75335;220;141;280;;rocket launcher (mainly a missile weapon)
-;;Legion;Salacia;legmh;Hover;1;53;520;27716;190;70;700;;rocket launcher (mainly a missile weapon)
+;;Legion;Salacia;legmh;Hover;1;53;520;27716;190;70;700;;rocket launcher without homing (not for 1:1 fights)
+;;Armada;units.names.armprowl;armprowl;Vehicle;3;336;4900;1644930;970;95;350;;same values as the Marauder (a duplicate)
 ;;Armada;Rover;armfav;Vehicle;1;35;105;3675;31;168;180;;scout: DPS x health below 10000
 ;;Armada;Tick;armflea;Bot;1;40;60;2400;21;132;140;;scout: DPS x health below 10000
 ;;Cortex;Rascal;corfav;Vehicle;1;32;90;2862;26;153;180;;scout: DPS x health below 10000
 ;;Legion;Goblin;leggob;Bot;1;27;200;5340;30;75;261;;scout: DPS x health below 10000
 ;;Legion;Wheelie;legscout;Vehicle;1;24;75;1770;23;160;169;;scout: DPS x health below 10000
-;;Cortex;Behemoth;corjugg;Bot;3;821;335000;275169000;20000;17;550;;too slow (speed 17)
-;;Armada;Barracuda;armsubk;Sea;2;175;2350;411250;950;81;400;;water unit
+;;Armada;Fatboy;armfboy;Bot;2;114;7800;891540;1400;30;700;;too slow (speed below 31)
+;;Cortex;Behemoth;corjugg;Bot;3;821;335000;275169000;20000;17;550;;too slow (speed below 31)
+;;Cortex;Mammoth;corsumo;Bot;2;503;15600;7851480;2200;23;650;;too slow (speed below 31)
+;;Armada;Barracuda;armsubk;Sea;2;0;2350;0;950;81;0;;water unit
 ;;Armada;Bermuda;armsjam;Sea;2;0;1350;0;310;45;0;;water unit
-;;Armada;Corsair;armroy;Sea;1;259;3700;959780;880;67;700;;water unit
+;;Armada;Corsair;armroy;Sea;1;147;3700;543530;880;67;700;;water unit
 ;;Armada;Dolphin;armdecade;Sea;1;135;970;130950;175;105;280;;water unit
 ;;Armada;Dragonslayer;armaas;Sea;2;0;3900;0;1000;63;0;;water unit
 ;;Armada;Dreadnought;armbats;Sea;2;600;9800;5880000;3300;58;880;;water unit
-;;Armada;Eel;armsub;Sea;1;86;840;71820;440;66;500;;water unit
+;;Armada;Eel;armsub;Sea;1;0;840;0;440;66;0;;water unit
 ;;Armada;Ellysaw;armpship;Sea;1;117;2150;250905;380;81;470;;water unit
 ;;Armada;Epoch;armepoch;Sea;2;1246;50000;62320000;20000;54;2450;;water unit
 ;;Armada;Excalibur;armexcalibur;Sea;2;133;1200;159960;900;60;600;;water unit
 ;;Armada;Longbow;armmship;Sea;2;108;3350;362805;2000;63;1550;;water unit
 ;;Armada;Maelstrom;armlship;Sea;2;250;2200;550000;570;99;400;;water unit
-;;Armada;Paladin;armcrus;Sea;2;482;5600;2699200;1000;60;500;;water unit
-;;Armada;Seadragon;armseadragon;Sea;2;100;2400;240000;8000;48;720;;water unit
-;;Armada;Serpent;armserp;Sea;2;206;3550;732365;1800;45;800;;water unit
+;;Armada;Paladin;armcrus;Sea;2;357;5600;1999200;1000;60;500;;water unit
+;;Armada;Seadragon;armseadragon;Sea;2;0;2400;0;8000;48;0;;water unit
+;;Armada;Serpent;armserp;Sea;2;0;3550;0;1800;45;0;;water unit
 ;;Armada;Skater;armpt;Sea;1;66;780;51090;150;93;300;;water unit
-;;Armada;Torpedo Ship;armtorps;Sea;1;46;940;42770;300;90;300;;water unit
-;;Armada;Trident;armtrident;Sea;2;170;3400;578000;1050;68;600;;water unit
+;;Armada;Torpedo Ship;armtorps;Sea;1;0;940;0;300;90;0;;water unit
+;;Armada;Trident;armtrident;Sea;2;0;3400;0;1050;68;0;;water unit
 ;;Cortex;Adjudicator;coresuppt3;Sea;3;2750;89000;244750000;30000;75;900;;water unit
 ;;Cortex;Arrow Storm;corarch;Sea;2;156;3900;609570;1000;60;870;;water unit
 ;;Cortex;Black Hydra;corblackhy;Sea;2;1304;53000;69122600;21000;50;2550;;water unit
 ;;Cortex;Black Prince;corprince;Sea;2;722;25000;18055000;13500;54;3200;;water unit
 ;;Cortex;Brimstone;corfship;Sea;2;375;2700;1012500;630;93;450;;water unit
-;;Cortex;Buccaneer;corcrus;Sea;2;532;6200;3297160;1000;54;500;;water unit
-;;Cortex;Desolator;cordesolator;Sea;2;106;2600;276380;9000;45;750;;water unit
+;;Cortex;Buccaneer;corcrus;Sea;2;407;6200;2522160;1000;54;500;;water unit
+;;Cortex;Desolator;cordesolator;Sea;2;0;2600;0;9000;45;0;;water unit
 ;;Cortex;Despot;corbats;Sea;2;659;12000;7906800;3400;53;950;;water unit
 ;;Cortex;Herring;corpt;Sea;1;24;890;20915;210;69;650;;water unit
-;;Cortex;Kraken;corssub;Sea;2;206;3900;804570;1900;39;850;;water unit
+;;Cortex;Kraken;corssub;Sea;2;0;3900;0;1900;39;0;;water unit
 ;;Cortex;Leviathan;corslrpc;Sea;3;125;7200;900000;8000;33;4950;;water unit
 ;;Cortex;Messenger;cormship;Sea;2;138;3350;460625;2000;61;1550;;water unit
 ;;Cortex;Onager;coronager;Sea;2;80;1400;112000;950;58;600;;water unit
-;;Cortex;Oppressor;corroy;Sea;1;272;3950;1075980;960;62;710;;water unit
-;;Cortex;Orca;corsub;Sea;1;137;1060;145008;580;57;500;;water unit
+;;Cortex;Oppressor;corroy;Sea;1;154;3950;608300;960;62;710;;water unit
+;;Cortex;Orca;corsub;Sea;1;0;1060;0;580;57;0;;water unit
 ;;Cortex;Phantasm;corsjam;Sea;2;0;1450;0;280;40;0;;water unit
-;;Cortex;Predator;corshark;Sea;2;159;1610;256151;730;84;400;;water unit
+;;Cortex;Predator;corshark;Sea;2;0;1610;0;730;84;0;;water unit
 ;;Cortex;Riptide;corpship;Sea;1;120;2350;282000;420;83;480;;water unit
-;;Cortex;Sentinel;corsentinel;Sea;2;170;3800;646000;1350;63;600;;water unit
+;;Cortex;Sentinel;corsentinel;Sea;2;0;3800;0;1350;63;0;;water unit
 ;;Cortex;Supporter;coresupp;Sea;1;91;480;43728;100;110;280;;water unit
-;;Legion;Architeuthis;leganavybattlesub;Sea;2;180;2350;423000;1100;72;600;;water unit
-;;Legion;Argonaut;legnavyfrigate;Sea;1;215;2600;560040;370;72;460;;water unit
+;;Legion;Architeuthis;leganavybattlesub;Sea;2;0;2350;0;1100;72;0;;water unit
+;;Legion;Argonaut;legnavyfrigate;Sea;1;0;2600;0;370;72;0;;water unit
 ;;Legion;Corinth;leganavyartyship;Sea;2;434;22000;9559000;13000;48;2100;;water unit
 ;;Legion;Dolus;leganavyradjamship;Sea;2;0;1700;0;450;42;0;;water unit
 ;;Legion;Hecate;leganavyantinukecarrier;Sea;2;0;5000;0;1600;63;0;;water unit
 ;;Legion;Hippocampus;legnavyscout;Sea;1;60;700;42000;120;97;351;;water unit
 ;;Legion;Iapetus;legnavyaaship;Sea;1;0;1200;0;250;60;0;;water unit
-;;Legion;Ketea;legnavysub;Sea;1;93;600;55980;320;57;400;;water unit
+;;Legion;Ketea;legnavysub;Sea;1;0;600;0;320;57;0;;water unit
 ;;Legion;Leocampus;leganavyantiswarm;Sea;2;191;2300;439070;500;105;350;;water unit
 ;;Legion;Neptune;leganavyflagship;Sea;2;3047;48000;146241600;16000;63;1000;;water unit
 ;;Legion;Notus;leganavyaaship;Sea;2;0;3900;0;1000;57;0;;water unit
 ;;Legion;Octeres;legnavyartyship;Sea;1;60;4500;268650;1450;45;960;;water unit
 ;;Legion;Scylla;leganavybattleship;Sea;2;875;10350;9056250;2900;25;750;;water unit
-;;Legion;Sphyrna;leganavyheavysub;Sea;2;206;3900;804570;1900;39;850;;water unit
+;;Legion;Sphyrna;leganavyheavysub;Sea;2;0;3900;0;1900;39;0;;water unit
 ;;Legion;Syracusia;legnavydestro;Sea;1;171;3800;649040;875;58;700;;water unit
-;;Legion;Thalassa;leganavycruiser;Sea;2;485;5600;2716000;900;57;500;;water unit
+;;Legion;Thalassa;leganavycruiser;Sea;2;360;5600;2016000;900;57;500;;water unit
 ;;Legion;Ultor;leganavymissileship;Sea;2;300;3350;1005000;2000;61;1550;;water unit
 ;;Armada;Epic Dolphin;armdecadet3;Sea;3;1050;14400;15120000;8000;69;1300;;water unit, Epic / Archaic variant
 ;;Armada;Epic Ellysaw;armpshipt3;Sea;3;2198;13900;30550810;6500;81;475;;water unit, Epic / Archaic variant
-;;Armada;Epic Serpent;armserpt3;Sea;3;1375;26500;36437500;15000;45;800;;water unit, Epic / Archaic variant
-;;Armada;Epic Skater;armptt2;Sea;2;450;6700;3015000;2500;72;600;;water unit, Epic / Archaic variant
+;;Armada;Epic Serpent;armserpt3;Sea;3;0;26500;0;15000;45;0;;water unit, Epic / Archaic variant
+;;Armada;Epic Skater;armptt2;Sea;2;0;6700;0;2500;72;0;;water unit, Epic / Archaic variant
+;;Armada;Whistler;armsam;Vehicle;1;26;820;21156;150;55;550;;weak support: DPS below 40
+;;Cortex;Lasher;cormist;Vehicle;1;25;860;21672;155;52;575;;weak support: DPS below 40
 ;;Legion;Belcher;legbart;Bot;2;30;1780;53400;550;60;625;;weak support: DPS below 40
 ;;Legion;Lance;legrail;Vehicle;1;27;1100;29370;240;47;650;;weak support: DPS below 40
 ;;Legion;Satyr;leglob;Bot;1;30;550;16500;60;51;400;;weak support: DPS below 40

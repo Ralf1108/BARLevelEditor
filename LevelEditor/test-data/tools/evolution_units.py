@@ -46,7 +46,7 @@ def kind(u):
     return c.capitalize() or u["move"]
 
 # left out by hand (the name of the unit: the reason)
-MANUAL = {"corjugg": "too slow (speed 17)", "corban": "missile launcher"}
+MANUAL = {"corban": "missile launcher", "armprowl": "same values as the Marauder (a duplicate)"}
 
 def why(u):
     """why a unit is not included in Evolution (empty: it is included)"""
@@ -67,7 +67,8 @@ def why(u):
     if not r and (re.search(r"artillery|rocket|missile launcher|mortar|howitzer|mlrs", desc + " " + u["human"], re.I) or (main and main[0] in ("Cannon", "MissileLauncher") and float(main[1]) >= 1000)):
         r.append("artillery / rocket launcher")
     if not r and u["dps"] * u["hp"] < 10000: r.append("scout: DPS x health below 10000")
-    if not r and main and main[0] in ("MissileLauncher", "StarburstLauncher") and u["name"] not in ladder: r.append("rocket launcher (mainly a missile weapon)")
+    if not r and main and main[0] in ("MissileLauncher", "StarburstLauncher") and (len(main) < 7 or main[6] != "true") and u["name"] not in ladder: r.append("rocket launcher without homing (not for 1:1 fights)")
+    if not r and u["speed"] < 31 and u["name"] not in ladder: r.append("too slow (speed below 31)")
     if not r and u["dps"] < 40: r.append("weak support: DPS below 40")
     if not r and u["name"] in MANUAL: r.append(MANUAL[u["name"]])
     return ", ".join(r)
@@ -148,9 +149,10 @@ tab = ["# Evolution: unit candidates", "",
        "- Candidates: bots, vehicles and hovercraft with a ground weapon; they have a level in the table",
        "- Left out (the last column says why): constructors, aircraft, water units, commanders, drones, mine layers, Epic and Archaic variants, Tumbleweeds",
        "- Left out: units without a ground weapon (radar, jammers, spies, anti air, crawling bombs)",
-       "- Left out: artillery and rocket launchers (the description says so, the main weapon is a cannon or missile of 1000 Elmo or more, or the main weapon is a missile or rocket weapon: Salacia, Torch; the units of the first version are kept)",
+       "- Left out: artillery and rocket launchers (the description says so, the main weapon is a cannon or missile of 1000 Elmo or more, or the main weapon is a rocket without homing: Salacia, Rocketeer, Aggravator; homing missiles for 1:1 fights stay, like Karganeth and Torch; the units of the first version are kept)",
        "- Left out: scouts (DPS x health below 10000) and weak support units (DPS below 40): no chance in a fight",
-       "- Left out by hand: Behemoth (too slow) and Banisher (missile launcher)",
+       "- Left out: units that are too slow (speed below 31: Behemoth, Mammoth, Fatboy)",
+       "- Left out by hand: Banisher (missile launcher), Prowler (same values as the Marauder)",
        "- *Long range = yes*: laser, plasma and rail gun units of 850 Elmo or more (no missiles); they only join when the option Long range of the room is on",
        "- *Included*: the 30 units that were in the game before (the number is their level); the others are new candidates", "",
        "**How the level is found**", "",
