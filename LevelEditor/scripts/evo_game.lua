@@ -1581,12 +1581,16 @@ function A.update(n)
 	end
 	local keep = {}
 	for _, b in ipairs(A.beacons) do
-		local taker
+		local taker, refresher
 		for _, uid in ipairs(Spring.GetUnitsInCylinder(b.x, b.z, A.PICK)) do
 			local p = owner[uid]
-			if p and not p.out and not (p.abilities and p.abilities[b.kind]) then
-				taker = p
-				break
+			if p and not p.out then
+				if not (p.abilities and p.abilities[b.kind]) then
+					taker = p
+					break
+				elseif not refresher and p.cool and (p.cool[b.kind] or 0) > n then
+					refresher = p -- (has it already and it cools down)
+				end
 			end
 		end
 		if taker then
@@ -1594,6 +1598,12 @@ function A.update(n)
 			taker.abilities[b.kind] = true
 			A.due[#A.due + 1] = { n + A.BACK, b.kind } -- (the same kind comes back somewhere else)
 			say(string.format("%s found %s.", taker.name, ABILITIES[b.kind].name))
+			changed = true
+		elseif refresher then
+			-- a power-up the unit has already, while it cools down: the beacon is used up and the cooldown is gone
+			refresher.cool[b.kind] = nil
+			A.due[#A.due + 1] = { n + A.BACK, b.kind }
+			say(string.format("%s used a beacon: %s is ready again.", refresher.name, ABILITIES[b.kind].name))
 			changed = true
 		else
 			keep[#keep + 1] = b
