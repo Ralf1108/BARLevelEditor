@@ -32,6 +32,10 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - An enemy **above** your level is worth more: times (1 + the levels it is above you). A level 1 unit that kills a level 3 unit gets 8 x 3 = 24 points and jumps to level 4
 - Points to the next level: 3, 5, 8, 12, 20, 31, 50, 81, 129 (every level 1.6 times the one before)
 
+**Experience**
+- Every kill of another player gives your unit 0.1 experience (the game's own bonus: a little more health, damage and faster reloading); you keep it when you level up
+- Every death costs 0.1 again
+
 **Death**
 - Before Armageddon: the unit comes back after **5 seconds** at a random place far from the others, **one level lower** (never below 1); the points of the level are lost
 - Every unit spawns on the land the commanders stand on: on a map with water or islands all of them are on the same piece of land and can reach each other
@@ -50,7 +54,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
   - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
-  - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20; the rings warn everybody 5 seconds before), then missiles that never stop and get worse: more and more of them, faster and faster. First they come down far from the enemy human players (never around computer players; the circle starts at 2000 Elmo), then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
+  - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20; the rings warn everybody 5 seconds before), then missiles that never stop and get worse (every human enemy has missiles of his own that follow him: one at first, two after two minutes, then one more every two minutes, and the volleys come faster and faster): more and more of them, faster and faster. First they come down far from the enemy human players (never around computer players; the circle starts at 2000 Elmo), then closer and closer around them, until there is no way out; the rest covers more and more of the map. Your own unit and your allies are never hit (a wide gap); red rings warn 5 seconds before where each one comes down
 - What the gift kills counts for you; when you are out, the units of your gift blow up
 
 ![Gates of Hell: red rings where the next missiles come down](../../docs/evolution-gates-of-hell.jpg)
@@ -112,7 +116,8 @@ Chosen by damage per second times health; artillery, units for water and the bom
 ## On the screen
 
 - At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, kills, deaths and points bar, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
-- At the bottom in the middle: your own unit, big: level, unit, points bar, kills, deaths and the buttons of your abilities
+- At the bottom in the middle: your own unit, big: level, unit, points bar, a violet **XP bar** (the experience bonus you keep: +0.1 per kill of a player, -0.1 per death), kills, deaths and the buttons of your abilities
+- The overview at the right shows the XP bar of everybody, not the points: when the others level up stays hidden
 - After a respawn the camera jumps to your new unit
 - At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel

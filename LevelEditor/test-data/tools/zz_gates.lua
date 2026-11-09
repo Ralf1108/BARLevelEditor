@@ -17,7 +17,7 @@ function widget:GameFrame(f)
 	if f == 90 then log("level after Level Up:", tostring(level(me))); Spring.SendLuaRulesMsg("evo|debug|3") end
 	if f == 120 then log("level after Level Down:", tostring(level(me))); Spring.SendLuaRulesMsg("evo|debug|1") end
 	if f == 150 then log("level after Armageddon:", tostring(level(me)), "gift window:", tostring(Spring.GetTeamRulesParam(me, "evoGift"))); Spring.SendLuaRulesMsg("evo|gift|3") end
-	if f >= 300 and f % 600 == 0 then
+	if f >= 300 and f % 300 == 0 then
 		local rings = tostring(Spring.GetGameRulesParam("evoNukes") or "")
 		local n, dEnemy, dMe = 0, math.huge, math.huge
 		local ex, ez, mx, mz

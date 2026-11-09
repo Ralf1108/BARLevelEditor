@@ -14,11 +14,12 @@ function widget:GameFrame(f)
 		end
 		log("frame", f, "own unit", tostring(id), "level", tostring(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoStage")))
 	end
-	if f == 900 then
+	if f == 1250 and (Spring.GetModOptions() or {}).lanevodebug == "1" then Spring.SendLuaRulesMsg("evo|debug|1") end -- (with -Debug: Armageddon, the window of the gifts; the picture comes at 1300)
+	if f == (((Spring.GetModOptions() or {}).lanevodebug == "1") and 1300 or 900) then
 		Spring.SendCommands("screenshot png")
 		log("picture taken")
 	end
-	if f == 960 then
+	if f == 1360 then
 		Spring.SendCommands("quitforce")
 	end
 end

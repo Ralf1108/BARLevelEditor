@@ -143,6 +143,23 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 	end
 
+	-- the radiation symbol (three blades, a dark ring, a centre) in yellow
+	function H.atom(cx, cy, r)
+		gl.Color(1, 0.9, 0.1, 1)
+		for k = 0, 2 do
+			local c = 90 + k * 120
+			gl.BeginEnd(GL.TRIANGLE_FAN, function()
+				gl.Vertex(cx, cy)
+				for i = 0, 8 do
+					local a = math.rad(c - 30 + 60 * i / 8)
+					gl.Vertex(cx + r * math.cos(a), cy + r * math.sin(a))
+				end
+			end)
+		end
+		H.disc(cx, cy, r * 0.3, { 0.1, 0.05, 0.02, 1 })
+		H.disc(cx, cy, r * 0.17, { 1, 0.9, 0.1, 1 })
+	end
+
 	function H.disc(x, y, r, c)
 		gl.Color(c[1], c[2], c[3], c[4] or 1)
 		gl.BeginEnd(GL.TRIANGLE_FAN, function()
@@ -365,36 +382,41 @@ if not gadgetHandler:IsSyncedCode() then
 			gl.LineWidth(1)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(out and "-" or tostring(row.stage), bx, cy, 18 * s, "cvo")
-			-- the name (first line), the points bar (second line)
+			-- the abilities at the right (large squares), left of them kills above deaths (a column), then at the left the name (first line, shortened to the
+			-- room it has) and the points bar (second line)
+			local asize = rowH * 0.66
+			local ax = rx2 - 5 * asize * 1.15 - 2 * s
+			local kx = ax - 50 * s
 			local nx = bx + br + 8 * s
 			local name = teamName(team)
-			if #name > 14 then
-				name = name:sub(1, 13) .. "."
+			if out then
+				name = name .. "  (out)"
+			end
+			local room = kx - 6 * s - nx
+			while #name > 1 and gl.GetTextWidth(name) * 15 * s > room do
+				name = name:sub(1, #name - 2) .. "."
 			end
 			gl.Color(out and 0.55 or 1, out and 0.55 or 1, out and 0.55 or 1, 1)
-			gl.Text(out and (name .. "  (out)") or name, nx, cy + 9 * s, 15 * s, "vo")
-			local px1, px2 = nx, nx + 110 * s
-			local frac = out and 0 or (row.need > 0 and math.min(1, row.xp / row.need) or 1)
+			gl.Text(name, nx, cy + 9 * s, 15 * s, "vo")
+			local px1, px2 = nx, nx + 84 * s
+			-- the experience bar (the bonus of the unit that is kept), not the points: when the others level up stays their secret
+			local exp = Spring.GetTeamRulesParam(team, "evoExp") or 0
+			local frac = out and 0 or exp / (exp + 1)
 			H.box(px1, cy - 15 * s, px2, cy - 4 * s, 5 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
 			if frac > 0 then
-				local fill = row.need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
-				H.box(px1 + 1, cy - 14 * s, px1 + 1 + math.max(10 * s, (px2 - px1 - 2) * frac), cy - 5 * s, 4 * s, fill[1], fill[2])
+				H.box(px1 + 1, cy - 14 * s, px1 + 1 + math.max(10 * s, (px2 - px1 - 2) * frac), cy - 5 * s, 4 * s, { 0.3, 0.2, 0.6, 1 }, { 0.65, 0.5, 1, 1 })
 			end
 			if not out then
 				gl.Color(0.8, 0.85, 0.95, 1)
-				gl.Text(row.need > 0 and string.format("%d/%d", row.xp, row.need) or "MAX", px2 + 6 * s, cy - 9 * s, 12 * s, "vo")
+				gl.Text(string.format("XP %.1f", exp), px2 + 5 * s, cy - 9 * s, 11 * s, "vo")
 			end
-			-- like the own panel: the status at the left (kills and deaths in the first line after the name), the abilities as large squares at the right
-			local kx = nx + 102 * s
 			H.crosshair(kx, cy + 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(tostring(row.kills), kx + 11 * s, cy + 9 * s, 14 * s, "vo")
-			local dx = kx + 42 * s
-			H.skull(dx, cy + 9 * s, 7 * s)
+			H.skull(kx, cy - 9 * s, 7 * s)
 			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(row.deaths), dx + 11 * s, cy + 9 * s, 14 * s, "vo")
-			local asize = rowH * 0.66
-			H.abilities(team, rx2 - 5 * asize * 1.15 - 2 * s, cy, asize)
+			gl.Text(tostring(row.deaths), kx + 11 * s, cy - 9 * s, 14 * s, "vo")
+			H.abilities(team, ax, cy, asize)
 			y = ry1 - gap
 		end
 		if scrolling then
@@ -469,11 +491,17 @@ if not gadgetHandler:IsSyncedCode() then
 				end
 				gl.Color(1, 1, 1, cooling and 0.6 or 1)
 			end
-			gl.Text(a.name, cx, by1 + 11 * s, 12 * s, "cvo")
+			local w1, w2 = a.name:match("^(%S+)%s+(%S+)$")
+			if w1 then
+				gl.Text(w1, cx, by1 + 19 * s, 11 * s, "cvo") -- (two words: one line each, not too close to the edges)
+				gl.Text(w2, cx, by1 + 8 * s, 11 * s, "cvo")
+			else
+				gl.Text(a.name, cx, by1 + 11 * s, 12 * s, "cvo")
+			end
 			if a.key == "repair" and h and healthy and h.act == 0 and h.cool == 0 then
 				-- (not greyed: marked, a click does nothing now)
 				gl.Color(0.6, 1, 0.7, 1)
-				gl.Text("not needed", cx, by1 + 24 * s, 10 * s, "cvo")
+				gl.Text("not needed", cx, by1 + 30 * s, 9 * s, "cvo")
 			end
 			if not (h and h.act > 0) then
 				-- the energy it costs, top right: yellow, red when the energy is short (while it works the seconds left stand there)
@@ -560,11 +588,11 @@ if not gadgetHandler:IsSyncedCode() then
 		local nx = bx + br + 14 * s
 		local unit = Spring.GetTeamRulesParam(mine, "evoName") or ""
 		gl.Color(1, 1, 1, 1)
-		gl.Text(out and "Out" or (NAMES[unit] or unit), nx, y2 - 22 * s, 20 * s, "vo")
+		gl.Text(out and "Out" or (NAMES[unit] or unit), nx, y2 - 14 * s, 18 * s, "vo")
 		local need = p("evoNeed")
 		local px1, px2 = nx, nx + 210 * s
 		local frac = out and 0 or (need > 0 and math.min(1, p("evoXp") / need) or 1)
-		local py = (y1 + y2) / 2 - 2 * s
+		local py = y1 + 66 * s
 		H.box(px1, py - 9 * s, px2, py + 9 * s, 9 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
 		if frac > 0 then
 			local fill = need > 0 and { { 0.1, 0.55, 0.3, 1 }, { 0.35, 0.95, 0.6, 1 } } or { { 0.7, 0.45, 0.05, 1 }, { 1, 0.85, 0.3, 1 } }
@@ -572,7 +600,16 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 		gl.Color(1, 1, 1, 1)
 		gl.Text(out and "" or (need > 0 and string.format("%d / %d points", p("evoXp"), need) or "MAX"), (px1 + px2) / 2, py, 12 * s, "cvo")
-		local ky = y1 + 20 * s
+		-- the experience bar under the points: the bonus of the unit (+0.1 for a kill of a player, -0.1 for a death), kept through the levels
+		local exp = p("evoExp")
+		local ey = y1 + 43 * s
+		H.box(px1, ey - 6 * s, px2, ey + 6 * s, 6 * s, { 0.02, 0.02, 0.04, 0.9 }, { 0.06, 0.06, 0.1, 0.9 }, { 0.4, 0.45, 0.6, 0.6 })
+		if not out and exp > 0 then
+			H.box(px1 + 1, ey - 5 * s, px1 + 1 + math.max(12 * s, (px2 - px1 - 2) * exp / (exp + 1)), ey + 5 * s, 5 * s, { 0.3, 0.2, 0.6, 1 }, { 0.65, 0.5, 1, 1 })
+		end
+		gl.Color(1, 1, 1, 1)
+		gl.Text(out and "" or string.format("XP %.1f", exp), (px1 + px2) / 2, ey, 11 * s, "cvo")
+		local ky = y1 + 18 * s
 		H.crosshair(nx + 8 * s, ky, 8 * s)
 		gl.Color(1, 1, 1, 1)
 		gl.Text(tostring(p("evoKills")) .. " kills", nx + 20 * s, ky, 13 * s, "vo")
@@ -585,7 +622,7 @@ if not gadgetHandler:IsSyncedCode() then
 		H.dbg = nil
 		if (Spring.GetModOptions() or {}).lanevodebug == "1" then
 			H.dbg = {}
-			local bw, bh = 120 * s, 30 * s
+			local bw, bh = 132 * s, 30 * s
 			local by1, by2 = y2 + 6 * s, y2 + 6 * s + bh
 			local specs = { { "Armageddon", { 0.35, 0.12, 0.1 }, { 0.6, 0.25, 0.15 } }, { "Level Up", { 0.08, 0.35, 0.12 }, { 0.2, 0.65, 0.3 }, "up" },
 				{ "Level Down", { 0.4, 0.08, 0.08 }, { 0.75, 0.2, 0.2 }, "down" } }
@@ -606,7 +643,8 @@ if not gadgetHandler:IsSyncedCode() then
 					end)
 					gl.Text(sp[1], bx + 30 * s, (by1 + by2) / 2, 14 * s, "vo")
 				else
-					gl.Text(sp[1], bx + bw / 2, (by1 + by2) / 2, 14 * s, "cvo")
+					H.atom(bx + 17 * s, (by1 + by2) / 2, 9 * s)
+					gl.Text(sp[1], bx + 32 * s, (by1 + by2) / 2, 14 * s, "vo")
 				end
 				bx = bx + bw + 8 * s
 			end
@@ -713,20 +751,27 @@ if not gadgetHandler:IsSyncedCode() then
 			gl.Text(a.tip, rx + 44 * s, byy - 26 * s, 10.5 * s, "vo")
 		end
 		-- Armageddon (right, bottom)
-		local fy = ay - 32 * s - 5 * 44 * s - 14 * s
+		local fy = ay - 32 * s - 5 * 44 * s - 34 * s
 		gl.Color(1, 0.4, 0.25, 1)
-		gl.Text("Level 10 brings ARMAGEDDON", rx, fy - 8 * s, 16 * s, "vo")
+		gl.Text("ARMAGEDDON", rx, fy - 8 * s, 16 * s, "vo")
+		gl.Color(0.85, 0.88, 0.95, 1)
+		gl.Text("(when a player reaches level 10)", rx + 140 * s, fy - 8 * s, 11.5 * s, "vo")
 		gl.Color(0.85, 0.88, 0.95, 1)
 		gl.Text("No fog of war, no respawn, the last one standing wins.", rx, fy - 28 * s, 11.5 * s, "vo")
 		gl.Text("The first one on level 10 chooses a gift:", rx, fy - 44 * s, 11.5 * s, "vo")
-		local gifts = { { "Hell on Earth", "8 tier 3 units; a lost one is replaced. Yours." }, { "Heaven on Earth", "8 Dragons around you, lost ones replaced. Yours." },
-			{ "Gates of Hell", "Missiles without end, ever closer to the enemies." } }
+		-- the three gifts as small buttons in the colors of the window of the gifts (red, blue, atom yellow)
+		local gifts = {
+			{ "Hell on Earth", "8 tier 3 units; lost ones replaced, +1 every 30 s", { 0.22, 0.02, 0.02 }, { 0.75, 0.13, 0.04 }, { 1, 0.55, 0.2 } },
+			{ "Heaven on Earth", "8 Dragons around you; lost ones replaced, +1 every 30 s", { 0.03, 0.10, 0.32 }, { 0.22, 0.52, 0.98 }, { 0.7, 0.88, 1 } },
+			{ "Gates of Hell", "Nuclear missiles without end, ever closer to the enemies", { 0.07, 0.07, 0.01 }, { 0.38, 0.34, 0.03 }, { 1, 0.9, 0.1 } },
+		}
 		for g, gift in ipairs(gifts) do
-			local gy = fy - 62 * s - (g - 1) * 18 * s
-			gl.Color(1, 0.8, 0.4, 1)
-			gl.Text(gift[1], rx, gy, 12 * s, "vo")
-			gl.Color(0.8, 0.84, 0.92, 1)
-			gl.Text(gift[2], rx + 118 * s, gy, 10.5 * s, "vo")
+			local gy2 = fy - 54 * s - (g - 1) * 34 * s
+			H.box(rx, gy2 - 28 * s, x2 - 16 * s, gy2, 5 * s, { gift[3][1], gift[3][2], gift[3][3], 0.96 }, { gift[4][1], gift[4][2], gift[4][3], 0.96 }, { gift[5][1], gift[5][2], gift[5][3], 1 }, 2)
+			gl.Color(gift[5][1], gift[5][2], gift[5][3], 1)
+			gl.Text(gift[1], rx + 10 * s, gy2 - 14 * s, 13 * s, "vo")
+			gl.Color(1, 1, 1, 1)
+			gl.Text(gift[2], rx + 130 * s, gy2 - 14 * s, 10 * s, "vo")
 		end
 		H.helpArea = { x1, y1, x2, y2 }
 		gl.Color(1, 1, 1, 1)
@@ -809,22 +854,22 @@ if not gadgetHandler:IsSyncedCode() then
 		H.character(s)
 		H.help(s, vsx, vsy)
 		-- radars being taken: "Taking 3/5" in the color of the taker above the radar
-		for x, z, s, t in tostring(Spring.GetGameRulesParam("evoTaking") or ""):gmatch("(%d+),(%d+),(%d+),(%d+)") do
+		for x, z, secs, t in tostring(Spring.GetGameRulesParam("evoTaking") or ""):gmatch("(%d+),(%d+),(%d+),(%d+)") do
 			x, z = tonumber(x), tonumber(z)
 			local sx, sy, onScreen = Spring.WorldToScreenCoords(x, Spring.GetGroundHeight(x, z) + 90, z)
 			if onScreen ~= false and Spring.IsSphereInView(x, Spring.GetGroundHeight(x, z), z, 60) then
 				local r, g, b = Spring.GetTeamColor(tonumber(t))
 				gl.Color(r or 1, g or 1, b or 1, 1)
-				gl.Text(string.format("Taking %d/5", tonumber(s)), sx, sy, 18, "co")
+				gl.Text(string.format("Taking %d/5", tonumber(secs)), sx, sy, 18 * s, "co")
 			end
 		end
 		-- the first 10 seconds of Armageddon: big letters above the middle of the screen (above the window of the gift)
 		if arma > 0 and Spring.GetGameFrame() - arma < 300 then
 			gl.Color(1, 0.25, 0.15, 1)
-			gl.Text("ARMAGEDDON IS HERE", vsx * 0.5, vsy * 0.76, 56, "co")
+			gl.Text("ARMAGEDDON IS HERE", vsx * 0.5, vsy * 0.76, 46 * s, "co")
 			gl.Color(1, 0.85, 0.6, 1)
-			gl.Text(tostring(Spring.GetGameRulesParam("evoHero") or "") .. " reached level 10. The fog of war is gone: everybody sees everybody.", vsx * 0.5, vsy * 0.76 - 50, 24, "co")
-			gl.Text("A lost unit does not come back any more. The last one standing wins.", vsx * 0.5, vsy * 0.76 - 82, 24, "co")
+			gl.Text(tostring(Spring.GetGameRulesParam("evoHero") or "") .. " reached level 10. The fog of war is gone: everybody sees everybody.", vsx * 0.5, vsy * 0.76 - 42 * s, 18 * s, "co")
+			gl.Text("A lost unit does not come back any more. The last one standing wins.", vsx * 0.5, vsy * 0.76 - 68 * s, 18 * s, "co")
 		end
 		gl.Color(1, 1, 1, 1)
 	end
@@ -903,6 +948,7 @@ local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
 local WILD_HP = 0.2 -- health of a wild unit (part of the normal): a fight with some damage
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
+local EXP_STEP = 0.1 -- the experience of the unit (the game's own: more health, damage, reload) for a kill of a player unit, minus it for a death
 local NO_AIM = (Spring.GetModOptions() or {}).lanevoaim == "0" -- the game option of the room: no auto-aim, the players aim themselves
 local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
@@ -990,6 +1036,7 @@ local function publish()
 		Spring.SetTeamRulesParam(p.team, "evoUnit", p.unit or 0, pub)
 		Spring.SetTeamRulesParam(p.team, "evoSpawn", p.spawns, pub)
 		Spring.SetTeamRulesParam(p.team, "evoName", p.unitName or "", pub)
+		Spring.SetTeamRulesParam(p.team, "evoExp", p.exp or 0, pub)
 		Spring.SetTeamRulesParam(p.team, "evoGift", p.giftAt and 1 or 0, pub)
 	end
 	Spring.SetGameRulesParam("evoTeams", table.concat(teams, ","))
@@ -1380,6 +1427,9 @@ local function spawn(p, x, z, facing)
 	p.unit, p.unitName, p.respawnAt = id, name, nil
 	if id then
 		owner[id] = p
+		if (p.exp or 0) > 0 then
+			Spring.SetUnitExperience(id, p.exp)
+		end
 		if p.ai then
 			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
 		elseif NO_AIM then
@@ -1570,7 +1620,8 @@ local function heavenStep(n)
 end
 
 -- Gates of Hell: missiles at a growing rate (see gatesStep); a red ring warns NUKE_WARN frames before each one
-local gates = {} -- { p, start, nextAt }: the players whose Gates of Hell run
+local gates = {} -- { p, start, nextAt, follow = team -> frame }: the players whose Gates of Hell run
+local FOLLOW_AI = (Spring.GetModOptions() or {}).lanevotest == "1" -- test only: the computer players are followed too (a test has no second human)
 local GATES_PER_PLAYER = 10 -- the first barrage: this many missiles per player (not per map size), all at once
 local function giftGates(p)
 	local now = Spring.GetGameFrame()
@@ -1603,18 +1654,19 @@ local function giftGates(p)
 	end
 end
 
--- Gates of Hell never ends and gets worse (after the first barrage of giftGates): a volley every `interval` (from 10 s at the start down to 3 s over four minutes) of 1 + t/45 s missiles (at most 8). Half of
--- the missiles of a volley follow the enemy players: first far from their unit (2000 Elmo, 12 Elmo less per second down to 120; only human players, never the computer players), so they come closer and
--- closer; the other half land at random places of the land, so more and more of the map is covered. Never within NUKE_SAFE Elmo of a unit of the player
--- who chose the gate or of his alliance.
+-- Gates of Hell never ends and gets worse (after the first barrage of giftGates). Every human enemy has missiles of his own that follow him: a volley at him
+-- every `interval` (10 s at the start, 3 s after four minutes) of 1 + t / 120 s missiles (one at the start, two after two minutes, then one more every two
+-- minutes), at 2000 Elmo (+ up to 200) from his unit at first, 12 Elmo less per second down to 120, so they come closer and closer. Computer players are not
+-- followed. Besides that one missile at a random place of the land at every volley rhythm of the gate, so the map fills up. Never within NUKE_SAFE Elmo of a unit
+-- of the player who chose the gate or of his alliance.
 local function gatesStep(n)
 	for gi = #gates, 1, -1 do
 		local g = gates[gi]
 		if finished or g.p.out then
 			table.remove(gates, gi)
-		elseif n >= g.nextAt then
+		else
 			local t = (n - g.start) / FPS
-			g.nextAt = n + math.floor(math.max(3, 10 - 7 * t / 240) * FPS) -- 10 s at the start, 3 s after four minutes
+			local interval = math.floor(math.max(3, 10 - 7 * t / 240) * FPS) -- 10 s at the start, 3 s after four minutes
 			local safe = {}
 			for _, q in ipairs(players) do
 				if q.ally == g.p.ally and q.unit and Spring.ValidUnitID(q.unit) then
@@ -1622,12 +1674,6 @@ local function gatesStep(n)
 					if ux then
 						safe[#safe + 1] = { ux, uz }
 					end
-				end
-			end
-			local targets = {}
-			for _, q in ipairs(players) do
-				if enemies(g.p, q) and not q.ai and not q.out and q.unit and Spring.ValidUnitID(q.unit) then -- (only human players are followed, not the computer players)
-					targets[#targets + 1] = q
 				end
 			end
 			local function ok(x, z)
@@ -1638,26 +1684,35 @@ local function gatesStep(n)
 				end
 				return x > 100 and z > 100 and x < Game.mapSizeX - 100 and z < Game.mapSizeZ - 100
 			end
-			local count = math.min(8, 1 + math.floor(t / 45))
-			for k = 1, count do
-				local x, z
-				for _ = 1, 20 do
-					if k % 2 == 1 and #targets > 0 then
-						local q = targets[math.random(1, #targets)]
-						local qx, _, qz = Spring.GetUnitPosition(q.unit)
-						local d = math.max(120, 2000 - t * 12) + math.random() * 200
-						local a = math.random() * 2 * math.pi
-						x, z = qx + math.cos(a) * d, qz + math.sin(a) * d
-					else
-						x, z = randomLand()
+			local function add(x, z, k)
+				nukes[#nukes + 1] = { frame = n + NUKE_WARN + (k - 1) * 20, x = math.floor(x), z = math.floor(z), p = g.p }
+			end
+			g.follow = g.follow or {}
+			for _, q in ipairs(players) do
+				if enemies(g.p, q) and (not q.ai or FOLLOW_AI) and not q.out and q.unit and Spring.ValidUnitID(q.unit) and n >= (g.follow[q.team] or 0) then
+					g.follow[q.team] = n + interval
+					local qx, _, qz = Spring.GetUnitPosition(q.unit)
+					for k = 1, 1 + math.floor(t / 120) do
+						for _ = 1, 20 do
+							local d = math.max(120, 2000 - t * 12) + math.random() * 200
+							local a = math.random() * 2 * math.pi
+							local x, z = qx + math.cos(a) * d, qz + math.sin(a) * d
+							if ok(x, z) then
+								add(x, z, k)
+								break
+							end
+						end
 					end
+				end
+			end
+			if n >= g.nextAt then
+				g.nextAt = n + interval
+				for _ = 1, 20 do
+					local x, z = randomLand()
 					if ok(x, z) then
+						add(x, z, 1)
 						break
 					end
-					x = nil
-				end
-				if x then
-					nukes[#nukes + 1] = { frame = n + NUKE_WARN + (k - 1) * 20, x = math.floor(x), z = math.floor(z), p = g.p }
 				end
 			end
 		end
@@ -2363,6 +2418,10 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 	if killer and killer ~= victim and (wasWild or enemies(killer, victim)) then
 		if not wasWild then
 			killer.kills = killer.kills + 1
+			killer.exp = (killer.exp or 0) + EXP_STEP -- (the experience of the unit: kept when the unit evolves)
+			if killer.unit and Spring.ValidUnitID(killer.unit) then
+				Spring.SetUnitExperience(killer.unit, killer.exp)
+			end
 		end
 		-- catching up: a player below the best one gets more (R.CATCH_UP per stage below it)
 		local best = killer.stage
@@ -2380,6 +2439,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 	end
 	victim.unit, victim.xp = nil, 0
 	victim.deaths = victim.deaths + 1
+	victim.exp = math.max(0, (victim.exp or 0) - EXP_STEP) -- (a death costs the same experience)
 	A.lose(victim) -- the abilities are gone with the unit
 	A.publish()
 	if armageddon then
