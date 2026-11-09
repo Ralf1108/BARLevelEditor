@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 21, stamp = "2026-11-09 07:05" }
+local LAN_VERSION = { number = 22, stamp = "2026-11-09 09:10" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -2119,7 +2119,7 @@ end
 
 ---------------------------------------------------------------- The button "LAN Options" in the title row of the room and its menu
 -- The room stays as the lobby has it. A green button "LAN Options" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
--- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: on / off; a joiner sees the state). They open their windows
+-- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier and Auto-aim; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
 -- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
@@ -2138,9 +2138,60 @@ local function leaveButton()
 	return found
 end
 
+local function closeEvoMenu()
+	if ui.evoMenu then pcall(function() ui.evoMenu:Dispose() end) end
+	ui.evoMenu = nil
+end
+
 local function closeLanMenu()
+	closeEvoMenu()
 	if ui.lanMenu then pcall(function() ui.lanMenu:Dispose() end) end
 	ui.lanMenu, ui.evoMenuBtn = nil, nil
+end
+
+-- The settings of Evolution (the submenu of the button Evolution; the host only): On / Off, Unit multiplier (1 to 4: the wild units and towers on the map
+-- times that number, game option lanevomult) and Auto-aim (on: the units shoot at what they see as in the game; off: only at what the player orders, game option
+-- lanevoaim=0, the players aim themselves with the order Attack)
+local EVO_MULTS = { "1", "2", "3", "4" }
+local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" end
+local function evoAim() return not (S and S.battle.modoptions.lanevoaim == "0") end
+local function setEvoOption(key, value)
+	if not S then return end
+	S.battle.modoptions[key] = value
+	toBattle("SETSCRIPTTAGS game/modoptions/" .. key .. "=" .. (value or ""))
+	log("Evolution option", key, tostring(value))
+end
+
+local function openEvoMenu()
+	closeEvoMenu()
+	local b = ui.evoMenuBtn
+	if not b or not S then return end
+	local sx, sy = b:LocalToScreen(b.width + 4, 0)
+	local on = evolutionOn()
+	local items = {
+		{ caption = "Evolution: " .. (on and "On" or "Off"), class = on and "action_button" or "option_button", tip = EVO_TIP,
+			fn = function() setEvolution(not evolutionOn()); openEvoMenu() end },
+		{ caption = "Unit multiplier: " .. evoMult() .. "x", tip = "How many wild units and towers stand on the map: 1x is the normal number, 2x twice as many (a denser map). Click to change (1 - 4).",
+			fn = function()
+				local cur = evoMult()
+				local nxt = EVO_MULTS[1]
+				for i, v in ipairs(EVO_MULTS) do if v == cur then nxt = EVO_MULTS[i % #EVO_MULTS + 1] end end
+				setEvoOption("lanevomult", nxt ~= "1" and nxt or nil)
+				openEvoMenu()
+			end },
+		{ caption = "Auto-aim: " .. (evoAim() and "On" or "Off"), class = evoAim() and "action_button" or "option_button",
+			tip = "Off: the units do not shoot by themselves, the players have to aim with the order Attack (more like a deathmatch).",
+			fn = function() setEvoOption("lanevoaim", evoAim() and "0" or nil); openEvoMenu() end },
+	}
+	local w = 270
+	ui.evoMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
+		resizable = false, draggable = false, classname = "main_window" }
+	for i, it in ipairs(items) do
+		Button:New { parent = ui.evoMenu, x = 2, right = 2, y = (i - 1) * 44, height = 40, caption = it.caption, objectOverrideFont = Config():GetFont(2),
+			classname = it.class or "action_button", tooltip = it.tip, OnClick = { function(self) it.fn(self) end } }
+	end
+	ui.evoMenu:BringToFront()
+	log("Evolution menu opened:", #items, "buttons")
 end
 
 local function evoCaption() return evolutionShown() and "Evolution on" or "Evolution" end
@@ -2156,7 +2207,7 @@ local function openLanMenu()
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
 		items[#items + 1] = { caption = evoCaption(), tip = EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
-			fn = function() if S then setEvolution(not evolutionOn()); openLanMenu() end end }
+			fn = function() if S then if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 	end
 	local w = 230
 	ui.lanMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
@@ -2233,6 +2284,11 @@ function widget:Update()
 		local ok, hit = pcall(function() return screen0:HitTest(cx, cy) end)
 		log("test: the control under the middle of the button LAN Play:", tostring(ok and hit and (hit.caption or hit.text or hit.classname)))
 		openLanMenu()
+	end
+	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
+		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Auto-aim) is opened, with 2x and no auto-aim set (a picture of it)
+		setEvoOption("lanevomult", "2"); setEvoOption("lanevoaim", "0")
+		openEvoMenu()
 	end
 	if tonumber(cfg.evolutionClose) and ui.popup and clock() > tonumber(cfg.evolutionClose) then
 		cfg.evolutionClose = nil -- test: the window with the rules is closed (a picture of the room with the button)
