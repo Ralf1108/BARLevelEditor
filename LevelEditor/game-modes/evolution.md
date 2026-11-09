@@ -62,7 +62,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 
 
 **Wild units and towers**
-- Units of nobody (Gaia) with 30 % of their health stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
+- Units of nobody (Gaia) with half of their health (the health bar shows 50 %) stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
 - Most of them **walk around** the map, about one in five stands still (and the towers), and they **only shoot back**
 - They **grow with the weakest player**: a new one has the level of the weakest player who is still in; one above it is replaced at once by one of its level (so the weakest player always has a chance), one two or more levels below it too, one every 3 seconds
 - One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds

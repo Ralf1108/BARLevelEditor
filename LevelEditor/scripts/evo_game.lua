@@ -979,7 +979,7 @@ local FIRST, FACTOR = 3, 1.6 -- points from stage 1 to 2, and how much more ever
 local RESPAWN = 5 * FPS -- frames until a destroyed unit comes back
 local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
 local REGEN, REGEN_STEP, REGEN_WAIT = 0.002, 30, 150 -- the unit of a player regenerates 0.2 % of its health per second (1 % in 5 s), 5 s after the last damage
-local WILD_HP = 0.3 -- health of a wild unit (part of the normal): a fight with some damage
+local WILD_HP = 0.5 -- the health of a wild unit at the start (part of the normal maximum: the bar shows it): a fight with some damage
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
 local EXP_STEP = 0.1 -- the experience of the unit (the game's own: more health, damage, reload) for a kill of a player unit, minus it for a death
@@ -1920,9 +1920,7 @@ local function spawnWild(s, tower, x, z, facing)
 	if id then
 		wild[id] = { stage = s, tower = tower, still = tower or math.random() < R.STILL }
 		local _, maxHp = Spring.GetUnitHealth(id)
-		local hp = math.max(1, (maxHp or 100) * WILD_HP)
-		Spring.SetUnitMaxHealth(id, hp)
-		Spring.SetUnitHealth(id, hp)
+		Spring.SetUnitHealth(id, math.max(1, (maxHp or 100) * WILD_HP)) -- (the maximum stays: the health bar shows the fraction)
 		Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { RETURN_FIRE }, 0)
 		Spring.GiveOrderToUnit(id, CMD_MOVE_STATE, { HOLD_POSITION }, 0)
 	end
