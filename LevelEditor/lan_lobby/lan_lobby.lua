@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 20, stamp = "2026-11-08 21:12" }
+local LAN_VERSION = { number = 21, stamp = "2026-11-09 07:05" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -471,6 +471,7 @@ selectScenario = function(name)
 	S.gameFile = nil
 	if data then
 		S.gameFile = { data = data, size = #data, hash = VFS.CalculateHash(data, 0), ver = own.ver, name = own.name }
+		S.servedGames = S.servedGames or {}; S.servedGames[S.gameFile.hash] = S.gameFile
 		toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size)
 	else
 		say("Warning: the extra game of the scenarios is not installed on the host (run the Level Editor setup).")
@@ -677,6 +678,7 @@ function syncPveGame() -- (the local declared above autohostCommand)
 		if data then
 			if not (S.gameFile and S.gameFile.ver == own.ver) then
 				S.gameFile = { data = data, size = #data, hash = VFS.CalculateHash(data, 0), ver = own.ver, name = own.name }
+				S.servedGames = S.servedGames or {}; S.servedGames[S.gameFile.hash] = S.gameFile
 			end
 			S.pveGame = true
 			toBattle("SETSCRIPTTAGS game/modoptions/lansync=" .. S.gameFile.ver .. "|" .. S.gameFile.hash .. "|" .. S.gameFile.size)
@@ -840,9 +842,11 @@ local function serverLine(c, line)
 		return
 	end
 	if cmd == "FETCHGAME" and not c.name then
+		-- by hash: a file the host announced a moment ago and has replaced since (the room changed) is still served
 		local g = S.gameFile
-		if g and args == g.hash then c.serve = { pos = 1, header = "SIZE " .. g.size .. "\n" }; log("serving the extra game to", tostring(c.sock:getpeername()))
-		else c.close = true end
+		if not (g and args == g.hash) then g = S.servedGames and S.servedGames[args] end
+		if g then c.serve = { pos = 1, header = "SIZE " .. g.size .. "\n", g = g }; log("serving the extra game to", tostring(c.sock:getpeername()))
+		else c.close = true; log("FETCHGAME refused: the host has no extra game with the hash", tostring(args), "(current: " .. tostring(S.gameFile and S.gameFile.hash) .. ")") end
 		return
 	end
 	if cmd == "LANVER" and not c.name then
@@ -969,16 +973,17 @@ local function updateServer()
 			local ok, e = pcall(serverLine, c, line)
 			if not ok then log("server error:", tostring(e), "in", line:sub(1, 60)) end
 		end
-		if c.serve and S.gameFile then
+		if c.serve then
 			local sv = c.serve
+			local g = sv.g
 			if sv.header then
 				local n = c.sock:send(sv.header)
 				if n then sv.header = nil end
 			else
-				local last, e, partial = c.sock:send(S.gameFile.data, sv.pos, math.min(sv.pos + 65535, S.gameFile.size))
+				local last, e, partial = c.sock:send(g.data, sv.pos, math.min(sv.pos + 65535, g.size))
 				local sent = last or partial
 				if sent then sv.pos = sent + 1 end
-				if sv.pos > S.gameFile.size then c.close = true; log("extra game served") end
+				if sv.pos > g.size then c.close = true; log("extra game served") end
 			end
 		end
 		if c.mapServe then
@@ -1157,7 +1162,7 @@ local function hookConnect()
 		if lan and lan.role == "client" and self.modoptions and self.modoptions.lansync and self.modoptions.lansync ~= "" then
 			local want = gameOfTag((self.modoptions.lansync or ""):match("^(%x+)|"))
 			if not want then
-				local msg = "The host plays " .. ((self.modoptions.lanscenario and self.modoptions.lanscenario ~= "") and ("the scenario '" .. self.modoptions.lanscenario .. "'") or "with a Scavengers / Raptors AI") .. " with another version of the Level Editor (no game version announced): please update the Level Editor manually."
+				local msg = "The host plays " .. ((self.modoptions.lanscenario and self.modoptions.lanscenario ~= "") and ("the scenario '" .. self.modoptions.lanscenario .. "'") or (self.modoptions.lanevolution == "1" and "the game mode Evolution" or "an extra game")) .. " with another version of the Level Editor (no game version announced): please update the Level Editor manually."
 				log("cannot join the scenario:", msg)
 				bigPopup(msg)
 				return
@@ -1379,7 +1384,7 @@ local function updateSync()
 	local function yes() lan.syncGame = want; startFetch(hash, tonumber(size)) end
 	local function no() lan.syncFailed = ver; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
 	if cfg.autoAccept then yes(); return end
-	local q = "The host plays " .. ((mo.lanscenario and mo.lanscenario ~= "") and ("the scenario '" .. mo.lanscenario .. "'") or "with a Scavengers / Raptors AI") .. " with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
+	local q = "The host plays " .. ((mo.lanscenario and mo.lanscenario ~= "") and ("the scenario '" .. mo.lanscenario .. "'") or (mo.lanevolution == "1" and "the game mode Evolution" or "an extra game (Scavengers / Raptors AI, late join)")) .. " with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
 	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
 end
 
