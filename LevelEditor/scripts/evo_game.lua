@@ -979,7 +979,8 @@ local FIRST, FACTOR = 3, 1.6 -- points from stage 1 to 2, and how much more ever
 local RESPAWN = 5 * FPS -- frames until a destroyed unit comes back
 local WILD_BACK = 10 * FPS -- frames until a destroyed wild unit comes back
 local REGEN, REGEN_STEP, REGEN_WAIT = 0.002, 30, 150 -- the unit of a player regenerates 0.2 % of its health per second (1 % in 5 s), 5 s after the last damage
-local WILD_HP = 0.5 -- the health of a wild unit at the start (part of the normal maximum: the bar shows it): a fight with some damage
+local WILD_HP = math.max(0.1, math.min(1, (tonumber((Spring.GetModOptions() or {}).lanevohp) or 50) / 100)) -- the health of a wild unit at the start (part of the normal maximum: the bar shows it; game option lanevohp 10 - 100, default 50)
+local REGEN_ON = (Spring.GetModOptions() or {}).lanevoregen ~= "0" -- game option lanevoregen=0: the units of the players do not regenerate
 local START_AFTER, START_UNTIL = 30, 900 -- frames: the commanders are looked for from START_AFTER on (BAR creates them at the start), new ones until START_UNTIL
 local CMD_FIRE_STATE, CMD_MOVE_STATE = CMD.FIRE_STATE, CMD.MOVE_STATE
 local EXP_STEP = 0.1 -- the experience of the unit (the game's own: more health, damage, reload) for a kill of a player unit, minus it for a death
@@ -2383,7 +2384,7 @@ function gadget:GameFrame(n)
 		upgradeWild()
 		upgradeRadars()
 	end
-	if n % REGEN_STEP == 0 then
+	if REGEN_ON and n % REGEN_STEP == 0 then
 		-- the units regenerate: REGEN of the health every REGEN_STEP frames, not for REGEN_WAIT frames after the last damage
 		for _, p in ipairs(players) do
 			local id = p.unit

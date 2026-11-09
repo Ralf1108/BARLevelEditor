@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 24, stamp = "2026-11-09 12:30" }
+local LAN_VERSION = { number = 25, stamp = "2026-11-09 13:40" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -2142,7 +2142,7 @@ end
 
 ---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
 -- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
--- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier; a joiner sees the state). They open their windows
+-- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier, Unit health, Regeneration, Debug mode; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
 -- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
@@ -2176,6 +2176,10 @@ end
 -- times that number, game option lanevomult)
 local EVO_MULTS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }
 local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" end
+-- Unit health (10 % to 100 %, default 50 %: the health the wild units start with, game option lanevohp) and Regeneration (On / Off, default on; lanevoregen=0 for off)
+local EVO_HPS = { "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" }
+local function evoHp() return (S and S.battle.modoptions.lanevohp) or "50" end
+local function evoRegen() return not (S and S.battle.modoptions.lanevoregen == "0") end
 local function setEvoOption(key, value)
 	if not S then return end
 	S.battle.modoptions[key] = value
@@ -2200,6 +2204,17 @@ local function openEvoMenu()
 				setEvoOption("lanevomult", nxt ~= "1" and nxt or nil)
 				openEvoMenu()
 			end },
+		{ caption = "Unit health: " .. evoHp() .. " %", tip = "The health the wild units (Gaia) start with, as a part of their normal health (the health bar shows it): 50 % is the default, 100 % full health, down to 10 %. Click to step through the values.",
+			fn = function()
+				local cur = evoHp()
+				local nxt = EVO_HPS[1]
+				for i, v in ipairs(EVO_HPS) do if v == cur then nxt = EVO_HPS[i % #EVO_HPS + 1] end end
+				setEvoOption("lanevohp", nxt ~= "50" and nxt or nil)
+				openEvoMenu()
+			end },
+		{ caption = "Regeneration: " .. (evoRegen() and "On" or "Off"), class = evoRegen() and "action_button" or "negative_button",
+			tip = "Regeneration of the units of the players " .. (evoRegen() and "on" or "off") .. ": on = every unit heals 1 % of its health every 5 seconds (0.2 % per second), starting 5 seconds after the last damage; off = no healing except the power-up Repair and evolving. Click to change.",
+			fn = function() setEvoOption("lanevoregen", evoRegen() and "0" or nil); openEvoMenu() end },
 		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
 			tip = "Debug mode " .. (S.battle.modoptions.lanevodebug == "1" and "on" or "off") .. ": extra buttons above the own panel in the game for testing (Armageddon, Level Up / Down, XP Up / Down, power-ups, a star for random values, Hide). Click to change.",
 			fn = function() setEvoOption("lanevodebug", S.battle.modoptions.lanevodebug == "1" and nil or "1"); openEvoMenu() end },
@@ -2227,7 +2242,7 @@ local function openLanMenu()
 	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
-		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 	end
 	local w = 230
@@ -2328,7 +2343,7 @@ function widget:Update()
 		openLanMenu()
 	end
 	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
-		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Debug mode) is opened, with 2x set (a picture of it)
+		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Debug mode) is opened, with 2x set (a picture of it)
 		setEvoOption("lanevomult", "2")
 		openEvoMenu()
 	end

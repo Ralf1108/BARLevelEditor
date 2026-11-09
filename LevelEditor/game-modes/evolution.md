@@ -15,9 +15,11 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - **Evolution** in the menu opens a small menu of its own with the settings (hold the mouse over a button for its explanation):
   - **On / Off**: a green button when on, red when off; off is the default
   - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
+  - **Unit health**: the health the wild units start with, from 10 % to 100 % in steps of 10, click to step through; 50 % is the default (the health bar of a wild unit shows it)
+  - **Regeneration**: On (default) or Off: whether the units of the players heal by themselves (1 % of the health every 5 seconds, starting 5 seconds after the last damage; the tooltip tells the rate)
   - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
-![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier and Debug mode](../../docs/evolution-room.jpg)
+![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration and Debug mode](../../docs/evolution-room.jpg)
 
 ![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
