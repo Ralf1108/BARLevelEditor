@@ -2189,9 +2189,9 @@ local function openEvoMenu()
 	local sx, sy = b:LocalToScreen(b.width + 4, 0)
 	local on = evolutionOn()
 	local items = {
-		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = EVO_TIP,
+		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Evolution is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch the game mode for everybody in the room: every player starts with one weak unit that evolves through 10 levels by kills.",
 			fn = function() setEvolution(not evolutionOn()); openEvoMenu() end },
-		{ caption = "Unit multiplier: " .. evoMult() .. "x", tip = "How many wild units and towers stand on the map: 1x is the normal number, 2x twice as many (a denser map). Click to change (1x - 10x).",
+		{ caption = "Unit multiplier: " .. evoMult() .. "x", tip = "How many wild units and towers stand on the map: 1x is the normal number, 2x twice as many (a denser map), up to 10x. Click to step through the values.",
 			fn = function()
 				local cur = evoMult()
 				local nxt = EVO_MULTS[1]
@@ -2200,10 +2200,10 @@ local function openEvoMenu()
 				openEvoMenu()
 			end },
 		{ caption = "Auto-aim: " .. (evoAim() and "On" or "Off"), class = evoAim() and "action_button" or "negative_button",
-			tip = "Off: the units do not shoot by themselves, the players have to aim with the order Attack (more like a deathmatch).",
+			tip = "Auto-aim " .. (evoAim() and "on: the units shoot at what they see, as usual." or "off: the units do not shoot by themselves, the players have to aim with the order Attack (more like a deathmatch).") .. " Click to change.",
 			fn = function() setEvoOption("lanevoaim", evoAim() and "0" or nil); openEvoMenu() end },
 		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
-			tip = "On: three buttons above the own panel in the game (Armageddon, Level Up, Level Down) for testing.",
+			tip = "Debug mode " .. (S.battle.modoptions.lanevodebug == "1" and "on" or "off") .. ": extra buttons above the own panel in the game for testing (Armageddon, Level Up / Down, XP Up / Down, power-ups, a star for random values, Hide). Click to change.",
 			fn = function() setEvoOption("lanevodebug", S.battle.modoptions.lanevodebug == "1" and nil or "1"); openEvoMenu() end },
 	}
 	local w = 270
@@ -2229,7 +2229,7 @@ local function openLanMenu()
 	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
-		items[#items + 1] = { caption = evoCaption(), tip = EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Auto-aim, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 	end
 	local w = 230
