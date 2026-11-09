@@ -167,7 +167,8 @@ local ABILITIES = {
 	{ key = "sprint", name = "Sprint", color = { 0.3, 0.65, 1 }, cost = 200, time = 8, cool = 30, tip = "Your unit is 50 % faster for 8 s" },
 	{ key = "repair", name = "Repair", color = { 0.3, 1, 0.35 }, cost = 500, time = 0, cool = 60, tip = "Heals 20 % of the health of your unit at once" },
 	{ key = "pulse", name = "Radar Pulse", color = { 1, 0.55, 0.1 }, cost = 250, time = 5, cool = 45, tip = "Your unit sees everything within 2500 Elmo for 5 s" },
-	{ key = "cloak", name = "Cloak", color = { 1, 0.9, 0.2 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible to the enemy for 15 s (until it fires)" },
+	{ key = "cloak", name = "Cloak", color = { 1, 0.9, 0.2 }, cost = 400, time = 15, cool = 60, tip = "Your unit is invisible to the enemy for 15 s (until it fires)",
+		info = "Hold Fire is set while you are cloaked, Fire at Will after it: flee from battle" },
 	{ key = "jammer", name = "Jammer", color = { 0.75, 0.35, 1 }, cost = 300, time = 20, cool = 60, tip = "Hides your unit from the enemy radar for 20 s" },
 }
 
@@ -636,9 +637,13 @@ if not gadgetHandler:IsSyncedCode() then
 		if hover then
 			-- the explanation above the button
 			local a, h = ABILITIES[hover], have[hover]
-			local lines = { a.tip, "Cost " .. a.cost .. " energy, cooldown " .. a.cool .. " s",
-				not h and ("Not yet yours: drive over a beacon of this color") or (h.act > 0 and ("Working: " .. h.act .. " s left")) or (h.cool > 0 and ("Ready again in " .. h.cool .. " s"))
-					or (a.key == "repair" and healthy and "Not needed now: full health") or (energy < a.cost and "Not enough energy") or "Click to use" }
+			local lines = { a.tip }
+			if a.info then
+				lines[#lines + 1] = a.info -- (an extra line of the tooltip, e.g. what Cloak does to the fire state)
+			end
+			lines[#lines + 1] = "Cost " .. a.cost .. " energy, cooldown " .. a.cool .. " s"
+			lines[#lines + 1] = not h and ("Not yet yours: drive over a beacon of this color") or (h.act > 0 and ("Working: " .. h.act .. " s left")) or (h.cool > 0 and ("Ready again in " .. h.cool .. " s"))
+				or (a.key == "repair" and healthy and "Not needed now: full health") or (energy < a.cost and "Not enough energy") or "Click to use"
 			local tw = 0
 			for _, l in ipairs(lines) do
 				tw = math.max(tw, gl.GetTextWidth(l) * 13 * s)
