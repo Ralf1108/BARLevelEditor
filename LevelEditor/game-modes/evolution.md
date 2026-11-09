@@ -127,7 +127,7 @@ Chosen by damage per second times health; artillery, units for water and the bom
 - At the bottom, left of the music player: your own unit, big: level, unit, points bar, a violet **XP bar** (the experience bonus you keep: +0.1 per kill of a player, -0.1 per death), kills, deaths and the buttons of your abilities
 - Everything scales with the size of the window
 - After a respawn the camera jumps to your new unit
-- At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with the units of the three factions (picture and name) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
+- At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with example units of the three factions (picture and name; every level has more units, see the [unit table](evolution-units.md)) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
 - The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
 
 ## Quick start for testing

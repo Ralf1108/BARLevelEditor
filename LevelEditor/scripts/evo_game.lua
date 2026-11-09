@@ -728,7 +728,7 @@ if not gadgetHandler:IsSyncedCode() then
 		local cx0, cw = x1 + 78 * s, (L - 66 * s) / 3
 		local top = y2 - head - uh
 		gl.Color(0.55, 0.95, 0.7, 1)
-		gl.Text("UNITS: the levels, in the three factions", x1 + 24 * s, top + 30 * s, 16 * s, "vo")
+		gl.Text("UNITS per level (examples: there are more of each level)", x1 + 24 * s, top + 30 * s, 16 * s, "vo")
 		for c, label in ipairs(labels) do
 			gl.Color(0.7, 0.8, 1, 1)
 			gl.Text(label, cx0 + (c - 1) * cw + 4 * s, top + 8 * s, 14 * s, "vo")
