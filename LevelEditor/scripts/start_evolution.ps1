@@ -2,8 +2,8 @@
 # options of Evolution (lanevolution=1) with the debug mode (lanevodebug=1), the extra game "Level Editor Scenarios" of the installation (data\games\LevelEditorScenarios.txt).
 #   -Map "Hooked 1.1"   the map (the name as BAR knows it)
 #   -Ai SimpleAI        the computer player (SimpleAI, SimpleDefenderAI, ... or NullAI)
-#   -Debug 0            without the debug mode
-param([Parameter(Mandatory)][string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'SimpleAI', [int]$Debug = 1)
+#   -DebugMode 0            without the debug mode
+param([Parameter(Mandatory)][string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'SimpleAI', [int]$DebugMode = 1)
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
@@ -12,7 +12,7 @@ if (-not (Test-Path $pointer)) { Fail 'The extra game of the Level Editor is not
 $game = (Get-Content $pointer)[1].Trim()
 $spec = Get-AiSpec $Ai
 $exe = Join-Path (Get-Engine $Data).FullName 'spring.exe'
-$dbg = if ($Debug) { ' lanevodebug=1;' } else { '' }
+$dbg = if ($DebugMode) { ' lanevodebug=1;' } else { '' }
 $script = @"
 [game]
 {
@@ -36,6 +36,6 @@ $script = @"
 "@
 $file = Join-Path $repo 'LevelEditor\evolution_script_installed.txt'
 [IO.File]::WriteAllText($file, $script, (New-Object Text.UTF8Encoding $false))
-Write-Host "Evolution on $Map against $($spec.Short)$(if ($Debug) { ', debug mode on' }) ..." -ForegroundColor Cyan
+Write-Host "Evolution on $Map against $($spec.Short)$(if ($DebugMode) { ', debug mode on' }) ..." -ForegroundColor Cyan
 & $exe --write-dir $Data $file
 if ($LASTEXITCODE -ne 0) { Write-Host "The game ended with an error, see $Data\infolog.txt" -ForegroundColor Yellow; exit 1 }
