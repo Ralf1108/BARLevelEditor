@@ -88,6 +88,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 **Computer players**
 - Every team without a human is steered by the game (its own AI is switched off for this unit)
 - It picks up the beacons it drives over and uses its abilities by itself
+- It also takes radars, solar collectors and wind turbines: it goes to the nearest one that is not its own and stands next to it until it is taken (unless an enemy is close), but it does not hold more than its share
 - It attacks only enemies of its **own level or higher** and wild units of its level or lower (in Armageddon every enemy) and otherwise only shoots back; with nothing to attack it walks around
 
 ## The ladders

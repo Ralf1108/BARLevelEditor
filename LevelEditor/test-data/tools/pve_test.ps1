@@ -57,4 +57,4 @@ $(if ($Evo) { "`t[ai0] { shortname=NullAI; team=1; host=0; name=Null1; }" } else
 "@
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
 Write-SandboxSettings "$Work\springsettings.cfg" $(if ($Evo) { , @(40, 40, 1600, 900) } else { , @(40, 40, 1200, 700) }) @('Sound = 0', 'MaxSounds = 0')
-Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzcloak\]|\[zzpve\]|\[zzbrood\]|\[zzevoshot\]|\[Evolution\]|\[LAN\]|Failed to load|Error|tweakdef' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
+Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzaitake\]|\[zzcloak\]|\[zzpve\]|\[zzbrood\]|\[zzevoshot\]|\[Evolution\]|\[LAN\]|Failed to load|Error|tweakdef' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"

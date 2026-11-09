@@ -273,7 +273,7 @@ if not gadgetHandler:IsSyncedCode() then
 			if a.xp ~= b.xp then return a.xp > b.xp end
 			return a.team < b.team
 		end)
-		local w, rowH, head, pad, gap = math.floor(380 * s), math.floor(44 * s), math.floor(28 * s), math.floor(7 * s), math.floor(4 * s)
+		local w, rowH, head, pad, gap = math.floor(456 * s), math.floor(44 * s), math.floor(28 * s), math.floor(7 * s), math.floor(4 * s)
 		local x2 = math.floor(vsx - 8 * s)
 		local x1 = x2 - w
 		local top = math.floor(vsy - 72 * base)
@@ -285,6 +285,20 @@ if not gadgetHandler:IsSyncedCode() then
 		local rx2 = x2 - pad - (scrolling and 9 * s or 0)
 		local y1 = top - head - (shown > 0 and (shown * (rowH + gap) + pad) or 0)
 		local hot = arma > 0
+		if H.hidden then
+			-- folded away to the right: only a small tab at the right edge (an arrow to the left) brings the list back
+			local tb = head
+			H.toggle = { x2 - tb, top - head, x2, top }
+			H.box(x2 - tb, top - head, x2, top, 6 * s, { 0.03, 0.04, 0.07, 0.85 }, { 0.10, 0.12, 0.18, 0.85 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.6 }, 2)
+			gl.Color(0.9, 0.95, 1, 1)
+			gl.BeginEnd(GL.TRIANGLES, function()
+				local cx, cy2, q = x2 - tb / 2, top - head / 2, tb * 0.25
+				gl.Vertex(cx + q * 0.7, cy2 + q); gl.Vertex(cx + q * 0.7, cy2 - q); gl.Vertex(cx - q, cy2)
+			end)
+			H.area2, H.pageRows = H.toggle, 0
+			gl.Color(1, 1, 1, 1)
+			return x1, x2, top - head, base
+		end
 		H.box(x1, y1, x2, top, 8 * s, { 0.03, 0.04, 0.07, 0.82 }, { 0.10, 0.12, 0.18, 0.82 }, hot and { 1, 0.3, 0.2, 0.9 } or { 0.55, 0.65, 0.85, 0.45 })
 		local pulse = 0.75 + 0.25 * math.sin(Spring.GetGameFrame() * 0.12)
 		if hot then
@@ -302,11 +316,8 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.Color(0.9, 0.95, 1, 1)
 		gl.BeginEnd(GL.TRIANGLES, function()
 			local cx, cy2, q = (tx1 + tx2) / 2, (ty1 + ty2) / 2, tb * 0.25
-			if H.hidden then -- (down: show)
-				gl.Vertex(cx - q, cy2 + q * 0.5); gl.Vertex(cx + q, cy2 + q * 0.5); gl.Vertex(cx, cy2 - q * 0.7)
-			else -- (up: hide)
-				gl.Vertex(cx - q, cy2 - q * 0.5); gl.Vertex(cx + q, cy2 - q * 0.5); gl.Vertex(cx, cy2 + q * 0.7)
-			end
+			-- (an arrow to the right: fold the list away to the right)
+			gl.Vertex(cx - q * 0.7, cy2 + q); gl.Vertex(cx - q * 0.7, cy2 - q); gl.Vertex(cx + q, cy2)
 		end)
 		if state ~= "running" then
 			gl.Color(1, 0.85, 0.4, 1)
@@ -1630,7 +1641,32 @@ local function steer(p)
 		end
 	end
 	A.ai(p, best)
-	if best then
+	-- radars and collectors: as long as its team holds fewer than its share (all of them divided by the players, at least 2) the nearest one that is not its
+	-- team's comes first unless an enemy player unit is within 600 Elmo; it stands within the range until the radar is taken (R.TAKE), then the next one
+	local owned, total = 0, 0
+	for _, rd in pairs(radars) do
+		total = total + 1
+		if rd.team == p.team then
+			owned = owned + 1
+		end
+	end
+	local r, d
+	if owned < math.max(2, math.ceil(total / math.max(1, #players))) then
+		r, d = nearest(x, z, radars, function(rd) return rd.team ~= p.team and not Spring.AreTeamsAllied(rd.team, p.team) end)
+	end
+	local urgent = best and bestD < 600 * 600 and owner[best]
+	if r and not urgent then
+		if d <= (R.RANGE * 0.6) ^ 2 then
+			if not idle(p.unit) then
+				Spring.GiveOrderToUnit(p.unit, CMD.STOP, {}, 0)
+			end
+		elseif idle(p.unit) or p.goal ~= r then
+			local rx, _, rz = Spring.GetUnitPosition(r)
+			p.goal = r
+			Spring.GiveOrderToUnit(p.unit, CMD.MOVE, { rx, Spring.GetGroundHeight(rx, rz), rz }, 0)
+		end
+	elseif best then
+		p.goal = nil
 		attackOrWalk(p.unit, p.ally, best)
 	elseif idle(p.unit) then
 		local tx, tz = randomLand()
