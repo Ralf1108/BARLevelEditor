@@ -40,7 +40,13 @@ local NAMES = {
 	corkarg = "Karganeth", cordemon = "Demon", corkorg = "Juggernaut",
 	leghades = "Alaris", legcen = "Phobos", legkark = "Karkinos", leggat = "Decurion", legjav = "Javelin", legaheattank = "Prometheus", leginc = "Incinerator",
 	legkeres = "Keres", legeshotgunmech = "Praetorian", legeheatraymech = "Sol Invictus",
+	armsnipe = "Sharpshooter", legsrail = "Arquebus", cordeadeye = "Deadeye", armmanni = "Starlight", corsiegebreaker = "Siegebreaker",
+	legerailtank = "Daedalus", corthermite = "Thermite", legpede = "Mukade", legapollyon = "Apollyon",
 }
+-- The units with a long range (an extra of the game option lanevolong=1, the room's button Long range: lasers, plasma and rail guns of 850 Elmo or more, no
+-- missiles) that come in addition to the ladder on their level (table: game-modes/evolution-units.md, column Long range)
+local LONG = { [3] = { "armsnipe", "legsrail" }, [4] = { "cordeadeye" }, [5] = { "armmanni", "corsiegebreaker" }, [8] = { "legerailtank" }, [9] = { "corthermite", "legpede" }, [10] = { "legapollyon" } }
+local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
 
 -- (used by both parts: the ladders and the help window)
 -- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
@@ -1055,6 +1061,11 @@ local function stageUnit(s)
 	for _, ladder in ipairs(LADDERS) do
 		if UnitDefNames[ladder[s]] then
 			options[#options + 1] = ladder[s]
+		end
+	end
+	for _, name in ipairs(LONG_RANGE and LONG[s] or {}) do
+		if UnitDefNames[name] then
+			options[#options + 1] = name
 		end
 	end
 	return options[math.random(1, math.max(1, #options))] or "armpw"

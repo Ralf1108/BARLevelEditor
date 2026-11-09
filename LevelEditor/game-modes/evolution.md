@@ -17,9 +17,10 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
   - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
   - **Unit health**: the health the wild units start with, click to step through: **Auto** (the default) is 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7 and 50 % from level 8 (a stronger level starts with more); or one value from 10 % to 100 % for all levels (the health bar of a wild unit shows it)
   - **Regeneration**: On (default) or Off: whether the units of the players heal by themselves (1 % of the health every 5 seconds, starting 5 seconds after the last damage; the tooltip tells the rate)
+  - **Long range**: On or Off (off is the default): when on, nine units with a long range (lasers, plasma and rail guns of 850 Elmo or more, no missiles) can appear on their levels too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon (the column Long range of the [unit table](evolution-units.md))
   - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
-![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration and Debug mode](../../docs/evolution-room.jpg)
+![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range and Debug mode](../../docs/evolution-room.jpg)
 
 ![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
