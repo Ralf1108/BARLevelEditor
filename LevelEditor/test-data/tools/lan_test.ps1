@@ -6,6 +6,7 @@
 #   -MapList none | official | wrong   the list of official map md5 of the joiners: none, the real one (fetched online), or one with a wrong md5
 #   -AlongsideGame   run next to a game you are playing (only the processes of the test are ever stopped)
 #   -Clients 1 | 2   joiners (PlayerB, PlayerC)
+#   -ClickAt 56   (evoroom) at that second a click into the chat area of the host's window: the menus of the room must close (with -Shots after it)
 #   -Shots 20,45   pictures of the window of the host (seconds after the start): shot_<s>.png in -Work (PrintWindow: the window may stay behind others;
 #                  gl.SaveImage and a copy of the screen come out black or disturb); -FrontShots: the window is brought to the front and the screen is copied
 #                  (for the lobby, when PrintWindow gives a white picture; it takes the focus for a moment)
@@ -13,7 +14,7 @@
 #         evo = Evolution on an official map (-Map, default Comet Catcher Remake 1.8): the host presses the button Evolution, PlayerA, PlayerB and a BARb computer
 #               (-Ai, default BARb) play each other; zz_lantest.lua logs the stages and sends the units of both players into the middle and takes screenshots;
 #               -EvoStage 10: everybody starts on that stage (Armageddon at once; PlayerA chooses the gift Gates of Hell, PlayerB Hell on Earth)
-#         evoroom = one instance, the host's room with Evolution switched on (the window with the rules, closed at 40 s of the lobby; then the menu of the button LAN Options opens) and a BARb computer, no game: pictures with -Shots, -WaitSec ends it
+#         evoroom = one instance, the host's room with Evolution switched on (the window with the rules, closed at 40 s of the lobby; then the menu of the button LAN Play opens) and a BARb computer, no game: pictures with -Shots, -WaitSec ends it
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host
 #         pve = the host adds a Raptors computer (-Ai RaptorsAI | ScavengersAI) to its ally team, both players place their start position (a click into the middle of the window, the
 #               widget zz_place.lua points the camera at the start box) and press ready; zz_pve.lua (host) measures the orders of the AI and of the human (lan_pve_hold.lua)
@@ -32,7 +33,7 @@
 # Everything is built in -Work (own write dir per instance, junctions to the engine and game files of the installation): nothing of the installed game is changed.
 # Run the Level Editor setup first (install_editor.bat): the lobby widget of the installation is not used, the one of this repository is, but the game files come from -Data.
 # The widget zz_lantest.lua logs "[zzlan]" lines (teams, scores) into infolog.txt of both instances and quits the game at -QuitFrame.
-param([string]$Mode = 'ctf', [switch]$Solo, [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = '', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play, [string]$Map = 'Comet Catcher Remake 1.8', [switch]$FrontShots, [int]$EvoStage = 0)
+param([string]$Mode = 'ctf', [switch]$Solo, [int]$ClickAt = 0, [int]$WaitSec = 420, [int]$QuitFrame = 4500, [string]$Sync = 'missing', [int]$Clients = 1, [string]$Lobby = 'same', [switch]$NoMap, [switch]$KeepOnline, [string]$MapList = 'none', [string]$Ai = 'RaptorsAI', [string]$PresetFile = '', [string]$PresetName = '', [string]$Work = (Join-Path $env:TEMP 'lan_test'), [string]$Data = '', [string]$Shots = '', [switch]$AlongsideGame, [switch]$Play, [string]$Map = 'Comet Catcher Remake 1.8', [switch]$FrontShots, [int]$EvoStage = 0)
 $sp = $Work
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
@@ -162,6 +163,13 @@ $start = Get-Date
 while (((Get-Date) - $start).TotalSeconds -lt $WaitSec -and ((@($who2 | ? { -not $procs[$_].HasExited }).Count -gt 0))) {
     foreach ($who in $who2) { if (-not $procs[$who].HasExited) { $procs[$who].Refresh(); [void][SbxWin]::SetWindowPos($procs[$who].MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013) } }
     $el = ((Get-Date) - $start).TotalSeconds
+    if ($ClickAt -gt 0 -and $el -ge $ClickAt -and -not $procs['H'].HasExited) {
+        $ClickAt = 0; $h = $procs['H'].MainWindowHandle; $r = New-Object W3+R; [void][W3]::GetWindowRect($h, [ref]$r)
+        [void][SbxWin]::SetWindowPos($h, [IntPtr]0, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($h); Start-Sleep -Milliseconds 700
+        [void][W6]::SetCursorPos([int]($r.L + ($r.Rt - $r.L) * 0.30), [int]($r.T + ($r.B - $r.T) * 0.82)); Start-Sleep -Milliseconds 300
+        [W6]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150; [W6]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero)
+        [void][SbxWin]::SetWindowPos($h, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($prev); 'clicked beside the menus'
+    }
     foreach ($s in @($shotAt)) { if ($el -ge $s -and -not $procs['H'].HasExited) {
         $shotAt = @($shotAt | ? { $_ -ne $s }); $procs['H'].Refresh()
         Save-Shot $procs['H'] "shot_$s.png"

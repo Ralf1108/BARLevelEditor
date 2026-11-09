@@ -2117,8 +2117,8 @@ local function evolutionShown()
 	return l and l.modoptions and l.modoptions.lanevolution == "1" or false
 end
 
----------------------------------------------------------------- The button "LAN Options" in the title row of the room and its menu
--- The room stays as the lobby has it. A green button "LAN Options" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
+---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
+-- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
 -- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier and Auto-aim; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
@@ -2221,7 +2221,7 @@ local function openLanMenu()
 		if it.evo then ui.evoMenuBtn = btn end
 	end
 	ui.lanMenu:BringToFront()
-	log("LAN Options menu opened:", #items, "buttons")
+	log("LAN Play menu opened:", #items, "buttons")
 end
 
 local function ensureLanMenuUi()
@@ -2237,10 +2237,10 @@ local function ensureLanMenuUi()
 		return
 	end
 	if not ui.lanButton then
-		ui.lanButton = Button:New { parent = screen0, x = 0, y = 0, width = 160, height = leave.height, caption = "LAN Options", objectOverrideFont = Config():GetFont(2),
-			classname = "action_button", tooltip = "LAN Options: Custom Scenario, Copilot and the game mode Evolution",
+		ui.lanButton = Button:New { parent = screen0, x = 0, y = 0, width = 160, height = leave.height, caption = "LAN Play", objectOverrideFont = Config():GetFont(2),
+			classname = "action_button", tooltip = "LAN Play: Custom Scenario, Copilot and the game mode Evolution",
 			OnClick = { function() if ui.lanMenu then closeLanMenu() else openLanMenu() end end } }
-		log("LAN Options button added")
+		log("LAN Play button added")
 	end
 	if not ui.lanButton.visible then ui.lanButton:Show() end
 	local lx, ly = leave:LocalToScreen(0, 0)
@@ -2249,8 +2249,40 @@ local function ensureLanMenuUi()
 	if ui.evoMenuBtn and ui.evoMenuBtn.caption ~= evoCaption() then ui.evoMenuBtn:SetCaption(evoCaption()) end
 end
 
+-- A click anywhere else closes the menu LAN Play and the submenu Evolution (polled: the press of the left mouse button outside the two windows and the two
+-- buttons that open them; the click itself goes on)
+local lastDown = false
+local function closeMenusOnOutsideClick()
+	if not (ui.lanMenu or ui.evoMenu) then lastDown = false; return end
+	local mx, my, down = Spring.GetMouseState()
+	local pressed = down and not lastDown
+	lastDown = down
+	if not pressed then return end
+	local cx, cy = mx, screen0.height - my
+	local function inside(c)
+		if not c then return false end
+		local ok, x, y = pcall(function() return c:LocalToScreen(0, 0) end)
+		return ok and x and cx >= x and cx <= x + c.width and cy >= y and cy <= y + c.height
+	end
+	if inside(ui.lanMenu) or inside(ui.evoMenu) or inside(ui.lanButton) or inside(ui.evoMenuBtn) then return end
+	log("menus closed by a click outside")
+	closeLanMenu()
+end
+
 ---------------------------------------------------------------- per frame
 function widget:Update()
+	closeMenusOnOutsideClick()
+	-- a joiner gets the window with the rules of Evolution too when the host switches it on (once; again after it was switched off and on)
+	if lan and lan.role == "client" then
+		local l = lobby()
+		local on = l and l.modoptions and l.modoptions.lanevolution == "1"
+		if on and not lan.evoShown then
+			lan.evoShown = true
+			bigPopup(EVO_INFO)
+		elseif not on then
+			lan.evoShown = nil
+		end
+	end
 	if ui.leave and ui.back then
 		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Close" then moves to the right of it
 		local want = S ~= nil or lan ~= nil
@@ -2463,7 +2495,7 @@ function widget:Update()
 		if clock() > cfg.dumpAt then
 			cfg.dumpDone = true
 			local col = roomMain()
-			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "LAN Options button at", ui.lanButton and ui.lanButton.x, ui.lanButton and ui.lanButton.y)
+			log("test: middle column", col and (col.x .. "," .. col.y .. " " .. col.width .. "x" .. col.height) or "not found", "LAN Play button at", ui.lanButton and ui.lanButton.x, ui.lanButton and ui.lanButton.y)
 			for _, ch in ipairs(col and col.children or {}) do
 				log("test:   child", tostring(ch.name), tostring(ch.classname), "y", ch.y, "h", ch.height, "visible", tostring(ch.visible), "caption", tostring(ch.caption or ch.text))
 			end
