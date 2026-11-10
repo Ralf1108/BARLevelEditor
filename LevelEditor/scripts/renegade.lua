@@ -751,13 +751,13 @@ function widget:DrawScreen()
 	local _, _, mainRange = weaponsOf(R.unit)
 	mainRange = mainRange or 0
 	local text
-	-- (a bomber and every weapon that is dropped have no range worth showing: the impact preview shows where the bombs land)
+	-- (an aircraft has no range display: it moves too fast for it, a bomber has the impact preview; the crosshair stays green)
 	local dropped = false
 	do
 		local ud0, sl0 = weaponsOf(R.unit)
 		local i0 = ud0 and sl0.L and sl0.L[1]
 		local wd0 = i0 and ud0.weapons[i0] and WeaponDefs[ud0.weapons[i0].weaponDef]
-		dropped = wd0 and wd0.type == "AircraftBomb" or false
+		dropped = (ud0 and ud0.canFly) or (wd0 and wd0.type == "AircraftBomb") or false
 	end
 	local inReach = h and (dropped or (mainRange > 0 and h.udist <= mainRange))
 	if not h then
