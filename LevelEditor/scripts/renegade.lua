@@ -470,6 +470,8 @@ function widget:MousePress(x, y, button)
 		if button == 1 then
 			if R.list and R.win and x >= R.win.x1 and x <= R.win.x2 and y >= R.win.y0 and y <= R.win.top then
 				pickerClick(x, y)
+			elseif inRect(x, y, R.btn3) then
+				R.rings = not R.rings -- (the debug button Range: the range rings on the ground on and off; off at the start)
 			elseif inRect(x, y, R.btn) or inRect(x, y, R.btn2) then
 				local mode = inRect(x, y, R.btn) and "self" or "enemy"
 				if R.list and R.pickMode == mode then R.list = false else R.list, R.pickMode = true, mode end
@@ -840,6 +842,7 @@ local function debugButton(x1, top, w, s)
 	local by = top + 8 * s
 	R.btn = { x1, by, x1 + w, by + bh }
 	R.btn2 = { x1, by + bh + 4 * s, x1 + w, by + 2 * bh + 4 * s }
+	R.btn3 = { x1, by + 2 * bh + 8 * s, x1 + w, by + 3 * bh + 8 * s }
 	local function button(r, label, on)
 		gl.Color(on and 0.35 or 0.2, on and 0.35 or 0.2, R.menu and 0.5 or 0.2, 0.9)
 		gl.Rect(r[1], r[2], r[3], r[4])
@@ -848,9 +851,10 @@ local function debugButton(x1, top, w, s)
 	end
 	button(R.btn, "Debug unit: " .. (ud and (ud.translatedHumanName or ud.name) or "?") .. "  v", R.list and R.pickMode ~= "enemy")
 	button(R.btn2, "Spawn enemy  v", R.list and R.pickMode == "enemy")
+	button(R.btn3, "Range rings: " .. (R.rings and "on" or "off"), R.rings)
 	if not R.menu then
 		gl.Color(0.8, 0.8, 0.5, 1)
-		gl.Text("Tab: free the mouse for the menu", x1 + w, R.btn2[4] + 4 * s, 11 * s, "ro")
+		gl.Text("Tab: free the mouse for the menu", x1 + w, R.btn3[4] + 4 * s, 11 * s, "ro")
 	end
 	gl.Color(1, 1, 1, 1)
 end
