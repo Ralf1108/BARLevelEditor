@@ -62,7 +62,7 @@ def target(w):
         if w["dmg"] > 2 and w["ground"]: t.append("Ground")
         if w["vtol"] > 2: t.append("Air")
         if w["water"] or w["type"] == "TorpedoLauncher": t.append("Water")
-    if not t: return "-"
+    if not t: return ""   # nothing: an empty cell (a "-" in a csv cell is a formula or a number for a spreadsheet)
     if len(t) == 3: return "All"
     return "+".join(sorted(t, key=["Air", "Ground", "Water"].index))
 
@@ -167,7 +167,7 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 
 - **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). empty = the weapon is not fired by a button (footsteps, script dummies).
 - **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button). A group has one button: the button of the first row of the group counts. Several groups may share a button.
-- **Target**: what the weapon can hit (Ground, Air, Water; All = everything). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
+- **Target**: what the weapon can hit (Ground, Air, Water; All = everything; empty = nothing). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
 - The proposal: weapons with the same weapon definition are one group; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
 

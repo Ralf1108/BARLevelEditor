@@ -17,6 +17,8 @@ kept up to date with every change. They are not the manuals: the READMEs and `do
 - After a change of the widget, gadgets or shared code: `start_level_editor.bat` rebuilds the extra games by itself (stamp); the BluePrinter needs
   `BluePrinter\install_blueprinter.bat` (or its start scripts).
 
+- Cells of the csv tables (`game-modes/*.csv`, opened in Excel) stay **empty** when there is no value: never "-" or another placeholder (Excel takes a leading "-", "+", "=" or "@" for a formula or a number).
+
 ## Patching files on Windows
 - Do not write PowerShell or Lua text with backslashes through shell heredocs or Python string literals: `\b`, `\t`, `\n` and `\\` get turned into control
   characters or lose a backslash (`shared\bar_common.ps1` became `shared<BS>ar_common.ps1`). Write the patch script as a file (the file write tool),
