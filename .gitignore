@@ -18,3 +18,4 @@ LevelEditor/renegade_script_installed.txt
 
 # LibreOffice lock files of the csv tables
 .~lock.*#
+__pycache__/
