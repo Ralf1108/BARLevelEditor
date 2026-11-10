@@ -592,7 +592,7 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 		-- a bomb keeps the speed of the aircraft and falls: where it lands if it were dropped now (the fall time from the height over the ground, a few passes)
 		local vx, vy, vz = Spring.GetUnitVelocity(R.unit)
 		if not vx then return end
-		local g = (Game.gravity or 120) / 900 -- Elmo per frame per frame
+		local g = (tonumber(wd.myGravity) or 0) > 0 and wd.myGravity or (Game.gravity or 120) / 900 -- Elmo per frame per frame (the bomb's own gravity, measured 0.4 for the Tsunami)
 		x, z = ux, uz
 		for _ = 1, 4 do
 			local gy = Spring.GetGroundHeight(x, z)

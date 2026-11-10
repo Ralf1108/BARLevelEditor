@@ -993,23 +993,6 @@ local function clearTargets(u, inp)
 	inp.moving = false
 end
 
--- A bomb is dropped where the aircraft is (not at the point the player looks at): its target is the point where a bomb dropped now would land (the position moved by the
--- velocity for the fall time over the ground; the widget draws the same point), so the weapon is in range and aimed at once and the bombs fall as soon as the button is down.
-local function bombPoint(u)
-	local ux, uy, uz = Spring.GetUnitPosition(u)
-	local vx, vy, vz = Spring.GetUnitVelocity(u)
-	if not ux or not vx then return nil end
-	local g = (Game.gravity or 120) / 900
-	local x, z = ux, uz
-	for _ = 1, 4 do
-		local drop = uy - Spring.GetGroundHeight(x, z)
-		local tt = (vy + math.sqrt(vy * vy + 2 * g * math.max(0, drop))) / g
-		x, z = ux + vx * tt, uz + vz * tt
-	end
-	x, z = math.max(1, math.min(Game.mapSizeX - 1, x)), math.max(1, math.min(Game.mapSizeZ - 1, z))
-	return x, Spring.GetGroundHeight(x, z), z
-end
-
 -- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
 local function applyTarget(team, u, ud, s, i, t)
 	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
@@ -1026,9 +1009,6 @@ local function applyTarget(team, u, ud, s, i, t)
 				Spring.SetUnitTarget(u, x, y, z, false, true, i)
 			end
 		end
-	elseif (WeaponDefs[ud.weapons[i].weaponDef] or {}).type == "AircraftBomb" then
-		local x, y, z = bombPoint(u)
-		if x then Spring.SetUnitTarget(u, x, y, z, false, true, i) end
 	else
 		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
 		local wd = WeaponDefs[ud.weapons[i].weaponDef]
@@ -1068,6 +1048,54 @@ local function aimable(ud, i)
 	return wd and not wd.stockpile and wd.type ~= "DGun" and wd.type ~= "AircraftBomb" -- (the D-gun is fired by hand: it has no target before the button)
 end
 
+-- Bombs are dropped by the gadget itself (Spring.SpawnProjectile at the aircraft with its velocity): the engine's bomb weapon fires only when the aircraft is low (measured: a
+-- Tsunami drops only under about 200 above the ground, a short click higher up did nothing for 300 frames), and one click should always drop the bombs. A press drops the salvo
+-- (salvoSize bombs, salvoDelay apart) when the weapon is ready and sets its reload (the panel shows it); a button held drops the next salvo as soon as it is ready. The weapon gets no
+-- target (the engine's own release stays quiet).
+local BOMBS = {} -- { f = frame to drop at, u = unit, team = team, wd = weapon definition id }
+local TESTPROJ = {} -- (tests: the projectiles spawned)
+local function dropBombs(team, u, i, f)
+	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	local wdid = ud and ud.weapons[i] and ud.weapons[i].weaponDef
+	local wd = wdid and WeaponDefs[wdid]
+	if not wd then return false end
+	local rf = reloadFrame(u, i)
+	if rf > f and rf < BLOCK / 2 then return false end -- (still reloading)
+	local n = math.max(1, tonumber(wd.salvoSize) or 1) * math.max(1, tonumber(wd.projectiles) or 1)
+	local gap = math.max(1, math.floor((tonumber(wd.salvoDelay) or 0.1) * 30 + 0.5))
+	for k = 0, n - 1 do BOMBS[#BOMBS + 1] = { f = f + k * gap, u = u, team = team, wd = wdid } end
+	local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or wd.reload or 1
+	Spring.SetUnitWeaponState(u, i, "reloadFrame", f + math.floor(time * 30) + (n - 1) * gap)
+	if TEST then Spring.Echo(string.format("[Renegade] bombs: %d at frame %d, %d frames apart, reload %.1f s", n, f, gap, time)) end
+	return true
+end
+local function processBombs(f)
+	local keep = {}
+	for _, b in ipairs(BOMBS) do
+		if b.f > f then
+			keep[#keep + 1] = b
+		elseif Spring.ValidUnitID(b.u) then
+			local x, y, z = Spring.GetUnitPosition(b.u)
+			local vx, vy, vz = Spring.GetUnitVelocity(b.u)
+			if x and vx then
+				local wd = WeaponDefs[b.wd]
+				local g = (tonumber(wd.myGravity) or 0) > 0 and wd.myGravity or (Game.gravity or 120) / 900 -- (Elmo per frame per frame; the projectile gets it negative)
+				local id = Spring.SpawnProjectile(b.wd, { pos = { x, y - 8, z }, speed = { vx, vy, vz }, owner = b.u, team = b.team, ttl = 1200, gravity = -g })
+				if TEST and id then TESTPROJ[id] = f end
+				if TEST then Spring.Echo(string.format("[Renegade] bomb %s at frame %d from %.0f %.0f %.0f, speed %.1f %.1f %.1f, height above ground %.0f", tostring(id), f, x, y, z, vx, vy, vz, y - Spring.GetGroundHeight(x, z))) end
+			end
+		end
+	end
+	BOMBS = keep
+	if TEST and f % 15 == 0 then
+		for id, f0 in pairs(TESTPROJ) do
+			local px, py, pz = Spring.GetProjectilePosition(id)
+			Spring.Echo(string.format("[Renegade] projectile %d (spawned %d) at frame %d: %s", id, f0, f, px and string.format("%.0f %.0f %.0f ground %.0f", px, py, pz, Spring.GetGroundHeight(px, pz)) or "gone"))
+			if not px then TESTPROJ[id] = nil end
+		end
+	end
+end
+
 local function shoot(team, f, force)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -1078,7 +1106,12 @@ local function shoot(team, f, force)
 	local change, clear = false, false
 	for i in pairs(pressed) do
 		local a = hold[i]
-		if not a or not a.down then
+		local wdb = WeaponDefs[ud.weapons[i].weaponDef]
+		if (not a or not a.down) and wdb and wdb.type == "AircraftBomb" then
+			hold[i] = { down = true, since = f, rf0 = reloadFrame(u, i), fired = true, t = inp.target, deadline = f, bomb = true }
+			dropBombs(team, u, i, f)
+			change = true
+		elseif not a or not a.down then
 			local before = reloadFrame(u, i)
 			unblock(u, i, f)
 			if TEST then Spring.Echo("[Renegade] press weapon " .. i .. " at frame " .. f .. ": reloadFrame " .. before .. " -> " .. reloadFrame(u, i)) end
@@ -1090,6 +1123,7 @@ local function shoot(team, f, force)
 		end
 	end
 	for i, a in pairs(hold) do
+		if a.bomb and a.down then dropBombs(team, u, i, f) end
 		if not a.fired and reloadFrame(u, i) > a.rf0 then
 			a.fired = true
 			if TEST then Spring.Echo("[Renegade] weapon " .. i .. " fired, frame " .. f .. ", reloadFrame " .. reloadFrame(u, i) .. ", " .. (f - a.since) .. " frames after the press") end
@@ -1109,7 +1143,9 @@ local function shoot(team, f, force)
 	end
 	local tick = change or force or f % AIM_EVERY == 0 or ud.canFly -- (an aircraft moves fast: the bombs' target every frame)
 	if tick then
-		for i, a in pairs(hold) do applyTarget(team, u, ud, s, i, a.t) end
+		for i, a in pairs(hold) do
+			if not a.bomb then applyTarget(team, u, ud, s, i, a.t) end
+		end
 	end
 	-- aim only: the other weapons of the buttons follow the view, their reload is held
 	if inp.aimed then
@@ -1406,6 +1442,16 @@ local function census()
 	end
 end
 
+if TEST then
+	for id, wd in pairs(WeaponDefs) do
+		if wd.type == "AircraftBomb" then Script.SetWatchExplosion(id, true) end
+	end
+end
+function gadget:Explosion(wdid, px, py, pz, owner)
+	if TEST and WeaponDefs[wdid] and WeaponDefs[wdid].type == "AircraftBomb" then Spring.Echo(string.format("[Renegade] bomb exploded at %.0f %.0f %.0f (ground %.0f), frame %d", px, py, pz, Spring.GetGroundHeight(px, pz), Spring.GetGameFrame())) end
+	return false
+end
+
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
 	if f >= 30 and f <= 300 and f % 15 == 0 then
@@ -1418,6 +1464,7 @@ function gadget:GameFrame(f)
 		steer(team, f)
 		lift(team, f)
 		shoot(team, f)
+		processBombs(f)
 		if not energyInit[team] then
 			energyInit[team] = true
 			Spring.SetTeamResource(team, "es", ENERGY_STORE)
