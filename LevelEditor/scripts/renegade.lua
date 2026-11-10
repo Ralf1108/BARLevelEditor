@@ -751,7 +751,15 @@ function widget:DrawScreen()
 	local _, _, mainRange = weaponsOf(R.unit)
 	mainRange = mainRange or 0
 	local text
-	local inReach = h and mainRange > 0 and h.udist <= mainRange
+	-- (a bomber and every weapon that is dropped have no range worth showing: the impact preview shows where the bombs land)
+	local dropped = false
+	do
+		local ud0, sl0 = weaponsOf(R.unit)
+		local i0 = ud0 and sl0.L and sl0.L[1]
+		local wd0 = i0 and ud0.weapons[i0] and WeaponDefs[ud0.weapons[i0].weaponDef]
+		dropped = wd0 and wd0.type == "AircraftBomb" or false
+	end
+	local inReach = h and (dropped or (mainRange > 0 and h.udist <= mainRange))
 	if not h then
 		text = "sky"
 	elseif h.kind == "unit" then
@@ -761,7 +769,7 @@ function widget:DrawScreen()
 	else
 		text = string.format("ground  %d m", math.floor(h.udist))
 	end
-	if h then text = text .. (inReach and "  IN RANGE" or string.format("  OUT OF RANGE (%d)", mainRange)) end
+	if h and not dropped then text = text .. (inReach and "  IN RANGE" or string.format("  OUT OF RANGE (%d)", mainRange)) end
 	local r, g, b = 1, 1, 1
 	if h then
 		if inReach then r, g, b = 0.35, 1, 0.4 else r, g, b = 1, 0.3, 0.25 end
