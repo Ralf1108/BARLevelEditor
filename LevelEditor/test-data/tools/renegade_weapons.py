@@ -1,10 +1,11 @@
 """The weapon table of Renegade (LevelEditor/game-modes/renegade-weapons.md and renegade_weapons.csv) and the block of renegade_game.lua made from it.
 
-  python renegade_weapons.py table <infolog.txt>   makes (or updates) the table from the lines "[zzwep] ..." that tools/zz_weapondump.lua writes into the infolog of a sandbox
-                                                   run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). The columns Group and Fire button of a row that is in the table
+  python renegade_weapons.py update                makes the table game-modes/renegade-weapons.md (for reading) and the block WEAPON_BUTTONS (between -- BEGIN WEAPONS and
+                                                   -- END WEAPONS) of scripts/renegade_game.lua from game-modes/renegade_weapons.csv, which is the source: change the columns
+                                                   Group and Fire button there (Excel) and run update_renegade_weapons.bat in game-modes.
+  python renegade_weapons.py table <infolog.txt>   makes the csv (and the md and the block) new from the lines "[zzwep] ..." that tools/zz_weapondump.lua writes into the
+                                                   infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Group and Fire button of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
-  python renegade_weapons.py lua [table.md|table.csv]   writes the block WEAPON_BUTTONS (between -- BEGIN WEAPONS and -- END WEAPONS) into scripts/renegade_game.lua
-                                                   from the columns Group and Fire button of the table (default: the .md).
 
 The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are one group; missiles
 (missile launcher, starburst, torpedo, anti-air only) and all other groups are sorted by range; with both kinds the shortest of the others goes on LMB, the rest of the
@@ -15,7 +16,7 @@ import csv, os, re, sys
 
 here = os.path.dirname(os.path.abspath(__file__))
 repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
-MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")
+MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")   # (made from the csv)
 CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
@@ -143,7 +144,7 @@ INTRO = """# Renegade: the weapons of all units
 
 [Renegade](renegade.md) · [Specification](../../specs/renegade.md) · [Start page](../../README.md)
 
-Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns** (and nothing else): the rest is read from the game.
+Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns in `renegade_weapons.csv`** (and nothing else): the rest is read from the game; this page is made from the csv.
 
 - **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). `-` = the weapon is not fired by a button (footsteps, script dummies).
 - **Fire button**: `LMB` (left mouse button), `RMB` (right) or `MMB` (middle). A group has one button: the button of the first row of the group counts. Several groups may share a button.
@@ -151,16 +152,34 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 - The proposal: weapons with the same weapon definition are one group; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
 
-After a change: `python LevelEditor\\test-data\\tools\\renegade_weapons.py lua` writes the table into `renegade_game.lua` (the block between `-- BEGIN WEAPONS` and `-- END WEAPONS`; do not edit it by hand), then the game gets the new file as usual. The same table is `renegade_weapons.csv` (for Excel; `lua renegade_weapons.csv` reads that one instead). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
+**How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Group** and **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (do not edit the page: it is made from the csv) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
 
 """
+
+
+def write_md(rows):
+    codes = {r[2] for r in rows}
+    with open(MD, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(INTRO)
+        fh.write("%d weapons of %d units.\n\n" % (len(rows), len(codes)))
+        fh.write("| " + " | ".join(COLUMNS) + " |\n|" + "|".join(["---"] * len(COLUMNS)) + "|\n")
+        for r in rows:
+            fh.write("| " + " | ".join(c.replace("|", "/") for c in r) + " |\n")
+
+
+def write_csv(rows):
+    with open(CSV, "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.writer(fh, delimiter=";")
+        w.writerow(COLUMNS)
+        for r in rows:
+            w.writerow(r)
 
 
 def make_table(log):
     units = read_dump(log)
     old = {}
-    if os.path.exists(MD):
-        for r in read_table(MD):
+    if os.path.exists(CSV):
+        for r in read_table(CSV):
             old[(r["Code"], r["#"])] = (r.get("Group", "-"), r.get("Fire button", "-"))
     rows = []
     facs = list(FACTION)
@@ -172,18 +191,17 @@ def make_table(log):
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
                          dmg, w["wname"], grp, btn])
-    with open(MD, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(INTRO)
-        fh.write("%d weapons of %d units.\n\n" % (len(rows), len(units)))
-        fh.write("| " + " | ".join(COLUMNS) + " |\n|" + "|".join(["---"] * len(COLUMNS)) + "|\n")
-        for r in rows:
-            fh.write("| " + " | ".join(c.replace("|", "/") for c in r) + " |\n")
-    with open(CSV, "w", encoding="utf-8-sig", newline="") as fh:
-        w = csv.writer(fh, delimiter=";")
-        w.writerow(COLUMNS)
-        for r in rows:
-            w.writerow(r)
+    write_csv(rows)
+    write_md(rows)
     print("%d rows, %d units" % (len(rows), len(units)))
+    make_lua(CSV)
+
+
+def make_update():
+    rows = [[r[c] for c in COLUMNS] for r in read_table(CSV)]
+    write_md(rows)
+    print("%s written (%d rows)" % (os.path.basename(MD), len(rows)))
+    make_lua(CSV)
 
 
 def make_lua(src):
@@ -225,7 +243,9 @@ def make_lua(src):
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "table":
         make_table(sys.argv[2])
+    elif len(sys.argv) >= 2 and sys.argv[1] == "update":
+        make_update()
     elif len(sys.argv) >= 2 and sys.argv[1] == "lua":
-        make_lua(sys.argv[2] if len(sys.argv) > 2 else MD)
+        make_lua(sys.argv[2] if len(sys.argv) > 2 else CSV)
     else:
         print(__doc__)

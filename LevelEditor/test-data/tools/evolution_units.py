@@ -1,5 +1,11 @@
 """Makes the table of the unit candidates of Evolution (LevelEditor/game-modes/evolution-units.md and evolution_units.csv).
 
+  python evolution_units.py update          the source is game-modes/evolution_units.csv (change Level, Long range and Note there, in Excel): makes the table
+                                            game-modes/evolution-units.md and the lists POOL / POOL_LONG / NAMES in scripts/evo_game.lua from it (double-click
+                                            update_evolution_units.bat in game-modes). A unit is in the game when its column Level has a number.
+  python evolution_units.py <infolog.txt>   makes the csv new from the numbers of the game (see below); the Level and Long range of a unit that is in the csv already
+                                            are kept (your changes); then the table and the lists.
+
 Input: the lines "[zzunit] ..." that tools/zz_unitdump.lua writes into the infolog of a sandbox run (pve_test.ps1 -Widget zz_unitdump.lua), and
 shared/unit_categories/unit_categories.json (type of a unit: bots, vehicles, hover, air, sea). The level of a unit: the Evolution level whose
 reference units (the current LADDERS of evo_game.lua) have the closest score = damage per second x health (on a logarithmic scale).
@@ -9,7 +15,8 @@ import json, math, re, sys, os
 
 here = os.path.dirname(os.path.abspath(__file__))
 repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
-log = sys.argv[1]
+UPDATE = sys.argv[1] == "update"
+log = None if UPDATE else sys.argv[1]
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
 cats = {u["code"]: u for u in json.load(open(os.path.join(repo, "shared", "unit_categories", "unit_categories.json"), encoding="utf-8"))}
 
@@ -22,83 +29,111 @@ for row in re.findall(r"\{([^{}]*)\}", block.split("\n", 1)[1]):
     for i, n in enumerate(re.findall(r'"(\w+)"', row), 1):
         ladder[n] = i
 
-units = []
-for line in open(log, encoding="utf-8", errors="replace"):
-    m = re.search(r"\[zzunit\] (.*)$", line.rstrip())
-    if not m or m.group(1) == "done":
-        continue
-    f = m.group(1).split(";")
-    if len(f) < 13:
-        continue
-    name, fac, human, tech, dps, aa, hp, metal, speed, rng, move, flags, weapons = f[:13]
-    if re.search(r"scav|raptor", name + " " + human, re.I):
-        continue   # (the Scavenger and Raptor copies are not listed at all)
-    units.append(dict(name=name, fac=FACTION[fac], human=human, tech=tech, dps=float(dps), aa=float(aa), hp=float(hp), metal=float(metal),
-                      speed=float(speed), range=float(rng), move=move, flags=flags, weapons=weapons))
+if not UPDATE:
+    units = []
+    for line in open(log, encoding="utf-8", errors="replace"):
+        m = re.search(r"\[zzunit\] (.*)$", line.rstrip())
+        if not m or m.group(1) == "done":
+            continue
+        f = m.group(1).split(";")
+        if len(f) < 13:
+            continue
+        name, fac, human, tech, dps, aa, hp, metal, speed, rng, move, flags, weapons = f[:13]
+        if re.search(r"scav|raptor", name + " " + human, re.I):
+            continue   # (the Scavenger and Raptor copies are not listed at all)
+        units.append(dict(name=name, fac=FACTION[fac], human=human, tech=tech, dps=float(dps), aa=float(aa), hp=float(hp), metal=float(metal),
+                          speed=float(speed), range=float(rng), move=move, flags=flags, weapons=weapons))
 
-def kind(u):
-    c = cats.get(u["name"], {}).get("category", "")
-    if "fly" in u["flags"]: return "Air"
-    if c == "sea" or "water" in u["flags"] or u["move"].startswith(("boat", "ship", "sub")): return "Sea"
-    if c == "hover" or u["move"].startswith(("hover", "hhover", "ahover")): return "Hover"
-    if c == "bots" or u["move"].startswith(("kbot", "bot", "abot", "sbot", "hbot", "tbot", "habot", "htbot", "vbot", "epicbot", "epicallterrain")): return "Bot"
-    if c == "vehicles" or u["move"].startswith(("tank", "atank", "htank", "mtank", "vehicle", "epicveh")): return "Vehicle"
-    return c.capitalize() or u["move"]
+    def kind(u):
+        c = cats.get(u["name"], {}).get("category", "")
+        if "fly" in u["flags"]: return "Air"
+        if c == "sea" or "water" in u["flags"] or u["move"].startswith(("boat", "ship", "sub")): return "Sea"
+        if c == "hover" or u["move"].startswith(("hover", "hhover", "ahover")): return "Hover"
+        if c == "bots" or u["move"].startswith(("kbot", "bot", "abot", "sbot", "hbot", "tbot", "habot", "htbot", "vbot", "epicbot", "epicallterrain")): return "Bot"
+        if c == "vehicles" or u["move"].startswith(("tank", "atank", "htank", "mtank", "vehicle", "epicveh")): return "Vehicle"
+        return c.capitalize() or u["move"]
 
-# left out by hand (the name of the unit: the reason)
-MANUAL = {"corban": "missile launcher", "armprowl": "same values as the Marauder (a duplicate)", "armsh": "very weak hovercraft", "corsh": "very weak hovercraft", "legsh": "very weak hovercraft"}
+    # left out by hand (the name of the unit: the reason)
+    MANUAL = {"corban": "missile launcher", "armprowl": "same values as the Marauder (a duplicate)", "armsh": "very weak hovercraft", "corsh": "very weak hovercraft", "legsh": "very weak hovercraft"}
 
-def why(u):
-    """why a unit is not included in Evolution (empty: it is included)"""
-    r = []
-    ws = [w.split(":") for w in u["weapons"].split()]
-    main = max([w for w in ws if w[0] != "StarburstLauncher"] or ws, key=lambda w: float(w[2])) if ws else None   # (the weapon with the most damage per second; Starburst launchers are stockpiled missiles)
-    if u["move"] in ("commanderbot", "scavcommanderbot"): r.append("commander")
-    if "drone" in u["name"]: r.append("drone")
-    if "builder" in u["flags"]: r.append("constructor")
-    if "fly" in u["flags"]: r.append("aircraft")
-    if kind(u) == "Sea": r.append("water unit")
-    if re.search(r"mine ?layer|minesweeper|mine", u["human"], re.I): r.append("mine layer")
-    if re.match(r"(Epic|Archaic) ", u["human"]): r.append("Epic / Archaic variant")
-    if "Tumbleweed" in u["human"]: r.append("Tumbleweed")
-    if u["dps"] <= 0 and not r: r.append("no ground weapon (radar, jammer, spy, anti air, crawling bomb)")
-    # artillery / rocket launcher: the description of the unit says so, or its main weapon reaches 1000 Elmo or more
-    desc = cats.get(u["name"], {}).get("description", "")
-    if not r and (re.search(r"artillery|rocket|missile launcher|mortar|howitzer|mlrs", desc + " " + u["human"], re.I) or (main and main[0] in ("Cannon", "MissileLauncher") and float(main[1]) >= 1000)):
-        r.append("artillery / rocket launcher")
-    if not r and u["dps"] * u["hp"] < 10000: r.append("scout: DPS x health below 10000")
-    if not r and main and main[0] in ("MissileLauncher", "StarburstLauncher") and (len(main) < 7 or main[6] != "true") and u["name"] not in ladder: r.append("rocket launcher without homing (not for 1:1 fights)")
-    if not r and u["speed"] < 31 and u["name"] not in ladder: r.append("too slow (speed below 31)")
-    if not r and u["dps"] < 40: r.append("weak support: DPS below 40")
-    if not r and u["name"] in MANUAL: r.append(MANUAL[u["name"]])
-    return ", ".join(r)
+    def why(u):
+        """why a unit is not included in Evolution (empty: it is included)"""
+        r = []
+        ws = [w.split(":") for w in u["weapons"].split()]
+        main = max([w for w in ws if w[0] != "StarburstLauncher"] or ws, key=lambda w: float(w[2])) if ws else None   # (the weapon with the most damage per second; Starburst launchers are stockpiled missiles)
+        if u["move"] in ("commanderbot", "scavcommanderbot"): r.append("commander")
+        if "drone" in u["name"]: r.append("drone")
+        if "builder" in u["flags"]: r.append("constructor")
+        if "fly" in u["flags"]: r.append("aircraft")
+        if kind(u) == "Sea": r.append("water unit")
+        if re.search(r"mine ?layer|minesweeper|mine", u["human"], re.I): r.append("mine layer")
+        if re.match(r"(Epic|Archaic) ", u["human"]): r.append("Epic / Archaic variant")
+        if "Tumbleweed" in u["human"]: r.append("Tumbleweed")
+        if u["dps"] <= 0 and not r: r.append("no ground weapon (radar, jammer, spy, anti air, crawling bomb)")
+        # artillery / rocket launcher: the description of the unit says so, or its main weapon reaches 1000 Elmo or more
+        desc = cats.get(u["name"], {}).get("description", "")
+        if not r and (re.search(r"artillery|rocket|missile launcher|mortar|howitzer|mlrs", desc + " " + u["human"], re.I) or (main and main[0] in ("Cannon", "MissileLauncher") and float(main[1]) >= 1000)):
+            r.append("artillery / rocket launcher")
+        if not r and u["dps"] * u["hp"] < 10000: r.append("scout: DPS x health below 10000")
+        if not r and main and main[0] in ("MissileLauncher", "StarburstLauncher") and (len(main) < 7 or main[6] != "true") and u["name"] not in ladder: r.append("rocket launcher without homing (not for 1:1 fights)")
+        if not r and u["speed"] < 31 and u["name"] not in ladder: r.append("too slow (speed below 31)")
+        if not r and u["dps"] < 40: r.append("weak support: DPS below 40")
+        if not r and u["name"] in MANUAL: r.append(MANUAL[u["name"]])
+        return ", ".join(r)
 
-for u in units:
-    u["type"] = kind(u)
-    u["score"] = u["dps"] * u["hp"]
-    u["note"] = why(u)
-    u["ladder"] = ladder.get(u["name"], "")
+    for u in units:
+        u["type"] = kind(u)
+        u["score"] = u["dps"] * u["hp"]
+        u["note"] = why(u)
+        u["ladder"] = ladder.get(u["name"], "")
 
-# the reference score of every level: the geometric mean of the ladder units of the three factions
-ref = {}
-for lvl in range(1, 11):
-    s = [u["score"] for u in units if u["ladder"] == lvl and u["score"] > 0]
-    ref[lvl] = math.exp(sum(math.log(x) for x in s) / len(s)) if s else None
-def level(u):
-    if u["score"] <= 0 or not any(ref.values()):
-        return ""
-    return min((l for l in ref if ref[l]), key=lambda l: abs(math.log(u["score"]) - math.log(ref[l])))
-OVERRIDE = {"legamph": 7}   # Telchine: 1107 DPS (like level 8) with 2750 health (like level 5): level 7
-def long_range(u):
-    """True: a laser, plasma or rail gun unit of 850 Elmo or more that is not on the ladder (no missiles): the game option Long range"""
-    ws = [w.split(":") for w in u["weapons"].split() if not w.startswith("StarburstLauncher")]
-    main = max(ws, key=lambda w: float(w[2])) if ws else None
-    return not u["ladder"] and u["range"] >= 850 and main is not None and main[0] != "MissileLauncher"
-for u in units:
-    incl = not u["note"]
-    u["level"] = (u["ladder"] or OVERRIDE.get(u["name"]) or level(u)) if incl else ""   # (a unit that is in the game keeps its level)
-    u["long"] = "yes" if incl and long_range(u) else ""
-    if u["long"]: u["note"] = "included only with the option Long range"
+    # the reference score of every level: the geometric mean of the ladder units of the three factions
+    ref = {}
+    for lvl in range(1, 11):
+        s = [u["score"] for u in units if u["ladder"] == lvl and u["score"] > 0]
+        ref[lvl] = math.exp(sum(math.log(x) for x in s) / len(s)) if s else None
+    def level(u):
+        if u["score"] <= 0 or not any(ref.values()):
+            return ""
+        return min((l for l in ref if ref[l]), key=lambda l: abs(math.log(u["score"]) - math.log(ref[l])))
+    OVERRIDE = {"legamph": 7}   # Telchine: 1107 DPS (like level 8) with 2750 health (like level 5): level 7
+    def long_range(u):
+        """True: a laser, plasma or rail gun unit of 850 Elmo or more that is not on the ladder (no missiles): the game option Long range"""
+        ws = [w.split(":") for w in u["weapons"].split() if not w.startswith("StarburstLauncher")]
+        main = max(ws, key=lambda w: float(w[2])) if ws else None
+        return not u["ladder"] and u["range"] >= 850 and main is not None and main[0] != "MissileLauncher"
+    OLD = {}
+    _csv = os.path.join(repo, "LevelEditor", "game-modes", "evolution_units.csv")
+    if os.path.exists(_csv):
+        import csv as _c
+        with open(_csv, encoding="utf-8-sig", newline="") as _fh:
+            for _r in _c.DictReader(_fh, delimiter=";"):
+                OLD[_r["Unit"]] = (int(_r["Level"]) if _r["Level"].strip().isdigit() else "", _r["Long range"].strip())
+    for u in units:
+        incl = not u["note"]
+        u["level"] = (u["ladder"] or OVERRIDE.get(u["name"]) or level(u)) if incl else ""   # (a unit that is in the game keeps its level)
+        u["long"] = "yes" if incl and long_range(u) else ""
+        if u["long"]: u["note"] = "included only with the option Long range"
+        if u["name"] in OLD:   # the Level and Long range of the csv that is there already (your changes) are kept
+            u["level"], u["long"] = OLD[u["name"]]
+else:
+    import csv
+    def num(x):
+        try:
+            return float(x)
+        except ValueError:
+            return 0.0
+    units = []
+    with open(os.path.join(repo, "LevelEditor", "game-modes", "evolution_units.csv"), encoding="utf-8-sig", newline="") as fh:
+        for r in csv.DictReader(fh, delimiter=";"):
+            units.append(dict(level=int(r["Level"]) if r["Level"].strip().isdigit() else "", ladder=int(r["Included"]) if r["Included"].strip().isdigit() else "",
+                              fac=r["Faction"], human=r["Name"], name=r["Unit"], type=r["Type"], tech=r["Tech"], dps=num(r["DPS"]), hp=num(r["Health"]),
+                              score=num(r["Score"]), metal=num(r["Metal"]), speed=num(r["Speed"]), range=num(r["Range"]), long=r["Long range"].strip(),
+                              note=r["Note (why not included)"]))
+    ref = {}
+    for lvl in range(1, 11):
+        s = [u["score"] for u in units if u["ladder"] == lvl and u["score"] > 0]
+        ref[lvl] = math.exp(sum(math.log(x) for x in s) / len(s)) if s else None
 included = [u for u in units if u["level"] != ""]
 rows = sorted(included, key=lambda u: (u["level"], u["fac"], u["score"])) + sorted([u for u in units if u["level"] == ""], key=lambda u: (u["note"], u["fac"], u["human"]))
 head = ["Level", "Included", "Faction", "Name", "Unit", "Type", "Tech", "DPS", "Health", "Score", "Metal", "Speed", "Range", "Long range", "Note (why not included)"]
@@ -119,7 +154,7 @@ def pool(kindlong):
             out.append("\t[%d] = { %s }," % (l, ", ".join(lists)))
     out.append("}")
     return "\n".join(out)
-gen = ["-- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution-units.md: change the table, not this block)",
+gen = ["-- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution_units.csv: change the csv, then update_evolution_units.bat, not this block)",
        "-- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range",
        "local POOL = " + pool(False), "local POOL_LONG = " + pool(True),
        "for name, title in pairs({"]
@@ -132,18 +167,19 @@ enl = "\r\n" if "\r\n" in src else "\n"
 a = src.index("-- BEGIN POOL"); b = src.index("-- END POOL") + len("-- END POOL")
 open(evo, "w", encoding="utf-8", newline="").write(src[:a] + enl.join(gen) + src[b:])
 
-# the csv for Excel (semicolons, UTF-8 with BOM)
+# the csv for Excel (semicolons, UTF-8 with BOM): the source; written only when it is made from the dump
 out = os.path.join(repo, "LevelEditor", "game-modes", "evolution_units.csv")
-with open(out, "w", encoding="utf-8-sig", newline="") as fh:
-    fh.write(";".join(head) + "\r\n")
-    for u in rows:
-        fh.write(";".join(str(c) for c in cells(u)) + "\r\n")
+if not UPDATE:
+    with open(out, "w", encoding="utf-8-sig", newline="") as fh:
+        fh.write(";".join(head) + "\r\n")
+        for u in rows:
+            fh.write(";".join(str(c) for c in cells(u)) + "\r\n")
 
 # the table in a file of its own: game-modes/evolution-units.md; the manual links to it at its end
 nl = "\r\n"
 tab = ["# Evolution: unit candidates", "",
        "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
-       "The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.", "",
+       "The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); the csv is the source (change *Level*, *Long range* and *Note* there, then double-click `update_evolution_units.bat` in this folder: it writes this page and the lists of `evo_game.lua`); it is made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.", "",
        "**Which units are candidates**", "",
        "- Looked at: every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed)",
        "- Candidates: bots, vehicles and hovercraft with a ground weapon; they have a level in the table",

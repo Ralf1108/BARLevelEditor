@@ -2,7 +2,7 @@
 
 [Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)
 
-The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); both are made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.
+The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); the csv is the source (change *Level*, *Long range* and *Note* there, then double-click `update_evolution_units.bat` in this folder: it writes this page and the lists of `evo_game.lua`); it is made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.
 
 **Which units are candidates**
 

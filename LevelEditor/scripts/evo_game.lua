@@ -43,7 +43,7 @@ local NAMES = {
 	armsnipe = "Sharpshooter", legsrail = "Arquebus", cordeadeye = "Deadeye", armmanni = "Starlight", corsiegebreaker = "Siegebreaker",
 	legerailtank = "Daedalus", corthermite = "Thermite", legpede = "Mukade", legapollyon = "Apollyon",
 }
--- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution-units.md: change the table, not this block)
+-- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution_units.csv: change the csv, then update_evolution_units.bat, not this block)
 -- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range
 local POOL = {
 	[1] = { { "armpw" }, { "corak" }, { "leghades" } },

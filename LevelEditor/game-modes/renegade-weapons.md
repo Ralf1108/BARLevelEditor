@@ -2,7 +2,7 @@
 
 [Renegade](renegade.md) · [Specification](../../specs/renegade.md) · [Start page](../../README.md)
 
-Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns** (and nothing else): the rest is read from the game.
+Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns in `renegade_weapons.csv`** (and nothing else): the rest is read from the game; this page is made from the csv.
 
 - **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). `-` = the weapon is not fired by a button (footsteps, script dummies).
 - **Fire button**: `LMB` (left mouse button), `RMB` (right) or `MMB` (middle). A group has one button: the button of the first row of the group counts. Several groups may share a button.
@@ -10,7 +10,7 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 - The proposal: weapons with the same weapon definition are one group; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
 
-After a change: `python LevelEditor\test-data\tools\renegade_weapons.py lua` writes the table into `renegade_game.lua` (the block between `-- BEGIN WEAPONS` and `-- END WEAPONS`; do not edit it by hand), then the game gets the new file as usual. The same table is `renegade_weapons.csv` (for Excel; `lua renegade_weapons.csv` reads that one instead). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
+**How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Group** and **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (do not edit the page: it is made from the csv) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
 
 1035 weapons of 497 units.
 
