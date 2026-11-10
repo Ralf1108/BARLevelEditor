@@ -743,6 +743,26 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return
 	end
+	if TEST and msg == "ren|test|3" then -- an enemy gunship (hold fire) 250 Elmo ahead of the unit, 100 Elmo up
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local u = units[team]
+		if u and not spec then
+			local x, y, z = Spring.GetUnitPosition(u)
+			local yaw = math.rad(input[team].yaw)
+			local ex, ez = x + math.sin(yaw) * 250, z + math.cos(yaw) * 250
+			for _, tm in ipairs(Spring.GetTeamList()) do
+				if not Spring.AreTeamsAllied(tm, team) and tm ~= Spring.GetGaiaTeamID() then
+					local e = Spring.CreateUnit("armbrawl", ex, Spring.GetGroundHeight(ex, ez) + 100, ez, 0, tm)
+					if e then
+						Spring.GiveOrderToUnit(e, CMD.FIRE_STATE, { 0 }, 0)
+						Spring.Echo("[Renegade] test gunship " .. e)
+					end
+					break
+				end
+			end
+		end
+		return
+	end
 	if TEST and msg == "ren|test|2" then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end

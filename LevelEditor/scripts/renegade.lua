@@ -39,6 +39,7 @@ local R = {
 	shot = nil, -- where a shot goes: the hit, or a far point along the view ray
 	sentAt = -100, sent = nil,
 	MARCH = 24, -- Elmo: step of the own ray over the heightmap
+	AA_RADIUS = 0.15, -- the anti-air circle: its radius as a part of the screen height
 	fake = false, -- the test widget steers (no mouse, no keys of the player)
 }
 
@@ -103,7 +104,7 @@ local function send(f, force)
 	local yaw, pitch = math.floor(R.yaw + 0.5) % 360, math.floor(R.pitch + 0.5)
 	local h = R.fire ~= 0 and R.shot
 	local msg = string.format("ren|%d|%d|%d|%d|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire,
-		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, h and h.unit or -1)
+		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, R.aaTarget or (h and h.unit) or -1)
 	if msg == R.sent then return end
 	if not force and f - R.sentAt < SEND_GAP then return end
 	Spring.SendLuaRulesMsg(msg)
@@ -116,18 +117,19 @@ end
 local SLOTS = { { "L", "LMB", 1, { 1, 0.25, 0.2 }, 3 }, { "R", "RMB", 2, { 1, 0.85, 0.2 }, 5 }, { "M", "MMB", 4, { 0.3, 1, 0.35 }, 7 } } -- key, tag, bit, color, line width
 local slotsText, slotsVal
 local function slotsOf(u)
-	local txt = Spring.GetUnitRulesParam(u, "renSlots") or ";;"
+	local aaText = Spring.GetUnitRulesParam(u, "renAA") or ""
+	local txt = (Spring.GetUnitRulesParam(u, "renSlots") or ";;") .. "|" .. aaText -- (a Pawn and an anti-air turret both have "1;;")
 	if txt == slotsText then return slotsVal end
 	local v = {}
 	local k = 0
-	for part in (txt .. ";"):gmatch("([^;]*);") do
+	for part in ((txt:match("^([^|]*)")) .. ";"):gmatch("([^;]*);") do
 		k = k + 1
 		local l = {}
 		for n in part:gmatch("%d+") do l[#l + 1] = tonumber(n) end
 		v[({ "L", "R", "M" })[k] or "x"] = l
 	end
 	v.aa = {}
-	for n in (Spring.GetUnitRulesParam(u, "renAA") or ""):gmatch("%d+") do v.aa[tonumber(n)] = true end
+	for n in aaText:gmatch("%d+") do v.aa[tonumber(n)] = true end
 	slotsText, slotsVal = txt, v
 	return v
 end
@@ -206,6 +208,44 @@ local function aim(u)
 	R.shot = hit or { kind = "air", x = px + dx * FAR, y = py + dy * FAR, z = pz + dz * FAR, unit = -1, dist = FAR, udist = FAR }
 end
 
+-- Anti-air: a unit with anti-air weapons gets an orange circle round the crosshair (R.AA_RADIUS of the screen height, generous: aircraft are fast). The enemy aircraft in
+-- range whose picture is nearest to the middle inside the circle is the lock (R.aaTarget): the anti-air weapons get it as their target when the button is pressed (their
+-- missiles home in on it). Without an aircraft in the circle they do not fire.
+local function aaPick(u)
+	R.aaTarget, R.aaScreen, R.aaCircle = nil, nil, nil
+	local ud, slots = weaponsOf(u)
+	if not ud or next(slots.aa) == nil then return end
+	local range = 0
+	for i in pairs(slots.aa) do
+		local wp = ud.weapons[i]
+		local wd = wp and WeaponDefs[wp.weaponDef]
+		if wd and wd.range then range = math.max(range, wd.range) end
+	end
+	local vsx, vsy = Spring.GetViewGeometry()
+	local cx, cy = vsx / 2, vsy / 2
+	local radius = vsy * R.AA_RADIUS
+	R.aaCircle = radius
+	local ux, uy, uz = Spring.GetUnitPosition(u, true)
+	local px, py, pz = Spring.GetCameraPosition()
+	local dx, dy, dz = Spring.GetCameraDirection()
+	local best, bestD
+	for _, id in ipairs(Spring.GetVisibleUnits(Spring.ENEMY_UNITS or -4, nil, true)) do
+		local d = UnitDefs[Spring.GetUnitDefID(id) or -1]
+		if d and d.canFly and not Spring.IsUnitAllied(id) then
+			local x, y, z = Spring.GetUnitPosition(id, true)
+			if x and ux and (x - ux) ^ 2 + (y - uy) ^ 2 + (z - uz) ^ 2 <= range * range and (x - px) * dx + (y - py) * dy + (z - pz) * dz > 0 then
+				local sx, sy = Spring.WorldToScreenCoords(x, y, z)
+				if sx then
+					local dist = math.sqrt((sx - cx) ^ 2 + (sy - cy) ^ 2)
+					if dist <= radius and (not bestD or dist < bestD) then best, bestD = id, dist; R.aaScreen = { sx, sy } end
+				end
+			end
+		end
+	end
+	R.aaTarget = best
+	if not best then R.aaScreen = nil end
+end
+
 local function keysNow()
 	local k = 0
 	if Spring.GetKeyState(K.W) then k = k + 1 end
@@ -257,6 +297,7 @@ function widget:Update()
 	if not R.menu then Spring.SetMouseCursor("none") end
 	setCamera(u)
 	aim(u)
+	aaPick(u)
 	send(Spring.GetGameFrame(), R.keys ~= prevKeys or R.fire ~= prevFire)
 	prevKeys, prevFire = R.keys, R.fire
 end
@@ -599,6 +640,26 @@ function widget:DrawScreen()
 	end)
 	gl.LineWidth(1)
 	gl.Text(text, cx, cy - s * 2.2, math.max(12, vsy / 70), "co")
+	-- anti-air: the orange circle (put the aircraft in it and press the button) and the lock on the aircraft
+	if R.aaCircle then
+		gl.Color(1, 0.6, 0.1, 0.9)
+		gl.LineWidth(2.5)
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			for a = 0, 63 do
+				gl.Vertex(cx + R.aaCircle * math.cos(a * math.pi / 32), cy + R.aaCircle * math.sin(a * math.pi / 32))
+			end
+		end)
+		if R.aaTarget and R.aaScreen then
+			local sx, sy, q = R.aaScreen[1], R.aaScreen[2], math.max(14, vsy / 45)
+			gl.Color(1, 0.7, 0.1, 1)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				gl.Vertex(sx - q, sy - q); gl.Vertex(sx + q, sy - q); gl.Vertex(sx + q, sy + q); gl.Vertex(sx - q, sy + q)
+			end)
+			local d = UnitDefs[Spring.GetUnitDefID(R.aaTarget) or -1]
+			gl.Text("AA LOCK " .. (d and (d.translatedHumanName or d.name) or ""), sx, sy - q - 14, math.max(12, vsy / 75), "co")
+		end
+		gl.LineWidth(1)
+	end
 	gl.Color(1, 1, 1, 1)
 	local x1, top, w, ps = panel(vsx, vsy)
 	if R.debug and x1 then
