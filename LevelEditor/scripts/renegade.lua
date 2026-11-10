@@ -215,7 +215,7 @@ end
 -- range whose picture is nearest to the middle inside the circle is the lock (R.aaTarget): the anti-air weapons get it as their target when the button is pressed (their
 -- missiles home in on it). Without an aircraft in the circle they do not fire.
 local function aaPick(u)
-	R.aaTarget, R.aaScreen, R.aaCircle = nil, nil, nil
+	R.aaTarget, R.aaScreen, R.aaCircle, R.aaFar = nil, nil, nil, nil
 	local ud, slots = weaponsOf(u)
 	if not ud or (next(slots.aa) == nil and next(slots.hy) == nil) then return end
 	local range = 0
@@ -234,21 +234,29 @@ local function aaPick(u)
 	local px, py, pz = Spring.GetCameraPosition()
 	local dx, dy, dz = Spring.GetCameraDirection()
 	local best, bestD
+	local far, farD, farScreen
 	for _, id in ipairs(Spring.GetVisibleUnits(Spring.ENEMY_UNITS or -4, nil, true)) do
 		local d = UnitDefs[Spring.GetUnitDefID(id) or -1]
 		if d and d.canFly and not Spring.IsUnitAllied(id) then
 			local x, y, z = Spring.GetUnitPosition(id, true)
-			if x and ux and (x - ux) ^ 2 + (y - uy) ^ 2 + (z - uz) ^ 2 <= range * range and (x - px) * dx + (y - py) * dy + (z - pz) * dz > 0 then
+			if x and ux and (x - px) * dx + (y - py) * dy + (z - pz) * dz > 0 then
+				local inRange = (x - ux) ^ 2 + (y - uy) ^ 2 + (z - uz) ^ 2 <= range * range
 				local sx, sy = Spring.WorldToScreenCoords(x, y, z)
 				if sx then
 					local dist = math.sqrt((sx - cx) ^ 2 + (sy - cy) ^ 2)
-					if dist <= radius and (not bestD or dist < bestD) then best, bestD = id, dist; R.aaScreen = { sx, sy } end
+					if dist <= radius then
+						if inRange and (not bestD or dist < bestD) then best, bestD = id, dist; R.aaScreen = { sx, sy }
+						elseif not inRange and (not farD or dist < farD) then far, farD, farScreen = id, dist, { sx, sy } end
+					end
 				end
 			end
 		end
 	end
 	R.aaTarget = best
-	if not best then R.aaScreen = nil end
+	if not best then
+		R.aaScreen = nil
+		if far then R.aaFar, R.aaFarScreen = far, farScreen end -- (an aircraft in the circle that is too far: shown, not locked)
+	end
 end
 
 local function keysNow()
@@ -817,6 +825,17 @@ function widget:DrawScreen()
 			end)
 			local d = UnitDefs[Spring.GetUnitDefID(R.aaTarget) or -1]
 			gl.Text("AA LOCK " .. (d and (d.translatedHumanName or d.name) or ""), sx, sy - q - 14, math.max(12, vsy / 75), "co")
+		elseif R.aaFar and R.aaFarScreen then
+			-- an aircraft in the circle but out of reach of the anti-air weapons: a red square, no lock, no fire
+			local sx, sy, q = R.aaFarScreen[1], R.aaFarScreen[2], math.max(14, vsy / 45)
+			gl.Color(1, 0.3, 0.25, 1)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				gl.Vertex(sx - q, sy - q); gl.Vertex(sx + q, sy - q); gl.Vertex(sx + q, sy + q); gl.Vertex(sx - q, sy + q)
+			end)
+			local d = UnitDefs[Spring.GetUnitDefID(R.aaFar) or -1]
+			local fs = math.max(12, vsy / 75)
+			gl.Text("AA LOCK " .. (d and (d.translatedHumanName or d.name) or ""), sx, sy - q - 14, fs, "co")
+			gl.Text("OUT OF RANGE", sx, sy - q - 14 - fs * 1.3, fs, "co")
 		end
 		gl.LineWidth(1)
 	end
