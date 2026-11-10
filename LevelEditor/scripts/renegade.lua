@@ -3,7 +3,7 @@
 --   camera   on the eye of the unit (team rules parameter renUnit of the gadget renegade_game.lua), looking along yaw / pitch; the engine camera "fps"
 --   mouse    the cursor is kept in the middle (Spring.WarpMouse), its movement turns yaw / pitch; the mouse buttons are taken (no selecting, no orders)
 --   keys     W A S D are taken from the game (no camera scrolling) and sent to the gadget as a bit mask with the view and the shot:
---            "ren|yaw|pitch|keys|fire|x|y|z|unit" (fire: 1 left button = main weapon, 2 right button = the other weapons; x y z the point under the crosshair
+--            "ren|yaw|pitch|keys|fire|x|y|z|unit" (fire: 1 left button, 2 right button, 4 middle button, each fires a group of weapons; x y z the point under the crosshair
 --            while firing, unit the enemy unit there or -1, not used by the gadget any more)
 --   HUD      crosshair (green: the point under it is within reach of the main weapon, red: not), what it points at, health and weapons with their reload bars,
 --            range rings round the unit
@@ -110,20 +110,44 @@ local function send(f, force)
 	R.sent, R.sentAt = msg, f
 end
 
--- The weapons of the unit: R.main = the weapon of the left button (the gadget chooses the strongest one and publishes its number as the unit rules parameter
--- renMain), the others are fired with the right button; R.mainRange / R.maxRange = the ranges.
+-- The weapons of the unit in the groups of the three buttons (the gadget works them out, slotsFor, and publishes them as the unit rules parameter renSlots
+-- "left;right;middle", each a list of weapon numbers, and renAA): slots = { L = {1, 3}, R = {2}, M = {} }. The colors: left red, right yellow, middle green;
+-- the lines get thicker from red to green, so all three can be seen when they lie on each other.
+local SLOTS = { { "L", "LMB", 1, { 1, 0.25, 0.2 }, 3 }, { "R", "RMB", 2, { 1, 0.85, 0.2 }, 5 }, { "M", "MMB", 4, { 0.3, 1, 0.35 }, 7 } } -- key, tag, bit, color, line width
+local slotsText, slotsVal
+local function slotsOf(u)
+	local txt = Spring.GetUnitRulesParam(u, "renSlots") or ";;"
+	if txt == slotsText then return slotsVal end
+	local v = {}
+	local k = 0
+	for part in (txt .. ";"):gmatch("([^;]*);") do
+		k = k + 1
+		local l = {}
+		for n in part:gmatch("%d+") do l[#l + 1] = tonumber(n) end
+		v[({ "L", "R", "M" })[k] or "x"] = l
+	end
+	v.aa = {}
+	for n in (Spring.GetUnitRulesParam(u, "renAA") or ""):gmatch("%d+") do v.aa[tonumber(n)] = true end
+	slotsText, slotsVal = txt, v
+	return v
+end
+
+-- the range of a group of weapons (the longest of them)
+local function slotRange(ud, list)
+	local best = 0
+	for _, i in ipairs(list or {}) do
+		local wp = ud.weapons[i]
+		local wd = wp and WeaponDefs[wp.weaponDef]
+		if wd and wd.range then best = math.max(best, wd.range) end
+	end
+	return best
+end
+
 local function weaponsOf(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
-	local main = Spring.GetUnitRulesParam(u, "renMain") or 1
-	local mainRange, maxRange = 0, 0
-	for i, wp in ipairs(ud and ud.weapons or {}) do
-		local wd = WeaponDefs[wp.weaponDef]
-		if wd and wd.range then
-			maxRange = math.max(maxRange, wd.range)
-			if i == main then mainRange = wd.range end
-		end
-	end
-	return ud, main, mainRange, maxRange
+	if not ud then return nil end
+	local slots = slotsOf(u)
+	return ud, slots, slotRange(ud, slots.L)
 end
 
 -- What the crosshair points at, and where a shot goes. R.hit = what is under the crosshair (a unit, the ground; nil = nothing), R.shot = where the shot goes:
@@ -210,7 +234,9 @@ function widget:Update()
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
 		local vsx, vsy = Spring.GetViewGeometry()
 		local cx, cy = math.floor(vsx / 2), math.floor(vsy / 2)
-		local mx, my = Spring.GetMouseState()
+		local mx, my, left, middle, right = Spring.GetMouseState()
+		-- the buttons are read every frame too: a release that did not come must not keep the unit firing
+		R.fire = (left and 1 or 0) + (right and 2 or 0) + (middle and 4 or 0)
 		if mx ~= cx or my ~= cy then
 			R.yaw = (R.yaw - (mx - cx) * SENS) % 360
 			R.pitch = math.max(-89, math.min(89, R.pitch + (my - cy) * SENS))
@@ -314,6 +340,13 @@ local function pickerClick(x, y)
 end
 
 ---------------------------------------------------------------- the mouse and the keys: taken from the game while the view is on
+local BUTTON_BIT = { [1] = 1, [3] = 2, [2] = 4 } -- left, right, middle
+
+local function setBit(bit, on)
+	local has = R.fire % (bit * 2) >= bit
+	if on and not has then R.fire = R.fire + bit elseif not on and has then R.fire = R.fire - bit end
+end
+
 function widget:MousePress(x, y, button)
 	if not R.on then return end
 	if R.menu then
@@ -328,8 +361,7 @@ function widget:MousePress(x, y, button)
 		end
 		return true
 	end
-	if button == 1 then R.fire = R.fire - (R.fire % 2) + 1 end -- the left button: the main weapon (bit 1)
-	if button == 3 then R.fire = (R.fire >= 2) and R.fire or R.fire + 2 end -- the right button: the other weapons (bit 2)
+	if BUTTON_BIT[button] then setBit(BUTTON_BIT[button], true) end
 	if R.shot then send(Spring.GetGameFrame(), true) end -- at once, not with the next frame
 	prevFire = R.fire
 	return true
@@ -337,8 +369,7 @@ end
 
 function widget:MouseRelease(x, y, button)
 	if not R.on then return end
-	if button == 1 and R.fire % 2 == 1 then R.fire = R.fire - 1 end
-	if button == 3 and R.fire >= 2 then R.fire = R.fire - 2 end
+	if BUTTON_BIT[button] then setBit(BUTTON_BIT[button], false) end
 	if R.shot then send(Spring.GetGameFrame(), true) end
 	prevFire = R.fire
 	return true
@@ -394,27 +425,41 @@ function widget:TextCommand(cmd)
 end
 
 ---------------------------------------------------------------- drawing
--- the range rings on the ground round the unit: the main weapon thick and red, the others thin and yellow
+-- on the ground: the range rings round the unit and, for each group of weapons, a line from the unit in the direction its barrel points now (it turns
+-- slower than you look round: fire when the line points where you look). Colors and widths as above; the thickest is drawn first.
+local function groundLine(x, z, dx, dz, len)
+	gl.BeginEnd(GL.LINE_STRIP, function()
+		for k = 0, 16 do
+			local px, pz = x + dx * len * k / 16, z + dz * len * k / 16
+			gl.Vertex(px, Spring.GetGroundHeight(px, pz) + 6, pz)
+		end
+	end)
+end
+
 function widget:DrawWorld()
 	if not R.on or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
 	if not x then return end
-	local ud, main = weaponsOf(R.unit)
+	local ud, slots = weaponsOf(R.unit)
 	if not ud then return end
 	gl.DepthTest(false)
-	local drawn = {}
-	for i, wp in ipairs(ud.weapons or {}) do
-		local wd = WeaponDefs[wp.weaponDef]
-		if wd and wd.range and wd.range > 0 and not drawn[math.floor(wd.range)] then
-			drawn[math.floor(wd.range)] = true
-			if i == main then
-				gl.LineWidth(5)
-				gl.Color(1, 0.2, 0.15, 0.95)
-			else
-				gl.LineWidth(2.5)
-				gl.Color(1, 0.85, 0.2, 0.8)
+	for k = #SLOTS, 1, -1 do
+		local sl = SLOTS[k]
+		local list = slots[sl[1]]
+		if list and #list > 0 then
+			local range = slotRange(ud, list)
+			gl.Color(sl[4][1], sl[4][2], sl[4][3], 0.95)
+			gl.LineWidth(sl[5])
+			gl.DrawGroundCircle(x, y, z, range, 64)
+			-- the barrel
+			local _, _, _, dx, _, dz = Spring.GetUnitWeaponVectors(R.unit, list[1])
+			if dx then
+				local l = math.sqrt(dx * dx + dz * dz)
+				if l > 0.01 then
+					gl.LineWidth(sl[5])
+					groundLine(x, z, dx / l, dz / l, math.min(range, 260))
+				end
 			end
-			gl.DrawGroundCircle(x, y, z, wd.range, 64)
 		end
 	end
 	gl.LineWidth(1)
@@ -424,20 +469,26 @@ end
 -- the panel at the bottom: health, then the weapons with their reload bars (LMB = the main weapon, RMB = the others)
 local function panel(vsx, vsy)
 	local u = R.unit
-	local ud, main = weaponsOf(u)
+	local ud, slots = weaponsOf(u)
 	if not ud then return end
 	local frame = Spring.GetGameFrame()
 	local s = math.max(0.7, vsy / 1080)
 	local w, h = 320 * s, 62 * s
 	local rows = {}
-	for i, wp in ipairs(ud.weapons or {}) do
-		local wd = WeaponDefs[wp.weaponDef]
-		if wd and (wd.damages and wd.range and wd.range > 0) then
-			local at = Spring.GetUnitWeaponState(u, i, "reloadFrame") or 0
-			local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or wd.reload or 1
-			local ready = at <= frame
-			local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
-			rows[#rows + 1] = { name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon", range = wd.range, fill = fill, ready = ready, time = time, main = i == main }
+	for _, sl in ipairs(SLOTS) do
+		local list = slots[sl[1]]
+		if list and #list > 0 then
+			local i = list[1]
+			local wd = WeaponDefs[ud.weapons[i].weaponDef]
+			if wd then
+				local at = Spring.GetUnitWeaponState(u, i, "reloadFrame") or 0
+				local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or wd.reload or 1
+				local ready = at <= frame
+				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
+				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
+				if #list > 1 then name = name .. "  x" .. #list end
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = sl[2], color = sl[4], aa = slots.aa[i] }
+			end
 		end
 	end
 	local hh = 40 * s -- the health row
@@ -452,13 +503,13 @@ local function panel(vsx, vsy)
 		while #name > 4 and gl.GetTextWidth(name) * 15 * s > w - 70 * s do name = name:sub(1, -2) end
 		gl.Color(1, 1, 1, 0.95)
 		gl.Text(name, x1 + 10 * s, ry + 40 * s, 15 * s, "o")
-		gl.Color(r.main and 1 or 0.9, r.main and 0.45 or 0.8, r.main and 0.3 or 0.3, 1)
-		gl.Text(r.main and "LMB" or "RMB", x1 + w - 10 * s, ry + 41 * s, 13 * s, "ro")
+		gl.Color(r.color[1], r.color[2], r.color[3], 1)
+		gl.Text(r.tag, x1 + w - 10 * s, ry + 41 * s, 13 * s, "ro")
 		gl.Color(0.7, 0.7, 0.7, 0.95)
-		gl.Text(string.format("range %d   reload %.1f s   %s", r.range, r.time, r.ready and "READY" or "reloading"), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "   (anti-air: look at the aircraft)" or ""), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
 		gl.Color(0.15, 0.15, 0.15, 0.9)
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
-		if r.ready then gl.Color(0.3, 0.85, 0.35, 1) else gl.Color(0.95, 0.65, 0.15, 1) end
+		if r.ready then gl.Color(r.color[1], r.color[2], r.color[3], 1) else gl.Color(r.color[1] * 0.55, r.color[2] * 0.55, r.color[3] * 0.55, 1) end
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + 10 * s + (w - 20 * s) * r.fill, ry + 18 * s)
 	end
 	-- health: a bar from red to green with the numbers
@@ -500,6 +551,7 @@ function widget:DrawScreen()
 	-- what the crosshair points at and whether the main weapon reaches it: green = within reach, red = too far, white = the sky
 	local h = R.hit
 	local _, _, mainRange = weaponsOf(R.unit)
+	mainRange = mainRange or 0
 	local text
 	local inReach = h and mainRange > 0 and h.udist <= mainRange
 	if not h then

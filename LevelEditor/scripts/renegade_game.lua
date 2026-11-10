@@ -86,18 +86,84 @@ local function steer(team, f)
 	l.frame, l.yaw, l.keys = f, inp.yaw, inp.keys
 end
 
--- The shot (like in a shooter: never a "target"): the left button fires the main weapon (the strongest one, unit rules parameter renMain), the right button the
--- other weapons. Each gets the point the player aims at as its target (Spring.SetUnitTarget with a position, user target, weapon number), shortened along the
--- line from the unit to the point to the reach of that weapon, so it fires toward the crosshair even where nothing is in reach. The enemy unit under the
--- crosshair is not chosen as a target. A message sets the target at once; it is renewed every AIM_EVERY frames; releasing the buttons clears it.
+-- The shot (like in a shooter: never a "target"): three mouse buttons, each fires a group of the unit's weapons (slotsFor): the left button the short range
+-- weapons, the right button the long range ones, the middle button the missiles. Each weapon gets the point the player aims at as its target
+-- (Spring.SetUnitTarget with a position, user target, weapon number), shortened along the line from the unit to the point to the reach of that weapon, so it fires
+-- toward the crosshair even where nothing is in reach. The enemy unit under the crosshair is not chosen as a target, except for anti-air weapons (they can only
+-- hit what flies: the player looks at the aircraft). A message sets the target at once; it is renewed every AIM_EVERY frames; releasing the buttons clears it.
+-- The groups: the weapons with the same weapon definition are one group (they fire together). Missiles (missile launchers, starburst, torpedoes, and the
+-- anti-air weapons) and all others are sorted by range. With both kinds: the shortest weapon of the others on the left button, the rest of the others on the right
+-- button (the right button takes the missiles when there is no second one), the missiles on the middle button. With only one kind: the shortest on the left,
+-- the next on the right, all further ones on the middle button.
+local MISSILE = { MissileLauncher = true, StarburstLauncher = true, TorpedoLauncher = true }
+local slotCache = {}
+local function slotsFor(ud)
+	local c = slotCache[ud.id]
+	if c then return c end
+	local armor = (Game.armorTypes or {}).default or 0
+	local vtol = (Game.armorTypes or {}).vtol or 14
+	local groups, byDef = {}, {}
+	for i, wp in ipairs(ud.weapons or {}) do
+		local wd = WeaponDefs[wp.weaponDef]
+		local d = wd and wd.damages and tonumber(wd.damages[armor]) or 0
+		local v = wd and wd.damages and tonumber(wd.damages[vtol]) or 0
+		-- (weapons without damage are no weapons: footsteps and the dummies that the unit scripts use)
+		if wd and (tonumber(wd.range) or 0) > 0 and wd.type ~= "Shield" and (tonumber(wd.interceptor) or 0) == 0 and (d > 2 or v > 2) then
+			local g = byDef[wp.weaponDef]
+			if not g then
+				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = (d <= 2 and v > d) }
+				if g.aa then g.missile = true end
+				byDef[wp.weaponDef] = g
+				groups[#groups + 1] = g
+			end
+			g.list[#g.list + 1] = i
+		end
+	end
+	local others, miss = {}, {}
+	for _, g in ipairs(groups) do
+		local l = g.missile and miss or others
+		l[#l + 1] = g
+	end
+	local function byRange(x, y) return x.range < y.range end
+	table.sort(others, byRange)
+	table.sort(miss, byRange)
+	local function merge(list, from)
+		local out = {}
+		for k = from, #list do
+			for _, i in ipairs(list[k].list) do out[#out + 1] = i end
+		end
+		return out
+	end
+	local s = { L = {}, R = {}, M = {}, aa = {} }
+	if #miss > 0 and #others > 0 then
+		s.L, s.R, s.M = merge(others, 1), {}, merge(miss, 1)
+		s.L = others[1].list
+		s.R = merge(others, 2)
+		if #s.R == 0 then s.R, s.M = s.M, {} end
+	else
+		local list = (#others > 0) and others or miss
+		s.L = list[1] and list[1].list or {}
+		s.R = list[2] and list[2].list or {}
+		s.M = merge(list, 3)
+	end
+	for _, g in ipairs(groups) do
+		if g.aa then
+			for _, i in ipairs(g.list) do s.aa[i] = true end
+		end
+	end
+	slotCache[ud.id] = s
+	return s
+end
+
 local function weaponsFor(u, mask)
 	local ud = UnitDefs[Spring.GetUnitDefID(u)]
-	local main = Spring.GetUnitRulesParam(u, "renMain") or 1
+	local s = slotsFor(ud)
 	local list = {}
-	for i = 1, #(ud and ud.weapons or {}) do
-		if (i == main and mask % 2 >= 1) or (i ~= main and mask >= 2) then list[#list + 1] = i end
-	end
-	return list, ud
+	local function add(l) for _, i in ipairs(l) do list[#list + 1] = i end end
+	if mask % 2 >= 1 then add(s.L) end
+	if math.floor(mask / 2) % 2 >= 1 then add(s.R) end
+	if mask >= 4 then add(s.M) end
+	return list, ud, s
 end
 
 local function shortened(u, ud, i, x, y, z)
@@ -133,10 +199,17 @@ local function shoot(team, f, force)
 	if mask == 0 then return end
 	if not force and f % AIM_EVERY ~= 0 then return end
 	local t = inp.target
-	local list, ud = weaponsFor(u, mask)
+	local list, ud, s = weaponsFor(u, mask)
 	for _, i in ipairs(list) do
-		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
-		Spring.SetUnitTarget(u, x, y, z, false, true, i)
+		if s.aa[i] then
+			-- anti-air: only at the aircraft the player looks at
+			if t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) then
+				Spring.SetUnitTarget(u, t.unit, false, true, i)
+			end
+		else
+			local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
+			Spring.SetUnitTarget(u, x, y, z, false, true, i)
+		end
 	end
 end
 
@@ -179,7 +252,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 	if spec or not units[team] then return end
 	local inp = input[team]
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
-	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), math.max(0, math.min(3, tonumber(fire)))
+	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), math.max(0, math.min(7, tonumber(fire)))
 	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
 	shoot(team, Spring.GetGameFrame(), true)
 end
@@ -220,24 +293,6 @@ local function place(defName, list, wanted)
 	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
 end
 
--- the strongest weapon of a unit definition (damage x projectiles / reload, anti-air weapons with next to no default damage count nothing); number of the weapon
-local function mainWeapon(ud)
-	local best, bi = -1, 1
-	local armor = (Game.armorTypes or {}).default or 0
-	for i, wp in ipairs(ud.weapons or {}) do
-		local wd = WeaponDefs[wp.weaponDef]
-		local score = 0
-		if wd and wd.damages then
-			local dmg = tonumber(wd.damages[armor]) or 0
-			if dmg > 2 then
-				score = dmg * (tonumber(wd.projectiles) or 1) * (tonumber(wd.salvoSize) or 1) / math.max(0.1, tonumber(wd.reload) or 1)
-			end
-		end
-		if score > best then best, bi = score, i end
-	end
-	return bi
-end
-
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
 local function giveUnit(team, defName, x, y, z, face)
 	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
@@ -249,7 +304,13 @@ local function giveUnit(team, defName, x, y, z, face)
 	input[team].fire = 0
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
-	Spring.SetUnitRulesParam(id, "renMain", mainWeapon(UnitDefNames[defName]), { public = true })
+	-- the groups of weapons of the buttons for the widget: "left;right;middle" (weapon numbers), and the anti-air weapons
+	local s = slotsFor(UnitDefNames[defName])
+	local aa = {}
+	for i in pairs(s.aa) do aa[#aa + 1] = i end
+	table.sort(aa)
+	Spring.SetUnitRulesParam(id, "renSlots", table.concat(s.L, ",") .. ";" .. table.concat(s.R, ",") .. ";" .. table.concat(s.M, ","), { public = true })
+	Spring.SetUnitRulesParam(id, "renAA", table.concat(aa, ","), { public = true })
 	return id
 end
 
@@ -343,7 +404,38 @@ local function steerBots()
 	end
 end
 
+-- test only: how many weapon groups do the units have (do three buttons do)?
+local function census()
+	local count, names = {}, {}
+	for _, ud in pairs(UnitDefs) do
+		if #(ud.weapons or {}) > 0 and not ud.name:find("_scav") and not ud.name:find("^raptor") then
+			local s = slotsFor(ud)
+			local n = 0
+			for _, l in ipairs({ s.L, s.R, s.M }) do if #l > 0 then n = n + 1 end end
+			count[n] = (count[n] or 0) + 1
+			if #s.M > 0 and #s.R > 0 and #s.L > 0 then names[#names + 1] = ud.name end
+		end
+	end
+	local t = {}
+	for n, c in pairs(count) do t[#t + 1] = n .. " buttons: " .. c .. " units" end
+	table.sort(t)
+	Spring.Echo("[Renegade] census: " .. table.concat(t, ", "))
+	for _, n in ipairs({ "armbanth", "armepoch", "corkarg", "armraz", "armpw", "armllt", "armroy", "corkorg", "armthor", "armmav" }) do
+		local ud = UnitDefNames[n]
+		if ud then
+			local s = slotsFor(ud)
+			local out = {}
+			for i, wp in ipairs(ud.weapons) do
+				local wd = WeaponDefs[wp.weaponDef]
+				out[#out + 1] = i .. "=" .. wd.name .. "(" .. tostring(wd.type) .. " r" .. math.floor(wd.range) .. ")"
+			end
+			Spring.Echo("[Renegade] " .. n .. ": L " .. table.concat(s.L, ",") .. " R " .. table.concat(s.R, ",") .. " M " .. table.concat(s.M, ",") .. "   " .. table.concat(out, " "))
+		end
+	end
+end
+
 function gadget:GameFrame(f)
+	if TEST and f == 40 then census() end
 	if f >= 30 and f <= 300 and f % 15 == 0 then
 		for _, team in ipairs(Spring.GetTeamList()) do
 			if team ~= Spring.GetGaiaTeamID() then take(team) end

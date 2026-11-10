@@ -16,17 +16,19 @@ A game mode in the making: **you are one unit of Beyond All Reason, seen from th
 |---|---|
 | Mouse | look round (the cursor stays in the middle) |
 | W A S D | walk (forward, left, back, right, relative to where you look) |
-| Left mouse button | fire the **main weapon** (the strongest one) at the point under the crosshair |
-| Right mouse button | fire all **other weapons** of the unit |
+| Left mouse button | fire the **short range weapons** at the point under the crosshair (red) |
+| Right mouse button | fire the **long range weapons** (yellow) |
+| Middle mouse button | fire the **missiles** (green); anti-air missiles only at the aircraft you look at |
 | Insert (or `/renegade`) | normal camera and back |
 | Tab | free the mouse for the debug menu, again: back to the game |
 
 ## What you see
 
 - **Crosshair** in the middle: **green** when the point under it is within the reach of the main weapon, **red** when it is too far, white for the sky. Under it: what you point at (unit, health, distance) and IN RANGE / OUT OF RANGE.
-- **Range rings** on the ground round you: the main weapon thick and red, the other weapons thin and yellow.
-- **Panel** at the bottom: your health, then every weapon with its name, LMB / RMB, range, reload time and a **reload bar** (green = ready to fire).
-- You can **always fire**, also into the sky or at far mountains: the shot goes where the crosshair points, as far as the weapon reaches, and the weapon's own reload is the only limit. Nothing is "targeted" as in the strategy game.
+- **Range rings** on the ground round you, in the color of the button: red (left), yellow (right), green (middle), thicker from red to green so you see all three when they lie on each other. A **line on the ground** of the same color shows where the barrel of that group points now: you look round faster than the turret turns, fire when the line points where you look.
+- **Panel** at the bottom: your health, then one row for every button group with the weapon's name, LMB / RMB / MMB, range, reload time and a **reload bar** in the color of the button (full = ready to fire).
+- Which weapons are on which button: weapons of the same kind fire together; the short range ones are on the left, the long range ones on the right, missiles in the middle (Titan: impulsion blaster, long-range laser, starburst rocket; Epoch: medium plasma, heavy plasma, anti-air missiles). Three buttons are enough for every unit of the game. Let go of the button and the unit stops firing.
+- You can **always fire**, also into the sky or at far mountains: the shot goes where the crosshair points, as far as the weapon reaches, and the weapon's own reload is the only limit. Nothing is "targeted" as in the strategy game (only anti-air missiles need the aircraft in the crosshair).
 - Laser units need energy: for the tests you get **500 energy per second**.
 
 ## Debug menu
