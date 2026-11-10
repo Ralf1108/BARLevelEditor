@@ -742,16 +742,18 @@ local function countdown(vsx, vsy)
 	gl.Text("respawn in " .. sec, vsx / 2, vsy * 0.52, vsy / 18, "co")
 end
 
--- The altimeter of an aircraft: a vertical scale at the right edge (0 to ALT_MAX Elmo above the ground, a tick every 100), a marker with the height that goes up and
--- down, and the number. Orange when the aircraft is near the ground.
+-- The altimeter (always shown): a vertical scale at the right edge (0 to ALT_MAX Elmo above the ground, a tick every 100), a marker with the height that goes up and
+-- down, and the number. Orange when an aircraft is near the ground.
 local ALT_MAX = 600
 local function altimeter(vsx, vsy)
 	local u = R.unit
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
-	if not ud or not ud.canFly then return end
+	if not ud then return end
 	local x, y, z = Spring.GetUnitPosition(u, true)
 	if not x then return end
-	local alt = math.max(0, y - Spring.GetGroundHeight(x, z))
+	-- an aircraft: the height above the ground; every other unit: the height of the ground it stands on (above the sea level), so it always knows whether it is up or down
+	local flies = ud.canFly
+	local alt = math.max(0, flies and (y - Spring.GetGroundHeight(x, z)) or y)
 	local s = math.max(0.7, vsy / 1080)
 	local bx, h = vsx - 70 * s, 320 * s
 	local y0 = (vsy - h) / 2
@@ -760,7 +762,7 @@ local function altimeter(vsx, vsy)
 	gl.Rect(bx - 44 * s, y0 - 34 * s, bx + 46 * s, y0 + h + 30 * s)
 	gl.Color(0.15, 0.15, 0.15, 0.9)
 	gl.Rect(bx - 6 * s, y0, bx + 6 * s, y0 + h)
-	local low = alt < 40
+	local low = flies and alt < 40
 	if low then gl.Color(1, 0.55, 0.15, 1) else gl.Color(0.45, 0.85, 1, 1) end
 	gl.Rect(bx - 6 * s, y0, bx + 6 * s, at(alt))
 	gl.Color(0.8, 0.8, 0.8, 0.9)
@@ -775,8 +777,10 @@ local function altimeter(vsx, vsy)
 	end)
 	gl.Text(string.format("%d", alt), bx - 8 * s, y0 + h + 10 * s, 15 * s, "ro")
 	gl.Color(0.7, 0.7, 0.7, 0.95)
-	gl.Text("Space up", bx - 36 * s, y0 - 14 * s, 10 * s, "o")
-	gl.Text("Ctrl down", bx - 36 * s, y0 - 26 * s, 10 * s, "o")
+	if flies then
+		gl.Text("Space up", bx - 36 * s, y0 - 14 * s, 10 * s, "o")
+		gl.Text("Ctrl down", bx - 36 * s, y0 - 26 * s, 10 * s, "o")
+	end
 end
 
 function widget:DrawScreen()

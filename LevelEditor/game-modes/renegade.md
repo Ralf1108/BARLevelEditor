@@ -21,7 +21,7 @@ A game mode in the making: **you are one unit of Beyond All Reason, seen from th
 | Middle mouse button | fire the **missiles** (green); anti-air missiles only at the aircraft you look at |
 | Insert (or `/renegade`) | normal camera and back |
 | Alt | switch **FULL FIRE** on / off: while on, the left mouse button fires **every weapon at once** (the panel shows LMB on all rows and "FULL FIRE ON" above it; anti-air weapons still need an aircraft in the circle) |
-| Space / Ctrl | aircraft that hover (gunships): **higher / lower**; the **altimeter** at the right edge shows the height above the ground |
+| Space / Ctrl | aircraft that hover (gunships): **higher / lower**; the **altimeter** at the right edge (always shown; for a ground unit the height of the ground it stands on) shows how high you are |
 | Tab | free the mouse for the debug menu, again: back to the game |
 
 ## What you see
