@@ -18,6 +18,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
   - **Unit health**: the health the wild units start with, click to step through: **Auto** (the default) is 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7 and 50 % from level 8 (a stronger level starts with more); or one value from 10 % to 100 % for all levels (the health bar of a wild unit shows it)
   - **Regeneration**: On (default) or Off: whether the units of the players heal by themselves (1 % of the health every 5 seconds, starting 5 seconds after the last damage; the tooltip tells the rate)
   - **Long range**: On or Off (off is the default): when on, nine units with a long range (lasers, plasma and rail guns of 850 Elmo or more, no missiles) can appear on their levels too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon (the column Long range of the [unit table](evolution-units.md))
+  - **All Be Gods**: On or Off (off is the default): off = only the **first** player on level 10 brings Armageddon and chooses a gift; the others who reach level 10 get nothing special (the chat says they are too late); on = every player who reaches level 10 chooses a gift
   - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
 ![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range and Debug mode](../../docs/evolution-room.jpg)
@@ -57,7 +58,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 ![Armageddon: the banner and the window of the gift](../../docs/evolution-armageddon.jpg)
 
 **The gift of level 10**
-- Every player who reaches level 10 chooses a gift in a window (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
+- The first player on level 10 chooses a gift in a window (with the option **All Be Gods** every player who reaches level 10 does) (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
   - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
   - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
   - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20); the red rings warn everybody 5 seconds before where each one comes down. Then the missiles never stop and get worse: every human enemy has missiles of his own that follow him (one at first, two after two minutes, then one more every two minutes), the volleys come every 10 seconds at first and every 3 seconds after four minutes. They start 2000 Elmo from the enemy and come closer and closer, until there is no way out; computer players are not followed. Your own unit and your allies are never hit
@@ -76,8 +77,13 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - Your unit regenerates **1 % of its health every 5 seconds**, but only when it has not been hit for 5 seconds
 
 **Energy**
-- Every player gets **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000** (**2000** with the option Long range, whose beam weapons cost up to 1500 per shot): units with laser weapons need it to shoot, the abilities cost it; the rest has to come from the solar collectors and wind turbines below
+- Every player gets **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000** (**2000** on level 10 as a bonus, and with the option Long range: the big beam weapons cost up to 1500 per shot): units with laser weapons need it to shoot, the abilities cost it; the rest has to come from the solar collectors and wind turbines below
 - **More energy**: solar collectors and wind turbines of nobody stand around the map; they cannot be destroyed. Stand next to one for 5 seconds ("Taking 3/5") and its energy is yours (a solar collector about 20 per second, a wind turbine as much as the wind gives); an enemy takes it the same way
+
+**Reclaim by itself**
+- Your unit reclaims by itself the **trees and wrecks** within 100 Elmo, as long as no enemy player's unit is within 700 Elmo (at most 60 per second)
+- Trees give **energy** 1 to 1, but only while your energy storage is not full
+- The **metal** of a wreck does not go into the metal storage: it **heals** your unit 1 to 1, but only while it is hurt (the chat shows nothing, the health bar rises)
 
 **Radars**
 - Radars of nobody stand all over the map, until it is covered; they **cannot be destroyed**
@@ -137,8 +143,8 @@ The table shows one unit of each faction per level as an example (the help windo
 `start_evolution.bat` in the folder LevelEditor starts at once a game of you against one SimpleAI on Hooked 1.1 with the debug mode on. Another map or computer player: `start_evolution.bat "Comet Catcher Remake 1.8" SimpleDefenderAI`.
 
 **Players on levels 8 and 9**
-- A player on level 8 or 9 shows on the **radar and the minimap of everybody** (also in the fog of war), so the others can team up against it; the chat says so when it begins
-- Not while that player is cloaked (the power-up Cloak hides it), and from Armageddon on there is no fog of war anyway
+- A player on level 8 or 9 shows on the **radar and the minimap of everybody** (also in the fog of war), so the others can team up against it; the chat says so with one of several sayings when it begins
+- Not while that player is cloaked or has the Jammer on (the power-ups Cloak and Jammer hide it for a while), and from Armageddon on there is no fog of war anyway
 
 ## Tips
 

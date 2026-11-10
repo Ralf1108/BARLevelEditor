@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 28, stamp = "2026-11-09 16:00" }
+local LAN_VERSION = { number = 29, stamp = "2026-11-10 09:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -652,14 +652,12 @@ local function autohostCommand(c, msg)
 		say(spadsState().locked)
 	elseif cmd == "force" then forceCommand(rest)
 	elseif (cmd == "cv" and rest:lower():match("^start")) or cmd == "start" then
-		-- the host starts when it wants; a boss only when every player has pressed Ready (the vote of a normal room)
-		if not isHost then
-			local waiting = notReadyPlayers(c.name)
-			if #waiting > 0 then
-				say("The game cannot start yet: everybody has to press Ready first. Not ready: " .. table.concat(waiting, ", ") .. ".")
-				log("autohost: start by the boss", c.name, "refused, not ready:", table.concat(waiting, ","))
-				return
-			end
+		-- the host and a boss start only when every other player has pressed Ready (the vote of a normal room)
+		local waiting = notReadyPlayers(c.name)
+		if #waiting > 0 then
+			say("The game cannot start yet: everybody has to press Ready first. Not ready: " .. table.concat(waiting, ", ") .. ".")
+			log("autohost: start by", c.name, isHost and "(host)" or "(boss)", "refused, not ready:", table.concat(waiting, ","))
+			return
 		end
 		startGameNow()
 	else log("autohost: ignored command", msg) end
@@ -2163,7 +2161,7 @@ end
 
 ---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
 -- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
--- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier, Unit health, Regeneration, Long range, Debug mode; a joiner sees the state). They open their windows
+-- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
 -- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
@@ -2201,6 +2199,7 @@ local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" en
 local EVO_HPS = { "auto", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" }
 local function evoHp() return (S and S.battle.modoptions.lanevohp) or "auto" end
 local function evoRegen() return not (S and S.battle.modoptions.lanevoregen == "0") end
+local function evoGods() return S and S.battle.modoptions.lanevogods == "1" end -- All Be Gods: every player on level 10 gets a gift (default off: only the first one)
 local function evoLong() return S and S.battle.modoptions.lanevolong == "1" end -- Long range: units with a long range (lasers, plasma, rail guns) join the levels (default off)
 local function setEvoOption(key, value)
 	if not S then return end
@@ -2240,6 +2239,9 @@ local function openEvoMenu()
 		{ caption = "Long range: " .. (evoLong() and "On" or "Off"), class = evoLong() and "action_button" or "negative_button",
 			tip = "Long range " .. (evoLong() and "on" or "off") .. ": on = units with a long range (sniper bots, rail guns, big lasers of 850 Elmo or more, no missiles) can appear on their levels too (Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon); off (the default) = only the normal units. Click to change.",
 			fn = function() setEvoOption("lanevolong", evoLong() and nil or "1"); openEvoMenu() end },
+		{ caption = "All Be Gods: " .. (evoGods() and "On" or "Off"), class = evoGods() and "action_button" or "negative_button",
+			tip = "All Be Gods " .. (evoGods() and "on" or "off") .. ": off (the default) = only the first player on level 10 brings Armageddon and chooses a gift (Hell on Earth, Heaven on Earth, Gates of Hell), the others on level 10 get nothing special; on = every player who reaches level 10 chooses a gift. Click to change.",
+			fn = function() setEvoOption("lanevogods", evoGods() and nil or "1"); openEvoMenu() end },
 		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
 			tip = "Debug mode " .. (S.battle.modoptions.lanevodebug == "1" and "on" or "off") .. ": extra buttons above the own panel in the game for testing (Armageddon, Level Up / Down, XP Up / Down, power-ups, a star for random values, Hide). Click to change.",
 			fn = function() setEvoOption("lanevodebug", S.battle.modoptions.lanevodebug == "1" and nil or "1"); openEvoMenu() end },
@@ -2267,7 +2269,7 @@ local function openLanMenu()
 	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
-		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 	end
 	local w = 230
@@ -2368,7 +2370,7 @@ function widget:Update()
 		openLanMenu()
 	end
 	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
-		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Long range, Debug mode) is opened, with 2x set (a picture of it)
+		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode) is opened, with 2x set (a picture of it)
 		setEvoOption("lanevomult", "2")
 		openEvoMenu()
 	end
@@ -2505,6 +2507,29 @@ function widget:Update()
 			cfg.bossStep = 2; log("test: the lobby shows isBoss for", target, ":", tostring(shown())); log("test: Disable Boss", target); l:SayBattle("!unboss " .. target); cfg.bossAt = clock() + 4
 		elseif cfg.bossStep == 2 and clock() > cfg.bossAt then
 			cfg.bossStep = 3; log("test: after Disable Boss the lobby shows isBoss for", target, ":", tostring(shown()))
+		end
+	end
+	-- test (lan_test.ps1 -Mode readystart): who may start when. Host: at +5 s Start while the joiner is not ready (refused), at +9 s the joiner becomes boss, at +25 s the host
+	-- presses Ready. Joiner: at +14 s Ready and Start while the host is not ready (refused: the host is not ready), at +35 s Start again (the host is ready: the game starts).
+	if cfg.startTest and lan and lan.step == "in" and (cfg.startTest == "host" and S and #humanList() >= 2 or cfg.startTest == "join" and not S) then
+		local l = lobby()
+		cfg.stAt = cfg.stAt or clock()
+		local t = clock() - cfg.stAt
+		local function step(k, at, fn)
+			if t > at and not cfg["st" .. k] then cfg["st" .. k] = true; log("test: step", k, "at", string.format("%.0f", t), "s"); fn() end
+		end
+		if cfg.startTest == "host" then
+			step(1, 5, function() log("test: the host presses Start, not ready:", table.concat(notReadyPlayers(S.hostConn.name), ",")); l:StartBattle() end)
+			step(2, 9, function()
+				local target
+				for _, h in ipairs(humanList()) do if h.name ~= S.hostConn.name then target = h.name end end
+				log("test: Make Boss", target); l:SayBattle("!boss " .. tostring(target))
+			end)
+			step(3, 25, function() log("test: the host presses Ready"); l:SetBattleStatus({ isReady = true }) end)
+		else
+			step(1, 14, function() log("test: the joiner presses Ready"); l:SetBattleStatus({ isReady = true }) end)
+			step(2, 18, function() log("test: the joiner (boss) presses Start while the host is not ready"); l:StartBattle() end)
+			step(3, 35, function() log("test: the joiner (boss) presses Start, everybody is ready"); l:StartBattle() end)
 		end
 	end
 	if cfg.teams and S and lan and lan.step == "in" and not cfg.teamsDone then

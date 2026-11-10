@@ -148,6 +148,7 @@ for name, title in pairs({
 end
 -- END POOL
 local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
+local ALL_GODS = (Spring.GetModOptions() or {}).lanevogods == "1" -- the room's button All Be Gods: every player who reaches level 10 gets a gift (default: only the first one)
 
 -- (used by both parts: the ladders and the help window)
 -- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
@@ -1118,7 +1119,7 @@ local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before 
 --   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
 --     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
 local R = {
-	ENERGY_BASE = 5, ENERGY = 3, GIFT_ENERGY = 1000, STORE = LONG_RANGE and 2000 or 1000, -- (2000 only with the option Long range: its beam weapons cost up to 1500 per shot)
+	ENERGY_BASE = 5, ENERGY = 3, GIFT_ENERGY = 1000, STORE = 1000, STORE_BIG = 2000, RECLAIM_RANGE = 100, RECLAIM_RATE = 60, RECLAIM_ENEMY = 700, -- (STORE_BIG on level 10 and with the option Long range: the big beam weapons cost up to 1500 per shot)
 	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
@@ -1144,6 +1145,7 @@ local radars = {} -- unitID -> { team = owner team (Gaia at first), name, take =
 local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- what the gadgets of the editor share (led_gadgets.lua)
 local say = G.sayer("Evolution")
 
+local godPlayer = nil -- the first player on level 10 (he alone chooses a gift without the option All Be Gods)
 local players = {} -- list of player records { team, ally, stage, xp, kills, deaths, unit, unitName, spawns, respawnAt, ai, name, out, top, giftAt }
 local byTeam = {} -- team -> player record
 local owner = {} -- unitID -> player record (the unit of a player team)
@@ -1975,6 +1977,9 @@ local function giveGift(p, n)
 	end
 	if n <= 2 then
 		p.giftEnergy = true -- (the heavy lasers of the units of the gift need energy: +R.GIFT_ENERGY per second for good)
+		if FOLLOW_AI then
+			Spring.Echo("[Evolution] test: gift energy +" .. R.GIFT_ENERGY .. " per second for " .. p.name)
+		end
 	end
 	publish()
 end
@@ -1987,10 +1992,17 @@ local function reachTop(p)
 	p.top = true
 	if not armageddon then
 		startArmageddon(p)
-	else
+		godPlayer = p
+	elseif ALL_GODS then
 		say(p.name .. " reached level 10 as well.")
+	else
+		-- only the first one on level 10 has the special power at the end
+		say(p.name .. " reached level 10 as well, but too late: the special power belongs to the first one.")
 	end
 	setCoalition() -- the others ally against the players on level 10
+	if not ALL_GODS and p ~= godPlayer then
+		return
+	end
 	p.giftAt = Spring.GetGameFrame()
 	if p.ai then
 		giveGift(p, math.random(1, 3))
@@ -2157,14 +2169,23 @@ local function generatorsOn() -- every second: the solar collectors and wind tur
 		end
 	end
 end
+-- One of these (at random) goes to the chat when a player begins to show on the radar of everybody
+local RADAR_SAYINGS = {
+	"%s lights up every radar screen. Time to panic, and then to team up!",
+	"Something big is waking up: %s is on the radar of everybody now. Run, or gang up!",
+	"%s has become a beacon of doom. Everybody can see it, so everybody can hunt it.",
+	"Alarm! %s is far too powerful to hide. All hands to the radar, and sharpen your teeth!",
+	"The ground trembles and %s blinks on every screen. A group hug against it, maybe?",
+	"Bad news in neon letters: %s is on every radar. The big bad wolf has a name now.",
+}
 -- On the levels R.REVEAL_STAGE to 9 the unit of a player shows on the radar and the minimap of every other ally team (the others can ally against it); not while
--- the power-up Cloak hides it, not in Armageddon (no fog of war then). Every second; the radar and "contact" bits of the line of sight state (2 + 8) are set by Lua.
+-- the power-up Cloak or Jammer hides it, not in Armageddon (no fog of war then). Every second; the radar and "contact" bits of the line of sight state (2 + 8) are set by Lua.
 local function revealTop()
 	for _, p in ipairs(players) do
 		local id = p.unit
-		local cloaked = false
+		local cloaked = false -- (the power-ups Cloak and Jammer hide the unit for a while, also on the levels with the radar signal)
 		for i, a in ipairs(ABILITIES) do
-			if a.key == "cloak" and p.active and p.active[i] then
+			if (a.key == "cloak" or a.key == "jammer") and p.active and p.active[i] then
 				cloaked = true
 			end
 		end
@@ -2190,9 +2211,69 @@ local function revealTop()
 			end
 			if want and not p.onRadar then
 				p.onRadar = true
-				say(p.name .. " is on level " .. p.stage .. " and shows on the radar of everybody now: ally against it!")
+				say(string.format(RADAR_SAYINGS[math.random(1, #RADAR_SAYINGS)], p.name))
 			elseif not want then
 				p.onRadar = nil
+			end
+		end
+	end
+end
+-- Every second the unit of a player reclaims by itself the trees and wrecks within R.RECLAIM_RANGE, when no unit of an enemy player is within R.RECLAIM_ENEMY: the energy of
+-- a feature (a tree) goes into the energy of the team 1 to 1, only while the storage is not full; the metal of a wreck does not go into the metal storage but heals the unit
+-- 1 to 1, only while it is hurt. At most R.RECLAIM_RATE of each per second.
+local function autoReclaim()
+	for _, p in ipairs(players) do
+		local id = p.unit
+		if id and not p.out and Spring.ValidUnitID(id) then
+			local x, _, z = Spring.GetUnitPosition(id)
+			local enemy = false
+			for _, q in ipairs(players) do
+				if q.ally ~= p.ally and not q.out and q.unit then
+					local qx, _, qz = Spring.GetUnitPosition(q.unit)
+					if qx and (qx - x) ^ 2 + (qz - z) ^ 2 < R.RECLAIM_ENEMY ^ 2 then
+						enemy = true
+						break
+					end
+				end
+			end
+			if not enemy then
+				local energy, store = Spring.GetTeamResources(p.team, "energy")
+				local hp, maxHp = Spring.GetUnitHealth(id)
+				local roomE, roomH = (store or 0) - (energy or 0), (maxHp or 0) - (hp or 0)
+				local budgetE, budgetH = R.RECLAIM_RATE, R.RECLAIM_RATE
+				for _, fid in ipairs(Spring.GetFeaturesInCylinder(x, z, R.RECLAIM_RANGE)) do
+					local fd = FeatureDefs[Spring.GetFeatureDefID(fid)]
+					local _, defM, _, defE, left = Spring.GetFeatureResources(fid)
+					if fd and fd.reclaimable and left and left > 0 and ((defE or 0) > 0 or (defM or 0) > 0) then
+						-- the part of the feature that fits (the energy and the health that the unit can take)
+						local frac = left
+						if (defE or 0) > 0 then
+							frac = math.min(frac, math.min(budgetE, roomE) / defE)
+						end
+						if (defM or 0) > 0 then
+							frac = math.min(frac, math.min(budgetH, roomH) / defM)
+						end
+						if frac > 0.001 then
+							local takeE, takeM = (defE or 0) * frac, (defM or 0) * frac
+							if takeE > 0 then
+								Spring.AddTeamResource(p.team, "energy", takeE)
+								roomE, budgetE = roomE - takeE, budgetE - takeE
+							end
+							if takeM > 0 then
+								Spring.SetUnitHealth(id, math.min(maxHp, (select(1, Spring.GetUnitHealth(id)) or hp) + takeM))
+								roomH, budgetH = roomH - takeM, budgetH - takeM
+							end
+							if left - frac <= 0.002 then
+								Spring.DestroyFeature(fid)
+							else
+								Spring.SetFeatureReclaim(fid, left - frac)
+							end
+							if FOLLOW_AI then
+								Spring.Echo(string.format("[Evolution] test: %s reclaims a feature (%s): energy %.0f, health %.0f", p.name, fd.name, takeE, takeM))
+							end
+						end
+					end
+				end
 			end
 		end
 	end
@@ -2403,8 +2484,9 @@ local function giveEnergy()
 	for _, p in ipairs(players) do
 		if not p.out then
 			local _, store = Spring.GetTeamResources(p.team, "energy")
-			if (store or 0) < R.STORE then
-				Spring.SetTeamResource(p.team, "es", R.STORE)
+			local want = (p.stage >= STAGES or LONG_RANGE) and R.STORE_BIG or R.STORE -- (2000 on level 10 as a bonus for the big beam weapons, and with the option Long range)
+			if (store or 0) < want then
+				Spring.SetTeamResource(p.team, "es", want)
 			end
 			Spring.AddTeamResource(p.team, "energy", R.ENERGY_BASE + R.ENERGY * p.stage + (p.giftEnergy and R.GIFT_ENERGY or 0))
 		end
@@ -2677,6 +2759,7 @@ function gadget:GameFrame(n)
 		noCloak()
 		generatorsOn()
 		revealTop()
+		autoReclaim()
 	end
 	if n % 15 == 0 then
 		takeRadars(15)
@@ -2831,11 +2914,26 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if p and n == "1" then
 			p.abilities = {}
 			for i = 1, #ABILITIES do p.abilities[i] = true end
+			Spring.AddTeamResource(p.team, "energy", 1000) -- (the abilities cost energy)
 			A.publish()
 		elseif p and n == "5" then
 			randomize()
 		elseif p and p.unit and n == "4" then
 			gain(p, 1000000) -- (level 10 at once: Armageddon, for the pictures of the manual)
+		elseif p and p.unit and n == "6" then
+			-- the unit is hurt (30 % health) and a wreck lies next to it (the automatic reclaim must heal it)
+			local hp, maxHp = Spring.GetUnitHealth(p.unit)
+			Spring.SetUnitHealth(p.unit, maxHp * 0.3)
+			local x, _, z = Spring.GetUnitPosition(p.unit)
+			local fid = Spring.CreateFeature("armpw_dead", x + 40, Spring.GetGroundHeight(x + 40, z + 40), z + 40)
+			Spring.Echo("[Evolution] test: hurt to 30 %, wreck " .. tostring(fid))
+		elseif p and n == "7" then
+			-- every other player reaches level 10 (to see who may choose a gift)
+			for _, q in ipairs(players) do
+				if q ~= p and q.unit and not q.out and q.stage < STAGES then
+					gain(q, 1000000)
+				end
+			end
 		elseif p and p.unit and n == "3" then
 			-- an enemy unit next to the player's unit sees it (or not, when it is hidden)
 			local x, _, z = Spring.GetUnitPosition(p.unit)
