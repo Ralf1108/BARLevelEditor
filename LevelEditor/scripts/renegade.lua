@@ -517,6 +517,49 @@ local function facingArrow(x, z, dx, dz)
 	end
 end
 
+-- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
+-- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
+-- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
+local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true }
+local function lobbed(wd)
+	return LOB[wd.type] or (wd.type == "Cannon" and ((tonumber(wd.highTrajectory) or 0) >= 1 or (tonumber(wd.range) or 0) >= 800))
+end
+
+local function impactPreview(ux, uy, uz, wd, color)
+	local h = R.hit
+	if not h then return end
+	local range = (tonumber(wd.range) or 0) - 8
+	local dx, dz = h.x - ux, h.z - uz
+	local d = math.sqrt(dx * dx + dz * dz)
+	if d < 1 then return end
+	if d > range then dx, dz, d = dx * range / d, dz * range / d, range end
+	local x, z = ux + dx, uz + dz
+	local y = Spring.GetGroundHeight(x, z)
+	local aoe = math.max(16, tonumber(wd.damageAreaOfEffect) or 16)
+	gl.Color(color[1], color[2], color[3], 0.22)
+	gl.BeginEnd(GL.TRIANGLE_FAN, function()
+		gl.Vertex(x, y + 4, z)
+		for k = 0, 32 do
+			local a = k / 32 * 2 * math.pi
+			gl.Vertex(x + math.cos(a) * aoe, Spring.GetGroundHeight(x + math.cos(a) * aoe, z + math.sin(a) * aoe) + 4, z + math.sin(a) * aoe)
+		end
+	end)
+	gl.Color(0, 0, 0, 0.7)
+	gl.LineWidth(7)
+	gl.DrawGroundCircle(x, y, z, aoe, 40)
+	gl.Color(color[1], color[2], color[3], 1)
+	gl.LineWidth(4)
+	gl.DrawGroundCircle(x, y, z, aoe, 40)
+	gl.BeginEnd(GL.LINES, function()
+		gl.Vertex(x - aoe * 0.5, y + 6, z); gl.Vertex(x + aoe * 0.5, y + 6, z)
+		gl.Vertex(x, y + 6, z - aoe * 0.5); gl.Vertex(x, y + 6, z + aoe * 0.5)
+		gl.Vertex(x, y, z); gl.Vertex(x, y + 400, z) -- the beam
+	end)
+	gl.LineWidth(2)
+	gl.Color(color[1], color[2], color[3], 0.6)
+	groundLine(ux, uz, dx / d, dz / d, d)
+end
+
 function widget:DrawWorld()
 	if not R.on or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
@@ -546,6 +589,12 @@ function widget:DrawWorld()
 				groundLine(x, z, dx / l, dz / l, math.min(range, 260))
 			end
 		end
+	end
+	for k = #SLOTS, 1, -1 do
+		local list = slots[SLOTS[k][1]]
+		local wp = list and list[1] and ud.weapons[list[1]]
+		local wd = wp and WeaponDefs[wp.weaponDef]
+		if wd and not slots.aa[list[1]] and lobbed(wd) then impactPreview(x, y, z, wd, SLOTS[k][4]) end
 	end
 	local fx, _, fz = Spring.GetUnitDirection(R.unit)
 	if fx then facingArrow(x, z, fx, fz) end
