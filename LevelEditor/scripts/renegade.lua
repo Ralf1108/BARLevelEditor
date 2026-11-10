@@ -230,6 +230,14 @@ function widget:Update()
 		Spring.SetUnitNoDraw(u, true)
 		Spring.SetUnitNoSelect(u, true)
 	end
+	-- Tab: polled, not taken from KeyPress (as a commander the game's own use of the key came first and the press never reached this widget)
+	local tab = Spring.GetKeyState(9)
+	if tab and not R.tabWas and R.debug then
+		R.menu = not R.menu
+		R.list = false
+		if R.picker then R.picker:setFocus(false) end
+	end
+	R.tabWas = tab
 	if not R.fake and not R.menu then
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
 		local vsx, vsy = Spring.GetViewGeometry()
@@ -391,12 +399,7 @@ function widget:KeyPress(key, mods, isRepeat)
 	if R.on and R.picker and R.picker.focus and key ~= 9 then
 		return R.picker:key(key) -- typing in the search field (Enter: done, Esc: clear, Backspace)
 	end
-	if R.on and key == 9 and R.debug then -- Tab: the mouse is free for the debug menu, again: back to the view
-		R.menu = not R.menu
-		R.list = false
-		if R.picker then R.picker:setFocus(false) end
-		return true
-	end
+	if R.on and key == 9 and R.debug then return true end -- Tab: the mouse is free for the debug menu, again: back to the view (switched in Update)
 	if R.on and (key == K.W or key == K.A or key == K.S or key == K.D) then
 		return true
 	end
@@ -452,13 +455,17 @@ function widget:DrawWorld()
 			gl.LineWidth(sl[5])
 			gl.DrawGroundCircle(x, y, z, range, 64)
 			-- the barrel
+			-- (a weapon that is not aiming reports straight up: then the unit's facing counts)
 			local _, _, _, dx, _, dz = Spring.GetUnitWeaponVectors(R.unit, list[1])
-			if dx then
-				local l = math.sqrt(dx * dx + dz * dz)
-				if l > 0.01 then
-					gl.LineWidth(sl[5])
-					groundLine(x, z, dx / l, dz / l, math.min(range, 260))
-				end
+			local l = dx and math.sqrt(dx * dx + dz * dz) or 0
+			if l < 0.2 then
+				local fx, _, fz = Spring.GetUnitDirection(R.unit)
+				dx, dz = fx or 0, fz or 1
+				l = math.sqrt(dx * dx + dz * dz)
+			end
+			if l > 0.01 then
+				gl.LineWidth(sl[5])
+				groundLine(x, z, dx / l, dz / l, math.min(range, 260))
 			end
 		end
 	end
@@ -544,7 +551,21 @@ local function debugButton(x1, top, w, s)
 	gl.Color(1, 1, 1, 1)
 end
 
+-- after a loss: the countdown to the respawn (the gadget publishes the frame as the team rules parameter renRespawn)
+local function countdown(vsx, vsy)
+	local at = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renRespawn") or 0
+	local frame = Spring.GetGameFrame()
+	if at <= frame then return end
+	local sec = math.ceil((at - frame) / 30)
+	gl.Color(1, 0.25, 0.2, 1)
+	gl.Text("YOU DIED", vsx / 2, vsy * 0.62, vsy / 14, "co")
+	gl.Color(1, 1, 1, 1)
+	gl.Text("respawn in " .. sec, vsx / 2, vsy * 0.52, vsy / 18, "co")
+end
+
 function widget:DrawScreen()
+	local vsx0, vsy0 = Spring.GetViewGeometry()
+	if not Spring.GetSpectatingState() then countdown(vsx0, vsy0) end
 	if not R.on then return end
 	local vsx, vsy = Spring.GetViewGeometry()
 	local cx, cy, s = vsx / 2, vsy / 2, math.max(8, vsy / 90)

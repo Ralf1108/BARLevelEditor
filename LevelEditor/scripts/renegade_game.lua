@@ -40,7 +40,8 @@ local ENERGY = 500 -- energy per second for the players (the lasers need much; f
 local MO = Spring.GetModOptions() or {}
 local DEBUG = MO.lanrenedebug == "1"
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
-local RESPAWN = 90 -- frames until a player's unit comes back
+local RESPAWN = 150 -- frames until a player's unit comes back (5 s; the widget counts down, team rules parameter renRespawn = the frame)
+local lastPos = {} -- team -> where its unit was lost (when no place is found, e.g. for a ship on land)
 local BOT_RESPAWN = 150
 local turnInto -- (defined below: the debug message of RecvLuaMsg needs it)
 local units = {} -- team -> unit id
@@ -279,15 +280,18 @@ end
 local function place(defName, list, wanted)
 	local defID = UnitDefNames[defName].id
 	local bestX, bestZ, bestScore
-	for _ = 1, 24 do
-		local x = 200 + math.random() * (Game.mapSizeX - 400)
-		local z = 200 + math.random() * (Game.mapSizeZ - 400)
-		local y = Spring.GetGroundHeight(x, z)
-		if y > 2 and Spring.TestMoveOrder(defID, x, y, z, 0, 0, 0, true, false, true) then
-			local d = nearestDist(x, z, list)
-			local score = wanted and -math.abs(d - wanted) or d
-			if not bestScore or score > bestScore then bestX, bestZ, bestScore = x, z, score end
+	for pass = 1, 2 do -- the second pass without the test of the movement class (a ship on land, a turret)
+		for _ = 1, 24 do
+			local x = 200 + math.random() * (Game.mapSizeX - 400)
+			local z = 200 + math.random() * (Game.mapSizeZ - 400)
+			local y = Spring.GetGroundHeight(x, z)
+			if y > 2 and (pass == 2 or Spring.TestMoveOrder(defID, x, y, z, 0, 0, 0, true, false, true)) then
+				local d = nearestDist(x, z, list)
+				local score = wanted and -math.abs(d - wanted) or d
+				if not bestScore or score > bestScore then bestX, bestZ, bestScore = x, z, score end
+			end
 		end
+		if bestX then break end
 	end
 	if not bestX then return nil end
 	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
@@ -451,9 +455,14 @@ function gadget:GameFrame(f)
 	end
 	for team, at in pairs(due) do
 		if f >= at then
-			due[team] = nil
 			local x, y, z = place(kind[team], others(team), nil)
-			if x then giveUnit(team, kind[team], x, y, z, 0) end
+			if not x and lastPos[team] then x, y, z = lastPos[team][1], lastPos[team][2], lastPos[team][3] end
+			if x and giveUnit(team, kind[team], x, y, z, 0) then
+				due[team] = nil
+				Spring.SetTeamRulesParam(team, "renRespawn", 0, { public = true })
+			else
+				due[team] = f + 30 -- (it did not work: again in a second)
+			end
 		end
 	end
 	if BOTS > 0 then
@@ -475,6 +484,9 @@ function gadget:UnitDestroyed(u, defID, team)
 		units[team] = nil
 		Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })
 		due[team] = Spring.GetGameFrame() + RESPAWN
+		Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
+		local x, y, z = Spring.GetUnitPosition(u)
+		if x then lastPos[team] = { x, y, z } end
 	elseif bots[u] then
 		bots[u] = nil
 		botDue[#botDue + 1] = Spring.GetGameFrame() + BOT_RESPAWN
