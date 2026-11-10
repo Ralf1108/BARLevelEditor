@@ -120,6 +120,31 @@ local function faceView(team, f)
 	Spring.SetUnitDirection(u, math.sin(yaw), 0, math.cos(yaw))
 end
 
+-- The wished height is above the ground: on a slope the height over the ground must stay (the move type follows the ground only slowly: an aircraft that flies down a mountain
+-- stays high, one that flies up it climbs late). Every frame the height it should have is worked out from the ground under it (going down) or the highest ground in the next
+-- second (going up) and its vertical speed is pushed toward it (at most FOLLOW_MAX Elmo a frame, only in the direction that is needed).
+local FOLLOW_MAX = 4
+local function followGround(u, inp, f)
+	if not inp.alt or inp.altUnit ~= u or inp.takeoffUnit ~= u or inp.landed or inp.lifting then return end
+	if inp.holdUntil and f < inp.holdUntil then return end
+	local vx, vy, vz = Spring.GetUnitVelocity(u)
+	local x, y, z = Spring.GetUnitPosition(u)
+	if not vx or not x then return end
+	local gnow = Spring.GetGroundHeight(x, z)
+	if y - gnow < 25 then return end
+	local gmax = gnow
+	for k = 1, 3 do gmax = math.max(gmax, Spring.GetGroundHeight(x + vx * 20 * k, z + vz * 20 * k)) end
+	local gnear = Spring.GetGroundHeight(x + vx * 10, z + vz * 10)
+	local want
+	if y < gmax + inp.alt - 8 and y - gnow < maxAlt(u) - 5 then -- (climbing ahead of a slope, but never over the highest height above the ground it is under now)
+		want = math.min(FOLLOW_MAX, (gmax + inp.alt - y) * 0.12)
+		if want > vy then Spring.SetUnitVelocity(u, vx, want, vz) end
+	elseif y > gnear + inp.alt + 8 then
+		want = math.max(-FOLLOW_MAX, (gnear + inp.alt - y) * 0.12)
+		if want < vy then Spring.SetUnitVelocity(u, vx, want, vz) end
+	end
+end
+
 local function lift(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -148,6 +173,7 @@ local function lift(team, f)
 			end
 		end
 	end
+	followGround(u, inp, f)
 	local up, down = inp.keys % 32 >= 16, inp.keys % 64 >= 32
 	if not (up or down) then
 		if inp.lifting and Spring.ValidUnitID(u) then

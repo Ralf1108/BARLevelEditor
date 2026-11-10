@@ -632,7 +632,6 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 	gl.BeginEnd(GL.LINES, function()
 		gl.Vertex(x - aoe * 0.5, y + 6, z); gl.Vertex(x + aoe * 0.5, y + 6, z)
 		gl.Vertex(x, y + 6, z - aoe * 0.5); gl.Vertex(x, y + 6, z + aoe * 0.5)
-		gl.Vertex(x, y, z); gl.Vertex(x, y + 400, z) -- the beam
 	end)
 	gl.LineWidth(2)
 	gl.Color(color[1], color[2], color[3], 0.6)
