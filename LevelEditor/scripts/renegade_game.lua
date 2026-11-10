@@ -145,6 +145,20 @@ local function followGround(u, inp, f)
 	end
 end
 
+-- The highest height is a hard limit: the move type overshoots (a bomber that takes off or climbs goes past the height it was asked for), so the real height over the ground is checked
+-- every frame and a unit over its highest height is pushed down (the vertical speed at least -0.5 and more the higher it is over it, at most 2 * FOLLOW_MAX); Space cannot raise it further.
+local function ceiling(u, inp)
+	local x, y, z = Spring.GetUnitPosition(u)
+	local vx, vy, vz = Spring.GetUnitVelocity(u)
+	if not x or not vx then return end
+	local over = y - Spring.GetGroundHeight(x, z) - maxAlt(u)
+	if over > 0 then
+		local push = -math.min(2 * FOLLOW_MAX, 0.5 + over * 0.2)
+		if vy > push then Spring.SetUnitVelocity(u, vx, push, vz) end
+		if inp.alt and inp.alt > maxAlt(u) then inp.alt = maxAlt(u) end
+	end
+end
+
 local function lift(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -173,6 +187,7 @@ local function lift(team, f)
 			end
 		end
 	end
+	if flyer(u) then ceiling(u, inp) end
 	followGround(u, inp, f)
 	local up, down = inp.keys % 32 >= 16, inp.keys % 64 >= 32
 	if not (up or down) then
