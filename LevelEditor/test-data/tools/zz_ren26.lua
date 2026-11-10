@@ -10,7 +10,7 @@ function widget:GameFrame(f)
 	if f == 100 then Spring.SendLuaRulesMsg("ren|unit|armbrawl") end
 	if f == 150 then R.keys = 16 end
 	if f == 190 then R.keys = 4 end -- S
-	if f == 310 then R.keys = 2 end -- A
+	if f == 310 then R.keys = 8 end -- D
 	if f >= 150 and f % 20 == 0 and R.unit then
 		local dx, _, dz = Spring.GetUnitDirection(R.unit)
 		local vx, _, vz = Spring.GetUnitVelocity(R.unit)

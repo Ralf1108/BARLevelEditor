@@ -68,6 +68,14 @@ end
 
 -- An aircraft stays in the air for good: fly mode (idle mode 0) from the first key on, it never lands by itself. Its height is changed only by Space and Ctrl (lift).
 local IDLEMODE = CMD.IDLEMODE or 145
+local function fixedGunship(ud)
+	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return false end
+	for _, wp in ipairs(ud.weapons or {}) do
+		local wd = WeaponDefs[wp.weaponDef]
+		if wd and not wd.turret and wd.type ~= "AircraftBomb" and (tonumber(wd.range) or 0) > 0 then return true end
+	end
+	return false
+end
 local function flyer(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	return ud and ud.canFly
@@ -84,6 +92,24 @@ local function applyHeight(u, inp)
 	local mc = Spring.MoveCtrl
 	if mc.SetGunshipMoveTypeData then pcall(mc.SetGunshipMoveTypeData, u, "wantedHeight", cmd) end
 	if mc.SetAirMoveTypeData then pcall(mc.SetAirMoveTypeData, u, "wantedHeight", cmd) end
+end
+
+-- A gunship with fixed guns looks where the player looks (its yaw follows the view) and moves in any direction with its nose toward the view: forward, backward, to the side.
+-- The move type turns the aircraft toward the way it flies, so its turn rate is set to 0 (SetGunshipMoveTypeData "turnRate" and "maxRudder"; measured: the nose then stays
+-- where it is while the unit flies backward at full speed) and the heading is set here every frame (Spring.SetUnitDirection, horizontal).
+local function faceView(team, f)
+	local u, inp = units[team], input[team]
+	if not u or not inp or not inp.aimed or not Spring.ValidUnitID(u) then return end
+	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	if not ud or not fixedGunship(ud) then return end
+	if inp.turnLockUnit ~= u then
+		inp.turnLockUnit = u
+		local mc = Spring.MoveCtrl
+		for _, key in ipairs({ "turnRate", "maxRudder" }) do pcall(mc.SetGunshipMoveTypeData, u, key, 0) end
+		if TEST then Spring.Echo("[Renegade] heading locked to the view for " .. ud.name) end
+	end
+	local yaw = math.rad(inp.yaw)
+	Spring.SetUnitDirection(u, math.sin(yaw), 0, math.cos(yaw))
 end
 
 local function lift(team, f)
@@ -1223,6 +1249,7 @@ function gadget:GameFrame(f)
 		end
 	end
 	for team in pairs(units) do
+		faceView(team, f)
 		steer(team, f)
 		lift(team, f)
 		shoot(team, f)
