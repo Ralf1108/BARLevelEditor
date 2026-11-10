@@ -614,8 +614,9 @@ local function slotsFor(ud)
 			local g = byDef[wp.weaponDef]
 			if not g then
 				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = (d <= 2 and v > d) }
-				-- a missile that hits the ground and aircraft (the description says "g2g/g2a"): at aircraft it locks on, at the ground the player aims
-				g.hy = g.missile and not g.aa and d > 2 and v > 2 and tostring(wd.description or ""):lower():find("g2a", 1, true) ~= nil
+				-- a weapon that hits the ground and aircraft (the description says "g2a" or "a2a"): at an aircraft in the circle it locks on, at the ground the player aims
+				local desc = tostring(wd.description or ""):lower()
+				g.hy = not g.aa and d > 2 and v > 2 and (desc:find("g2a", 1, true) ~= nil or desc:find("a2a", 1, true) ~= nil)
 				if g.aa then g.missile = true end
 				byDef[wp.weaponDef] = g
 				groups[#groups + 1] = g

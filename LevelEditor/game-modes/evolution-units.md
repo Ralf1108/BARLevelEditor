@@ -25,6 +25,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 - A new unit gets the level whose score is closest to its own (on a logarithmic scale): the ranges are in the table below
 - One manual change: Telchine on level 7 (1107 DPS but only 2750 health)
 
+<!-- BEGIN TABLE (made from evolution_units.csv by test-data/tools/evolution_units.py: change the csv, not what stands between the markers; the text above may be edited) -->
 **The ranges of the levels** (DPS x health)
 
 | Level | Reference (3 units in the game) | From | To |
@@ -475,3 +476,4 @@ The selection of the units that can appear in Evolution (the candidates) and the
 |  |  | Legion | Belcher | legbart | Bot | 2 | 30 | 1780 | 53400 | 550 | 60 | 625 |  | weak support: DPS below 40 |
 |  |  | Legion | Lance | legrail | Vehicle | 1 | 27 | 1100 | 29370 | 240 | 47 | 650 |  | weak support: DPS below 40 |
 |  |  | Legion | Satyr | leglob | Bot | 1 | 30 | 550 | 16500 | 60 | 51 | 400 |  | weak support: DPS below 40 |
+<!-- END TABLE -->

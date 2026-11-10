@@ -153,7 +153,7 @@ INTRO = """# Renegade: the weapons of all units
 
 [Renegade](renegade.md) · [Specification](../../specs/renegade.md) · [Start page](../../README.md)
 
-Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns in `renegade_weapons.csv`** (and nothing else): the rest is read from the game; this page is made from the csv.
+Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns in `renegade_weapons.csv`** (and nothing else): the rest is read from the game. The table below is made from the csv (between the two comment lines `BEGIN TABLE` and `END TABLE`: do not edit it); the text around it, like this, may be edited.
 
 - **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). empty = the weapon is not fired by a button (footsteps, script dummies).
 - **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button). A group has one button: the button of the first row of the group counts. Several groups may share a button.
@@ -161,19 +161,30 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 - The proposal: weapons with the same weapon definition are one group; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
 
-**How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Group** and **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (do not edit the page: it is made from the csv) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
+**How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Group** and **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (only the table between the markers `BEGIN TABLE` and `END TABLE` is rewritten, the text around it stays) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
 
 """
 
 
+BEGIN_TABLE = "<!-- BEGIN TABLE (made from renegade_weapons.csv by test-data/tools/renegade_weapons.py: change the csv, not what stands between the markers; the text around may be edited) -->"
+END_TABLE = "<!-- END TABLE -->"
+
+
 def write_md(rows):
+    """only what stands between the markers is written (the count and the table); the text around it stays as it is. A file without the markers (or none) is made with the text INTRO."""
     codes = {r[2] for r in rows}
-    with open(MD, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(INTRO)
-        fh.write("%d weapons of %d units.\n\n" % (len(rows), len(codes)))
-        fh.write("| " + " | ".join(COLUMNS) + " |\n|" + "|".join(["---"] * len(COLUMNS)) + "|\n")
-        for r in rows:
-            fh.write("| " + " | ".join(c.replace("|", "/") for c in r) + " |\n")
+    lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
+    for r in rows:
+        lines.append("| " + " | ".join(c.replace("|", "/") for c in r) + " |")
+    block = BEGIN_TABLE + "\n" + "\n".join(lines) + "\n" + END_TABLE + "\n"
+    old = open(MD, encoding="utf-8", newline="").read().replace("\r\n", "\n") if os.path.exists(MD) else ""
+    if BEGIN_TABLE[:20] in old and END_TABLE in old:
+        a = old.index(BEGIN_TABLE[:20])
+        b = old.index(END_TABLE) + len(END_TABLE) + 1
+        text = old[:a] + block + old[b:]
+    else:
+        text = INTRO + block
+    open(MD, "w", encoding="utf-8", newline="\n").write(text)
 
 
 def write_csv(rows):

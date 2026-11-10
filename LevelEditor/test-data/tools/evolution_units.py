@@ -208,7 +208,21 @@ tab += ["", "**All units** (the candidates first, sorted by level; then the unit
         "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
 for u in rows:
     tab.append("| " + " | ".join(str(c) for c in cells(u)) + " |")
-open(os.path.join(repo, "LevelEditor", "game-modes", "evolution-units.md"), "w", encoding="utf-8", newline="").write(nl.join(tab) + nl)
+# only the generated part (the ranges of the levels and the table of all units) is written between the markers; the text above stays as it is. A file without the
+# markers gets them in front of "**The ranges of the levels**" (its text above is kept); a missing file is made whole.
+BEGIN_MARK = "<!-- BEGIN TABLE (made from evolution_units.csv by test-data/tools/evolution_units.py: change the csv, not what stands between the markers; the text above may be edited) -->"
+END_MARK = "<!-- END TABLE -->"
+mdpath = os.path.join(repo, "LevelEditor", "game-modes", "evolution-units.md")
+ri = tab.index("**The ranges of the levels** (DPS x health)")
+generated = BEGIN_MARK + nl + nl.join(tab[ri:]) + nl + END_MARK + nl
+old = open(mdpath, encoding="utf-8", newline="").read().replace("\r\n", "\n") if os.path.exists(mdpath) else ""
+if BEGIN_MARK[:20] in old and END_MARK in old:
+    text = old[:old.index(BEGIN_MARK[:20])] + generated.replace("\r\n", "\n") + old[old.index(END_MARK) + len(END_MARK) + 1:]
+elif "**The ranges of the levels**" in old:
+    text = old[:old.index("**The ranges of the levels**")] + generated.replace("\r\n", "\n")
+else:
+    text = nl.join(tab[:ri]).replace("\r\n", "\n") + "\n" + generated.replace("\r\n", "\n")
+open(mdpath, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))
 md = os.path.join(repo, "LevelEditor", "game-modes", "evolution.md")
 t = open(md, encoding="utf-8", newline="").read()
 marker = "## Unit candidates"
