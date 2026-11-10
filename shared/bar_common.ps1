@@ -179,6 +179,8 @@ $ScenarioGameFiles = @(
     @('lan_pve_hold.lua', 'luarules/gadgets/lan_pve_hold.lua'),   # LAN Play: drops the orders of a Scavengers / Raptors AI of the room
     @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
+    @('editor_common.lua', 'luaui/Include/editor_common.lua'),   # Renegade: the unit menu of the debug mode is the one of the Level Editor (also in the extra game "Level Editor", see Get-EditorGameEntries)
+    @('area_attack.lua', 'luaui/Include/area_attack.lua'),   # loaded by editor_common.lua
     @('led_gadgets.lua', 'luaui/Include/led_gadgets.lua'),   # what the gadgets share (editor mode, messages, game options)
     @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the window of the gift of stage 10
     @('renegade.lua', 'luaui/widgets/renegade.lua'),   # Renegade (LAN Play): the first person view and the steering of the own unit

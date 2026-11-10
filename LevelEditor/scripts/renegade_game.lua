@@ -6,7 +6,7 @@
 -- apply; its fire state is hold fire: it shoots only at what the player aims at. Test only: game option lanrenotest=1 and "ren|test|1" put an enemy
 -- Peewee (hold fire) 150 Elmo in front of the unit. 
 -- Game option lanrenebots=<n>: n computer Peewees of the first team without a human walk around and fight the players (a lost one comes back after 5 s),
--- lanrenedebug=1: the player may turn into another unit ("ren|unit|<unit name>"). A player's unit that is lost comes back after 3 s at a place far from
+-- lanrenedebug=1: the player may turn into another unit ("ren|unit|<unit name>", units with a weapon: also aircraft, ships on water, turrets). A player's unit that is lost comes back after 3 s at a place far from
 -- the enemies. Team rules parameter renUnit (public): the unit of the team (0 = none). Spec: specs/renegade.md.
 function gadget:GetInfo()
 	return {
@@ -36,6 +36,7 @@ local TURN = 6 -- degrees: the order is given again at once when the wished dire
 
 local TEST = (Spring.GetModOptions() or {}).lanrenotest == "1"
 local AIM_EVERY = 3 -- frames: the target is given again (a move order may drop it)
+local ENERGY = 500 -- energy per second for the players (the lasers need much; for the tests)
 local MO = Spring.GetModOptions() or {}
 local DEBUG = MO.lanrenedebug == "1"
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
@@ -85,28 +86,58 @@ local function steer(team, f)
 	l.frame, l.yaw, l.keys = f, inp.yaw, inp.keys
 end
 
--- fire at the point or the unit under the crosshair; the target is checked (an own or allied unit is not a target: its position counts)
-local function shoot(team, f)
+-- The shot (like in a shooter: never a "target"): the left button fires the main weapon (the strongest one, unit rules parameter renMain), the right button the
+-- other weapons. Each gets the point the player aims at as its target (Spring.SetUnitTarget with a position, user target, weapon number), shortened along the
+-- line from the unit to the point to the reach of that weapon, so it fires toward the crosshair even where nothing is in reach. The enemy unit under the
+-- crosshair is not chosen as a target. A message sets the target at once; it is renewed every AIM_EVERY frames; releasing the buttons clears it.
+local function weaponsFor(u, mask)
+	local ud = UnitDefs[Spring.GetUnitDefID(u)]
+	local main = Spring.GetUnitRulesParam(u, "renMain") or 1
+	local list = {}
+	for i = 1, #(ud and ud.weapons or {}) do
+		if (i == main and mask % 2 >= 1) or (i ~= main and mask >= 2) then list[#list + 1] = i end
+	end
+	return list, ud
+end
+
+local function shortened(u, ud, i, x, y, z)
+	local wd = WeaponDefs[ud.weapons[i].weaponDef]
+	local ux, uy, uz = Spring.GetUnitPosition(u, true)
+	local dx, dy, dz = x - ux, y - uy, z - uz
+	local d = math.sqrt(dx * dx + dy * dy + dz * dz)
+	local r = ((wd and wd.range) or 0) - 8
+	if d > r and d > 0 then
+		local k = math.max(0, r) / d
+		x, y, z = ux + dx * k, uy + dy * k, uz + dz * k
+	end
+	return math.max(1, math.min(Game.mapSizeX - 1, x)), y, math.max(1, math.min(Game.mapSizeZ - 1, z))
+end
+
+-- clear the targets of all weapons: SetUnitTarget(unit, nil) does not clear a target that was set for one weapon number, a stop order does (it clears the
+-- move order too: the steering gives it again)
+local function clearTargets(u, inp)
+	Spring.SetUnitTarget(u, nil)
+	Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+	inp.moving = false
+end
+
+local function shoot(team, f, force)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
-	if inp.fire ~= 1 then
-		if inp.firing then
-			Spring.SetUnitTarget(u, nil)
-			inp.firing = false
-		end
-		return
+	local mask = inp.fire
+	if mask ~= inp.mask then
+		if inp.mask ~= 0 then clearTargets(u, inp) end
+		inp.mask = mask
+		force = true
 	end
-	if f % AIM_EVERY ~= 0 then return end
+	if mask == 0 then return end
+	if not force and f % AIM_EVERY ~= 0 then return end
 	local t = inp.target
-	if t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) then
-		Spring.SetUnitTarget(u, t.unit, false, true)
-	else
-		-- a point: where the player aims, also in the air or on a mountain; inside the map
-		local x = math.max(1, math.min(Game.mapSizeX - 1, t.x))
-		local z = math.max(1, math.min(Game.mapSizeZ - 1, t.z))
-		Spring.SetUnitTarget(u, x, t.y, z, false, true)
+	local list, ud = weaponsFor(u, mask)
+	for _, i in ipairs(list) do
+		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
+		Spring.SetUnitTarget(u, x, y, z, false, true, i)
 	end
-	inp.firing = true
 end
 
 function gadget:RecvLuaMsg(msg, playerID)
@@ -148,8 +179,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 	if spec or not units[team] then return end
 	local inp = input[team]
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
-	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), tonumber(fire)
+	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), math.max(0, math.min(3, tonumber(fire)))
 	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
+	shoot(team, Spring.GetGameFrame(), true)
 end
 
 -- a place on the land for a unit: of 24 random places where the unit can stand, the one farthest from the units of the other teams (a player) or the one at
@@ -188,24 +220,48 @@ local function place(defName, list, wanted)
 	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
 end
 
+-- the strongest weapon of a unit definition (damage x projectiles / reload, anti-air weapons with next to no default damage count nothing); number of the weapon
+local function mainWeapon(ud)
+	local best, bi = -1, 1
+	local armor = (Game.armorTypes or {}).default or 0
+	for i, wp in ipairs(ud.weapons or {}) do
+		local wd = WeaponDefs[wp.weaponDef]
+		local score = 0
+		if wd and wd.damages then
+			local dmg = tonumber(wd.damages[armor]) or 0
+			if dmg > 2 then
+				score = dmg * (tonumber(wd.projectiles) or 1) * (tonumber(wd.salvoSize) or 1) / math.max(0.1, tonumber(wd.reload) or 1)
+			end
+		end
+		if score > best then best, bi = score, i end
+	end
+	return bi
+end
+
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
 local function giveUnit(team, defName, x, y, z, face)
 	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
 	if not id then return nil end
 	units[team] = id
 	kind[team] = defName
-	input[team] = input[team] or { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, firing = false }
-	input[team].moving, input[team].firing = false, false
+	input[team] = input[team] or { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, mask = 0 }
+	input[team].moving, input[team].mask = false, 0
+	input[team].fire = 0
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
+	Spring.SetUnitRulesParam(id, "renMain", mainWeapon(UnitDefNames[defName]), { public = true })
 	return id
 end
 
 turnInto = function(team, defName)
 	local u = units[team]
 	local ud = UnitDefNames[defName]
-	if not u or not Spring.ValidUnitID(u) or not ud or ud.canFly or (ud.speed or 0) <= 0 then return end
+	if not u or not Spring.ValidUnitID(u) or not ud or #(ud.weapons or {}) == 0 then return end
 	local x, y, z = Spring.GetUnitPosition(u)
+	if (ud.minWaterDepth or 0) > 0 and Spring.GetGroundHeight(x, z) > -ud.minWaterDepth then
+		Spring.Echo("[Renegade] " .. defName .. " needs water")
+		return
+	end
 	local hp, mhp = Spring.GetUnitHealth(u)
 	local old = u
 	local id = giveUnit(team, defName, x, y, z, Spring.GetUnitBuildFacing(u))
@@ -300,6 +356,10 @@ function gadget:GameFrame(f)
 	for team in pairs(units) do
 		steer(team, f)
 		shoot(team, f)
+		if f % 30 == 0 then
+			Spring.SetTeamResource(team, "es", 20000) -- the storage: the lasers take much energy per shot
+			Spring.AddTeamResource(team, "energy", ENERGY)
+		end
 	end
 	for team, at in pairs(due) do
 		if f >= at then

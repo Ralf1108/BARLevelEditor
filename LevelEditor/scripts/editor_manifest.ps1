@@ -48,7 +48,7 @@ function Get-EditorGameEntries {
     $list = @()
     foreach ($f in $EditorGameFiles) { $list += , @($f[2], (Join-Path (Get-EditorFolder $f[0]) $f[1])) }
     foreach ($f in $ScenarioGameFiles) {
-        if ($f[1] -like 'luarules/*' -or $f[1] -like 'luaui/Include/*') {
+        if (($f[1] -like 'luarules/*' -or $f[1] -like 'luaui/Include/*') -and -not ($list | Where-Object { $_[0] -eq $f[1] })) {   # (not twice: editor_common.lua is in both lists)
             $src = $null
             foreach ($d in (Get-ScenarioGameDirs)) { if (Test-Path (Join-Path $d $f[0])) { $src = Join-Path $d $f[0]; break } }
             $list += , @($f[1], $(if ($src) { $src } else { Join-Path (Get-EditorFolder 'scripts') $f[0] }))
