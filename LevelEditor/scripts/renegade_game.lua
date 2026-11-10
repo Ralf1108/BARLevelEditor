@@ -129,6 +129,7 @@ end
 local function steer(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
+	if inp.attacking then return end -- (a gunship in the attack state: the engine flies it)
 	local dx, dz = wish(inp)
 	if not dx then
 		if inp.moving then
@@ -859,6 +860,41 @@ local function aimable(ud, i)
 	return wd and not wd.stockpile and wd.type ~= "DGun" and wd.type ~= "AircraftBomb" -- (the D-gun is fired by hand: it has no target before the button)
 end
 
+-- A gunship with fixed guns (hovering aircraft, weapons without a turret) is put into the engine's attack state while the player fires: an attack order on the point the
+-- player aims at (the ground behind an enemy unit, not the unit: like in a shooter). In that state the engine tilts its body nose down (about 30 degrees, measured with
+-- the game's own attack orders: zz_ren23.lua), so the guns can reach the ground below it, and it flies to its range and circles. The steering stands back while it
+-- attacks; when the buttons are let go (and nothing is held any more) a stop order ends the attack and the normal steering goes on.
+local ATTACK_EVERY = 10
+local function fixedGunship(ud)
+	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return false end
+	for _, wp in ipairs(ud.weapons or {}) do
+		local wd = WeaponDefs[wp.weaponDef]
+		if wd and not wd.turret and wd.type ~= "AircraftBomb" and (tonumber(wd.range) or 0) > 0 then return true end
+	end
+	return false
+end
+local function attackOrder(u, ud, inp, f, pressedAny, holding)
+	if not fixedGunship(ud) then return end
+	if pressedAny then
+		if f - (inp.attackAt or -100) >= ATTACK_EVERY then
+			local t = inp.target
+			local y = t.y
+			if t.unit and t.unit >= 0 then y = Spring.GetGroundHeight(t.x, t.z) end -- (the ground behind the unit)
+			Spring.GiveOrderToUnit(u, CMD.ATTACK, { t.x, y, t.z }, 0)
+			inp.attackAt = f
+			inp.attacking = true
+			inp.moving = false
+			if TEST and not inp.attackLogged then inp.attackLogged = true; Spring.Echo(string.format("[Renegade] attack order on the aim point %.0f %.0f %.0f", t.x, y, t.z)) end
+		end
+	elseif inp.attacking and not holding then
+		Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+		Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0)
+		inp.attacking = false
+		inp.moving = false
+		inp.idleFrom = f -- (the 5 s before it lands start now, not at the last key)
+	end
+end
+
 local function shoot(team, f, force)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -866,6 +902,7 @@ local function shoot(team, f, force)
 	local list, ud, s = weaponsFor(u, inp.fire)
 	local pressed = {}
 	for _, i in ipairs(list) do pressed[i] = true end
+	attackOrder(u, ud, inp, f, #list > 0 and inp.target ~= nil, next(hold) ~= nil)
 	local change, clear = false, false
 	for i in pairs(pressed) do
 		local a = hold[i]
