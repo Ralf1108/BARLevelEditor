@@ -726,6 +726,19 @@ end
 -- reloadFrame changed) or its time is up (`until`: 45 frames plus the reload time, at most 8 s), then the stop order clears it. A weapon that has fired is let go at once.
 local function reloadFrame(u, i) return Spring.GetUnitWeaponState(u, i, "reloadFrame") or 0 end
 
+-- The turret follows the view without firing ("aim only"): every weapon of the three buttons that is not pressed gets the point the player looks at as its target
+-- (shortened to its reach: the turret turns toward it) and its reload is held: once it is ready its reloadFrame is set far into the future (BLOCK), so it aims but does not
+-- fire. Pressing the button sets it to now (it fires as soon as it has turned); a weapon that is reloading is left alone (BLOCK is set when it is ready). The widget shows a
+-- weapon with reloadFrame >= BLOCK / 2 as READY. Not for anti-air weapons (they have no target without a lock) and not for stockpile weapons (starburst).
+local BLOCK = 1000000
+local function unblock(u, i, f)
+	if reloadFrame(u, i) >= BLOCK / 2 then Spring.SetUnitWeaponState(u, i, "reloadFrame", f) end
+end
+local function aimable(ud, i)
+	local wd = WeaponDefs[ud.weapons[i].weaponDef]
+	return wd and not wd.stockpile
+end
+
 local function shoot(team, f, force)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -737,15 +750,21 @@ local function shoot(team, f, force)
 	for i in pairs(pressed) do
 		local a = hold[i]
 		if not a or not a.down then
+			local before = reloadFrame(u, i)
+			unblock(u, i, f)
+			if TEST then Spring.Echo("[Renegade] press weapon " .. i .. " at frame " .. f .. ": reloadFrame " .. before .. " -> " .. reloadFrame(u, i)) end
 			local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or 1
-			hold[i] = { down = true, since = f, rf0 = reloadFrame(u, i), fired = false, t = inp.target, deadline = f + 45 + math.min(240, math.floor(time * 30)) }
+			hold[i] = { down = true, since = f, rf0 = reloadFrame(u, i), fired = false, t = inp.target, deadline = f + 150 + math.min(240, math.floor(time * 30)) }
 			change = true
 		else
 			a.t = inp.target
 		end
 	end
 	for i, a in pairs(hold) do
-		if not a.fired and reloadFrame(u, i) > a.rf0 then a.fired = true end
+		if not a.fired and reloadFrame(u, i) > a.rf0 then
+			a.fired = true
+			if TEST then Spring.Echo("[Renegade] weapon " .. i .. " fired, frame " .. f .. ", reloadFrame " .. reloadFrame(u, i) .. ", " .. (f - a.since) .. " frames after the press") end
+		end
 		if a.down and not pressed[i] then
 			a.down = false -- released
 			change = true
@@ -759,9 +778,25 @@ local function shoot(team, f, force)
 		clearTargets(u, inp) -- (also clears the targets of the weapons that are still held: they get theirs again below)
 		change = true
 	end
-	if next(hold) == nil then return end
-	if not (change or force or f % AIM_EVERY == 0) then return end
-	for i, a in pairs(hold) do applyTarget(team, u, ud, s, i, a.t) end
+	local tick = change or force or f % AIM_EVERY == 0
+	if tick then
+		for i, a in pairs(hold) do applyTarget(team, u, ud, s, i, a.t) end
+	end
+	-- aim only: the other weapons of the buttons follow the view, their reload is held
+	if inp.aimed then
+		for _, list2 in ipairs({ s.L, s.R, s.M }) do
+			for _, i in ipairs(list2) do
+				if not hold[i] and not s.aa[i] and aimable(ud, i) then
+					if reloadFrame(u, i) <= f then Spring.SetUnitWeaponState(u, i, "reloadFrame", BLOCK) end
+					if tick then
+						local t = inp.target
+						local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
+						Spring.SetUnitTarget(u, x, y, z, false, true, i)
+					end
+				end
+			end
+		end
+	end
 end
 
 function gadget:RecvLuaMsg(msg, playerID)
@@ -851,6 +886,8 @@ function gadget:RecvLuaMsg(msg, playerID)
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
 	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), math.max(0, math.min(7, tonumber(fire)))
 	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
+	inp.aimed = true -- (from the first message on the turret follows the view)
+	if TEST and inp.fire ~= 0 and not inp.said then inp.said = true; Spring.Echo("[Renegade] first message with a button: fire " .. inp.fire .. " at frame " .. Spring.GetGameFrame() .. ", weapons " .. #weaponsFor(units[team], inp.fire)) end
 	shoot(team, Spring.GetGameFrame(), true)
 end
 

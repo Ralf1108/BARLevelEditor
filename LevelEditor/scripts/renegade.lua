@@ -102,7 +102,7 @@ end
 
 local function send(f, force)
 	local yaw, pitch = math.floor(R.yaw + 0.5) % 360, math.floor(R.pitch + 0.5)
-	local h = R.fire ~= 0 and R.shot
+	local h = R.shot -- (always: the turret follows the view even when nothing is fired)
 	local msg = string.format("ren|%d|%d|%d|%d|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire,
 		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, R.aaTarget or (h and h.unit) or -1)
 	if msg == R.sent then return end
@@ -491,6 +491,30 @@ local function groundLine(x, z, dx, dz, len)
 	end)
 end
 
+-- A small thick green arrow on the ground: the way the unit faces, the way it walks or drives when W is pressed (a tank has to turn first when you look behind you).
+local function facingArrow(x, z, dx, dz)
+	local l = math.sqrt(dx * dx + dz * dz)
+	if l < 0.01 then return end
+	dx, dz = dx / l, dz / l
+	local px, pz = -dz, dx
+	local function at(a, b) return a, Spring.GetGroundHeight(a, b) + 8, b end
+	local l0, l1, l2, w = 25, 70, 100, 16
+	for pass = 1, 2 do
+		if pass == 1 then gl.Color(0, 0, 0, 0.6); gl.LineWidth(11) else gl.Color(0.2, 1, 0.3, 1); gl.LineWidth(7) end
+		gl.BeginEnd(GL.LINES, function()
+			gl.Vertex(at(x + dx * l0, z + dz * l0))
+			gl.Vertex(at(x + dx * l1, z + dz * l1))
+		end)
+		if pass == 2 then
+			gl.BeginEnd(GL.TRIANGLES, function()
+				gl.Vertex(at(x + dx * l2, z + dz * l2))
+				gl.Vertex(at(x + dx * l1 + px * w, z + dz * l1 + pz * w))
+				gl.Vertex(at(x + dx * l1 - px * w, z + dz * l1 - pz * w))
+			end)
+		end
+	end
+end
+
 function widget:DrawWorld()
 	if not R.on or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
@@ -521,6 +545,8 @@ function widget:DrawWorld()
 			end
 		end
 	end
+	local fx, _, fz = Spring.GetUnitDirection(R.unit)
+	if fx then facingArrow(x, z, fx, fz) end
 	gl.LineWidth(1)
 	gl.Color(1, 1, 1, 1)
 end
@@ -542,7 +568,7 @@ local function panel(vsx, vsy)
 			if wd then
 				local at = Spring.GetUnitWeaponState(u, i, "reloadFrame") or 0
 				local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or wd.reload or 1
-				local ready = at <= frame
+				local ready = at <= frame or at >= 500000 -- (500000 and more: the gadget holds the reload of a weapon that only aims)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
 				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
