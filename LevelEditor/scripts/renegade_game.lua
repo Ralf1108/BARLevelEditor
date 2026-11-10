@@ -776,6 +776,10 @@ end
 -- move order too: the steering gives it again)
 local function clearTargets(u, inp)
 	Spring.SetUnitTarget(u, nil)
+	-- (measured: a target of one weapon is not cleared by SetUnitTarget(nil) for that weapon number, only by a stop order. The stop order also stops a walking or flying
+	-- unit, so it is given only before the turret has started to follow the view: from then on the weapons that are not pressed get the view point as their target and
+	-- their reload is held (aim only), so nothing keeps firing and no stop order is needed.)
+	if inp.aimed then return end
 	Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
 	inp.moving = false
 end
