@@ -360,7 +360,9 @@ def gradient_bg(size):
 
 
 # the sizes: name, beam colour, thickness of the beam, the width of the picture that the row shows (the weapon is smaller in a row of a light weapon)
-SIZES = [("laser-heavy", (60, 235, 90), 1.0, 2880), ("laser-medium", (70, 150, 255), 0.72, 3300), ("laser-light", (255, 70, 40), 0.45, 3900)]
+SIZES = [("laser-heavy", (60, 235, 90), 1.0, 2880), ("laser-medium", (70, 150, 255), 0.72, 3300), ("laser-light", (255, 70, 40), 0.45, 3900),
+         ("laser-ultra", (60, 110, 255), 1.75, 2300),   # the heaviest laser: blue, a very thick beam (the Pulsar)
+         ("heatray", (255, 205, 40), 1.35, 2600)]       # the heat ray: yellow (the Juggernaut)
 
 
 def main():

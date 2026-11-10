@@ -3,6 +3,7 @@
   python weapon_categories.py        writes game-modes/renegade-weapon-categories.md (the categories with counts and examples) and game-modes/renegade_weapon_categories.csv
                                      (every weapon on a mouse button with its proposed category and picture name; a proposal, the csv of the weapons is not changed)
 
+Heat rays (description with "heat ray") are one category (yellow), the lasers of the heaviest kind (tachyon, ion accelerator, "ultra" or 2500 damage and more) another (laser-ultra, blue and very thick).
 A weapon gets a family (laser, plasma cannon, missile launcher ...) from its Type and its description, and a size (light, medium, heavy) from words in the description
 (light, mini, small / heavy, huge, massive, ultra) and otherwise from the damage of one shot. Weapons without a button (footsteps, dummies) are left out.
 """
@@ -54,8 +55,12 @@ def classify(r):
         return "lightning", None
     if "emp" in d and t in ("EMP cannon",) or d.startswith("emp grenade"):
         return "emp-grenade", None
-    if "stun" in d or "paralyz" in d or "flashbang" in d:
+    if "stun" in d or "paralyz" in d or "flashbang" in d or ("emp" in d and "beam" in d):
         return "stun-beam", None
+    if "heat ray" in d or "heatray" in d:
+        return "heatray", None   # (yellow: the Juggernaut, the Adjudicator, Thermite ...)
+    if t in ("Beam laser", "Laser") and ("tachyon" in d or "ion accelerator" in d or re.search(chr(92) + "bultra" + chr(92) + "b", d) or dmg(r) >= 2500):
+        return "laser-ultra", None   # (blue and very thick: the Pulsar, the tachyon beams ...)
     if t == "Melee" or "self-destruct" in d or "dummy" in d or "crawlingbomb" in d:
         return "self-destruct", None
     if t == "Bomb":
