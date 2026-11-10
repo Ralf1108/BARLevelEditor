@@ -728,6 +728,23 @@ local function clearTargets(u, inp)
 	inp.moving = false
 end
 
+-- A bomb is dropped where the aircraft is (not at the point the player looks at): its target is the point where a bomb dropped now would land (the position moved by the
+-- velocity for the fall time over the ground; the widget draws the same point), so the weapon is in range and aimed at once and the bombs fall as soon as the button is down.
+local function bombPoint(u)
+	local ux, uy, uz = Spring.GetUnitPosition(u)
+	local vx, vy, vz = Spring.GetUnitVelocity(u)
+	if not ux or not vx then return nil end
+	local g = (Game.gravity or 120) / 900
+	local x, z = ux, uz
+	for _ = 1, 4 do
+		local drop = uy - Spring.GetGroundHeight(x, z)
+		local tt = (vy + math.sqrt(vy * vy + 2 * g * math.max(0, drop))) / g
+		x, z = ux + vx * tt, uz + vz * tt
+	end
+	x, z = math.max(1, math.min(Game.mapSizeX - 1, x)), math.max(1, math.min(Game.mapSizeZ - 1, z))
+	return x, Spring.GetGroundHeight(x, z), z
+end
+
 -- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
 local function applyTarget(team, u, ud, s, i, t)
 	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
@@ -744,6 +761,9 @@ local function applyTarget(team, u, ud, s, i, t)
 				Spring.SetUnitTarget(u, x, y, z, false, true, i)
 			end
 		end
+	elseif (WeaponDefs[ud.weapons[i].weaponDef] or {}).type == "AircraftBomb" then
+		local x, y, z = bombPoint(u)
+		if x then Spring.SetUnitTarget(u, x, y, z, false, true, i) end
 	else
 		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
 		local wd = WeaponDefs[ud.weapons[i].weaponDef]
@@ -770,7 +790,7 @@ local function unblock(u, i, f)
 end
 local function aimable(ud, i)
 	local wd = WeaponDefs[ud.weapons[i].weaponDef]
-	return wd and not wd.stockpile and wd.type ~= "DGun" -- (the D-gun is fired by hand: it has no target before the button)
+	return wd and not wd.stockpile and wd.type ~= "DGun" and wd.type ~= "AircraftBomb" -- (the D-gun is fired by hand: it has no target before the button)
 end
 
 local function shoot(team, f, force)
@@ -812,7 +832,7 @@ local function shoot(team, f, force)
 		clearTargets(u, inp) -- (also clears the targets of the weapons that are still held: they get theirs again below)
 		change = true
 	end
-	local tick = change or force or f % AIM_EVERY == 0
+	local tick = change or force or f % AIM_EVERY == 0 or ud.canFly -- (an aircraft moves fast: the bombs' target every frame)
 	if tick then
 		for i, a in pairs(hold) do applyTarget(team, u, ud, s, i, a.t) end
 	end
