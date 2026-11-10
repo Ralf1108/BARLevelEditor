@@ -6,7 +6,7 @@
 -- apply; its fire state is hold fire: it shoots only at what the player aims at. Test only: game option lanrenotest=1 and "ren|test|1" put an enemy
 -- Peewee (hold fire) 150 Elmo in front of the unit. 
 -- Game option lanrenebots=<n>: n computer Peewees of the first team without a human walk around and fight the players (a lost one comes back after 5 s),
--- lanrenedebug=1: the player may turn into another unit ("ren|unit|<unit name>", units with a weapon: also aircraft, ships on water, turrets). A player's unit that is lost comes back after 3 s at a place far from
+-- lanrenedebug=1: the player may turn into another unit ("ren|unit|<unit name>", units with a weapon: also aircraft, ships (they lie on the land: for the tests), turrets). A player's unit that is lost comes back after 3 s at a place far from
 -- the enemies. Team rules parameter renUnit (public): the unit of the team (0 = none). Spec: specs/renegade.md.
 function gadget:GetInfo()
 	return {
@@ -258,10 +258,6 @@ turnInto = function(team, defName)
 	local ud = UnitDefNames[defName]
 	if not u or not Spring.ValidUnitID(u) or not ud or #(ud.weapons or {}) == 0 then return end
 	local x, y, z = Spring.GetUnitPosition(u)
-	if (ud.minWaterDepth or 0) > 0 and Spring.GetGroundHeight(x, z) > -ud.minWaterDepth then
-		Spring.Echo("[Renegade] " .. defName .. " needs water")
-		return
-	end
 	local hp, mhp = Spring.GetUnitHealth(u)
 	local old = u
 	local id = giveUnit(team, defName, x, y, z, Spring.GetUnitBuildFacing(u))

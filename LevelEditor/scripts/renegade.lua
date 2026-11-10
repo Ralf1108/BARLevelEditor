@@ -240,7 +240,10 @@ local function picker()
 	if not Shared then return nil end
 	local cfg = Shared.newConfig("LuaUI/Config/RenegadeUnits.lua", "Renegade unit menu (not saved)", { uCols = 5, uRows = 4 }, { uCols = { 1, 8 }, uRows = { 1, 8 } })
 	R.picker = Shared.newUnits({
-		cfg = cfg, search = false, noPreview = true, factions = { "arm", "cor", "leg" },
+		cfg = cfg, noPreview = true, factions = { "arm", "cor", "leg" },
+		ownText = function(on) -- the search field: the typed text comes to widget:TextInput
+			if on then widgetHandler:OwnText() else widgetHandler:DisownText() end
+		end,
 		groups = { "turrets", "bot", "vehicle", "hover", "air", "ships" },
 		filter = function(ud) return #(ud.weapons or {}) > 0 end, -- what shoots: units and turrets
 	})
@@ -257,7 +260,7 @@ local function pickerLayout()
 	local vsx, vsy = Spring.GetViewGeometry()
 	local cw, ch = g:size()
 	local hb = m.HB
-	local filterH = 3 * (hb + 3) + m.PAD
+	local filterH = g:filterRowCount() * (hb + 3) + m.PAD
 	local w, h = cw + 2 * m.PAD, filterH + ch + 28 * Shared.S
 	local x1 = math.max(4, (vsx - w) / 2)
 	local y0 = math.max(4, (vsy - h) / 2)
@@ -285,7 +288,7 @@ local function drawPicker()
 		local d = UnitDefs[e.id]
 		gl.Text((d.translatedHumanName or d.humanName or e.name) .. "  (" .. e.name .. ")  " .. (d.tooltip or ""), win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
 	else
-		gl.Text("Click a unit: you turn into it. Tab: back to the game.", win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
+		gl.Text("Click a unit: you turn into it. Search: type words or the code. Tab: back to the game.", win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
 	end
 	R.win = win
 end
@@ -305,6 +308,7 @@ local function pickerClick(x, y)
 	local e = i and g:list()[i]
 	if e then
 		Spring.SendLuaRulesMsg("ren|unit|" .. e.name)
+		g:setFocus(false)
 		R.list, R.menu = false, false
 	end
 end
@@ -353,14 +357,22 @@ function widget:KeyPress(key, mods, isRepeat)
 		if R.on then R.off = true; disable() else R.off = false end
 		return true
 	end
+	if R.on and R.picker and R.picker.focus and key ~= 9 then
+		return R.picker:key(key) -- typing in the search field (Enter: done, Esc: clear, Backspace)
+	end
 	if R.on and key == 9 and R.debug then -- Tab: the mouse is free for the debug menu, again: back to the view
 		R.menu = not R.menu
 		R.list = false
+		if R.picker then R.picker:setFocus(false) end
 		return true
 	end
 	if R.on and (key == K.W or key == K.A or key == K.S or key == K.D) then
 		return true
 	end
+end
+
+function widget:TextInput(ch)
+	if R.on and R.picker and R.picker.focus then return R.picker:textInput(ch) end
 end
 
 function widget:TextCommand(cmd)

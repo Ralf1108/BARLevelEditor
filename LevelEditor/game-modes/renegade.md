@@ -31,7 +31,7 @@ A game mode in the making: **you are one unit of Beyond All Reason, seen from th
 
 ## Debug menu
 
-With `start_renegade.bat` a button **Debug unit** sits above the panel. Press **Tab** (the mouse is free), click the button: the unit menu of the Level Editor opens (faction, group - Turrets, Bots, Vehicles, Hover, Air, Ships -, tech level and the pictures of the units that have a weapon). A click on a picture **turns you into that unit** at the same place with the same share of health; as a turret you cannot move but you can fire; a ship needs water.
+With `start_renegade.bat` a button **Debug unit** sits above the panel. Press **Tab** (the mouse is free), click the button: the unit menu of the Level Editor opens (faction, group - Turrets, Bots, Vehicles, Hover, Air, Ships -, tech level, a **search field** and the pictures of the units that have a weapon). A click on a picture **turns you into that unit** at the same place with the same share of health; as a turret you cannot move but you can fire; a ship lies on the land (for the tests) and fires.
 
 ## Not yet there
 
