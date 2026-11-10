@@ -781,7 +781,18 @@ local function panel(vsx, vsy)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
 				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = (not drops) and reach(ud, slots, list, R.hit) or nil }
+				local state = (not drops) and reach(ud, slots, list, R.hit) or nil
+				local attack, height
+				if wd.type == "AircraftBomb" then
+					-- a bomber drops only up to its attack altitude: green up to it, yellow up to 15% above, red higher (nothing is dropped)
+					attack = tonumber(Spring.GetUnitRulesParam(u, "renAttackAlt"))
+					local ux, uy, uz = Spring.GetUnitPosition(u)
+					if attack and ux then
+						height = uy - Spring.GetGroundHeight(ux, uz)
+						state = height <= attack and "green" or (height <= attack * 1.15 and "yellow" or "red")
+					end
+				end
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height }
 			end
 		end
 	end
@@ -813,7 +824,11 @@ local function panel(vsx, vsy)
 			gl.Text("AIR ONLY", x1 + w - 10 * s, ry + 24 * s, 12 * s, "ro")
 		end
 		gl.Color(0.7, 0.7, 0.7, 0.95)
-		gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "" or (r.hy and "   (aircraft in the circle: lock; ground: aim)" or "")), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		if r.attack then
+			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s   %s", r.attack, r.height, r.time, r.ready and "READY" or "reloading"), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		else
+			gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "" or (r.hy and "   (aircraft in the circle: lock; ground: aim)" or "")), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		end
 		gl.Color(0.15, 0.15, 0.15, 0.9)
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
 		if r.ready then gl.Color(r.color[1], r.color[2], r.color[3], 1) else gl.Color(r.color[1] * 0.55, r.color[2] * 0.55, r.color[3] * 0.55, 1) end

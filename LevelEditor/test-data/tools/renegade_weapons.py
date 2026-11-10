@@ -25,7 +25,7 @@ MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")   # 
 CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 CRUISE_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_cruise.csv")
 CRUISE_MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-cruise.md")
-CRUISE_COLUMNS = ["Faction", "Unit", "Code", "Cruise altitude", "Cruise altitude used"]
+CRUISE_COLUMNS = ["Faction", "Unit", "Code", "Cruise altitude", "Cruise altitude used", "Attack altitude"]
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
 COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image"]
@@ -245,6 +245,7 @@ How high an aircraft may fly in Renegade (above the ground; it follows the terra
 
 - **Cruise altitude**: the `cruiseAltitude` of the unit definition (not read by the game).
 - **Cruise altitude used**: the highest height above the ground the aircraft may fly (Space raises, Ctrl lowers, the altimeter ends there). 3 times the cruise altitude: measured, a gunship and a fighter really fly at 3 times it. In the game the height is cut to 1000.
+- **Attack altitude** (bombers only: aircraft whose bomb is on a mouse button): the aircraft drops its bombs only up to this height above the ground; the weapon row in the panel is green up to it (yellow up to 15% above it, red higher). Empty = no limit. The start value is the cruise altitude of the definition (the engine's own bomb release has no fixed height: measured, it depends on the target and the heading); change it here.
 - Every aircraft of Armada, Cortex and Legion is in, also those without a weapon (scouts, transports, builders, radar planes, satellites); only a unit with a weapon can be played.
 
 **How to change it:** open the csv in Excel (columns separated by semicolons), change Cruise altitude used, save, double-click `update_renegade_weapons.bat` (in this folder: it writes this page and the table CRUISE_ALT in `renegade_game.lua` as well as the weapon table).
@@ -281,7 +282,8 @@ def make_cruise(units):
         if code in by:
             by[code][3] = u["cruise"]
         else:
-            r = [FACTION.get(u["fac"], u["fac"]), u["human"], code, u["cruise"], str(3 * int(u["cruise"]))]
+            bomber = any(w["type"] == "AircraftBomb" and (w["dmg"] > 2 or w["vtol"] > 2) for w in u["weapons"])
+            r = [FACTION.get(u["fac"], u["fac"]), u["human"], code, u["cruise"], str(3 * int(u["cruise"])), u["cruise"] if bomber else ""]
             rows.append(r)
             by[code] = r
     rows = write_cruise(rows)
@@ -306,10 +308,12 @@ def make_lua(src):
             continue
         units.setdefault(r["Code"], []).append(r)
     lines = []
-    cruise = {}
+    cruise, attack = {}, {}
     for r in read_cruise():
         if r[4].isdigit():
             cruise[r[2]] = int(r[4])
+        if r[5].isdigit():
+            attack[r[2]] = int(r[5])
     for code in sorted(units):
         by = {"LMB": [], "RMB": [], "MMB": []}
         for r in units[code]:
@@ -321,7 +325,7 @@ def make_lua(src):
     text = text.replace("\r\n", "\n")
     a, b = text.index("-- BEGIN WEAPONS"), text.index("-- END WEAPONS")
     head = "-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
-    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n"
+    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n" + "ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the ground (column Attack altitude)\n" + "\n".join("	%s = %d," % (c, attack[c]) for c in sorted(attack)) + "\n}\n"
     text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + text[b:]
     open(GADGET, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))
     print("%d units written" % len(lines))

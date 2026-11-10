@@ -6,110 +6,111 @@ How high an aircraft may fly in Renegade (above the ground; it follows the terra
 
 - **Cruise altitude**: the `cruiseAltitude` of the unit definition (not read by the game).
 - **Cruise altitude used**: the highest height above the ground the aircraft may fly (Space raises, Ctrl lowers, the altimeter ends there). 3 times the cruise altitude: measured, a gunship and a fighter really fly at 3 times it. In the game the height is cut to 1000.
+- **Attack altitude** (bombers only: aircraft whose bomb is on a mouse button): the aircraft drops its bombs only up to this height above the ground; the weapon row in the panel is green up to it (yellow up to 15% above it, red higher). Empty = no limit. The start value is the cruise altitude of the definition (the engine's own bomb release has no fixed height: measured, it depends on the target and the heading); change it here.
 - Every aircraft of Armada, Cortex and Legion is in, also those without a weapon (scouts, transports, builders, radar planes, satellites); only a unit with a weapon can be played.
 
 **How to change it:** open the csv in Excel (columns separated by semicolons), change Cruise altitude used, save, double-click `update_renegade_weapons.bat` (in this folder: it writes this page and the table CRUISE_ALT in `renegade_game.lua` as well as the weapon table).
 
 99 aircraft.
 
-| Faction | Unit | Code | Cruise altitude | Cruise altitude used |
-|---|---|---|---|---|
-| Armada | Abductor | armdfly | 135 | 405 |
-| Armada | Advanced Construction Aircraft | armaca | 80 | 240 |
-| Armada | Assist Drone | armassistdrone | 100 | 300 |
-| Armada | Attack Drone | armdrone | 40 | 120 |
-| Armada | Attack Drone | armdroneold | 70 | 210 |
-| Armada | Banshee | armkam | 70 | 210 |
-| Armada | Blink | armpeep | 180 | 540 |
-| Armada | Blizzard | armpnix | 220 | 660 |
-| Armada | Construction Aircraft | armca | 70 | 210 |
-| Armada | Construction Seaplane | armcsa | 50 | 150 |
-| Armada | Cormorant | armlance | 90 | 270 |
-| Armada | Cyclone | armsfig | 140 | 420 |
-| Armada | Cyclone | armsfig2 | 140 | 420 |
-| Armada | Depth Charge Drone | armtdrone | 40 | 120 |
-| Armada | Epic Liche | armlichet4 | 150 | 450 |
-| Armada | Epic Stormbringer | armthundt4 | 190 | 570 |
-| Armada | Experimental Construction Aircraft | armhaca | 50 | 150 |
-| Armada | Falcon | armfig | 125 | 375 |
-| Armada | Firefly | armfify | 78 | 234 |
-| Armada | Flying Epoch | armfepocht4 | 100 | 300 |
-| Armada | Highwind | armhawk | 160 | 480 |
-| Armada | Horizon | armsehak | 220 | 660 |
-| Armada | Hornet | armblade | 110 | 330 |
-| Armada | Liche | armliche | 150 | 450 |
-| Armada | Oracle | armawac | 160 | 480 |
-| Armada | Osprey | armhvytrans | 100 | 300 |
-| Armada | Puffin | armseap | 100 | 300 |
-| Armada | Roughneck | armbrawl | 100 | 300 |
-| Armada | Sabre | armsaber | 85 | 255 |
-| Armada | Satellite | armsat | 2700 | 8100 |
-| Armada | Stiletto | armstil | 120 | 360 |
-| Armada | Stork | armatlas | 100 | 300 |
-| Armada | Stormbringer | armthund | 165 | 495 |
-| Armada | Tsunami | armsb | 210 | 630 |
-| Cortex | Advanced Construction Aircraft | coraca | 70 | 210 |
-| Cortex | Angler | cortitan | 90 | 270 |
-| Cortex | Archaic Dragon | corcrw | 75 | 225 |
-| Cortex | Assist Drone | corassistdrone | 100 | 300 |
-| Cortex | Attack Drone | cordrone | 40 | 120 |
-| Cortex | Attack Drone | cordroneold | 78 | 234 |
-| Cortex | Bat | corsfig | 140 | 420 |
-| Cortex | Bat | corsfig2 | 140 | 420 |
-| Cortex | Condor | corawac | 110 | 330 |
-| Cortex | Construction Aircraft | corca | 75 | 225 |
-| Cortex | Construction Seaplane | corcsa | 55 | 165 |
-| Cortex | Cutlass | corcut | 85 | 255 |
-| Cortex | Dam Buster | corsb | 150 | 450 |
-| Cortex | Depth Charge Drone | cortdrone | 40 | 120 |
-| Cortex | Disgruntler | cords | 165 | 495 |
-| Cortex | Disperser Omni | cordronecarryair | 100 | 300 |
-| Cortex | Dragon | corcrwh | 85 | 255 |
-| Cortex | Epic Dragon | corcrwt4 | 110 | 330 |
-| Cortex | Experimental Construction Aircraft | corhaca | 55 | 165 |
-| Cortex | Finch | corfink | 110 | 330 |
-| Cortex | Flying Black Hydra | corfblackhyt4 | 100 | 300 |
-| Cortex | Hailstorm | corhurc | 220 | 660 |
-| Cortex | Hephaestus | corhvytrans | 100 | 300 |
-| Cortex | Hercules | corvalk | 100 | 300 |
-| Cortex | Monsoon | corseap | 100 | 300 |
-| Cortex | Nighthawk | corvamp | 160 | 480 |
-| Cortex | Satellite | corsat | 2700 | 8100 |
-| Cortex | Shuriken | corbw | 78 | 234 |
-| Cortex | Skyhook | corseah | 135 | 405 |
-| Cortex | Valiant | corveng | 125 | 375 |
-| Cortex | Wasp | corape | 100 | 300 |
-| Cortex | Watcher | corhunt | 190 | 570 |
-| Cortex | Whirlwind | corshad | 165 | 495 |
-| Legion | Advanced Construction Aircraft | legaca | 70 | 210 |
-| Legion | Aeolus | leglts | 100 | 300 |
-| Legion | Aesacus | legatorpbomber | 90 | 270 |
-| Legion | Ajax | legafigdef | 160 | 480 |
-| Legion | Assist Drone | legassistdrone | 100 | 300 |
-| Legion | Astrapios | legspfighter | 140 | 420 |
-| Legion | Blindfold | legcib | 130 | 390 |
-| Legion | Construction Seaplane | legspcon | 50 | 150 |
-| Legion | Enyo | legspsurfacegunship | 85 | 255 |
-| Legion | Epic Mosquito | legmost3 | 150 | 450 |
-| Legion | Epic Tyrannus | legfortt4 | 250 | 750 |
-| Legion | Experimental Construction Aircraft | leghaca | 55 | 165 |
-| Legion | Harbinger | legmineb | 150 | 450 |
-| Legion | Hecatoncheir | legspcarrier | 100 | 300 |
-| Legion | Hippotes | legatrans | 100 | 300 |
-| Legion | Ladon | legsptorpgunship | 100 | 300 |
-| Legion | Legion Construction Aircraft | legca | 75 | 225 |
-| Legion | Legion Drone | legdrone | 78 | 234 |
-| Legion | Legion Heavy Drone | legheavydrone | 68 | 204 |
-| Legion | Legion Heavy Drone | legheavydronesmall | 68 | 204 |
-| Legion | Legionnaire | legionnaire | 160 | 480 |
-| Legion | Martyr | legkam | 50 | 150 |
-| Legion | Mosquito | legmos | 70 | 210 |
-| Legion | Noctua | legfig | 125 | 375 |
-| Legion | Okeanos | legspradarsonarplane | 220 | 660 |
-| Legion | Phoenix | legphoenix | 220 | 660 |
-| Legion | Pyrphoros | legspbomber | 210 | 630 |
-| Legion | Stronghold | legstronghold | 135 | 405 |
-| Legion | Tyrannus | legfort | 100 | 300 |
-| Legion | Venator | legvenator | 160 | 480 |
-| Legion | Whisper | legwhisper | 130 | 390 |
-| Legion | Wildfire | legnap | 180 | 540 |
+| Faction | Unit | Code | Cruise altitude | Cruise altitude used | Attack altitude |
+|---|---|---|---|---|---|
+| Armada | Abductor | armdfly | 135 | 405 |  |
+| Armada | Advanced Construction Aircraft | armaca | 80 | 240 |  |
+| Armada | Assist Drone | armassistdrone | 100 | 300 |  |
+| Armada | Attack Drone | armdrone | 40 | 120 |  |
+| Armada | Attack Drone | armdroneold | 70 | 210 |  |
+| Armada | Banshee | armkam | 70 | 210 |  |
+| Armada | Blink | armpeep | 180 | 540 |  |
+| Armada | Blizzard | armpnix | 220 | 660 | 220 |
+| Armada | Construction Aircraft | armca | 70 | 210 |  |
+| Armada | Construction Seaplane | armcsa | 50 | 150 |  |
+| Armada | Cormorant | armlance | 90 | 270 |  |
+| Armada | Cyclone | armsfig | 140 | 420 |  |
+| Armada | Cyclone | armsfig2 | 140 | 420 |  |
+| Armada | Depth Charge Drone | armtdrone | 40 | 120 |  |
+| Armada | Epic Liche | armlichet4 | 150 | 450 | 150 |
+| Armada | Epic Stormbringer | armthundt4 | 190 | 570 | 190 |
+| Armada | Experimental Construction Aircraft | armhaca | 50 | 150 |  |
+| Armada | Falcon | armfig | 125 | 375 |  |
+| Armada | Firefly | armfify | 78 | 234 |  |
+| Armada | Flying Epoch | armfepocht4 | 100 | 300 |  |
+| Armada | Highwind | armhawk | 160 | 480 |  |
+| Armada | Horizon | armsehak | 220 | 660 |  |
+| Armada | Hornet | armblade | 110 | 330 |  |
+| Armada | Liche | armliche | 150 | 450 |  |
+| Armada | Oracle | armawac | 160 | 480 |  |
+| Armada | Osprey | armhvytrans | 100 | 300 |  |
+| Armada | Puffin | armseap | 100 | 300 |  |
+| Armada | Roughneck | armbrawl | 100 | 300 |  |
+| Armada | Sabre | armsaber | 85 | 255 |  |
+| Armada | Satellite | armsat | 2700 | 8100 |  |
+| Armada | Stiletto | armstil | 120 | 360 | 120 |
+| Armada | Stork | armatlas | 100 | 300 |  |
+| Armada | Stormbringer | armthund | 165 | 495 | 165 |
+| Armada | Tsunami | armsb | 210 | 630 | 210 |
+| Cortex | Advanced Construction Aircraft | coraca | 70 | 210 |  |
+| Cortex | Angler | cortitan | 90 | 270 |  |
+| Cortex | Archaic Dragon | corcrw | 75 | 225 |  |
+| Cortex | Assist Drone | corassistdrone | 100 | 300 |  |
+| Cortex | Attack Drone | cordrone | 40 | 120 |  |
+| Cortex | Attack Drone | cordroneold | 78 | 234 |  |
+| Cortex | Bat | corsfig | 140 | 420 |  |
+| Cortex | Bat | corsfig2 | 140 | 420 |  |
+| Cortex | Condor | corawac | 110 | 330 |  |
+| Cortex | Construction Aircraft | corca | 75 | 225 |  |
+| Cortex | Construction Seaplane | corcsa | 55 | 165 |  |
+| Cortex | Cutlass | corcut | 85 | 255 |  |
+| Cortex | Dam Buster | corsb | 150 | 450 | 150 |
+| Cortex | Depth Charge Drone | cortdrone | 40 | 120 |  |
+| Cortex | Disgruntler | cords | 165 | 495 | 165 |
+| Cortex | Disperser Omni | cordronecarryair | 100 | 300 |  |
+| Cortex | Dragon | corcrwh | 85 | 255 |  |
+| Cortex | Epic Dragon | corcrwt4 | 110 | 330 |  |
+| Cortex | Experimental Construction Aircraft | corhaca | 55 | 165 |  |
+| Cortex | Finch | corfink | 110 | 330 |  |
+| Cortex | Flying Black Hydra | corfblackhyt4 | 100 | 300 |  |
+| Cortex | Hailstorm | corhurc | 220 | 660 | 220 |
+| Cortex | Hephaestus | corhvytrans | 100 | 300 |  |
+| Cortex | Hercules | corvalk | 100 | 300 |  |
+| Cortex | Monsoon | corseap | 100 | 300 |  |
+| Cortex | Nighthawk | corvamp | 160 | 480 |  |
+| Cortex | Satellite | corsat | 2700 | 8100 |  |
+| Cortex | Shuriken | corbw | 78 | 234 |  |
+| Cortex | Skyhook | corseah | 135 | 405 |  |
+| Cortex | Valiant | corveng | 125 | 375 |  |
+| Cortex | Wasp | corape | 100 | 300 |  |
+| Cortex | Watcher | corhunt | 190 | 570 |  |
+| Cortex | Whirlwind | corshad | 165 | 495 | 165 |
+| Legion | Advanced Construction Aircraft | legaca | 70 | 210 |  |
+| Legion | Aeolus | leglts | 100 | 300 |  |
+| Legion | Aesacus | legatorpbomber | 90 | 270 |  |
+| Legion | Ajax | legafigdef | 160 | 480 |  |
+| Legion | Assist Drone | legassistdrone | 100 | 300 |  |
+| Legion | Astrapios | legspfighter | 140 | 420 |  |
+| Legion | Blindfold | legcib | 130 | 390 |  |
+| Legion | Construction Seaplane | legspcon | 50 | 150 |  |
+| Legion | Enyo | legspsurfacegunship | 85 | 255 |  |
+| Legion | Epic Mosquito | legmost3 | 150 | 450 |  |
+| Legion | Epic Tyrannus | legfortt4 | 250 | 750 |  |
+| Legion | Experimental Construction Aircraft | leghaca | 55 | 165 |  |
+| Legion | Harbinger | legmineb | 150 | 450 |  |
+| Legion | Hecatoncheir | legspcarrier | 100 | 300 |  |
+| Legion | Hippotes | legatrans | 100 | 300 |  |
+| Legion | Ladon | legsptorpgunship | 100 | 300 |  |
+| Legion | Legion Construction Aircraft | legca | 75 | 225 |  |
+| Legion | Legion Drone | legdrone | 78 | 234 |  |
+| Legion | Legion Heavy Drone | legheavydrone | 68 | 204 |  |
+| Legion | Legion Heavy Drone | legheavydronesmall | 68 | 204 |  |
+| Legion | Legionnaire | legionnaire | 160 | 480 |  |
+| Legion | Martyr | legkam | 50 | 150 | 50 |
+| Legion | Mosquito | legmos | 70 | 210 |  |
+| Legion | Noctua | legfig | 125 | 375 |  |
+| Legion | Okeanos | legspradarsonarplane | 220 | 660 |  |
+| Legion | Phoenix | legphoenix | 220 | 660 |  |
+| Legion | Pyrphoros | legspbomber | 210 | 630 | 210 |
+| Legion | Stronghold | legstronghold | 135 | 405 |  |
+| Legion | Tyrannus | legfort | 100 | 300 |  |
+| Legion | Venator | legvenator | 160 | 480 |  |
+| Legion | Whisper | legwhisper | 130 | 390 |  |
+| Legion | Wildfire | legnap | 180 | 540 | 180 |

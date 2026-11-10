@@ -80,6 +80,7 @@ local function flyer(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	return ud and ud.canFly
 end
+local ATTACK_ALT -- (filled in the block below: the height up to which a bomber drops its bombs, column Attack altitude)
 local CRUISE_ALT -- (filled in the block WEAPON_BUTTONS below: the highest height above the ground of an aircraft, column Cruise altitude of the table)
 
 -- The height of an aircraft that flies (gunships hover where they are): Space raises it, Ctrl lowers it (LIFT_RATE Elmo a frame, between MIN_ALT and MAX_ALT above the
@@ -876,6 +877,21 @@ CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table
 	legvenator = 480,
 	legwhisper = 390,
 }
+ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the ground (column Attack altitude)
+	armlichet4 = 150,
+	armpnix = 220,
+	armsb = 210,
+	armstil = 120,
+	armthund = 165,
+	armthundt4 = 190,
+	cords = 165,
+	corhurc = 220,
+	corsb = 150,
+	corshad = 165,
+	legkam = 50,
+	legnap = 180,
+	legspbomber = 210,
+}
 -- END WEAPONS
 local MISSILE = { MissileLauncher = true, StarburstLauncher = true, TorpedoLauncher = true }
 local slotCache = {}
@@ -1011,8 +1027,21 @@ local function applyTarget(team, u, ud, s, i, t)
 			end
 		end
 	elseif TESTENGINE and (WeaponDefs[ud.weapons[i].weaponDef] or {}).type == "AircraftBomb" then
-		local ux, _, uz = Spring.GetUnitPosition(u) -- (tests: the target is the ground under the aircraft)
-		Spring.SetUnitTarget(u, ux, Spring.GetGroundHeight(ux, uz), uz, false, true, i)
+		-- (tests: the target is the point where a bomb dropped now would land: the position moved by the velocity for the fall time)
+		local ux, uy, uz = Spring.GetUnitPosition(u)
+		local vx, vy, vz = Spring.GetUnitVelocity(u)
+		if ux and vx then
+			local wdb = WeaponDefs[ud.weapons[i].weaponDef]
+			local g = (tonumber(wdb.myGravity) or 0) > 0 and wdb.myGravity or (Game.gravity or 120) / 900
+			local x, z = ux, uz
+			for _ = 1, 4 do
+				local drop = uy - Spring.GetGroundHeight(x, z)
+				local tt = (vy + math.sqrt(vy * vy + 2 * g * math.max(0, drop))) / g
+				x, z = ux + vx * tt, uz + vz * tt
+			end
+			x, z = math.max(1, math.min(Game.mapSizeX - 1, x)), math.max(1, math.min(Game.mapSizeZ - 1, z))
+			Spring.SetUnitTarget(u, x, Spring.GetGroundHeight(x, z), z, false, true, i)
+		end
 	else
 		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
 		local wd = WeaponDefs[ud.weapons[i].weaponDef]
@@ -1058,6 +1087,10 @@ end
 -- target (the engine's own release stays quiet).
 local BOMBS = {} -- { f = frame to drop at, u = unit, team = team, wd = weapon definition id }
 local TESTPROJ = {} -- (tests: the projectiles spawned)
+local function attackAlt(u)
+	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	return ud and ATTACK_ALT and ATTACK_ALT[(ud.name:gsub("_scav$", ""))] or nil
+end
 local function dropBombs(team, u, i, f)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	local wdid = ud and ud.weapons[i] and ud.weapons[i].weaponDef
@@ -1065,6 +1098,11 @@ local function dropBombs(team, u, i, f)
 	if not wd then return false end
 	local rf = reloadFrame(u, i)
 	if rf > f and rf < BLOCK / 2 then return false end -- (still reloading)
+	local limit = attackAlt(u)
+	if limit then
+		local x, y, z = Spring.GetUnitPosition(u)
+		if x and y - Spring.GetGroundHeight(x, z) > limit then return false end -- (too high: the panel row is red, nothing is dropped)
+	end
 	local n = math.max(1, tonumber(wd.salvoSize) or 1) * math.max(1, tonumber(wd.projectiles) or 1)
 	local gap = math.max(1, math.floor((tonumber(wd.salvoDelay) or 0.1) * 30 + 0.5))
 	for k = 0, n - 1 do BOMBS[#BOMBS + 1] = { f = f + k * gap, u = u, team = team, wd = wdid } end
@@ -1322,7 +1360,10 @@ local function giveUnit(team, defName, x, y, z, face)
 	table.sort(aa)
 	Spring.SetUnitRulesParam(id, "renSlots", table.concat(s.L, ",") .. ";" .. table.concat(s.R, ",") .. ";" .. table.concat(s.M, ","), { public = true })
 	Spring.SetUnitRulesParam(id, "renAA", table.concat(aa, ","), { public = true })
-	if flyer(id) then Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true }) end
+	if flyer(id) then
+		Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true })
+		Spring.SetUnitRulesParam(id, "renAttackAlt", attackAlt(id), { public = true }) -- (nil: no limit)
+	end
 	local hy = {}
 	for i in pairs(s.hy) do hy[#hy + 1] = i end
 	table.sort(hy)
