@@ -21,7 +21,7 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
   - **All Be Gods**: On or Off (off is the default): off = only the **first** player on level 10 brings Armageddon and chooses a gift; the others who reach level 10 get nothing special (the chat says they are too late); on = every player who reaches level 10 chooses a gift
   - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
 
-![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range and Debug mode](../../docs/evolution-room.jpg)
+![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods and Debug mode](../../docs/evolution-room.jpg)
 
 ![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
