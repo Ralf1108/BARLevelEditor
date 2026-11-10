@@ -1,13 +1,14 @@
 """Detailed pictures of weapons for the panel of Renegade, drawn with Pillow and numpy (no outside pictures, no AI): a metal body with bevelled plates, rust and scratches,
 hazard stripes, vents, cables and glowing parts.
 
-  python weapon_art.py [out_dir]    draws the heavy laser: weapon_laser-heavy_big.png (2900 x 700, transparent) and weapon_laser-heavy.png (the picture of a panel row: 768 x 128, the weapon and its beam over the whole width)
+  python weapon_art.py [out_dir]    draws the cannon once and makes the three sizes of the laser from it (heavy: green, medium: blue, light: red; weapon_laser-<size>.png, the picture of a panel row: 768 x 128)
+                                    and writes the body of the cannon as source/laser_cannon_body.png (default out_dir: LevelEditor/game-modes/weapon-images)
 """
 import math, os, random, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-W, H = 2900, 700   # (wide: the beam runs far to the right, the banner of the panel row is 6 : 1)
+W, H = 4300, 800   # (wide: the beam runs far to the right, the banner of the panel row is 6 : 1)
 rng = np.random.default_rng(7)
 random.seed(7)
 
@@ -153,7 +154,8 @@ STEEL_T, STEEL_B = (132, 134, 140), (52, 54, 60)
 DARK_T, DARK_B = (58, 60, 66), (22, 24, 28)
 
 
-def heavy_laser():
+def gun_body():
+    """the laser cannon without its glow (the same body for every size; the beam and the glowing parts are added by beam_fx in the colour of the size)"""
     gun = np.zeros((H, W, 4), np.float32)
     cy = 420
 
@@ -224,7 +226,7 @@ def heavy_laser():
     muz = mask_of(poly([(1010, 330), (1090, 300), (1250, 280), (1310, 315), (1310, 575), (1250, 610), (1090, 590), (1010, 560)]))
     part(gun, muz, STEEL_T, STEEL_B, bevel=10, rust=0.14, spec=0.8)
     for x in (1030, 1056, 1082, 1108):
-        part(gun, mask_of(rrect((x, 372, x + 14, 470), 5)), (255, 140, 60), (200, 60, 24), bevel=2, grain=0.02)
+        part(gun, mask_of(rrect((x, 372, x + 14, 470), 5)), (70, 72, 78), (30, 32, 36), bevel=2, grain=0.02)
     cap = mask_of(poly([(1130, 300), (1260, 282), (1300, 322), (1300, 380), (1130, 380)]))
     part(gun, cap, (150, 152, 158), (70, 72, 78), bevel=8, rust=0.08)
     # the ring around the opening
@@ -253,41 +255,61 @@ def heavy_laser():
     out.alpha_composite(sh)
     out.alpha_composite(img)
 
-    # --- the glow inside the opening, the heat round it and the beam with its electric tendrils
+    return out
+
+
+def mix(c, white, k):
+    return tuple(int(c[i] + (white - c[i]) * k) for i in range(3))
+
+
+def beam_fx(body, color, k=1.0):
+    """the glow in the opening, the glowing vents, the heat and the beam with its electric tendrils in a colour; k = the thickness of the beam (1 = the heavy laser)"""
+    out = body.copy()
+    c1, c2, c3, c4 = color, mix(color, 255, 0.45), mix(color, 255, 0.8), mix(color, 255, 0.94)
+    # the glowing vents
+    gl_v = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    vd = ImageDraw.Draw(gl_v)
+    for x in (1030, 1056, 1082, 1108):
+        vd.rounded_rectangle((x, 372, x + 14, 470), radius=5, fill=c2 + (255,))
+    out.alpha_composite(gl_v.filter(ImageFilter.GaussianBlur(6)))
+    out.alpha_composite(gl_v)
+    # the glow in the opening
     glowl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     gd = ImageDraw.Draw(glowl)
-    gd.ellipse((1224, 350, 1310, 492), fill=(255, 120, 30, 255))
-    gd.ellipse((1240, 372, 1306, 472), fill=(255, 190, 90, 255))
-    gd.ellipse((1254, 392, 1306, 450), fill=(255, 245, 210, 255))
+    gd.ellipse((1224, 350, 1310, 492), fill=c1 + (255,))
+    gd.ellipse((1240, 372, 1306, 472), fill=c2 + (255,))
+    gd.ellipse((1254, 392, 1306, 450), fill=c3 + (255,))
     out.alpha_composite(glowl.filter(ImageFilter.GaussianBlur(5)))
+    # the heat round the muzzle and along the beam
     halo = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     hd = ImageDraw.Draw(halo)
-    hd.ellipse((1100, 250, 1500, 590), fill=(255, 80, 20, 150))
-    hd.rectangle((1290, 352, W, 488), fill=(255, 70, 20, 170))
-    out.alpha_composite(halo.filter(ImageFilter.GaussianBlur(42)))
+    hd.ellipse((1100, 250, 1500, 590), fill=c1 + (150,))
+    hd.rectangle((1290, int(421 - 69 * k), W, int(421 + 69 * k)), fill=c1 + (170,))
+    out.alpha_composite(halo.filter(ImageFilter.GaussianBlur(42 * max(0.6, k))))
+    # the body of the beam, the hot core and the white centre
     bm = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    bd = ImageDraw.Draw(bm)
-    bd.rounded_rectangle((1270, 388, W + 40, 454), radius=33, fill=(255, 92, 22, 255))
-    out.alpha_composite(bm.filter(ImageFilter.GaussianBlur(7)))
+    ImageDraw.Draw(bm).rounded_rectangle((1270, int(421 - 33 * k), W + 40, int(421 + 33 * k)), radius=int(33 * k), fill=c1 + (255,))
+    out.alpha_composite(bm.filter(ImageFilter.GaussianBlur(7 * max(0.6, k))))
     out.alpha_composite(bm)
     core = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     cd = ImageDraw.Draw(core)
-    cd.rounded_rectangle((1270, 402, W + 40, 440), radius=19, fill=(255, 226, 150, 255))
-    cd.rounded_rectangle((1270, 412, W + 40, 430), radius=9, fill=(255, 255, 245, 255))
+    cd.rounded_rectangle((1270, int(421 - 19 * k), W + 40, int(421 + 19 * k)), radius=int(19 * k), fill=c3 + (255,))
+    cd.rounded_rectangle((1270, int(421 - 9 * k), W + 40, int(421 + 9 * k)), radius=int(9 * k), fill=c4 + (255,))
     out.alpha_composite(core.filter(ImageFilter.GaussianBlur(2)))
     out.alpha_composite(core)
     # lightning tendrils along the beam
+    r = random.Random(11)
     tend = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     td = ImageDraw.Draw(tend)
-    for _ in range(34):
-        x = random.randint(1300, W - 20)
-        y = 421 + random.randint(-22, 22)
+    for _ in range(int(34 * W / 2900)):
+        x = r.randint(1300, W - 20)
+        y = 421 + int(r.randint(-22, 22) * k)
         pts = [(x, y)]
-        for _ in range(random.randint(4, 8)):
-            x += random.randint(10, 34)
-            y += random.randint(-16, 16)
+        for _ in range(r.randint(4, 8)):
+            x += r.randint(10, 34)
+            y += int(r.randint(-16, 16) * k)
             pts.append((x, y))
-        td.line(pts, fill=(255, 190, 90, 255), width=2)
+        td.line(pts, fill=c2 + (255,), width=2)
     out.alpha_composite(tend.filter(ImageFilter.GaussianBlur(1.4)))
     out.alpha_composite(tend)
     return out
@@ -320,13 +342,14 @@ def panel_icon(big, size=(256, 128)):
     return card
 
 
-def panel_banner(big, size=(768, 128)):
-    """the picture of a panel row: the weapon and its beam over the whole width (6 : 1) on a dark background; the row puts text and the cooldown on top of it"""
-    crop = big.crop((20, 190, W, 190 + (W - 20) // 6))
+def panel_banner(big, crop_width, size=(768, 128)):
+    """the picture of a panel row: the weapon and its beam over the whole width (6 : 1) on a dark background; the row puts text and the cooldown on top of it. crop_width: how much of the
+    picture is shown (the more, the smaller the weapon in the row)"""
+    h = crop_width // 6
+    crop = big.crop((20, 421 - h // 2, 20 + crop_width, 421 + h // 2))
     bg = gradient_bg(size)
-    k = size[0] / crop.width
-    ic = crop.resize((size[0], int(crop.height * k)), Image.LANCZOS)
-    bg.alpha_composite(ic, (0, (size[1] - ic.height) // 2))
+    ic = crop.resize(size, Image.LANCZOS)
+    bg.alpha_composite(ic, (0, 0))
     return bg.convert("RGB")
 
 
@@ -336,16 +359,22 @@ def gradient_bg(size):
     return out
 
 
+# the sizes: name, beam colour, thickness of the beam, the width of the picture that the row shows (the weapon is smaller in a row of a light weapon)
+SIZES = [("laser-heavy", (60, 235, 90), 1.0, 2880), ("laser-medium", (70, 150, 255), 0.72, 3300), ("laser-light", (255, 70, 40), 0.45, 3900)]
+
+
 def main():
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "weapon-icons")
-    os.makedirs(out, exist_ok=True)
-    big = heavy_laser()
-    bg = Image.new("RGBA", big.size, (28, 28, 30, 255))
-    bg.alpha_composite(big)
-    big.save(os.path.join(out, "weapon_laser-heavy_big.png"))
-    bg.convert("RGB").resize((W // 2, H // 2), Image.LANCZOS).save(os.path.join(out, "weapon_laser-heavy_big_on_dark.png"))
-    panel_banner(big).save(os.path.join(out, "weapon_laser-heavy.png"))
-    print("done")
+    here = os.path.dirname(os.path.abspath(__file__))
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(here)), "game-modes", "weapon-images")
+    src = os.path.join(out, "source")
+    os.makedirs(src, exist_ok=True)
+    body = gun_body()
+    # the picture of the cannon without glow: the source of the pictures of the sizes (drawn by this file, kept to look at it)
+    body.crop((20, 190, 1330, 660)).save(os.path.join(src, "laser_cannon_body.png"))
+    for name, color, k, cw in SIZES:
+        big = beam_fx(body, color, k)
+        panel_banner(big, cw).save(os.path.join(out, "weapon_%s.png" % name))
+        print("weapon_%s.png" % name)
 
 
 if __name__ == "__main__":
