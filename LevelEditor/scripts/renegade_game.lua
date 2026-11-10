@@ -129,7 +129,6 @@ end
 local function steer(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
-	if inp.faceUntil and f < inp.faceUntil then return end -- (a gunship turns toward the aim: shoot gave the order)
 	local dx, dz = wish(inp)
 	if not dx then
 		if inp.moving then
@@ -856,37 +855,6 @@ local function aimable(ud, i)
 	return wd and not wd.stockpile and wd.type ~= "DGun" and wd.type ~= "AircraftBomb" -- (the D-gun is fired by hand: it has no target before the button)
 end
 
--- A gunship has guns that are fixed to its body (no turret): it must face the target. While a button of such a weapon is down and the unit does not face the point the
--- player aims at, it gets a short move order toward it (every FACE_EVERY frames; an aircraft turns toward where it flies; SetUnitRotation had no effect on aircraft:
--- measured). The steering does not give its own move order for FACE_HOLD frames after that. Not for fighters and bombers (they fly toward the target by themselves),
--- only for the aircraft that hover (isHoveringAirUnit / hoverAttack).
-local FACE_EVERY, FACE_HOLD, FACE_STEP = 8, 12, 120
-local function faceTarget(u, ud, pressedList, inp, f)
-	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return end
-	local fixed = false
-	for _, i in ipairs(pressedList) do
-		local wd = WeaponDefs[ud.weapons[i].weaponDef]
-		if wd and not wd.turret and wd.type ~= "AircraftBomb" then fixed = true end
-	end
-	if not fixed then return end
-	local t = inp.target
-	local ux, uy, uz = Spring.GetUnitPosition(u)
-	local fx, _, fz = Spring.GetUnitDirection(u)
-	if not ux or not fx then return end
-	local dx, dz = t.x - ux, t.z - uz
-	local d = math.sqrt(dx * dx + dz * dz)
-	if d < 40 then return end
-	local diff = (math.atan2(dx, dz) - math.atan2(fx, fz) + math.pi) % (2 * math.pi) - math.pi
-	if math.abs(diff) < 0.12 then return end -- (about 7 degrees: faces it)
-	if f % FACE_EVERY ~= 0 then return end
-	local tx = math.max(16, math.min(Game.mapSizeX - 16, ux + dx / d * FACE_STEP))
-	local tz = math.max(16, math.min(Game.mapSizeZ - 16, uz + dz / d * FACE_STEP))
-	Spring.GiveOrderToUnit(u, CMD.MOVE, { tx, uy, tz }, 0)
-	inp.faceUntil = f + FACE_HOLD
-	inp.moving = true
-	if TEST and (inp.faceLogged or 0) < 3 then inp.faceLogged = (inp.faceLogged or 0) + 1; Spring.Echo(string.format("[Renegade] face: unit turns %.0f degrees toward the aim", math.deg(diff))) end
-end
-
 local function shoot(team, f, force)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -894,7 +862,6 @@ local function shoot(team, f, force)
 	local list, ud, s = weaponsFor(u, inp.fire)
 	local pressed = {}
 	for _, i in ipairs(list) do pressed[i] = true end
-	if #list > 0 and inp.target then faceTarget(u, ud, list, inp, f) end
 	local change, clear = false, false
 	for i in pairs(pressed) do
 		local a = hold[i]
