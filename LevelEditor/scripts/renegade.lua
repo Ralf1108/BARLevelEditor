@@ -523,6 +523,25 @@ local function facingArrow(x, z, dx, dz)
 	end
 end
 
+-- The guns of a gunship are fixed to its body: they point (almost) along its nose and can only turn down by MAX_DOWN degrees (measured with the Roughneck: whatever
+-- the view, the barrel stays at about 27 degrees down). A point on the ground that lies steeper below the aircraft cannot be hit. fixedGun tells whether the unit is such an
+-- aircraft; tooSteep whether the point under the crosshair is out of the cone; the radius of the dead zone on the ground under the aircraft is its height / tan(MAX_DOWN).
+local MAX_DOWN = 27
+local function fixedGun(ud, slots)
+	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return false end
+	for _, key in ipairs({ "L", "R", "M" }) do
+		local i = slots[key] and slots[key][1]
+		local wd = i and ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
+		if wd and not wd.turret and wd.type ~= "AircraftBomb" then return true end
+	end
+	return false
+end
+local function deadRadius(u)
+	local x, y, z = Spring.GetUnitPosition(u, true)
+	if not x then return 0 end
+	return math.max(0, y - Spring.GetGroundHeight(x, z)) / math.tan(math.rad(MAX_DOWN))
+end
+
 -- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
 -- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
 -- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
@@ -621,6 +640,24 @@ function widget:DrawWorld()
 		if wd and not slots.aa[list[1]] then
 			if wd.type == "AircraftBomb" then impactPreview(x, y, z, wd, SLOTS[k][4], true)
 			elseif lobbed(wd) then impactPreview(x, y, z, wd, SLOTS[k][4]) end
+		end
+	end
+	if fixedGun(ud, slots) then
+		-- the dead zone of the fixed guns: the ground right under the aircraft that is too steep to hit
+		local rad = deadRadius(R.unit)
+		if rad > 20 then
+			gl.Color(1, 0.2, 0.15, 0.9)
+			gl.LineWidth(4)
+			gl.DrawGroundCircle(x, y, z, rad, 48)
+			gl.Color(1, 0.2, 0.15, 0.25)
+			gl.BeginEnd(GL.TRIANGLE_FAN, function()
+				gl.Vertex(x, Spring.GetGroundHeight(x, z) + 3, z)
+				for k = 0, 48 do
+					local a = k / 48 * 2 * math.pi
+					local px, pz = x + math.cos(a) * rad, z + math.sin(a) * rad
+					gl.Vertex(px, Spring.GetGroundHeight(px, pz) + 3, pz)
+				end
+			end)
 		end
 	end
 	local fx, _, fz = Spring.GetUnitDirection(R.unit)
@@ -813,9 +850,22 @@ function widget:DrawScreen()
 		text = string.format("ground  %d m", math.floor(h.udist))
 	end
 	if h and not dropped then text = text .. (inReach and "  IN RANGE" or string.format("  OUT OF RANGE (%d)", mainRange)) end
+	-- a gunship with fixed guns: the point under the crosshair must not be steeper below it than the guns can turn
+	local steep = false
+	do
+		local ud1, sl1 = weaponsOf(R.unit)
+		if h and ud1 and fixedGun(ud1, sl1) then
+			local ux, uy, uz = Spring.GetUnitPosition(R.unit, true)
+			if ux then
+				local hd = math.sqrt((h.x - ux) ^ 2 + (h.z - uz) ^ 2)
+				steep = hd < 1 or math.deg(math.atan2(uy - h.y, hd)) > MAX_DOWN
+			end
+		end
+	end
+	if steep then text = text .. string.format("  TOO STEEP (max %d deg down)", MAX_DOWN) end
 	local r, g, b = 1, 1, 1
 	if h then
-		if inReach then r, g, b = 0.35, 1, 0.4 else r, g, b = 1, 0.3, 0.25 end
+		if inReach and not steep then r, g, b = 0.35, 1, 0.4 else r, g, b = 1, 0.3, 0.25 end
 	end
 	gl.Color(r, g, b, 0.95)
 	gl.LineWidth(3)

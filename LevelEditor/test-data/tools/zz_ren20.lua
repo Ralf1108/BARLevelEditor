@@ -13,15 +13,15 @@ function widget:GameFrame(f)
 	if f == 150 then R.keys = 1 end
 	if f == 185 then R.keys = 0 end
 	if f == 230 then R.fire = 1; lastRf = rf() end
-	if f >= 230 and f < 230 + 20 * 7 and (f - 230) % 20 == 0 then
+	if f >= 230 and f < 230 + 20 * 8 and (f - 230) % 20 == 0 then
 		local k = (f - 230) / 20
-		R.pitch = -15 - 10 * k
+		R.pitch = -10 - 10 * k
 	end
-	if f >= 240 and f < 230 + 20 * 7 + 20 and f % 20 == 10 then
+	if f >= 240 and f < 230 + 20 * 8 + 20 and f % 20 == 10 then
 		local _, y, _ = Spring.GetUnitPosition(R.unit)
 		local tt = Spring.GetUnitWeaponTarget(R.unit, 1)
 		local r = rf()
-		log("pitch", string.format("%.0f", R.pitch), "height", string.format("%.0f", y), "shot", R.shot and string.format("%s %.0f", R.shot.kind, R.shot.udist or -1) or "-", "target type", ts(tt), "reloadFrame", r, "fired since last", ts(r ~= lastRf))
+		log("pitch", string.format("%.0f", R.pitch), "height", string.format("%.0f", y), "shot", R.shot and string.format("%s %.0f", R.shot.kind, R.shot.udist or -1) or "-", "target type", ts(tt), "weapon dir", (function() local _, _, _, dx, dy, dz = Spring.GetUnitWeaponVectors(R.unit, 1); if not dx then return "-" end return string.format("%.2f %.2f %.2f = %.0f deg down", dx, dy, dz, -math.deg(math.asin(math.max(-1, math.min(1, dy))))) end)(), "reloadFrame", r, "fired since last", ts(r ~= lastRf))
 		lastRf = r
 	end
 	if f == 400 then R.fire = 0; Spring.SendCommands("quitforce") end
