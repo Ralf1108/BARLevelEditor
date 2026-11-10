@@ -1,0 +1,899 @@
+﻿Faction;Unit;Code;#;Weapon;Type;Damage;Category;Picture
+Armada;Abductor;armdfly;1;Heavy a2g EMP beam;Beam laser;10500;laser-heavy;weapon_laser-heavy.png
+Armada;Ambassador;armmerl;1;Heavy long-range g2g high-trajectory starburst rocket launcher;Starburst missile;2000;heavy-rocket;weapon_heavy-rocket.png
+Armada;Anemone;armdl;1;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Armada;Arbalest;armflak;1;Heavy g2a flak cannon;Cannon;250 (air);flak;weapon_flak.png
+Armada;Archangel;armaak;1;Long-Range Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Armada;Archangel;armaak;2;Medium-Range Anti-Air Missile Launcher;Missile;100 (air);aa-missile;weapon_aa-missile.png
+Armada;Armada Commander;armcom;1;Light close-quarters g2g/g2a laser;Beam laser;75;laser-light;weapon_laser-light.png
+Armada;Armada Commander;armcom;2;Light underwater-combat laser;Beam laser;200;laser-light;weapon_laser-light.png
+Armada;Armada Commander;armcom;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander;armcomcon;1;Light close-quarters g2g/g2a laser;Beam laser;75;laser-light;weapon_laser-light.png
+Armada;Armada Commander;armcomcon;2;Light underwater-combat laser;Beam laser;200;laser-light;weapon_laser-light.png
+Armada;Armada Commander;armcomcon;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 10;armcomlvl10;1;HeavyRockets;Starburst missile;4400;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 10;armcomlvl10;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 10;armcomlvl10;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 10;armcomlvl10;4;Arcing Stun Beam;Beam laser;60000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armcomlvl10;5;Short-Range Lightning Discharge;Lightning;118;lightning;weapon_lightning.png
+Armada;Armada Commander Level 10;armcomlvl10;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armdecomlvl10;1;HeavyRockets;Starburst missile;4400;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 10;armdecomlvl10;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 10;armdecomlvl10;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 10;armdecomlvl10;4;Arcing Stun Beam;Beam laser;60000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armdecomlvl10;5;Short-Range Lightning Discharge;Lightning;118;lightning;weapon_lightning.png
+Armada;Armada Commander Level 10;armdecomlvl10;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 2;armcomlvl2;1;Scatter Beamer;Beam laser;14;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 2;armcomlvl2;2;Light underwater-combat laser;Beam laser;400;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 2;armcomlvl2;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 2;armdecomlvl2;1;Scatter Beamer;Beam laser;14;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 2;armdecomlvl2;2;Light underwater-combat laser;Beam laser;400;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 2;armdecomlvl2;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 3;armcomlvl3;1;HeavyRockets;Starburst missile;550;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 3;armcomlvl3;2;J7NSLaser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 3;armcomlvl3;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 3;armcomlvl3;4;Arcing Stun Beam;Beam laser;16000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armcomlvl3;5;Scatter Beamer;Beam laser;15;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 3;armcomlvl3;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armdecomlvl3;1;HeavyRockets;Starburst missile;550;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 3;armdecomlvl3;2;J7NSLaser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 3;armdecomlvl3;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 3;armdecomlvl3;4;Arcing Stun Beam;Beam laser;16000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armdecomlvl3;5;Scatter Beamer;Beam laser;15;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 3;armdecomlvl3;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armcomlvl4;1;HeavyRockets;Starburst missile;800;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 4;armcomlvl4;2;J7NSLaser;Beam laser;400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 4;armcomlvl4;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 4;armcomlvl4;4;Arcing Stun Beam;Beam laser;22000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armcomlvl4;5;Scatter Beamer;Beam laser;25;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 4;armcomlvl4;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armdecomlvl4;1;HeavyRockets;Starburst missile;800;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 4;armdecomlvl4;2;J7NSLaser;Beam laser;400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 4;armdecomlvl4;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 4;armdecomlvl4;4;Arcing Stun Beam;Beam laser;22000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armdecomlvl4;5;Scatter Beamer;Beam laser;25;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 4;armdecomlvl4;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armcomlvl5;1;HeavyRockets;Starburst missile;1200;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 5;armcomlvl5;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 5;armcomlvl5;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 5;armcomlvl5;4;Arcing Stun Beam;Beam laser;30000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armcomlvl5;5;Short-Range Lightning Discharge;Lightning;42;lightning;weapon_lightning.png
+Armada;Armada Commander Level 5;armcomlvl5;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armdecomlvl5;1;HeavyRockets;Starburst missile;1200;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 5;armdecomlvl5;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 5;armdecomlvl5;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 5;armdecomlvl5;4;Arcing Stun Beam;Beam laser;30000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armdecomlvl5;5;Short-Range Lightning Discharge;Lightning;42;lightning;weapon_lightning.png
+Armada;Armada Commander Level 5;armdecomlvl5;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armcomlvl6;1;HeavyRockets;Starburst missile;1350;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 6;armcomlvl6;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 6;armcomlvl6;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 6;armcomlvl6;4;Arcing Stun Beam;Beam laser;40000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armcomlvl6;5;Short-Range Lightning Discharge;Lightning;50;lightning;weapon_lightning.png
+Armada;Armada Commander Level 6;armcomlvl6;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armdecomlvl6;1;HeavyRockets;Starburst missile;1350;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 6;armdecomlvl6;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 6;armdecomlvl6;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 6;armdecomlvl6;4;Arcing Stun Beam;Beam laser;40000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armdecomlvl6;5;Short-Range Lightning Discharge;Lightning;50;lightning;weapon_lightning.png
+Armada;Armada Commander Level 6;armdecomlvl6;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armcomlvl7;1;HeavyRockets;Starburst missile;1800;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 7;armcomlvl7;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 7;armcomlvl7;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 7;armcomlvl7;4;Arcing Stun Beam;Beam laser;56000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armcomlvl7;5;Short-Range Lightning Discharge;Lightning;57;lightning;weapon_lightning.png
+Armada;Armada Commander Level 7;armcomlvl7;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armdecomlvl7;1;HeavyRockets;Starburst missile;1800;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 7;armdecomlvl7;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 7;armdecomlvl7;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 7;armdecomlvl7;4;Arcing Stun Beam;Beam laser;56000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armdecomlvl7;5;Short-Range Lightning Discharge;Lightning;57;lightning;weapon_lightning.png
+Armada;Armada Commander Level 7;armdecomlvl7;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armcomlvl8;1;HeavyRockets;Starburst missile;2300;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 8;armcomlvl8;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 8;armcomlvl8;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 8;armcomlvl8;4;Arcing Stun Beam;Beam laser;60000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armcomlvl8;5;Short-Range Lightning Discharge;Lightning;72;lightning;weapon_lightning.png
+Armada;Armada Commander Level 8;armcomlvl8;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armdecomlvl8;1;HeavyRockets;Starburst missile;2300;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 8;armdecomlvl8;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 8;armdecomlvl8;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 8;armdecomlvl8;4;Arcing Stun Beam;Beam laser;60000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armdecomlvl8;5;Short-Range Lightning Discharge;Lightning;72;lightning;weapon_lightning.png
+Armada;Armada Commander Level 8;armdecomlvl8;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armcomlvl9;1;HeavyRockets;Starburst missile;3600;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 9;armcomlvl9;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 9;armcomlvl9;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 9;armcomlvl9;4;Arcing Stun Beam;Beam laser;60000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armcomlvl9;5;Short-Range Lightning Discharge;Lightning;88;lightning;weapon_lightning.png
+Armada;Armada Commander Level 9;armcomlvl9;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armdecomlvl9;1;HeavyRockets;Starburst missile;3600;heavy-rocket;weapon_heavy-rocket.png
+Armada;Armada Commander Level 9;armdecomlvl9;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Armada;Armada Commander Level 9;armdecomlvl9;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 9;armdecomlvl9;4;Arcing Stun Beam;Beam laser;60000;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armdecomlvl9;5;Short-Range Lightning Discharge;Lightning;88;lightning;weapon_lightning.png
+Armada;Armada Commander Level 9;armdecomlvl9;6;EMP Damage-Mitigating Flashbang;Laser;20000;stun-beam;weapon_stun-beam.png
+Armada;Armageddon;armsilo;1;Intercontinental ballistic nuclear warhead;Starburst missile;12500;nuclear;weapon_nuclear.png
+Armada;Assimilator;armassimilator;1;scav rapid fire plasma gun;Laser;33;plasma-light;weapon_plasma-light.png
+Armada;Attack Drone;armdrone;1;Rapid-fire a2g machine guns;Laser;11;machine-gun-light;weapon_machine-gun-light.png
+Armada;Attack Drone;armdroneold;1;Railgun;Laser;100;railgun;weapon_railgun.png
+Armada;Banshee;armkam;1;Rapid-fire close-quarters a2g plasma guns;Plasma;9;plasma-light;weapon_plasma-light.png
+Armada;Barracuda;armsubk;1;Rapid armor-piercing torpedoes;Torpedo;350;torpedo;weapon_torpedo.png
+Armada;Basilica;armbrtha;1;Long-range plasma cannon;Plasma;1625;plasma-heavy;weapon_plasma-heavy.png
+Armada;Beamer;armbeamer;1;Anti-swarm constant wave g2g laser;Beam laser;27;laser-light;weapon_laser-light.png
+Armada;Blitz;armflash;1;Rapid-fire close-quarters plasma gun;Plasma;9;plasma-light;weapon_plasma-light.png
+Armada;Blizzard;armpnix;1;Heavy a2g impulse warheads;Bomb;266;bomb;weapon_bomb.png
+Armada;Bull;armbull;1;Heavy g2g plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Cauteriser;armnavaldefturret;1;Dual Medium Plasma Gauss Cannons;Plasma;200;gauss;weapon_gauss.png
+Armada;Centurion;armwar;1;Dual close-quarters g2g laser;Beam laser;55;laser-light;weapon_laser-light.png
+Armada;Chainsaw;armcir;1;Rapid-fire long-range g2a missile barrel;Missile;250 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Commander;armdecom;1;Light close-quarters g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Armada;Commander;armdecom;2;J7NSLaser;Beam laser;63;laser-medium;weapon_laser-medium.png
+Armada;Commander;armdecom;3;Decoy-disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Armada;Cormorant;armlance;1;Light homing torpedo launcher;Torpedo;375;torpedo;weapon_torpedo.png
+Armada;Corsair;armroy;1;Heavy long-range plasma cannon;Plasma;235;plasma-heavy;weapon_plasma-heavy.png
+Armada;Corsair;armroy;2;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Armada;Crocodile;armanac;1;Medium g2g plasma cannon;Plasma;98;plasma-medium;weapon_plasma-medium.png
+Armada;Crossbow;armjeth;1;Light g2a missile launcher;Missile;110 (air);missile-light;weapon_missile-light.png
+Armada;Cyclone;armsfig;1;Guided a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Armada;Cyclone;armsfig2;1;Guided a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Armada;Depth Charge Drone;armtdrone;1;Depthcharge launcher;Torpedo;215;depth-charge;weapon_depth-charge.png
+Armada;Dolphin;armdecade;1;Rapid-fire close-quarters plasma turret;Plasma;9;plasma-light;weapon_plasma-light.png
+Armada;Dolphin;armdecade;2;Rapid-fire close-quarters plasma turret;Plasma;9;plasma-light;weapon_plasma-light.png
+Armada;Dragon's Claw;armclaw;1;Close-quarters g2g lightning turret;Lightning;18;lightning;weapon_lightning.png
+Armada;Dragon's Fury;armlwall;1;Medium Lightning Cannon;Lightning;64;lightning;weapon_lightning.png
+Armada;Dragonslayer;armaas;2;Long-range g2a guided missile launcher;Missile;63 (air);missile-light;weapon_missile-light.png
+Armada;Dragonslayer;armaas;3;Heavy g2a flak cannon;Cannon;200 (air);flak;weapon_flak.png
+Armada;Dreadnought;armbats;1;Heavy long-range g2g plasma cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Armada;Dreadnought;armbats;2;Heavy long-range g2g plasma cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Armada;Eel;armsub;1;Light torpedo launcher;Torpedo;342;torpedo;weapon_torpedo.png
+Armada;Ellysaw;armpship;1;Light long-range plasma cannon;Plasma;70;plasma-light;weapon_plasma-light.png
+Armada;Ellysaw;armpship;2;Light long-range plasma cannon;Plasma;70;plasma-light;weapon_plasma-light.png
+Armada;Epic Commander - Final Boss;armcomboss;1;J8Laser;Beam laser;1000;laser-heavy;weapon_laser-heavy.png
+Armada;Epic Commander - Final Boss;armcomboss;2;J8NSLaser;Beam laser;1000;laser-heavy;weapon_laser-heavy.png
+Armada;Epic Commander - Final Boss;armcomboss;3;Darkmatter Photon-Disruptor;D-gun;999999;d-gun;weapon_d-gun.png
+Armada;Epic Dolphin;armdecadet3;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;plasma-light;weapon_plasma-light.png
+Armada;Epic Dolphin;armdecadet3;2;Mini Rapid-fire long-range plasma cannon;Plasma;210;plasma-light;weapon_plasma-light.png
+Armada;Epic Ellysaw;armpshipt3;1;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;116;laser-medium;weapon_laser-medium.png
+Armada;Epic Ellysaw;armpshipt3;2;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;116;laser-medium;weapon_laser-medium.png
+Armada;Epic Liche;armlichet4;1;Intercontinental ballistic nuclear warhead;Bomb;9500;nuclear;weapon_nuclear.png
+Armada;Epic Pawn;armpwt4;1;Rapid-fire huge g2g plasma guns;Plasma;200;plasma-heavy;weapon_plasma-heavy.png
+Armada;Epic Pulsar;armannit3;1;Heavy long-range g2g tachyon accelerator beam;Beam laser;48000;laser-heavy;weapon_laser-heavy.png
+Armada;Epic Recluse;armsptkt4;1;Parabolic trajectory g2g multi-rocket launcher;Missile;500;rocket-salvo;weapon_rocket-salvo.png
+Armada;Epic Serpent;armserpt3;1;Heavy guided torpedo launcher;Torpedo;1650;torpedo;weapon_torpedo.png
+Armada;Epic Serpent;armserpt3;2;Heavy guided torpedo launcher;Torpedo;1650;torpedo;weapon_torpedo.png
+Armada;Epic Serpent;armserpt3;3;Heavy guided torpedo launcher;Torpedo;1650;torpedo;weapon_torpedo.png
+Armada;Epic Serpent;armserpt3;4;Heavy guided torpedo launcher;Torpedo;1650;torpedo;weapon_torpedo.png
+Armada;Epic Serpent;armserpt3;5;Heavy guided torpedo launcher;Torpedo;1650;torpedo;weapon_torpedo.png
+Armada;Epic Skater;armptt2;1;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Armada;Epic Skater;armptt2;2;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Armada;Epic Skater;armptt2;3;Rapid-fire long-range g2a missile barrel;Missile;170 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Epic Stormbringer;armthundt4;1;Ultra Heavy Bombs;Bomb;900;bomb;weapon_bomb.png
+Armada;Epic Tumbleweed;armvadert4;1;Crawlingbomb Dummy Weapon;Melee;20000;self-destruct;weapon_self-destruct.png
+Armada;Epic Tumbleweed;armvadert4;2;Self-destruction;Cannon;2000;self-destruct;weapon_self-destruct.png
+Armada;Epoch;armepoch;1;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Armada;Epoch;armepoch;2;Secondary rapid-fire heavy plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Epoch;armepoch;3;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Armada;Epoch;armepoch;4;Secondary rapid-fire heavy plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Epoch;armepoch;5;Secondary rapid-fire heavy plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Epoch;armepoch;6;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Epoch;armepoch;7;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Excalibur;armexcalibur;1;Caliburn s2g tachyon accelerator beam;Beam laser;800;laser-heavy;weapon_laser-heavy.png
+Armada;Falcon;armfig;1;Light a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Armada;Fatboy;armfboy;1;Heavy AoE g2g plasma cannon;Plasma;800;plasma-heavy;weapon_plasma-heavy.png
+Armada;Ferret;armferret;1;Pop-up rapid-fire g2a missile launcher;Missile;125 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Flying Epoch;armfepocht4;1;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Armada;Flying Epoch;armfepocht4;2;Secondary rapid-fire heavy plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Flying Epoch;armfepocht4;3;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Armada;Flying Epoch;armfepocht4;4;Secondary rapid-fire heavy plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Flying Epoch;armfepocht4;5;Secondary rapid-fire heavy plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Armada;Flying Epoch;armfepocht4;6;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Flying Epoch;armfepocht4;7;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Gauntlet;armguard;1;Heavy g2g long range plasma cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Armada;Gauntlet;armguard;2;Heavy g2g long range plasma cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Armada;Gorgon;armkraken;1;Rapid-fire gauss cannon;Cannon;180;gauss;weapon_gauss.png
+Armada;Gremlin;armgremlin;1;Light close-quarters gauss cannon;Cannon;263;gauss;weapon_gauss.png
+Armada;Groundhog;armmlv;1;Seismic charge;Cannon;15;cannon-light;weapon_cannon-light.png
+Armada;Gun Platform;armgplat;1;Light g2g plasma cannon;Plasma;97;plasma-light;weapon_plasma-light.png
+Armada;Gunslinger;armmav;1;Anti-swarm g2g gauss-impulse guns;Cannon;265;gauss;weapon_gauss.png
+Armada;Harpoon;armtl;1;Level1TorpedoLauncher;Torpedo;280;torpedo;weapon_torpedo.png
+Armada;Highwind;armhawk;1;High velocity a2a missile launcher;Missile;24;missile-light;weapon_missile-light.png
+Armada;Hornet;armblade;1;Heavy a2g armor-piercing sabot missile launcher;Missile;190;missile-heavy;weapon_missile-heavy.png
+Armada;Hound;armfido;1;Ballistic g2g AoE plasma cannon;Plasma;255;plasma-medium;weapon_plasma-medium.png
+Armada;Jaguar;armlatnk;1;Close-quarters lightning turret;Lightning;22;lightning;weapon_lightning.png
+Armada;Jaguar;armlatnk;2;Light g2a missile launcher;Missile;90 (air);missile-light;weapon_missile-light.png
+Armada;Janus;armjanus;1;Heavy g2g dual-missile launcher;Missile;330;missile-heavy;weapon_missile-heavy.png
+Armada;Janus;armjanus;2;Heavy g2g dual-missile launcher;Missile;330;missile-heavy;weapon_missile-heavy.png
+Armada;Liche;armliche;1;Tactical nuclear homing missile;Missile;5625;nuclear;weapon_nuclear.png
+Armada;Liquifier;armanavaldefturret;1;Long-Range Tachyon Emitter;Beam laser;2500;laser-heavy;weapon_laser-heavy.png
+Armada;Liquifier;armanavaldefturret;2;Quad Medium Plasma Gauss Cannons;Plasma;200;gauss;weapon_gauss.png
+Armada;Longbow;armmship;1;Heavy long-range g2g starburst rocket launcher;Cannon;650;heavy-rocket;weapon_heavy-rocket.png
+Armada;Longbow;armmship;2;Medium Range g2a AA Missiles;Missile;138 (air);aa-missile;weapon_aa-missile.png
+Armada;Lunchbox;armlunchbox;1;Heavy long-range g2g plasma cannon;Plasma;1265;plasma-heavy;weapon_plasma-heavy.png
+Armada;Lunkhead;armlun;1;Heavy ballistic underwater cannon;Cannon;370;cannon-heavy;weapon_cannon-heavy.png
+Armada;Lunkhead;armlun;2;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Armada;Mace;armham;1;Light g2g plasma cannon (low trajectory);Plasma;104;plasma-light;weapon_plasma-light.png
+Armada;Maelstrom;armlship;1;Close-quarters lightning turret;Lightning;35;lightning;weapon_lightning.png
+Armada;Maelstrom;armlship;2;Light g2a missile launcher;Missile;138 (air);missile-light;weapon_missile-light.png
+Armada;Manta;armfhlt;1;HighEnergyLaser;Beam laser;210;laser-medium;weapon_laser-medium.png
+Armada;Marauder;armmar;1;Double close-quarters gauss cannon;Cannon;235;gauss;weapon_gauss.png
+Armada;Marauder;armmar;2;Guided g2a missile launcher;Missile;90 (air);missile-medium;weapon_missile-medium.png
+Armada;Mauser;armmart;1;Long-range g2g plasma cannon;Plasma;260;plasma-medium;weapon_plasma-medium.png
+Armada;Meatball;armmeatball;1;Long range g2g plasma cannon;Plasma;200;plasma-medium;weapon_plasma-medium.png
+Armada;Meatball;armmeatball;2;Guided g2a missile launcher;Missile;85 (air);missile-medium;weapon_missile-medium.png
+Armada;Mercury;armmercury;1;Heavy long-range g2a guided missile launcher;Missile;750 (air);missile-heavy;weapon_missile-heavy.png
+Armada;Mini Ragnarok;armminivulc;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;plasma-light;weapon_plasma-light.png
+Armada;Moray;armatl;1;Heavy long-range homing torpedo launcher;Torpedo;780;torpedo;weapon_torpedo.png
+Armada;Naval Arbalest;armfflak;1;Heavy g2a flak cannon;Cannon;250 (air);flak;weapon_flak.png
+Armada;Naval Nettle;armfrt;1;Light g2a missile launcher;Missile;115 (air);missile-light;weapon_missile-light.png
+Armada;Nettle;armrl;1;Light g2a missile launcher;Missile;115 (air);missile-light;weapon_missile-light.png
+Armada;Nexus;armdronecarry;2;Missiles;Missile;138 (air);missile-medium;weapon_missile-medium.png
+Armada;Overwatch;armhlt;1;Heavy g2g high energy laser;Beam laser;387;laser-heavy;weapon_laser-heavy.png
+Armada;Paladin;armcrus;1;Long-range g2g gauss cannon;Cannon;220;gauss;weapon_gauss.png
+Armada;Paladin;armcrus;2;Light close-quarters g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Armada;Paladin;armcrus;3;Medium depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Armada;Paralyzer;armemp;1;Heavy long-range g2g EMP starburst rocket;Starburst missile;50000;heavy-rocket;weapon_heavy-rocket.png
+Armada;Pawn;armpw;1;Rapid-fire close-quarters g2g plasma guns;Plasma;9;plasma-light;weapon_plasma-light.png
+Armada;Pawn Launcher;armbotrail;1;Long range bot cannon;Cannon;10;cannon-light;weapon_cannon-light.png
+Armada;Pincer;armpincer;1;Light close-quarters plasma cannon;Plasma;116;plasma-light;weapon_plasma-light.png
+Armada;Pit Bull;armpb;1;Pop-up heavy g2g gauss cannon;Cannon;675;gauss;weapon_gauss.png
+Armada;Platypus;armamph;1;Light close-quarters laser;Beam laser;80;laser-light;weapon_laser-light.png
+Armada;Platypus;armamph;2;Light g2a missile launcher;Missile;90 (air);missile-light;weapon_missile-light.png
+Armada;Possum;armmh;1;Light long-range g2g starburst rocket launcher;Starburst missile;300;heavy-rocket;weapon_heavy-rocket.png
+Armada;Puffin;armseap;1;Homing torpedo launcher;Torpedo;342;torpedo;weapon_torpedo.png
+Armada;Pulsar;armanni;1;Heavy long-range g2g tachyon accelerator beam;Beam laser;10800;laser-heavy;weapon_laser-heavy.png
+Armada;Ragnarok;armvulc;1;Rapid-fire long-range plasma cannon;Plasma;1625;plasma-heavy;weapon_plasma-heavy.png
+Armada;Ratte;armrattet4;1;Huge g2g plasma cannon;Plasma;1200;plasma-heavy;weapon_plasma-heavy.png
+Armada;Rattlesnake;armamb;1;Pop-up heavy  long range g2g plasma cannon;Plasma;350;plasma-heavy;weapon_plasma-heavy.png
+Armada;Rattlesnake;armamb;2;Pop-up heavy  long range g2g plasna cannon;Cannon;350;cannon-heavy;weapon_cannon-heavy.png
+Armada;Razorback;armraz;1;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;105;laser-medium;weapon_laser-medium.png
+Armada;Recluse;armsptk;1;Parabolic trajectory g2g multi-rocket launcher;Missile;200;rocket-salvo;weapon_rocket-salvo.png
+Armada;Rocketeer;armrock;1;Medium g2g rocket launcher;Missile;157;missile-medium;weapon_missile-medium.png
+Armada;Roughneck;armbrawl;1;Rapid-fire a2g plasma guns;Plasma;16;plasma-light;weapon_plasma-light.png
+Armada;Rover;armfav;1;Light Close-Quarters g2g Laser;Beam laser;35;laser-light;weapon_laser-light.png
+Armada;Sabre;armsaber;1;Light a2g discharge blaster;Laser;60;laser-light;weapon_laser-light.png
+Armada;Scumbag;armfrock;1;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Armada;Seadragon;armseadragon;1;Torpedo launcher;Torpedo;800;torpedo;weapon_torpedo.png
+Armada;Seadragon;armseadragon;2;Intercontinental ballistic nuclear warhead;Starburst missile;12500;nuclear;weapon_nuclear.png
+Armada;Seeker;armsh;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;36;laser-light;weapon_laser-light.png
+Armada;Sentry;armllt;1;Light g2g laser turret;Beam laser;75;laser-light;weapon_laser-light.png
+Armada;Serpent;armserp;1;Heavy guided torpedo launcher;Torpedo;825;torpedo;weapon_torpedo.png
+Armada;Serpent;armserp;2;Heavy guided torpedo launcher;Torpedo;825;torpedo;weapon_torpedo.png
+Armada;Sharpshooter;armsnipe;1;SniperWeapon;Cannon;2500;cannon-heavy;weapon_cannon-heavy.png
+Armada;Shellshocker;armart;1;Long-range high-trajectory g2g plasma cannon;Plasma;182;plasma-medium;weapon_plasma-medium.png
+Armada;Shockwave;armshockwave;1;Medium EMP turret;EMP cannon;800;emp-grenade;weapon_emp-grenade.png
+Armada;Shredder;armyork;2;Heavy g2a flak cannon;Cannon;200 (air);flak;weapon_flak.png
+Armada;Skater;armpt;1;Light close-quarters laser;Beam laser;24;laser-light;weapon_laser-light.png
+Armada;Skater;armpt;2;Light g2a missile launcher;Missile;80 (air);missile-light;weapon_missile-light.png
+Armada;Sprinter;armfast;1;Rapid-firing close-quarters g2g plasma guns;Plasma;12;plasma-light;weapon_plasma-light.png
+Armada;Starlight;armmanni;1;Heavy long-range g2g tachyon beam;Beam laser;2500;laser-heavy;weapon_laser-heavy.png
+Armada;Stiletto;armstil;1;Heavy a2g EMP warheads;Bomb;6000;bomb;weapon_bomb.png
+Armada;Stormbringer;armthund;1;Light a2g impulse warheads;Bomb;110;bomb;weapon_bomb.png
+Armada;Stout;armstump;1;Light g2g plasma cannon;Plasma;97;plasma-light;weapon_plasma-light.png
+Armada;Sweeper;armah;2;Light g2a missile launcher;Missile;62 (air);missile-light;weapon_missile-light.png
+Armada;Thor;armthor;1;Heavy Lighting Cannon;Lightning;300;lightning;weapon_lightning.png
+Armada;Thor;armthor;2;Heavy long-range g2g EMP starburst rocket;Starburst missile;80000;heavy-rocket;weapon_heavy-rocket.png
+Armada;Thor;armthor;3;Long Range EMP laser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Armada;Thor;armthor;4;Long Range EMP laser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Armada;Tick;armflea;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;24;laser-light;weapon_laser-light.png
+Armada;Titan;armbanth;1;Close-quarters impulsion blaster;Laser;730;laser-heavy;weapon_laser-heavy.png
+Armada;Titan;armbanth;2;High-energy long-range g2g/g2a lazor of DEEEEEEWWWWWWMMMMMM;Beam laser;6000;laser-heavy;weapon_laser-heavy.png
+Armada;Titan;armbanth;3;Heavy g2g/g2a guided starburst missile launcher;Starburst missile;900;heavy-rocket;weapon_heavy-rocket.png
+Armada;Torpedo Ship;armtorps;1;Torpedo;Torpedo;455;torpedo;weapon_torpedo.png
+Armada;Trident;armtrident;2;Depthcharge launcher;Torpedo;255;depth-charge;weapon_depth-charge.png
+Armada;Tsunami;armsb;1;Medium a2g impulse warheads;Bomb;200;bomb;weapon_bomb.png
+Armada;Tumbleweed;armvader;2;Self-destruction;Cannon;1000;self-destruct;weapon_self-destruct.png
+Armada;Turtle;armcroc;1;Medium g2g gauss-cannon;Cannon;225;gauss;weapon_gauss.png
+Armada;Turtle;armcroc;2;Light g2a missile launcher;Missile;60 (air);missile-light;weapon_missile-light.png
+Armada;units.names.armcomnew;armcomnew;1;Light close-quarters g2g/g2a laser;Beam laser;75;laser-light;weapon_laser-light.png
+Armada;units.names.armcomnew;armcomnew;2;Light underwater-combat laser;Beam laser;200;laser-light;weapon_laser-light.png
+Armada;units.names.armcomnew;armcomnew;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Armada;units.names.armprowl;armprowl;1;Double close-quarters gauss cannon;Cannon;235;gauss;weapon_gauss.png
+Armada;units.names.armprowl;armprowl;2;Guided g2a missile launcher;Missile;85 (air);missile-medium;weapon_missile-medium.png
+Armada;Vanguard;armvang;1;Heavy long-range g2g plasma cannon;Plasma;1265;plasma-heavy;weapon_plasma-heavy.png
+Armada;Vanguard;armvang;2;Heavy long-range g2g plasma cannon;Plasma;1265;plasma-heavy;weapon_plasma-heavy.png
+Armada;Webber;armspid;1;Close-quarters light EMP laser;Beam laser;850;laser-light;weapon_laser-light.png
+Armada;Welder;armzeus;1;Close-quarters g2g lightning rifle;Lightning;22;lightning;weapon_lightning.png
+Armada;Whistler;armsam;1;Light g2a missile launcher;Missile;160 (air);missile-light;weapon_missile-light.png
+Armada;Whistler;armsam;2;Light g2g missile launcher;Missile;86;missile-light;weapon_missile-light.png
+Armada;Zapper;armzapper;1;Light EMP laser;Beam laser;800;laser-light;weapon_laser-light.png
+Cortex;Adjudicator;coresuppt3;1;Ultra Heavy Juggernaut-Spec Heatray;Beam laser;5500;laser-heavy;weapon_laser-heavy.png
+Cortex;Adjudicator;coresuppt3;2;Ultra Heavy Juggernaut-Spec Heatray;Beam laser;5500;laser-heavy;weapon_laser-heavy.png
+Cortex;Advanced Exploiter;cormexp;1;High energy g2g laser;Beam laser;215;laser-medium;weapon_laser-medium.png
+Cortex;Advanced Exploiter;cormexp;2;Heavy g2g/g2a barrage missile launcher;Missile;260;missile-heavy;weapon_missile-heavy.png
+Cortex;Aggravator;corstorm;1;Rockets;Missile;157;missile-medium;weapon_missile-medium.png
+Cortex;Agitator;corpun;1;Long-range g2g plasma cannon;Plasma;350;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Agitator;corpun;2;Long-range g2g plasma cannon;Plasma;350;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Alligator;corseal;1;PlasmaCannon;Plasma;116;plasma-medium;weapon_plasma-medium.png
+Cortex;Angler;cortitan;1;Heavy homing torpedo launcher;Torpedo;1200;torpedo;weapon_torpedo.png
+Cortex;Apocalypse;corsilo;1;Intercontinental thermonuclear ballistic missile;Starburst missile;15000;nuclear;weapon_nuclear.png
+Cortex;Arbiter;corhrk;1;HeavyRockets;Starburst missile;850;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Archaic Dragon;corcrw;1;High energy a2g laser;Beam laser;250;laser-heavy;weapon_laser-heavy.png
+Cortex;Archaic Dragon;corcrw;2;HighEnergyLaser;Beam laser;90;laser-medium;weapon_laser-medium.png
+Cortex;Archaic Dragon;corcrw;3;HighEnergyLaser;Beam laser;90;laser-medium;weapon_laser-medium.png
+Cortex;Archaic Karkinos;corkark;1;Light g2g Heat Ray;Beam laser;160;laser-light;weapon_laser-light.png
+Cortex;Archaic Karkinos;corkark;2;RiotCannon;Cannon;190;cannon-medium;weapon_cannon-medium.png
+Cortex;Arrow Storm;corarch;2;AA2Missile;Missile;125;missile-medium;weapon_missile-medium.png
+Cortex;Arrow Storm;corarch;3;FlakCannon;Cannon;200 (air);flak;weapon_flak.png
+Cortex;Attack Drone;cordrone;1;HeatRay;Beam laser;60;laser-medium;weapon_laser-medium.png
+Cortex;Attack Drone;cordroneold;1;HeatRay;Beam laser;80;laser-medium;weapon_laser-medium.png
+Cortex;Banisher;corban;1;Banisher;Missile;1000;missile-heavy;weapon_missile-heavy.png
+Cortex;Basilisk;corint;1;Long-range plasma cannon;Plasma;2000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Bat;corsfig;1;Guided a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Cortex;Bat;corsfig2;1;Guided a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Cortex;Bat;corsfig2;2;Guided a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Cortex;Behemoth;corjugg;1;GaussCannon;D-gun;1200;d-gun;weapon_d-gun.png
+Cortex;Behemoth;corjugg;2;LightLaser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Behemoth;corjugg;3;LightLaser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Behemoth;corjugg;4;LightLaser;Beam laser;150;laser-light;weapon_laser-light.png
+Cortex;Birdeater;corah;2;Missiles;Missile;62 (air);missile-light;weapon_missile-light.png
+Cortex;Birdshot;corflak;1;Heavy g2a flak cannon;Cannon;250 (air);flak;weapon_flak.png
+Cortex;Black Hydra;corblackhy;1;BattleshipCannon;Cannon;600;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Black Hydra;corblackhy;2;HighEnergyLaser;Beam laser;270;laser-heavy;weapon_laser-heavy.png
+Cortex;Black Hydra;corblackhy;3;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Cortex;Black Hydra;corblackhy;4;HighEnergyLaser;Beam laser;270;laser-heavy;weapon_laser-heavy.png
+Cortex;Black Hydra;corblackhy;5;HighEnergyLaser;Beam laser;270;laser-heavy;weapon_laser-heavy.png
+Cortex;Black Hydra;corblackhy;6;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Cortex;Black Prince;corprince;1;Heavy Long-Range Plasma Bombardment Cannon;Plasma;2000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Black Prince;corprince;2;Long-Range Plasma Bombardment Cannons;Plasma;1000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Black Prince;corprince;3;Long-Range Plasma Bombardment Cannons;Plasma;1000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Black Prince;corprince;4;Long-Range Plasma Bombardment Cannons;Plasma;1000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Black Prince;corprince;5;Anti-Air Flak Cannons;Cannon;200 (air);flak;weapon_flak.png
+Cortex;Black Prince;corprince;6;Anti-Air Flak Cannons;Cannon;200 (air);flak;weapon_flak.png
+Cortex;Brimstone;corfship;1;Heavy long range AoE flamethrower;Flamethrower;25;flamethrower;weapon_flamethrower.png
+Cortex;Brimstone;corfship;2;Missiles;Missile;138 (air);missile-medium;weapon_missile-medium.png
+Cortex;Brute;corraid;1;LightCannon;Cannon;97;cannon-light;weapon_cannon-light.png
+Cortex;Buccaneer;corcrus;1;HighEnergyLaser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Buccaneer;corcrus;2;L2DeckLaser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Buccaneer;corcrus;3;Medium depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Cortex;Bulwark;cordoom;1;Long-range g2g tachyon accelerator;Beam laser;4500;laser-heavy;weapon_laser-heavy.png
+Cortex;Bulwark;cordoom;2;High energy g2g laser;Beam laser;247;laser-medium;weapon_laser-medium.png
+Cortex;Bulwark;cordoom;3;Light close-quarters g2g laser;Beam laser;40;laser-light;weapon_laser-light.png
+Cortex;Calamity;corbuzz;1;Rapid-fire long-range plasma cannon;Plasma;2000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Catalyst;cortron;1;Long range tactical g2g nuclear warheads;Starburst missile;4000;nuclear;weapon_nuclear.png
+Cortex;Cataphract;corsok;1;Disruptor Bolt;Laser;750;laser-heavy;weapon_laser-heavy.png
+Cortex;Cataphract;corsok;2;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Cortex;Catapult;corcat;1;CatapultRockets;Missile;450;missile-heavy;weapon_missile-heavy.png
+Cortex;Cayman;corsnap;1;MediumPlasmaCannon;Plasma;98;plasma-medium;weapon_plasma-medium.png
+Cortex;Cerberus;corbhmth;1;Heavy g2g barrage plasma battery;Plasma;450;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Cerberus;corbhmth;2;Heavy g2g barrage plasma battery;Plasma;450;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Cerberus;corbhmth;3;Heavy g2g barrage plasma battery;Plasma;450;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Commander;cordecom;1;J7Laser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Commander;cordecom;2;J7NSLaser;Beam laser;63;laser-medium;weapon_laser-medium.png
+Cortex;Commander;cordecom;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Commando;cormando;1;CommandoBlaster;Laser;100;laser-medium;weapon_laser-medium.png
+Cortex;Coral;corfhlt;1;High energy g2g laser;Beam laser;231;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander;corcom;1;J7Laser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander;corcom;2;J7NSLaser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander;corcom;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander;corcomcon;1;J7Laser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander;corcomcon;2;J7NSLaser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander;corcomcon;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 10;corcomlvl10;1;Long range AoE flamethrower;Flamethrower;120;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 10;corcomlvl10;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 10;corcomlvl10;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 10;corcomlvl10;5;EyeLaser;Beam laser;80;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 10;corcomlvl10;6;HeavyCannon;Cannon;2000;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;1;Long range AoE flamethrower;Flamethrower;120;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;5;EyeLaser;Beam laser;80;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;6;HeavyCannon;Cannon;2000;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 2;corcomlvl2;1;HighEnergyLaser;Beam laser;215;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 2;corcomlvl2;2;J7NSLaser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 2;corcomlvl2;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 2;cordecomlvl2;1;HighEnergyLaser;Beam laser;215;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 2;cordecomlvl2;2;J7NSLaser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 2;cordecomlvl2;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 3;corcomlvl3;1;HighEnergyLaser;Beam laser;380;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 3;corcomlvl3;2;J7NSLaser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 3;corcomlvl3;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 3;corcomlvl3;5;Eye laser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;1;HighEnergyLaser;Beam laser;380;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;2;J7NSLaser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;5;Eye laser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 4;corcomlvl4;1;HighEnergyLaser;Beam laser;550;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 4;corcomlvl4;2;J7NSLaser;Beam laser;400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 4;corcomlvl4;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 4;corcomlvl4;5;Eye laser;Beam laser;85;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 4;corcomlvl4;6;HeavyCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;1;HighEnergyLaser;Beam laser;550;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;2;J7NSLaser;Beam laser;400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;5;Eye laser;Beam laser;85;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;6;HeavyCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 5;corcomlvl5;1;Anti-swarm AoE flamethrower;Flamethrower;90;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 5;corcomlvl5;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 5;corcomlvl5;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 5;corcomlvl5;5;Eye laser;Beam laser;120;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 5;corcomlvl5;6;HeavyCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 5;cordecomlvl5;1;Anti-swarm AoE flamethrower;Flamethrower;90;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 5;cordecomlvl5;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 5;cordecomlvl5;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 5;cordecomlvl5;5;Eye laser;Beam laser;120;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 5;cordecomlvl5;6;HeavyCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 6;corcomlvl6;1;Anti-swarm AoE flamethrower;Flamethrower;90;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 6;corcomlvl6;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 6;corcomlvl6;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 6;corcomlvl6;5;EyeLaser;Beam laser;26;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 6;corcomlvl6;6;HeavyCannon;Cannon;675;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;1;Anti-swarm AoE flamethrower;Flamethrower;90;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;5;EyeLaser;Beam laser;26;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;6;HeavyCannon;Cannon;675;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 7;corcomlvl7;1;Anti-swarm AoE flamethrower;Flamethrower;90;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 7;corcomlvl7;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 7;corcomlvl7;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 7;corcomlvl7;5;EyeLaser;Beam laser;34;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 7;corcomlvl7;6;HeavyCannon;Cannon;900;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;1;Anti-swarm AoE flamethrower;Flamethrower;90;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;2;UltravioletRayBeam;Beam laser;1200;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;5;EyeLaser;Beam laser;34;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;6;HeavyCannon;Cannon;900;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 8;corcomlvl8;1;Long range AoE flamethrower;Flamethrower;80;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 8;corcomlvl8;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 8;corcomlvl8;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 8;corcomlvl8;5;EyeLaser;Beam laser;42;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 8;corcomlvl8;6;HeavyCannon;Cannon;1050;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;1;Long range AoE flamethrower;Flamethrower;80;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;5;EyeLaser;Beam laser;42;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;6;HeavyCannon;Cannon;1050;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 9;corcomlvl9;1;Long range AoE flamethrower;Flamethrower;96;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 9;corcomlvl9;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 9;corcomlvl9;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 9;corcomlvl9;5;EyeLaser;Beam laser;58;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 9;corcomlvl9;6;HeavyCannon;Cannon;1350;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;1;Long range AoE flamethrower;Flamethrower;96;flamethrower;weapon_flamethrower.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;2;UWSupernovaBeam;Beam laser;1400;laser-heavy;weapon_laser-heavy.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;5;EyeLaser;Beam laser;58;laser-light;weapon_laser-light.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;6;HeavyCannon;Cannon;1350;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Cutlass;corcut;1;RiotCannon;Cannon;47;cannon-light;weapon_cannon-light.png
+Cortex;Cyclops;cornavaldefturret;1;Heavy Plasma Blast Cannon;Plasma;495;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Dam Buster;corsb;1;CorSeaAdvancedBombs;Bomb;50;bomb;weapon_bomb.png
+Cortex;Deadeye;cordeadeye;1;HeavyBlaster;Laser;834;laser-heavy;weapon_laser-heavy.png
+Cortex;Demon;cordemon;1;Demon's Maw, Heavy long range AoE flamethrower;Flamethrower;48;flamethrower;weapon_flamethrower.png
+Cortex;Demon;cordemon;2;ShoulderRockets;Missile;100;missile-medium;weapon_missile-medium.png
+Cortex;Depth Charge Drone;cortdrone;1;Depthcharge launcher;Torpedo;255;depth-charge;weapon_depth-charge.png
+Cortex;Desolator;cordesolator;1;Torpedo launcher;Torpedo;850;torpedo;weapon_torpedo.png
+Cortex;Desolator;cordesolator;2;Intercontinental thermonuclear ballistic missile;Starburst missile;15000;nuclear;weapon_nuclear.png
+Cortex;Despot;corbats;1;BattleshipCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Despot;corbats;2;BattleshipCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Despot;corbats;3;BattleshipCannon;Cannon;450;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Despot;corbats;4;HighEnergyLaser;Beam laser;300;laser-heavy;weapon_laser-heavy.png
+Cortex;Devastator;corfdoom;1;Medium-range g2g plasma cannon;Plasma;420;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Devastator;corfdoom;2;High energy g2g laser;Beam laser;231;laser-medium;weapon_laser-medium.png
+Cortex;Devastator;corfdoom;3;Light close-quarters g2g laser;Beam laser;40;laser-light;weapon_laser-light.png
+Cortex;Disgruntler;cords;1;AK Bomb;Bomb;100;bomb;weapon_bomb.png
+Cortex;Disperser;cordronecarry;2;Missiles;Missile;138 (air);missile-medium;weapon_missile-medium.png
+Cortex;Dragon;corcrwh;1;Dragon's Maw: heavy medium range AoE flamethrower;Flamethrower;6;flamethrower;weapon_flamethrower.png
+Cortex;Dragon;corcrwh;2;Advanced d2a rapid missile launcher;Missile;76 (air);missile-light;weapon_missile-light.png
+Cortex;Dragon;corcrwh;3;HighEnergyLaser;Beam laser;90;laser-medium;weapon_laser-medium.png
+Cortex;Dragon;corcrwh;4;HighEnergyLaser;Beam laser;90;laser-medium;weapon_laser-medium.png
+Cortex;Dragon;corcrwh;5;HighEnergyLaser;Beam laser;90;laser-medium;weapon_laser-medium.png
+Cortex;Dragon;corcrwh;6;HighEnergyLaser;Beam laser;90;laser-medium;weapon_laser-medium.png
+Cortex;Dragon's Maw;cormaw;1;Pop-up anti-swarm AoE flamethrower;Flamethrower;22;flamethrower;weapon_flamethrower.png
+Cortex;Dragon's Rage;cormwall;1;CatapultRockets;Missile;450;missile-heavy;weapon_missile-heavy.png
+Cortex;Duck;coramph;1;Torpedo;Torpedo;250;torpedo;weapon_torpedo.png
+Cortex;Duck;coramph;2;HighEnergyLaser;Beam laser;150;laser-medium;weapon_laser-medium.png
+Cortex;Epic Bulwark;cordoomt3;1;Armageddon Heat Ray;Beam laser;7500;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Bulwark;cordoomt3;2;Long-range g2g tachyon accelerator;Beam laser;4500;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Bulwark;cordoomt3;3;High energy g2g laser;Beam laser;247;laser-medium;weapon_laser-medium.png
+Cortex;Epic Commander - Final Boss;corcomboss;1;J8Laser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Epic Commander - Final Boss;corcomboss;2;J8NSLaser;Beam laser;200;laser-medium;weapon_laser-medium.png
+Cortex;Epic Commander - Final Boss;corcomboss;3;Darkmatter Photon-Disruptor;D-gun;999999;d-gun;weapon_d-gun.png
+Cortex;Epic Commando;cormandot4;1;Close-quarters EMP Scattergun;Beam laser;2000;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Commando;cormandot4;2;Disintegrator;D-gun;2400;d-gun;weapon_d-gun.png
+Cortex;Epic Dragon;corcrwt4;1;Demon's Maw, Heavy long range AoE flamethrower;Flamethrower;40;flamethrower;weapon_flamethrower.png
+Cortex;Epic Dragon;corcrwt4;2;Advanced Rapid-Fire Anti-Air Missile Launcher;Missile;400 (air);aa-missile;weapon_aa-missile.png
+Cortex;Epic Dragon;corcrwt4;3;Ultra HighEnergyLaser;Beam laser;2000;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Dragon;corcrwt4;4;Ultra HighEnergyLaser;Beam laser;2000;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Dragon;corcrwt4;5;Ultra HighEnergyLaser;Beam laser;2000;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Dragon;corcrwt4;6;Ultra HighEnergyLaser;Beam laser;2000;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Grunt;corakt4;1;Laser;Beam laser;100;laser-medium;weapon_laser-medium.png
+Cortex;Epic Karganeth;corkarganetht4;1;KarganethMissiles;Missile;700;missile-heavy;weapon_missile-heavy.png
+Cortex;Epic Karganeth;corkarganetht4;2;ShoulderRockets;Missile;750 (air);missile-heavy;weapon_missile-heavy.png
+Cortex;Epic Tzar;corgolt4;1;Huge g2g plasma cannon;Plasma;8000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Epic Tzar;corgolt4;2;HighEnergyLaser;Beam laser;750;laser-heavy;weapon_laser-heavy.png
+Cortex;Epic Tzar;corgolt4;3;HighEnergyLaser;Beam laser;750;laser-heavy;weapon_laser-heavy.png
+Cortex;Eradicator;corerad;1;Long-range rapid-fire g2a missile launcher;Missile;250 (air);rocket-salvo;weapon_rocket-salvo.png
+Cortex;Exploiter;corexp;1;Light close-quarters g2g laser turret;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Fiend;corpyro;1;FlameThrower;Flamethrower;17;flamethrower;weapon_flamethrower.png
+Cortex;Flying Black Hydra;corfblackhyt4;1;BattleshipCannon;Cannon;600;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Flying Black Hydra;corfblackhyt4;2;HighEnergyLaser;Beam laser;270;laser-heavy;weapon_laser-heavy.png
+Cortex;Flying Black Hydra;corfblackhyt4;3;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Cortex;Flying Black Hydra;corfblackhyt4;4;HighEnergyLaser;Beam laser;270;laser-heavy;weapon_laser-heavy.png
+Cortex;Flying Black Hydra;corfblackhyt4;5;HighEnergyLaser;Beam laser;270;laser-heavy;weapon_laser-heavy.png
+Cortex;Flying Black Hydra;corfblackhyt4;6;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Cortex;Forge;corforge;1;FlameThrower;Flamethrower;5;flamethrower;weapon_flamethrower.png
+Cortex;Fury;corsent;2;FlakCannon;Cannon;200 (air);flak;weapon_flak.png
+Cortex;Garpike;corgarp;1;PincerCannon;Cannon;116;cannon-medium;weapon_cannon-medium.png
+Cortex;Goon;corsh;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;36;laser-light;weapon_laser-light.png
+Cortex;Grunt;corak;1;Laser;Beam laser;37;laser-light;weapon_laser-light.png
+Cortex;Guard;corllt;1;Light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Gun Platform;corgplat;1;Light g2g plasma cannon;Plasma;97;plasma-light;weapon_plasma-light.png
+Cortex;Hailstorm;corhurc;1;Heavy a2g incinerating warheads;Bomb;333;bomb;weapon_bomb.png
+Cortex;Halberd;corhal;1;HighEnergyLaser;Beam laser;275;laser-heavy;weapon_laser-heavy.png
+Cortex;Heat Tiger;corftiger;1;HeatRay;Beam laser;15;laser-light;weapon_laser-light.png
+Cortex;Herring;corpt;1;Light g2a missile launcher;Missile;120 (air);missile-light;weapon_missile-light.png
+Cortex;Herring;corpt;2;Missiles;Missile;47;missile-light;weapon_missile-light.png
+Cortex;Incisor;corgator;1;Laser;Beam laser;75;laser-medium;weapon_laser-medium.png
+Cortex;Janitor;corfrock;1;Advanced g2a rapid missile launcher;Missile;76 (air);missile-light;weapon_missile-light.png
+Cortex;Jellyfish;cordl;1;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Cortex;Juggernaut;corkorg;1;GaussCannon;Cannon;165;gauss;weapon_gauss.png
+Cortex;Juggernaut;corkorg;2;Experimental g2g Eradicator Heat Ray;Beam laser;5500;laser-heavy;weapon_laser-heavy.png
+Cortex;Juggernaut;corkorg;3;HeavyRockets;Starburst missile;1000;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Karganeth;corkarg;1;KarganethMissiles;Missile;180;missile-medium;weapon_missile-medium.png
+Cortex;Karganeth;corkarg;2;ShoulderRockets;Missile;100;missile-medium;weapon_missile-medium.png
+Cortex;Kraken;corssub;1;AdvTorpedo;Torpedo;1650;torpedo;weapon_torpedo.png
+Cortex;Lamprey;coratl;1;Long-range advanced torpedo launcher;Torpedo;1100;torpedo;weapon_torpedo.png
+Cortex;Laser Tiger;corgatreap;1;High energy g2g laser;Beam laser;261;laser-heavy;weapon_laser-heavy.png
+Cortex;Lasher;cormist;1;Light g2a missile launcher;Missile;120 (air);missile-light;weapon_missile-light.png
+Cortex;Lasher;cormist;2;Light g2g missile launcher;Missile;63;missile-light;weapon_missile-light.png
+Cortex;Leviathan;corslrpc;1;Heavy long range g2g AoE plasma cannon;Plasma;2000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Mammoth;corsumo;1;HighEnergyLaser;Beam laser;302;laser-heavy;weapon_laser-heavy.png
+Cortex;Mangonel;cormh;1;Rocket;Starburst missile;550;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Manticore;coraak;1;Missiles;Missile;250 (air);missile-medium;weapon_missile-medium.png
+Cortex;Manticore;coraak;2;Heavy g2a flak cannon;Cannon;300 (air);flak;weapon_flak.png
+Cortex;Messenger;cormship;1;Heavy long-range g2g starburst rocket launcher;Cannon;1100;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Messenger;cormship;2;Medium Range g2a AA Missiles;Missile;138 (air);aa-missile;weapon_aa-missile.png
+Cortex;Mini Calamity;corminibuzz;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;plasma-light;weapon_plasma-light.png
+Cortex;Monsoon;corseap;1;Homing torpedo launcher;Torpedo;342;torpedo;weapon_torpedo.png
+Cortex;Naval Birdshot;corenaa;1;Heavy g2a flak cannon;Cannon;250 (air);flak;weapon_flak.png
+Cortex;Negotiator;corvroc;1;Rocket;Starburst missile;1700;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Nighthawk;corvamp;1;Guided a2a/a2g missile launcher;Missile;24;missile-light;weapon_missile-light.png
+Cortex;Obligator;corobligator;1;Long range missile battery;Missile;255;missile-medium;weapon_missile-medium.png
+Cortex;Obligator;corobligator;2;Heavy vertical rocket pod;Starburst missile;671;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Onager;coronager;1;Medium long-range s2g missile launcher;Starburst missile;360;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Oppressor;corroy;1;HeavyCannon;Cannon;385;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Oppressor;corroy;2;Depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Cortex;Orca;corsub;1;Light torpedo launcher;Torpedo;342;torpedo;weapon_torpedo.png
+Cortex;Orthrus;coranavaldefturret;1;Disruptor Bolt;Laser;900;laser-heavy;weapon_laser-heavy.png
+Cortex;Orthrus;coranavaldefturret;2;Heavy Plasma Blast Cannon;Plasma;525;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Overlord;corhltfus;1;High energy g2g laser;Beam laser;750;laser-heavy;weapon_laser-heavy.png
+Cortex;Persecutor;cortoast;1;Pop-up long-range heavy g2g plasma cannon;Plasma;420;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Persecutor;cortoast;2;Pop-up long-range heavy g2g plasma cannon;Plasma;420;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Poison Arrow;corparrow;1;PoisonArrowCannon;Cannon;370;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Pounder;corlevlr;1;RiotCannon;Cannon;190;cannon-medium;weapon_cannon-medium.png
+Cortex;Predator;corshark;1;Rapid armor-piercing torpedoes;Torpedo;350;torpedo;weapon_torpedo.png
+Cortex;Quad Guard;corhllllt;1;Close-quarters light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Quad Guard;corhllllt;2;Close-quarters light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Quad Guard;corhllllt;3;Close-quarters light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Quad Guard;corhllllt;4;Close-quarters light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Quaker;cormart;1;PlasmaCannon;Plasma;420;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Rascal;corfav;1;Light Close-Quarters g2g Laser;Beam laser;35;laser-light;weapon_laser-light.png
+Cortex;Riptide;corpship;1;LightCannon;Cannon;96;cannon-light;weapon_cannon-light.png
+Cortex;Salamander;corsala;1;Medium g2g Heat Ray;Beam laser;18;laser-light;weapon_laser-light.png
+Cortex;SAM;cormadsam;1;Advanced g2a rapid missile launcher;Missile;90 (air);missile-medium;weapon_missile-medium.png
+Cortex;Scorpion;corvipe;1;Heavy g2g sabot rocket launcher;Missile;825;missile-heavy;weapon_missile-heavy.png
+Cortex;Screamer;corscreamer;1;Long-range heavy g2a missile launcher;Missile;750 (air);missile-heavy;weapon_missile-heavy.png
+Cortex;Sentinel;corsentinel;2;Depthcharge launcher;Torpedo;255;depth-charge;weapon_depth-charge.png
+Cortex;Sheldon;cormort;1;PlasmaCannon;Plasma;105;plasma-medium;weapon_plasma-medium.png
+Cortex;Shiva;corshiva;1;HeavyCannon;Cannon;600;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Shiva;corshiva;2;HeavyRockets;Starburst missile;750;heavy-rocket;weapon_heavy-rocket.png
+Cortex;Shuriken;corbw;1;Light EMP laser;Beam laser;600;laser-light;weapon_laser-light.png
+Cortex;Siegebreaker;corsiegebreaker;1;Overcharged Dreadshot Ion Accelerator;Beam laser;4000;laser-heavy;weapon_laser-heavy.png
+Cortex;Slingshot;corfrt;1;Light g2a missile launcher;Missile;115 (air);missile-light;weapon_missile-light.png
+Cortex;Sumo;corcan;1;HighEnergyLaser;Beam laser;275;laser-heavy;weapon_laser-heavy.png
+Cortex;Supporter;coresupp;1;LightLaser;Beam laser;41;laser-light;weapon_laser-light.png
+Cortex;Supporter;coresupp;2;LightLaser;Beam laser;41;laser-light;weapon_laser-light.png
+Cortex;Termite;cortermite;1;HeatRay;Beam laser;265;laser-heavy;weapon_laser-heavy.png
+Cortex;Thermite;corthermite;1;Thermite Heatray;Beam laser;2000;laser-heavy;weapon_laser-heavy.png
+Cortex;Thermite;corthermite;2;Thermite heavy medium range AoE flamethrower;Flamethrower;30;flamethrower;weapon_flamethrower.png
+Cortex;Thistle;corrl;1;Light g2a missile launcher;Missile;115 (air);missile-light;weapon_missile-light.png
+Cortex;Thug;corthud;1;PlasmaCannon;Plasma;104;plasma-medium;weapon_plasma-medium.png
+Cortex;Tiger;correap;1;PlasmaCannon;Plasma;120;plasma-medium;weapon_plasma-medium.png
+Cortex;Torch;cortorch;1;Flamethrower;Missile;85;missile-medium;weapon_missile-medium.png
+Cortex;Trapper;cormlv;1;Seismic charge;Cannon;15;cannon-light;weapon_cannon-light.png
+Cortex;Trasher;corcrash;1;Missiles;Missile;110 (air);missile-medium;weapon_missile-medium.png
+Cortex;Tremor;cortrem;1;RapidArtillery;Artillery;200;artillery;weapon_artillery.png
+Cortex;Twin Guard;corhllt;1;Close-quarters light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Twin Guard;corhllt;2;Close-quarters light g2g laser;Beam laser;75;laser-light;weapon_laser-light.png
+Cortex;Tzar;corgol;1;HeavyCannon;Cannon;900;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Urchin;cortl;1;Torpedo launcher;Torpedo;280;torpedo;weapon_torpedo.png
+Cortex;Valiant;corveng;1;Light guided a2a missile launcher;Missile;12;missile-light;weapon_missile-light.png
+Cortex;Vesuvius;corves;1;Huge g2g plasma cannon;Plasma;8000;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Vesuvius;corves;2;Banisher;Missile;1000;missile-heavy;weapon_missile-heavy.png
+Cortex;Vesuvius;corves;3;Banisher;Missile;1000;missile-heavy;weapon_missile-heavy.png
+Cortex;Vesuvius;corves;4;Demon's Maw, Heavy long range AoE flamethrower;Flamethrower;48;flamethrower;weapon_flamethrower.png
+Cortex;Warden;corhlt;1;High energy g2g laser;Beam laser;261;laser-heavy;weapon_laser-heavy.png
+Cortex;Wasp;corape;1;Heavy a2g shrapnel rockets;Missile;122;missile-heavy;weapon_missile-heavy.png
+Cortex;Whirlwind;corshad;1;Medium a2g incinerating warheads;Bomb;112;bomb;weapon_bomb.png
+Cortex;Wolverine;corwolv;1;LightArtillery;Artillery;300;artillery;weapon_artillery.png
+Legion;Aesacus;legatorpbomber;1;Medium Homing Torpedo Launcher;Torpedo;750;torpedo;weapon_torpedo.png
+Legion;Aesacus;legatorpbomber;2;Medium Homing Torpedo Launcher;Torpedo;750;torpedo;weapon_torpedo.png
+Legion;Ajax;legafigdef;1;Heavy A2A Gatling Guns;Laser;80 (air);laser-heavy;weapon_laser-heavy.png
+Legion;Alaris;leghades;1;Dual-Feed Medium Shotgun;Laser;10;shotgun;weapon_shotgun.png
+Legion;Alpheus;legah;1;Light G2A Gatling Gun;Laser;5;laser-light;weapon_laser-light.png
+Legion;Amputator;legcluster;1;Long-Range g2g Cluster Plasma Cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Legion;Amputator;legcluster;2;Long-Range g2g Cluster Plasma Cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Legion;Apollyon;legapollyon;1;Heavy rotary cannon;Laser;50;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;2;Heavy rotary cannon;Laser;50;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;3;Heavy rotary cannon;Laser;50;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;4;Heavy rotary cannon;Laser;50;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;5;Heavy rotary cannon;Laser;20;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;6;Heavy rotary cannon;Laser;20;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;7;Dual Rotary Microflak Cannons;Cannon;58 (air);flak;weapon_flak.png
+Legion;Apollyon;legapollyon;8;Dual Rotary Microflak Cannons;Cannon;58 (air);flak;weapon_flak.png
+Legion;Apollyon;legapollyon;9;CatapultRockets;Missile;465;missile-heavy;weapon_missile-heavy.png
+Legion;Apollyon;legapollyon;10;CatapultRockets;Missile;465;missile-heavy;weapon_missile-heavy.png
+Legion;Aquilon;legadvaabot;1;Rotary Microflak Cannon;Cannon;40 (air);flak;weapon_flak.png
+Legion;Aquilon;legadvaabot;2;Light Anti-Air Railgun;Laser;225 (air);railgun;weapon_railgun.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;2;Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;3;Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;4;Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;5;Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;6;Anti-Air Flak Cannon;Cannon;190 (air);flak;weapon_flak.png
+Legion;Architeuthis;leganavybattlesub;1;Packhound Torpedo System;Torpedo;150;torpedo;weapon_torpedo.png
+Legion;Argonaut;legnavyfrigate;1;Deck Torpedo Launcher;Torpedo;140;torpedo;weapon_torpedo.png
+Legion;Argonaut;legnavyfrigate;2;Deck Torpedo Launcher;Torpedo;140;torpedo;weapon_torpedo.png
+Legion;Arquebus;legsrail;1;Railgun;Laser;850;railgun;weapon_railgun.png
+Legion;Astraeus;legelrpcmech;1;Long-Range g2g Heavy Cluster Plasma Cannon;Plasma;600;plasma-heavy;weapon_plasma-heavy.png
+Legion;Astrapios;legspfighter;1;Light Salvo Missile Launcher;Missile;37 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Ballista;legbal;1;Rockets;Missile;250;missile-medium;weapon_missile-medium.png
+Legion;Barrage;legbar;1;Napalm Launcher;Cannon;60;cannon-medium;weapon_cannon-medium.png
+Legion;Bastion;legbastion;1;Heavy Sustained Sweepfire Heat Ray;Beam laser;155;laser-heavy;weapon_laser-heavy.png
+Legion;Belcher;legbart;1;Heavy Napalm Launcher;Cannon;60;cannon-heavy;weapon_cannon-heavy.png
+Legion;Bombardier;legbombard;1;Pop-up heavy g2g grenade launcher;Cannon;375;cannon-heavy;weapon_cannon-heavy.png
+Legion;Boreas;legavroc;1;Heavy Long-Range g2g High-Trajectory Starburst Rocket Launcher;Starburst missile;2000;heavy-rocket;weapon_heavy-rocket.png
+Legion;Bramble;legrl;1;Light g2a Missile Launcher;Missile;115 (air);missile-light;weapon_missile-light.png
+Legion;Cacophony;legmg;1;Heavy Rapid-fire Machine Gun;Laser;17;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Cardea;legcar;1;Medium Shotgun;Laser;40;shotgun;weapon_shotgun.png
+Legion;Cetus;legamphtank;1;Light Close-quarters Gauss Cannon;Cannon;116;gauss;weapon_gauss.png
+Legion;Charon;legvflak;1;Dual Rotary Microflak Cannons;Cannon;40 (air);flak;weapon_flak.png
+Legion;Charybdis;legehovertank;1;Heavy Sweepfire Heatray;Beam laser;25;laser-heavy;weapon_laser-heavy.png
+Legion;Charybdis;legehovertank;2;Depthcharge Launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Legion;Charybdis;legehovertank;3;Parabolic Trajectory Multi-Rocket Launcher;Missile;100;rocket-salvo;weapon_rocket-salvo.png
+Legion;Charybdis;legehovertank;4;Parabolic Trajectory Multi-Rocket Launcher;Missile;100;rocket-salvo;weapon_rocket-salvo.png
+Legion;Chimera;legapopupdef;1;Heavy Riot Blast Cannon;Cannon;280;cannon-heavy;weapon_cannon-heavy.png
+Legion;Chimera;legapopupdef;2;Dual Rotary Machine Guns;Laser;10;machine-gun-light;weapon_machine-gun-light.png
+Legion;Chimera;legapopupdef;3;Dual Rotary Machine Guns;Laser;10;machine-gun-light;weapon_machine-gun-light.png
+Legion;Cleaver;legamcluster;1;Long-range g2g plasma cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Legion;Combat Commander;legcomt2com;1;Rapid-fire a2g machine guns;Laser;20;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Combat Commander;legcomt2com;2;Level1TorpedoLauncher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Combat Commander;legcomt2com;3;EMP Grenade;EMP cannon;10000;emp-grenade;weapon_emp-grenade.png
+Legion;Combat Commander;legcomt2com;4;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Combat Commander;legcomt2com;5;Parabolic trajectory g2g multi-rocket launcher;Missile;200;rocket-salvo;weapon_rocket-salvo.png
+Legion;Corinth;leganavyartyship;1;Dual Quad-Barrelled Long-Range Cluster Plasma Cannon;Plasma;350;plasma-heavy;weapon_plasma-heavy.png
+Legion;Corinth;leganavyartyship;2;Heavy Artillery Cluster Plasma Cannon;Plasma;250;artillery;weapon_artillery.png
+Legion;Corinth;leganavyartyship;3;Heavy Artillery Cluster Plasma Cannon;Plasma;250;artillery;weapon_artillery.png
+Legion;Corinth;leganavyartyship;4;Heavy Artillery Cluster Plasma Cannon;Plasma;250;artillery;weapon_artillery.png
+Legion;Daedalus;legerailtank;1;Siege Rail Accelerator;Laser;800;railgun;weapon_railgun.png
+Legion;Daedalus;legerailtank;2;Siege Rail Accelerator;Laser;800;railgun;weapon_railgun.png
+Legion;Daedalus;legerailtank;3;Siege Rail Accelerator;Laser;800;railgun;weapon_railgun.png
+Legion;Decurion;leggat;1;Rapid-fire Machine Gun;Laser;12;machine-gun-light;weapon_machine-gun-light.png
+Legion;Delphinus;leganavaltorpturret;1;Long-range advanced torpedo launcher;Torpedo;1100;torpedo;weapon_torpedo.png
+Legion;Dragon's Claw;legdtl;1;Close-quarters g2g lightning turret;Lightning;21;lightning;weapon_lightning.png
+Legion;Dragon's Constitution;legrwall;1;Compact Railgun;Laser;1000;railgun;weapon_railgun.png
+Legion;Dragon's Jaw;legdtr;1;Area Control Riot Cannon;Cannon;240;cannon-medium;weapon_cannon-medium.png
+Legion;Dragon's Maw;legdtf;1;Pop-up anti-swarm AoE flamethrower;Flamethrower;16;flamethrower;weapon_flamethrower.png
+Legion;Dragon's Tail;legdtm;1;Rocket;Starburst missile;550;heavy-rocket;weapon_heavy-rocket.png
+Legion;Economy Commander;legcomecon;1;RiotCannon;Cannon;190;cannon-medium;weapon_cannon-medium.png
+Legion;Economy Commander;legcomecon;2;Level1TorpedoLauncher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Economy Commander;legcomecon;3;EMP Grenade;EMP cannon;10000;emp-grenade;weapon_emp-grenade.png
+Legion;Economy Commander;legcomecon;4;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Enyo;legspsurfacegunship;1;Area Control Riot Cannon;Cannon;200;cannon-medium;weapon_cannon-medium.png
+Legion;Epic Arquebus;legsrailt4;1;Railgun;Laser;6000;railgun;weapon_railgun.png
+Legion;Epic Goblin;leggobt3;1;Rapid-fire close quarters machine guns;Laser;224;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Epic Mosquito;legmost3;1;CatapultRockets;Missile;200;missile-medium;weapon_missile-medium.png
+Legion;Epic Tyrannus;legfortt4;1;PlasmaCannon;Plasma;480;plasma-heavy;weapon_plasma-heavy.png
+Legion;Epic Tyrannus;legfortt4;2;PlasmaCannon;Plasma;480;plasma-heavy;weapon_plasma-heavy.png
+Legion;Epic Tyrannus;legfortt4;3;scav rapid fire plasma gun;Laser;50;plasma-light;weapon_plasma-light.png
+Legion;Epic Tyrannus;legfortt4;4;scav rapid fire plasma gun;Laser;50;plasma-light;weapon_plasma-light.png
+Legion;Epic Tyrannus;legfortt4;5;scav rapid fire plasma gun;Laser;50;plasma-light;weapon_plasma-light.png
+Legion;Epic Tyrannus;legfortt4;6;Advanced d2a rapid missile launcher;Starburst missile;154 (air);heavy-rocket;weapon_heavy-rocket.png
+Legion;Euryale;legctl;1;Homing Torpedo Launcher;Torpedo;225;torpedo;weapon_torpedo.png
+Legion;Eviscerator;legacluster;1;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;414;plasma-heavy;weapon_plasma-heavy.png
+Legion;Eviscerator;legacluster;2;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;414;plasma-heavy;weapon_plasma-heavy.png
+Legion;Fulmen;leganavalaaturret;1;Dual Rotary Microflak Cannons;Cannon;58 (air);flak;weapon_flak.png
+Legion;Gelasma;legfmg;1;Rapid-Fire Gatling Gun;Laser;18;laser-light;weapon_laser-light.png
+Legion;Gladiator;legaskirmtank;1;Heavy Rotary Plasma Cannon;Plasma;70;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Glaucus;legsh;1;Light Close-Quarters g2g Heat Ray;Beam laser;60;laser-light;weapon_laser-light.png
+Legion;Goblin;leggob;1;Rapid-fire a2g machine guns;Laser;12;machine-gun-light;weapon_machine-gun-light.png
+Legion;Helios;leghelios;1;Light g2g Heat Ray;Beam laser;135;laser-light;weapon_laser-light.png
+Legion;Hippocampus;legnavyscout;1;Twin Rapid-fire Machine Guns;Laser;12;machine-gun-light;weapon_machine-gun-light.png
+Legion;Hoplite;legstr;1;Twin Rapid-fire Machine Guns;Laser;8;machine-gun-light;weapon_machine-gun-light.png
+Legion;Iapetus;legnavyaaship;1;Advanced g2a Salvo Missile Launcher;Missile;24 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Incinerator;leginc;1;Heavy g2g Sustained Heat Ray;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Inferno;leginf;1;Heavy Burst-Fire Napalm Artillery Tri-Cannons;Artillery;60;artillery;weapon_artillery.png
+Legion;Infestor;leginfestor;1;Close-Quarters Light Heat Ray;Beam laser;120;laser-light;weapon_laser-light.png
+Legion;Ionia;leganavaldefturret;1;Dual Rotary Heavy-Calibre Machine Guns;Laser;24;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Ionia;leganavaldefturret;2;Dual Heavy Assault Kinetic Shotgun;Laser;30;shotgun;weapon_shotgun.png
+Legion;Javelin;legjav;1;Twin Rapid-fire Machine Guns;Laser;12;machine-gun-light;weapon_machine-gun-light.png
+Legion;Javelin;legjav;2;Light AA Rotary Gun;Laser;10 (air);machine-gun-light;weapon_machine-gun-light.png
+Legion;Karkinos;legkark;1;Light g2g Heat Ray;Beam laser;160;laser-light;weapon_laser-light.png
+Legion;Karkinos;legkark;2;Dual-Feed Medium Shotgun;Laser;20;shotgun;weapon_shotgun.png
+Legion;Keres;legkeres;1;Heavy riot cannon;Cannon;400;cannon-heavy;weapon_cannon-heavy.png
+Legion;Keres;legkeres;2;Heavy rotary cannon;Laser;10;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Keres;legkeres;3;Heavy rotary cannon;Laser;10;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Ketea;legnavysub;1;Submerged Torpedo Launcher;Torpedo;140;torpedo;weapon_torpedo.png
+Legion;Ladon;legsptorpgunship;1;VTOL Torpedo Launcher;Torpedo;140;torpedo;weapon_torpedo.png
+Legion;Lance;legrail;1;Railgun;Laser;200;railgun;weapon_railgun.png
+Legion;Lance;legrail;2;Railgun;Laser;300 (air);railgun;weapon_railgun.png
+Legion;Legion Commander;legcom;1;Close-Quarters Heatray;Beam laser;175;laser-medium;weapon_laser-medium.png
+Legion;Legion Commander;legcom;2;Underwater Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander;legcom;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander;legcom;4;Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Legion;Legion Commander;legdecom;1;Close-Quarters Heatray;Beam laser;175;laser-medium;weapon_laser-medium.png
+Legion;Legion Commander;legdecom;2;Underwater Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander;legdecom;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander;legdecom;4;Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Legion;Legion Commander Level 10;legcomlvl10;1;Rapid-Fire Plasma Cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 10;legcomlvl10;2;MK-X Torpedo Launcher;Torpedo;400;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 10;legcomlvl10;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 10;legcomlvl10;4;Railgun;Laser;500;railgun;weapon_railgun.png
+Legion;Legion Commander Level 10;legdecomlvl10;1;Rapid-Fire Plasma Cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 10;legdecomlvl10;2;MK-X Torpedo Launcher;Torpedo;400;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 10;legdecomlvl10;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 10;legdecomlvl10;4;Railgun;Laser;500;railgun;weapon_railgun.png
+Legion;Legion Commander Level 2;legcomlvl2;1;Rapid-Fire Machine Gun;Laser;25;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 2;legcomlvl2;2;MK-II Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 2;legcomlvl2;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 2;legcomlvl2;4;Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Legion;Legion Commander Level 2;legdecomlvl2;1;Rapid-Fire Machine Gun;Laser;25;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 2;legdecomlvl2;2;MK-II Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 2;legdecomlvl2;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 2;legdecomlvl2;4;Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Legion;Legion Commander Level 3;legcomlvl3;1;Rapid-Fire Machine Gun;Laser;30;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 3;legcomlvl3;2;MK-III Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 3;legcomlvl3;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 3;legcomlvl3;4;Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Legion;Legion Commander Level 3;legdecomlvl3;1;Rapid-Fire Machine Gun;Laser;30;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 3;legdecomlvl3;2;MK-III Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 3;legdecomlvl3;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 3;legdecomlvl3;4;Anti-Air Missile Launcher;Missile;150 (air);aa-missile;weapon_aa-missile.png
+Legion;Legion Commander Level 4;legcomlvl4;1;Rapid-Fire Machine Gun;Laser;40;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 4;legcomlvl4;2;MK-IV Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 4;legcomlvl4;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 4;legcomlvl4;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 4;legdecomlvl4;1;Rapid-Fire Machine Gun;Laser;40;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 4;legdecomlvl4;2;MK-IV Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 4;legdecomlvl4;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 4;legdecomlvl4;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 5;legcomlvl5;1;Rapid-Fire Machine Gun;Laser;50;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 5;legcomlvl5;2;MK-V Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 5;legcomlvl5;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 5;legcomlvl5;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 5;legdecomlvl5;1;Rapid-Fire Machine Gun;Laser;50;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 5;legdecomlvl5;2;MK-V Torpedo Launcher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 5;legdecomlvl5;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 5;legdecomlvl5;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 6;legcomlvl6;1;Rapid-Fire Plasma Cannon;Plasma;360;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 6;legcomlvl6;2;MK-VI Torpedo Launcher;Torpedo;300;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 6;legcomlvl6;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 6;legcomlvl6;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 6;legdecomlvl6;1;Rapid-Fire Plasma Cannon;Plasma;360;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 6;legdecomlvl6;2;MK-VI Torpedo Launcher;Torpedo;300;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 6;legdecomlvl6;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 6;legdecomlvl6;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 7;legcomlvl7;1;Rapid-Fire Plasma Cannon;Plasma;400;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 7;legcomlvl7;2;MK-VII Torpedo Launcher;Torpedo;300;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 7;legcomlvl7;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 7;legcomlvl7;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 7;legdecomlvl7;1;Rapid-Fire Plasma Cannon;Plasma;400;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 7;legdecomlvl7;2;MK-VII Torpedo Launcher;Torpedo;300;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 7;legdecomlvl7;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 7;legdecomlvl7;4;Railgun;Laser;250;railgun;weapon_railgun.png
+Legion;Legion Commander Level 8;legcomlvl8;1;Rapid-Fire Plasma Cannon;Plasma;475;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 8;legcomlvl8;2;MK-VIII Torpedo Launcher;Torpedo;350;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 8;legcomlvl8;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 8;legcomlvl8;4;Railgun;Laser;300;railgun;weapon_railgun.png
+Legion;Legion Commander Level 8;legdecomlvl8;1;Rapid-Fire Plasma Cannon;Plasma;475;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 8;legdecomlvl8;2;MK-VIII Torpedo Launcher;Torpedo;350;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 8;legdecomlvl8;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 8;legdecomlvl8;4;Railgun;Laser;300;railgun;weapon_railgun.png
+Legion;Legion Commander Level 9;legcomlvl9;1;Rapid-Fire Plasma Cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 9;legcomlvl9;2;MK-IX Torpedo Launcher;Torpedo;350;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 9;legcomlvl9;3;Disintegrator;D-gun;99999;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 9;legcomlvl9;4;Railgun;Laser;400;railgun;weapon_railgun.png
+Legion;Legion Commander Level 9;legdecomlvl9;1;Rapid-Fire Plasma Cannon;Plasma;500;plasma-heavy;weapon_plasma-heavy.png
+Legion;Legion Commander Level 9;legdecomlvl9;2;MK-IX Torpedo Launcher;Torpedo;350;torpedo;weapon_torpedo.png
+Legion;Legion Commander Level 9;legdecomlvl9;3;Disintegrator;D-gun;40;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 9;legdecomlvl9;4;Railgun;Laser;400;railgun;weapon_railgun.png
+Legion;Legion Drone;legdrone;1;Burst-fire Machine Gun;Laser;12;machine-gun-light;weapon_machine-gun-light.png
+Legion;Legion Heavy Drone;legheavydrone;1;a2g Heat Ray;Beam laser;10;laser-light;weapon_laser-light.png
+Legion;Legion Heavy Drone;legheavydronesmall;1;a2g Heat Ray;Beam laser;10;laser-light;weapon_laser-light.png
+Legion;Legionnaire;legionnaire;1;Rapid-fire dual A2A machine guns;Laser;80 (air);machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Leocampus;leganavyantiswarm;1;Medium Blast Riot Cannon;Cannon;210;cannon-medium;weapon_cannon-medium.png
+Legion;Leocampus;leganavyantiswarm;2;Advanced g2a Salvo Missile Launcher;Missile;24 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Lupara;leglupara;1;Medium g2a Flak Blunderbuss;Cannon;255 (air);flak;weapon_flak.png
+Legion;Martyr;legkam;2;Mine Detonator;Cannon;1000 (air);cannon-heavy;weapon_cannon-heavy.png
+Legion;Martyr;legkam;3;Crawlingbomb Dummy Weapon;Bomb;440;self-destruct;weapon_self-destruct.png
+Legion;Medusa;legmed;2;Hexaburst Homing Siege Rockets;Starburst missile;500;heavy-rocket;weapon_heavy-rocket.png
+Legion;Mini Starfall;legministarfall;1;Long-Range High-Trajectory 63-Salvo Plasma Launcher;Plasma;125;plasma-medium;weapon_plasma-medium.png
+Legion;Mosquito;legmos;1;Rockets;Missile;44;missile-light;weapon_missile-light.png
+Legion;Mukade;legpede;1;Rapid-fire a2g machine guns;Laser;21;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Mukade;legpede;2;Railgun;Laser;500;railgun;weapon_railgun.png
+Legion;Mukade;legpede;3;Parabolic trajectory g2g multi-rocket launcher;Missile;200;rocket-salvo;weapon_rocket-salvo.png
+Legion;Mukade;legpede;4;Parabolic trajectory g2g multi-rocket launcher;Missile;200;rocket-salvo;weapon_rocket-salvo.png
+Legion;Mukade;legpede;5;Railgun;Laser;500;railgun;weapon_railgun.png
+Legion;Mukade;legpede;6;Rapid-fire a2g machine guns;Laser;21;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Myrmidon;legeallterrainmech;1;Heavy Long-Range Cluster Plasma Cannon;Plasma;345;plasma-heavy;weapon_plasma-heavy.png
+Legion;Myrmidon;legeallterrainmech;2;Heavy Long-Range High-Trajectory Cluster Plasma Cannon;Plasma;345;plasma-heavy;weapon_plasma-heavy.png
+Legion;Myrmidon;legeallterrainmech;4;Advanced g2a Salvo Missile Launcher;Missile;37 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Neptune;leganavyflagship;2;Dual Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Neptune;leganavyflagship;3;Dual Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Neptune;leganavyflagship;4;Dual Naval-Series Rail Accelerators;Laser;800;railgun;weapon_railgun.png
+Legion;Neptune;leganavyflagship;5;Dual Naval-Series Rail Accelerators;Laser;800;railgun;weapon_railgun.png
+Legion;Neptune;leganavyflagship;6;Dual Naval-Series Rail Accelerators;Laser;800;railgun;weapon_railgun.png
+Legion;Neptune;leganavyflagship;7;Dual Naval-Series Rail Accelerators;Laser;800;railgun;weapon_railgun.png
+Legion;Nereus;legner;1;Medium g2g plasma cannon;Plasma;55;plasma-light;weapon_plasma-light.png
+Legion;Noctua;legfig;1;Burst-Fire A2A Machine Gun;Laser;36 (air);machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Notus;leganavyaaship;1;Dual Rotary Microflak Cannons;Cannon;40 (air);flak;weapon_flak.png
+Legion;Notus;leganavyaaship;2;Advanced Salvo Anti-Air Missile Launcher;Missile;20 (air);aa-missile;weapon_aa-missile.png
+Legion;Notus;leganavyaaship;3;Advanced Salvo Anti-Air Missile Launcher;Missile;20 (air);aa-missile;weapon_aa-missile.png
+Legion;Octeres;legnavyartyship;1;Long-Range Naval Cluster Artillery Cannon;Artillery;300;artillery;weapon_artillery.png
+Legion;Octeres;legnavyartyship;2;Long-Range Naval Cluster Artillery Cannon;Artillery;300;artillery;weapon_artillery.png
+Legion;Offensive Commander;legcomoff;1;Rapid-fire a2g machine guns;Laser;26;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Offensive Commander;legcomoff;2;Level1TorpedoLauncher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Offensive Commander;legcomoff;3;EMP Grenade;EMP cannon;10000;emp-grenade;weapon_emp-grenade.png
+Legion;Offensive Commander;legcomoff;4;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Olympus;leglrpc;1;Long-Range g2g Heavy Cluster Plasma Cannon;Plasma;600;plasma-heavy;weapon_plasma-heavy.png
+Legion;Perdition;legperdition;1;Long-Range Tactical Hellfire Napalm Shell;Cannon;1200;cannon-heavy;weapon_cannon-heavy.png
+Legion;Phalanx;legshot;1;Medium Blast Riot Cannon;Cannon;210;cannon-medium;weapon_cannon-medium.png
+Legion;Pharos;leglht;1;Light g2g Heat Ray;Beam laser;200;laser-light;weapon_laser-light.png
+Legion;Phobos;legcen;1;Close-quarters g2g gauss-cannon;Cannon;75;gauss;weapon_gauss.png
+Legion;Phoenix;legphoenix;2;Heavy a2g Phoenix Flame Heat Ray;Beam laser;145;laser-heavy;weapon_laser-heavy.png
+Legion;Phorcys;legnavaldefturret;1;Dual-Salvo Medium Rocket Launcher;Missile;95;rocket-salvo;weapon_rocket-salvo.png
+Legion;Pilum;legbunk;2;Hard-Plasma Mining Tool;D-gun;300;d-gun;weapon_d-gun.png
+Legion;Pilum;legbunk;3;Snub-Nose Railgun;Laser;475;railgun;weapon_railgun.png
+Legion;Pluto;legflak;1;Dual Rotary Microflak Cannons;Cannon;58 (air);flak;weapon_flak.png
+Legion;Polybolos;legfrl;1;Light g2a Missile Launcher;Missile;115 (air);missile-light;weapon_missile-light.png
+Legion;Praetorian;legeshotgunmech;2;Dual Heavy Assault Kinetic Shotgun;Laser;60;shotgun;weapon_shotgun.png
+Legion;Praetorian;legeshotgunmech;3;Parabolic Trajectory Multi-Rocket Launcher;Missile;150;rocket-salvo;weapon_rocket-salvo.png
+Legion;Praetorian;legeshotgunmech;4;Rotary Microflak Cannon;Cannon;30 (air);flak;weapon_flak.png
+Legion;Prometheus;legaheattank;1;Heavy g2g Cleansing Heat Ray;Beam laser;25;laser-heavy;weapon_laser-heavy.png
+Legion;Pyrphoros;legspbomber;1;Advanced Scatterfire Warheads;Bomb;50;bomb;weapon_bomb.png
+Legion;Quickshot;legmrv;1;Two-Round Burst Fire Plasma Cannon;Plasma;72;plasma-medium;weapon_plasma-medium.png
+Legion;Rhapsis;legrhapsis;1;Advanced g2a Salvo Missile Launcher;Missile;15 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Salacia;legmh;1;Rocket;Starburst missile;400;heavy-rocket;weapon_heavy-rocket.png
+Legion;Sapper;legmlv;1;Seismic charge;Cannon;15;cannon-light;weapon_cannon-light.png
+Legion;Satyr;leglob;1;Forwards Plasma Cannon;Plasma;75;plasma-medium;weapon_plasma-medium.png
+Legion;Scylla;leganavybattleship;1;Heavy long-range g2g plasma cannon;Plasma;270;plasma-heavy;weapon_plasma-heavy.png
+Legion;Scylla;leganavybattleship;2;Heavy long-range g2g plasma cannon;Plasma;300;plasma-heavy;weapon_plasma-heavy.png
+Legion;Scylla;leganavybattleship;3;Medium Shotgun;Laser;20;shotgun;weapon_shotgun.png
+Legion;Scylla;leganavybattleship;4;Medium Shotgun;Laser;20;shotgun;weapon_shotgun.png
+Legion;Sol Invictus;legeheatraymech;2;Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Sol Invictus;legeheatraymech;3;Experimental Thermal Ordnance Generators;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Sol Invictus;legeheatraymech;4;Ultra Heavy Riot Autocannon;Cannon;420;cannon-heavy;weapon_cannon-heavy.png
+Legion;Sol Invictus;legeheatraymech;5;Ultra Heavy Riot Autocannon;Cannon;420;cannon-heavy;weapon_cannon-heavy.png
+Legion;Sol Invictus;legeheatraymech;6;Anti-Air Flak Cannon;Cannon;190 (air);flak;weapon_flak.png
+Legion;Sphyrna;leganavyheavysub;1;Long-Range Heavy Torpedo;Torpedo;1650;torpedo;weapon_torpedo.png
+Legion;Starfall;legstarfall;1;Very Long-Range High-Trajectory 63-Salvo Plasma Launcher;Plasma;600;plasma-heavy;weapon_plasma-heavy.png
+Legion;Stheno;legtl;1;Torpedo Launcher;Torpedo;280;torpedo;weapon_torpedo.png
+Legion;Stronghold;legstronghold;1;Medium Shotgun;Laser;30;shotgun;weapon_shotgun.png
+Legion;Supernova;legsilo;1;Intercontinental Thermonuclear Ballistic Missile;Starburst missile;15000;nuclear;weapon_nuclear.png
+Legion;Syracusia;legnavydestro;1;Medium Sweepfire Heatray;Beam laser;410;laser-heavy;weapon_laser-heavy.png
+Legion;Tactical Defense Commander;legcomt2def;1;RiotCannon;Cannon;190;cannon-medium;weapon_cannon-medium.png
+Legion;Tactical Defense Commander;legcomt2def;2;Level1TorpedoLauncher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Tactical Defense Commander;legcomt2def;3;EMP Grenade;EMP cannon;10000;emp-grenade;weapon_emp-grenade.png
+Legion;Tactical Defense Commander;legcomt2def;4;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Tactical Offense Commander;legcomt2off;1;Rapid-fire a2g machine guns;Laser;26;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tactical Offense Commander;legcomt2off;2;Level1TorpedoLauncher;Torpedo;250;torpedo;weapon_torpedo.png
+Legion;Tactical Offense Commander;legcomt2off;3;EMP Grenade;EMP cannon;10000;emp-grenade;weapon_emp-grenade.png
+Legion;Tactical Offense Commander;legcomt2off;4;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Telchine;legamph;1;Heavy g2g Cleansing Heat Ray;Beam laser;33;laser-heavy;weapon_laser-heavy.png
+Legion;Telchine;legamph;2;Depthcharge launcher;Torpedo;350;depth-charge;weapon_depth-charge.png
+Legion;Thalassa;leganavycruiser;1;Twin Rapid-fire Machine Guns;Laser;24;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Thalassa;leganavycruiser;2;Medium depthcharge launcher;Torpedo;225;depth-charge;weapon_depth-charge.png
+Legion;Thanatos;leghrk;1;CatapultRockets;Missile;150;missile-medium;weapon_missile-medium.png
+Legion;Toxotai;legaabot;1;Advanced g2a Salvo Missile Launcher;Missile;37 (air);rocket-salvo;weapon_rocket-salvo.png
+Legion;Triton;legfloat;1;Medium g2g gauss cannon;Cannon;250;gauss;weapon_gauss.png
+Legion;Triton;legfloat;2;Rapid-fire machine gun;Laser;7;machine-gun-light;weapon_machine-gun-light.png
+Legion;Tyrannus;legfort;1;PlasmaCannon;Plasma;166;plasma-medium;weapon_plasma-medium.png
+Legion;Tyrannus;legfort;2;PlasmaCannon;Plasma;166;plasma-medium;weapon_plasma-medium.png
+Legion;Tyrannus;legfort;3;Burst-fire Machine Gun;Laser;36;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tyrannus;legfort;4;Burst-fire Machine Gun;Laser;36;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tyrannus;legfort;5;Burst-fire Machine Gun;Laser;36;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tyrannus;legfort;6;Advanced d2a rapid missile launcher;Starburst missile;76 (air);heavy-rocket;weapon_heavy-rocket.png
+Legion;Ultor;leganavymissileship;1;Heavy Long-Range Vertical Salvo Rocket Launcher;Cannon;450;rocket-salvo;weapon_rocket-salvo.png
+Legion;Ultor;leganavymissileship;2;Salvo Anti-Air Missile Launcher;Missile;20 (air);aa-missile;weapon_aa-missile.png
+Legion;Venator;legvenator;1;Birdshot Cannon;Cannon;24;cannon-light;weapon_cannon-light.png
+Legion;Wheelie;legscout;1;Burst-fire Machine Gun;Laser;11;machine-gun-light;weapon_machine-gun-light.png
+Legion;Wildfire;legnap;1;Heavy a2g napalm warheads;Bomb;50;bomb;weapon_bomb.png
+Legion;Xyston;leglraa;1;Heavy Anti-Air Railgun;Laser;700 (air);railgun;weapon_railgun.png
