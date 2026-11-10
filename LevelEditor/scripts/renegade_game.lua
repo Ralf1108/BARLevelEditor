@@ -4,7 +4,10 @@
 -- move orders (no MoveCtrl) toward a point in the wished direction and stops it when no key is down.
 -- While fire is 1 the unit gets the point (or the enemy unit) as its target (Spring.SetUnitTarget, user target), so its own weapon, turret, reload and damage
 -- apply; its fire state is hold fire: it shoots only at what the player aims at. Test only: game option lanrenotest=1 and "ren|test|1" put an enemy
--- Peewee (hold fire) 150 Elmo in front of the unit. Team rules parameter renUnit (public): the unit of the team (0 = none). Spec: specs/renegade.md.
+-- Peewee (hold fire) 150 Elmo in front of the unit. 
+-- Game option lanrenebots=<n>: n computer Peewees of the first team without a human walk around and fight the players (a lost one comes back after 5 s),
+-- lanrenedebug=1: the player may turn into another unit ("ren|unit|<unit name>"). A player's unit that is lost comes back after 3 s at a place far from
+-- the enemies. Team rules parameter renUnit (public): the unit of the team (0 = none). Spec: specs/renegade.md.
 function gadget:GetInfo()
 	return {
 		name = "Renegade",
@@ -33,7 +36,16 @@ local TURN = 6 -- degrees: the order is given again at once when the wished dire
 
 local TEST = (Spring.GetModOptions() or {}).lanrenotest == "1"
 local AIM_EVERY = 3 -- frames: the target is given again (a move order may drop it)
+local MO = Spring.GetModOptions() or {}
+local DEBUG = MO.lanrenedebug == "1"
+local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
+local RESPAWN = 90 -- frames until a player's unit comes back
+local BOT_RESPAWN = 150
+local turnInto -- (defined below: the debug message of RecvLuaMsg needs it)
 local units = {} -- team -> unit id
+local kind = {} -- team -> unit definition name of the player's unit (a lost unit comes back as the same one)
+local due = {} -- team -> frame at which the unit comes back
+local bots, botDue, botTeam = {}, {}, nil -- bots: unit id -> true; botDue: frames at which a lost one comes back
 local input = {} -- team -> { yaw, pitch, keys, fire, last = { frame, yaw, keys }, moving }
 
 local function sign(n) return n > 0 and 1 or (n < 0 and -1 or 0) end
@@ -119,6 +131,17 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return
 	end
+	if TEST and msg == "ren|test|2" then
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end
+		return
+	end
+	local want = msg:match("^ren|unit|([%w_]+)$")
+	if want then
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		if DEBUG and not spec then turnInto(team, want) end
+		return
+	end
 	local yaw, pitch, keys, fire, tx, ty, tz, tu = msg:match("^ren|(-?%d+)|(-?%d+)|(%d+)|(%d)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)$")
 	if not yaw then return end
 	local _, active, spec, team = Spring.GetPlayerInfo(playerID, false)
@@ -127,6 +150,70 @@ function gadget:RecvLuaMsg(msg, playerID)
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
 	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), tonumber(fire)
 	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
+end
+
+-- a place on the land for a unit: of 24 random places where the unit can stand, the one farthest from the units of the other teams (a player) or the one at
+-- about 800 Elmo from the nearest player unit (a bot: the fight comes to the player)
+local function others(team)
+	local l = {}
+	for tm, u in pairs(units) do
+		if tm ~= team and Spring.ValidUnitID(u) then l[#l + 1] = u end
+	end
+	return l
+end
+
+local function nearestDist(x, z, list)
+	local best = 1e9
+	for _, u in ipairs(list) do
+		local ux, _, uz = Spring.GetUnitPosition(u)
+		if ux then best = math.min(best, math.sqrt((ux - x) ^ 2 + (uz - z) ^ 2)) end
+	end
+	return best
+end
+
+local function place(defName, list, wanted)
+	local defID = UnitDefNames[defName].id
+	local bestX, bestZ, bestScore
+	for _ = 1, 24 do
+		local x = 200 + math.random() * (Game.mapSizeX - 400)
+		local z = 200 + math.random() * (Game.mapSizeZ - 400)
+		local y = Spring.GetGroundHeight(x, z)
+		if y > 2 and Spring.TestMoveOrder(defID, x, y, z, 0, 0, 0, true, false, true) then
+			local d = nearestDist(x, z, list)
+			local score = wanted and -math.abs(d - wanted) or d
+			if not bestScore or score > bestScore then bestX, bestZ, bestScore = x, z, score end
+		end
+	end
+	if not bestX then return nil end
+	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
+end
+
+-- the unit of a player: new, or after a loss, or turned into another one (debug)
+local function giveUnit(team, defName, x, y, z, face)
+	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
+	if not id then return nil end
+	units[team] = id
+	kind[team] = defName
+	input[team] = input[team] or { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, firing = false }
+	input[team].moving, input[team].firing = false, false
+	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
+	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
+	return id
+end
+
+turnInto = function(team, defName)
+	local u = units[team]
+	local ud = UnitDefNames[defName]
+	if not u or not Spring.ValidUnitID(u) or not ud or ud.canFly or (ud.speed or 0) <= 0 then return end
+	local x, y, z = Spring.GetUnitPosition(u)
+	local hp, mhp = Spring.GetUnitHealth(u)
+	local old = u
+	local id = giveUnit(team, defName, x, y, z, Spring.GetUnitBuildFacing(u))
+	if not id then return end
+	local _, nmhp = Spring.GetUnitHealth(id)
+	if hp and mhp and nmhp then Spring.SetUnitHealth(id, nmhp * hp / mhp) end
+	Spring.DestroyUnit(old, false, true) -- (units[team] is the new one already: no respawn)
+	Spring.Echo("[Renegade] team " .. team .. " turned into " .. defName .. " (unit " .. id .. ")")
 end
 
 -- a team with a human and a commander: the commander is replaced by the first unit
@@ -144,15 +231,62 @@ local function take(team)
 			local x, y, z = Spring.GetUnitPosition(u)
 			local face = Spring.GetUnitBuildFacing(u)
 			Spring.DestroyUnit(u, false, true)
-			local id = Spring.CreateUnit(START_UNIT, x, y, z, face, team)
-			if id then
-				units[team] = id
-				input[team] = { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, firing = false }
-				Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
-				Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
-				Spring.Echo("[Renegade] team " .. team .. " steers a " .. START_UNIT .. " (unit " .. id .. ")")
-			end
+			local id = giveUnit(team, START_UNIT, x, y, z, face)
+			if id then Spring.Echo("[Renegade] team " .. team .. " steers a " .. START_UNIT .. " (unit " .. id .. ")") end
 			return
+		end
+	end
+end
+
+-- the bots: units of the first team that has no human; they fight their way toward the nearest player unit
+local function findBotTeam()
+	for _, team in ipairs(Spring.GetTeamList()) do
+		if team ~= Spring.GetGaiaTeamID() and units[team] == nil then
+			local human = false
+			for _, p in ipairs(Spring.GetPlayerList(team, true)) do
+				local _, _, spec = Spring.GetPlayerInfo(p, false)
+				if not spec then human = true end
+			end
+			if not human then return team end
+		end
+	end
+end
+
+local function spawnBot()
+	if not botTeam then return end
+	local x, y, z = place(START_UNIT, others(botTeam), 800)
+	if not x then return end
+	local id = Spring.CreateUnit(START_UNIT, x, y, z, math.random(0, 3), botTeam)
+	if id then
+		bots[id] = true
+		if TEST then Spring.Echo("[Renegade] bot " .. id .. " at " .. math.floor(x) .. " " .. math.floor(z)) end
+	end
+end
+
+local function steerBots()
+	local players = others(botTeam)
+	if #players == 0 then return end
+	if TEST then
+		local n, near = 0, 1e9
+		for id in pairs(bots) do
+			n = n + 1
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x then near = math.min(near, nearestDist(x, z, players)) end
+		end
+		Spring.Echo("[Renegade] bots " .. n .. ", nearest to a player " .. math.floor(near) .. " Elmo")
+	end
+	for id in pairs(bots) do
+		local x, _, z = Spring.GetUnitPosition(id)
+		if x then
+			local best, bx, bz = 1e9
+			for _, u in ipairs(players) do
+				local ux, _, uz = Spring.GetUnitPosition(u)
+				local d = (ux - x) ^ 2 + (uz - z) ^ 2
+				if d < best then best, bx, bz = d, ux, uz end
+			end
+			local tx = math.max(16, math.min(Game.mapSizeX - 16, bx + (math.random() - 0.5) * 300))
+			local tz = math.max(16, math.min(Game.mapSizeZ - 16, bz + (math.random() - 0.5) * 300))
+			Spring.GiveOrderToUnit(id, CMD.FIGHT, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
 		end
 	end
 end
@@ -167,12 +301,34 @@ function gadget:GameFrame(f)
 		steer(team, f)
 		shoot(team, f)
 	end
+	for team, at in pairs(due) do
+		if f >= at then
+			due[team] = nil
+			local x, y, z = place(kind[team], others(team), nil)
+			if x then giveUnit(team, kind[team], x, y, z, 0) end
+		end
+	end
+	if BOTS > 0 then
+		if f == 120 then
+			botTeam = findBotTeam()
+			for _ = 1, BOTS do spawnBot() end
+		end
+		if botTeam and f > 120 then
+			for i = #botDue, 1, -1 do
+				if f >= botDue[i] then table.remove(botDue, i); spawnBot() end
+			end
+			if f % 120 == 0 then steerBots() end
+		end
+	end
 end
 
 function gadget:UnitDestroyed(u, defID, team)
 	if units[team] == u then
 		units[team] = nil
-		input[team] = nil
 		Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })
+		due[team] = Spring.GetGameFrame() + RESPAWN
+	elseif bots[u] then
+		bots[u] = nil
+		botDue[#botDue + 1] = Spring.GetGameFrame() + BOT_RESPAWN
 	end
 end

@@ -46,6 +46,7 @@ function widget:Initialize()
 		return
 	end
 	WG.renegade = R
+	R.debug = mo.lanrenedebug == "1"
 	R.getState = function() return Spring.GetCameraState() end
 end
 
@@ -196,7 +197,7 @@ function widget:Update()
 		Spring.SetUnitNoDraw(u, true)
 		Spring.SetUnitNoSelect(u, true)
 	end
-	if not R.fake then
+	if not R.fake and not R.menu then
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
 		local vsx, vsy = Spring.GetViewGeometry()
 		local cx, cy = math.floor(vsx / 2), math.floor(vsy / 2)
@@ -207,16 +208,38 @@ function widget:Update()
 			Spring.WarpMouse(cx, cy)
 		end
 		R.keys = keysNow()
+	elseif R.menu then
+		R.keys, R.fire = 0, 0 -- the menu: the mouse is free, nothing is steered or fired
 	end
-	Spring.SetMouseCursor("none")
+	if not R.menu then Spring.SetMouseCursor("none") end
 	setCamera(u)
 	aim(u)
 	send(Spring.GetGameFrame(), false)
 end
 
 -- take the mouse and the keys of the game away while the view is on
+local function inRect(x, y, r) return r and x >= r[1] and x <= r[3] and y >= r[2] and y <= r[4] end
+
 function widget:MousePress(x, y, button)
 	if R.on then
+		if R.menu then
+			if button == 1 then
+				if R.list then
+					local entry = R.listAt and R.listAt(x, y)
+					if entry then
+						Spring.SendLuaRulesMsg("ren|unit|" .. entry.name)
+						R.list, R.menu = false, false
+						return true
+					end
+				end
+				if inRect(x, y, R.btn) then
+					R.list = not R.list
+				elseif not inRect(x, y, R.listRect) then
+					R.list = false
+				end
+			end
+			return true
+		end
 		if button == 1 then R.fire = 1 end
 		return true
 	end
@@ -227,13 +250,21 @@ function widget:MouseRelease(x, y, button)
 	return R.on
 end
 
-function widget:MouseWheel()
+function widget:MouseWheel(up, value)
+	if R.on and R.menu and R.list then
+		R.scroll = math.max(0, math.min(#R.units - 1, (R.scroll or 0) - (up and 1 or -1) * 3))
+	end
 	return R.on
 end
 
 function widget:KeyPress(key, mods, isRepeat)
 	if key == 277 then -- Insert
 		if R.on then R.off = true; disable() else R.off = false end
+		return true
+	end
+	if R.on and key == 9 and R.debug then -- Tab: the mouse is free for the debug menu, again: back to the view
+		R.menu = not R.menu
+		R.list = false
 		return true
 	end
 	if R.on and (key == K.W or key == K.A or key == K.S or key == K.D) then
@@ -280,6 +311,7 @@ local function weaponPanel(vsx, vsy)
 	end
 	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
 	local total = #rows * h + 8 * s
+	R.panel = { x1, y1, x1 + w, y1 + total }
 	gl.Color(0, 0, 0, 0.55)
 	gl.Rect(x1, y1, x1 + w, y1 + total)
 	for i, r in ipairs(rows) do
@@ -294,6 +326,86 @@ local function weaponPanel(vsx, vsy)
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
 		if r.ready then gl.Color(0.3, 0.85, 0.35, 1) else gl.Color(0.95, 0.65, 0.15, 1) end
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + 10 * s + (w - 20 * s) * r.fill, ry + 18 * s)
+	end
+	gl.Color(1, 1, 1, 1)
+	return x1, y1 + total, w, s
+end
+
+-- the units a player may turn into (debug): mobile land units with a weapon, sorted by faction and name
+local function unitList()
+	if R.units then return R.units end
+	local list = {}
+	local rank = { arm = 1, cor = 2, leg = 3 }
+	for _, ud in pairs(UnitDefs) do
+		local n = ud.name
+		local label = ud.translatedHumanName or n
+		if ud.canMove and not ud.canFly and (ud.speed or 0) > 0 and not ud.isBuilding and #(ud.weapons or {}) > 0
+			and not (ud.customParams and (ud.customParams.iscommander or ud.customParams.isscavenger))
+			and not n:find("_scav") and not n:find("^raptor") and not n:find("^chicken") and not ((ud.minWaterDepth or 0) > 0)
+			and not label:find("Epic") and not label:find("Commander") and not label:find("Final Boss") then
+			list[#list + 1] = { name = n, label = label, rank = rank[n:sub(1, 3)] or 4 }
+		end
+	end
+	table.sort(list, function(a, b)
+		if a.rank ~= b.rank then return a.rank < b.rank end
+		if a.label ~= b.label then return a.label < b.label end
+		return a.name < b.name
+	end)
+	R.units = list
+	return list
+end
+
+-- the debug menu above the weapon panel: a button with the unit (click: a list of units, click a name: turn into it); Tab frees the mouse
+local ROWS, COLS = 18, 3
+local function debugMenu(x1, top, w, s)
+	local ud = UnitDefs[Spring.GetUnitDefID(R.unit or -1) or -1]
+	local bh = 28 * s
+	local by = top + 8 * s
+	R.btn = { x1, by, x1 + w, by + bh }
+	gl.Color(R.list and 0.35 or 0.2, R.list and 0.35 or 0.2, R.menu and 0.5 or 0.2, 0.9)
+	gl.Rect(x1, by, x1 + w, by + bh)
+	gl.Color(1, 1, 1, 1)
+	gl.Text("Debug unit: " .. (ud and (ud.translatedHumanName or ud.name) or "?") .. "  v", x1 + 10 * s, by + 8 * s, 14 * s, "o")
+	if not R.menu then
+		gl.Color(0.8, 0.8, 0.5, 1)
+		gl.Text("Tab: free the mouse for the menu", x1 + w, by + bh + 4 * s, 11 * s, "ro")
+	end
+	R.listRect = nil
+	if R.menu and R.list then
+		local list = unitList()
+		local colW, rowH = 300 * s, 19 * s
+		local lx = math.max(8, x1 + w / 2 - colW * COLS / 2)
+		local ly = by + bh + 22 * s
+		R.listRect = { lx, ly, lx + colW * COLS, ly + rowH * ROWS }
+		gl.Color(0, 0, 0, 0.8)
+		gl.Rect(lx, ly, lx + colW * COLS, ly + rowH * ROWS)
+		local mx, my = Spring.GetMouseState()
+		local base = (R.scroll or 0)
+		local cur = ud and ud.name
+		for c = 1, COLS do
+			for r = 1, ROWS do
+				local e = list[base + (c - 1) * ROWS + r]
+				if e then
+					local ex, ey = lx + (c - 1) * colW, ly + (ROWS - r) * rowH
+					if mx >= ex and mx < ex + colW and my >= ey and my < ey + rowH then
+						gl.Color(0.3, 0.45, 0.8, 0.9)
+						gl.Rect(ex, ey, ex + colW, ey + rowH)
+					end
+					if e.name == cur then gl.Color(1, 0.9, 0.3, 1) else gl.Color(0.9, 0.9, 0.9, 1) end
+					local text = e.label .. "  (" .. e.name .. ")"
+					while #text > 6 and gl.GetTextWidth(text) * 12 * s > colW - 12 * s do text = text:sub(1, -2) end
+					gl.Text(text, ex + 6 * s, ey + 4 * s, 12 * s, "o")
+				end
+			end
+		end
+		gl.Color(0.7, 0.7, 0.7, 1)
+		gl.Text(string.format("%d-%d of %d units; mouse wheel scrolls", base + 1, math.min(#list, base + ROWS * COLS), #list), lx, ly + rowH * ROWS + 4 * s, 11 * s, "o")
+		R.listAt = function(x, y)
+			if not (x >= lx and x < lx + colW * COLS and y >= ly and y < ly + rowH * ROWS) then return nil end
+			local c = math.floor((x - lx) / colW) + 1
+			local r = ROWS - math.floor((y - ly) / rowH)
+			return list[base + (c - 1) * ROWS + r]
+		end
 	end
 	gl.Color(1, 1, 1, 1)
 end
@@ -328,5 +440,6 @@ function widget:DrawScreen()
 	gl.Color(enemy and 1 or 0.9, enemy and 0.3 or 0.9, enemy and 0.3 or 0.9, 1)
 	gl.Text(text, cx, cy - s * 2.2, math.max(12, vsy / 70), "co")
 	gl.Color(1, 1, 1, 1)
-	weaponPanel(vsx, vsy)
+	local x1, top, w, ps = weaponPanel(vsx, vsy)
+	if R.debug and x1 then debugMenu(x1, top, w, ps) end
 end
