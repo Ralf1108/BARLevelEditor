@@ -1,6 +1,6 @@
 # Renegade
 
-A planned game mode of LAN Play: every human player steers **one original BAR unit in the first person** (mouse look, WASD, crosshair, left mouse button fires), the others do the same in the same world. Named after the C&C Renegade idea: the units of a real-time strategy game, played as a shooter. Status: **concept and proof-of-concept plan, nothing is implemented yet.** This document is the working spec; it grows with each proof-of-concept step. Related: [Evolution](evolution.md) (one unit per player, same lobby and gadget pattern), [LAN Play](lan-play.md).
+A planned game mode of LAN Play: every human player steers **one original BAR unit in the first person** (mouse look, WASD, crosshair, left mouse button fires), the others do the same in the same world. Named after the C&C Renegade idea: the units of a real-time strategy game, played as a shooter. Status: **concept and proof-of-concept plan, nothing is implemented yet.** This document is the working spec; it grows with each proof-of-concept step. User view: [Renegade manual](../LevelEditor/game-modes/renegade.md). Related: [Evolution](evolution.md) (one unit per player, same lobby and gadget pattern), [LAN Play](lan-play.md).
 
 ## 1. Goal and rules of thumb
 
