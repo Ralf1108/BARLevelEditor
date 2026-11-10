@@ -699,39 +699,69 @@ local function clearTargets(u, inp)
 	inp.moving = false
 end
 
+-- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
+local function applyTarget(team, u, ud, s, i, t)
+	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
+	if s.aa[i] then
+		-- anti-air: only at the aircraft the player looks at
+		if lock then Spring.SetUnitTarget(u, t.unit, false, true, i) end
+	elseif s.hy[i] and lock and (UnitDefs[Spring.GetUnitDefID(t.unit)] or {}).canFly then
+		local ok = Spring.SetUnitTarget(u, t.unit, false, true, i) -- ground and air: at an aircraft in the circle it locks on
+		if TEST and not input[team].logged then input[team].logged = true; Spring.Echo("[Renegade] air lock of weapon " .. i .. " on " .. t.unit .. ": " .. tostring(ok)) end
+		if not ok then -- (the weapon refuses the unit as a target: the point where it is)
+			local x, y, z = Spring.GetUnitPosition(t.unit, true)
+			if x then
+				x, y, z = shortened(u, ud, i, x, y, z)
+				Spring.SetUnitTarget(u, x, y, z, false, true, i)
+			end
+		end
+	else
+		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
+		Spring.SetUnitTarget(u, x, y, z, false, true, i)
+	end
+end
+
+-- One click is one shot: a weapon that is pressed (inp.hold[weapon].down) keeps its target while the button is down (continuous fire, as fast as it reloads). When the
+-- button goes up before the weapon has fired (the turret was still turning, the weapon was still reloading) the target stays until the weapon has fired (its
+-- reloadFrame changed) or its time is up (`until`: 45 frames plus the reload time, at most 8 s), then the stop order clears it. A weapon that has fired is let go at once.
+local function reloadFrame(u, i) return Spring.GetUnitWeaponState(u, i, "reloadFrame") or 0 end
+
 local function shoot(team, f, force)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
-	local mask = inp.fire
-	if mask ~= inp.mask then
-		if inp.mask ~= 0 then clearTargets(u, inp) end
-		inp.mask = mask
-		force = true
-	end
-	if mask == 0 then return end
-	if not force and f % AIM_EVERY ~= 0 then return end
-	local t = inp.target
-	local list, ud, s = weaponsFor(u, mask)
-	for _, i in ipairs(list) do
-		local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
-		if s.aa[i] then
-			-- anti-air: only at the aircraft the player looks at
-			if lock then Spring.SetUnitTarget(u, t.unit, false, true, i) end
-		elseif s.hy[i] and lock and (UnitDefs[Spring.GetUnitDefID(t.unit)] or {}).canFly then
-			local ok = Spring.SetUnitTarget(u, t.unit, false, true, i) -- ground and air: at an aircraft in the circle it locks on
-			if TEST and not inp.logged then inp.logged = true; Spring.Echo("[Renegade] air lock of weapon " .. i .. " on " .. t.unit .. ": " .. tostring(ok)) end
-			if not ok then -- (the weapon refuses the unit as a target: the point where it is)
-				local x, y, z = Spring.GetUnitPosition(t.unit, true)
-				if x then
-					x, y, z = shortened(u, ud, i, x, y, z)
-					Spring.SetUnitTarget(u, x, y, z, false, true, i)
-				end
-			end
+	local hold = inp.hold
+	local list, ud, s = weaponsFor(u, inp.fire)
+	local pressed = {}
+	for _, i in ipairs(list) do pressed[i] = true end
+	local change, clear = false, false
+	for i in pairs(pressed) do
+		local a = hold[i]
+		if not a or not a.down then
+			local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or 1
+			hold[i] = { down = true, since = f, rf0 = reloadFrame(u, i), fired = false, t = inp.target, deadline = f + 45 + math.min(240, math.floor(time * 30)) }
+			change = true
 		else
-			local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
-			Spring.SetUnitTarget(u, x, y, z, false, true, i)
+			a.t = inp.target
 		end
 	end
+	for i, a in pairs(hold) do
+		if not a.fired and reloadFrame(u, i) > a.rf0 then a.fired = true end
+		if a.down and not pressed[i] then
+			a.down = false -- released
+			change = true
+		end
+		if not a.down and (a.fired or f >= a.deadline) then
+			hold[i] = nil
+			clear = true
+		end
+	end
+	if clear then
+		clearTargets(u, inp) -- (also clears the targets of the weapons that are still held: they get theirs again below)
+		change = true
+	end
+	if next(hold) == nil then return end
+	if not (change or force or f % AIM_EVERY == 0) then return end
+	for i, a in pairs(hold) do applyTarget(team, u, ud, s, i, a.t) end
 end
 
 function gadget:RecvLuaMsg(msg, playerID)
@@ -869,8 +899,9 @@ local function giveUnit(team, defName, x, y, z, face)
 	if not id then return nil end
 	units[team] = id
 	kind[team] = defName
-	input[team] = input[team] or { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, mask = 0 }
+	input[team] = input[team] or { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, mask = 0, hold = {} }
 	input[team].moving, input[team].mask = false, 0
+	input[team].hold = {}
 	input[team].fire = 0
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
