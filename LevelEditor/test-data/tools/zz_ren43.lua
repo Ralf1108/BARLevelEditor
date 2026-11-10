@@ -7,9 +7,11 @@ function widget:GameFrame(f)
 	if not R then return end
 	if f == 90 then R.fake = true; R.yaw, R.pitch = 180, 0 end
 	if f == 100 then Spring.SendLuaRulesMsg("ren|unit|armbanth") end
-	if f == 180 and R.unit then
+	if f == 160 then R.fire = 3 end
+	if f == 164 then R.fire = 0 end
+	if f == 200 and R.unit then
 		log("renPics", tostring(Spring.GetUnitRulesParam(R.unit, "renPics")), "file", tostring(VFS.FileExists("LuaUI/Images/renegade/weapons/weapon_laser-heavy.png")))
 		Spring.SendCommands("screenshot png")
 	end
-	if f == 210 then Spring.SendCommands("quitforce") end
+	if f == 230 then Spring.SendCommands("quitforce") end
 end

@@ -1,13 +1,13 @@
 """Detailed pictures of weapons for the panel of Renegade, drawn with Pillow and numpy (no outside pictures, no AI): a metal body with bevelled plates, rust and scratches,
 hazard stripes, vents, cables and glowing parts.
 
-  python weapon_art.py [out_dir]    draws the heavy laser: weapon_laser-heavy_big.png (1600 x 700, transparent) and weapon_laser-heavy.png (the picture for the panel, 256 x 128)
+  python weapon_art.py [out_dir]    draws the heavy laser: weapon_laser-heavy_big.png (2900 x 700, transparent) and weapon_laser-heavy.png (the picture of a panel row: 768 x 128, the weapon and its beam over the whole width)
 """
 import math, os, random, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-W, H = 1600, 700
+W, H = 2900, 700   # (wide: the beam runs far to the right, the banner of the panel row is 6 : 1)
 rng = np.random.default_rng(7)
 random.seed(7)
 
@@ -279,7 +279,7 @@ def heavy_laser():
     # lightning tendrils along the beam
     tend = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     td = ImageDraw.Draw(tend)
-    for _ in range(14):
+    for _ in range(34):
         x = random.randint(1300, W - 20)
         y = 421 + random.randint(-22, 22)
         pts = [(x, y)]
@@ -320,6 +320,22 @@ def panel_icon(big, size=(256, 128)):
     return card
 
 
+def panel_banner(big, size=(768, 128)):
+    """the picture of a panel row: the weapon and its beam over the whole width (6 : 1) on a dark background; the row puts text and the cooldown on top of it"""
+    crop = big.crop((20, 190, W, 190 + (W - 20) // 6))
+    bg = gradient_bg(size)
+    k = size[0] / crop.width
+    ic = crop.resize((size[0], int(crop.height * k)), Image.LANCZOS)
+    bg.alpha_composite(ic, (0, (size[1] - ic.height) // 2))
+    return bg.convert("RGB")
+
+
+def gradient_bg(size):
+    a = vgrad(size, (40, 46, 58), (14, 16, 22))
+    out = Image.fromarray(a.astype(np.uint8), "RGB").convert("RGBA")
+    return out
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "weapon-icons")
     os.makedirs(out, exist_ok=True)
@@ -327,8 +343,8 @@ def main():
     bg = Image.new("RGBA", big.size, (28, 28, 30, 255))
     bg.alpha_composite(big)
     big.save(os.path.join(out, "weapon_laser-heavy_big.png"))
-    bg.convert("RGB").save(os.path.join(out, "weapon_laser-heavy_big_on_dark.png"))
-    panel_icon(big).save(os.path.join(out, "weapon_laser-heavy.png"))
+    bg.convert("RGB").resize((W // 2, H // 2), Image.LANCZOS).save(os.path.join(out, "weapon_laser-heavy_big_on_dark.png"))
+    panel_banner(big).save(os.path.join(out, "weapon_laser-heavy.png"))
     print("done")
 
 

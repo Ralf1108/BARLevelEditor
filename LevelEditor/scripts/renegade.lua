@@ -777,7 +777,6 @@ local function panel(vsx, vsy)
 	local frame = Spring.GetGameFrame()
 	local s = math.max(0.7, vsy / 1080)
 	local w, h = 320 * s, 62 * s
-	local pw, ph = 96 * s, 48 * s -- the picture of a weapon (a row with a picture is wider: the text moves right)
 	local rows = {}
 	R.states = {} -- (for the tests: the colour of every row)
 	local allAtOnce = R.full -- FULL FIRE (Alt switches it): the left button fires every weapon
@@ -809,7 +808,7 @@ local function panel(vsx, vsy)
 		end
 	end
 	local anyPic = false
-	for _, r in ipairs(rows) do if r.pic then anyPic = true; w = 430 * s; break end end -- (with a picture the panel is wider, every row keeps the place of the picture)
+	for _, r in ipairs(rows) do if r.pic then anyPic = true; w = 372 * s; break end end -- (with a picture the panel is as wide as the picture of a row: 6 : 1)
 	local hh = 40 * s -- the health row
 	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
 	local total = #rows * h + hh + 8 * s
@@ -818,42 +817,61 @@ local function panel(vsx, vsy)
 	gl.Rect(x1, y1, x1 + w, y1 + total)
 	gl.Color(1, 0.3, 0.2, 1)
 	gl.Text("Alt: FULL FIRE " .. (R.full and "ON" or "off"), x1 + w - 6 * s, y1 + total + 6 * s, 13 * s, "ro") -- (above the panel, right)
+	-- a row: the picture of the weapon over the whole width as the background (dark card without one), the cooldown like the one of the abilities of Evolution (a grey fill from the right
+	-- that runs down, the seconds left), the colour of the range on top of the picture, a strip in the colour of the button at the left, and the text in front of it
 	for i, r in ipairs(rows) do
 		local ry = y1 + 6 * s + (#rows - i) * h
+		local cx1, cx2, cy1, cy2 = x1 + 4 * s, x1 + w - 4 * s, ry + 2 * s, ry + h - 2 * s
 		R.states[i] = r.state or "-"
-		if r.state then
-			-- the colour of the row: the weapon reaches what the crosshair points at (green), is at its limit (yellow) or does not reach it / cannot hit it (red)
-			local c = REACH_COLOR[r.state]
-			gl.Color(c[1], c[2], c[3], 0.32)
-			gl.Rect(x1 + 3 * s, ry + 2 * s, x1 + w - 3 * s, ry + h - 4 * s)
-		end
-		local name = r.name
-		local tx = x1 + 10 * s + (anyPic and (pw + 8 * s) or 0) -- the text starts right of the picture
+		gl.Color(0.1, 0.1, 0.12, 0.95)
+		gl.Rect(cx1, cy1, cx2, cy2)
 		if r.pic then
-			gl.Color(1, 1, 1, 1)
+			gl.Color(1, 1, 1, 0.92)
 			gl.Texture(r.pic)
-			gl.TexRect(x1 + 8 * s, ry + 8 * s, x1 + 8 * s + pw, ry + 8 * s + ph)
+			gl.TexRect(cx1, cy1, cx2, cy2)
 			gl.Texture(false)
 		end
-		while #name > 4 and gl.GetTextWidth(name) * 15 * s > w - 70 * s - (tx - x1 - 10 * s) do name = name:sub(1, -2) end
-		gl.Color(1, 1, 1, 0.95)
-		gl.Text(name, tx, ry + 40 * s, 15 * s, "o")
+		if r.pic then
+			-- a dark veil behind the text: strong at the left, gone at the right (the beam stays bright)
+			gl.BeginEnd(GL.QUADS, function()
+				gl.Color(0, 0, 0, 0.55); gl.Vertex(cx1, cy1); gl.Vertex(cx1, cy2)
+				gl.Color(0, 0, 0, 0); gl.Vertex(cx1 + (cx2 - cx1) * 0.75, cy2); gl.Vertex(cx1 + (cx2 - cx1) * 0.75, cy1)
+			end)
+		end
+		if r.state then
+			-- the weapon reaches what the crosshair points at (green), is at its limit (yellow) or does not reach it / cannot hit it (red)
+			local c = REACH_COLOR[r.state]
+			gl.Color(c[1], c[2], c[3], 0.30)
+			gl.Rect(cx1, cy1, cx2, cy2)
+		end
+		local left = 1 - r.fill -- the part of the reload that is left
+		if not r.ready then
+			gl.Color(0.22, 0.22, 0.25, 0.80)
+			gl.Rect(cx2 - (cx2 - cx1) * left, cy1, cx2, cy2)
+		end
 		gl.Color(r.color[1], r.color[2], r.color[3], 1)
-		gl.Text(r.tag, x1 + w - 10 * s, ry + 41 * s, 13 * s, "ro")
+		gl.Rect(cx1, cy1, cx1 + 5 * s, cy2)
+		local tx = cx1 + 12 * s
+		local name = r.name
+		while #name > 4 and gl.GetTextWidth(name) * 15 * s > (cx2 - tx) - 62 * s do name = name:sub(1, -2) end
+		gl.Color(1, 1, 1, 1)
+		gl.Text(name, tx, cy2 - 20 * s, 15 * s, "o")
+		gl.Color(r.color[1], r.color[2], r.color[3], 1)
+		gl.Text(r.tag, cx2 - 8 * s, cy2 - 19 * s, 14 * s, "ro")
 		if r.aa then
 			gl.Color(1, 0.6, 0.15, 1) -- (anti-air only: fires only at an aircraft in the circle)
-			gl.Text("AIR ONLY", x1 + w - 10 * s, ry + 24 * s, 12 * s, "ro")
+			gl.Text("AIR ONLY", cx2 - 8 * s, cy2 - 35 * s, 12 * s, "ro")
 		end
-		gl.Color(0.7, 0.7, 0.7, 0.95)
+		gl.Color(0.92, 0.95, 1, 1)
 		if r.attack then
-			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s   %s", r.attack, r.height, r.time, r.ready and "READY" or "reloading"), tx, ry + 24 * s, 12 * s, "o")
+			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s", r.attack, r.height, r.time), tx, cy1 + 8 * s, 12 * s, "o")
 		else
-			gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "" or ((r.hy and not anyPic) and "   (aircraft in the circle: lock; ground: aim)" or "")), tx, ry + 24 * s, 12 * s, "o")
+			gl.Text(string.format("range %d   reload %.1f s%s", r.range, r.time, (r.aa or anyPic or not r.hy) and "" or "   (aircraft in the circle: lock; ground: aim)"), tx, cy1 + 8 * s, 12 * s, "o")
 		end
-		gl.Color(0.15, 0.15, 0.15, 0.9)
-		gl.Rect(tx, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
-		if r.ready then gl.Color(r.color[1], r.color[2], r.color[3], 1) else gl.Color(r.color[1] * 0.55, r.color[2] * 0.55, r.color[3] * 0.55, 1) end
-		gl.Rect(tx, ry + 6 * s, tx + (x1 + w - 10 * s - tx) * r.fill, ry + 18 * s)
+		if not r.ready then
+			gl.Color(1, 1, 1, 1)
+			gl.Text(string.format("%.1f s", left * r.time), cx2 - 8 * s, cy1 + 7 * s, 14 * s, "ro") -- (the seconds left count down here)
+		end
 	end
 	-- health: a bar from red to green with the numbers
 	local hp, mhp = Spring.GetUnitHealth(u)
