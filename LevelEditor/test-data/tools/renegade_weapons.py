@@ -2,16 +2,16 @@
 
   python renegade_weapons.py update                makes the table game-modes/renegade-weapons.md (for reading) and the block WEAPON_BUTTONS (between -- BEGIN WEAPONS and
                                                    -- END WEAPONS) of scripts/renegade_game.lua from game-modes/renegade_weapons.csv, which is the source: change the columns
-                                                   Group and Fire button there (Excel) and run update_renegade_weapons.bat in game-modes.
+                                                   Fire button there (Excel) and run update_renegade_weapons.bat in game-modes.
   python renegade_weapons.py table <infolog.txt>   makes the csv (and the md and the block) new from the lines "[zzwep] ..." that tools/zz_weapondump.lua writes into the
-                                                   infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Group and Fire button of a row that is in the csv
+                                                   infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Fire button and Weapon image of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
 
 The D-gun (type DGun: the Disintegrator of the commanders) is always on RMB; then the shortest other group is on LMB and everything else on MMB.
-The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are one group; missiles
+The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are fired together; missiles
 (missile launcher, starburst, torpedo, anti-air only) and all other groups are sorted by range; with both kinds the shortest of the others goes on LMB, the rest of the
 others on RMB (the missiles on RMB when there is no second one) and the missiles on MMB; with one kind only the shortest on LMB, the next on RMB, all further on MMB.
-Weapons that do no damage (footsteps, script dummies) get an empty Group and Fire button (not fired by a button).
+Weapons that do no damage (footsteps, script dummies) get an empty Fire button (not fired by a button). Weapons of a unit with the same button are fired together.
 """
 import csv, os, re, sys
 
@@ -21,12 +21,12 @@ MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")   # 
 CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
-COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Group", "Fire button"]
+COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image"]
 BUTTONS = ("LMB", "RMB", "MMB", "")
 
 
 def clean(x):
-    """a cell of Group or Fire button: the old "-" (and "-0", which a spreadsheet made of it) mean empty"""
+    """a cell of Fire button: the old "-" (and "-0", which a spreadsheet made of it) mean empty"""
     x = (x or "").strip()
     return "" if x in ("-", "-0") else x
 MISSILE = ("MissileLauncher", "StarburstLauncher", "TorpedoLauncher")
@@ -112,12 +112,11 @@ def propose(weapons):
     result = {}
     ranked = sorted(order + dguns, key=lambda g: ({"LMB": 0, "RMB": 1, "MMB": 2}[button[id(g)]], g["range"]))
     for k, g in enumerate(ranked):
-        letter = chr(ord("A") + k)
         for n in g["nums"]:
-            result[n] = (letter, button[id(g)])
+            result[n] = button[id(g)]
     for w in weapons:
         if w["n"] not in result:
-            result[w["n"]] = ("", "")
+            result[w["n"]] = ""
     return result
 
 
@@ -164,15 +163,15 @@ INTRO = """# Renegade: the weapons of all units
 
 [Renegade](renegade.md) · [Specification](../../specs/renegade.md) · [Start page](../../README.md)
 
-Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns in `renegade_weapons.csv`** (and nothing else): the rest is read from the game. The table below is made from the csv (between the two comment lines `BEGIN TABLE` and `END TABLE`: do not edit it); the text around it, like this, may be edited.
+Which weapon of a unit is fired with which mouse button in Renegade. **Change the column Fire button in `renegade_weapons.csv`** (and nothing else): the rest is read from the game. The table below is made from the csv (between the two comment lines `BEGIN TABLE` and `END TABLE`: do not edit it); the text around it, like this, may be edited.
 
-- **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). empty = the weapon is not fired by a button (footsteps, script dummies).
-- **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button). A group has one button: the button of the first row of the group counts. Several groups may share a button.
+- **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button: footsteps, script dummies). Weapons of a unit with the same button are fired together (like the three medium plasma guns of the Epoch); give the same button to as many weapons as you like.
+- **Weapon image**: empty for now; a picture of the weapon for the panel, to be filled in when the interface is made nicer.
 - **Target**: what the weapon can hit (Ground, Air, Water; All = everything; empty = nothing). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
-- The proposal: weapons with the same weapon definition are one group; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
+- The proposal: weapons with the same weapon definition are fired together; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
 
-**How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Group** and **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (only the table between the markers `BEGIN TABLE` and `END TABLE` is rewritten, the text around it stays) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
+**How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (only the table between the markers `BEGIN TABLE` and `END TABLE` is rewritten, the text around it stays) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
 
 """
 
@@ -211,19 +210,19 @@ def make_table(log):
     old = {}
     if os.path.exists(CSV):
         for r in read_table(CSV):
-            old[(r["Code"], r["#"])] = (clean(r.get("Group")), clean(r.get("Fire button")))
+            old[(r["Code"], r["#"])] = (clean(r.get("Fire button")), (r.get("Weapon image") or "").strip())
     rows = []
     facs = list(FACTION)
     for code in sorted(units, key=lambda c: (facs.index(units[c]["fac"]) if units[c]["fac"] in facs else 9, units[c]["human"].lower(), c)):
         u = units[code]
         prop = propose(u["weapons"])
         for w in sorted(u["weapons"], key=lambda w: w["n"]):
-            grp, btn = old.get((code, str(w["n"])), prop[w["n"]])
+            btn, img = old.get((code, str(w["n"])), (prop[w["n"]], ""))
             if any(x["type"] == "DGun" for x in u["weapons"]):
-                grp, btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
+                btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
-                         dmg, w["wname"], grp, btn])
+                         dmg, w["wname"], btn, img])
     write_csv(rows)
     write_md(rows)
     print("%d rows, %d units" % (len(rows), len(units)))
@@ -241,29 +240,18 @@ def make_lua(src):
     rows = read_table(src)
     units = {}
     for r in rows:
-        r["Fire button"], r["Group"] = clean(r.get("Fire button")), clean(r.get("Group"))
+        r["Fire button"] = clean(r.get("Fire button"))
         if r["Fire button"] not in BUTTONS:
             print("unknown button", r.get("Fire button"), "at", r.get("Code"), r.get("#"))
             continue
         units.setdefault(r["Code"], []).append(r)
     lines = []
     for code in sorted(units):
-        rs = units[code]
-        groupbtn = {}
-        for r in rs:
-            g = r.get("Group", "")
-            if g == "" or r["Fire button"] == "":
-                continue
-            if g in groupbtn and groupbtn[g] != r["Fire button"]:
-                print("note: %s group %s has several buttons, %s counts" % (code, g, groupbtn[g]))
-                continue
-            groupbtn[g] = r["Fire button"]
         by = {"LMB": [], "RMB": [], "MMB": []}
-        for r in rs:
-            g = r.get("Group", "")
-            if g in groupbtn:
-                by[groupbtn[g]].append(int(r["#"]))
-        lines.append("\t%s = { L = { %s }, R = { %s }, M = { %s } }," % (code, ", ".join(map(str, sorted(by["LMB"]))), ", ".join(map(str, sorted(by["RMB"]))), ", ".join(map(str, sorted(by["MMB"])))))
+        for r in units[code]:
+            if r["Fire button"]:
+                by[r["Fire button"]].append(int(r["#"]))
+        lines.append("	%s = { L = { %s }, R = { %s }, M = { %s } }," % (code, ", ".join(map(str, sorted(by["LMB"]))), ", ".join(map(str, sorted(by["RMB"]))), ", ".join(map(str, sorted(by["MMB"])))))
     text = open(GADGET, encoding="utf-8", newline="").read()
     nl = "\r\n" if "\r\n" in text else "\n"
     text = text.replace("\r\n", "\n")

@@ -36,7 +36,8 @@ local TURN = 6 -- degrees: the order is given again at once when the wished dire
 
 local TEST = (Spring.GetModOptions() or {}).lanrenotest == "1"
 local AIM_EVERY = 3 -- frames: the target is given again (a move order may drop it)
-local ENERGY = 500 -- energy per second for the players (the lasers need much; for the tests)
+local ENERGY_START, ENERGY_STORE, ENERGY_INCOME = 5000, 20000, 1000 -- energy of a player: at the start, the storage, and the income per second (shots cost energy)
+local energyInit = {}
 local MO = Spring.GetModOptions() or {}
 local DEBUG = MO.lanrenedebug == "1"
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
@@ -1119,10 +1120,12 @@ function gadget:GameFrame(f)
 	for team in pairs(units) do
 		steer(team, f)
 		shoot(team, f)
-		if f % 30 == 0 then
-			Spring.SetTeamResource(team, "es", 20000) -- the storage: the lasers take much energy per shot
-			Spring.AddTeamResource(team, "energy", ENERGY)
+		if not energyInit[team] then
+			energyInit[team] = true
+			Spring.SetTeamResource(team, "es", ENERGY_STORE)
+			Spring.SetTeamResource(team, "energy", ENERGY_START)
 		end
+		if f % 30 == 0 then Spring.AddTeamResource(team, "energy", ENERGY_INCOME) end
 	end
 	for team, at in pairs(due) do
 		if f >= at then
