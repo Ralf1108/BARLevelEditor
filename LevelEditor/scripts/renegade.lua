@@ -30,6 +30,7 @@ local R = {
 	keys = 0, fire = 0,
 	hit = nil, -- what the crosshair points at: { kind = "unit" | "ground", x, y, z, unit, dist }
 	sentAt = -100, sent = nil,
+	MARCH = 24, -- Elmo: step of the own ray over the heightmap
 	fake = false, -- the test widget steers (no mouse, no keys of the player)
 	log = false,
 }
@@ -49,7 +50,7 @@ function widget:Initialize()
 end
 
 function widget:Shutdown()
-	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false) end
+	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	WG.renegade = nil
 end
 
@@ -83,12 +84,13 @@ local function enable(u)
 	R.on = true
 	R.unit = u
 	R.hidden = true
-	Spring.SetUnitNoDraw(u, true) -- the own model is not drawn (local only)
+	Spring.SetUnitNoDraw(u, true) -- the own model is not drawn and the screen ray and the mouse skip it (local only)
+	Spring.SetUnitNoSelect(u, true)
 	say("first person view on, unit", u, "camera fps")
 end
 
 local function disable()
-	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false) end
+	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	R.hidden = false
 	R.on = false
 	R.keys, R.fire = 0, 0
@@ -97,7 +99,7 @@ end
 
 local function send(f, force)
 	local yaw, pitch = math.floor(R.yaw + 0.5) % 360, math.floor(R.pitch + 0.5)
-	local h = R.fire == 1 and R.hit
+	local h = R.fire == 1 and R.shot
 	local msg = string.format("ren|%d|%d|%d|%d|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire,
 		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, h and h.unit or -1)
 	if msg == R.sent then return end
@@ -106,31 +108,67 @@ local function send(f, force)
 	R.sent, R.sentAt = msg, f
 end
 
--- what the crosshair points at: the ray from the middle of the screen; the own unit is skipped (then only the ground counts)
+-- What the crosshair points at, and where a shot goes. R.hit = what is under the crosshair (a unit, the ground; nil = nothing), R.shot = where the shot goes:
+-- always a point along the view ray, never further than the weapon reaches, so the unit can fire anywhere (sky, far mountains, beyond its range), like in a shooter.
+-- The engine's ray TraceScreenRay answers "sky" for terrain it does not know (the scenery beyond the edge of the map); then the ray is followed over the heightmap
+-- in steps (R.MARCH Elmo) as long as it stays inside the map.
+local function range(u)
+	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	return ud and ud.maxWeaponRange or 300
+end
+
+local function march(px, py, pz, dx, dy, dz, maxDist)
+	local step = R.MARCH
+	local d = step
+	local sx, sz = Game.mapSizeX, Game.mapSizeZ
+	local lastAbove = true
+	while d <= maxDist do
+		local x, y, z = px + dx * d, py + dy * d, pz + dz * d
+		if x < 0 or z < 0 or x > sx or z > sz then return nil end
+		if y <= Spring.GetGroundHeight(x, z) then
+			-- between the last two samples: bisect
+			local lo, hi = d - step, d
+			for _ = 1, 6 do
+				local m = (lo + hi) / 2
+				if py + dy * m <= Spring.GetGroundHeight(px + dx * m, pz + dz * m) then hi = m else lo = m end
+			end
+			return px + dx * hi, py + dy * hi, pz + dz * hi, hi
+		end
+		d = d + step
+	end
+	return nil
+end
+
 local function aim(u)
 	local vsx, vsy = Spring.GetViewGeometry()
 	local cx, cy = vsx / 2, vsy / 2
 	local px, py, pz = Spring.GetCameraPosition()
+	local dx, dy, dz = Spring.GetCameraDirection()
 	-- measured: TraceScreenRay returns "unit", id or "ground", { x, y, z } (also with onlyCoords, which ignores units)
 	local kind, v = Spring.TraceScreenRay(cx, cy, false, false, true)
+	R.rayKind = kind
+	local reach = range(u) - 8
+	local hit
 	if kind == "unit" and v ~= u then
-		local x, y2, z2 = Spring.GetUnitPosition(v, true)
-		if x then
-			R.hit = { kind = "unit", x = x, y = y2, z = z2, unit = v, dist = math.sqrt((x - px) ^ 2 + (y2 - py) ^ 2 + (z2 - pz) ^ 2) }
-			return
+		local x, y, z = Spring.GetUnitPosition(v, true)
+		if x then hit = { kind = "unit", x = x, y = y, z = z, unit = v } end
+	end
+	if not hit then
+		local gx, gy, gz
+		if kind == "ground" and type(v) == "table" then
+			gx, gy, gz = v[1], v[2], v[3]
+		else
+			gx, gy, gz = march(px, py, pz, dx, dy, dz, 6000)
 		end
+		if gx then hit = { kind = "ground", x = gx, y = gy, z = gz, unit = -1 } end
 	end
-	local gx, gy, gz
-	if kind == "ground" and type(v) == "table" then
-		gx, gy, gz = v[1], v[2], v[3]
+	if hit then hit.dist = math.sqrt((hit.x - px) ^ 2 + (hit.y - py) ^ 2 + (hit.z - pz) ^ 2) end
+	R.hit = hit
+	-- the shot: the hit when it is within reach, otherwise the point at the reach along the ray (no unit target then)
+	if hit and hit.dist <= reach then
+		R.shot = hit
 	else
-		local _, pos = Spring.TraceScreenRay(cx, cy, true)
-		if type(pos) == "table" then gx, gy, gz = pos[1], pos[2], pos[3] end
-	end
-	if gx then
-		R.hit = { kind = "ground", x = gx, y = gy, z = gz, unit = -1, dist = math.sqrt((gx - px) ^ 2 + (gy - py) ^ 2 + (gz - pz) ^ 2) }
-	else
-		R.hit = nil -- the sky
+		R.shot = { kind = "air", x = px + dx * reach, y = py + dy * reach, z = pz + dz * reach, unit = -1, dist = reach }
 	end
 end
 
@@ -153,9 +191,10 @@ function widget:Update()
 	if not R.on and not R.off then enable(u) end
 	if not R.on then return end
 	if u ~= R.unit then
-		if R.hidden and Spring.ValidUnitID(R.unit or -1) then Spring.SetUnitNoDraw(R.unit, false) end
+		if R.hidden and Spring.ValidUnitID(R.unit or -1) then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 		R.unit = u
 		Spring.SetUnitNoDraw(u, true)
+		Spring.SetUnitNoSelect(u, true)
 	end
 	if not R.fake then
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
@@ -220,6 +259,45 @@ function widget:TextCommand(cmd)
 	return true
 end
 
+-- the weapons of the unit at the bottom of the screen: name, range and the reload bar (full = ready)
+local function weaponPanel(vsx, vsy)
+	local u = R.unit
+	local ud = u and UnitDefs[Spring.GetUnitDefID(u) or -1]
+	if not ud then return end
+	local frame = Spring.GetGameFrame()
+	local s = math.max(0.7, vsy / 1080)
+	local w, h = 300 * s, 62 * s
+	local rows = {}
+	for i, wp in ipairs(ud.weapons or {}) do
+		local wd = WeaponDefs[wp.weaponDef]
+		if wd and (wd.damages and wd.range and wd.range > 0) then
+			local at = Spring.GetUnitWeaponState(u, i, "reloadFrame") or 0
+			local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or wd.reload or 1
+			local ready = at <= frame
+			local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
+			rows[#rows + 1] = { name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon", range = wd.range, fill = fill, ready = ready, time = time }
+		end
+	end
+	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
+	local total = #rows * h + 8 * s
+	gl.Color(0, 0, 0, 0.55)
+	gl.Rect(x1, y1, x1 + w, y1 + total)
+	for i, r in ipairs(rows) do
+		local ry = y1 + 6 * s + (#rows - i) * h
+		local name = r.name
+		while #name > 4 and gl.GetTextWidth(name) * 15 * s > w - 20 * s do name = name:sub(1, -2) end
+		gl.Color(1, 1, 1, 0.95)
+		gl.Text(name, x1 + 10 * s, ry + 40 * s, 15 * s, "o")
+		gl.Color(0.7, 0.7, 0.7, 0.95)
+		gl.Text(string.format("range %d   reload %.1f s   %s", r.range, r.time, r.ready and "READY" or "reloading"), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		gl.Color(0.15, 0.15, 0.15, 0.9)
+		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
+		if r.ready then gl.Color(0.3, 0.85, 0.35, 1) else gl.Color(0.95, 0.65, 0.15, 1) end
+		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + 10 * s + (w - 20 * s) * r.fill, ry + 18 * s)
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
 -- the crosshair
 function widget:DrawScreen()
 	if not R.on then return end
@@ -250,4 +328,5 @@ function widget:DrawScreen()
 	gl.Color(enemy and 1 or 0.9, enemy and 0.3 or 0.9, enemy and 0.3 or 0.9, 1)
 	gl.Text(text, cx, cy - s * 2.2, math.max(12, vsy / 70), "co")
 	gl.Color(1, 1, 1, 1)
+	weaponPanel(vsx, vsy)
 end

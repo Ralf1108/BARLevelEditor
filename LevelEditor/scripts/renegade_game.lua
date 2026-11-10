@@ -89,7 +89,10 @@ local function shoot(team, f)
 	if t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) then
 		Spring.SetUnitTarget(u, t.unit, false, true)
 	else
-		Spring.SetUnitTarget(u, t.x, t.y, t.z, false, true)
+		-- a point: where the player aims, also in the air or on a mountain; inside the map
+		local x = math.max(1, math.min(Game.mapSizeX - 1, t.x))
+		local z = math.max(1, math.min(Game.mapSizeZ - 1, t.z))
+		Spring.SetUnitTarget(u, x, t.y, z, false, true)
 	end
 	inp.firing = true
 end
