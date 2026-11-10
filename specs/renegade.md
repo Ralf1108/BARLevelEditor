@@ -64,7 +64,7 @@ Like in a shooter, never a "target". While a button is down every weapon of its 
 - The main weapon is no longer a concept (an earlier version had "left = the strongest, right = all others").
 
 ### 5.3 Anti-air and weapons that also hit aircraft
-- `aa`: default damage <= 2 and more damage against vtol (flak, anti-air missiles). `hy`: damage against the ground and against vtol and a description with "g2a" or "a2a" (the Titan's laser and starburst: "g2g/g2a"). Both are published per unit (`renAA`, `renHY`).
+- `aa`: default damage <= 2 and more damage against vtol (flak, anti-air missiles), or a description with only air tokens (g2a / a2a / s2a and no x2g / x2s: the Demon's and Kagan's shoulder rockets have ground damage but are air only). `hy`: damage against the ground and against vtol and a description with "g2a" or "a2a" (the Titan's laser and starburst: "g2g/g2a"). Both are published per unit (`renAA`, `renHY`).
 - With a lock (the `unit` of the message is an enemy): `aa` weapons get it as their target (`SetUnitTarget(unit, enemy, false, true, weaponNumber)`; homing missiles), `hy` weapons only when it flies (`canFly`), otherwise the point as every weapon; `aa` weapons without a lock do not fire. When the engine refuses the unit for a weapon (the Titan starburst: `SetUnitTarget` returns false) the point where the aircraft is becomes the target. Measured: anti-air turret `armrl` against a hovering Brawler 250 Elmo ahead and 100 up: crosshair 3 degrees beside it -> lock, weapon target type 1, the Brawler lost health (1780 -> 1665 in 1.3 s), looking away: no lock, no fire; Titan laser (right button): lock, target type 1, the Brawler destroyed.
 
 ### 5.4 Debug messages (only with `lanrenedebug`)

@@ -613,9 +613,11 @@ local function slotsFor(ud)
 		if wd and (tonumber(wd.range) or 0) > 0 and wd.type ~= "Shield" and (tonumber(wd.interceptor) or 0) == 0 and (d > 2 or v > 2) then
 			local g = byDef[wp.weaponDef]
 			if not g then
-				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = (d <= 2 and v > d), dgun = wd.type == "DGun" }
-				-- a weapon that hits the ground and aircraft (the description says "g2a" or "a2a"): at an aircraft in the circle it locks on, at the ground the player aims
 				local desc = tostring(wd.description or ""):lower()
+				-- air only: no damage against the ground, or the description names only air targets (g2a / a2a / s2a and no x2g / x2s: the Demon's shoulder rockets)
+				local airTok = desc:find("[gas]2a") ~= nil and desc:find("[gas]2[gs]") == nil
+				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = ((d <= 2 and v > d) or airTok), dgun = wd.type == "DGun" }
+				-- a weapon that hits the ground and aircraft (the description says "g2a" or "a2a"): at an aircraft in the circle it locks on, at the ground the player aims
 				g.hy = not g.aa and d > 2 and v > 2 and (desc:find("g2a", 1, true) ~= nil or desc:find("a2a", 1, true) ~= nil)
 				if g.aa then g.missile = true end
 				byDef[wp.weaponDef] = g

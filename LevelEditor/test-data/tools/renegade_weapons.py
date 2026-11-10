@@ -80,7 +80,8 @@ def propose(weapons):
             continue
         g = groups.get(w["wname"])
         if g is None:
-            aa = w["dmg"] <= 2 and w["vtol"] > 2
+            dl = w["desc"].lower()
+            aa = (w["dmg"] <= 2 and w["vtol"] > 2) or (re.search(r"[gas]2a", dl) is not None and re.search(r"[gas]2[gs]", dl) is None)   # air only (same rule as the gadget)
             g = dict(name=w["wname"], range=w["range"], nums=[], missile=(w["type"] in MISSILE) or aa, dgun=w["type"] == "DGun")
             groups[w["wname"]] = g
             order.append(g)
