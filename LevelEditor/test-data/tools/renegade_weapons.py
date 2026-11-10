@@ -7,8 +7,8 @@
                                                    infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Fire button and Weapon image of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
 
-Cruise altitude (aircraft only, empty otherwise): the highest height above the ground the aircraft may fly in Renegade; the value is the cruiseAltitude of the unit definition (the
-dump of zz_weapondump.lua carries it as a 17th field) and may be changed in the csv; the block CRUISE_ALT of the gadget is made from it.
+Cruise altitude (aircraft only, empty otherwise): the cruiseAltitude of the unit definition (the dump of zz_weapondump.lua carries it as a 17th field). Cruise altitude used: the highest height above
+the ground the aircraft may fly in Renegade, a new row gets 3 times the cruise altitude (measured: a gunship and a fighter really fly at 3 times it); change it in the csv; the block CRUISE_ALT of the gadget is made from it.
 The D-gun (type DGun: the Disintegrator of the commanders) is always on RMB; then the shortest other group is on LMB and everything else on MMB.
 The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are fired together; missiles
 (missile launcher, starburst, torpedo, anti-air only) and all other groups are sorted by range; with both kinds the shortest of the others goes on LMB, the rest of the
@@ -23,7 +23,7 @@ MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")   # 
 CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
-COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Cruise altitude"]
+COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Cruise altitude", "Cruise altitude used"]
 BUTTONS = ("LMB", "RMB", "MMB", "")
 
 
@@ -168,7 +168,8 @@ INTRO = """# Renegade: the weapons of all units
 Which weapon of a unit is fired with which mouse button in Renegade. **Change the column Fire button in `renegade_weapons.csv`** (and nothing else): the rest is read from the game. The table below is made from the csv (between the two comment lines `BEGIN TABLE` and `END TABLE`: do not edit it); the text around it, like this, may be edited.
 
 - **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button: footsteps, script dummies). Weapons of a unit with the same button are fired together (like the three medium plasma guns of the Epoch); give the same button to as many weapons as you like.
-- **Cruise altitude**: aircraft only (empty for all other units): the highest height above the ground the aircraft may fly in Renegade (the cruiseAltitude of the unit definition; change it here).
+- **Cruise altitude**: aircraft only (empty for all other units): the cruiseAltitude of the unit definition (not read by the game).
+- **Cruise altitude used**: aircraft only: the highest height above the ground the aircraft may fly in Renegade. 3 times the cruise altitude (measured: gunships and fighters really fly at 3 times it); change it here.
 - **Weapon image**: empty for now; a picture of the weapon for the panel, to be filled in when the interface is made nicer.
 - **Target**: what the weapon can hit (Ground, Air, Water; All = everything; empty = nothing). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
 - The proposal: weapons with the same weapon definition are fired together; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
@@ -213,19 +214,19 @@ def make_table(log):
     old = {}
     if os.path.exists(CSV):
         for r in read_table(CSV):
-            old[(r["Code"], r["#"])] = (clean(r.get("Fire button")), (r.get("Weapon image") or "").strip(), (r.get("Cruise altitude") or "").strip())
+            old[(r["Code"], r["#"])] = (clean(r.get("Fire button")), (r.get("Weapon image") or "").strip(), (r.get("Cruise altitude") or "").strip(), (r.get("Cruise altitude used") or "").strip())
     rows = []
     facs = list(FACTION)
     for code in sorted(units, key=lambda c: (facs.index(units[c]["fac"]) if units[c]["fac"] in facs else 9, units[c]["human"].lower(), c)):
         u = units[code]
         prop = propose(u["weapons"])
         for w in sorted(u["weapons"], key=lambda w: w["n"]):
-            btn, img, cru = old.get((code, str(w["n"])), (prop[w["n"]], "", ""))
+            btn, img, cru, used = old.get((code, str(w["n"])), (prop[w["n"]], "", "", ""))
             if any(x["type"] == "DGun" for x in u["weapons"]):
                 btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
-                         dmg, w["wname"], btn, img, u["cruise"] or cru])
+                         dmg, w["wname"], btn, img, u["cruise"] or cru, used or (str(3 * int(u["cruise"] or cru)) if (u["cruise"] or cru).isdigit() else "")])
     write_csv(rows)
     write_md(rows)
     print("%d rows, %d units" % (len(rows), len(units)))
@@ -251,7 +252,7 @@ def make_lua(src):
     lines = []
     cruise = {}
     for r in rows:
-        v = (r.get("Cruise altitude") or "").strip()
+        v = (r.get("Cruise altitude used") or "").strip()
         if v.isdigit():
             cruise[r["Code"]] = int(v)
     for code in sorted(units):
@@ -265,7 +266,7 @@ def make_lua(src):
     text = text.replace("\r\n", "\n")
     a, b = text.index("-- BEGIN WEAPONS"), text.index("-- END WEAPONS")
     head = "-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
-    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (column Cruise altitude)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n"
+    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n"
     text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + text[b:]
     open(GADGET, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))
     print("%d units written" % len(lines))
