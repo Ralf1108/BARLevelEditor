@@ -65,6 +65,14 @@ local function wish(inp)
 	return dx / l, dz / l
 end
 
+-- An aircraft stays in the air when the keys are let go: fly mode (idle mode 0) while it moves and for LAND_AFTER frames after the last key, then land mode (1).
+local LAND_AFTER = 150 -- 5 s
+local IDLEMODE = CMD.IDLEMODE or 145
+local function flyer(u)
+	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	return ud and ud.canFly
+end
+
 local function steer(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
@@ -73,9 +81,19 @@ local function steer(team, f)
 		if inp.moving then
 			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
 			inp.moving = false
+			if flyer(u) then
+				Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0) -- (stay up)
+				inp.idleFrom = f
+			end
+		end
+		if inp.idleFrom and f - inp.idleFrom >= LAND_AFTER then
+			Spring.GiveOrderToUnit(u, IDLEMODE, { 1 }, 0) -- (5 s without a key: land)
+			inp.idleFrom = nil
 		end
 		return
 	end
+	if not inp.moving and flyer(u) then Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0) end
+	inp.idleFrom = nil
 	local l = inp.last
 	local turned = math.abs(((inp.yaw - l.yaw + 180) % 360) - 180) > TURN
 	if inp.moving and not turned and l.keys == inp.keys and f - l.frame < REISSUE then return end
