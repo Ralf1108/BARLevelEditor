@@ -77,4 +77,6 @@ Files: `LevelEditor/scripts/renegade.lua` (widget), `renegade_game.lua` (gadget)
 - **Movement:** W with yaw 0 / A with yaw 90 / S with yaw 270 moved the unit the right way (north-south 211 and 327 Elmo in about 4 s of game time at speed 4); the stop works (speed 0). At the start position of Hooked (map edge, x = 10) the first W was blocked (8 Elmo), a second try elsewhere worked; an S after A took a detour (cliffs near the edge): pathfinding decides, as expected for move orders.
 - **Crosshair:** four short lines in the middle (`DrawScreen`); the screen ray is PoC 3.
 
+- **Quick start:** `LevelEditor\start_renegade.bat [map] [AI]` (default `Hooked 1.1` and `NullAI`, which does nothing) runs `ensure_installed.ps1` and `scripts\start_renegade.ps1` (writes `LevelEditor\renegade_script_installed.txt`, ignored by git): you in team 0, the computer player in team 1, game options `lanrenegade=1; lanplay=1; deathmode=neverend`.
+
 Not yet done: a real mouse and keyboard test by hand, PoC 3 to 5, lobby button and `LAN_VERSION`, aircraft and other movement types.
