@@ -42,18 +42,21 @@ def friendly_type(w):
 
 
 def target(w):
-    t = []
-    if w["dmg"] > 2 and w["ground"]:
-        t.append("Ground")
-    if w["vtol"] > 2:
-        t.append("Air")
+    """what the weapon can hit: the tokens of its description (g2g = ground to ground, g2a = ground to air, a2g, a2a, g2s ... = water) when it has them (the damage against
+    aircraft alone says nothing: many ground missiles have the same damage against every armor class), otherwise the damage (ground, air) and the type (torpedo = water)"""
     d = w["desc"].lower()
-    if w["water"] or w["type"] == "TorpedoLauncher" or re.search(r"\b[gas]2s\b", d):
-        t.append("Water")
-    if not t:
-        return "-"
-    if len(t) == 3:
-        return "All"
+    tokens = set(re.findall(r"([gas]2[gas])", d))
+    t = []
+    if tokens:
+        if tokens & {"g2g", "a2g", "s2g"}: t.append("Ground")
+        if tokens & {"g2a", "a2a", "s2a"}: t.append("Air")
+        if tokens & {"g2s", "a2s", "s2s"}: t.append("Water")
+    else:
+        if w["dmg"] > 2 and w["ground"]: t.append("Ground")
+        if w["vtol"] > 2: t.append("Air")
+        if w["water"] or w["type"] == "TorpedoLauncher": t.append("Water")
+    if not t: return "-"
+    if len(t) == 3: return "All"
     return "+".join(sorted(t, key=["Air", "Ground", "Water"].index))
 
 

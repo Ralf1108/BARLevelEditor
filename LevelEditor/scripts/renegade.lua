@@ -118,7 +118,8 @@ local SLOTS = { { "L", "LMB", 1, { 1, 0.25, 0.2 }, 3 }, { "R", "RMB", 2, { 1, 0.
 local slotsText, slotsVal
 local function slotsOf(u)
 	local aaText = Spring.GetUnitRulesParam(u, "renAA") or ""
-	local txt = (Spring.GetUnitRulesParam(u, "renSlots") or ";;") .. "|" .. aaText -- (a Pawn and an anti-air turret both have "1;;")
+	local hyText = Spring.GetUnitRulesParam(u, "renHY") or ""
+	local txt = (Spring.GetUnitRulesParam(u, "renSlots") or ";;") .. "|" .. aaText .. "|" .. hyText -- (a Pawn and an anti-air turret both have "1;;")
 	if txt == slotsText then return slotsVal end
 	local v = {}
 	local k = 0
@@ -130,6 +131,8 @@ local function slotsOf(u)
 	end
 	v.aa = {}
 	for n in aaText:gmatch("%d+") do v.aa[tonumber(n)] = true end
+	v.hy = {}
+	for n in hyText:gmatch("%d+") do v.hy[tonumber(n)] = true end
 	slotsText, slotsVal = txt, v
 	return v
 end
@@ -214,12 +217,14 @@ end
 local function aaPick(u)
 	R.aaTarget, R.aaScreen, R.aaCircle = nil, nil, nil
 	local ud, slots = weaponsOf(u)
-	if not ud or next(slots.aa) == nil then return end
+	if not ud or (next(slots.aa) == nil and next(slots.hy) == nil) then return end
 	local range = 0
-	for i in pairs(slots.aa) do
-		local wp = ud.weapons[i]
-		local wd = wp and WeaponDefs[wp.weaponDef]
-		if wd and wd.range then range = math.max(range, wd.range) end
+	for _, set in ipairs({ slots.aa, slots.hy }) do
+		for i in pairs(set) do
+			local wp = ud.weapons[i]
+			local wd = wp and WeaponDefs[wp.weaponDef]
+			if wd and wd.range then range = math.max(range, wd.range) end
+		end
 	end
 	local vsx, vsy = Spring.GetViewGeometry()
 	local cx, cy = vsx / 2, vsy / 2
@@ -535,7 +540,7 @@ local function panel(vsx, vsy)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
 				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = sl[2], color = sl[4], aa = slots.aa[i] }
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = sl[2], color = sl[4], aa = slots.aa[i], hy = slots.hy[i] }
 			end
 		end
 	end
@@ -554,7 +559,7 @@ local function panel(vsx, vsy)
 		gl.Color(r.color[1], r.color[2], r.color[3], 1)
 		gl.Text(r.tag, x1 + w - 10 * s, ry + 41 * s, 13 * s, "ro")
 		gl.Color(0.7, 0.7, 0.7, 0.95)
-		gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "   (anti-air: look at the aircraft)" or ""), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "   (anti-air: aircraft in the circle)" or (r.hy and "   (aircraft in the circle: lock; ground: aim)" or "")), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
 		gl.Color(0.15, 0.15, 0.15, 0.9)
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
 		if r.ready then gl.Color(r.color[1], r.color[2], r.color[3], 1) else gl.Color(r.color[1] * 0.55, r.color[2] * 0.55, r.color[3] * 0.55, 1) end

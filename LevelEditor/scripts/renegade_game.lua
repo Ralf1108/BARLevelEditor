@@ -614,6 +614,8 @@ local function slotsFor(ud)
 			local g = byDef[wp.weaponDef]
 			if not g then
 				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = (d <= 2 and v > d) }
+				-- a missile that hits the ground and aircraft (the description says "g2g/g2a"): at aircraft it locks on, at the ground the player aims
+				g.hy = g.missile and not g.aa and d > 2 and v > 2 and tostring(wd.description or ""):lower():find("g2a", 1, true) ~= nil
 				if g.aa then g.missile = true end
 				byDef[wp.weaponDef] = g
 				groups[#groups + 1] = g
@@ -621,10 +623,11 @@ local function slotsFor(ud)
 			g.list[#g.list + 1] = i
 		end
 	end
-	local s = { L = {}, R = {}, M = {}, aa = {} }
+	local s = { L = {}, R = {}, M = {}, aa = {}, hy = {} }
 	for _, g in ipairs(groups) do
-		if g.aa then
-			for _, i in ipairs(g.list) do s.aa[i] = true end
+		for _, i in ipairs(g.list) do
+			if g.aa then s.aa[i] = true end
+			if g.hy then s.hy[i] = true end
 		end
 	end
 	local entry = WEAPON_BUTTONS[(ud.name:gsub("_scav$", ""))] -- the table of game-modes/renegade-weapons.md (a Scavenger copy: the normal unit's entry)
@@ -709,10 +712,19 @@ local function shoot(team, f, force)
 	local t = inp.target
 	local list, ud, s = weaponsFor(u, mask)
 	for _, i in ipairs(list) do
+		local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
 		if s.aa[i] then
 			-- anti-air: only at the aircraft the player looks at
-			if t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) then
-				Spring.SetUnitTarget(u, t.unit, false, true, i)
+			if lock then Spring.SetUnitTarget(u, t.unit, false, true, i) end
+		elseif s.hy[i] and lock and (UnitDefs[Spring.GetUnitDefID(t.unit)] or {}).canFly then
+			local ok = Spring.SetUnitTarget(u, t.unit, false, true, i) -- ground and air: at an aircraft in the circle it locks on
+			if TEST and not inp.logged then inp.logged = true; Spring.Echo("[Renegade] air lock of weapon " .. i .. " on " .. t.unit .. ": " .. tostring(ok)) end
+			if not ok then -- (the weapon refuses the unit as a target: the point where it is)
+				local x, y, z = Spring.GetUnitPosition(t.unit, true)
+				if x then
+					x, y, z = shortened(u, ud, i, x, y, z)
+					Spring.SetUnitTarget(u, x, y, z, false, true, i)
+				end
 			end
 		else
 			local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
@@ -842,6 +854,10 @@ local function giveUnit(team, defName, x, y, z, face)
 	table.sort(aa)
 	Spring.SetUnitRulesParam(id, "renSlots", table.concat(s.L, ",") .. ";" .. table.concat(s.R, ",") .. ";" .. table.concat(s.M, ","), { public = true })
 	Spring.SetUnitRulesParam(id, "renAA", table.concat(aa, ","), { public = true })
+	local hy = {}
+	for i in pairs(s.hy) do hy[#hy + 1] = i end
+	table.sort(hy)
+	Spring.SetUnitRulesParam(id, "renHY", table.concat(hy, ","), { public = true })
 	return id
 end
 
