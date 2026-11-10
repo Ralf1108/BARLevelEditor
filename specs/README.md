@@ -14,6 +14,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [restrictions.md](restrictions.md) | what the player may not build, the R window |
 | [tower-defense.md](tower-defense.md), [capture-the-flag.md](capture-the-flag.md), [reclaim-the-fame.md](reclaim-the-fame.md) | the three game modes of a level |
 | [evolution.md](evolution.md) | the game mode Evolution of LAN Play (any map) |
+| [renegade.md](renegade.md) | planned game mode Renegade: one unit per player in the first person (concept, proof-of-concept plan) |
 | [arena.md](arena.md) | the Arena tool (button A) |
 | [scenario-builder.md](scenario-builder.md) | scenario info, the builder, `scenario.txt`, the extra game of the scenarios |
 | [scenario-multiplayer.md](scenario-multiplayer.md) | console lobby, split screen, bundle and map transfer |

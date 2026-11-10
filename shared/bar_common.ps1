@@ -172,6 +172,7 @@ $ScenarioGameFiles = @(
     @('ctf_game.lua', 'luarules/gadgets/ctf_game.lua'),
     @('rtf_game.lua', 'luarules/gadgets/rtf_game.lua'),
     @('evo_game.lua', 'luarules/gadgets/evo_game.lua'),
+    @('renegade_game.lua', 'luarules/gadgets/renegade_game.lua'),
     @('unit_restrictions.lua', 'luarules/gadgets/unit_restrictions.lua'),
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
     @('lan_latejoin.lua', 'luarules/gadgets/lan_latejoin.lua'),   # LAN Play: a player who joins a running game is moved into a team
@@ -180,6 +181,7 @@ $ScenarioGameFiles = @(
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
     @('led_gadgets.lua', 'luaui/Include/led_gadgets.lua'),   # what the gadgets share (editor mode, messages, game options)
     @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the window of the gift of stage 10
+    @('renegade.lua', 'luaui/widgets/renegade.lua'),   # Renegade (LAN Play): the first person view and the steering of the own unit
     @('scenario_briefing.lua', 'luaui/widgets/scenario_briefing.lua'),   # the briefing window (a game widget: no "Allow user widgets" needed)
     @('shared_start.lua', 'luaui/widgets/shared_start.lua'))             # starts a game in which several humans play one team (Copilot)
 $ScenarioGamePointer = 'LevelEditorScenarios.txt'   # in data\games: file name and game name of the one the editor setup built (read by LAN Play)
