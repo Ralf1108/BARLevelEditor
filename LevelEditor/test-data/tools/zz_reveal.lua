@@ -4,7 +4,8 @@ function widget:GetInfo() return { name = "zz reveal", desc = "test only: a play
 -- stop. Ends at frame 2400.
 function widget:GameFrame(f)
 	if f == 5 then Spring.SendCommands("setmaxspeed 10", "setminspeed 10") end
-	if f >= 30 and f <= 90 and f % 10 == 0 then Spring.SendLuaRulesMsg("evo|debug|2") end
-	if f == 1500 then Spring.SendLuaRulesMsg("evo|debug|3") end
-	if f == 2400 then Spring.SendCommands("quitforce") end
+	if f >= 30 and f <= 90 and f % 10 == 0 and f ~= 90 then Spring.SendLuaRulesMsg("evo|debug|2") end   -- (six times: level 7; a seventh at 100)
+	if f == 100 then Spring.SendLuaRulesMsg("evo|debug|2") end
+	if f == 800 then Spring.SendLuaRulesMsg("evo|debug|3") end
+	if f == 1300 then Spring.SendCommands("quitforce") end
 end

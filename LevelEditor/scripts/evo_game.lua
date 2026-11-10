@@ -148,6 +148,7 @@ for name, title in pairs({
 end
 -- END POOL
 local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
+local TESTING = (Spring.GetModOptions() or {}).lanevotest == "1" -- test only: some lines for the log
 local ALL_GODS = (Spring.GetModOptions() or {}).lanevogods == "1" -- the room's button All Be Gods: every player who reaches level 10 gets a gift (default: only the first one)
 
 -- (used by both parts: the ladders and the help window)
@@ -1446,6 +1447,7 @@ function A.start(p, i)
 			-- a human player: hold fire while cloaked (a unit that fires is seen at once); fire at will again when the cloak is over
 			p.holdFire = true
 			Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { 0 }, 0)
+			Spring.GiveOrderToUnit(id, CMD.STOP, {}, 0) -- (the weapons let go of the target they have already)
 		end
 	elseif a.key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
@@ -1466,6 +1468,7 @@ function A.start(p, i)
 				base[w] = Spring.GetUnitWeaponState(id, w, "reloadFrame") or 0
 			end
 			p.active[i].base = base
+			p.active[i].grace = Spring.GetGameFrame() + 60 -- (a shot that was already on its way when the cloak began does not end it)
 		end
 	end
 end
@@ -1564,7 +1567,12 @@ function A.update(n)
 				local ud = UnitDefs[Spring.GetUnitDefID(act.unit)]
 				for w = 1, #(ud and ud.weapons or {}) do
 					local r = Spring.GetUnitWeaponState(act.unit, w, "reloadFrame")
-					if r and r > ((act.base or {})[w] or 1e9) then
+					if r and n < (act.grace or 0) then
+						act.base[w] = r -- (the first 60 frames: only note the reload frame)
+					elseif r and r > ((act.base or {})[w] or 1e9) then
+						if TESTING then
+							Spring.Echo(string.format("[Evolution] test: seen by weapon %d: reload frame %s, at the start %s, frame %d", w, tostring(r), tostring(act.base[w]), n))
+						end
 						A.stop(p, i)
 						say(p.name .. " is seen: the cloak ends when the unit fires.")
 						break
@@ -2205,7 +2213,8 @@ local function revealTop()
 			if want and FOLLOW_AI and Spring.GetGameFrame() % (5 * FPS) == 0 then
 				for _, a in ipairs(Spring.GetAllyTeamList()) do
 					if a ~= Spring.GetUnitAllyTeam(id) then
-						Spring.Echo("[Evolution] test: " .. p.name .. " (level " .. p.stage .. ") on the radar of ally team " .. a .. ": " .. tostring(Spring.IsUnitInRadar(id, a)))
+						local st = Spring.GetUnitLosState(id, a, false)
+						Spring.Echo("[Evolution] test: " .. p.name .. " (level " .. p.stage .. ") on the radar of ally team " .. a .. ": " .. tostring(Spring.IsUnitInRadar(id, a)) .. " | state los " .. tostring(st and st.los) .. " radar " .. tostring(st and st.radar) .. " typed " .. tostring(st and st.typed))
 					end
 				end
 			end
