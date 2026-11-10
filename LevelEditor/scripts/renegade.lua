@@ -359,7 +359,7 @@ local function drawPicker()
 	Shared.drawButtons(filters, hb * 0.4, hb)
 	local mx, my = Spring.GetMouseState()
 	local ud = UnitDefs[Spring.GetUnitDefID(R.unit or -1) or -1]
-	g:draw(grid, mx, my, ud and ud.name, nil, true)
+	g:draw(grid, mx, my, R.pickMode ~= "enemy" and ud and ud.name or nil, nil, true)
 	-- the name of the unit under the mouse pointer, under the pictures
 	local i = g:at(grid, mx, my)
 	local e = i and g:list()[i]
@@ -368,7 +368,8 @@ local function drawPicker()
 		local d = UnitDefs[e.id]
 		gl.Text((d.translatedHumanName or d.humanName or e.name) .. "  (" .. e.name .. ")  " .. (d.tooltip or ""), win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
 	else
-		gl.Text("Click a unit: you turn into it. Search: type words or the code. Tab: back to the game.", win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
+		gl.Text(R.pickMode == "enemy" and "Click a unit: it appears as an enemy 1000 Elmo ahead. Search: type words or the code. Tab: back to the game."
+			or "Click a unit: you turn into it. Search: type words or the code. Tab: back to the game.", win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
 	end
 	R.win = win
 end
@@ -387,9 +388,13 @@ local function pickerClick(x, y)
 	local i = g:at(grid, x, y)
 	local e = i and g:list()[i]
 	if e then
-		Spring.SendLuaRulesMsg("ren|unit|" .. e.name)
-		g:setFocus(false)
-		R.list, R.menu = false, false
+		if R.pickMode == "enemy" then
+			Spring.SendLuaRulesMsg("ren|spawn|" .. e.name) -- an enemy 1000 Elmo ahead; the menu stays open for more
+		else
+			Spring.SendLuaRulesMsg("ren|unit|" .. e.name)
+			g:setFocus(false)
+			R.list, R.menu = false, false
+		end
 	end
 end
 
@@ -407,8 +412,9 @@ function widget:MousePress(x, y, button)
 		if button == 1 then
 			if R.list and R.win and x >= R.win.x1 and x <= R.win.x2 and y >= R.win.y0 and y <= R.win.top then
 				pickerClick(x, y)
-			elseif inRect(x, y, R.btn) then
-				R.list = not R.list
+			elseif inRect(x, y, R.btn) or inRect(x, y, R.btn2) then
+				local mode = inRect(x, y, R.btn) and "self" or "enemy"
+				if R.list and R.pickMode == mode then R.list = false else R.list, R.pickMode = true, mode end
 			else
 				R.list = false
 			end
@@ -580,19 +586,24 @@ local function panel(vsx, vsy)
 	return x1, y1 + total, w, s
 end
 
--- the debug button above the panel: the unit; a click opens the unit menu
+-- the debug buttons above the panel: "Debug unit" (you turn into a unit) and "Spawn enemy" (an enemy 1000 Elmo ahead); both open the unit menu
 local function debugButton(x1, top, w, s)
 	local ud = UnitDefs[Spring.GetUnitDefID(R.unit or -1) or -1]
 	local bh = 28 * s
 	local by = top + 8 * s
 	R.btn = { x1, by, x1 + w, by + bh }
-	gl.Color(R.list and 0.35 or 0.2, R.list and 0.35 or 0.2, R.menu and 0.5 or 0.2, 0.9)
-	gl.Rect(x1, by, x1 + w, by + bh)
-	gl.Color(1, 1, 1, 1)
-	gl.Text("Debug unit: " .. (ud and (ud.translatedHumanName or ud.name) or "?") .. "  v", x1 + 10 * s, by + 8 * s, 14 * s, "o")
+	R.btn2 = { x1, by + bh + 4 * s, x1 + w, by + 2 * bh + 4 * s }
+	local function button(r, label, on)
+		gl.Color(on and 0.35 or 0.2, on and 0.35 or 0.2, R.menu and 0.5 or 0.2, 0.9)
+		gl.Rect(r[1], r[2], r[3], r[4])
+		gl.Color(1, 1, 1, 1)
+		gl.Text(label, r[1] + 10 * s, r[2] + 8 * s, 14 * s, "o")
+	end
+	button(R.btn, "Debug unit: " .. (ud and (ud.translatedHumanName or ud.name) or "?") .. "  v", R.list and R.pickMode ~= "enemy")
+	button(R.btn2, "Spawn enemy  v", R.list and R.pickMode == "enemy")
 	if not R.menu then
 		gl.Color(0.8, 0.8, 0.5, 1)
-		gl.Text("Tab: free the mouse for the menu", x1 + w, by + bh + 4 * s, 11 * s, "ro")
+		gl.Text("Tab: free the mouse for the menu", x1 + w, R.btn2[4] + 4 * s, 11 * s, "ro")
 	end
 	gl.Color(1, 1, 1, 1)
 end
@@ -647,13 +658,29 @@ function widget:DrawScreen()
 	gl.Text(text, cx, cy - s * 2.2, math.max(12, vsy / 70), "co")
 	-- anti-air: the orange circle (put the aircraft in it and press the button) and the lock on the aircraft
 	if R.aaCircle then
-		gl.Color(1, 0.6, 0.1, 0.9)
-		gl.LineWidth(2.5)
-		gl.BeginEnd(GL.LINE_LOOP, function()
-			for a = 0, 63 do
-				gl.Vertex(cx + R.aaCircle * math.cos(a * math.pi / 32), cy + R.aaCircle * math.sin(a * math.pi / 32))
+		local function ring(radius)
+			gl.BeginEnd(GL.LINE_LOOP, function()
+				for a = 0, 63 do
+					gl.Vertex(cx + radius * math.cos(a * math.pi / 32), cy + radius * math.sin(a * math.pi / 32))
+				end
+			end)
+		end
+		if R.aaTarget then
+			-- an aircraft is locked: the circle glows (bright, thick, with a soft halo that pulses): fire now
+			local k = 0.75 + 0.25 * math.sin(os.clock() * 9)
+			for i, w in ipairs({ 14, 9, 5 }) do
+				gl.Color(1, 0.65, 0.1, 0.10 * k * i)
+				gl.LineWidth(w)
+				ring(R.aaCircle)
 			end
-		end)
+			gl.Color(1, 0.95, 0.45, 1)
+			gl.LineWidth(3.5)
+			ring(R.aaCircle)
+		else
+			gl.Color(1, 0.6, 0.1, 0.9)
+			gl.LineWidth(2.5)
+			ring(R.aaCircle)
+		end
 		if R.aaTarget and R.aaScreen then
 			local sx, sy, q = R.aaScreen[1], R.aaScreen[2], math.max(14, vsy / 45)
 			gl.Color(1, 0.7, 0.1, 1)

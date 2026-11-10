@@ -780,6 +780,32 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end
 		return
 	end
+	local spawn = msg:match("^ren|spawn|([%w_]+)$")
+	if spawn then
+		-- debug: an enemy unit 1000 Elmo ahead of the player's view, a ground unit on the ground, an aircraft 200 Elmo up; it fights toward the player
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local ud = UnitDefNames[spawn]
+		local u = units[team]
+		if DEBUG and not spec and ud and u and Spring.ValidUnitID(u) then
+			local enemy
+			for _, tm in ipairs(Spring.GetTeamList()) do
+				if not Spring.AreTeamsAllied(tm, team) and tm ~= Spring.GetGaiaTeamID() then enemy = tm; break end
+			end
+			if enemy then
+				local x, y, z = Spring.GetUnitPosition(u)
+				local yaw = math.rad(input[team].yaw)
+				local ex = math.max(64, math.min(Game.mapSizeX - 64, x + math.sin(yaw) * 1000))
+				local ez = math.max(64, math.min(Game.mapSizeZ - 64, z + math.cos(yaw) * 1000))
+				local ey = Spring.GetGroundHeight(ex, ez) + (ud.canFly and 200 or 0)
+				local id = Spring.CreateUnit(spawn, ex, ey, ez, math.random(0, 3), enemy)
+				if id then
+					Spring.GiveOrderToUnit(id, CMD.FIGHT, { x, Spring.GetGroundHeight(x, z), z }, 0)
+					if TEST then Spring.Echo(string.format("[Renegade] spawned %s %d at %d Elmo, height above the ground %d", spawn, id, math.sqrt((ex - x) ^ 2 + (ez - z) ^ 2), ey - Spring.GetGroundHeight(ex, ez))) end
+				end
+			end
+		end
+		return
+	end
 	local want = msg:match("^ren|unit|([%w_]+)$")
 	if want then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)

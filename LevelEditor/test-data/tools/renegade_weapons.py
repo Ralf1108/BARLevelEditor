@@ -10,7 +10,7 @@
 The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are one group; missiles
 (missile launcher, starburst, torpedo, anti-air only) and all other groups are sorted by range; with both kinds the shortest of the others goes on LMB, the rest of the
 others on RMB (the missiles on RMB when there is no second one) and the missiles on MMB; with one kind only the shortest on LMB, the next on RMB, all further on MMB.
-Weapons that do no damage (footsteps, script dummies) get "-" (not fired by a button).
+Weapons that do no damage (footsteps, script dummies) get an empty Group and Fire button (not fired by a button).
 """
 import csv, os, re, sys
 
@@ -21,7 +21,13 @@ CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
 COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Group", "Fire button"]
-BUTTONS = ("LMB", "RMB", "MMB", "-")
+BUTTONS = ("LMB", "RMB", "MMB", "")
+
+
+def clean(x):
+    """a cell of Group or Fire button: the old "-" (and "-0", which a spreadsheet made of it) mean empty"""
+    x = (x or "").strip()
+    return "" if x in ("-", "-0") else x
 MISSILE = ("MissileLauncher", "StarburstLauncher", "TorpedoLauncher")
 
 
@@ -45,7 +51,7 @@ def target(w):
     """what the weapon can hit: the tokens of its description (g2g = ground to ground, g2a = ground to air, a2g, a2a, g2s ... = water) when it has them (the damage against
     aircraft alone says nothing: many ground missiles have the same damage against every armor class), otherwise the damage (ground, air) and the type (torpedo = water)"""
     d = w["desc"].lower()
-    tokens = set(re.findall(r"([gas]2[gas])", d))
+    tokens = set(re.findall(r"\b([gas]2[gas])\b", d))
     t = []
     if tokens:
         if tokens & {"g2g", "a2g", "s2g"}: t.append("Ground")
@@ -100,7 +106,7 @@ def propose(weapons):
             result[n] = (letter, button[id(g)])
     for w in weapons:
         if w["n"] not in result:
-            result[w["n"]] = ("-", "-")
+            result[w["n"]] = ("", "")
     return result
 
 
@@ -149,8 +155,8 @@ INTRO = """# Renegade: the weapons of all units
 
 Which weapon of a unit is fired with which mouse button in Renegade. **Change the last two columns in `renegade_weapons.csv`** (and nothing else): the rest is read from the game; this page is made from the csv.
 
-- **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). `-` = the weapon is not fired by a button (footsteps, script dummies).
-- **Fire button**: `LMB` (left mouse button), `RMB` (right) or `MMB` (middle). A group has one button: the button of the first row of the group counts. Several groups may share a button.
+- **Group**: a letter per unit; weapons with the same letter belong together (they are fired together, like the three medium plasma guns of the Epoch). empty = the weapon is not fired by a button (footsteps, script dummies).
+- **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button). A group has one button: the button of the first row of the group counts. Several groups may share a button.
 - **Target**: what the weapon can hit (Ground, Air, Water; All = everything). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
 - The proposal: weapons with the same weapon definition are one group; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
@@ -183,7 +189,7 @@ def make_table(log):
     old = {}
     if os.path.exists(CSV):
         for r in read_table(CSV):
-            old[(r["Code"], r["#"])] = (r.get("Group", "-"), r.get("Fire button", "-"))
+            old[(r["Code"], r["#"])] = (clean(r.get("Group")), clean(r.get("Fire button")))
     rows = []
     facs = list(FACTION)
     for code in sorted(units, key=lambda c: (facs.index(units[c]["fac"]) if units[c]["fac"] in facs else 9, units[c]["human"].lower(), c)):
@@ -211,7 +217,8 @@ def make_lua(src):
     rows = read_table(src)
     units = {}
     for r in rows:
-        if r.get("Fire button", "-") not in BUTTONS:
+        r["Fire button"], r["Group"] = clean(r.get("Fire button")), clean(r.get("Group"))
+        if r["Fire button"] not in BUTTONS:
             print("unknown button", r.get("Fire button"), "at", r.get("Code"), r.get("#"))
             continue
         units.setdefault(r["Code"], []).append(r)
@@ -220,8 +227,8 @@ def make_lua(src):
         rs = units[code]
         groupbtn = {}
         for r in rs:
-            g = r.get("Group", "-")
-            if g == "-" or r["Fire button"] == "-":
+            g = r.get("Group", "")
+            if g == "" or r["Fire button"] == "":
                 continue
             if g in groupbtn and groupbtn[g] != r["Fire button"]:
                 print("note: %s group %s has several buttons, %s counts" % (code, g, groupbtn[g]))
@@ -229,7 +236,7 @@ def make_lua(src):
             groupbtn[g] = r["Fire button"]
         by = {"LMB": [], "RMB": [], "MMB": []}
         for r in rs:
-            g = r.get("Group", "-")
+            g = r.get("Group", "")
             if g in groupbtn:
                 by[groupbtn[g]].append(int(r["#"]))
         lines.append("\t%s = { L = { %s }, R = { %s }, M = { %s } }," % (code, ", ".join(map(str, sorted(by["LMB"]))), ", ".join(map(str, sorted(by["RMB"]))), ", ".join(map(str, sorted(by["MMB"])))))
