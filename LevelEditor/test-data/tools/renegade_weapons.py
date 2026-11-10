@@ -7,9 +7,10 @@
                                                    infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Fire button and Weapon image of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
 
-A row without a weapon (column # and the weapon columns empty) is an aircraft that carries none (scout, transport, builder, radar plane, satellite): it is in the table for its cruise altitude and is kept by `table`.
-Cruise altitude (aircraft only, empty otherwise): the cruiseAltitude of the unit definition (the dump of zz_weapondump.lua carries it as a 17th field). Cruise altitude used: the highest height above
-the ground the aircraft may fly in Renegade, a new row gets 3 times the cruise altitude (measured: a gunship and a fighter really fly at 3 times it); change it in the csv; the block CRUISE_ALT of the gadget is made from it.
+The second table, game-modes/renegade_cruise.csv (and renegade-cruise.md): every aircraft of Armada, Cortex and Legion (also those without a weapon) with Cruise altitude (the cruiseAltitude of the
+unit definition; the dump of zz_weapondump.lua carries it as a 17th field) and Cruise altitude used (the highest height above the ground the aircraft may fly in Renegade; a new row gets 3 times the
+cruise altitude: measured, a gunship and a fighter really fly at 3 times it; change it in the csv). `update` makes the block CRUISE_ALT of the gadget from it; `table` adds the aircraft of the dump
+that are not in it and sets their Cruise altitude (a value of Cruise altitude used that is there stays).
 The D-gun (type DGun: the Disintegrator of the commanders) is always on RMB; then the shortest other group is on LMB and everything else on MMB.
 The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are fired together; missiles
 (missile launcher, starburst, torpedo, anti-air only) and all other groups are sorted by range; with both kinds the shortest of the others goes on LMB, the rest of the
@@ -22,9 +23,12 @@ here = os.path.dirname(os.path.abspath(__file__))
 repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
 MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")   # (made from the csv)
 CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
+CRUISE_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_cruise.csv")
+CRUISE_MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-cruise.md")
+CRUISE_COLUMNS = ["Faction", "Unit", "Code", "Cruise altitude", "Cruise altitude used"]
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
-COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Cruise altitude", "Cruise altitude used"]
+COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image"]
 BUTTONS = ("LMB", "RMB", "MMB", "")
 
 
@@ -169,8 +173,6 @@ INTRO = """# Renegade: the weapons of all units
 Which weapon of a unit is fired with which mouse button in Renegade. **Change the column Fire button in `renegade_weapons.csv`** (and nothing else): the rest is read from the game. The table below is made from the csv (between the two comment lines `BEGIN TABLE` and `END TABLE`: do not edit it); the text around it, like this, may be edited.
 
 - **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button: footsteps, script dummies). Weapons of a unit with the same button are fired together (like the three medium plasma guns of the Epoch); give the same button to as many weapons as you like.
-- **Cruise altitude**: aircraft only (empty for all other units): the cruiseAltitude of the unit definition (not read by the game).
-- **Cruise altitude used**: aircraft only: the highest height above the ground the aircraft may fly in Renegade. 3 times the cruise altitude (measured: gunships and fighters really fly at 3 times it); change it here.
 - **Weapon image**: empty for now; a picture of the weapon for the panel, to be filled in when the interface is made nicer.
 - **Target**: what the weapon can hit (Ground, Air, Water; All = everything; empty = nothing). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
 - The proposal: weapons with the same weapon definition are fired together; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
@@ -188,7 +190,7 @@ END_TABLE = "<!-- END TABLE -->"
 def write_md(rows):
     """only what stands between the markers is written (the count and the table); the text around it stays as it is. A file without the markers (or none) is made with the text INTRO."""
     codes = {r[2] for r in rows}
-    lines = ["%d weapons of %d units (%d aircraft without a weapon are in for their cruise altitude)." % (len([r for r in rows if r[3]]), len(codes), len([r for r in rows if not r[3]])), "", "| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
+    lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
     for r in rows:
         lines.append("| " + " | ".join(c.replace("|", "/") for c in r) + " |")
     block = BEGIN_TABLE + "\n" + "\n".join(lines) + "\n" + END_TABLE + "\n"
@@ -213,38 +215,84 @@ def write_csv(rows):
 def make_table(log):
     units = read_dump(log)
     old = {}
-    extra = []   # rows without a weapon (# empty: aircraft that carry none: scouts, transports, builders), kept as they are
     if os.path.exists(CSV):
         for r in read_table(CSV):
-            if not (r.get("#") or "").strip():
-                extra.append([(r.get(c) or "") for c in COLUMNS])
-                continue
-            old[(r["Code"], r["#"])] = (clean(r.get("Fire button")), (r.get("Weapon image") or "").strip(), (r.get("Cruise altitude") or "").strip(), (r.get("Cruise altitude used") or "").strip())
+            old[(r["Code"], r["#"])] = (clean(r.get("Fire button")), (r.get("Weapon image") or "").strip())
     rows = []
     facs = list(FACTION)
     for code in sorted(units, key=lambda c: (facs.index(units[c]["fac"]) if units[c]["fac"] in facs else 9, units[c]["human"].lower(), c)):
         u = units[code]
         prop = propose(u["weapons"])
         for w in sorted(u["weapons"], key=lambda w: w["n"]):
-            btn, img, cru, used = old.get((code, str(w["n"])), (prop[w["n"]], "", "", ""))
+            btn, img = old.get((code, str(w["n"])), (prop[w["n"]], ""))
             if any(x["type"] == "DGun" for x in u["weapons"]):
                 btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
-                         dmg, w["wname"], btn, img, u["cruise"] or cru, used or (str(3 * int(u["cruise"] or cru)) if (u["cruise"] or cru).isdigit() else "")])
-    rows += [r for r in extra if r[2] not in units]
-    order = list(FACTION.values())
-    rows.sort(key=lambda r: (order.index(r[0]) if r[0] in order else 9, r[1].lower(), r[2], int(r[3]) if r[3].isdigit() else 0))
+                         dmg, w["wname"], btn, img])
     write_csv(rows)
     write_md(rows)
-    print("%d rows, %d units" % (len(rows), len({r[2] for r in rows})))
+    print("%d rows, %d units" % (len(rows), len(units)))
+    make_cruise(units)
     make_lua(CSV)
+
+
+CRUISE_INTRO = """# Renegade: the cruise altitude of the aircraft
+
+[Renegade](renegade.md) · [Specification](../../specs/renegade.md) · [Start page](../../README.md)
+
+How high an aircraft may fly in Renegade (above the ground; it follows the terrain, and when the ground falls away it sinks with it). **Change the column Cruise altitude used in `renegade_cruise.csv`**: the rest is read from the game.
+
+- **Cruise altitude**: the `cruiseAltitude` of the unit definition (not read by the game).
+- **Cruise altitude used**: the highest height above the ground the aircraft may fly (Space raises, Ctrl lowers, the altimeter ends there). 3 times the cruise altitude: measured, a gunship and a fighter really fly at 3 times it. In the game the height is cut to 1000.
+- Every aircraft of Armada, Cortex and Legion is in, also those without a weapon (scouts, transports, builders, radar planes, satellites); only a unit with a weapon can be played.
+
+**How to change it:** open the csv in Excel (columns separated by semicolons), change Cruise altitude used, save, double-click `update_renegade_weapons.bat` (in this folder: it writes this page and the table CRUISE_ALT in `renegade_game.lua` as well as the weapon table).
+
+"""
+
+
+def read_cruise():
+    return [[(r.get(c) or "").strip() for c in CRUISE_COLUMNS] for r in read_table(CRUISE_CSV)] if os.path.exists(CRUISE_CSV) else []
+
+
+def write_cruise(rows):
+    order = list(FACTION.values())
+    rows = sorted(rows, key=lambda r: (order.index(r[0]) if r[0] in order else 9, r[1].lower(), r[2]))
+    with open(CRUISE_CSV, "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.writer(fh, delimiter=";")
+        w.writerow(CRUISE_COLUMNS)
+        for r in rows:
+            w.writerow(r)
+    lines = ["%d aircraft." % len(rows), "", "| " + " | ".join(CRUISE_COLUMNS) + " |", "|" + "|".join(["---"] * len(CRUISE_COLUMNS)) + "|"]
+    for r in rows:
+        lines.append("| " + " | ".join(r) + " |")
+    open(CRUISE_MD, "w", encoding="utf-8", newline=chr(10)).write(CRUISE_INTRO + chr(10).join(lines) + chr(10))
+    return rows
+
+
+def make_cruise(units):
+    """the aircraft of the dump that are not in the cruise table yet are added (3 times the cruise altitude); the cruise altitude of the others is renewed, Cruise altitude used stays"""
+    rows = read_cruise()
+    by = {r[2]: r for r in rows}
+    for code, u in units.items():
+        if not u["cruise"].isdigit():
+            continue
+        if code in by:
+            by[code][3] = u["cruise"]
+        else:
+            r = [FACTION.get(u["fac"], u["fac"]), u["human"], code, u["cruise"], str(3 * int(u["cruise"]))]
+            rows.append(r)
+            by[code] = r
+    rows = write_cruise(rows)
+    print("%d aircraft in the cruise table" % len(rows))
 
 
 def make_update():
     rows = [[r[c] for c in COLUMNS] for r in read_table(CSV)]
     write_md(rows)
     print("%s written (%d rows)" % (os.path.basename(MD), len(rows)))
+    write_cruise(read_cruise())
     make_lua(CSV)
 
 
@@ -259,10 +307,9 @@ def make_lua(src):
         units.setdefault(r["Code"], []).append(r)
     lines = []
     cruise = {}
-    for r in rows:
-        v = (r.get("Cruise altitude used") or "").strip()
-        if v.isdigit():
-            cruise[r["Code"]] = int(v)
+    for r in read_cruise():
+        if r[4].isdigit():
+            cruise[r[2]] = int(r[4])
     for code in sorted(units):
         by = {"LMB": [], "RMB": [], "MMB": []}
         for r in units[code]:
@@ -274,7 +321,7 @@ def make_lua(src):
     text = text.replace("\r\n", "\n")
     a, b = text.index("-- BEGIN WEAPONS"), text.index("-- END WEAPONS")
     head = "-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
-    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n"
+    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n"
     text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + text[b:]
     open(GADGET, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))
     print("%d units written" % len(lines))
