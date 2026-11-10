@@ -524,9 +524,9 @@ local function facingArrow(x, z, dx, dz)
 end
 
 -- The guns of a gunship are fixed to its body: they point (almost) along its nose and can only turn down by MAX_DOWN degrees (measured with the Roughneck: whatever
--- the view, the barrel stays at about 27 degrees down; with the nose tilted by the attack order about 55). A point on the ground that lies steeper below the aircraft cannot be hit. fixedGun tells whether the unit is such an
+-- the view, the barrel stays at about 27 degrees down). A point on the ground that lies steeper below the aircraft cannot be hit. fixedGun tells whether the unit is such an
 -- aircraft; tooSteep whether the point under the crosshair is out of the cone; the radius of the dead zone on the ground under the aircraft is its height / tan(MAX_DOWN).
-local MAX_DOWN = 55 -- 27 degrees of the guns plus about 28 of the body tilt in the attack state (the gadget gives the attack order while the player fires; measured 30)
+local MAX_DOWN = 27
 local function fixedGun(ud, slots)
 	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return false end
 	for _, key in ipairs({ "L", "R", "M" }) do
