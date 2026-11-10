@@ -28,7 +28,7 @@ function widget:GameFrame(f)
 					Spring.Echo(string.format("[zzwep] %s;%s;%s;%d;%s;%s;%s;%d;%.2f;%.0f;%.0f;%d;%d;%d;%d;%s", n, fac, (ud.translatedHumanName or ud.humanName or n):gsub(";", ","), i,
 						tostring(wd.name), tostring(wd.description or ""):gsub(";", ","), tostring(wd.type), wd.range or 0, wd.reload or 0,
 						wd.damages and wd.damages[defIdx] or 0, wd.damages and wd.damages[vtolIdx] or 0, wd.projectiles or 1, wd.salvoSize or 1,
-						b(wd.canAttackGround ~= false), b(wd.waterWeapon), table.concat(flags, ",")))
+						b(wd.canAttackGround ~= false), b(wd.waterWeapon), table.concat(flags, ",") .. ";" .. (ud.canFly and string.format("%.0f", ud.cruiseAltitude or 0) or "")))
 				end
 			end
 		end

@@ -80,10 +80,17 @@ local function flyer(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	return ud and ud.canFly
 end
+local CRUISE_ALT -- (filled in the block WEAPON_BUTTONS below: the highest height above the ground of an aircraft, column Cruise altitude of the table)
 
 -- The height of an aircraft that flies (gunships hover where they are): Space raises it, Ctrl lowers it (LIFT_RATE Elmo a frame, between MIN_ALT and MAX_ALT above the
 -- ground). The height is the flying height the move type wants (Spring.MoveCtrl.SetGunshipMoveTypeData / SetAirMoveTypeData "wantedHeight"); a landed aircraft takes off.
 local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED, TAKEOFF_ALT = 4, 4, 600, 2.3, 400
+-- the highest height of an aircraft: its cruise altitude (column Cruise altitude of the table; a unit that is not in it: the cruiseAltitude of its definition); never over MAX_ALT
+local function maxAlt(u)
+	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	local v = ud and ((CRUISE_ALT and CRUISE_ALT[(ud.name:gsub("_scav$", ""))]) or tonumber(ud.cruiseAltitude))
+	return math.max(MIN_ALT + 20, math.min(MAX_ALT, v or 220))
+end
 local LAND_HOLD = 60 -- frames: the lower key held at the bottom (2 s) lands the aircraft
 -- (the height the move type reaches is not the height asked for: it hovers about 100 Elmo higher; the difference is measured whenever the aircraft is not climbing or sinking
 -- and taken off from what is asked for, so the real height is the wished one)
@@ -122,11 +129,11 @@ local function lift(team, f)
 		inp.landed = false
 		local x, y, z = Spring.GetUnitPosition(u)
 		if y - Spring.GetGroundHeight(x, z) < 25 then
-			inp.altUnit, inp.alt = u, TAKEOFF_ALT
+			inp.altUnit, inp.alt = u, math.min(TAKEOFF_ALT, maxAlt(u))
 			applyHeight(u, inp)
 			Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0)
 			Spring.GiveOrderToUnit(u, CMD.MOVE, { x, y, z }, 0)
-			if TEST then Spring.Echo(string.format("[Renegade] takeoff: wanted height %d", TAKEOFF_ALT)) end
+			if TEST then Spring.Echo(string.format("[Renegade] takeoff: wanted height %d", inp.alt)) end
 		end
 	end
 	if inp.alt and inp.altUnit == u and inp.cmd and f % 10 == 0 then
@@ -147,7 +154,7 @@ local function lift(team, f)
 			-- the key is let go: hold the height it has now (the move type would climb on to the old wanted height and beyond)
 			inp.lifting = false
 			local x, y, z = Spring.GetUnitPosition(u)
-			inp.alt = math.max(MIN_ALT, math.min(MAX_ALT, y - Spring.GetGroundHeight(x, z)))
+			inp.alt = math.max(MIN_ALT, math.min(maxAlt(u), y - Spring.GetGroundHeight(x, z)))
 			applyHeight(u, inp)
 			inp.holdUntil = f + 45 -- (and the vertical speed is taken away for 1.5 s: the move type lags and overshoots)
 		end
@@ -164,7 +171,7 @@ local function lift(team, f)
 	if inp.altUnit ~= u then inp.altUnit, inp.alt = u, nil end
 	inp.alt = inp.alt or math.max(MIN_ALT, y - Spring.GetGroundHeight(x, z))
 	local before = inp.alt
-	inp.alt = math.max(MIN_ALT, math.min(MAX_ALT, inp.alt + (up and LIFT_RATE or 0) - (down and LIFT_RATE or 0)))
+	inp.alt = math.max(MIN_ALT, math.min(maxAlt(u), inp.alt + (up and LIFT_RATE or 0) - (down and LIFT_RATE or 0)))
 	local mc = Spring.MoveCtrl
 	if down and y - Spring.GetGroundHeight(x, z) > MIN_ALT + 5 then
 		-- the move type lets an aircraft sink only slowly: push it down (about 70 Elmo a second)
@@ -227,7 +234,7 @@ end
 -- anti-air weapons) and all others are sorted by range. With both kinds: the shortest weapon of the others on the left button, the rest of the others on the right
 -- button (the right button takes the missiles when there is no second one), the missiles on the middle button. With only one kind: the shortest on the left,
 -- the next on the right, all further ones on the middle button.
--- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade-weapons.md: change the table, not this block)
+-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)
 local WEAPON_BUTTONS = {
 	armaak = { L = { 2 }, R = { 1 }, M = {  } },
 	armaas = { L = { 3 }, R = { 2 }, M = {  } },
@@ -727,6 +734,74 @@ local WEAPON_BUTTONS = {
 	legvenator = { L = { 1 }, R = {  }, M = {  } },
 	legvflak = { L = { 1 }, R = {  }, M = {  } },
 }
+CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (column Cruise altitude)
+	armblade = 110,
+	armbrawl = 100,
+	armdfly = 135,
+	armdrone = 40,
+	armdroneold = 70,
+	armfepocht4 = 100,
+	armfig = 125,
+	armhawk = 160,
+	armkam = 70,
+	armlance = 90,
+	armliche = 150,
+	armlichet4 = 150,
+	armpnix = 220,
+	armsaber = 85,
+	armsb = 210,
+	armseap = 100,
+	armsfig = 140,
+	armsfig2 = 140,
+	armstil = 120,
+	armtdrone = 40,
+	armthund = 165,
+	armthundt4 = 190,
+	corape = 100,
+	corbw = 78,
+	corcrw = 75,
+	corcrwh = 85,
+	corcrwt4 = 110,
+	corcut = 85,
+	cordrone = 40,
+	cordronecarryair = 100,
+	cordroneold = 78,
+	cords = 165,
+	corfblackhyt4 = 100,
+	corhurc = 220,
+	corsb = 150,
+	corseap = 100,
+	corsfig = 140,
+	corsfig2 = 140,
+	corshad = 165,
+	cortdrone = 40,
+	cortitan = 90,
+	corvamp = 160,
+	corveng = 125,
+	legafigdef = 160,
+	legatorpbomber = 90,
+	legcib = 130,
+	legdrone = 78,
+	legfig = 125,
+	legfort = 100,
+	legfortt4 = 250,
+	legheavydrone = 68,
+	legheavydronesmall = 68,
+	legionnaire = 160,
+	legkam = 50,
+	legmineb = 150,
+	legmos = 70,
+	legmost3 = 150,
+	legnap = 180,
+	legphoenix = 220,
+	legspbomber = 210,
+	legspcarrier = 100,
+	legspfighter = 140,
+	legspsurfacegunship = 85,
+	legsptorpgunship = 100,
+	legstronghold = 135,
+	legvenator = 160,
+}
 -- END WEAPONS
 local MISSILE = { MissileLauncher = true, StarburstLauncher = true, TorpedoLauncher = true }
 local slotCache = {}
@@ -1129,6 +1204,7 @@ local function giveUnit(team, defName, x, y, z, face)
 	table.sort(aa)
 	Spring.SetUnitRulesParam(id, "renSlots", table.concat(s.L, ",") .. ";" .. table.concat(s.R, ",") .. ";" .. table.concat(s.M, ","), { public = true })
 	Spring.SetUnitRulesParam(id, "renAA", table.concat(aa, ","), { public = true })
+	if flyer(id) then Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true }) end
 	local hy = {}
 	for i in pairs(s.hy) do hy[#hy + 1] = i end
 	table.sort(hy)
