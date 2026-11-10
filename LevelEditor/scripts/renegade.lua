@@ -758,6 +758,17 @@ local function reach(ud, slots, list, h)
 end
 local REACH_COLOR = { green = { 0.25, 0.85, 0.3 }, yellow = { 0.95, 0.8, 0.15 }, red = { 0.9, 0.2, 0.15 } }
 
+-- The pictures of the weapons: the gadget publishes "<weapon number>=<picture>,..." (renPics); a picture is the file LuaUI/Images/renegade/weapons/weapon_<picture>.png of the game
+local picCache = {}
+local function weaponPicture(u, i)
+	local txt = Spring.GetUnitRulesParam(u, "renPics") or ""
+	local name = txt:match("%f[%d]" .. i .. "=([%w%-_]+)")
+	if not name then return nil end
+	local path = "LuaUI/Images/renegade/weapons/weapon_" .. name .. ".png"
+	if picCache[path] == nil then picCache[path] = VFS.FileExists(path) and path or false end
+	return picCache[path] or nil
+end
+
 local function panel(vsx, vsy)
 	local u = R.unit
 	local ud, slots = weaponsOf(u)
@@ -766,6 +777,7 @@ local function panel(vsx, vsy)
 	local frame = Spring.GetGameFrame()
 	local s = math.max(0.7, vsy / 1080)
 	local w, h = 320 * s, 62 * s
+	local pw, ph = 96 * s, 48 * s -- the picture of a weapon (a row with a picture is wider: the text moves right)
 	local rows = {}
 	R.states = {} -- (for the tests: the colour of every row)
 	local allAtOnce = R.full -- FULL FIRE (Alt switches it): the left button fires every weapon
@@ -792,10 +804,12 @@ local function panel(vsx, vsy)
 						state = height <= attack and "green" or (height <= attack * 1.15 and "yellow" or "red")
 					end
 				end
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height }
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i) }
 			end
 		end
 	end
+	local anyPic = false
+	for _, r in ipairs(rows) do if r.pic then anyPic = true; w = 430 * s; break end end -- (with a picture the panel is wider, every row keeps the place of the picture)
 	local hh = 40 * s -- the health row
 	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
 	local total = #rows * h + hh + 8 * s
@@ -814,9 +828,16 @@ local function panel(vsx, vsy)
 			gl.Rect(x1 + 3 * s, ry + 2 * s, x1 + w - 3 * s, ry + h - 4 * s)
 		end
 		local name = r.name
-		while #name > 4 and gl.GetTextWidth(name) * 15 * s > w - 70 * s do name = name:sub(1, -2) end
+		local tx = x1 + 10 * s + (anyPic and (pw + 8 * s) or 0) -- the text starts right of the picture
+		if r.pic then
+			gl.Color(1, 1, 1, 1)
+			gl.Texture(r.pic)
+			gl.TexRect(x1 + 8 * s, ry + 8 * s, x1 + 8 * s + pw, ry + 8 * s + ph)
+			gl.Texture(false)
+		end
+		while #name > 4 and gl.GetTextWidth(name) * 15 * s > w - 70 * s - (tx - x1 - 10 * s) do name = name:sub(1, -2) end
 		gl.Color(1, 1, 1, 0.95)
-		gl.Text(name, x1 + 10 * s, ry + 40 * s, 15 * s, "o")
+		gl.Text(name, tx, ry + 40 * s, 15 * s, "o")
 		gl.Color(r.color[1], r.color[2], r.color[3], 1)
 		gl.Text(r.tag, x1 + w - 10 * s, ry + 41 * s, 13 * s, "ro")
 		if r.aa then
@@ -825,14 +846,14 @@ local function panel(vsx, vsy)
 		end
 		gl.Color(0.7, 0.7, 0.7, 0.95)
 		if r.attack then
-			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s   %s", r.attack, r.height, r.time, r.ready and "READY" or "reloading"), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s   %s", r.attack, r.height, r.time, r.ready and "READY" or "reloading"), tx, ry + 24 * s, 12 * s, "o")
 		else
-			gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "" or (r.hy and "   (aircraft in the circle: lock; ground: aim)" or "")), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+			gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "" or ((r.hy and not anyPic) and "   (aircraft in the circle: lock; ground: aim)" or "")), tx, ry + 24 * s, 12 * s, "o")
 		end
 		gl.Color(0.15, 0.15, 0.15, 0.9)
-		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
+		gl.Rect(tx, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
 		if r.ready then gl.Color(r.color[1], r.color[2], r.color[3], 1) else gl.Color(r.color[1] * 0.55, r.color[2] * 0.55, r.color[3] * 0.55, 1) end
-		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + 10 * s + (w - 20 * s) * r.fill, ry + 18 * s)
+		gl.Rect(tx, ry + 6 * s, tx + (x1 + w - 10 * s - tx) * r.fill, ry + 18 * s)
 	end
 	-- health: a bar from red to green with the numbers
 	local hp, mhp = Spring.GetUnitHealth(u)

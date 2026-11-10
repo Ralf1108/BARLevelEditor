@@ -25,6 +25,8 @@ MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-weapons.md")   # 
 CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 CRUISE_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_cruise.csv")
 CRUISE_MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-cruise.md")
+IMAGES = os.path.join(repo, "LevelEditor", "game-modes", "weapon-images")
+CATEGORIES_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapon_categories.csv")
 CRUISE_COLUMNS = ["Faction", "Unit", "Code", "Cruise altitude", "Cruise altitude used", "Attack altitude"]
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
@@ -320,13 +322,21 @@ def make_lua(src):
             if r["Fire button"]:
                 by[r["Fire button"]].append(int(r["#"]))
         lines.append("	%s = { L = { %s }, R = { %s }, M = { %s } }," % (code, ", ".join(map(str, sorted(by["LMB"]))), ", ".join(map(str, sorted(by["RMB"]))), ", ".join(map(str, sorted(by["MMB"])))))
+    # the pictures: the weapons whose category has a picture (weapon-images/weapon_<category>.png; categories csv made by weapon_categories.py)
+    pics = {}
+    if os.path.exists(CATEGORIES_CSV) and os.path.isdir(IMAGES):
+        have = {f[len("weapon_"):-len(".png")] for f in os.listdir(IMAGES) if f.startswith("weapon_") and f.endswith(".png")}
+        for r in read_table(CATEGORIES_CSV):
+            if r["Category"] in have:
+                pics.setdefault(r["Code"], {})[int(r["#"])] = r["Category"]
+    pic_lines = "\n".join("	%s = { %s }," % (c, ", ".join('[%d] = "%s"' % (n, pics[c][n]) for n in sorted(pics[c]))) for c in sorted(pics))
     text = open(GADGET, encoding="utf-8", newline="").read()
     nl = "\r\n" if "\r\n" in text else "\n"
     text = text.replace("\r\n", "\n")
     a, b = text.index("-- BEGIN WEAPONS"), text.index("-- END WEAPONS")
     head = "-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
     alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n" + "ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the ground (column Attack altitude)\n" + "\n".join("	%s = %d," % (c, attack[c]) for c in sorted(attack)) + "\n}\n"
-    text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + text[b:]
+    text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + "WEAPON_PICS = { -- the picture of a weapon of the panel (weapon-images/weapon_<name>.png)\n" + pic_lines + "\n}\n" + text[b:]
     open(GADGET, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))
     print("%d units written" % len(lines))
 

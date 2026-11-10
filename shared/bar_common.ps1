@@ -143,8 +143,13 @@ function Write-GameZip([string]$path, $entries, $fixedTime = $null) {
         foreach ($e in $entries) {
             $entry = $zip.CreateEntry($e[0])
             if ($fixedTime) { $entry.LastWriteTime = $fixedTime }
-            $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
-            try { $w.Write($e[1]) } finally { $w.Close() }
+            if ($e[1] -is [byte[]]) {   # a picture: the bytes as they are
+                $s = $entry.Open()
+                try { $s.Write($e[1], 0, $e[1].Length) } finally { $s.Close() }
+            } else {
+                $w = New-Object IO.StreamWriter($entry.Open(), $utf8)
+                try { $w.Write($e[1]) } finally { $w.Close() }
+            }
         }
     } finally { $zip.Dispose() }
     Move-Item $tmp $path -Force
@@ -278,6 +283,19 @@ function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
         $text = [IO.File]::ReadAllText($src).Replace("`r", '')
         $entries += , @($f[1], $text)
         $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($f[1] + "`n" + $text + "`n"))
+    }
+    # the pictures of the weapon panel of Renegade (LevelEditor\game-modes\weapon-images\*.png, found next to the scripts folder): luaui/Images/renegade/weapons/<file>
+    foreach ($d in $dirs) {
+        $pd = if ($d) { Join-Path (Split-Path $d -Parent) 'game-modes\weapon-images' } else { $null }
+        if ($pd -and (Test-Path $pd)) {
+            foreach ($img in (Get-ChildItem $pd -Filter 'weapon_*.png' | Sort-Object Name)) {
+                [byte[]]$data0 = [IO.File]::ReadAllBytes($img.FullName)
+                $entries += , @(('luaui/Images/renegade/weapons/' + $img.Name), $data0)
+                $bytes.AddRange([Text.Encoding]::UTF8.GetBytes('luaui/Images/renegade/weapons/' + $img.Name + "`n"))
+                $bytes.AddRange($data0)
+            }
+            break
+        }
     }
     foreach ($f in $ScenarioGameDerived) {
         $text = Get-GameFileText $data $game $f[0]

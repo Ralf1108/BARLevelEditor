@@ -80,6 +80,7 @@ local function flyer(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	return ud and ud.canFly
 end
+local WEAPON_PICS -- (filled in the block below: the picture of a weapon of the panel by unit and weapon number)
 local ATTACK_ALT -- (filled in the block below: the height up to which a bomber drops its bombs, column Attack altitude)
 local CRUISE_ALT -- (filled in the block WEAPON_BUTTONS below: the highest height above the ground of an aircraft, column Cruise altitude of the table)
 
@@ -892,6 +893,84 @@ ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the g
 	legnap = 180,
 	legspbomber = 210,
 }
+WEAPON_PICS = { -- the picture of a weapon of the panel (weapon-images/weapon_<name>.png)
+	armanavaldefturret = { [1] = "laser-heavy" },
+	armanni = { [1] = "laser-heavy" },
+	armannit3 = { [1] = "laser-heavy" },
+	armbanth = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	armcomboss = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	armcomlvl10 = { [2] = "laser-heavy" },
+	armcomlvl3 = { [2] = "laser-heavy" },
+	armcomlvl4 = { [2] = "laser-heavy" },
+	armcomlvl5 = { [2] = "laser-heavy" },
+	armcomlvl6 = { [2] = "laser-heavy" },
+	armcomlvl7 = { [2] = "laser-heavy" },
+	armcomlvl8 = { [2] = "laser-heavy" },
+	armcomlvl9 = { [2] = "laser-heavy" },
+	armdecomlvl10 = { [2] = "laser-heavy" },
+	armdecomlvl3 = { [2] = "laser-heavy" },
+	armdecomlvl4 = { [2] = "laser-heavy" },
+	armdecomlvl5 = { [2] = "laser-heavy" },
+	armdecomlvl6 = { [2] = "laser-heavy" },
+	armdecomlvl7 = { [2] = "laser-heavy" },
+	armdecomlvl8 = { [2] = "laser-heavy" },
+	armdecomlvl9 = { [2] = "laser-heavy" },
+	armdfly = { [1] = "laser-heavy" },
+	armexcalibur = { [1] = "laser-heavy" },
+	armhlt = { [1] = "laser-heavy" },
+	armmanni = { [1] = "laser-heavy" },
+	armthor = { [3] = "laser-heavy", [4] = "laser-heavy" },
+	coranavaldefturret = { [1] = "laser-heavy" },
+	corbats = { [4] = "laser-heavy" },
+	corblackhy = { [2] = "laser-heavy", [4] = "laser-heavy", [5] = "laser-heavy" },
+	corcan = { [1] = "laser-heavy" },
+	corcomlvl10 = { [2] = "laser-heavy" },
+	corcomlvl3 = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	corcomlvl4 = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	corcomlvl5 = { [2] = "laser-heavy" },
+	corcomlvl6 = { [2] = "laser-heavy" },
+	corcomlvl7 = { [2] = "laser-heavy" },
+	corcomlvl8 = { [2] = "laser-heavy" },
+	corcomlvl9 = { [2] = "laser-heavy" },
+	corcrw = { [1] = "laser-heavy" },
+	corcrwt4 = { [3] = "laser-heavy", [4] = "laser-heavy", [5] = "laser-heavy", [6] = "laser-heavy" },
+	cordeadeye = { [1] = "laser-heavy" },
+	cordecomlvl10 = { [2] = "laser-heavy" },
+	cordecomlvl3 = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	cordecomlvl4 = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	cordecomlvl5 = { [2] = "laser-heavy" },
+	cordecomlvl6 = { [2] = "laser-heavy" },
+	cordecomlvl7 = { [2] = "laser-heavy" },
+	cordecomlvl8 = { [2] = "laser-heavy" },
+	cordecomlvl9 = { [2] = "laser-heavy" },
+	cordoom = { [1] = "laser-heavy" },
+	cordoomt3 = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	coresuppt3 = { [1] = "laser-heavy", [2] = "laser-heavy" },
+	corfblackhyt4 = { [2] = "laser-heavy", [4] = "laser-heavy", [5] = "laser-heavy" },
+	corgatreap = { [1] = "laser-heavy" },
+	corgolt4 = { [2] = "laser-heavy", [3] = "laser-heavy" },
+	corhal = { [1] = "laser-heavy" },
+	corhlt = { [1] = "laser-heavy" },
+	corhltfus = { [1] = "laser-heavy" },
+	corkorg = { [2] = "laser-heavy" },
+	cormandot4 = { [1] = "laser-heavy" },
+	corsiegebreaker = { [1] = "laser-heavy" },
+	corsok = { [1] = "laser-heavy" },
+	corsumo = { [1] = "laser-heavy" },
+	cortermite = { [1] = "laser-heavy" },
+	corthermite = { [1] = "laser-heavy" },
+	legafigdef = { [1] = "laser-heavy" },
+	legaheattank = { [1] = "laser-heavy" },
+	legamph = { [1] = "laser-heavy" },
+	leganavyflagship = { [2] = "laser-heavy", [3] = "laser-heavy" },
+	legbastion = { [1] = "laser-heavy" },
+	legeheatraymech = { [2] = "laser-heavy", [3] = "laser-heavy" },
+	legeheatraymech_old = { [2] = "laser-heavy", [3] = "laser-heavy", [4] = "laser-heavy", [5] = "laser-heavy" },
+	legehovertank = { [1] = "laser-heavy" },
+	leginc = { [1] = "laser-heavy" },
+	legnavydestro = { [1] = "laser-heavy" },
+	legphoenix = { [2] = "laser-heavy" },
+}
 -- END WEAPONS
 local MISSILE = { MissileLauncher = true, StarburstLauncher = true, TorpedoLauncher = true }
 local slotCache = {}
@@ -1360,6 +1439,15 @@ local function giveUnit(team, defName, x, y, z, face)
 	table.sort(aa)
 	Spring.SetUnitRulesParam(id, "renSlots", table.concat(s.L, ",") .. ";" .. table.concat(s.R, ",") .. ";" .. table.concat(s.M, ","), { public = true })
 	Spring.SetUnitRulesParam(id, "renAA", table.concat(aa, ","), { public = true })
+	do
+		-- the pictures of the weapons for the panel: "<weapon number>=<picture>,..." (only the weapons that have one)
+		local ud0 = UnitDefs[Spring.GetUnitDefID(id) or -1]
+		local pics = ud0 and WEAPON_PICS and WEAPON_PICS[(ud0.name:gsub("_scav$", ""))]
+		local list = {}
+		for n, name in pairs(pics or {}) do list[#list + 1] = n .. "=" .. name end
+		table.sort(list)
+		Spring.SetUnitRulesParam(id, "renPics", table.concat(list, ","), { public = true })
+	end
 	if flyer(id) then
 		Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true })
 		Spring.SetUnitRulesParam(id, "renAttackAlt", attackAlt(id), { public = true }) -- (nil: no limit)
