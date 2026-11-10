@@ -7,6 +7,7 @@
                                                    infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Fire button and Weapon image of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
 
+A row without a weapon (column # and the weapon columns empty) is an aircraft that carries none (scout, transport, builder, radar plane, satellite): it is in the table for its cruise altitude and is kept by `table`.
 Cruise altitude (aircraft only, empty otherwise): the cruiseAltitude of the unit definition (the dump of zz_weapondump.lua carries it as a 17th field). Cruise altitude used: the highest height above
 the ground the aircraft may fly in Renegade, a new row gets 3 times the cruise altitude (measured: a gunship and a fighter really fly at 3 times it); change it in the csv; the block CRUISE_ALT of the gadget is made from it.
 The D-gun (type DGun: the Disintegrator of the commanders) is always on RMB; then the shortest other group is on LMB and everything else on MMB.
@@ -187,7 +188,7 @@ END_TABLE = "<!-- END TABLE -->"
 def write_md(rows):
     """only what stands between the markers is written (the count and the table); the text around it stays as it is. A file without the markers (or none) is made with the text INTRO."""
     codes = {r[2] for r in rows}
-    lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
+    lines = ["%d weapons of %d units (%d aircraft without a weapon are in for their cruise altitude)." % (len([r for r in rows if r[3]]), len(codes), len([r for r in rows if not r[3]])), "", "| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
     for r in rows:
         lines.append("| " + " | ".join(c.replace("|", "/") for c in r) + " |")
     block = BEGIN_TABLE + "\n" + "\n".join(lines) + "\n" + END_TABLE + "\n"
@@ -212,8 +213,12 @@ def write_csv(rows):
 def make_table(log):
     units = read_dump(log)
     old = {}
+    extra = []   # rows without a weapon (# empty: aircraft that carry none: scouts, transports, builders), kept as they are
     if os.path.exists(CSV):
         for r in read_table(CSV):
+            if not (r.get("#") or "").strip():
+                extra.append([(r.get(c) or "") for c in COLUMNS])
+                continue
             old[(r["Code"], r["#"])] = (clean(r.get("Fire button")), (r.get("Weapon image") or "").strip(), (r.get("Cruise altitude") or "").strip(), (r.get("Cruise altitude used") or "").strip())
     rows = []
     facs = list(FACTION)
@@ -227,9 +232,12 @@ def make_table(log):
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
                          dmg, w["wname"], btn, img, u["cruise"] or cru, used or (str(3 * int(u["cruise"] or cru)) if (u["cruise"] or cru).isdigit() else "")])
+    rows += [r for r in extra if r[2] not in units]
+    order = list(FACTION.values())
+    rows.sort(key=lambda r: (order.index(r[0]) if r[0] in order else 9, r[1].lower(), r[2], int(r[3]) if r[3].isdigit() else 0))
     write_csv(rows)
     write_md(rows)
-    print("%d rows, %d units" % (len(rows), len(units)))
+    print("%d rows, %d units" % (len(rows), len({r[2] for r in rows})))
     make_lua(CSV)
 
 

@@ -12,7 +12,7 @@ function widget:GameFrame(f)
 		for id, ud in pairs(UnitDefs) do
 			if ud.canFly then
 				n = n + 1
-				log("def", ud.name, "|", tostring(ud.humanName), "| cruise", tostring(ud.cruiseAltitude), "| hover", tostring(ud.hoverAttack), "| speed", string.format("%.0f", ud.speed or 0), "| bomber", tostring(ud.isBomberAirUnit), "| fighter", tostring(ud.isFighterAirUnit), "| transport", tostring(ud.transportCapacity and ud.transportCapacity > 0))
+				log("def", ud.name, "|", tostring(ud.humanName), "| cruise", tostring(ud.cruiseAltitude), "| hover", tostring(ud.hoverAttack), "| speed", string.format("%.0f", ud.speed or 0), "| bomber", tostring(ud.isBomberAirUnit), "| fighter", tostring(ud.isFighterAirUnit), "| name", tostring(ud.translatedHumanName), "| transport", tostring(ud.transportCapacity and ud.transportCapacity > 0))
 			end
 		end
 		log("count", n)
