@@ -23,113 +23,113 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Armada | Arbalest | armflak | 1 | Heavy g2a flak cannon | Cannon | Air | 850 | 0.5 s | 250 (air) | armflak_armflak_gun | A | LMB |
 | Armada | Archangel | armaak | 1 | Long-Range Anti-Air Missile Launcher | Missile | Air | 1200 | 1.3 s | 150 (air) | armaak_longrangemissile | B | RMB |
 | Armada | Archangel | armaak | 2 | Medium-Range Anti-Air Missile Launcher | Missile | Air | 880 | 0.7 s | 100 (air) | armaak_shortrangemissile | A | LMB |
-| Armada | Armada Commander | armcom | 1 | Light close-quarters g2g/g2a laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | armcom_armcomlaser | B | RMB |
+| Armada | Armada Commander | armcom | 1 | Light close-quarters g2g/g2a laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | armcom_armcomlaser | A | LMB |
 | Armada | Armada Commander | armcom | 2 | Light underwater-combat laser | Beam laser | All | 300 | 1.0 s | 200 | armcom_armcomsealaser | C | MMB |
-| Armada | Armada Commander | armcom | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcom_disintegrator | A | LMB |
-| Armada | Armada Commander | armcomcon | 1 | Light close-quarters g2g/g2a laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | armcomcon_armcomlaser | B | RMB |
+| Armada | Armada Commander | armcom | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcom_disintegrator | B | RMB |
+| Armada | Armada Commander | armcomcon | 1 | Light close-quarters g2g/g2a laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | armcomcon_armcomlaser | A | LMB |
 | Armada | Armada Commander | armcomcon | 2 | Light underwater-combat laser | Beam laser | All | 300 | 1.0 s | 200 | armcomcon_armcomsealaser | C | MMB |
-| Armada | Armada Commander | armcomcon | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomcon_disintegrator | A | LMB |
+| Armada | Armada Commander | armcomcon | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomcon_disintegrator | B | RMB |
 | Armada | Armada Commander Level 10 | armcomlvl10 | 1 | HeavyRockets | Starburst missile | Air+Ground | 870 | 2.0 s | 4400 | armcomlvl10_backlauncher | F | MMB |
-| Armada | Armada Commander Level 10 | armcomlvl10 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armcomlvl10_armcomsealaser | C | RMB |
+| Armada | Armada Commander Level 10 | armcomlvl10 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armcomlvl10_armcomsealaser | C | MMB |
 | Armada | Armada Commander Level 10 | armcomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl10_disintegrator | B | RMB |
-| Armada | Armada Commander Level 10 | armcomlvl10 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armcomlvl10_longgun | E | RMB |
-| Armada | Armada Commander Level 10 | armcomlvl10 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 118 | armcomlvl10_shortgun | D | RMB |
+| Armada | Armada Commander Level 10 | armcomlvl10 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armcomlvl10_longgun | E | MMB |
+| Armada | Armada Commander Level 10 | armcomlvl10 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 118 | armcomlvl10_shortgun | D | MMB |
 | Armada | Armada Commander Level 10 | armcomlvl10 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl10_empflashbang | A | LMB |
 | Armada | Armada Commander Level 10 | armdecomlvl10 | 1 | HeavyRockets | Starburst missile | Air+Ground | 870 | 2.0 s | 4400 | armdecomlvl10_backlauncher | F | MMB |
-| Armada | Armada Commander Level 10 | armdecomlvl10 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armdecomlvl10_armcomsealaser | C | RMB |
+| Armada | Armada Commander Level 10 | armdecomlvl10 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armdecomlvl10_armcomsealaser | C | MMB |
 | Armada | Armada Commander Level 10 | armdecomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl10_disintegrator | B | RMB |
-| Armada | Armada Commander Level 10 | armdecomlvl10 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armdecomlvl10_longgun | E | RMB |
-| Armada | Armada Commander Level 10 | armdecomlvl10 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 118 | armdecomlvl10_shortgun | D | RMB |
+| Armada | Armada Commander Level 10 | armdecomlvl10 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armdecomlvl10_longgun | E | MMB |
+| Armada | Armada Commander Level 10 | armdecomlvl10 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 118 | armdecomlvl10_shortgun | D | MMB |
 | Armada | Armada Commander Level 10 | armdecomlvl10 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl10_empflashbang | A | LMB |
-| Armada | Armada Commander Level 2 | armcomlvl2 | 1 | Scatter Beamer | Beam laser | Air+Ground | 300 | 0.1 s | 14 | armcomlvl2_shortgun | B | RMB |
+| Armada | Armada Commander Level 2 | armcomlvl2 | 1 | Scatter Beamer | Beam laser | Air+Ground | 300 | 0.1 s | 14 | armcomlvl2_shortgun | A | LMB |
 | Armada | Armada Commander Level 2 | armcomlvl2 | 2 | Light underwater-combat laser | Beam laser | All | 300 | 1.0 s | 400 | armcomlvl2_armcomsealaser | C | MMB |
-| Armada | Armada Commander Level 2 | armcomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl2_disintegrator | A | LMB |
-| Armada | Armada Commander Level 2 | armdecomlvl2 | 1 | Scatter Beamer | Beam laser | Air+Ground | 300 | 0.1 s | 14 | armdecomlvl2_shortgun | B | RMB |
+| Armada | Armada Commander Level 2 | armcomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl2_disintegrator | B | RMB |
+| Armada | Armada Commander Level 2 | armdecomlvl2 | 1 | Scatter Beamer | Beam laser | Air+Ground | 300 | 0.1 s | 14 | armdecomlvl2_shortgun | A | LMB |
 | Armada | Armada Commander Level 2 | armdecomlvl2 | 2 | Light underwater-combat laser | Beam laser | All | 300 | 1.0 s | 400 | armdecomlvl2_armcomsealaser | C | MMB |
-| Armada | Armada Commander Level 2 | armdecomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl2_disintegrator | A | LMB |
-| Armada | Armada Commander Level 3 | armcomlvl3 | 1 | HeavyRockets | Starburst missile | Air+Ground | 435 | 3.3 s | 550 | armcomlvl3_backlauncher | F | MMB |
-| Armada | Armada Commander Level 3 | armcomlvl3 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 300 | armcomlvl3_armcomsealaser | E | RMB |
+| Armada | Armada Commander Level 2 | armdecomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl2_disintegrator | B | RMB |
+| Armada | Armada Commander Level 3 | armcomlvl3 | 1 | HeavyRockets | Starburst missile | Air+Ground | 435 | 3.3 s | 550 | armcomlvl3_backlauncher | E | MMB |
+| Armada | Armada Commander Level 3 | armcomlvl3 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 300 | armcomlvl3_armcomsealaser | F | MMB |
 | Armada | Armada Commander Level 3 | armcomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl3_disintegrator | B | RMB |
-| Armada | Armada Commander Level 3 | armcomlvl3 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 410 | 8.0 s | 16000 | armcomlvl3_longgun | D | RMB |
-| Armada | Armada Commander Level 3 | armcomlvl3 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 15 | armcomlvl3_shortgun | C | RMB |
+| Armada | Armada Commander Level 3 | armcomlvl3 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 410 | 8.0 s | 16000 | armcomlvl3_longgun | D | MMB |
+| Armada | Armada Commander Level 3 | armcomlvl3 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 15 | armcomlvl3_shortgun | C | MMB |
 | Armada | Armada Commander Level 3 | armcomlvl3 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl3_empflashbang | A | LMB |
-| Armada | Armada Commander Level 3 | armdecomlvl3 | 1 | HeavyRockets | Starburst missile | Air+Ground | 435 | 3.3 s | 550 | armdecomlvl3_backlauncher | F | MMB |
-| Armada | Armada Commander Level 3 | armdecomlvl3 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 300 | armdecomlvl3_armcomsealaser | E | RMB |
+| Armada | Armada Commander Level 3 | armdecomlvl3 | 1 | HeavyRockets | Starburst missile | Air+Ground | 435 | 3.3 s | 550 | armdecomlvl3_backlauncher | E | MMB |
+| Armada | Armada Commander Level 3 | armdecomlvl3 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 300 | armdecomlvl3_armcomsealaser | F | MMB |
 | Armada | Armada Commander Level 3 | armdecomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl3_disintegrator | B | RMB |
-| Armada | Armada Commander Level 3 | armdecomlvl3 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 410 | 8.0 s | 16000 | armdecomlvl3_longgun | D | RMB |
-| Armada | Armada Commander Level 3 | armdecomlvl3 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 15 | armdecomlvl3_shortgun | C | RMB |
+| Armada | Armada Commander Level 3 | armdecomlvl3 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 410 | 8.0 s | 16000 | armdecomlvl3_longgun | D | MMB |
+| Armada | Armada Commander Level 3 | armdecomlvl3 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 15 | armdecomlvl3_shortgun | C | MMB |
 | Armada | Armada Commander Level 3 | armdecomlvl3 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl3_empflashbang | A | LMB |
 | Armada | Armada Commander Level 4 | armcomlvl4 | 1 | HeavyRockets | Starburst missile | Air+Ground | 550 | 3.3 s | 800 | armcomlvl4_backlauncher | F | MMB |
-| Armada | Armada Commander Level 4 | armcomlvl4 | 2 | J7NSLaser | Beam laser | All | 450 | 0.3 s | 400 | armcomlvl4_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 4 | armcomlvl4 | 2 | J7NSLaser | Beam laser | All | 450 | 0.3 s | 400 | armcomlvl4_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 4 | armcomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl4_disintegrator | B | RMB |
-| Armada | Armada Commander Level 4 | armcomlvl4 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 500 | 8.0 s | 22000 | armcomlvl4_longgun | E | RMB |
-| Armada | Armada Commander Level 4 | armcomlvl4 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 25 | armcomlvl4_shortgun | C | RMB |
+| Armada | Armada Commander Level 4 | armcomlvl4 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 500 | 8.0 s | 22000 | armcomlvl4_longgun | E | MMB |
+| Armada | Armada Commander Level 4 | armcomlvl4 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 25 | armcomlvl4_shortgun | C | MMB |
 | Armada | Armada Commander Level 4 | armcomlvl4 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl4_empflashbang | A | LMB |
 | Armada | Armada Commander Level 4 | armdecomlvl4 | 1 | HeavyRockets | Starburst missile | Air+Ground | 550 | 3.3 s | 800 | armdecomlvl4_backlauncher | F | MMB |
-| Armada | Armada Commander Level 4 | armdecomlvl4 | 2 | J7NSLaser | Beam laser | All | 450 | 0.3 s | 400 | armdecomlvl4_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 4 | armdecomlvl4 | 2 | J7NSLaser | Beam laser | All | 450 | 0.3 s | 400 | armdecomlvl4_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 4 | armdecomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl4_disintegrator | B | RMB |
-| Armada | Armada Commander Level 4 | armdecomlvl4 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 500 | 8.0 s | 22000 | armdecomlvl4_longgun | E | RMB |
-| Armada | Armada Commander Level 4 | armdecomlvl4 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 25 | armdecomlvl4_shortgun | C | RMB |
+| Armada | Armada Commander Level 4 | armdecomlvl4 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 500 | 8.0 s | 22000 | armdecomlvl4_longgun | E | MMB |
+| Armada | Armada Commander Level 4 | armdecomlvl4 | 5 | Scatter Beamer | Beam laser | Air+Ground | 350 | 0.1 s | 25 | armdecomlvl4_shortgun | C | MMB |
 | Armada | Armada Commander Level 4 | armdecomlvl4 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl4_empflashbang | A | LMB |
 | Armada | Armada Commander Level 5 | armcomlvl5 | 1 | HeavyRockets | Starburst missile | Air+Ground | 620 | 2.5 s | 1200 | armcomlvl5_backlauncher | F | MMB |
-| Armada | Armada Commander Level 5 | armcomlvl5 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.7 s | 1200 | armcomlvl5_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 5 | armcomlvl5 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.7 s | 1200 | armcomlvl5_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 5 | armcomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl5_disintegrator | B | RMB |
-| Armada | Armada Commander Level 5 | armcomlvl5 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 30000 | armcomlvl5_longgun | E | RMB |
-| Armada | Armada Commander Level 5 | armcomlvl5 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 42 | armcomlvl5_shortgun | C | RMB |
+| Armada | Armada Commander Level 5 | armcomlvl5 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 30000 | armcomlvl5_longgun | E | MMB |
+| Armada | Armada Commander Level 5 | armcomlvl5 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 42 | armcomlvl5_shortgun | C | MMB |
 | Armada | Armada Commander Level 5 | armcomlvl5 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl5_empflashbang | A | LMB |
 | Armada | Armada Commander Level 5 | armdecomlvl5 | 1 | HeavyRockets | Starburst missile | Air+Ground | 620 | 2.5 s | 1200 | armdecomlvl5_backlauncher | F | MMB |
-| Armada | Armada Commander Level 5 | armdecomlvl5 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.7 s | 1200 | armdecomlvl5_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 5 | armdecomlvl5 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.7 s | 1200 | armdecomlvl5_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 5 | armdecomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl5_disintegrator | B | RMB |
-| Armada | Armada Commander Level 5 | armdecomlvl5 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 30000 | armdecomlvl5_longgun | E | RMB |
-| Armada | Armada Commander Level 5 | armdecomlvl5 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 42 | armdecomlvl5_shortgun | C | RMB |
+| Armada | Armada Commander Level 5 | armdecomlvl5 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 30000 | armdecomlvl5_longgun | E | MMB |
+| Armada | Armada Commander Level 5 | armdecomlvl5 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 42 | armdecomlvl5_shortgun | C | MMB |
 | Armada | Armada Commander Level 5 | armdecomlvl5 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl5_empflashbang | A | LMB |
 | Armada | Armada Commander Level 6 | armcomlvl6 | 1 | HeavyRockets | Starburst missile | Air+Ground | 730 | 2.5 s | 1350 | armcomlvl6_backlauncher | F | MMB |
-| Armada | Armada Commander Level 6 | armcomlvl6 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.5 s | 1200 | armcomlvl6_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 6 | armcomlvl6 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.5 s | 1200 | armcomlvl6_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 6 | armcomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl6_disintegrator | B | RMB |
-| Armada | Armada Commander Level 6 | armcomlvl6 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 40000 | armcomlvl6_longgun | E | RMB |
-| Armada | Armada Commander Level 6 | armcomlvl6 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 50 | armcomlvl6_shortgun | C | RMB |
+| Armada | Armada Commander Level 6 | armcomlvl6 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 40000 | armcomlvl6_longgun | E | MMB |
+| Armada | Armada Commander Level 6 | armcomlvl6 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 50 | armcomlvl6_shortgun | C | MMB |
 | Armada | Armada Commander Level 6 | armcomlvl6 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl6_empflashbang | A | LMB |
 | Armada | Armada Commander Level 6 | armdecomlvl6 | 1 | HeavyRockets | Starburst missile | Air+Ground | 730 | 2.5 s | 1350 | armdecomlvl6_backlauncher | F | MMB |
-| Armada | Armada Commander Level 6 | armdecomlvl6 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.5 s | 1200 | armdecomlvl6_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 6 | armdecomlvl6 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.5 s | 1200 | armdecomlvl6_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 6 | armdecomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl6_disintegrator | B | RMB |
-| Armada | Armada Commander Level 6 | armdecomlvl6 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 40000 | armdecomlvl6_longgun | E | RMB |
-| Armada | Armada Commander Level 6 | armdecomlvl6 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 50 | armdecomlvl6_shortgun | C | RMB |
+| Armada | Armada Commander Level 6 | armdecomlvl6 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 40000 | armdecomlvl6_longgun | E | MMB |
+| Armada | Armada Commander Level 6 | armdecomlvl6 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 50 | armdecomlvl6_shortgun | C | MMB |
 | Armada | Armada Commander Level 6 | armdecomlvl6 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl6_empflashbang | A | LMB |
 | Armada | Armada Commander Level 7 | armcomlvl7 | 1 | HeavyRockets | Starburst missile | Air+Ground | 730 | 2.5 s | 1800 | armcomlvl7_backlauncher | F | MMB |
-| Armada | Armada Commander Level 7 | armcomlvl7 | 2 | UltravioletRayBeam | Beam laser | All | 500 | 0.4 s | 1200 | armcomlvl7_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 7 | armcomlvl7 | 2 | UltravioletRayBeam | Beam laser | All | 500 | 0.4 s | 1200 | armcomlvl7_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 7 | armcomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl7_disintegrator | B | RMB |
-| Armada | Armada Commander Level 7 | armcomlvl7 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 56000 | armcomlvl7_longgun | E | RMB |
-| Armada | Armada Commander Level 7 | armcomlvl7 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 57 | armcomlvl7_shortgun | C | RMB |
+| Armada | Armada Commander Level 7 | armcomlvl7 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 56000 | armcomlvl7_longgun | E | MMB |
+| Armada | Armada Commander Level 7 | armcomlvl7 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 57 | armcomlvl7_shortgun | C | MMB |
 | Armada | Armada Commander Level 7 | armcomlvl7 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl7_empflashbang | A | LMB |
 | Armada | Armada Commander Level 7 | armdecomlvl7 | 1 | HeavyRockets | Starburst missile | Air+Ground | 730 | 2.5 s | 1800 | armdecomlvl7_backlauncher | F | MMB |
-| Armada | Armada Commander Level 7 | armdecomlvl7 | 2 | UltravioletRayBeam | Beam laser | All | 500 | 0.4 s | 1200 | armdecomlvl7_armcomsealaser | D | RMB |
+| Armada | Armada Commander Level 7 | armdecomlvl7 | 2 | UltravioletRayBeam | Beam laser | All | 500 | 0.4 s | 1200 | armdecomlvl7_armcomsealaser | D | MMB |
 | Armada | Armada Commander Level 7 | armdecomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl7_disintegrator | B | RMB |
-| Armada | Armada Commander Level 7 | armdecomlvl7 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 56000 | armdecomlvl7_longgun | E | RMB |
-| Armada | Armada Commander Level 7 | armdecomlvl7 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 57 | armdecomlvl7_shortgun | C | RMB |
+| Armada | Armada Commander Level 7 | armdecomlvl7 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 550 | 8.0 s | 56000 | armdecomlvl7_longgun | E | MMB |
+| Armada | Armada Commander Level 7 | armdecomlvl7 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 425 | 0.1 s | 57 | armdecomlvl7_shortgun | C | MMB |
 | Armada | Armada Commander Level 7 | armdecomlvl7 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl7_empflashbang | A | LMB |
 | Armada | Armada Commander Level 8 | armcomlvl8 | 1 | HeavyRockets | Starburst missile | Air+Ground | 800 | 2.0 s | 2300 | armcomlvl8_backlauncher | F | MMB |
-| Armada | Armada Commander Level 8 | armcomlvl8 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | armcomlvl8_armcomsealaser | C | RMB |
+| Armada | Armada Commander Level 8 | armcomlvl8 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | armcomlvl8_armcomsealaser | C | MMB |
 | Armada | Armada Commander Level 8 | armcomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl8_disintegrator | B | RMB |
-| Armada | Armada Commander Level 8 | armcomlvl8 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armcomlvl8_longgun | E | RMB |
-| Armada | Armada Commander Level 8 | armcomlvl8 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 72 | armcomlvl8_shortgun | D | RMB |
+| Armada | Armada Commander Level 8 | armcomlvl8 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armcomlvl8_longgun | E | MMB |
+| Armada | Armada Commander Level 8 | armcomlvl8 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 72 | armcomlvl8_shortgun | D | MMB |
 | Armada | Armada Commander Level 8 | armcomlvl8 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl8_empflashbang | A | LMB |
 | Armada | Armada Commander Level 8 | armdecomlvl8 | 1 | HeavyRockets | Starburst missile | Air+Ground | 800 | 2.0 s | 2300 | armdecomlvl8_backlauncher | F | MMB |
-| Armada | Armada Commander Level 8 | armdecomlvl8 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | armdecomlvl8_armcomsealaser | C | RMB |
+| Armada | Armada Commander Level 8 | armdecomlvl8 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | armdecomlvl8_armcomsealaser | C | MMB |
 | Armada | Armada Commander Level 8 | armdecomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl8_disintegrator | B | RMB |
-| Armada | Armada Commander Level 8 | armdecomlvl8 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armdecomlvl8_longgun | E | RMB |
-| Armada | Armada Commander Level 8 | armdecomlvl8 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 72 | armdecomlvl8_shortgun | D | RMB |
+| Armada | Armada Commander Level 8 | armdecomlvl8 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armdecomlvl8_longgun | E | MMB |
+| Armada | Armada Commander Level 8 | armdecomlvl8 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 72 | armdecomlvl8_shortgun | D | MMB |
 | Armada | Armada Commander Level 8 | armdecomlvl8 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl8_empflashbang | A | LMB |
 | Armada | Armada Commander Level 9 | armcomlvl9 | 1 | HeavyRockets | Starburst missile | Air+Ground | 870 | 2.0 s | 3600 | armcomlvl9_backlauncher | F | MMB |
-| Armada | Armada Commander Level 9 | armcomlvl9 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armcomlvl9_armcomsealaser | C | RMB |
+| Armada | Armada Commander Level 9 | armcomlvl9 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armcomlvl9_armcomsealaser | C | MMB |
 | Armada | Armada Commander Level 9 | armcomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomlvl9_disintegrator | B | RMB |
-| Armada | Armada Commander Level 9 | armcomlvl9 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armcomlvl9_longgun | E | RMB |
-| Armada | Armada Commander Level 9 | armcomlvl9 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 88 | armcomlvl9_shortgun | D | RMB |
+| Armada | Armada Commander Level 9 | armcomlvl9 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armcomlvl9_longgun | E | MMB |
+| Armada | Armada Commander Level 9 | armcomlvl9 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 88 | armcomlvl9_shortgun | D | MMB |
 | Armada | Armada Commander Level 9 | armcomlvl9 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armcomlvl9_empflashbang | A | LMB |
 | Armada | Armada Commander Level 9 | armdecomlvl9 | 1 | HeavyRockets | Starburst missile | Air+Ground | 870 | 2.0 s | 3600 | armdecomlvl9_backlauncher | F | MMB |
-| Armada | Armada Commander Level 9 | armdecomlvl9 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armdecomlvl9_armcomsealaser | C | RMB |
+| Armada | Armada Commander Level 9 | armdecomlvl9 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.3 s | 1400 | armdecomlvl9_armcomsealaser | C | MMB |
 | Armada | Armada Commander Level 9 | armdecomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecomlvl9_disintegrator | B | RMB |
-| Armada | Armada Commander Level 9 | armdecomlvl9 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armdecomlvl9_longgun | E | RMB |
-| Armada | Armada Commander Level 9 | armdecomlvl9 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 88 | armdecomlvl9_shortgun | D | RMB |
+| Armada | Armada Commander Level 9 | armdecomlvl9 | 4 | Arcing Stun Beam | Beam laser | Air+Ground | 600 | 8.0 s | 60000 | armdecomlvl9_longgun | E | MMB |
+| Armada | Armada Commander Level 9 | armdecomlvl9 | 5 | Short-Range Lightning Discharge | Lightning | Air+Ground | 500 | 0.1 s | 88 | armdecomlvl9_shortgun | D | MMB |
 | Armada | Armada Commander Level 9 | armdecomlvl9 | 6 | EMP Damage-Mitigating Flashbang | Laser | Air+Ground | 3 | 0.2 s | 20000 | armdecomlvl9_empflashbang | A | LMB |
 | Armada | Armageddon | armsilo | 1 | Intercontinental ballistic nuclear warhead | Starburst missile | Air+Ground | 72000 | 30.0 s | 12500 | armsilo_nuclear_missile | A | LMB |
 | Armada | Armageddon | armsilo | 2 | Nuclear Launch | Cannon | - | 0 | 30.0 s | 0 | armsilo_nuclear_launch |  |  |
@@ -150,8 +150,8 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Armada | Chainsaw | armcir | 1 | Rapid-fire long-range g2a missile barrel | Missile | Air | 1200 | 1.6 s | 250 (air) | armcir_arm_cir | A | LMB |
 | Armada | Citadel | armamd | 1 | ICBM intercepting missile launcher | Starburst missile | Air+Ground | 72000 | 2.0 s | 1500 | armamd_amd_rocket |  |  |
 | Armada | Commander | armdecom | 1 | Light close-quarters g2g laser | Beam laser | Ground | 300 | 0.4 s | 75 | armdecom_armcomlaser | C | MMB |
-| Armada | Commander | armdecom | 2 | J7NSLaser | Beam laser | All | 260 | 1.0 s | 63 | armdecom_armcomsealaser | B | RMB |
-| Armada | Commander | armdecom | 3 | Decoy-disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecom_disintegrator | A | LMB |
+| Armada | Commander | armdecom | 2 | J7NSLaser | Beam laser | All | 260 | 1.0 s | 63 | armdecom_armcomsealaser | A | LMB |
+| Armada | Commander | armdecom | 3 | Decoy-disintegrator | D-gun | All | 250 | 0.9 s | 40 | armdecom_disintegrator | B | RMB |
 | Armada | Cormorant | armlance | 1 | Light homing torpedo launcher | Torpedo | All | 400 | 6.0 s | 375 | armlance_armair_torpedo | A | LMB |
 | Armada | Corsair | armroy | 1 | Heavy long-range plasma cannon | Plasma | Air+Ground | 700 | 1.6 s | 235 | armroy_plasma | A | LMB |
 | Armada | Corsair | armroy | 2 | Depthcharge launcher | Torpedo | All | 400 | 2.0 s | 225 | armroy_depthcharge | B | RMB |
@@ -173,8 +173,8 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Armada | Ellysaw | armpship | 1 | Light long-range plasma cannon | Plasma | Air+Ground | 470 | 1.2 s | 70 | armpship_plasma | A | LMB |
 | Armada | Ellysaw | armpship | 2 | Light long-range plasma cannon | Plasma | Air+Ground | 470 | 1.2 s | 70 | armpship_plasma | A | LMB |
 | Armada | Epic Commander - Final Boss | armcomboss | 1 | J8Laser | Beam laser | Air+Ground | 1250 | 0.0 s | 1000 | armcomboss_armcomlaserboss | A | LMB |
-| Armada | Epic Commander - Final Boss | armcomboss | 2 | J8NSLaser | Beam laser | All | 1250 | 0.0 s | 1000 | armcomboss_armcomsealaserboss | B | RMB |
-| Armada | Epic Commander - Final Boss | armcomboss | 3 | Darkmatter Photon-Disruptor | D-gun | Air+Ground | 1250 | 0.0 s | 999999 | armcomboss_disintegratorxl | C | MMB |
+| Armada | Epic Commander - Final Boss | armcomboss | 2 | J8NSLaser | Beam laser | All | 1250 | 0.0 s | 1000 | armcomboss_armcomsealaserboss | C | MMB |
+| Armada | Epic Commander - Final Boss | armcomboss | 3 | Darkmatter Photon-Disruptor | D-gun | Air+Ground | 1250 | 0.0 s | 999999 | armcomboss_disintegratorxl | B | RMB |
 | Armada | Epic Dolphin | armdecadet3 | 1 | Mini Rapid-fire long-range plasma cannon | Plasma | Air+Ground | 1300 | 0.4 s | 210 | armdecadet3_armminivulc_weapon | A | LMB |
 | Armada | Epic Dolphin | armdecadet3 | 2 | Mini Rapid-fire long-range plasma cannon | Plasma | Air+Ground | 1300 | 0.4 s | 210 | armdecadet3_armminivulc_weapon | A | LMB |
 | Armada | Epic Ellysaw | armpshipt3 | 1 | Rapid-fire close quarters g2g armor-piercing laser | Beam laser | Ground | 475 | 0.6 s | 116 | armpshipt3_mech_rapidlaser | A | LMB |
@@ -328,9 +328,9 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Armada | Turtle | armcroc | 1 | Medium g2g gauss-cannon | Cannon | Ground | 480 | 1.6 s | 225 | armcroc_arm_triton | A | LMB |
 | Armada | Turtle | armcroc | 2 | Light g2a missile launcher | Missile | Air | 765 | 1.7 s | 60 (air) | armcroc_armcl_missile | B | RMB |
 | Armada | Umbrella | armscab | 1 | ICBM intercepting missile launcher | Starburst missile | Air+Ground | 72000 | 2.0 s | 500 | armscab_armscab_weapon |  |  |
-| Armada | units.names.armcomnew | armcomnew | 1 | Light close-quarters g2g/g2a laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | armcomnew_armcomlaser | B | RMB |
+| Armada | units.names.armcomnew | armcomnew | 1 | Light close-quarters g2g/g2a laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | armcomnew_armcomlaser | A | LMB |
 | Armada | units.names.armcomnew | armcomnew | 2 | Light underwater-combat laser | Beam laser | All | 300 | 1.0 s | 200 | armcomnew_armcomsealaser | C | MMB |
-| Armada | units.names.armcomnew | armcomnew | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomnew_disintegrator | A | LMB |
+| Armada | units.names.armcomnew | armcomnew | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | armcomnew_disintegrator | B | RMB |
 | Armada | units.names.armprowl | armprowl | 1 | Double close-quarters gauss cannon | Cannon | Air+Ground | 350 | 0.7 s | 235 | armprowl_armmech_cannon | A | LMB |
 | Armada | units.names.armprowl | armprowl | 2 | Guided g2a missile launcher | Missile | Air | 600 | 2.0 s | 85 (air) | armprowl_armamph_missile | B | RMB |
 | Armada | Vanguard | armvang | 1 | Heavy long-range g2g plasma cannon | Plasma | Ground | 1450 | 8.0 s | 1265 | armvang_shocker_low | A | LMB |
@@ -372,10 +372,10 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Cortex | Bat | corsfig2 | 2 | Guided a2a missile launcher | Missile | Air | 710 | 0.8 s | 12 | corsfig2_small_weapon | B | RMB |
 | Cortex | Bedbug | corroach | 1 | Crawlingbomb Dummy Weapon | Melee | Water | 42 | 0.1 s | 0 | corroach_crawl_dummy |  |  |
 | Cortex | Bedbug | corroach | 2 | Self-destruction | Cannon | - | 1 | 0.1 s | 0 | corroach_crawl_detonator |  |  |
-| Cortex | Behemoth | corjugg | 1 | GaussCannon | D-gun | Air+Ground | 590 | 4.0 s | 1200 | corjugg_juggernaut_fire | C | MMB |
+| Cortex | Behemoth | corjugg | 1 | GaussCannon | D-gun | Air+Ground | 590 | 4.0 s | 1200 | corjugg_juggernaut_fire | B | RMB |
 | Cortex | Behemoth | corjugg | 2 | LightLaser | Beam laser | Air+Ground | 435 | 0.3 s | 75 | corjugg_juggernaut_bottom | A | LMB |
 | Cortex | Behemoth | corjugg | 3 | LightLaser | Beam laser | Air+Ground | 435 | 0.3 s | 75 | corjugg_juggernaut_bottom | A | LMB |
-| Cortex | Behemoth | corjugg | 4 | LightLaser | Beam laser | Air+Ground | 550 | 0.5 s | 150 | corjugg_juggernaut_top | B | RMB |
+| Cortex | Behemoth | corjugg | 4 | LightLaser | Beam laser | Air+Ground | 550 | 0.5 s | 150 | corjugg_juggernaut_top | C | MMB |
 | Cortex | Behemoth | corjugg | 5 | JuggStep | Cannon | - | 0 | 1.5 s | 0 | corjugg_juggfootstep |  |  |
 | Cortex | Birdeater | corah | 1 | Missiles | Cannon | - | 800 | 0.5 s | 0 | corah_bogus_missile |  |  |
 | Cortex | Birdeater | corah | 2 | Missiles | Missile | Air | 700 | 2.2 s | 62 (air) | corah_corah_weapon | A | LMB |
@@ -415,111 +415,111 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Cortex | Commander | cordecom | 3 | Disintegrator | D-gun | All | 262 | 0.9 s | 40 | cordecom_disintegrator | B | RMB |
 | Cortex | Commando | cormando | 1 | CommandoBlaster | Laser | Air+Ground | 300 | 0.5 s | 100 | cormando_commando_blaster | A | LMB |
 | Cortex | Coral | corfhlt | 1 | High energy g2g laser | Beam laser | Ground | 630 | 1.0 s | 231 | corfhlt_corfhlt_laser | A | LMB |
-| Cortex | Cortex Commander | corcom | 1 | J7Laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | corcom_corcomlaser | B | RMB |
+| Cortex | Cortex Commander | corcom | 1 | J7Laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | corcom_corcomlaser | A | LMB |
 | Cortex | Cortex Commander | corcom | 2 | J7NSLaser | Beam laser | All | 300 | 1.0 s | 200 | corcom_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander | corcom | 3 | Disintegrator | D-gun | All | 262 | 0.9 s | 99999 | corcom_disintegrator | A | LMB |
-| Cortex | Cortex Commander | corcomcon | 1 | J7Laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | corcomcon_corcomlaser | B | RMB |
+| Cortex | Cortex Commander | corcom | 3 | Disintegrator | D-gun | All | 262 | 0.9 s | 99999 | corcom_disintegrator | B | RMB |
+| Cortex | Cortex Commander | corcomcon | 1 | J7Laser | Beam laser | Air+Ground | 300 | 0.4 s | 75 | corcomcon_corcomlaser | A | LMB |
 | Cortex | Cortex Commander | corcomcon | 2 | J7NSLaser | Beam laser | All | 300 | 1.0 s | 200 | corcomcon_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander | corcomcon | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomcon_disintegrator | A | LMB |
-| Cortex | Cortex Commander Level 10 | corcomlvl10 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 120 | corcomlvl10_corcomlaser | B | RMB |
+| Cortex | Cortex Commander | corcomcon | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomcon_disintegrator | B | RMB |
+| Cortex | Cortex Commander Level 10 | corcomlvl10 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 120 | corcomlvl10_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 10 | corcomlvl10 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | corcomlvl10_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 10 | corcomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl10_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 10 | corcomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl10_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 10 | corcomlvl10 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl10_repulsor |  |  |
 | Cortex | Cortex Commander Level 10 | corcomlvl10 | 5 | EyeLaser | Beam laser | Air+Ground | 870 | 0.0 s | 80 | corcomlvl10_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 10 | corcomlvl10 | 6 | HeavyCannon | Cannon | Air+Ground | 750 | 3.0 s | 2000 | corcomlvl10_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 10 | cordecomlvl10 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 120 | cordecomlvl10_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 10 | cordecomlvl10 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 120 | cordecomlvl10_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 10 | cordecomlvl10 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | cordecomlvl10_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 10 | cordecomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl10_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 10 | cordecomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl10_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 10 | cordecomlvl10 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl10_repulsor |  |  |
 | Cortex | Cortex Commander Level 10 | cordecomlvl10 | 5 | EyeLaser | Beam laser | Air+Ground | 870 | 0.0 s | 80 | cordecomlvl10_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 10 | cordecomlvl10 | 6 | HeavyCannon | Cannon | Air+Ground | 750 | 3.0 s | 2000 | cordecomlvl10_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 2 | corcomlvl2 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 300 | 0.5 s | 215 | corcomlvl2_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 2 | corcomlvl2 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 300 | 0.5 s | 215 | corcomlvl2_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 2 | corcomlvl2 | 2 | J7NSLaser | Beam laser | All | 300 | 0.5 s | 200 | corcomlvl2_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 2 | corcomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl2_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 2 | corcomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl2_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 2 | corcomlvl2 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl2_repulsor |  |  |
-| Cortex | Cortex Commander Level 2 | cordecomlvl2 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 300 | 0.5 s | 215 | cordecomlvl2_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 2 | cordecomlvl2 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 300 | 0.5 s | 215 | cordecomlvl2_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 2 | cordecomlvl2 | 2 | J7NSLaser | Beam laser | All | 300 | 0.5 s | 200 | cordecomlvl2_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 2 | cordecomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl2_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 2 | cordecomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl2_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 2 | cordecomlvl2 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl2_repulsor |  |  |
-| Cortex | Cortex Commander Level 3 | corcomlvl3 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.4 s | 380 | corcomlvl3_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 3 | corcomlvl3 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.4 s | 380 | corcomlvl3_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 3 | corcomlvl3 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 300 | corcomlvl3_corcomsealaser | D | MMB |
-| Cortex | Cortex Commander Level 3 | corcomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl3_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 3 | corcomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl3_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 3 | corcomlvl3 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl3_repulsor |  |  |
 | Cortex | Cortex Commander Level 3 | corcomlvl3 | 5 | Eye laser | Beam laser | Air+Ground | 435 | 0.5 s | 75 | corcomlvl3_corcomeyelaser | C | MMB |
-| Cortex | Cortex Commander Level 3 | cordecomlvl3 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.4 s | 380 | cordecomlvl3_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 3 | cordecomlvl3 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.4 s | 380 | cordecomlvl3_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 3 | cordecomlvl3 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 300 | cordecomlvl3_corcomsealaser | D | MMB |
-| Cortex | Cortex Commander Level 3 | cordecomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl3_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 3 | cordecomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl3_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 3 | cordecomlvl3 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl3_repulsor |  |  |
 | Cortex | Cortex Commander Level 3 | cordecomlvl3 | 5 | Eye laser | Beam laser | Air+Ground | 435 | 0.5 s | 75 | cordecomlvl3_corcomeyelaser | C | MMB |
-| Cortex | Cortex Commander Level 4 | corcomlvl4 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.3 s | 550 | corcomlvl4_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 4 | corcomlvl4 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.3 s | 550 | corcomlvl4_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 4 | corcomlvl4 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 400 | corcomlvl4_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 4 | corcomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl4_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 4 | corcomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl4_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 4 | corcomlvl4 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl4_repulsor |  |  |
 | Cortex | Cortex Commander Level 4 | corcomlvl4 | 5 | Eye laser | Beam laser | Air+Ground | 550 | 0.3 s | 85 | corcomlvl4_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 4 | corcomlvl4 | 6 | HeavyCannon | Cannon | Air+Ground | 500 | 3.0 s | 450 | corcomlvl4_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 4 | cordecomlvl4 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.3 s | 550 | cordecomlvl4_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 4 | cordecomlvl4 | 1 | HighEnergyLaser | Beam laser | Air+Ground | 350 | 0.3 s | 550 | cordecomlvl4_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 4 | cordecomlvl4 | 2 | J7NSLaser | Beam laser | All | 450 | 0.4 s | 400 | cordecomlvl4_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 4 | cordecomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl4_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 4 | cordecomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl4_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 4 | cordecomlvl4 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl4_repulsor |  |  |
 | Cortex | Cortex Commander Level 4 | cordecomlvl4 | 5 | Eye laser | Beam laser | Air+Ground | 550 | 0.3 s | 85 | cordecomlvl4_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 4 | cordecomlvl4 | 6 | HeavyCannon | Cannon | Air+Ground | 500 | 3.0 s | 450 | cordecomlvl4_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 5 | corcomlvl5 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 1.1 s | 90 | corcomlvl5_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 5 | corcomlvl5 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 1.1 s | 90 | corcomlvl5_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 5 | corcomlvl5 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.9 s | 1200 | corcomlvl5_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 5 | corcomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl5_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 5 | corcomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl5_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 5 | corcomlvl5 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl5_repulsor |  |  |
 | Cortex | Cortex Commander Level 5 | corcomlvl5 | 5 | Eye laser | Beam laser | Air+Ground | 620 | 0.2 s | 120 | corcomlvl5_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 5 | corcomlvl5 | 6 | HeavyCannon | Cannon | Air+Ground | 600 | 3.0 s | 450 | corcomlvl5_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 5 | cordecomlvl5 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 1.1 s | 90 | cordecomlvl5_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 5 | cordecomlvl5 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 1.1 s | 90 | cordecomlvl5_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 5 | cordecomlvl5 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.9 s | 1200 | cordecomlvl5_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 5 | cordecomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl5_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 5 | cordecomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl5_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 5 | cordecomlvl5 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl5_repulsor |  |  |
 | Cortex | Cortex Commander Level 5 | cordecomlvl5 | 5 | Eye laser | Beam laser | Air+Ground | 620 | 0.2 s | 120 | cordecomlvl5_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 5 | cordecomlvl5 | 6 | HeavyCannon | Cannon | Air+Ground | 600 | 3.0 s | 450 | cordecomlvl5_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 6 | corcomlvl6 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.9 s | 90 | corcomlvl6_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 6 | corcomlvl6 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.9 s | 90 | corcomlvl6_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 6 | corcomlvl6 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.7 s | 1200 | corcomlvl6_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 6 | corcomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl6_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 6 | corcomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl6_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 6 | corcomlvl6 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl6_repulsor |  |  |
 | Cortex | Cortex Commander Level 6 | corcomlvl6 | 5 | EyeLaser | Beam laser | Air+Ground | 730 | 0.0 s | 26 | corcomlvl6_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 6 | corcomlvl6 | 6 | HeavyCannon | Cannon | Air+Ground | 600 | 3.0 s | 675 | corcomlvl6_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 6 | cordecomlvl6 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.9 s | 90 | cordecomlvl6_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 6 | cordecomlvl6 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.9 s | 90 | cordecomlvl6_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 6 | cordecomlvl6 | 2 | UltravioletRayBeam | Beam laser | All | 475 | 0.7 s | 1200 | cordecomlvl6_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 6 | cordecomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl6_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 6 | cordecomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl6_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 6 | cordecomlvl6 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl6_repulsor |  |  |
 | Cortex | Cortex Commander Level 6 | cordecomlvl6 | 5 | EyeLaser | Beam laser | Air+Ground | 730 | 0.0 s | 26 | cordecomlvl6_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 6 | cordecomlvl6 | 6 | HeavyCannon | Cannon | Air+Ground | 600 | 3.0 s | 675 | cordecomlvl6_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 7 | corcomlvl7 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.8 s | 90 | corcomlvl7_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 7 | corcomlvl7 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.8 s | 90 | corcomlvl7_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 7 | corcomlvl7 | 2 | UltravioletRayBeam | Beam laser | All | 500 | 0.5 s | 1200 | corcomlvl7_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 7 | corcomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl7_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 7 | corcomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl7_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 7 | corcomlvl7 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl7_repulsor |  |  |
 | Cortex | Cortex Commander Level 7 | corcomlvl7 | 5 | EyeLaser | Beam laser | Air+Ground | 730 | 0.0 s | 34 | corcomlvl7_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 7 | corcomlvl7 | 6 | HeavyCannon | Cannon | Air+Ground | 700 | 3.0 s | 900 | corcomlvl7_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 7 | cordecomlvl7 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.8 s | 90 | cordecomlvl7_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 7 | cordecomlvl7 | 1 | Anti-swarm AoE flamethrower | Flamethrower | Air+Ground | 400 | 0.8 s | 90 | cordecomlvl7_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 7 | cordecomlvl7 | 2 | UltravioletRayBeam | Beam laser | All | 500 | 0.5 s | 1200 | cordecomlvl7_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 7 | cordecomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl7_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 7 | cordecomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl7_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 7 | cordecomlvl7 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl7_repulsor |  |  |
 | Cortex | Cortex Commander Level 7 | cordecomlvl7 | 5 | EyeLaser | Beam laser | Air+Ground | 730 | 0.0 s | 34 | cordecomlvl7_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 7 | cordecomlvl7 | 6 | HeavyCannon | Cannon | Air+Ground | 700 | 3.0 s | 900 | cordecomlvl7_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 8 | corcomlvl8 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 80 | corcomlvl8_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 8 | corcomlvl8 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 80 | corcomlvl8_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 8 | corcomlvl8 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.5 s | 1400 | corcomlvl8_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 8 | corcomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl8_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 8 | corcomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl8_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 8 | corcomlvl8 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl8_repulsor |  |  |
 | Cortex | Cortex Commander Level 8 | corcomlvl8 | 5 | EyeLaser | Beam laser | Air+Ground | 800 | 0.0 s | 42 | corcomlvl8_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 8 | corcomlvl8 | 6 | HeavyCannon | Cannon | Air+Ground | 700 | 3.0 s | 1050 | corcomlvl8_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 8 | cordecomlvl8 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 80 | cordecomlvl8_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 8 | cordecomlvl8 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 80 | cordecomlvl8_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 8 | cordecomlvl8 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.5 s | 1400 | cordecomlvl8_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 8 | cordecomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl8_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 8 | cordecomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl8_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 8 | cordecomlvl8 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl8_repulsor |  |  |
 | Cortex | Cortex Commander Level 8 | cordecomlvl8 | 5 | EyeLaser | Beam laser | Air+Ground | 800 | 0.0 s | 42 | cordecomlvl8_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 8 | cordecomlvl8 | 6 | HeavyCannon | Cannon | Air+Ground | 700 | 3.0 s | 1050 | cordecomlvl8_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 9 | corcomlvl9 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 96 | corcomlvl9_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 9 | corcomlvl9 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 96 | corcomlvl9_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 9 | corcomlvl9 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | corcomlvl9_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 9 | corcomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl9_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 9 | corcomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | corcomlvl9_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 9 | corcomlvl9 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | corcomlvl9_repulsor |  |  |
 | Cortex | Cortex Commander Level 9 | corcomlvl9 | 5 | EyeLaser | Beam laser | Air+Ground | 870 | 0.0 s | 58 | corcomlvl9_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 9 | corcomlvl9 | 6 | HeavyCannon | Cannon | Air+Ground | 750 | 3.0 s | 1350 | corcomlvl9_armcannon | D | MMB |
-| Cortex | Cortex Commander Level 9 | cordecomlvl9 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 96 | cordecomlvl9_corcomlaser | B | RMB |
+| Cortex | Cortex Commander Level 9 | cordecomlvl9 | 1 | Long range AoE flamethrower | Flamethrower | Air+Ground | 475 | 0.4 s | 96 | cordecomlvl9_corcomlaser | A | LMB |
 | Cortex | Cortex Commander Level 9 | cordecomlvl9 | 2 | UWSupernovaBeam | Beam laser | All | 500 | 0.4 s | 1400 | cordecomlvl9_corcomsealaser | C | MMB |
-| Cortex | Cortex Commander Level 9 | cordecomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl9_disintegrator | A | LMB |
+| Cortex | Cortex Commander Level 9 | cordecomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | cordecomlvl9_disintegrator | B | RMB |
 | Cortex | Cortex Commander Level 9 | cordecomlvl9 | 4 | PlasmaRepulsor | Shield | - | 100 | 1.0 s | 0 | cordecomlvl9_repulsor |  |  |
 | Cortex | Cortex Commander Level 9 | cordecomlvl9 | 5 | EyeLaser | Beam laser | Air+Ground | 870 | 0.0 s | 58 | cordecomlvl9_corcomeyelaser | E | MMB |
 | Cortex | Cortex Commander Level 9 | cordecomlvl9 | 6 | HeavyCannon | Cannon | Air+Ground | 750 | 3.0 s | 1350 | cordecomlvl9_armcannon | D | MMB |
@@ -557,9 +557,9 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Cortex | Epic Bulwark | cordoomt3 | 1 | Armageddon Heat Ray | Beam laser | Air+Ground | 1350 | 4.0 s | 7500 | cordoomt3_armagmheat | C | MMB |
 | Cortex | Epic Bulwark | cordoomt3 | 2 | Long-range g2g tachyon accelerator | Beam laser | Ground | 950 | 6.0 s | 4500 | cordoomt3_armageddon_blue_laser | B | RMB |
 | Cortex | Epic Bulwark | cordoomt3 | 3 | High energy g2g laser | Beam laser | Ground | 650 | 0.2 s | 247 | cordoomt3_armageddon_green_laser | A | LMB |
-| Cortex | Epic Commander - Final Boss | corcomboss | 1 | J8Laser | Beam laser | Air+Ground | 1250 | 0.0 s | 200 | corcomboss_corcomlaserboss | B | RMB |
+| Cortex | Epic Commander - Final Boss | corcomboss | 1 | J8Laser | Beam laser | Air+Ground | 1250 | 0.0 s | 200 | corcomboss_corcomlaserboss | A | LMB |
 | Cortex | Epic Commander - Final Boss | corcomboss | 2 | J8NSLaser | Beam laser | All | 1250 | 0.0 s | 200 | corcomboss_corcomsealaserboss | C | MMB |
-| Cortex | Epic Commander - Final Boss | corcomboss | 3 | Darkmatter Photon-Disruptor | D-gun | Air+Ground | 750 | 5.0 s | 999999 | corcomboss_disintegratorxl | A | LMB |
+| Cortex | Epic Commander - Final Boss | corcomboss | 3 | Darkmatter Photon-Disruptor | D-gun | Air+Ground | 750 | 5.0 s | 999999 | corcomboss_disintegratorxl | B | RMB |
 | Cortex | Epic Commando | cormandot4 | 1 | Close-quarters EMP Scattergun | Beam laser | Air+Ground | 250 | 2.2 s | 2000 | cormandot4_commando_stunner | A | LMB |
 | Cortex | Epic Commando | cormandot4 | 2 | Disintegrator | D-gun | All | 250 | 0.9 s | 2400 | cormandot4_commando_back_cannon | B | RMB |
 | Cortex | Epic Dragon | corcrwt4 | 1 | Demon's Maw, Heavy long range AoE flamethrower | Flamethrower | Air+Ground | 500 | 0.4 s | 40 | corcrwt4_kmaw | A | LMB |
@@ -601,11 +601,11 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Cortex | Incisor | corgator | 1 | Laser | Beam laser | Air+Ground | 230 | 0.8 s | 75 | corgator_gator_laserx | A | LMB |
 | Cortex | Janitor | corfrock | 1 | Advanced g2a rapid missile launcher | Missile | Air | 840 | 0.4 s | 76 (air) | corfrock_aamissile | A | LMB |
 | Cortex | Jellyfish | cordl | 1 | Depthcharge launcher | Torpedo | All | 600 | 1.5 s | 225 | cordl_coax_depthcharge | A | LMB |
-| Cortex | Juggernaut | corkorg | 1 | GaussCannon | Cannon | Air+Ground | 590 | 1.4 s | 165 | corkorg_corkorg_fire | B | RMB |
-| Cortex | Juggernaut | corkorg | 2 | Experimental g2g Eradicator Heat Ray | Beam laser | Ground | 900 | 4.0 s | 5500 | corkorg_corkorg_laser | C | RMB |
-| Cortex | Juggernaut | corkorg | 3 | HeavyRockets | Starburst missile | Air+Ground | 950 | 6.0 s | 1000 | corkorg_corkorg_rocket | D | MMB |
-| Cortex | Juggernaut | corkorg | 4 | KrogCrush | Cannon | Air+Ground | 55 | 0.2 s | 150 | corkorg_krogkick | A | LMB |
-| Cortex | Juggernaut | corkorg | 5 | KrogCrush | Cannon | Air+Ground | 55 | 0.2 s | 150 | corkorg_krogkick | A | LMB |
+| Cortex | Juggernaut | corkorg | 1 | GaussCannon | Cannon | Air+Ground | 590 | 1.4 s | 165 | corkorg_corkorg_fire | A | LMB |
+| Cortex | Juggernaut | corkorg | 2 | Experimental g2g Eradicator Heat Ray | Beam laser | Ground | 900 | 4.0 s | 5500 | corkorg_corkorg_laser | B | RMB |
+| Cortex | Juggernaut | corkorg | 3 | HeavyRockets | Starburst missile | Air+Ground | 950 | 6.0 s | 1000 | corkorg_corkorg_rocket | C | MMB |
+| Cortex | Juggernaut | corkorg | 4 | KrogCrush | Cannon | Air+Ground | 55 | 0.2 s | 150 | corkorg_krogkick |  |  |
+| Cortex | Juggernaut | corkorg | 5 | KrogCrush | Cannon | Air+Ground | 55 | 0.2 s | 150 | corkorg_krogkick |  |  |
 | Cortex | Juggernaut | corkorg | 6 | KrogStep | Cannon | - | 0 | 1.5 s | 0 | corkorg_krogfootstep |  |  |
 | Cortex | Juggernaut | corkorg | 7 | KrogAim | Cannon | - | 10 | 1.0 s | 0 | corkorg_krogweaponaim |  |  |
 | Cortex | Juggernaut | corkorg | 8 | KrogRestore | Cannon | - | 10 | 1.0 s | 0 | corkorg_krogweaponrestore |  |  |
@@ -829,101 +829,101 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Legion | Ladon | legsptorpgunship | 1 | VTOL Torpedo Launcher | Torpedo | All | 460 | 4.5 s | 140 | legsptorpgunship_leg_torpedo_launcher | A | LMB |
 | Legion | Lance | legrail | 1 | Railgun | Laser | Air+Ground | 650 | 7.5 s | 200 | legrail_railgun | A | LMB |
 | Legion | Lance | legrail | 2 | Railgun | Laser | Air | 750 | 4.0 s | 300 (air) | legrail_aa_railgun | B | RMB |
-| Legion | Legion Commander | legcom | 1 | Close-Quarters Heatray | Beam laser | Air+Ground | 300 | 0.8 s | 175 | legcom_legcomlaser | B | RMB |
+| Legion | Legion Commander | legcom | 1 | Close-Quarters Heatray | Beam laser | Air+Ground | 300 | 0.8 s | 175 | legcom_legcomlaser | A | LMB |
 | Legion | Legion Commander | legcom | 2 | Underwater Torpedo Launcher | Torpedo | All | 300 | 2.0 s | 250 | legcom_torpedo | C | MMB |
-| Legion | Legion Commander | legcom | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcom_disintegrator | A | LMB |
+| Legion | Legion Commander | legcom | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcom_disintegrator | B | RMB |
 | Legion | Legion Commander | legcom | 4 | Anti-Air Missile Launcher | Missile | Air | 300 | 1.2 s | 150 (air) | legcom_aa_missile | D | MMB |
-| Legion | Legion Commander | legdecom | 1 | Close-Quarters Heatray | Beam laser | Air+Ground | 300 | 0.8 s | 175 | legdecom_legcomlaser | B | RMB |
+| Legion | Legion Commander | legdecom | 1 | Close-Quarters Heatray | Beam laser | Air+Ground | 300 | 0.8 s | 175 | legdecom_legcomlaser | A | LMB |
 | Legion | Legion Commander | legdecom | 2 | Underwater Torpedo Launcher | Torpedo | All | 300 | 2.0 s | 250 | legdecom_torpedo | C | MMB |
-| Legion | Legion Commander | legdecom | 3 | Disintegrator | D-gun | All | 262 | 0.9 s | 40 | legdecom_disintegrator | A | LMB |
+| Legion | Legion Commander | legdecom | 3 | Disintegrator | D-gun | All | 262 | 0.9 s | 40 | legdecom_disintegrator | B | RMB |
 | Legion | Legion Commander | legdecom | 4 | Anti-Air Missile Launcher | Missile | Air | 450 | 1.2 s | 150 (air) | legdecom_aa_missile | D | MMB |
-| Legion | Legion Commander Level 10 | legcomlvl10 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.3 s | 500 | legcomlvl10_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 10 | legcomlvl10 | 2 | MK-X Torpedo Launcher | Torpedo | All | 600 | 0.8 s | 400 | legcomlvl10_torpedo | D | MMB |
-| Legion | Legion Commander Level 10 | legcomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl10_disintegrator | A | LMB |
-| Legion | Legion Commander Level 10 | legcomlvl10 | 4 | Railgun | Laser | Air+Ground | 950 | 2.0 s | 500 | legcomlvl10_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 10 | legcomlvl10 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.3 s | 500 | legcomlvl10_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 10 | legcomlvl10 | 2 | MK-X Torpedo Launcher | Torpedo | All | 600 | 0.8 s | 400 | legcomlvl10_torpedo | C | MMB |
+| Legion | Legion Commander Level 10 | legcomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl10_disintegrator | B | RMB |
+| Legion | Legion Commander Level 10 | legcomlvl10 | 4 | Railgun | Laser | Air+Ground | 950 | 2.0 s | 500 | legcomlvl10_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 10 | legcomlvl10 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legcomlvl10_botcannon |  |  |
-| Legion | Legion Commander Level 10 | legdecomlvl10 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.3 s | 500 | legdecomlvl10_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 10 | legdecomlvl10 | 2 | MK-X Torpedo Launcher | Torpedo | All | 600 | 0.8 s | 400 | legdecomlvl10_torpedo | D | MMB |
-| Legion | Legion Commander Level 10 | legdecomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl10_disintegrator | A | LMB |
-| Legion | Legion Commander Level 10 | legdecomlvl10 | 4 | Railgun | Laser | Air+Ground | 950 | 2.0 s | 500 | legdecomlvl10_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 10 | legdecomlvl10 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.3 s | 500 | legdecomlvl10_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 10 | legdecomlvl10 | 2 | MK-X Torpedo Launcher | Torpedo | All | 600 | 0.8 s | 400 | legdecomlvl10_torpedo | C | MMB |
+| Legion | Legion Commander Level 10 | legdecomlvl10 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl10_disintegrator | B | RMB |
+| Legion | Legion Commander Level 10 | legdecomlvl10 | 4 | Railgun | Laser | Air+Ground | 950 | 2.0 s | 500 | legdecomlvl10_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 10 | legdecomlvl10 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legdecomlvl10_botcannon |  |  |
-| Legion | Legion Commander Level 2 | legcomlvl2 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 300 | 0.4 s | 25 | legcomlvl2_armmg_weapon | B | RMB |
+| Legion | Legion Commander Level 2 | legcomlvl2 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 300 | 0.4 s | 25 | legcomlvl2_armmg_weapon | A | LMB |
 | Legion | Legion Commander Level 2 | legcomlvl2 | 2 | MK-II Torpedo Launcher | Torpedo | All | 350 | 1.6 s | 250 | legcomlvl2_torpedo | C | MMB |
-| Legion | Legion Commander Level 2 | legcomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl2_disintegrator | A | LMB |
+| Legion | Legion Commander Level 2 | legcomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl2_disintegrator | B | RMB |
 | Legion | Legion Commander Level 2 | legcomlvl2 | 4 | Anti-Air Missile Launcher | Missile | Air | 450 | 1.2 s | 150 (air) | legcomlvl2_aa_missile | D | MMB |
-| Legion | Legion Commander Level 2 | legdecomlvl2 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 300 | 0.4 s | 25 | legdecomlvl2_armmg_weapon | B | RMB |
+| Legion | Legion Commander Level 2 | legdecomlvl2 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 300 | 0.4 s | 25 | legdecomlvl2_armmg_weapon | A | LMB |
 | Legion | Legion Commander Level 2 | legdecomlvl2 | 2 | MK-II Torpedo Launcher | Torpedo | All | 350 | 1.6 s | 250 | legdecomlvl2_torpedo | C | MMB |
-| Legion | Legion Commander Level 2 | legdecomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl2_disintegrator | A | LMB |
+| Legion | Legion Commander Level 2 | legdecomlvl2 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl2_disintegrator | B | RMB |
 | Legion | Legion Commander Level 2 | legdecomlvl2 | 4 | Anti-Air Missile Launcher | Missile | Air | 450 | 1.2 s | 150 (air) | legdecomlvl2_aa_missile | D | MMB |
-| Legion | Legion Commander Level 3 | legcomlvl3 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 30 | legcomlvl3_armmg_weapon | B | RMB |
+| Legion | Legion Commander Level 3 | legcomlvl3 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 30 | legcomlvl3_armmg_weapon | A | LMB |
 | Legion | Legion Commander Level 3 | legcomlvl3 | 2 | MK-III Torpedo Launcher | Torpedo | All | 500 | 1.2 s | 250 | legcomlvl3_torpedo | D | MMB |
-| Legion | Legion Commander Level 3 | legcomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl3_disintegrator | A | LMB |
+| Legion | Legion Commander Level 3 | legcomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl3_disintegrator | B | RMB |
 | Legion | Legion Commander Level 3 | legcomlvl3 | 4 | Anti-Air Missile Launcher | Missile | Air | 400 | 1.2 s | 150 (air) | legcomlvl3_aa_missile | C | MMB |
 | Legion | Legion Commander Level 3 | legcomlvl3 | 5 | Long range bot cannon | Cannon | - | 400 | 0.9 s | 0 | legcomlvl3_botcannon |  |  |
-| Legion | Legion Commander Level 3 | legdecomlvl3 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 30 | legdecomlvl3_armmg_weapon | B | RMB |
+| Legion | Legion Commander Level 3 | legdecomlvl3 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 30 | legdecomlvl3_armmg_weapon | A | LMB |
 | Legion | Legion Commander Level 3 | legdecomlvl3 | 2 | MK-III Torpedo Launcher | Torpedo | All | 500 | 1.2 s | 250 | legdecomlvl3_torpedo | D | MMB |
-| Legion | Legion Commander Level 3 | legdecomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl3_disintegrator | A | LMB |
+| Legion | Legion Commander Level 3 | legdecomlvl3 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl3_disintegrator | B | RMB |
 | Legion | Legion Commander Level 3 | legdecomlvl3 | 4 | Anti-Air Missile Launcher | Missile | Air | 400 | 1.2 s | 150 (air) | legdecomlvl3_aa_missile | C | MMB |
 | Legion | Legion Commander Level 3 | legdecomlvl3 | 5 | Long range bot cannon | Cannon | - | 400 | 0.9 s | 0 | legdecomlvl3_botcannon |  |  |
-| Legion | Legion Commander Level 4 | legcomlvl4 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 40 | legcomlvl4_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 4 | legcomlvl4 | 2 | MK-IV Torpedo Launcher | Torpedo | All | 450 | 0.8 s | 250 | legcomlvl4_torpedo | D | MMB |
-| Legion | Legion Commander Level 4 | legcomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl4_disintegrator | A | LMB |
-| Legion | Legion Commander Level 4 | legcomlvl4 | 4 | Railgun | Laser | Air+Ground | 550 | 2.7 s | 250 | legcomlvl4_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 4 | legcomlvl4 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 40 | legcomlvl4_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 4 | legcomlvl4 | 2 | MK-IV Torpedo Launcher | Torpedo | All | 450 | 0.8 s | 250 | legcomlvl4_torpedo | C | MMB |
+| Legion | Legion Commander Level 4 | legcomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl4_disintegrator | B | RMB |
+| Legion | Legion Commander Level 4 | legcomlvl4 | 4 | Railgun | Laser | Air+Ground | 550 | 2.7 s | 250 | legcomlvl4_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 4 | legcomlvl4 | 5 | Long range bot cannon | Cannon | - | 500 | 0.9 s | 0 | legcomlvl4_botcannon |  |  |
-| Legion | Legion Commander Level 4 | legdecomlvl4 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 40 | legdecomlvl4_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 4 | legdecomlvl4 | 2 | MK-IV Torpedo Launcher | Torpedo | All | 450 | 0.8 s | 250 | legdecomlvl4_torpedo | D | MMB |
-| Legion | Legion Commander Level 4 | legdecomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl4_disintegrator | A | LMB |
-| Legion | Legion Commander Level 4 | legdecomlvl4 | 4 | Railgun | Laser | Air+Ground | 550 | 2.7 s | 250 | legdecomlvl4_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 4 | legdecomlvl4 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 40 | legdecomlvl4_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 4 | legdecomlvl4 | 2 | MK-IV Torpedo Launcher | Torpedo | All | 450 | 0.8 s | 250 | legdecomlvl4_torpedo | C | MMB |
+| Legion | Legion Commander Level 4 | legdecomlvl4 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl4_disintegrator | B | RMB |
+| Legion | Legion Commander Level 4 | legdecomlvl4 | 4 | Railgun | Laser | Air+Ground | 550 | 2.7 s | 250 | legdecomlvl4_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 4 | legdecomlvl4 | 5 | Long range bot cannon | Cannon | - | 500 | 0.9 s | 0 | legdecomlvl4_botcannon |  |  |
-| Legion | Legion Commander Level 5 | legcomlvl5 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 50 | legcomlvl5_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 5 | legcomlvl5 | 2 | MK-V Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 250 | legcomlvl5_torpedo | D | MMB |
-| Legion | Legion Commander Level 5 | legcomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl5_disintegrator | A | LMB |
-| Legion | Legion Commander Level 5 | legcomlvl5 | 4 | Railgun | Laser | Air+Ground | 620 | 2.7 s | 250 | legcomlvl5_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 5 | legcomlvl5 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 50 | legcomlvl5_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 5 | legcomlvl5 | 2 | MK-V Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 250 | legcomlvl5_torpedo | C | MMB |
+| Legion | Legion Commander Level 5 | legcomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl5_disintegrator | B | RMB |
+| Legion | Legion Commander Level 5 | legcomlvl5 | 4 | Railgun | Laser | Air+Ground | 620 | 2.7 s | 250 | legcomlvl5_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 5 | legcomlvl5 | 5 | Long range bot cannon | Cannon | - | 600 | 0.9 s | 0 | legcomlvl5_botcannon |  |  |
-| Legion | Legion Commander Level 5 | legdecomlvl5 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 50 | legdecomlvl5_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 5 | legdecomlvl5 | 2 | MK-V Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 250 | legdecomlvl5_torpedo | D | MMB |
-| Legion | Legion Commander Level 5 | legdecomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl5_disintegrator | A | LMB |
-| Legion | Legion Commander Level 5 | legdecomlvl5 | 4 | Railgun | Laser | Air+Ground | 620 | 2.7 s | 250 | legdecomlvl5_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 5 | legdecomlvl5 | 1 | Rapid-Fire Machine Gun | Laser | Air+Ground | 350 | 0.4 s | 50 | legdecomlvl5_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 5 | legdecomlvl5 | 2 | MK-V Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 250 | legdecomlvl5_torpedo | C | MMB |
+| Legion | Legion Commander Level 5 | legdecomlvl5 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl5_disintegrator | B | RMB |
+| Legion | Legion Commander Level 5 | legdecomlvl5 | 4 | Railgun | Laser | Air+Ground | 620 | 2.7 s | 250 | legdecomlvl5_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 5 | legdecomlvl5 | 5 | Long range bot cannon | Cannon | - | 600 | 0.9 s | 0 | legdecomlvl5_botcannon |  |  |
-| Legion | Legion Commander Level 6 | legcomlvl6 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 360 | legcomlvl6_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 6 | legcomlvl6 | 2 | MK-VI Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 300 | legcomlvl6_torpedo | D | MMB |
-| Legion | Legion Commander Level 6 | legcomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl6_disintegrator | A | LMB |
-| Legion | Legion Commander Level 6 | legcomlvl6 | 4 | Railgun | Laser | Air+Ground | 730 | 2.7 s | 250 | legcomlvl6_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 6 | legcomlvl6 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 360 | legcomlvl6_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 6 | legcomlvl6 | 2 | MK-VI Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 300 | legcomlvl6_torpedo | C | MMB |
+| Legion | Legion Commander Level 6 | legcomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl6_disintegrator | B | RMB |
+| Legion | Legion Commander Level 6 | legcomlvl6 | 4 | Railgun | Laser | Air+Ground | 730 | 2.7 s | 250 | legcomlvl6_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 6 | legcomlvl6 | 5 | Long range bot cannon | Cannon | - | 600 | 0.9 s | 0 | legcomlvl6_botcannon |  |  |
-| Legion | Legion Commander Level 6 | legdecomlvl6 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 360 | legdecomlvl6_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 6 | legdecomlvl6 | 2 | MK-VI Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 300 | legdecomlvl6_torpedo | D | MMB |
-| Legion | Legion Commander Level 6 | legdecomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl6_disintegrator | A | LMB |
-| Legion | Legion Commander Level 6 | legdecomlvl6 | 4 | Railgun | Laser | Air+Ground | 730 | 2.7 s | 250 | legdecomlvl6_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 6 | legdecomlvl6 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 360 | legdecomlvl6_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 6 | legdecomlvl6 | 2 | MK-VI Torpedo Launcher | Torpedo | All | 500 | 0.8 s | 300 | legdecomlvl6_torpedo | C | MMB |
+| Legion | Legion Commander Level 6 | legdecomlvl6 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl6_disintegrator | B | RMB |
+| Legion | Legion Commander Level 6 | legdecomlvl6 | 4 | Railgun | Laser | Air+Ground | 730 | 2.7 s | 250 | legdecomlvl6_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 6 | legdecomlvl6 | 5 | Long range bot cannon | Cannon | - | 600 | 0.9 s | 0 | legdecomlvl6_botcannon |  |  |
-| Legion | Legion Commander Level 7 | legcomlvl7 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 400 | legcomlvl7_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 7 | legcomlvl7 | 2 | MK-VII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 300 | legcomlvl7_torpedo | D | MMB |
-| Legion | Legion Commander Level 7 | legcomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl7_disintegrator | A | LMB |
-| Legion | Legion Commander Level 7 | legcomlvl7 | 4 | Railgun | Laser | Air+Ground | 730 | 2.6 s | 250 | legcomlvl7_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 7 | legcomlvl7 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 400 | legcomlvl7_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 7 | legcomlvl7 | 2 | MK-VII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 300 | legcomlvl7_torpedo | C | MMB |
+| Legion | Legion Commander Level 7 | legcomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl7_disintegrator | B | RMB |
+| Legion | Legion Commander Level 7 | legcomlvl7 | 4 | Railgun | Laser | Air+Ground | 730 | 2.6 s | 250 | legcomlvl7_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 7 | legcomlvl7 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legcomlvl7_botcannon |  |  |
-| Legion | Legion Commander Level 7 | legdecomlvl7 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 400 | legdecomlvl7_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 7 | legdecomlvl7 | 2 | MK-VII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 300 | legdecomlvl7_torpedo | D | MMB |
-| Legion | Legion Commander Level 7 | legdecomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl7_disintegrator | A | LMB |
-| Legion | Legion Commander Level 7 | legdecomlvl7 | 4 | Railgun | Laser | Air+Ground | 730 | 2.6 s | 250 | legdecomlvl7_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 7 | legdecomlvl7 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 425 | 0.3 s | 400 | legdecomlvl7_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 7 | legdecomlvl7 | 2 | MK-VII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 300 | legdecomlvl7_torpedo | C | MMB |
+| Legion | Legion Commander Level 7 | legdecomlvl7 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl7_disintegrator | B | RMB |
+| Legion | Legion Commander Level 7 | legdecomlvl7 | 4 | Railgun | Laser | Air+Ground | 730 | 2.6 s | 250 | legdecomlvl7_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 7 | legdecomlvl7 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legdecomlvl7_botcannon |  |  |
-| Legion | Legion Commander Level 8 | legcomlvl8 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.2 s | 475 | legcomlvl8_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 8 | legcomlvl8 | 2 | MK-VIII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legcomlvl8_torpedo | D | MMB |
-| Legion | Legion Commander Level 8 | legcomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl8_disintegrator | A | LMB |
-| Legion | Legion Commander Level 8 | legcomlvl8 | 4 | Railgun | Laser | Air+Ground | 800 | 2.4 s | 300 | legcomlvl8_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 8 | legcomlvl8 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.2 s | 475 | legcomlvl8_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 8 | legcomlvl8 | 2 | MK-VIII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legcomlvl8_torpedo | C | MMB |
+| Legion | Legion Commander Level 8 | legcomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl8_disintegrator | B | RMB |
+| Legion | Legion Commander Level 8 | legcomlvl8 | 4 | Railgun | Laser | Air+Ground | 800 | 2.4 s | 300 | legcomlvl8_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 8 | legcomlvl8 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legcomlvl8_botcannon |  |  |
-| Legion | Legion Commander Level 8 | legdecomlvl8 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.2 s | 475 | legdecomlvl8_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 8 | legdecomlvl8 | 2 | MK-VIII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legdecomlvl8_torpedo | D | MMB |
-| Legion | Legion Commander Level 8 | legdecomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl8_disintegrator | A | LMB |
-| Legion | Legion Commander Level 8 | legdecomlvl8 | 4 | Railgun | Laser | Air+Ground | 800 | 2.4 s | 300 | legdecomlvl8_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 8 | legdecomlvl8 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.2 s | 475 | legdecomlvl8_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 8 | legdecomlvl8 | 2 | MK-VIII Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legdecomlvl8_torpedo | C | MMB |
+| Legion | Legion Commander Level 8 | legdecomlvl8 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl8_disintegrator | B | RMB |
+| Legion | Legion Commander Level 8 | legdecomlvl8 | 4 | Railgun | Laser | Air+Ground | 800 | 2.4 s | 300 | legdecomlvl8_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 8 | legdecomlvl8 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legdecomlvl8_botcannon |  |  |
-| Legion | Legion Commander Level 9 | legcomlvl9 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.4 s | 500 | legcomlvl9_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 9 | legcomlvl9 | 2 | MK-IX Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legcomlvl9_torpedo | D | MMB |
-| Legion | Legion Commander Level 9 | legcomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl9_disintegrator | A | LMB |
-| Legion | Legion Commander Level 9 | legcomlvl9 | 4 | Railgun | Laser | Air+Ground | 870 | 2.2 s | 400 | legcomlvl9_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 9 | legcomlvl9 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.4 s | 500 | legcomlvl9_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 9 | legcomlvl9 | 2 | MK-IX Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legcomlvl9_torpedo | C | MMB |
+| Legion | Legion Commander Level 9 | legcomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 99999 | legcomlvl9_disintegrator | B | RMB |
+| Legion | Legion Commander Level 9 | legcomlvl9 | 4 | Railgun | Laser | Air+Ground | 870 | 2.2 s | 400 | legcomlvl9_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 9 | legcomlvl9 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legcomlvl9_botcannon |  |  |
-| Legion | Legion Commander Level 9 | legdecomlvl9 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.4 s | 500 | legdecomlvl9_armmg_weapon | B | RMB |
-| Legion | Legion Commander Level 9 | legdecomlvl9 | 2 | MK-IX Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legdecomlvl9_torpedo | D | MMB |
-| Legion | Legion Commander Level 9 | legdecomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl9_disintegrator | A | LMB |
-| Legion | Legion Commander Level 9 | legdecomlvl9 | 4 | Railgun | Laser | Air+Ground | 870 | 2.2 s | 400 | legdecomlvl9_railgunt2 | C | RMB |
+| Legion | Legion Commander Level 9 | legdecomlvl9 | 1 | Rapid-Fire Plasma Cannon | Plasma | Air+Ground | 500 | 0.4 s | 500 | legdecomlvl9_armmg_weapon | A | LMB |
+| Legion | Legion Commander Level 9 | legdecomlvl9 | 2 | MK-IX Torpedo Launcher | Torpedo | All | 550 | 0.8 s | 350 | legdecomlvl9_torpedo | C | MMB |
+| Legion | Legion Commander Level 9 | legdecomlvl9 | 3 | Disintegrator | D-gun | All | 250 | 0.9 s | 40 | legdecomlvl9_disintegrator | B | RMB |
+| Legion | Legion Commander Level 9 | legdecomlvl9 | 4 | Railgun | Laser | Air+Ground | 870 | 2.2 s | 400 | legdecomlvl9_railgunt2 | D | MMB |
 | Legion | Legion Commander Level 9 | legdecomlvl9 | 5 | Long range bot cannon | Cannon | - | 700 | 0.9 s | 0 | legdecomlvl9_botcannon |  |  |
 | Legion | Legion Drone | legdrone | 1 | Burst-fire Machine Gun | Laser | Air+Ground | 300 | 0.9 s | 12 | legdrone_semiauto | A | LMB |
 | Legion | Legion Heavy Drone | legheavydrone | 1 | a2g Heat Ray | Beam laser | Ground | 430 | 0.8 s | 10 | legheavydrone_heat_ray | A | LMB |
@@ -983,8 +983,8 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 | Legion | Phoenix | legphoenix | 3 | PhoenixBlast | Cannon | - | 10 | 1.0 s | 0 | legphoenix_legphsound |  |  |
 | Legion | Phorcys | legnavaldefturret | 1 | Dual-Salvo Medium Rocket Launcher | Missile | Air+Ground | 720 | 2.5 s | 95 | legnavaldefturret_leg_med_anti_naval_salvo_rocket | A | LMB |
 | Legion | Pilum | legbunk | 1 | Targeting System | Cannon | - | 650 | 0.1 s | 0 | legbunk_aimhull |  |  |
-| Legion | Pilum | legbunk | 2 | Hard-Plasma Mining Tool | D-gun | All | 150 | 2.0 s | 300 | legbunk_piledriver | A | LMB |
-| Legion | Pilum | legbunk | 3 | Snub-Nose Railgun | Laser | Air+Ground | 650 | 3.0 s | 475 | legbunk_railgunt2 | B | RMB |
+| Legion | Pilum | legbunk | 2 | Hard-Plasma Mining Tool | D-gun | All | 150 | 2.0 s | 300 | legbunk_piledriver | B | RMB |
+| Legion | Pilum | legbunk | 3 | Snub-Nose Railgun | Laser | Air+Ground | 650 | 3.0 s | 475 | legbunk_railgunt2 | A | LMB |
 | Legion | Pluto | legflak | 1 | Dual Rotary Microflak Cannons | Cannon | Air | 875 | 0.2 s | 58 (air) | legflak_leg_t2_microflak | A | LMB |
 | Legion | Polybolos | legfrl | 1 | Light g2a Missile Launcher | Missile | Air | 765 | 1.7 s | 115 (air) | legfrl_legrl_missile | A | LMB |
 | Legion | Praetorian | legeshotgunmech | 1 | Targeting System | Cannon | - | 420 | 2.5 s | 0 | legeshotgunmech_aimhull |  |  |

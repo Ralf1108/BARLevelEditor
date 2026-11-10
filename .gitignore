@@ -15,3 +15,6 @@ _claudeResumeSession.txt
 shared/unit_categories/unit_categories.json
 LevelEditor/evolution_script_installed.txt
 LevelEditor/renegade_script_installed.txt
+
+# LibreOffice lock files of the csv tables
+.~lock.*#

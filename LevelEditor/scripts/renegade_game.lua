@@ -123,33 +123,33 @@ local WEAPON_BUTTONS = {
 	armcarry = { L = {  }, R = {  }, M = {  } },
 	armcir = { L = { 1 }, R = {  }, M = {  } },
 	armclaw = { L = { 1 }, R = {  }, M = {  } },
-	armcom = { L = { 3 }, R = { 1 }, M = { 2 } },
-	armcomboss = { L = { 1 }, R = { 2 }, M = { 3 } },
-	armcomcon = { L = { 3 }, R = { 1 }, M = { 2 } },
-	armcomlvl10 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl2 = { L = { 3 }, R = { 1 }, M = { 2 } },
-	armcomlvl3 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl4 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl5 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl6 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl7 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl8 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomlvl9 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armcomnew = { L = { 3 }, R = { 1 }, M = { 2 } },
+	armcom = { L = { 1 }, R = { 3 }, M = { 2 } },
+	armcomboss = { L = { 1 }, R = { 3 }, M = { 2 } },
+	armcomcon = { L = { 1 }, R = { 3 }, M = { 2 } },
+	armcomlvl10 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl2 = { L = { 1 }, R = { 3 }, M = { 2 } },
+	armcomlvl3 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl4 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl5 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl6 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl7 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl8 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomlvl9 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armcomnew = { L = { 1 }, R = { 3 }, M = { 2 } },
 	armcroc = { L = { 1 }, R = { 2 }, M = {  } },
 	armcrus = { L = { 2 }, R = { 1 }, M = { 3 } },
 	armdecade = { L = { 1, 2 }, R = {  }, M = {  } },
 	armdecadet3 = { L = { 1, 2 }, R = {  }, M = {  } },
-	armdecom = { L = { 3 }, R = { 2 }, M = { 1 } },
-	armdecomlvl10 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl2 = { L = { 3 }, R = { 1 }, M = { 2 } },
-	armdecomlvl3 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl4 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl5 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl6 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl7 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl8 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
-	armdecomlvl9 = { L = { 6 }, R = { 2, 3, 4, 5 }, M = { 1 } },
+	armdecom = { L = { 2 }, R = { 3 }, M = { 1 } },
+	armdecomlvl10 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl2 = { L = { 1 }, R = { 3 }, M = { 2 } },
+	armdecomlvl3 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl4 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl5 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl6 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl7 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl8 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
+	armdecomlvl9 = { L = { 6 }, R = { 3 }, M = { 1, 2, 4, 5 } },
 	armdfly = { L = { 1 }, R = {  }, M = {  } },
 	armdl = { L = { 1 }, R = {  }, M = {  } },
 	armdrone = { L = { 1 }, R = {  }, M = {  } },
@@ -283,18 +283,18 @@ local WEAPON_BUTTONS = {
 	corcan = { L = { 1 }, R = {  }, M = {  } },
 	corcarry = { L = {  }, R = {  }, M = {  } },
 	corcat = { L = { 1 }, R = {  }, M = {  } },
-	corcom = { L = { 3 }, R = { 1 }, M = { 2 } },
-	corcomboss = { L = { 3 }, R = { 1 }, M = { 2 } },
-	corcomcon = { L = { 3 }, R = { 1 }, M = { 2 } },
-	corcomlvl10 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	corcomlvl2 = { L = { 3 }, R = { 1 }, M = { 2 } },
-	corcomlvl3 = { L = { 3 }, R = { 1 }, M = { 2, 5 } },
-	corcomlvl4 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	corcomlvl5 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	corcomlvl6 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	corcomlvl7 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	corcomlvl8 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	corcomlvl9 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
+	corcom = { L = { 1 }, R = { 3 }, M = { 2 } },
+	corcomboss = { L = { 1 }, R = { 3 }, M = { 2 } },
+	corcomcon = { L = { 1 }, R = { 3 }, M = { 2 } },
+	corcomlvl10 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	corcomlvl2 = { L = { 1 }, R = { 3 }, M = { 2 } },
+	corcomlvl3 = { L = { 1 }, R = { 3 }, M = { 2, 5 } },
+	corcomlvl4 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	corcomlvl5 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	corcomlvl6 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	corcomlvl7 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	corcomlvl8 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	corcomlvl9 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
 	corcrash = { L = { 1 }, R = {  }, M = {  } },
 	corcrus = { L = { 2 }, R = { 1 }, M = { 3 } },
 	corcrw = { L = { 1 }, R = { 2, 3 }, M = {  } },
@@ -303,15 +303,15 @@ local WEAPON_BUTTONS = {
 	corcut = { L = { 1 }, R = {  }, M = {  } },
 	cordeadeye = { L = { 1 }, R = {  }, M = {  } },
 	cordecom = { L = { 2 }, R = { 3 }, M = { 1 } },
-	cordecomlvl10 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	cordecomlvl2 = { L = { 3 }, R = { 1 }, M = { 2 } },
-	cordecomlvl3 = { L = { 3 }, R = { 1 }, M = { 2, 5 } },
-	cordecomlvl4 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	cordecomlvl5 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	cordecomlvl6 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	cordecomlvl7 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	cordecomlvl8 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
-	cordecomlvl9 = { L = { 3 }, R = { 1 }, M = { 2, 5, 6 } },
+	cordecomlvl10 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	cordecomlvl2 = { L = { 1 }, R = { 3 }, M = { 2 } },
+	cordecomlvl3 = { L = { 1 }, R = { 3 }, M = { 2, 5 } },
+	cordecomlvl4 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	cordecomlvl5 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	cordecomlvl6 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	cordecomlvl7 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	cordecomlvl8 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
+	cordecomlvl9 = { L = { 1 }, R = { 3 }, M = { 2, 5, 6 } },
 	cordemon = { L = { 1 }, R = { 2 }, M = {  } },
 	cordesolator = { L = { 1 }, R = { 2 }, M = {  } },
 	cordl = { L = { 1 }, R = {  }, M = {  } },
@@ -356,12 +356,12 @@ local WEAPON_BUTTONS = {
 	corhrk = { L = { 1 }, R = {  }, M = {  } },
 	corhurc = { L = { 1 }, R = {  }, M = {  } },
 	corint = { L = { 1 }, R = {  }, M = {  } },
-	corjugg = { L = { 2, 3 }, R = { 4 }, M = { 1 } },
+	corjugg = { L = { 2, 3 }, R = { 1 }, M = { 4 } },
 	corjuno = { L = {  }, R = {  }, M = {  } },
 	corkarg = { L = { 1 }, R = { 2 }, M = {  } },
 	corkarganetht4 = { L = { 1 }, R = { 2 }, M = {  } },
 	corkark = { L = { 2 }, R = { 1 }, M = {  } },
-	corkorg = { L = { 4, 5 }, R = { 1, 2 }, M = { 3 } },
+	corkorg = { L = { 1 }, R = { 2 }, M = { 3 } },
 	corlevlr = { L = { 1 }, R = {  }, M = {  } },
 	corllt = { L = { 1 }, R = {  }, M = {  } },
 	cormabm = { L = {  }, R = {  }, M = {  } },
@@ -471,37 +471,37 @@ local WEAPON_BUTTONS = {
 	legbart = { L = { 1 }, R = {  }, M = {  } },
 	legbastion = { L = { 1 }, R = {  }, M = {  } },
 	legbombard = { L = { 1 }, R = {  }, M = {  } },
-	legbunk = { L = { 2 }, R = { 3 }, M = {  } },
+	legbunk = { L = { 3 }, R = { 2 }, M = {  } },
 	legcar = { L = { 1 }, R = {  }, M = {  } },
 	legcen = { L = { 1 }, R = {  }, M = {  } },
 	legcib = { L = {  }, R = {  }, M = {  } },
 	legcluster = { L = { 1 }, R = { 2 }, M = {  } },
-	legcom = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
+	legcom = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
 	legcomecon = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
-	legcomlvl10 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legcomlvl2 = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
-	legcomlvl3 = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
-	legcomlvl4 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legcomlvl5 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legcomlvl6 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legcomlvl7 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legcomlvl8 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legcomlvl9 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
+	legcomlvl10 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl2 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl3 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl4 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl5 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl6 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl7 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl8 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legcomlvl9 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
 	legcomoff = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
 	legcomt2com = { L = { 3 }, R = { 1 }, M = { 2, 4, 5 } },
 	legcomt2def = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
 	legcomt2off = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
 	legctl = { L = { 1 }, R = {  }, M = {  } },
-	legdecom = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
-	legdecomlvl10 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legdecomlvl2 = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
-	legdecomlvl3 = { L = { 3 }, R = { 1 }, M = { 2, 4 } },
-	legdecomlvl4 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legdecomlvl5 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legdecomlvl6 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legdecomlvl7 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legdecomlvl8 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
-	legdecomlvl9 = { L = { 3 }, R = { 1, 4 }, M = { 2 } },
+	legdecom = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl10 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl2 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl3 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl4 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl5 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl6 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl7 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl8 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
+	legdecomlvl9 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
 	legdeflector = { L = {  }, R = {  }, M = {  } },
 	legdrone = { L = { 1 }, R = {  }, M = {  } },
 	legdtf = { L = { 1 }, R = {  }, M = {  } },
@@ -613,7 +613,7 @@ local function slotsFor(ud)
 		if wd and (tonumber(wd.range) or 0) > 0 and wd.type ~= "Shield" and (tonumber(wd.interceptor) or 0) == 0 and (d > 2 or v > 2) then
 			local g = byDef[wp.weaponDef]
 			if not g then
-				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = (d <= 2 and v > d) }
+				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = (d <= 2 and v > d), dgun = wd.type == "DGun" }
 				-- a weapon that hits the ground and aircraft (the description says "g2a" or "a2a"): at an aircraft in the circle it locks on, at the ground the player aims
 				local desc = tostring(wd.description or ""):lower()
 				g.hy = not g.aa and d > 2 and v > 2 and (desc:find("g2a", 1, true) ~= nil or desc:find("a2a", 1, true) ~= nil)
@@ -637,9 +637,9 @@ local function slotsFor(ud)
 		slotCache[ud.id] = s
 		return s
 	end
-	local others, miss = {}, {}
+	local others, miss, dguns = {}, {}, {}
 	for _, g in ipairs(groups) do
-		local l = g.missile and miss or others
+		local l = g.dgun and dguns or (g.missile and miss or others)
 		l[#l + 1] = g
 	end
 	local function byRange(x, y) return x.range < y.range end
@@ -652,7 +652,15 @@ local function slotsFor(ud)
 		end
 		return out
 	end
-	if #miss > 0 and #others > 0 then
+	if #dguns > 0 then
+		-- the D-gun (the commander's Disintegrator) is always on the right button; the shortest of the others on the left, the rest in the middle
+		s.R = merge(dguns, 1)
+		local rest = {}
+		for _, g in ipairs(others) do rest[#rest + 1] = g end
+		for _, g in ipairs(miss) do rest[#rest + 1] = g end
+		s.L = rest[1] and rest[1].list or {}
+		s.M = merge(rest, 2)
+	elseif #miss > 0 and #others > 0 then
 		s.L, s.R, s.M = merge(others, 1), {}, merge(miss, 1)
 		s.L = others[1].list
 		s.R = merge(others, 2)
@@ -717,7 +725,12 @@ local function applyTarget(team, u, ud, s, i, t)
 		end
 	else
 		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
-		Spring.SetUnitTarget(u, x, y, z, false, true, i)
+		local wd = WeaponDefs[ud.weapons[i].weaponDef]
+		if wd and wd.type == "DGun" then
+			Spring.SetUnitTarget(u, x, y, z, true, true, i) -- the D-gun: a manual fire weapon (the dgun flag)
+		else
+			Spring.SetUnitTarget(u, x, y, z, false, true, i)
+		end
 	end
 end
 
@@ -736,7 +749,7 @@ local function unblock(u, i, f)
 end
 local function aimable(ud, i)
 	local wd = WeaponDefs[ud.weapons[i].weaponDef]
-	return wd and not wd.stockpile
+	return wd and not wd.stockpile and wd.type ~= "DGun" -- (the D-gun is fired by hand: it has no target before the button)
 end
 
 local function shoot(team, f, force)

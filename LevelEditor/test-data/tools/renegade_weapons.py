@@ -7,6 +7,7 @@
                                                    infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Group and Fire button of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
 
+The D-gun (type DGun: the Disintegrator of the commanders) is always on RMB; then the shortest other group is on LMB and everything else on MMB.
 The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are one group; missiles
 (missile launcher, starburst, torpedo, anti-air only) and all other groups are sorted by range; with both kinds the shortest of the others goes on LMB, the rest of the
 others on RMB (the missiles on RMB when there is no second one) and the missiles on MMB; with one kind only the shortest on LMB, the next on RMB, all further on MMB.
@@ -80,14 +81,23 @@ def propose(weapons):
         g = groups.get(w["wname"])
         if g is None:
             aa = w["dmg"] <= 2 and w["vtol"] > 2
-            g = dict(name=w["wname"], range=w["range"], nums=[], missile=(w["type"] in MISSILE) or aa)
+            g = dict(name=w["wname"], range=w["range"], nums=[], missile=(w["type"] in MISSILE) or aa, dgun=w["type"] == "DGun")
             groups[w["wname"]] = g
             order.append(g)
         g["nums"].append(w["n"])
+    dguns = [g for g in order if g["dgun"]]
+    order = [g for g in order if not g["dgun"]]
     others = sorted([g for g in order if not g["missile"]], key=lambda g: g["range"])
     miss = sorted([g for g in order if g["missile"]], key=lambda g: g["range"])
     button = {}
-    if others and miss:
+    for g in dguns:
+        button[id(g)] = "RMB"   # the D-gun (the commander's Disintegrator) is always on the right button
+    if dguns:
+        # the right button is taken: the shortest of the others on the left, everything else in the middle
+        rest = others + miss
+        for k, g in enumerate(rest):
+            button[id(g)] = "LMB" if k == 0 else "MMB"
+    elif others and miss:
         button[id(others[0])] = "LMB"
         for g in others[1:]:
             button[id(g)] = "RMB"
@@ -99,7 +109,7 @@ def propose(weapons):
         for i, g in enumerate(lst):
             button[id(g)] = ("LMB", "RMB", "MMB")[min(i, 2)]
     result = {}
-    ranked = sorted(order, key=lambda g: ({"LMB": 0, "RMB": 1, "MMB": 2}[button[id(g)]], g["range"]))
+    ranked = sorted(order + dguns, key=lambda g: ({"LMB": 0, "RMB": 1, "MMB": 2}[button[id(g)]], g["range"]))
     for k, g in enumerate(ranked):
         letter = chr(ord("A") + k)
         for n in g["nums"]:
@@ -208,6 +218,8 @@ def make_table(log):
         prop = propose(u["weapons"])
         for w in sorted(u["weapons"], key=lambda w: w["n"]):
             grp, btn = old.get((code, str(w["n"])), prop[w["n"]])
+            if any(x["type"] == "DGun" for x in u["weapons"]):
+                grp, btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
                          dmg, w["wname"], grp, btn])
