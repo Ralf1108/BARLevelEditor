@@ -1,8 +1,10 @@
 -- Renegade (synchronized part), a planned game mode of LAN Play: every human player steers one original unit in the first person. Active only with the
 -- game option lanrenegade=1. Proof of concept 2: every team with a human player and a commander gets a Peewee (armpw) instead; the game widget renegade.lua
--- sends the view and the keys ("ren|<yaw degrees>|<pitch degrees>|<keys>|<fire>", keys: W 1, A 2, S 4, D 8); this gadget moves the unit with ordinary
+-- sends the view and the keys ("ren|<yaw degrees>|<pitch degrees>|<keys>|<fire>|<x>|<y>|<z>|<unit>", keys: W 1, A 2, S 4, D 8; x y z the point under the crosshair, unit the enemy there or -1); this gadget moves the unit with ordinary
 -- move orders (no MoveCtrl) toward a point in the wished direction and stops it when no key is down.
--- Team rules parameter renUnit (public): the unit of the team (0 = none). Spec: specs/renegade.md.
+-- While fire is 1 the unit gets the point (or the enemy unit) as its target (Spring.SetUnitTarget, user target), so its own weapon, turret, reload and damage
+-- apply; its fire state is hold fire: it shoots only at what the player aims at. Test only: game option lanrenotest=1 and "ren|test|1" put an enemy
+-- Peewee (hold fire) 150 Elmo in front of the unit. Team rules parameter renUnit (public): the unit of the team (0 = none). Spec: specs/renegade.md.
 function gadget:GetInfo()
 	return {
 		name = "Renegade",
@@ -29,6 +31,8 @@ local STEP = 200 -- Elmo: how far ahead of the unit the move order points
 local REISSUE = 10 -- frames: a move order is given again after that time while a key is down
 local TURN = 6 -- degrees: the order is given again at once when the wished direction turned by more than that
 
+local TEST = (Spring.GetModOptions() or {}).lanrenotest == "1"
+local AIM_EVERY = 3 -- frames: the target is given again (a move order may drop it)
 local units = {} -- team -> unit id
 local input = {} -- team -> { yaw, pitch, keys, fire, last = { frame, yaw, keys }, moving }
 
@@ -69,14 +73,57 @@ local function steer(team, f)
 	l.frame, l.yaw, l.keys = f, inp.yaw, inp.keys
 end
 
+-- fire at the point or the unit under the crosshair; the target is checked (an own or allied unit is not a target: its position counts)
+local function shoot(team, f)
+	local u, inp = units[team], input[team]
+	if not u or not inp or not Spring.ValidUnitID(u) then return end
+	if inp.fire ~= 1 then
+		if inp.firing then
+			Spring.SetUnitTarget(u, nil)
+			inp.firing = false
+		end
+		return
+	end
+	if f % AIM_EVERY ~= 0 then return end
+	local t = inp.target
+	if t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) then
+		Spring.SetUnitTarget(u, t.unit, false, true)
+	else
+		Spring.SetUnitTarget(u, t.x, t.y, t.z, false, true)
+	end
+	inp.firing = true
+end
+
 function gadget:RecvLuaMsg(msg, playerID)
-	local yaw, pitch, keys, fire = msg:match("^ren|(-?%d+)|(-?%d+)|(%d+)|(%d)$")
+	if TEST and msg == "ren|test|1" then
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local u = units[team]
+		if u and not spec then
+			local x, y, z = Spring.GetUnitPosition(u)
+			local inp = input[team]
+			local yaw = math.rad(inp.yaw)
+			local ex, ez = x + math.sin(yaw) * 150, z + math.cos(yaw) * 150
+			for _, t in ipairs(Spring.GetTeamList()) do
+				if not Spring.AreTeamsAllied(t, team) and t ~= Spring.GetGaiaTeamID() then
+					local e = Spring.CreateUnit(START_UNIT, ex, Spring.GetGroundHeight(ex, ez), ez, 0, t)
+					if e then
+						Spring.GiveOrderToUnit(e, CMD.FIRE_STATE, { 0 }, 0)
+						Spring.Echo("[Renegade] test enemy " .. e .. " at " .. math.floor(ex) .. " " .. math.floor(ez))
+					end
+					break
+				end
+			end
+		end
+		return
+	end
+	local yaw, pitch, keys, fire, tx, ty, tz, tu = msg:match("^ren|(-?%d+)|(-?%d+)|(%d+)|(%d)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)$")
 	if not yaw then return end
 	local _, active, spec, team = Spring.GetPlayerInfo(playerID, false)
 	if spec or not units[team] then return end
 	local inp = input[team]
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
 	inp.keys, inp.fire = math.max(0, math.min(15, tonumber(keys))), tonumber(fire)
+	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
 end
 
 -- a team with a human and a commander: the commander is replaced by the first unit
@@ -97,7 +144,8 @@ local function take(team)
 			local id = Spring.CreateUnit(START_UNIT, x, y, z, face, team)
 			if id then
 				units[team] = id
-				input[team] = { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false }
+				input[team] = { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, firing = false }
+				Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
 				Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
 				Spring.Echo("[Renegade] team " .. team .. " steers a " .. START_UNIT .. " (unit " .. id .. ")")
 			end
@@ -112,7 +160,10 @@ function gadget:GameFrame(f)
 			if team ~= Spring.GetGaiaTeamID() then take(team) end
 		end
 	end
-	for team in pairs(units) do steer(team, f) end
+	for team in pairs(units) do
+		steer(team, f)
+		shoot(team, f)
+	end
 end
 
 function gadget:UnitDestroyed(u, defID, team)

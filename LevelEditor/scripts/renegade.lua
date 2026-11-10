@@ -2,7 +2,7 @@
 -- Scenarios", active only with the game option lanrenegade=1. Proof of concept 1 and 2:
 --   camera   on the eye of the unit (team rules parameter renUnit of the gadget renegade_game.lua), looking along yaw / pitch; the engine camera "fps" "fps" (state logged with /renegade log)
 --   mouse    the cursor is kept in the middle (Spring.WarpMouse), its movement turns yaw / pitch; the mouse buttons are taken (no selecting, no orders)
---   keys     W A S D are taken from the game (no camera scrolling) and sent to the gadget as a bit mask with the view: "ren|yaw|pitch|keys|fire"
+--   keys     W A S D are taken from the game (no camera scrolling) and sent to the gadget as a bit mask with the view: "ren|yaw|pitch|keys|fire|x|y|z|unit" (x y z: the point under the crosshair, unit: the enemy unit there or -1; zeros while not firing)
 --   toggle   the key Insert or /renegade gives the normal camera back and forth
 -- Test hooks for the test widget: WG.renegade.
 function widget:GetInfo()
@@ -28,6 +28,7 @@ local R = {
 	yaw = 0, pitch = 0, -- degrees: yaw 0 looks along +z, 90 along +x; pitch up positive
 	YAW0 = math.pi, -- ry of the camera when yaw is 0
 	keys = 0, fire = 0,
+	hit = nil, -- what the crosshair points at: { kind = "unit" | "ground", x, y, z, unit, dist }
 	sentAt = -100, sent = nil,
 	fake = false, -- the test widget steers (no mouse, no keys of the player)
 	log = false,
@@ -96,11 +97,41 @@ end
 
 local function send(f, force)
 	local yaw, pitch = math.floor(R.yaw + 0.5) % 360, math.floor(R.pitch + 0.5)
-	local msg = string.format("ren|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire)
+	local h = R.fire == 1 and R.hit
+	local msg = string.format("ren|%d|%d|%d|%d|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire,
+		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, h and h.unit or -1)
 	if msg == R.sent then return end
 	if not force and f - R.sentAt < SEND_GAP then return end
 	Spring.SendLuaRulesMsg(msg)
 	R.sent, R.sentAt = msg, f
+end
+
+-- what the crosshair points at: the ray from the middle of the screen; the own unit is skipped (then only the ground counts)
+local function aim(u)
+	local vsx, vsy = Spring.GetViewGeometry()
+	local cx, cy = vsx / 2, vsy / 2
+	local px, py, pz = Spring.GetCameraPosition()
+	-- measured: TraceScreenRay returns "unit", id or "ground", { x, y, z } (also with onlyCoords, which ignores units)
+	local kind, v = Spring.TraceScreenRay(cx, cy, false, false, true)
+	if kind == "unit" and v ~= u then
+		local x, y2, z2 = Spring.GetUnitPosition(v, true)
+		if x then
+			R.hit = { kind = "unit", x = x, y = y2, z = z2, unit = v, dist = math.sqrt((x - px) ^ 2 + (y2 - py) ^ 2 + (z2 - pz) ^ 2) }
+			return
+		end
+	end
+	local gx, gy, gz
+	if kind == "ground" and type(v) == "table" then
+		gx, gy, gz = v[1], v[2], v[3]
+	else
+		local _, pos = Spring.TraceScreenRay(cx, cy, true)
+		if type(pos) == "table" then gx, gy, gz = pos[1], pos[2], pos[3] end
+	end
+	if gx then
+		R.hit = { kind = "ground", x = gx, y = gy, z = gz, unit = -1, dist = math.sqrt((gx - px) ^ 2 + (gy - py) ^ 2 + (gz - pz) ^ 2) }
+	else
+		R.hit = nil -- the sky
+	end
 end
 
 local function keysNow()
@@ -140,6 +171,7 @@ function widget:Update()
 	end
 	Spring.SetMouseCursor("none")
 	setCamera(u)
+	aim(u)
 	send(Spring.GetGameFrame(), false)
 end
 
@@ -202,5 +234,20 @@ function widget:DrawScreen()
 		gl.Vertex(cx, cy + s / 3); gl.Vertex(cx, cy + s)
 	end)
 	gl.LineWidth(1)
+	-- what the crosshair points at (proof of concept 3: debug text under the crosshair)
+	local h = R.hit
+	local text
+	if not h then
+		text = "sky"
+	elseif h.kind == "unit" then
+		local d = UnitDefs[Spring.GetUnitDefID(h.unit) or -1]
+		local hp, mhp = Spring.GetUnitHealth(h.unit)
+		text = string.format("%s%s  %d%%  %d m", d and (d.translatedHumanName or d.name) or "unit", Spring.IsUnitAllied(h.unit) and " (ally)" or "", hp and mhp and math.floor(100 * hp / mhp) or 0, math.floor(h.dist))
+	else
+		text = string.format("ground %d / %d  %d m", h.x, h.z, math.floor(h.dist))
+	end
+	local enemy = h and h.kind == "unit" and not Spring.IsUnitAllied(h.unit)
+	gl.Color(enemy and 1 or 0.9, enemy and 0.3 or 0.9, enemy and 0.3 or 0.9, 1)
+	gl.Text(text, cx, cy - s * 2.2, math.max(12, vsy / 70), "co")
 	gl.Color(1, 1, 1, 1)
 end

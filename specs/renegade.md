@@ -47,17 +47,21 @@ Checked 2026-11-10 by looking for the function names in the installed engine (`s
 |---|---|---|
 | PoC 1 | Camera: pick the test unit, put the camera on its eye and follow (local, no gadget). Try the `fps` controller first, log its state; else own camera | stable first-person picture while the unit is moved by normal orders |
 | PoC 2 | Mouse and movement: yaw/pitch from mouse, WASD moves the unit (gadget with move orders), RTS input suppressed | walk around with mouse look, no selection boxes or camera scrolling |
-| PoC 3 | Crosshair and screen ray: crosshair in the middle, the ray's hit (ground point / unit) shown as debug text | the shown hit matches what the crosshair points at |
-| PoC 4 | Fire: left button -> target to the gadget -> original weapon fires at the crosshair point | shots land at the crosshair, damage is the game's own |
+| PoC 3 (done) | Crosshair and screen ray: crosshair in the middle, the ray's hit (ground point / unit) shown as debug text | the shown hit matches what the crosshair points at |
+| PoC 4 (done) | Fire: left button -> target to the gadget -> original weapon fires at the crosshair point | shots land at the crosshair, damage is the game's own |
 | PoC 5 | Two players (LAN test with host + 1 joiner): each steers one unit, they shoot each other | both screens show the same fight, no desync |
 
-The first implementation covers PoC 1 and 2 (camera, mouse, movement).
+PoC 1 to 4 are implemented, see the last section.
 
-## 6. Not in the first prototype
+## 6. Later: jumping (noted, not planned in detail)
+
+A shooter has jump and hop. The engine has no jump key for ground units; ideas to try later: a short synced hop with `Spring.SetUnitVelocity` (upward speed, gravity does the rest; for kbots and vehicles the movement type may overwrite it), or `Spring.MoveCtrl` for the duration of the jump only (position by our own ballistic curve, back to normal movement on landing), or the unit scripts (`CallCOBScript`) for the animation. To decide: how the engine's ground movement reacts to a velocity impulse, how to detect landing, whether the weapon may be fired in the air, and whether jumping stays deterministic. The input message would get a key bit (Space = 16).
+
+## 7. Not in the first prototype
 
 Hundreds of players, own lobby/matchmaking/dedicated server, new weapons/projectiles/damage model, all unit types (aircraft, ships, hovercraft need their own control model), full HUD, sound, animation and progression systems. Respawn and teams will reuse the Evolution pattern (start position, death -> new unit after a delay).
 
-## 7. Open questions
+## 8. Open questions
 
 - Is the `fps` camera state usable from a widget and tied to a unit, or must the own camera be used?
 - Can the mouse be fully captured (cursor hidden and kept in the middle, also at the window edge)?
@@ -67,16 +71,17 @@ Hundreds of players, own lobby/matchmaking/dedicated server, new weapons/project
 - Traffic and determinism of the input messages with many players.
 - What the lobby/team setup needs (one unit per human, no commander, no building).
 
-## 8. Implemented and measured (PoC 1 and 2)
+## 9. Implemented and measured (PoC 1 to 4)
 
-Files: `LevelEditor/scripts/renegade.lua` (widget), `renegade_game.lua` (gadget), both in `$ScenarioGameFiles`. Test: `pve_test.ps1 -Ren -Widget zz_ren.lua -Map "Hooked 1.1"` (lines `[zzren]`), `zz_cam.lua` (which camera states take a direction).
+Files: `LevelEditor/scripts/renegade.lua` (widget), `renegade_game.lua` (gadget), both in `$ScenarioGameFiles`. Tests: `pve_test.ps1 -Ren -Widget zz_ren.lua -Map "Hooked 1.1"` (lines `[zzren]`; PoC 1 and 2), `-Ren -RenTest -Widget zz_ren3.lua` (PoC 3 and 4), `zz_cam.lua` (which camera states take a direction).
 
 - **Gadget:** with `lanrenegade=1` every team with a human and a commander gets an `armpw` instead (frames 30-300; team rules parameter `renUnit`, public). The widget's message `ren|<yaw>|<pitch>|<keys>|<fire>` (`RecvLuaMsg`, sender's team must own a unit; keys W 1, A 2, S 4, D 8) is stored; `steer` gives `CMD.MOVE` to a point 200 Elmo ahead in the wished direction (forward `(sin yaw, cos yaw)`, right `(-cos yaw, sin yaw)`), again after 10 frames or when the direction turns by more than 6 degrees, `CMD.STOP` when no key is down. No `MoveCtrl`. `fire` is only stored (PoC 4).
 - **Camera:** the engine camera `fps` works from a widget, set every frame by `Spring.SetCameraState({name = "fps", mode = 0, oldHeight = 0, px, py, pz, rx, ry, rz}, 0)`. **The direction comes from `rx` and `ry`, not from `dx, dy, dz` (ignored):** `rx = pi/2 - pitch` (pi/2 horizontal), `ry = pi - yaw` (our yaw 0 looks along +z, 90 along +x). Without `mode`/`oldHeight` the engine fell back to the `spring` camera in one run. Measured: `GetCameraDirection` equals the wanted direction (yaw 0/90/45, pitch 0/20/-10). Switching by name to `free`, `ta` or `spring` did not take over (name stayed `fps`). Eye = `GetUnitViewPosition` + 0.85 x `GetUnitHeight` (Peewee: 26 -> 22.1 above the base); the own model is hidden with `SetUnitNoDraw` (a picture shows ground, crosshair and the minimap view cone; the unit panel still shows the unit).
 - **Mouse:** `Spring.GetMouseState` + `Spring.WarpMouse(middle)` each frame; the difference is the turn (0.15 degrees per pixel; y is from the bottom: mouse up = look up, mouse right = yaw down). Measured: the warp lands exactly, one frame later yaw and pitch are as expected. `MousePress`, `MouseRelease`, `MouseWheel` and the keys W A S D return true while the view is on (RTS does not react; not yet checked by hand with a real mouse). Insert (or `/renegade`) switches back and forth, `/renegade log` writes the camera state, `/renegade flip` turns the yaw offset by 180 degrees.
 - **Movement:** W with yaw 0 / A with yaw 90 / S with yaw 270 moved the unit the right way (north-south 211 and 327 Elmo in about 4 s of game time at speed 4); the stop works (speed 0). At the start position of Hooked (map edge, x = 10) the first W was blocked (8 Elmo), a second try elsewhere worked; an S after A took a detour (cliffs near the edge): pathfinding decides, as expected for move orders.
-- **Crosshair:** four short lines in the middle (`DrawScreen`); the screen ray is PoC 3.
+- **Crosshair and screen ray (PoC 3):** four short lines in the middle (`DrawScreen`) and, under it, what the ray hits: `Spring.TraceScreenRay(middle, false, false, true)` gives `"unit", id` or `"ground", {x, y, z}` (the table also with `onlyCoords`, which ignores units; `"sky"` otherwise). The own unit was not hit (it is hidden); should it be, the ground behind it counts. `R.hit` = kind, point, unit, distance; the text is "Pawn 100% 151 m" (red for an enemy, "(ally)" for an ally), "ground x / z, distance" or "sky". Measured with `zz_ren3.lua`: the crosshair on the enemy gave its id at 151.6 m, on the ground the point 84 m away.
+- **Fire (PoC 4):** the left button sets `fire`; while it is down the message carries the point under the crosshair and the unit there (or -1). The gadget (`shoot`, every 3 frames) calls `Spring.SetUnitTarget(unit, enemy, false, true)` or `(unit, x, y, z, false, true)` (user target; an allied unit counts as a point) and `SetUnitTarget(unit, nil)` when the button is up; the unit's fire state is hold fire, so it shoots only at what the player aims at. Measured with `pve_test.ps1 -Ren -RenTest -Widget zz_ren3.lua` (game option `lanrenotest=1`, hook `ren|test|1` puts a Peewee of the enemy 150 Elmo ahead): the weapon target was the enemy (`GetUnitWeaponTarget`: type 1, user true), after 4 s of fire its health fell from 370 to 109 (the weapon's own damage, no own damage system); after the button went up the target was cleared; at the ground the target (type 2) followed the crosshair while the unit strafed with A.
 
 - **Quick start:** `LevelEditor\start_renegade.bat [map] [AI]` (default `Hooked 1.1` and `NullAI`, which does nothing) runs `ensure_installed.ps1` and `scripts\start_renegade.ps1` (writes `LevelEditor\renegade_script_installed.txt`, ignored by git): you in team 0, the computer player in team 1, game options `lanrenegade=1; lanplay=1; deathmode=neverend`.
 
-Not yet done: a real mouse and keyboard test by hand, PoC 3 to 5, lobby button and `LAN_VERSION`, aircraft and other movement types.
+Not yet done: PoC 5 (two players), a hand test of the fire, lobby button and `LAN_VERSION`, aircraft and other movement types.

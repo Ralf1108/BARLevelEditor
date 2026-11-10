@@ -1,7 +1,7 @@
 @echo off
 rem Starts a Renegade game at once (first person test): you with one Peewee against a passive computer player on the map Hooked 1.1.
 rem Other map or computer player: start_renegade.bat "Map name" AIName (e.g. start_renegade.bat "Comet Catcher Remake 1.8" SimpleAI).
-rem Keys in the game: mouse = look, W A S D = walk, Insert = normal camera and back. The setup runs by itself (ensure_installed.ps1) when the code or the BAR version changed.
+rem Keys in the game: mouse = look, W A S D = walk, left mouse button = fire, Insert = normal camera and back. The setup runs by itself (ensure_installed.ps1) when the code or the BAR version changed.
 setlocal
 set "L=%~dp0"
 set "DATA=C:\Games\Beyond-All-Reason\data"
