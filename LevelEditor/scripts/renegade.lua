@@ -290,6 +290,7 @@ function widget:Update()
 		local mx, my, left, middle, right = Spring.GetMouseState()
 		-- the buttons are read every frame too: a release that did not come must not keep the unit firing
 		R.fire = (left and 1 or 0) + (right and 2 or 0) + (middle and 4 or 0)
+		if left and (Spring.GetModKeyState()) then R.fire = 7 end -- Alt + left button: every weapon at once
 		if mx ~= cx or my ~= cy then
 			R.yaw = (R.yaw - (mx - cx) * SENS) % 360
 			R.pitch = math.max(-89, math.min(89, R.pitch + (my - cy) * SENS))
@@ -404,6 +405,7 @@ local BUTTON_BIT = { [1] = 1, [3] = 2, [2] = 4 } -- left, right, middle
 local function setBit(bit, on)
 	local has = R.fire % (bit * 2) >= bit
 	if on and not has then R.fire = R.fire + bit elseif not on and has then R.fire = R.fire - bit end
+	if bit == 1 and on and (Spring.GetModKeyState()) then R.fire = 7 end -- Alt + left button: every weapon at once
 end
 
 function widget:MousePress(x, y, button)
@@ -560,6 +562,7 @@ local function panel(vsx, vsy)
 	local s = math.max(0.7, vsy / 1080)
 	local w, h = 320 * s, 62 * s
 	local rows = {}
+	local allAtOnce = Spring.GetModKeyState() -- Alt held: the left button fires every weapon
 	for _, sl in ipairs(SLOTS) do
 		local list = slots[sl[1]]
 		if list and #list > 0 then
@@ -572,7 +575,7 @@ local function panel(vsx, vsy)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
 				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = sl[2], color = sl[4], aa = slots.aa[i], hy = slots.hy[i] }
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i] }
 			end
 		end
 	end

@@ -20,6 +20,7 @@ A game mode in the making: **you are one unit of Beyond All Reason, seen from th
 | Right mouse button | fire the **long range weapons** (yellow) |
 | Middle mouse button | fire the **missiles** (green); anti-air missiles only at the aircraft you look at |
 | Insert (or `/renegade`) | normal camera and back |
+| Alt + left mouse button | fire **every weapon at once** (the panel then shows LMB on all rows; anti-air weapons still need an aircraft in the circle) |
 | Tab | free the mouse for the debug menu, again: back to the game |
 
 ## What you see
