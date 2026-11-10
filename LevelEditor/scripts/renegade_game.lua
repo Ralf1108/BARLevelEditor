@@ -83,7 +83,8 @@ end
 
 -- The height of an aircraft that flies (gunships hover where they are): Space raises it, Ctrl lowers it (LIFT_RATE Elmo a frame, between MIN_ALT and MAX_ALT above the
 -- ground). The height is the flying height the move type wants (Spring.MoveCtrl.SetGunshipMoveTypeData / SetAirMoveTypeData "wantedHeight"); a landed aircraft takes off.
-local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED, TAKEOFF_ALT = 4, 30, 600, 2.3, 400
+local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED, TAKEOFF_ALT = 4, 4, 600, 2.3, 400
+local LAND_HOLD = 60 -- frames: the lower key held at the bottom (2 s) lands the aircraft
 -- (the height the move type reaches is not the height asked for: it hovers about 100 Elmo higher; the difference is measured whenever the aircraft is not climbing or sinking
 -- and taken off from what is asked for, so the real height is the wished one)
 local function applyHeight(u, inp)
@@ -115,9 +116,10 @@ end
 local function lift(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
-	if inp.keys > 0 and inp.takeoffUnit ~= u and flyer(u) then
+	if inp.keys % 32 > 0 and inp.takeoffUnit ~= u and flyer(u) then -- (the lower key alone does not take off)
 		-- the first key of an aircraft that stands on the ground: it takes off once, up to TAKEOFF_ALT; from then on only Space and Ctrl change the height
 		inp.takeoffUnit = u
+		inp.landed = false
 		local x, y, z = Spring.GetUnitPosition(u)
 		if y - Spring.GetGroundHeight(x, z) < 25 then
 			inp.altUnit, inp.alt = u, TAKEOFF_ALT
@@ -170,6 +172,19 @@ local function lift(team, f)
 		if vx then Spring.SetUnitVelocity(u, vx, math.min(vy, -DOWN_SPEED), vz) end
 	end
 	applyHeight(u, inp)
+	-- all the way down and the lower key held on: it lands (and takes off again with the next key)
+	if down and not inp.landed and y - Spring.GetGroundHeight(x, z) <= MIN_ALT + 12 then
+		inp.landHold = (inp.landHold or 0) + 1
+		if inp.landHold >= LAND_HOLD then
+			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+			Spring.GiveOrderToUnit(u, IDLEMODE, { 1 }, 0)
+			inp.landHold, inp.lifting, inp.takeoffUnit, inp.alt, inp.moving, inp.landed = 0, false, nil, nil, false, true
+			if TEST then Spring.Echo("[Renegade] landing") end
+			return
+		end
+	else
+		inp.landHold = 0
+	end
 	if up and (y - Spring.GetGroundHeight(x, z)) < 20 and not inp.moving then
 		Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0)
 		Spring.GiveOrderToUnit(u, CMD.MOVE, { x, y, z }, 0) -- (a landed aircraft takes off)
