@@ -21,7 +21,7 @@ function widget:GameFrame(f)
 		local _, y, _ = Spring.GetUnitPosition(R.unit)
 		local tt = Spring.GetUnitWeaponTarget(R.unit, 1)
 		local r = rf()
-		log("pitch", string.format("%.0f", R.pitch), "height", string.format("%.0f", y), "shot", R.shot and string.format("%s %.0f", R.shot.kind, R.shot.udist or -1) or "-", "target type", ts(tt), "weapon dir", (function() local _, _, _, dx, dy, dz = Spring.GetUnitWeaponVectors(R.unit, 1); if not dx then return "-" end return string.format("%.2f %.2f %.2f = %.0f deg down", dx, dy, dz, -math.deg(math.asin(math.max(-1, math.min(1, dy))))) end)(), "reloadFrame", r, "fired since last", ts(r ~= lastRf))
+		log("pitch", string.format("%.0f", R.pitch), "height", string.format("%.0f", y), "shot", R.shot and string.format("%s %.0f", R.shot.kind, R.shot.udist or -1) or "-", "target type", ts(tt), "weapon dir", (function() local _, _, _, dx, dy, dz = Spring.GetUnitWeaponVectors(R.unit, 1); if not dx then return "-" end return string.format("%.2f %.2f %.2f = %.0f deg down", dx, dy, dz, -math.deg(math.asin(math.max(-1, math.min(1, dy))))) end)(), "reloadFrame", r, "fired since last", ts(r ~= lastRf), "corrected", R.corrected and string.format("%.0f m out", R.corrected.d) or "no", "limit check: height/tan27", string.format("%.0f", (y - Spring.GetGroundHeight(select(1, Spring.GetUnitPosition(R.unit)), select(3, Spring.GetUnitPosition(R.unit)))) / math.tan(math.rad(27))))
 		lastRf = r
 	end
 	if f == 400 then R.fire = 0; Spring.SendCommands("quitforce") end

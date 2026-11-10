@@ -155,6 +155,55 @@ local function weaponsOf(u)
 	return ud, slots, slotRange(ud, slots.L)
 end
 
+-- The guns of a gunship are fixed to its body: they point (almost) along its nose and can only turn down by MAX_DOWN degrees (measured with the Roughneck: whatever
+-- the view, the barrel stays at about 27 degrees down). A point on the ground that lies steeper below the aircraft cannot be hit. fixedGun tells whether the unit is such an
+-- aircraft; the radius of the dead zone on the ground under the aircraft is its height / tan(MAX_DOWN). A point under the crosshair that lies in the dead zone is moved out
+-- along the ground to the edge of the zone (correctShot): the shot goes there, the crosshair says so and a marker shows the point; the unit keeps its free movement.
+local MAX_DOWN = 27
+local function fixedGun(ud, slots)
+	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return false end
+	for _, key in ipairs({ "L", "R", "M" }) do
+		local i = slots[key] and slots[key][1]
+		local wd = i and ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
+		if wd and not wd.turret and wd.type ~= "AircraftBomb" then return true end
+	end
+	return false
+end
+local function deadRadius(u)
+	local x, y, z = Spring.GetUnitPosition(u, true)
+	if not x then return 0 end
+	return math.max(0, y - Spring.GetGroundHeight(x, z)) / math.tan(math.rad(MAX_DOWN))
+end
+
+local function correctShot(u)
+	R.corrected = nil
+	local ud, slots = weaponsOf(u)
+	local h = R.hit
+	if not ud or not h or not R.shot or not fixedGun(ud, slots) then return end
+	local ux, uy, uz = Spring.GetUnitPosition(u, true)
+	if not ux then return end
+	local dx, dz = h.x - ux, h.z - uz
+	local hd = math.sqrt(dx * dx + dz * dz)
+	if hd >= 1 and math.deg(math.atan2(uy - h.y, hd)) <= MAX_DOWN then return end -- reachable: as aimed
+	if hd < 1 then
+		local fx, _, fz = Spring.GetUnitDirection(u)
+		dx, dz = fx or 0, fz or 1
+		hd = math.sqrt(dx * dx + dz * dz)
+		if hd < 0.01 then return end
+	end
+	local nx, nz = dx / hd, dz / hd
+	local d, x, z, g = hd
+	for _ = 1, 4 do
+		x = math.max(1, math.min(Game.mapSizeX - 1, ux + nx * d))
+		z = math.max(1, math.min(Game.mapSizeZ - 1, uz + nz * d))
+		g = Spring.GetGroundHeight(x, z)
+		d = math.max(1, (uy - g) / math.tan(math.rad(MAX_DOWN)))
+	end
+	R.shot = { kind = "ground", x = x, y = g, z = z, unit = -1, dist = R.shot.dist, udist = d }
+	R.corrected = { x = x, y = g, z = z, d = d }
+end
+
+
 -- What the crosshair points at, and where a shot goes. R.hit = what is under the crosshair (a unit, the ground; nil = nothing), R.shot = where the shot goes:
 -- the hit, or a far point along the view ray in the sky; the gadget shortens it to the reach of each weapon, so the unit can fire anywhere (sky, far
 -- mountains, beyond its range), like in a shooter. The engine's ray TraceScreenRay answers "sky" for terrain it does not know (the scenery beyond the edge of
@@ -309,6 +358,7 @@ function widget:Update()
 	if not R.menu then Spring.SetMouseCursor("none") end
 	setCamera(u)
 	aim(u)
+	correctShot(u)
 	aaPick(u)
 	send(Spring.GetGameFrame(), R.keys ~= prevKeys or R.fire ~= prevFire)
 	prevKeys, prevFire = R.keys, R.fire
@@ -523,25 +573,6 @@ local function facingArrow(x, z, dx, dz)
 	end
 end
 
--- The guns of a gunship are fixed to its body: they point (almost) along its nose and can only turn down by MAX_DOWN degrees (measured with the Roughneck: whatever
--- the view, the barrel stays at about 27 degrees down). A point on the ground that lies steeper below the aircraft cannot be hit. fixedGun tells whether the unit is such an
--- aircraft; tooSteep whether the point under the crosshair is out of the cone; the radius of the dead zone on the ground under the aircraft is its height / tan(MAX_DOWN).
-local MAX_DOWN = 27
-local function fixedGun(ud, slots)
-	if not (ud.canFly and (ud.isHoveringAirUnit or ud.hoverAttack)) then return false end
-	for _, key in ipairs({ "L", "R", "M" }) do
-		local i = slots[key] and slots[key][1]
-		local wd = i and ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
-		if wd and not wd.turret and wd.type ~= "AircraftBomb" then return true end
-	end
-	return false
-end
-local function deadRadius(u)
-	local x, y, z = Spring.GetUnitPosition(u, true)
-	if not x then return 0 end
-	return math.max(0, y - Spring.GetGroundHeight(x, z)) / math.tan(math.rad(MAX_DOWN))
-end
-
 -- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
 -- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
 -- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
@@ -657,6 +688,21 @@ function widget:DrawWorld()
 					local px, pz = x + math.cos(a) * rad, z + math.sin(a) * rad
 					gl.Vertex(px, Spring.GetGroundHeight(px, pz) + 3, pz)
 				end
+			end)
+		end
+		if R.corrected then
+			-- where the shot goes when the aim is too steep: a ring, a cross and a beam at the edge of the zone
+			local c = R.corrected
+			gl.Color(0, 0, 0, 0.7)
+			gl.LineWidth(7)
+			gl.DrawGroundCircle(c.x, c.y, c.z, 36, 32)
+			gl.Color(1, 0.75, 0.2, 1)
+			gl.LineWidth(4)
+			gl.DrawGroundCircle(c.x, c.y, c.z, 36, 32)
+			gl.BeginEnd(GL.LINES, function()
+				gl.Vertex(c.x - 24, c.y + 6, c.z); gl.Vertex(c.x + 24, c.y + 6, c.z)
+				gl.Vertex(c.x, c.y + 6, c.z - 24); gl.Vertex(c.x, c.y + 6, c.z + 24)
+				gl.Vertex(c.x, c.y, c.z); gl.Vertex(c.x, c.y + 300, c.z)
 			end)
 		end
 	end
@@ -850,22 +896,12 @@ function widget:DrawScreen()
 		text = string.format("ground  %d m", math.floor(h.udist))
 	end
 	if h and not dropped then text = text .. (inReach and "  IN RANGE" or string.format("  OUT OF RANGE (%d)", mainRange)) end
-	-- a gunship with fixed guns: the point under the crosshair must not be steeper below it than the guns can turn
-	local steep = false
-	do
-		local ud1, sl1 = weaponsOf(R.unit)
-		if h and ud1 and fixedGun(ud1, sl1) then
-			local ux, uy, uz = Spring.GetUnitPosition(R.unit, true)
-			if ux then
-				local hd = math.sqrt((h.x - ux) ^ 2 + (h.z - uz) ^ 2)
-				steep = hd < 1 or math.deg(math.atan2(uy - h.y, hd)) > MAX_DOWN
-			end
-		end
-	end
-	if steep then text = text .. string.format("  TOO STEEP (max %d deg down)", MAX_DOWN) end
+	-- a gunship with fixed guns: an aim point steeper below it than the guns can turn is moved out to the edge of the dead zone (correctShot)
+	local steep = R.corrected ~= nil
+	if steep then text = text .. string.format("  STEEP: the shot lands %d m out (guns reach %d deg down)", math.floor(R.corrected.d), MAX_DOWN) end
 	local r, g, b = 1, 1, 1
 	if h then
-		if inReach and not steep then r, g, b = 0.35, 1, 0.4 else r, g, b = 1, 0.3, 0.25 end
+		if steep then r, g, b = 1, 0.75, 0.2 elseif inReach then r, g, b = 0.35, 1, 0.4 else r, g, b = 1, 0.3, 0.25 end
 	end
 	gl.Color(r, g, b, 0.95)
 	gl.LineWidth(3)
