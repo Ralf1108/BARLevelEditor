@@ -993,6 +993,7 @@ local function clearTargets(u, inp)
 	inp.moving = false
 end
 
+local TESTENGINE = false -- (tests: the engine's own bomb release instead of ours: ren|test|4)
 -- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
 local function applyTarget(team, u, ud, s, i, t)
 	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
@@ -1009,6 +1010,9 @@ local function applyTarget(team, u, ud, s, i, t)
 				Spring.SetUnitTarget(u, x, y, z, false, true, i)
 			end
 		end
+	elseif TESTENGINE and (WeaponDefs[ud.weapons[i].weaponDef] or {}).type == "AircraftBomb" then
+		local ux, _, uz = Spring.GetUnitPosition(u) -- (tests: the target is the ground under the aircraft)
+		Spring.SetUnitTarget(u, ux, Spring.GetGroundHeight(ux, uz), uz, false, true, i)
 	else
 		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
 		local wd = WeaponDefs[ud.weapons[i].weaponDef]
@@ -1107,7 +1111,7 @@ local function shoot(team, f, force)
 	for i in pairs(pressed) do
 		local a = hold[i]
 		local wdb = WeaponDefs[ud.weapons[i].weaponDef]
-		if (not a or not a.down) and wdb and wdb.type == "AircraftBomb" then
+		if (not a or not a.down) and wdb and wdb.type == "AircraftBomb" and not TESTENGINE then
 			hold[i] = { down = true, since = f, rf0 = reloadFrame(u, i), fired = true, t = inp.target, deadline = f, bomb = true }
 			dropBombs(team, u, i, f)
 			change = true
@@ -1126,7 +1130,10 @@ local function shoot(team, f, force)
 		if a.bomb and a.down then dropBombs(team, u, i, f) end
 		if not a.fired and reloadFrame(u, i) > a.rf0 then
 			a.fired = true
-			if TEST then Spring.Echo("[Renegade] weapon " .. i .. " fired, frame " .. f .. ", reloadFrame " .. reloadFrame(u, i) .. ", " .. (f - a.since) .. " frames after the press") end
+			if TEST then
+				local ux, uy, uz = Spring.GetUnitPosition(u)
+				Spring.Echo("[Renegade] weapon " .. i .. " fired, frame " .. f .. ", reloadFrame " .. reloadFrame(u, i) .. ", " .. (f - a.since) .. " frames after the press" .. (ux and string.format(", %s at %.0f above the ground", UnitDefs[Spring.GetUnitDefID(u)].name, uy - Spring.GetGroundHeight(ux, uz)) or ""))
+			end
 		end
 		if a.down and not pressed[i] then
 			a.down = false -- released
@@ -1206,6 +1213,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return
 	end
+	if TEST and msg == "ren|test|4" then TESTENGINE = true return end
 	if TEST and msg == "ren|test|2" then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end
