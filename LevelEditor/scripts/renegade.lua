@@ -5,8 +5,8 @@
 --   keys     W A S D are taken from the game (no camera scrolling) and sent to the gadget as a bit mask with the view and the shot:
 --            "ren|yaw|pitch|keys|fire|x|y|z|unit" (fire: 1 left button, 2 right button, 4 middle button, each fires a group of weapons; x y z the point under the crosshair
 --            while firing, unit the enemy unit there or -1, not used by the gadget any more)
---   HUD      crosshair (green: the point under it is within reach of the main weapon, red: not), what it points at, health and weapons with their reload bars,
---            range rings round the unit
+--   HUD      crosshair (green: a weapon that is valid for what it points at reaches it, yellow: at the limit, red: none reaches it), what it points at and how far, health and
+--            weapons with their reload bars and the same colours on their rows (range rings only with /renegade rings)
 --   debug    (game option lanrenedebug=1) the button "Debug unit" over the panel opens the unit menu of the Level Editor (faction, group, tech level, pictures)
 --   toggle   the key Insert or /renegade gives the normal camera back and forth; Tab frees the mouse for the debug menu
 -- Test hooks for the test widget: WG.renegade.
@@ -525,6 +525,9 @@ function widget:TextCommand(cmd)
 	if a == "flip" then
 		R.YAW0 = R.YAW0 + math.pi
 		say("yaw offset", R.YAW0)
+	elseif a == "rings" then
+		R.rings = not R.rings
+		say("range rings", R.rings and "on" or "off")
 	elseif a == "log" then
 		local st = Spring.GetCameraState()
 		local t = {}
@@ -648,7 +651,7 @@ function widget:DrawWorld()
 			local range = slotRange(ud, list)
 			gl.Color(sl[4][1], sl[4][2], sl[4][3], 0.95)
 			gl.LineWidth(sl[5])
-			gl.DrawGroundCircle(x, y, z, range, 64)
+			if R.rings then gl.DrawGroundCircle(x, y, z, range, 64) end -- (the range rings only on request: /renegade rings)
 			-- the barrel
 			-- (a weapon that is not aiming reports straight up: then the unit's facing counts)
 			local _, _, _, dx, _, dz = Spring.GetUnitWeaponVectors(R.unit, list[1])
@@ -724,14 +727,46 @@ function widget:DrawWorld()
 end
 
 -- the panel at the bottom: health, then the weapons with their reload bars (LMB = the main weapon, RMB = the others)
+-- Which weapons reach what the crosshair points at (R.hit): for each group of weapons its first weapon is checked: is it valid for the target (an aircraft: only anti-air weapons and
+-- the ones that can fire at both; anything else: not the anti-air-only ones) and the distance from the unit against its range: green = well within it (up to 90% of the range),
+-- yellow = at the limit (up to 110%), red = out of reach or no weapon for this target. nil = nothing to say (the sky, an aircraft or a bomber: it drops, no range).
+local EDGE = 0.1
+local function dropper(ud, slots)
+	local i0 = slots.L and slots.L[1]
+	local wd0 = i0 and ud.weapons[i0] and WeaponDefs[ud.weapons[i0].weaponDef]
+	return (ud.canFly or (wd0 and wd0.type == "AircraftBomb")) and true or false
+end
+local function reach(ud, slots, list, h)
+	if not h then return nil end
+	local i = list[1]
+	local wp = ud.weapons[i]
+	local wd = wp and WeaponDefs[wp.weaponDef]
+	if not wd then return nil end
+	local range = slotRange(ud, list)
+	local air = false
+	if h.kind == "unit" then
+		local d = UnitDefs[Spring.GetUnitDefID(h.unit) or -1]
+		air = d and d.canFly or false
+	end
+	local valid
+	if air then valid = slots.aa[i] or slots.hy[i] else valid = not slots.aa[i] end
+	if not valid or range <= 0 then return "red" end
+	if h.udist <= range * (1 - EDGE) then return "green" end
+	if h.udist <= range * (1 + EDGE) then return "yellow" end
+	return "red"
+end
+local REACH_COLOR = { green = { 0.25, 0.85, 0.3 }, yellow = { 0.95, 0.8, 0.15 }, red = { 0.9, 0.2, 0.15 } }
+
 local function panel(vsx, vsy)
 	local u = R.unit
 	local ud, slots = weaponsOf(u)
 	if not ud then return end
+	local drops = dropper(ud, slots)
 	local frame = Spring.GetGameFrame()
 	local s = math.max(0.7, vsy / 1080)
 	local w, h = 320 * s, 62 * s
 	local rows = {}
+	R.states = {} -- (for the tests: the colour of every row)
 	local allAtOnce = R.full -- FULL FIRE (Alt switches it): the left button fires every weapon
 	for _, sl in ipairs(SLOTS) do
 		local list = slots[sl[1]]
@@ -745,7 +780,7 @@ local function panel(vsx, vsy)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
 				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i] }
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = (not drops) and reach(ud, slots, list, R.hit) or nil }
 			end
 		end
 	end
@@ -759,6 +794,13 @@ local function panel(vsx, vsy)
 	gl.Text("Alt: FULL FIRE " .. (R.full and "ON" or "off"), x1 + w - 6 * s, y1 + total + 6 * s, 13 * s, "ro") -- (above the panel, right)
 	for i, r in ipairs(rows) do
 		local ry = y1 + 6 * s + (#rows - i) * h
+		R.states[i] = r.state or "-"
+		if r.state then
+			-- the colour of the row: the weapon reaches what the crosshair points at (green), is at its limit (yellow) or does not reach it / cannot hit it (red)
+			local c = REACH_COLOR[r.state]
+			gl.Color(c[1], c[2], c[3], 0.32)
+			gl.Rect(x1 + 3 * s, ry + 2 * s, x1 + w - 3 * s, ry + h - 4 * s)
+		end
 		local name = r.name
 		while #name > 4 and gl.GetTextWidth(name) * 15 * s > w - 70 * s do name = name:sub(1, -2) end
 		gl.Color(1, 1, 1, 0.95)
@@ -876,18 +918,25 @@ function widget:DrawScreen()
 	local cx, cy, s = vsx / 2, vsy / 2, math.max(8, vsy / 90)
 	-- what the crosshair points at and whether the main weapon reaches it: green = within reach, red = too far, white = the sky
 	local h = R.hit
-	local _, _, mainRange = weaponsOf(R.unit)
-	mainRange = mainRange or 0
 	local text
 	-- (an aircraft has no range display: it moves too fast for it, a bomber has the impact preview; the crosshair stays green)
-	local dropped = false
+	-- the colour: green as soon as one weapon that is valid for the target reaches it, yellow when the best is at its limit, red when none reaches it (the panel shows which)
+	local dropped, best = false, nil
 	do
 		local ud0, sl0 = weaponsOf(R.unit)
-		local i0 = ud0 and sl0.L and sl0.L[1]
-		local wd0 = i0 and ud0.weapons[i0] and WeaponDefs[ud0.weapons[i0].weaponDef]
-		dropped = (ud0 and ud0.canFly) or (wd0 and wd0.type == "AircraftBomb") or false
+		if ud0 then
+			dropped = dropper(ud0, sl0)
+			if h and not dropped then
+				for _, sl in ipairs(SLOTS) do
+					local list = sl0[sl[1]]
+					local st = list and #list > 0 and reach(ud0, sl0, list, h) or nil
+					if st == "green" or (st == "yellow" and best ~= "green") or (st == "red" and not best) then best = st end
+				end
+			end
+		end
 	end
-	local inReach = h and (dropped or (mainRange > 0 and h.udist <= mainRange))
+	R.best = best -- (for the tests)
+	local inReach = h and (dropped or best == "green")
 	if not h then
 		text = "sky"
 	elseif h.kind == "unit" then
@@ -897,13 +946,15 @@ function widget:DrawScreen()
 	else
 		text = string.format("ground  %d m", math.floor(h.udist))
 	end
-	if h and not dropped then text = text .. (inReach and "  IN RANGE" or string.format("  OUT OF RANGE (%d)", mainRange)) end
 	-- a gunship with fixed guns: an aim point steeper below it than the guns can turn is moved out to the edge of the dead zone (correctShot)
 	local steep = R.corrected ~= nil
 	if steep then text = text .. string.format("  STEEP: the shot lands %d m out (guns reach %d deg down)", math.floor(R.corrected.d), MAX_DOWN) end
 	local r, g, b = 1, 1, 1
 	if h then
-		if steep then r, g, b = 1, 0.75, 0.2 elseif inReach then r, g, b = 0.35, 1, 0.4 else r, g, b = 1, 0.3, 0.25 end
+		if steep then r, g, b = 1, 0.75, 0.2
+		elseif inReach then r, g, b = 0.35, 1, 0.4
+		elseif best == "yellow" then r, g, b = 1, 0.9, 0.2
+		else r, g, b = 1, 0.3, 0.25 end
 	end
 	gl.Color(r, g, b, 0.95)
 	gl.LineWidth(3)
