@@ -858,7 +858,7 @@ local function altimeter(vsx, vsy)
 	gl.BeginEnd(GL.TRIANGLES, function()
 		gl.Vertex(bx - 7 * s, my); gl.Vertex(bx - 24 * s, my + 8 * s); gl.Vertex(bx - 24 * s, my - 8 * s)
 	end)
-	gl.Text(string.format("%d", alt), bx - 8 * s, y0 + h + 10 * s, 15 * s, "ro")
+	gl.Text(string.format("%d m", alt), bx - 8 * s, y0 + h + 10 * s, 15 * s, "ro")
 	gl.Color(0.7, 0.7, 0.7, 0.95)
 	if flies then
 		gl.Text("Space up", bx - 36 * s, y0 - 14 * s, 10 * s, "o")

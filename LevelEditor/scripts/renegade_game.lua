@@ -66,8 +66,7 @@ local function wish(inp)
 	return dx / l, dz / l
 end
 
--- An aircraft stays in the air when the keys are let go: fly mode (idle mode 0) while it moves and for LAND_AFTER frames after the last key, then land mode (1).
-local LAND_AFTER = 150 -- 5 s
+-- An aircraft stays in the air for good: fly mode (idle mode 0) from the first key on, it never lands by itself. Its height is changed only by Space and Ctrl (lift).
 local IDLEMODE = CMD.IDLEMODE or 145
 local function flyer(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
@@ -76,10 +75,44 @@ end
 
 -- The height of an aircraft that flies (gunships hover where they are): Space raises it, Ctrl lowers it (LIFT_RATE Elmo a frame, between MIN_ALT and MAX_ALT above the
 -- ground). The height is the flying height the move type wants (Spring.MoveCtrl.SetGunshipMoveTypeData / SetAirMoveTypeData "wantedHeight"); a landed aircraft takes off.
-local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED = 4, 30, 600, 2.3
+local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED, TAKEOFF_ALT = 4, 30, 600, 2.3, 400
+-- (the height the move type reaches is not the height asked for: it hovers about 100 Elmo higher; the difference is measured whenever the aircraft is not climbing or sinking
+-- and taken off from what is asked for, so the real height is the wished one)
+local function applyHeight(u, inp)
+	local cmd = math.max(0, inp.alt - (inp.off or 100))
+	inp.cmd = cmd
+	local mc = Spring.MoveCtrl
+	if mc.SetGunshipMoveTypeData then pcall(mc.SetGunshipMoveTypeData, u, "wantedHeight", cmd) end
+	if mc.SetAirMoveTypeData then pcall(mc.SetAirMoveTypeData, u, "wantedHeight", cmd) end
+end
+
 local function lift(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
+	if inp.keys > 0 and inp.takeoffUnit ~= u and flyer(u) then
+		-- the first key of an aircraft that stands on the ground: it takes off once, up to TAKEOFF_ALT; from then on only Space and Ctrl change the height
+		inp.takeoffUnit = u
+		local x, y, z = Spring.GetUnitPosition(u)
+		if y - Spring.GetGroundHeight(x, z) < 25 then
+			inp.altUnit, inp.alt = u, TAKEOFF_ALT
+			applyHeight(u, inp)
+			Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0)
+			Spring.GiveOrderToUnit(u, CMD.MOVE, { x, y, z }, 0)
+			if TEST then Spring.Echo(string.format("[Renegade] takeoff: wanted height %d", TAKEOFF_ALT)) end
+		end
+	end
+	if inp.alt and inp.altUnit == u and inp.cmd and f % 10 == 0 then
+		local x, y, z = Spring.GetUnitPosition(u)
+		local _, vy = Spring.GetUnitVelocity(u)
+		if vy and math.abs(vy) < 0.1 and y - Spring.GetGroundHeight(x, z) > 40 then
+			local off = (y - Spring.GetGroundHeight(x, z)) - inp.cmd
+			if math.abs(off - (inp.off or 100)) > 6 then
+				inp.off = off
+				applyHeight(u, inp) -- (the aircraft settles at the wished height)
+				if TEST then Spring.Echo(string.format("[Renegade] height offset measured %.0f, asked for %.0f", off, inp.cmd)) end
+			end
+		end
+	end
 	local up, down = inp.keys % 32 >= 16, inp.keys % 64 >= 32
 	if not (up or down) then
 		if inp.lifting and Spring.ValidUnitID(u) then
@@ -87,7 +120,7 @@ local function lift(team, f)
 			inp.lifting = false
 			local x, y, z = Spring.GetUnitPosition(u)
 			inp.alt = math.max(MIN_ALT, math.min(MAX_ALT, y - Spring.GetGroundHeight(x, z)))
-			if Spring.MoveCtrl.SetGunshipMoveTypeData then pcall(Spring.MoveCtrl.SetGunshipMoveTypeData, u, "wantedHeight", inp.alt) end
+			applyHeight(u, inp)
 			inp.holdUntil = f + 45 -- (and the vertical speed is taken away for 1.5 s: the move type lags and overshoots)
 		end
 		if inp.holdUntil and f < inp.holdUntil and Spring.ValidUnitID(u) then
@@ -104,21 +137,13 @@ local function lift(team, f)
 	inp.alt = inp.alt or math.max(MIN_ALT, y - Spring.GetGroundHeight(x, z))
 	local before = inp.alt
 	inp.alt = math.max(MIN_ALT, math.min(MAX_ALT, inp.alt + (up and LIFT_RATE or 0) - (down and LIFT_RATE or 0)))
-	if inp.idleFrom then inp.idleFrom = f end -- (it stays in the air while the height keys are down)
 	local mc = Spring.MoveCtrl
 	if down and y - Spring.GetGroundHeight(x, z) > MIN_ALT + 5 then
 		-- the move type lets an aircraft sink only slowly: push it down (about 70 Elmo a second)
 		local vx, vy, vz = Spring.GetUnitVelocity(u)
 		if vx then Spring.SetUnitVelocity(u, vx, math.min(vy, -DOWN_SPEED), vz) end
 	end
-	local ok1, ok2
-	if mc.SetGunshipMoveTypeData then ok1 = pcall(mc.SetGunshipMoveTypeData, u, "wantedHeight", inp.alt) end
-	if mc.SetAirMoveTypeData then ok2 = pcall(mc.SetAirMoveTypeData, u, "wantedHeight", inp.alt) end
-	if TEST and f % 30 == 0 then
-		local g1 = mc.GetGunshipMoveTypeData and select(2, pcall(mc.GetGunshipMoveTypeData, u, "wantedHeight"))
-		local g2 = mc.GetAirMoveTypeData and select(2, pcall(mc.GetAirMoveTypeData, u, "wantedHeight"))
-		Spring.Echo(string.format("[Renegade] lift: set %.0f gunship ok %s air ok %s, read back gunship %s air %s, real height %.0f, y %.0f, ground %.0f", inp.alt, tostring(ok1), tostring(ok2), tostring(g1), tostring(g2), y - Spring.GetGroundHeight(x, z), y, Spring.GetGroundHeight(x, z)))
-	end
+	applyHeight(u, inp)
 	if up and (y - Spring.GetGroundHeight(x, z)) < 20 and not inp.moving then
 		Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0)
 		Spring.GiveOrderToUnit(u, CMD.MOVE, { x, y, z }, 0) -- (a landed aircraft takes off)
@@ -136,17 +161,11 @@ local function steer(team, f)
 			inp.moving = false
 			if flyer(u) then
 				Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0) -- (stay up)
-				inp.idleFrom = f
 			end
-		end
-		if inp.idleFrom and f - inp.idleFrom >= LAND_AFTER then
-			Spring.GiveOrderToUnit(u, IDLEMODE, { 1 }, 0) -- (5 s without a key: land)
-			inp.idleFrom = nil
 		end
 		return
 	end
 	if not inp.moving and flyer(u) then Spring.GiveOrderToUnit(u, IDLEMODE, { 0 }, 0) end
-	inp.idleFrom = nil
 	local l = inp.last
 	local turned = math.abs(((inp.yaw - l.yaw + 180) % 360) - 180) > TURN
 	if inp.moving and not turned and l.keys == inp.keys % 16 and f - l.frame < REISSUE then return end
