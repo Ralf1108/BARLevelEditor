@@ -529,15 +529,33 @@ local function lobbed(wd)
 	return LOB[wd.type] or (wd.type == "Cannon" and ((tonumber(wd.highTrajectory) or 0) >= 1 or (tonumber(wd.range) or 0) >= 800))
 end
 
-local function impactPreview(ux, uy, uz, wd, color)
-	local h = R.hit
-	if not h then return end
-	local range = (tonumber(wd.range) or 0) - 8
-	local dx, dz = h.x - ux, h.z - uz
-	local d = math.sqrt(dx * dx + dz * dz)
-	if d < 1 then return end
-	if d > range then dx, dz, d = dx * range / d, dz * range / d, range end
-	local x, z = ux + dx, uz + dz
+local function impactPreview(ux, uy, uz, wd, color, bomb)
+	local x, z, dx, dz, d
+	if bomb then
+		-- a bomb keeps the speed of the aircraft and falls: where it lands if it were dropped now (the fall time from the height over the ground, a few passes)
+		local vx, vy, vz = Spring.GetUnitVelocity(R.unit)
+		if not vx then return end
+		local g = (Game.gravity or 120) / 900 -- Elmo per frame per frame
+		x, z = ux, uz
+		for _ = 1, 4 do
+			local gy = Spring.GetGroundHeight(x, z)
+			local drop = uy - gy
+			local tt = (vy + math.sqrt(vy * vy + 2 * g * math.max(0, drop))) / g -- frames
+			x, z = ux + vx * tt, uz + vz * tt
+		end
+		dx, dz = x - ux, z - uz
+		d = math.sqrt(dx * dx + dz * dz)
+		if d < 1 then dx, dz, d = 0, 1, 1 end
+	else
+		local h = R.hit
+		if not h then return end
+		local range = (tonumber(wd.range) or 0) - 8
+		dx, dz = h.x - ux, h.z - uz
+		d = math.sqrt(dx * dx + dz * dz)
+		if d < 1 then return end
+		if d > range then dx, dz, d = dx * range / d, dz * range / d, range end
+		x, z = ux + dx, uz + dz
+	end
 	local y = Spring.GetGroundHeight(x, z)
 	local aoe = math.max(16, tonumber(wd.damageAreaOfEffect) or 16)
 	gl.Color(color[1], color[2], color[3], 0.22)
@@ -598,7 +616,10 @@ function widget:DrawWorld()
 		local list = slots[SLOTS[k][1]]
 		local wp = list and list[1] and ud.weapons[list[1]]
 		local wd = wp and WeaponDefs[wp.weaponDef]
-		if wd and not slots.aa[list[1]] and lobbed(wd) then impactPreview(x, y, z, wd, SLOTS[k][4]) end
+		if wd and not slots.aa[list[1]] then
+			if wd.type == "AircraftBomb" then impactPreview(x, y, z, wd, SLOTS[k][4], true)
+			elseif lobbed(wd) then impactPreview(x, y, z, wd, SLOTS[k][4]) end
+		end
 	end
 	local fx, _, fz = Spring.GetUnitDirection(R.unit)
 	if not ud.canMove then
