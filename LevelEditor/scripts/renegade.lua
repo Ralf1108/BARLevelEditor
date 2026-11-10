@@ -590,8 +590,12 @@ local function panel(vsx, vsy)
 		gl.Text(name, x1 + 10 * s, ry + 40 * s, 15 * s, "o")
 		gl.Color(r.color[1], r.color[2], r.color[3], 1)
 		gl.Text(r.tag, x1 + w - 10 * s, ry + 41 * s, 13 * s, "ro")
+		if r.aa then
+			gl.Color(1, 0.6, 0.15, 1) -- (anti-air only: fires only at an aircraft in the circle)
+			gl.Text("AIR ONLY", x1 + w - 10 * s, ry + 24 * s, 12 * s, "ro")
+		end
 		gl.Color(0.7, 0.7, 0.7, 0.95)
-		gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "   (anti-air: aircraft in the circle)" or (r.hy and "   (aircraft in the circle: lock; ground: aim)" or "")), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
+		gl.Text(string.format("range %d   reload %.1f s   %s%s", r.range, r.time, r.ready and "READY" or "reloading", r.aa and "" or (r.hy and "   (aircraft in the circle: lock; ground: aim)" or "")), x1 + 10 * s, ry + 24 * s, 12 * s, "o")
 		gl.Color(0.15, 0.15, 0.15, 0.9)
 		gl.Rect(x1 + 10 * s, ry + 6 * s, x1 + w - 10 * s, ry + 18 * s)
 		if r.ready then gl.Color(r.color[1], r.color[2], r.color[3], 1) else gl.Color(r.color[1] * 0.55, r.color[2] * 0.55, r.color[3] * 0.55, 1) end
