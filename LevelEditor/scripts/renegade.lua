@@ -1031,7 +1031,7 @@ local function panel(vsx, vsy)
 	end
 	for _, r in ipairs(rows) do if r.pic then w = 502 * s; break end end -- (with a picture the card of a row is 6 : 1)
 	local hh = 40 * s -- the health row
-	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
+	local x1, y1 = 8 * s, 210 * s -- at the left side, above the menu of the game (build / order menu at the bottom left; the minimap above): the middle of the screen stays free for the view
 	local total = #rows * h + hh + 8 * s
 	R.panel = { x1, y1, x1 + w, y1 + total }
 	card(x1, y1, x1 + w, y1 + total, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
@@ -1313,7 +1313,7 @@ local function scoreboard(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
--- The compass at the bottom right, between the panel of the weapons and the music player: a round dial; the green arrow is the way the vehicle drives (where W takes it), the coloured arrowheads at the
+-- The compass at the bottom in the middle: a round dial; the green arrow is the way the vehicle drives (where W takes it), the coloured arrowheads at the
 -- rim are the barrels of the groups of weapons (the colour of their buttons; the turrets turn slower than you look round). Up = the way you look: an arrow that points up means the
 -- vehicle drives where you look. (It replaces the two arrows on the ground.)
 local function compass(vsx, vsy)
@@ -1334,9 +1334,8 @@ local function compass(vsx, vsy)
 	end
 	local s = math.max(0.7, vsy / 1080)
 	local r = 62 * s
-    -- at the bottom, between the panel of the weapons and the music player of the game (about 190 wide at the right edge): not in the way there
-    local left = (R.panel and R.panel[3] or (vsx * 0.7)) + 14 * s
-    local cx, cy = (left + vsx - 190 * s) / 2, 18 * s + r + 8 * s
+	-- at the bottom in the middle: free there, the panel of the weapons is at the left side
+	local cx, cy = vsx / 2, 18 * s + r + 8 * s
 	gl.Color(0, 0, 0, 0.45)
 	disc(cx, cy, r)
 	gl.Color(0.6, 0.7, 0.85, 0.9)

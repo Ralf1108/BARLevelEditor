@@ -1,6 +1,6 @@
 function widget:GetInfo() return { name = "zz ren48", desc = "test only: the wider panel, the pointers and the list of the players", layer = 1, enabled = true } end
 -- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren47.lua: the player becomes a Juggernaut, an Ambassador and a Tsunami one after the other, a picture is taken of each.
-local list = { "armthund", "armpw", "armmav" }
+local list = { "corjugg", "armpw", "armmav" }
 function widget:GameFrame(f)
 	local R = WG.renegade
 	if not R then return end
