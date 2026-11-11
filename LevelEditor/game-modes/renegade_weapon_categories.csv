@@ -57,32 +57,32 @@ Legion;Sapper;legmlv;1;Seismic charge;Cannon;15;1;cannon-light;weapon_cannon-lig
 Legion;Tactical Defense Commander;legcomt2def;1;RiotCannon;Cannon;190;1;cannon-light;weapon_cannon-light.png
 Legion;Venator;legvenator;1;Birdshot Cannon;Cannon;24;2;cannon-light;weapon_cannon-light.png
 Armada;Rattlesnake;armamb;2;Pop-up heavy  long range g2g plasna cannon;Cannon;350;2;cannon-medium;weapon_cannon-medium.png
-Armada;Sharpshooter;armsnipe;1;SniperWeapon;Cannon;2500;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Black Hydra;corblackhy;1;BattleshipCannon;Cannon;600;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Cortex Commander Level 7;corcomlvl7;6;HeavyCannon;Cannon;900;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Cortex Commander Level 7;cordecomlvl7;6;HeavyCannon;Cannon;900;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 8;corcomlvl8;6;HeavyCannon;Cannon;1050;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;6;HeavyCannon;Cannon;1050;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 9;corcomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Despot;corbats;1;BattleshipCannon;Cannon;450;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Despot;corbats;2;BattleshipCannon;Cannon;450;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Despot;corbats;3;BattleshipCannon;Cannon;450;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Poison Arrow;corparrow;1;PoisonArrowCannon;Cannon;370;2;cannon-medium;weapon_cannon-medium.png
-Cortex;Tzar;corgol;1;HeavyCannon;Cannon;900;2;cannon-medium;weapon_cannon-medium.png
 Legion;Bombardier;legbombard;1;Pop-up heavy g2g grenade launcher;Cannon;375;2;cannon-medium;weapon_cannon-medium.png
 Legion;Chimera;legapopupdef;1;Heavy Riot Blast Cannon;Cannon;280;2;cannon-medium;weapon_cannon-medium.png
 Legion;Leocampus;leganavyantiswarm;1;Medium Blast Riot Cannon;Cannon;210;2;cannon-medium;weapon_cannon-medium.png
 Legion;Phalanx;legshot;1;Medium Blast Riot Cannon;Cannon;210;2;cannon-medium;weapon_cannon-medium.png
 Armada;Lunkhead;armlun;1;Heavy ballistic underwater cannon;Cannon;370;3;cannon-heavy;weapon_cannon-heavy.png
+Armada;Sharpshooter;armsnipe;1;SniperWeapon;Cannon;2500;2;cannon-heavy;weapon_cannon-heavy.png
 Cortex;Flying Black Hydra;corfblackhyt4;1;BattleshipCannon;Cannon;600;3;cannon-heavy;weapon_cannon-heavy.png
 Cortex;Shiva;corshiva;1;HeavyCannon;Cannon;600;3;cannon-heavy;weapon_cannon-heavy.png
+Cortex;Tzar;corgol;1;HeavyCannon;Cannon;900;2;cannon-heavy;weapon_cannon-heavy.png
 Legion;Keres;legkeres;1;Heavy riot cannon;Cannon;400;3;cannon-heavy;weapon_cannon-heavy.png
+Legion;Sol Invictus;legeheatraymech;4;Ultra Heavy Riot Autocannon;Cannon;420;3;cannon-heavy;weapon_cannon-heavy.png
+Legion;Sol Invictus;legeheatraymech;5;Ultra Heavy Riot Autocannon;Cannon;420;3;cannon-heavy;weapon_cannon-heavy.png
 Cortex;Cortex Commander Level 10;corcomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-ultra;weapon_cannon-ultra.png
 Cortex;Cortex Commander Level 10;cordecomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 8;corcomlvl8;6;HeavyCannon;Cannon;1050;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 8;cordecomlvl8;6;HeavyCannon;Cannon;1050;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 9;corcomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 9;cordecomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-ultra;weapon_cannon-ultra.png
 Legion;Perdition;legperdition;1;Long-Range Tactical Hellfire Napalm Shell;Cannon;1200;2;cannon-ultra;weapon_cannon-ultra.png
-Legion;Sol Invictus;legeheatraymech;4;Ultra Heavy Riot Autocannon;Cannon;420;3;cannon-ultra;weapon_cannon-ultra.png
-Legion;Sol Invictus;legeheatraymech;5;Ultra Heavy Riot Autocannon;Cannon;420;3;cannon-ultra;weapon_cannon-ultra.png
 Armada;Armada Commander;armcom;3;Disintegrator;D-gun;99999;1;d-gun;
 Armada;Armada Commander;armcomcon;3;Disintegrator;D-gun;99999;1;d-gun;
 Armada;Armada Commander Level 10;armcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;

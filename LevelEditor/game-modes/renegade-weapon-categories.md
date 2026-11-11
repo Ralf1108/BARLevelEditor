@@ -17,7 +17,7 @@
 |---|---|---|---|
 | laser | 100 | 800 | 6000 |
 | plasma | 60 | 400 | 1500 |
-| cannon | 60 | 300 | 350 |
+| cannon | 60 | 250 | 600 |
 | missile | 40 | 150 | 800 |
 | machine-gun | 20 | 80 |  |
 
@@ -31,9 +31,9 @@
 | artillery |  | 8 | 5 | Corinth: Heavy Artillery Cluster Plasma Cannon; Octeres: Long-Range Naval Cluster Artillery Cannon; Tremor: RapidArtillery |
 | bomb |  | 11 | 11 | Blizzard: Heavy a2g impulse warheads; Epic Stormbringer: Ultra Heavy Bombs; Stiletto: Heavy a2g EMP warheads |
 | cannon-light | <img src="weapon-images/weapon_cannon-light.png" width="384"> | 24 | 24 | Cortex Commander Level 4: HeavyCannon; Cortex Commander Level 5: HeavyCannon; Cortex Commander Level 6: HeavyCannon |
-| cannon-medium | <img src="weapon-images/weapon_cannon-medium.png" width="384"> | 14 | 12 | Despot: BattleshipCannon; Cortex Commander Level 7: HeavyCannon; Rattlesnake: Pop-up heavy  long range g2g plasna cannon |
-| cannon-heavy | <img src="weapon-images/weapon_cannon-heavy.png" width="384"> | 4 | 4 | Lunkhead: Heavy ballistic underwater cannon; Flying Black Hydra: BattleshipCannon; Shiva: HeavyCannon |
-| cannon-ultra | <img src="weapon-images/weapon_cannon-ultra.png" width="384"> | 9 | 8 | Cortex Commander Level 10: HeavyCannon; Cortex Commander Level 8: HeavyCannon; Cortex Commander Level 9: HeavyCannon |
+| cannon-medium | <img src="weapon-images/weapon_cannon-medium.png" width="384"> | 16 | 14 | Despot: BattleshipCannon; Cortex Commander Level 7: HeavyCannon; Cortex Commander Level 8: HeavyCannon |
+| cannon-heavy | <img src="weapon-images/weapon_cannon-heavy.png" width="384"> | 8 | 7 | Sol Invictus: Ultra Heavy Riot Autocannon; Lunkhead: Heavy ballistic underwater cannon; Sharpshooter: SniperWeapon |
+| cannon-ultra | <img src="weapon-images/weapon_cannon-ultra.png" width="384"> | 3 | 3 | Cortex Commander Level 10: HeavyCannon; Perdition: Long-Range Tactical Hellfire Napalm Shell |
 | d-gun |  | 68 | 68 | Armada Commander: Disintegrator; Armada Commander Level 10: Disintegrator; Armada Commander Level 2: Disintegrator |
 | depth-charge |  | 17 | 16 | Depth Charge Drone: Depthcharge launcher; Epic Skater: Depthcharge launcher; Anemone: Depthcharge launcher |
 | emp-grenade |  | 6 | 6 | Shockwave: Medium EMP turret; Combat Commander: EMP Grenade; Economy Commander: EMP Grenade |

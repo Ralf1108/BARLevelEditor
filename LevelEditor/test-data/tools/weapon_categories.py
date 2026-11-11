@@ -26,7 +26,7 @@ IMAGES = os.path.join(GM, "weapon-images")
 SIZED = ("laser", "plasma", "cannon", "missile", "machine-gun")
 SIZES = ("light", "medium", "heavy", "ultra")
 # the start values of renegade_weapon_limits.csv (damage per second): below Weak a size less, from Strong a size more, from Ultra the ultra size (empty: no ultra size by damage)
-DEFAULT_LIMITS = {"laser": (100, 800, 6000), "plasma": (60, 400, 1500), "cannon": (60, 300, 350), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
+DEFAULT_LIMITS = {"laser": (100, 800, 6000), "plasma": (60, 400, 1500), "cannon": (60, 250, 600), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
 LIMIT_COLUMNS = ["Family", "Weak below", "Strong from", "Ultra from"]   # damage per second
 
 
