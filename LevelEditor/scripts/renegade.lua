@@ -819,7 +819,7 @@ local function weaponStats(ud, slots, list, time)
 	if slots.aa[i] then d = math.max(d, tonumber(wd.damages and wd.damages[vtol]) or 0) end
 	local dmg = d * math.max(1, tonumber(wd.projectiles) or 1)
 	local dps = dmg * math.max(1, tonumber(wd.salvoSize) or 1) * #list / math.max(0.1, time)
-	return dmg, dps
+	return dmg, dps, math.max(1, tonumber(wd.salvoSize) or 1) / math.max(0.1, time)
 end
 local function num(v)
 	if v >= 10000 then return string.format("%.0fk", v / 1000) end
@@ -847,32 +847,73 @@ local function ring(x, y, r)
 		for a = 0, 17 do gl.Vertex(x + r * math.cos(a * math.pi / 9), y + r * math.sin(a * math.pi / 9)) end
 	end)
 end
+local function disc(x, y, r)
+	gl.BeginEnd(GL.TRIANGLE_FAN, function()
+		gl.Vertex(x, y)
+		for a = 0, 16 do gl.Vertex(x + r * math.cos(a * math.pi / 8), y + r * math.sin(a * math.pi / 8)) end
+	end)
+end
+-- the symbols of kills (a crosshair) and deaths (a skull), as in the overview of Evolution
+local function crosshair(x, y, r)
+	gl.Color(1, 0.45, 0.35, 1)
+	gl.LineWidth(2)
+	ring(x, y, r * 0.7)
+	gl.BeginEnd(GL.LINES, function()
+		for _, d in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+			gl.Vertex(x + d[1] * r * 0.35, y + d[2] * r * 0.35); gl.Vertex(x + d[1] * r, y + d[2] * r)
+		end
+	end)
+	gl.LineWidth(1)
+end
+local function skull(x, y, r)
+	gl.Color(0.85, 0.85, 0.85, 1)
+	disc(x, y + r * 0.15, r * 0.75)
+	gl.Rect(x - r * 0.4, y - r * 0.8, x + r * 0.4, y - r * 0.2)
+	gl.Color(0.1, 0.1, 0.12, 1)
+	disc(x - r * 0.3, y + r * 0.1, r * 0.2)
+	disc(x + r * 0.3, y + r * 0.1, r * 0.2)
+end
+-- the symbols of the values: range = a target ring, rate = a bullet with speed lines, damage = an explosion (a jagged star), dps = damage over time (a rising curve over its axes)
 local function icon(kind, x, y, r, c)
 	gl.Color(c[1], c[2], c[3], 1)
-	gl.LineWidth(1.6)
+	gl.LineWidth(1.8)
 	if kind == "range" then
 		ring(x, y, r); ring(x, y, r * 0.3)
 		gl.BeginEnd(GL.LINES, function()
 			gl.Vertex(x - r * 1.3, y); gl.Vertex(x - r * 0.6, y); gl.Vertex(x + r * 0.6, y); gl.Vertex(x + r * 1.3, y)
 			gl.Vertex(x, y - r * 1.3); gl.Vertex(x, y - r * 0.6); gl.Vertex(x, y + r * 0.6); gl.Vertex(x, y + r * 1.3)
 		end)
-	elseif kind == "reload" then
-		ring(x, y, r)
+	elseif kind == "rate" then
+		gl.BeginEnd(GL.TRIANGLES, function() -- the bullet: a point at the right
+			gl.Vertex(x + r * 1.2, y); gl.Vertex(x + r * 0.2, y + r * 0.55); gl.Vertex(x + r * 0.2, y - r * 0.55)
+		end)
+		gl.Rect(x - r * 0.5, y - r * 0.55, x + r * 0.25, y + r * 0.55)
 		gl.BeginEnd(GL.LINES, function()
-			gl.Vertex(x, y); gl.Vertex(x, y + r * 0.7); gl.Vertex(x, y); gl.Vertex(x + r * 0.5, y - r * 0.2)
+			gl.Vertex(x - r * 1.3, y + r * 0.55); gl.Vertex(x - r * 0.7, y + r * 0.55)
+			gl.Vertex(x - r * 1.3, y - r * 0.55); gl.Vertex(x - r * 0.7, y - r * 0.55)
+			gl.Vertex(x - r * 1.0, y); gl.Vertex(x - r * 0.7, y)
 		end)
 	elseif kind == "damage" then
-		gl.BeginEnd(GL.LINES, function()
-			for a = 0, 7 do
-				local ca, sa = math.cos(a * math.pi / 4), math.sin(a * math.pi / 4)
-				local k = (a % 2 == 0) and 1.25 or 0.8
-				gl.Vertex(x + ca * r * 0.25, y + sa * r * 0.25); gl.Vertex(x + ca * r * k, y + sa * r * k)
+		gl.BeginEnd(GL.TRIANGLE_FAN, function()
+			gl.Vertex(x, y)
+			for a = 0, 20 do
+				local k = (a % 2 == 0) and 1.3 or 0.55
+				gl.Vertex(x + math.cos(a * math.pi / 10) * r * k, y + math.sin(a * math.pi / 10) * r * k)
 			end
 		end)
 	else
-		gl.Rect(x - r, y - r, x - r * 0.4, y - r * 0.2)
-		gl.Rect(x - r * 0.3, y - r, x + r * 0.3, y + r * 0.35)
-		gl.Rect(x + r * 0.4, y - r, x + r, y + r)
+		gl.BeginEnd(GL.LINE_STRIP, function() -- the axes
+			gl.Vertex(x - r, y + r); gl.Vertex(x - r, y - r); gl.Vertex(x + r * 1.2, y - r)
+		end)
+		gl.BeginEnd(GL.LINE_STRIP, function() -- the curve that rises faster and faster
+			for a = 0, 8 do
+				local u = a / 8
+				gl.Vertex(x - r + u * r * 2.2, y - r + (u * u) * r * 2.1)
+			end
+		end)
+		gl.BeginEnd(GL.TRIANGLES, function() -- the arrowhead at its end
+			gl.Vertex(x + r * 1.2, y + r * 1.1); gl.Vertex(x + r * 0.5, y + r * 0.9); gl.Vertex(x + r * 1.1, y + r * 0.3)
+		end)
 	end
 	gl.LineWidth(1)
 end
@@ -913,8 +954,8 @@ local function panel(vsx, vsy)
 						state = height <= attack and "green" or (height <= attack * 1.15 and "yellow" or "red")
 					end
 				end
-				local dmg, dps = weaponStats(ud, slots, list, time)
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps, ord = #rows + 1 }
+				local dmg, dps, rate = weaponStats(ud, slots, list, time)
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps, rate = rate, ord = #rows + 1 }
 			end
 		end
 	end
@@ -966,7 +1007,7 @@ local function panel(vsx, vsy)
 			-- and a darker strip behind the values (they must stay readable over the picture)
 			gl.BeginEnd(GL.QUADS, function()
 				gl.Color(0, 0, 0, 0.6); gl.Vertex(cx1, cy1); gl.Vertex(cx1, cy1 + 38 * s)
-				gl.Color(0, 0, 0, 0); gl.Vertex(cx1 + (cx2 - cx1) * 0.95, cy1 + 38 * s); gl.Vertex(cx1 + (cx2 - cx1) * 0.95, cy1)
+				gl.Color(0, 0, 0, 0.45); gl.Vertex(cx1 + (cx2 - cx1) * 0.95, cy1 + 38 * s); gl.Vertex(cx1 + (cx2 - cx1) * 0.95, cy1)
 			end)
 		end
 		if r.state then
@@ -1013,7 +1054,7 @@ local function panel(vsx, vsy)
 		if r.auto then
 			cols[#cols + 1] = { nil, "", "fires by itself" }
 		else
-			cols[#cols + 1] = { "reload", "RELOAD", string.format("%.1f s", r.time) }
+			cols[#cols + 1] = { "rate", "SHOTS / S", r.rate >= 10 and string.format("%.0f", r.rate) or (r.rate >= 0.1 and string.format("%.1f", r.rate) or string.format("%.2f", r.rate)) }
 			cols[#cols + 1] = { "damage", "DAMAGE", num(r.dmg) }
 			cols[#cols + 1] = { "dps", "DPS", num(r.dps), true }
 		end
@@ -1186,8 +1227,8 @@ local function scoreboard(vsx, vsy)
 	card(x1, y1, x2, top, { 0.05, 0.06, 0.08, 0.75 }, { 0.02, 0.02, 0.03, 0.75 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
 	gl.Color(0.7, 0.78, 0.9, 1)
 	gl.Text("PLAYERS", x1 + 10 * s, top - 20 * s, 14 * s, "o")
-	gl.Text("K", x2 - 62 * s, top - 20 * s, 14 * s, "co")
-	gl.Text("D", x2 - 22 * s, top - 20 * s, 14 * s, "co")
+	crosshair(x2 - 62 * s, top - 14 * s, 8 * s)
+	skull(x2 - 22 * s, top - 14 * s, 8 * s)
 	local me = Spring.GetMyTeamID()
 	for i = 1, shown do
 		local r = rows[i]
