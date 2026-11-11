@@ -61,22 +61,33 @@ def rivets(layer, pts, r=6):
 
 
 def part(layer, mask, top, bottom, bevel=7, grain=0.10, rust=0.0, spec=0.55):
-    """paints a metal part into the layer (an RGBA float array): a vertical gradient, bevelled edges, a fine grain, a little rust"""
-    size = mask.size
-    col = vgrad(size, top, bottom)
-    s = shade(mask, bevel)
+    """paints a metal part into the layer (an RGBA float array): a vertical gradient, bevelled edges, a fine grain, a little rust.
+    Only the part of the picture around the mask is worked on (the box of the mask and a margin for the blurs): it is much faster than the whole canvas and gives the same look."""
+    box = mask.getbbox()
+    if box is None:
+        return
+    m = max(64, 3 * bevel + 12)
+    x0, y0 = max(0, box[0] - m), max(0, box[1] - m)
+    x1, y1 = min(mask.size[0], box[2] + m), min(mask.size[1], box[3] + m)
+    sub = mask.crop((x0, y0, x1, y1))
+    size = sub.size
+    k = np.linspace(0, 1, mask.size[1], dtype=np.float32)[y0:y1, None, None]   # the gradient runs over the whole height of the canvas
+    t_ = np.array(top, np.float32)[None, None, :]
+    b_ = np.array(bottom, np.float32)[None, None, :]
+    col = np.broadcast_to(t_ + (b_ - t_) * k, (size[1], size[0], 3)).copy()
+    s = shade(sub, bevel)
     col += (s[:, :, None] * 120 * spec)
-    rim = shade_edge(mask, 5)
+    rim = shade_edge(sub, 5)
     col *= (1 - rim[:, :, None] * 0.30)
     g = noise(size, 3, int(rng.integers(1 << 30))) - 0.5
     col *= (1 + g[:, :, None] * grain * 2)
     if rust > 0:
         r = noise(size, 22, int(rng.integers(1 << 30))) * 0.55 + noise(size, 6, int(rng.integers(1 << 30))) * 0.45
-        rim = shade_edge(mask)
+        rim = shade_edge(sub)
         r = np.clip((r + rim * 0.55 - (0.80 - rust * 1.2)) * 6, 0, 1) * 0.8
         col = col * (1 - r[:, :, None] * 0.45) + np.array([112, 66, 40], np.float32)[None, None, :] * (r[:, :, None] * 0.45)
-    a = np.asarray(mask, dtype=np.float32) / 255.0
-    paste(layer, np.clip(col, 0, 255), a)
+    a = np.asarray(sub, dtype=np.float32) / 255.0
+    paste(layer[y0:y1, x0:x1], np.clip(col, 0, 255), a)
 
 
 def paste(layer, rgb, alpha):

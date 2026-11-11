@@ -1,8 +1,7 @@
 """The rest of the weapon pictures for the panel of Renegade (d-gun, stun beam, flak, lightning, machine gun in three sizes, gauss, artillery, shotgun, EMP grenade, self-destruct, railgun, flamethrower, depth charge, anti-air missile, bomb, nuclear), same style as
 weapon_art.py and weapon_art2.py: a gun or launcher on the left, the projectile or the effect far right (the same place in every picture).
 
-  python weapon_art3.py [out_dir]    writes weapon_<category>.png (768 x 128) and sheet_new.png (all of them one below the other); default out_dir: LevelEditor/game-modes/weapon-images
-                                     (ART_ONLY=name,name draws only those)
+  The pictures are drawn by weapon_art_build.py (it lists them and draws them in parallel); this file has the drawing functions: f(body, tip) -> the picture before the crop.
 """
 import math, os, random, sys
 import numpy as np
@@ -252,7 +251,7 @@ def emp_grenade(body, tip):
     return out
 
 
-def self_destruct(tip):
+def self_destruct(body_unused, tip):
     """self-destruction: a round black bomb with a burning fuse and a big explosion"""
     out = new()
     g = np.zeros((H, W, 4), np.float32)
@@ -390,7 +389,7 @@ def bomb_shape(length, rad, angle):
     return img.rotate(angle, expand=True, resample=Image.BICUBIC)
 
 
-def bomb(tip):
+def bomb(body_unused, tip):
     """a bomb: the wing of an aircraft with a rack at the left, three bombs falling away from it in a curve"""
     out = new()
     wing = new()
@@ -431,54 +430,3 @@ def nuclear(body_unused, tip):
         d.ellipse((cx + dx - r, CY + dy - r, cx + dx + r, CY + dy + r), fill=(255, 215, 120, 255))
     blur_add(out, core, 10)
     return out
-
-
-def make_all():
-    cannon = wa.gun_body()
-    pic = {}
-
-    def tip(cw):
-        return 20 + w2.FRONT * cw
-    pic["d-gun"] = (dgun(cannon, tip(3300)), 3300)
-    pic["stun-beam"] = (stun(cannon, tip(3300)), 3300)
-    pic["flak"] = (flak(cannon, tip(3500)), 3500)
-    pic["lightning"] = (lightning(cannon, tip(3300)), 3300)
-    pic["machine-gun-light"] = (machine_gun(cannon, tip(3900), 1, 9, 16, 0), 3900)
-    pic["machine-gun-medium"] = (machine_gun(cannon, tip(3500), 2, 11, 20, 0), 3500)
-    pic["machine-gun-heavy"] = (machine_gun(cannon, tip(3200), 3, 14, 24, 0), 3200)
-    pic["gauss"] = (gauss(cannon, tip(3300)), 3300)
-    pic["artillery"] = (artillery(cannon, tip(3300)), 3300)
-    pic["shotgun"] = (shotgun(cannon, tip(3500)), 3500)
-    pic["emp-grenade"] = (emp_grenade(w2.launcher_body(1, 150), tip(3300)), 3300)
-    pic["self-destruct"] = (self_destruct(tip(3300)), 3300)
-    pic["railgun"] = (railgun(cannon, tip(3300)), 3300)
-    pic["flamethrower"] = (flamethrower(cannon, tip(3300)), 3300)
-    pic["depth-charge"] = (depth_charge(w2.launcher_body(1, 150), tip(3300)), 3300)
-    pic["aa-missile"] = (aa_missile(w2.launcher_body(1, 110), tip(3300)), 3300)
-    pic["bomb"] = (bomb(tip(3300)), 3300)
-    pic["nuclear"] = (nuclear(None, tip(3300)), 3300)
-    only = os.environ.get("ART_ONLY")
-    return {k: v for k, v in pic.items() if not only or k in only.split(",")}
-
-
-def main():
-    here = os.path.dirname(os.path.abspath(__file__))
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(here)), "game-modes", "weapon-images")
-    os.makedirs(out, exist_ok=True)
-    rows = []
-    for name, (big, cw) in make_all().items():
-        img = wa.panel_banner(big, cw)
-        img.save(os.path.join(out, "weapon_%s.png" % name))
-        rows.append((name, img))
-        print("weapon_%s.png" % name, flush=True)
-    for s in range(0, len(rows), 6):
-        part_rows = rows[s:s + 6]
-        sheet = Image.new("RGB", (768, len(part_rows) * 136), (0, 0, 0))
-        for i, (name, img) in enumerate(part_rows):
-            sheet.paste(img, (0, i * 136))
-            ImageDraw.Draw(sheet).text((6, i * 136 + 4), name, fill=(255, 255, 255))
-        sheet.save(os.path.join(out, "sheet_new%d.png" % (s // 6 + 1)))
-
-
-if __name__ == "__main__":
-    main()

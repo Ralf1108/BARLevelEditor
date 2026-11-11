@@ -1,8 +1,7 @@
 """More weapon pictures for the panel of Renegade (plasma cannon, cannon, missile launcher, torpedo launcher, starburst launcher, rocket salvo), same style as weapon_art.py
 (drawn with Pillow and numpy, the same bevelled metal parts): a gun or a launcher with the projectile coming out at the front.
 
-  python weapon_art2.py [out_dir]    writes weapon_<category>.png (768 x 128) of every picture of make_all (also the lasers, redrawn from weapon_art.py) and three comparison sheets sheet1-3.png with all pictures one below the other;
-                                     default out_dir: LevelEditor/game-modes/weapon-images (give another folder to keep the repository clean; ART_ONLY=name,name draws only those)
+  The pictures are drawn by weapon_art_build.py (it lists them and draws them in parallel); this file has the drawing functions.
 """
 import math, os, random, sys
 import numpy as np
@@ -314,51 +313,3 @@ def starburst_shot(body, tip):
 
 # ------------------------------------------------------------------ the pictures
 FRONT = 0.93   # the front of the projectile at this part of the width of the picture shown
-
-
-def make_all():
-    """name -> (picture, the width of the picture the row shows); the order is the one of the comparison sheet"""
-    cannon = wa.gun_body()
-
-    def tip(cw):
-        return 20 + FRONT * cw
-    P = (200, 90, 255)
-    pics = {}
-    for name, k, cw in (("light", 0.25, 3900), ("medium", 0.5, 3500), ("heavy", 0.8, 3200), ("ultra", 1.15, 3000)):
-        pics["cannon-" + name] = (cannon_shot(cannon, k, tip(cw)), cw)
-    for name, th, k, cw in (("light", 90, 0.45, 3900), ("medium", 130, 0.8, 3500), ("heavy", 170, 1.1, 3200), ("ultra", 220, 1.6, 3000)):
-        pics["missile-" + name] = (missile_shot(launcher_body(1, th), k, tip(cw)), cw)
-    pics["heavy-rocket"] = (starburst_shot(launcher_body(1, 190), tip(3100)), 3100)
-    if os.environ.get("ART_ONLY"):
-        return {k: v for k, v in pics.items() if k in os.environ["ART_ONLY"].split(",")}
-    pics["rocket-salvo"] = (salvo_shot(pod_body(), tip(3500)), 3500)
-    for name, k, cw in (("light", 0.40, 3900), ("medium", 0.70, 3500), ("heavy", 1.0, 3100), ("ultra", 1.6, 2900)):
-        pics["plasma-" + name] = (plasma(cannon, P, k, tip(cw)), cw)
-    pics["torpedo"] = (torpedo_shot(launcher_body(1, 170), 1.0, tip(3300)), 3300)
-    for name, color, k, cw in wa.SIZES:
-        pics["laser-" + name[6:] if name.startswith("laser-") else name] = (wa.beam_fx(cannon, color, k), cw)
-    return pics
-
-
-def main():
-    here = os.path.dirname(os.path.abspath(__file__))
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(here)), "game-modes", "weapon-images")
-    os.makedirs(out, exist_ok=True)
-    rows = []
-    for name, (big, cw) in make_all().items():
-        img = wa.panel_banner(big, cw)
-        img.save(os.path.join(out, "weapon_%s.png" % name))
-        rows.append((name, img))
-        print("weapon_%s.png" % name)
-    # the comparison sheets (all pictures one below the other, three sheets)
-    for s in range(0, len(rows), 7):
-        part_rows = rows[s:s + 7]
-        sheet = Image.new("RGB", (768, len(part_rows) * 136), (0, 0, 0))
-        for i, (name, img) in enumerate(part_rows):
-            sheet.paste(img, (0, i * 136))
-            ImageDraw.Draw(sheet).text((6, i * 136 + 4), name, fill=(255, 255, 255))
-        sheet.save(os.path.join(out, "sheet%d.png" % (s // 7 + 1)))
-
-
-if __name__ == "__main__":
-    main()
