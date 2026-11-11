@@ -1547,6 +1547,7 @@ local function reloadFrame(u, i) return Spring.GetUnitWeaponState(u, i, "reloadF
 -- fire. Pressing the button sets it to now (it fires as soon as it has turned); a weapon that is reloading is left alone (BLOCK is set when it is ready). The widget shows a
 -- weapon with reloadFrame >= BLOCK / 2 as READY. Not for anti-air weapons (they have no target without a lock) and not for stockpile weapons (starburst).
 local BLOCK = 1000000
+local PENDING_MAX = 30 -- frames (1 s): a click that is released while the weapon has more reload than this left is forgotten
 local function unblock(u, i, f)
 	if reloadFrame(u, i) >= BLOCK / 2 then Spring.SetUnitWeaponState(u, i, "reloadFrame", f) end
 end
@@ -1650,6 +1651,10 @@ local function shoot(team, f, force)
 		if a.down and not pressed[i] then
 			a.down = false -- released
 			change = true
+			-- a click on a weapon that still has more than PENDING_MAX of reload left is dropped: it must not fire later "on its own" (a weapon that is only waiting for the turret to
+			-- turn, or has less reload left, still fires: one click is one shot)
+			local rf = reloadFrame(u, i)
+			if not a.fired and not a.bomb and rf < BLOCK / 2 and rf - f > PENDING_MAX then a.deadline = f end
 		end
 		if not a.down and (a.fired or f >= a.deadline) then
 			hold[i] = nil
