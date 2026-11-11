@@ -4,7 +4,8 @@
 #   -Ai NullAI          the computer player (NullAI does nothing itself; SimpleAI, ... build and fight)
 #   -Bots 3             computer Peewees of that player that walk around and fight you (a lost one comes back; 0 = none)
 #   -DebugMode 0        without the debug menu (the button above the weapon: turn into another unit)
-param([Parameter(Mandatory)][string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'NullAI', [int]$Bots = 3, [int]$DebugMode = 1)
+#   -QuickTest          for quick tests: without the Legion units and the extra units of the release candidates (they take time to load); without it all of them are loaded
+param([Parameter(Mandatory)][string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'NullAI', [int]$Bots = 3, [int]$DebugMode = 1, [switch]$QuickTest)
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
@@ -22,7 +23,7 @@ $script = @"
 	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
 	[ai0] { shortname=$($spec.Short); version=$($spec.Version); team=1; host=0; name=$($spec.Short)1; }
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; lanplay=1; lanrenegade=1; lanrenebots=$Bots;$(if ($DebugMode) { ' lanrenedebug=1;' }) }
+	[modoptions] { deathmode=neverend;$(if (-not $QuickTest) { ' experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1;' }) lanplay=1; lanrenegade=1; lanrenebots=$Bots;$(if ($DebugMode) { ' lanrenedebug=1;' }) }
 	ishost=1;
 	hostip=127.0.0.1;
 	myplayername=Player;

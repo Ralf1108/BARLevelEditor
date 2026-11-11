@@ -1492,7 +1492,7 @@ M.TECHS = { { 1, "T1" }, { 2, "T2" }, { 3, "T3" } }
 
 local function unitGroup(ud)
 	local mc = ud.modCategories or {}
-	if ud.isBuilding or not ud.canMove then
+	if ud.isBuilding or not ud.canMove or ((ud.speed or 0) <= 0 and not ud.canFly) then -- (a unit that cannot move at all counts as a building too: the Legion Hive and Naval Hive, drone carriers, have canMove true and speed 0)
 		-- turrets: buildings with a weapon (no factories, no mines and other explosive buildings)
 		if #(ud.weapons or {}) > 0 and not ud.isFactory and (ud.customParams or {}).unitgroup ~= "explo" then
 			return "turrets"
