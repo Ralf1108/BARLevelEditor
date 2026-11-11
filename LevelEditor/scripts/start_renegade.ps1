@@ -22,7 +22,7 @@ $script = @"
 	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
 	[ai0] { shortname=$($spec.Short); version=$($spec.Version); team=1; host=0; name=$($spec.Short)1; }
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; lanplay=1; lanrenegade=1; lanrenebots=$Bots;$(if ($DebugMode) { ' lanrenedebug=1;' }) }
+	[modoptions] { deathmode=neverend; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; lanplay=1; lanrenegade=1; lanrenebots=$Bots;$(if ($DebugMode) { ' lanrenedebug=1;' }) }
 	ishost=1;
 	hostip=127.0.0.1;
 	myplayername=Player;
