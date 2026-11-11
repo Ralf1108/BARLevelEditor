@@ -26,7 +26,7 @@ IMAGES = os.path.join(GM, "weapon-images")
 SIZED = ("laser", "plasma", "cannon", "missile", "machine-gun")
 SIZES = ("light", "medium", "heavy", "ultra")
 # the start values of renegade_weapon_limits.csv (damage per second): below Weak a size less, from Strong a size more, from Ultra the ultra size (empty: no ultra size by damage)
-DEFAULT_LIMITS = {"laser": (100, 800, 6000), "plasma": (60, 400, 1500), "cannon": (60, 300, 3000), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
+DEFAULT_LIMITS = {"laser": (100, 800, 6000), "plasma": (60, 400, 1500), "cannon": (60, 300, 350), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
 LIMIT_COLUMNS = ["Family", "Weak below", "Strong from", "Ultra from"]   # damage per second
 
 
@@ -107,7 +107,7 @@ def classify(r):
         return "heatray", None   # (yellow: the Juggernaut, the Adjudicator, Thermite ...)
     if t in ("Beam laser", "Laser") and ("tachyon" in d or "ion accelerator" in d or re.search(chr(92) + "bultra" + chr(92) + "b", d) or dps(r) >= (LIMITS["laser"][2] or 10 ** 9)):
         return "laser-ultra", None   # (blue and very thick: the Pulsar, the tachyon beams ...)
-    if t == "Melee" or "self-destruct" in d or "dummy" in d or "crawlingbomb" in d:
+    if t == "Melee" or "self-destruct" in d or "dummy" in d or "crawlingbomb" in d or "detonator" in d:
         return "self-destruct", None
     if t == "Bomb":
         if "nuclear" in d or "atomic" in d:
