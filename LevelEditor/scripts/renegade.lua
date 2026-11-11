@@ -1270,7 +1270,7 @@ local function scoreboard(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
--- The compass in front of the player (always in the field of view): a small round dial; the green arrow is the way the vehicle drives (where W takes it), the coloured arrowheads at the
+-- The compass at the bottom right, between the panel of the weapons and the music player: a round dial; the green arrow is the way the vehicle drives (where W takes it), the coloured arrowheads at the
 -- rim are the barrels of the groups of weapons (the colour of their buttons; the turrets turn slower than you look round). Up = the way you look: an arrow that points up means the
 -- vehicle drives where you look. (It replaces the two arrows on the ground.)
 local function compass(vsx, vsy)
@@ -1290,7 +1290,10 @@ local function compass(vsx, vsy)
 		return (dx * rt[1] + dz * rt[3]) / rl, (dx * fw[1] + dz * fw[3]) / fl
 	end
 	local s = math.max(0.7, vsy / 1080)
-	local cx, cy, r = vsx / 2, vsy / 2 - vsy * 0.2, 48 * s
+	local r = 62 * s
+    -- at the bottom, between the panel of the weapons and the music player of the game (about 190 wide at the right edge): not in the way there
+    local left = (R.panel and R.panel[3] or (vsx * 0.7)) + 14 * s
+    local cx, cy = (left + vsx - 190 * s) / 2, 18 * s + r + 8 * s
 	gl.Color(0, 0, 0, 0.45)
 	disc(cx, cy, r)
 	gl.Color(0.6, 0.7, 0.85, 0.9)
