@@ -760,13 +760,99 @@ local REACH_COLOR = { green = { 0.25, 0.85, 0.3 }, yellow = { 0.95, 0.8, 0.15 },
 
 -- The pictures of the weapons: the gadget publishes "<weapon number>=<picture>,..." (renPics); a picture is the file LuaUI/Images/renegade/weapons/weapon_<picture>.png of the game
 local picCache = {}
-local function weaponPicture(u, i)
+local function picName(u, i)
 	local txt = Spring.GetUnitRulesParam(u, "renPics") or ""
-	local name = txt:match("%f[%d]" .. i .. "=([%w%-_]+)")
+	return txt:match("%f[%d]" .. i .. "=([%w%-_]+)")
+end
+local function weaponPicture(u, i)
+	local name = picName(u, i)
 	if not name then return nil end
 	local path = "LuaUI/Images/renegade/weapons/weapon_" .. name .. ".png"
 	if picCache[path] == nil then picCache[path] = VFS.FileExists(path) and path or false end
 	return picCache[path] or nil
+end
+
+-- The name of a weapon on the panel: the name of its picture ("laser-light" = "Light Laser"); a weapon without a picture keeps its technical name
+local SIZE_NAMES = { light = "Light", medium = "Medium", heavy = "Heavy", ultra = "Ultra" }
+local NICE_NAMES = { ["d-gun"] = "D-Gun", ["emp-grenade"] = "EMP Grenade", ["aa-missile"] = "Anti-Air Missile", ["anti-nuke"] = "Anti-Nuke Missile", ["self-destruct"] = "Self-Destruct" }
+local function niceName(pic)
+	local base, size = pic:match("^(.-)%-(%a+)$")
+	if size and SIZE_NAMES[size] then pic = base else size = nil end
+	local n = NICE_NAMES[pic]
+	if not n then
+		n = pic:gsub("%-", " ")
+		n = n:gsub("(%a)(%a*)", function(a, b) return a:upper() .. b end)
+	end
+	return size and (SIZE_NAMES[size] .. " " .. n) or n
+end
+
+-- damage of one shot (all the projectiles of a shot) and damage per second of a group (its weapons fire together; a salvo counts all its shots) against the default armor
+-- (an anti-air weapon: against aircraft)
+local function weaponStats(ud, slots, list, time)
+	local i = list[1]
+	local wd = WeaponDefs[ud.weapons[i].weaponDef]
+	local armor = (Game.armorTypes or {}).default or 0
+	local vtol = (Game.armorTypes or {}).vtol or 14
+	local d = tonumber(wd.damages and wd.damages[armor]) or 0
+	if slots.aa[i] then d = math.max(d, tonumber(wd.damages and wd.damages[vtol]) or 0) end
+	local dmg = d * math.max(1, tonumber(wd.projectiles) or 1)
+	local dps = dmg * math.max(1, tonumber(wd.salvoSize) or 1) * #list / math.max(0.1, time)
+	return dmg, dps
+end
+local function num(v)
+	if v >= 10000 then return string.format("%.0fk", v / 1000) end
+	if v >= 1000 then return string.format("%.1fk", v / 1000) end
+	return string.format("%d", math.floor(v + 0.5))
+end
+
+-- drawing helpers: a card with a vertical gradient and an edge, and the small symbols of the values (range: a target ring, reload: a clock, damage: a burst, dps: rising bars)
+local function card(x1, y1, x2, y2, top, bot, edge, width)
+	gl.BeginEnd(GL.QUADS, function()
+		gl.Color(bot[1], bot[2], bot[3], bot[4]); gl.Vertex(x1, y1); gl.Vertex(x2, y1)
+		gl.Color(top[1], top[2], top[3], top[4]); gl.Vertex(x2, y2); gl.Vertex(x1, y2)
+	end)
+	if edge then
+		gl.Color(edge[1], edge[2], edge[3], edge[4])
+		gl.LineWidth(width or 1.5)
+		gl.BeginEnd(GL.LINE_LOOP, function()
+			gl.Vertex(x1, y1); gl.Vertex(x2, y1); gl.Vertex(x2, y2); gl.Vertex(x1, y2)
+		end)
+		gl.LineWidth(1)
+	end
+end
+local function ring(x, y, r)
+	gl.BeginEnd(GL.LINE_LOOP, function()
+		for a = 0, 17 do gl.Vertex(x + r * math.cos(a * math.pi / 9), y + r * math.sin(a * math.pi / 9)) end
+	end)
+end
+local function icon(kind, x, y, r, c)
+	gl.Color(c[1], c[2], c[3], 1)
+	gl.LineWidth(1.6)
+	if kind == "range" then
+		ring(x, y, r); ring(x, y, r * 0.3)
+		gl.BeginEnd(GL.LINES, function()
+			gl.Vertex(x - r * 1.3, y); gl.Vertex(x - r * 0.6, y); gl.Vertex(x + r * 0.6, y); gl.Vertex(x + r * 1.3, y)
+			gl.Vertex(x, y - r * 1.3); gl.Vertex(x, y - r * 0.6); gl.Vertex(x, y + r * 0.6); gl.Vertex(x, y + r * 1.3)
+		end)
+	elseif kind == "reload" then
+		ring(x, y, r)
+		gl.BeginEnd(GL.LINES, function()
+			gl.Vertex(x, y); gl.Vertex(x, y + r * 0.7); gl.Vertex(x, y); gl.Vertex(x + r * 0.5, y - r * 0.2)
+		end)
+	elseif kind == "damage" then
+		gl.BeginEnd(GL.LINES, function()
+			for a = 0, 7 do
+				local ca, sa = math.cos(a * math.pi / 4), math.sin(a * math.pi / 4)
+				local k = (a % 2 == 0) and 1.25 or 0.8
+				gl.Vertex(x + ca * r * 0.25, y + sa * r * 0.25); gl.Vertex(x + ca * r * k, y + sa * r * k)
+			end
+		end)
+	else
+		gl.Rect(x - r, y - r, x - r * 0.4, y - r * 0.2)
+		gl.Rect(x - r * 0.3, y - r, x + r * 0.3, y + r * 0.35)
+		gl.Rect(x + r * 0.4, y - r, x + r, y + r)
+	end
+	gl.LineWidth(1)
 end
 
 local function panel(vsx, vsy)
@@ -776,7 +862,7 @@ local function panel(vsx, vsy)
 	local drops = dropper(ud, slots)
 	local frame = Spring.GetGameFrame()
 	local s = math.max(0.7, vsy / 1080)
-	local w, h = 320 * s, 62 * s
+	local w, h = 320 * s, 68 * s
 	local rows = {}
 	R.states = {} -- (for the tests: the colour of every row)
 	local allAtOnce = R.full -- FULL FIRE (Alt switches it): the left button fires every weapon
@@ -790,7 +876,8 @@ local function panel(vsx, vsy)
 				local time = Spring.GetUnitWeaponState(u, i, "reloadTime") or wd.reload or 1
 				local ready = at <= frame or at >= 500000 -- (500000 and more: the gadget holds the reload of a weapon that only aims)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
-				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
+				local pn = picName(u, i)
+				local name = (pn and niceName(pn)) or (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
 				local state = (not drops) and reach(ud, slots, list, R.hit) or nil
 				local attack, height
@@ -803,7 +890,8 @@ local function panel(vsx, vsy)
 						state = height <= attack and "green" or (height <= attack * 1.15 and "yellow" or "red")
 					end
 				end
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i) }
+				local dmg, dps = weaponStats(ud, slots, list, time)
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps }
 			end
 		end
 	end
@@ -815,40 +903,43 @@ local function panel(vsx, vsy)
 			local wd = ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
 			if wd and not seen[wd.id] then
 				seen[wd.id] = true
-				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
+				local pn = picName(u, i)
+				local name = (pn and niceName(pn)) or (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				rows[#rows + 1] = { name = name, range = tonumber(wd.range) or 0, fill = 1, ready = true, time = wd.reload or 1, tag = "AUTO", color = { 0.62, 0.64, 0.7 }, auto = true, pic = weaponPicture(u, i) }
 			end
 		end
 	end
-	local anyPic = false
-	for _, r in ipairs(rows) do if r.pic then anyPic = true; w = 372 * s; break end end -- (with a picture the panel is as wide as the picture of a row: 6 : 1)
+	for _, r in ipairs(rows) do if r.pic then w = 372 * s; break end end -- (with a picture the panel is as wide as the picture of a row: 6 : 1)
 	local hh = 40 * s -- the health row
 	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
 	local total = #rows * h + hh + 8 * s
 	R.panel = { x1, y1, x1 + w, y1 + total }
-	gl.Color(0, 0, 0, 0.55)
-	gl.Rect(x1, y1, x1 + w, y1 + total)
+	card(x1, y1, x1 + w, y1 + total, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
 	gl.Color(1, 0.3, 0.2, 1)
 	gl.Text("Alt: FULL FIRE " .. (R.full and "ON" or "off"), x1 + w - 6 * s, y1 + total + 6 * s, 13 * s, "ro") -- (above the panel, right)
-	-- a row: the picture of the weapon over the whole width as the background (dark card without one), the cooldown like the one of the abilities of Evolution (a grey fill from the right
-	-- that runs down, the seconds left), the colour of the range on top of the picture, a strip in the colour of the button at the left, and the text in front of it
+	-- a row: a card with the picture of the weapon over the whole width as the background, the cooldown like the one of the abilities of Evolution (a grey fill from the right
+	-- that runs down, the seconds left), the colour of the range on top of the picture, a strip and the tag in the colour of the button, the name, and the values with their symbols
 	for i, r in ipairs(rows) do
 		local ry = y1 + 6 * s + (#rows - i) * h
 		local cx1, cx2, cy1, cy2 = x1 + 4 * s, x1 + w - 4 * s, ry + 2 * s, ry + h - 2 * s
 		R.states[i] = r.state or "-"
-		gl.Color(0.1, 0.1, 0.12, 0.95)
-		gl.Rect(cx1, cy1, cx2, cy2)
+		card(cx1, cy1, cx2, cy2, { 0.16, 0.17, 0.21, 0.97 }, { 0.07, 0.07, 0.09, 0.97 })
 		if r.pic then
+			local ph = (cx2 - cx1) / 6
+			local py = (cy1 + cy2) / 2 - ph / 2
 			gl.Color(1, 1, 1, 0.92)
 			gl.Texture(r.pic)
-			gl.TexRect(cx1, cy1, cx2, cy2)
+			gl.TexRect(cx1, py, cx2, py + ph)
 			gl.Texture(false)
-		end
-		if r.pic then
 			-- a dark veil behind the text: strong at the left, gone at the right (the beam stays bright)
 			gl.BeginEnd(GL.QUADS, function()
-				gl.Color(0, 0, 0, 0.55); gl.Vertex(cx1, cy1); gl.Vertex(cx1, cy2)
-				gl.Color(0, 0, 0, 0); gl.Vertex(cx1 + (cx2 - cx1) * 0.75, cy2); gl.Vertex(cx1 + (cx2 - cx1) * 0.75, cy1)
+				gl.Color(0, 0, 0, 0.7); gl.Vertex(cx1, cy1); gl.Vertex(cx1, cy2)
+				gl.Color(0, 0, 0, 0); gl.Vertex(cx1 + (cx2 - cx1) * 0.8, cy2); gl.Vertex(cx1 + (cx2 - cx1) * 0.8, cy1)
+			end)
+			-- and a darker strip behind the values (they must stay readable over the picture)
+			gl.BeginEnd(GL.QUADS, function()
+				gl.Color(0, 0, 0, 0.6); gl.Vertex(cx1, cy1); gl.Vertex(cx1, cy1 + 38 * s)
+				gl.Color(0, 0, 0, 0); gl.Vertex(cx1 + (cx2 - cx1) * 0.95, cy1 + 38 * s); gl.Vertex(cx1 + (cx2 - cx1) * 0.95, cy1)
 			end)
 		end
 		if r.state then
@@ -862,67 +953,102 @@ local function panel(vsx, vsy)
 			gl.Color(0.22, 0.22, 0.25, 0.80)
 			gl.Rect(cx2 - (cx2 - cx1) * left, cy1, cx2, cy2)
 		end
-		gl.Color(r.color[1], r.color[2], r.color[3], 1)
+		local rc = r.color
+		card(cx1, cy1, cx2, cy2, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { rc[1] * 0.8, rc[2] * 0.8, rc[3] * 0.8, 0.75 }, 1.5)
+		gl.Color(rc[1], rc[2], rc[3], 1)
 		gl.Rect(cx1, cy1, cx1 + 5 * s, cy2)
-		local tx = cx1 + 12 * s
+		local tx = cx1 + 14 * s
+		-- the tag (the mouse button) as a badge at the top right
+		local tw = gl.GetTextWidth(r.tag) * 13 * s + 12 * s
+		gl.Color(rc[1], rc[2], rc[3], 1)
+		gl.Rect(cx2 - tw - 5 * s, cy2 - 20 * s, cx2 - 5 * s, cy2 - 4 * s)
+		gl.Color(0.05, 0.05, 0.07, 1)
+		gl.Text(r.tag, cx2 - 11 * s, cy2 - 17 * s, 13 * s, "ro")
 		local name = r.name
-		while #name > 4 and gl.GetTextWidth(name) * 15 * s > (cx2 - tx) - 62 * s do name = name:sub(1, -2) end
+		local room = (cx2 - tw - 12 * s) - tx - (r.aa and 70 * s or 0)
+		while #name > 4 and gl.GetTextWidth(name) * 17 * s > room do name = name:sub(1, -2) end
 		gl.Color(1, 1, 1, 1)
-		gl.Text(name, tx, cy2 - 20 * s, 15 * s, "o")
-		gl.Color(r.color[1], r.color[2], r.color[3], 1)
-		gl.Text(r.tag, cx2 - 8 * s, cy2 - 19 * s, 14 * s, "ro")
+		gl.Text(name, tx, cy2 - 20 * s, 17 * s, "o")
 		if r.aa then
 			gl.Color(1, 0.6, 0.15, 1) -- (anti-air only: fires only at an aircraft in the circle)
-			gl.Text("AIR ONLY", cx2 - 8 * s, cy2 - 35 * s, 12 * s, "ro")
+			gl.Text("AIR ONLY", cx2 - tw - 12 * s, cy2 - 18 * s, 11 * s, "ro")
 		end
-		gl.Color(0.92, 0.95, 1, 1)
+		-- the values: symbol, a small label above the number; the damage per second in orange
+		local cols = {}
 		if r.auto then
-			gl.Text(r.range >= 20000 and "range: the whole map   fires by itself" or string.format("range %d   fires by itself", r.range), tx, cy1 + 8 * s, 12 * s, "o")
+			cols[#cols + 1] = { "range", "RANGE", r.range >= 20000 and "map" or num(r.range), false, 80 * s }
 		elseif r.attack then
-			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s", r.attack, r.height, r.time), tx, cy1 + 8 * s, 12 * s, "o")
+			cols[#cols + 1] = { "range", "DROPS BELOW", num(r.attack) .. " m", false, 90 * s }
+			cols[#cols + 1] = { "range", "NOW", num(r.height or 0) .. " m" }
 		else
-			gl.Text(string.format("range %d   reload %.1f s%s", r.range, r.time, (r.aa or anyPic or not r.hy) and "" or "   (aircraft in the circle: lock; ground: aim)"), tx, cy1 + 8 * s, 12 * s, "o")
+			cols[#cols + 1] = { "range", "RANGE", num(r.range) }
+		end
+		if r.auto then
+			cols[#cols + 1] = { nil, "", "fires by itself" }
+		else
+			cols[#cols + 1] = { "reload", "RELOAD", string.format("%.1f s", r.time) }
+			cols[#cols + 1] = { "damage", "DAMAGE", num(r.dmg) }
+			cols[#cols + 1] = { "dps", "DPS", num(r.dps), true }
+		end
+		local colw = (#cols >= 5 and 58 or 62) * s
+		local cx = tx
+		for k, c in ipairs(cols) do
+			local hot = c[4]
+			local ic = hot and { 1, 0.7, 0.2 } or { 0.6, 0.75, 0.95 }
+			if c[1] then icon(c[1], cx + 6 * s, cy1 + 15 * s, 5.5 * s, ic) end
+			local vx = c[1] and cx + 17 * s or cx
+			gl.Color(0.6, 0.65, 0.75, 1)
+			gl.Text(c[2], vx, cy1 + 28 * s, 9 * s, "o")
+			if hot then gl.Color(1, 0.72, 0.25, 1) else gl.Color(0.95, 0.97, 1, 1) end
+			gl.Text(c[3], vx, cy1 + 8 * s, 15 * s, "o")
+			cx = cx + (c[5] or colw)
 		end
 		if not r.ready then
 			gl.Color(1, 1, 1, 1)
-			gl.Text(string.format("%.1f s", left * r.time), cx2 - 8 * s, cy1 + 7 * s, 14 * s, "ro") -- (the seconds left count down here)
+			gl.Text(string.format("%.1f s", left * r.time), cx2 - 8 * s, cy1 + 7 * s, 15 * s, "ro") -- (the seconds left count down here)
 		end
 	end
-	-- health: a bar from red to green with the numbers
+	-- health: a bar from red to green, the name of the unit in front of it and the numbers at the right
 	local hp, mhp = Spring.GetUnitHealth(u)
 	hp, mhp = hp or 0, math.max(1, mhp or 1)
 	local frac = math.max(0, math.min(1, hp / mhp))
 	local hy = y1 + 8 * s + #rows * h
-	gl.Color(0.15, 0.15, 0.15, 0.9)
-	gl.Rect(x1 + 10 * s, hy + 4 * s, x1 + w - 10 * s, hy + 26 * s)
-	gl.Color(1 - frac, 0.25 + 0.65 * frac, 0.2, 1)
-	gl.Rect(x1 + 10 * s, hy + 4 * s, x1 + 10 * s + (w - 20 * s) * frac, hy + 26 * s)
+	local bx1, bx2 = x1 + 8 * s, x1 + w - 8 * s
+	card(bx1, hy + 4 * s, bx2, hy + 32 * s, { 0.2, 0.2, 0.22, 0.95 }, { 0.08, 0.08, 0.09, 0.95 }, { 0.5, 0.55, 0.65, 0.6 }, 1.5)
+	if frac > 0 then
+		local fx = bx1 + (bx2 - bx1) * frac
+		local r0, g0 = 1 - frac, 0.25 + 0.65 * frac
+		card(bx1, hy + 4 * s, fx, hy + 32 * s, { r0, g0, 0.25, 1 }, { r0 * 0.45, g0 * 0.45, 0.1, 1 })
+	end
 	gl.Color(1, 1, 1, 1)
-	gl.Text(string.format("HEALTH  %d / %d", math.ceil(hp), math.floor(mhp)), x1 + w / 2, hy + 10 * s, 14 * s, "co")
+	gl.Text(ud.translatedHumanName or ud.name or "?", bx1 + 8 * s, hy + 11 * s, 16 * s, "o")
+	gl.Text(string.format("%d / %d", math.ceil(hp), math.floor(mhp)), bx2 - 8 * s, hy + 11 * s, 16 * s, "ro")
 	gl.Color(1, 1, 1, 1)
 	return x1, y1 + total, w, s
 end
 
--- the debug buttons above the panel: "Debug unit" (you turn into a unit) and "Spawn enemy" (an enemy 1000 Elmo ahead); both open the unit menu
+-- the debug buttons above the panel, side by side: "Unit" (you turn into a unit) and "Spawn" (an enemy 1000 Elmo ahead) open the unit menu, "Range" switches the range rings (green = on, red = off)
 local function debugButton(x1, top, w, s)
-	local ud = UnitDefs[Spring.GetUnitDefID(R.unit or -1) or -1]
 	local bh = 28 * s
-	local by = top + 8 * s
-	R.btn = { x1, by, x1 + w, by + bh }
-	R.btn2 = { x1, by + bh + 4 * s, x1 + w, by + 2 * bh + 4 * s }
-	R.btn3 = { x1, by + 2 * bh + 8 * s, x1 + w, by + 3 * bh + 8 * s }
-	local function button(r, label, on)
-		gl.Color(on and 0.35 or 0.2, on and 0.35 or 0.2, R.menu and 0.5 or 0.2, 0.9)
-		gl.Rect(r[1], r[2], r[3], r[4])
+	local gap = 6 * s
+	local bw = (w - 2 * gap) / 3
+	local by = top + 26 * s
+	R.btn = { x1, by, x1 + bw, by + bh }
+	R.btn2 = { x1 + bw + gap, by, x1 + 2 * bw + gap, by + bh }
+	R.btn3 = { x1 + 2 * (bw + gap), by, x1 + w, by + bh }
+	local function button(r, label, on, c)
+		c = c or { 0.35, 0.45, 0.65 }
+		local k = on and 1 or 0.45
+		card(r[1], r[2], r[3], r[4], { c[1] * k + 0.1, c[2] * k + 0.1, c[3] * k + 0.1, 0.95 }, { c[1] * k * 0.4, c[2] * k * 0.4, c[3] * k * 0.4, 0.95 }, { c[1], c[2], c[3], on and 1 or 0.6 }, 1.5)
 		gl.Color(1, 1, 1, 1)
-		gl.Text(label, r[1] + 10 * s, r[2] + 8 * s, 14 * s, "o")
+		gl.Text(label, (r[1] + r[3]) / 2, r[2] + 8 * s, 15 * s, "co")
 	end
-	button(R.btn, "Debug unit: " .. (ud and (ud.translatedHumanName or ud.name) or "?") .. "  v", R.list and R.pickMode ~= "enemy")
-	button(R.btn2, "Spawn enemy  v", R.list and R.pickMode == "enemy")
-	button(R.btn3, "Range rings: " .. (R.rings and "on" or "off"), R.rings)
+	button(R.btn, "Unit  v", R.list and R.pickMode ~= "enemy")
+	button(R.btn2, "Spawn  v", R.list and R.pickMode == "enemy")
+	button(R.btn3, "Range", R.rings, R.rings and { 0.25, 0.8, 0.3 } or { 0.85, 0.25, 0.2 })
 	if not R.menu then
 		gl.Color(0.8, 0.8, 0.5, 1)
-		gl.Text("Tab: free the mouse for the menu", x1 + w, R.btn3[4] + 4 * s, 11 * s, "ro")
+		gl.Text("Tab: free the mouse for the menu", x1 + w, by + bh + 4 * s, 11 * s, "ro")
 	end
 	gl.Color(1, 1, 1, 1)
 end
@@ -939,8 +1065,10 @@ local function countdown(vsx, vsy)
 	gl.Text("respawn in " .. sec, vsx / 2, vsy * 0.52, vsy / 18, "co")
 end
 
--- The altimeter (always shown): a vertical scale at the right edge (0 to the highest height of the aircraft, rules parameter renMaxAlt = its cruise altitude; any other
--- unit: 0 to ALT_MAX; a tick every 100, every 50 on a short scale), a marker with the height that goes up and down, and the number. Orange when an aircraft is near the ground.
+-- The altimeter (always shown): a vertical scale at the right edge with the heights above the sea level (0 = the sea level). The ground is the yellow part at the bottom (its top is
+-- the height of the ground under the unit), above it the height in the air (blue; orange when an aircraft is near the ground). An aircraft: the scale reaches up to the ground plus
+-- its highest height (rules parameter renMaxAlt = its cruise altitude); any other unit: up to ALT_MAX. A tick every 50 or 100 m, a marker with the height, the number on top
+-- (the height above the ground for an aircraft, the height of the ground for any other unit), GROUND and its height below.
 local ALT_MAX = 600
 local function altimeter(vsx, vsy)
 	local u = R.unit
@@ -948,37 +1076,44 @@ local function altimeter(vsx, vsy)
 	if not ud then return end
 	local x, y, z = Spring.GetUnitPosition(u, true)
 	if not x then return end
-	-- an aircraft: the height above the ground; every other unit: the height of the ground it stands on (above the sea level), so it always knows whether it is up or down
 	local flies = ud.canFly
-	local altMax = flies and tonumber(Spring.GetUnitRulesParam(u, "renMaxAlt")) or ALT_MAX
-	local step = altMax <= 160 and 50 or 100
-	local alt = math.max(0, flies and (y - Spring.GetGroundHeight(x, z)) or y)
+	local ground = Spring.GetGroundHeight(x, z)
+	local air = math.max(0, flies and (y - ground) or 0)
+	local altMax = flies and tonumber(Spring.GetUnitRulesParam(u, "renMaxAlt")) or nil
+	local lo = math.min(0, ground, y)
+	local top = flies and (ground + (altMax or ALT_MAX)) or math.max(ALT_MAX, ground + 100)
+	top = math.max(top, y)
+	local span = top - lo
+	local step = span <= 200 and 50 or (span <= 800 and 100 or 200)
 	local s = math.max(0.7, vsy / 1080)
 	local bx, h = vsx - 70 * s, 320 * s
 	local y0 = (vsy - h) / 2
-	local function at(a) return y0 + h * math.min(1, a / altMax) end
-	gl.Color(0, 0, 0, 0.55)
-	gl.Rect(bx - 44 * s, y0 - 34 * s, bx + 46 * s, y0 + h + 30 * s)
+	local function at(a) return y0 + h * math.max(0, math.min(1, (a - lo) / span)) end
+	card(bx - 46 * s, y0 - 52 * s, bx + 48 * s, y0 + h + 32 * s, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
 	gl.Color(0.15, 0.15, 0.15, 0.9)
 	gl.Rect(bx - 6 * s, y0, bx + 6 * s, y0 + h)
-	local low = flies and alt < 40
+	gl.Color(0.85, 0.68, 0.2, 1) -- the ground (up to its height)
+	gl.Rect(bx - 6 * s, y0, bx + 6 * s, at(ground))
+	local low = flies and air < 40
 	if low then gl.Color(1, 0.55, 0.15, 1) else gl.Color(0.45, 0.85, 1, 1) end
-	gl.Rect(bx - 6 * s, y0, bx + 6 * s, at(alt))
+	if y > ground then gl.Rect(bx - 6 * s, at(ground), bx + 6 * s, at(y)) end -- the air between the ground and the unit
 	gl.Color(0.8, 0.8, 0.8, 0.9)
-	for a = 0, altMax, step do
+	for a = math.ceil(lo / step) * step, top, step do
 		gl.Rect(bx + 6 * s, at(a) - 1, bx + 16 * s, at(a) + 1)
 		gl.Text(tostring(a), bx + 20 * s, at(a) - 5 * s, 11 * s, "o")
 	end
-	local my = at(alt)
+	local my = at(y)
 	if low then gl.Color(1, 0.55, 0.15, 1) else gl.Color(1, 1, 1, 1) end
 	gl.BeginEnd(GL.TRIANGLES, function()
 		gl.Vertex(bx - 7 * s, my); gl.Vertex(bx - 24 * s, my + 8 * s); gl.Vertex(bx - 24 * s, my - 8 * s)
 	end)
-	gl.Text(string.format("%d m", alt), bx - 8 * s, y0 + h + 10 * s, 15 * s, "ro")
+	gl.Text(string.format("%d m", flies and air or math.max(0, y)), bx - 8 * s, y0 + h + 10 * s, 15 * s, "ro")
+	gl.Color(1, 0.85, 0.3, 1)
+	gl.Text(string.format("GROUND %d m", ground), bx - 8 * s, y0 - 16 * s, 12 * s, "ro")
 	gl.Color(0.7, 0.7, 0.7, 0.95)
 	if flies then
-		gl.Text("Space up", bx - 36 * s, y0 - 14 * s, 10 * s, "o")
-		gl.Text("Ctrl down", bx - 36 * s, y0 - 26 * s, 10 * s, "o")
+		gl.Text("Space up", bx - 36 * s, y0 - 30 * s, 10 * s, "o")
+		gl.Text("Ctrl down", bx - 36 * s, y0 - 42 * s, 10 * s, "o")
 	end
 end
 
