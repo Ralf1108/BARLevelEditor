@@ -543,8 +543,8 @@ function widget:TextCommand(cmd)
 end
 
 ---------------------------------------------------------------- drawing
--- on the ground: the range rings round the unit and, for each group of weapons, a line from the unit in the direction its barrel points now (it turns
--- slower than you look round: fire when the line points where you look). Colors and widths as above; the thickest is drawn first.
+-- on the ground: the range rings round the unit (on request) and, for each group of weapons, a small pointer in the colour of its button that shows the way its barrel points now
+-- (it turns slower than you look round: fire when the pointer points where you look). A pointer is a flat arrowhead with a dark edge; the pointers of the groups stand side by side.
 local function groundLine(x, z, dx, dz, len)
 	gl.BeginEnd(GL.LINE_STRIP, function()
 		for k = 0, 16 do
@@ -553,15 +553,32 @@ local function groundLine(x, z, dx, dz, len)
 		end
 	end)
 end
+local function pointer(x, z, dx, dz, side, c, k)
+	local px, pz = -dz, dx
+	local cx, cz = x + dx * 250 * k + px * side * k, z + dz * 250 * k + pz * side * k
+	local function at(a, b) return a, Spring.GetGroundHeight(a, b) + 7, b end
+	local function pt(f, l) return at(cx + dx * f * k + px * l * k, cz + dz * f * k + pz * l * k) end
+	-- the arrowhead: the tip, the two wings and the notch
+	gl.Color(c[1], c[2], c[3], 0.95)
+	gl.BeginEnd(GL.TRIANGLES, function()
+		gl.Vertex(pt(30, 0)); gl.Vertex(pt(-14, 20)); gl.Vertex(pt(-2, 0))
+		gl.Vertex(pt(30, 0)); gl.Vertex(pt(-2, 0)); gl.Vertex(pt(-14, -20))
+	end)
+	gl.Color(0, 0, 0, 0.85)
+	gl.LineWidth(2)
+	gl.BeginEnd(GL.LINE_LOOP, function()
+		gl.Vertex(pt(30, 0)); gl.Vertex(pt(-14, 20)); gl.Vertex(pt(-2, 0)); gl.Vertex(pt(-14, -20))
+	end)
+end
 
 -- A small thick green arrow on the ground: the way the unit faces, the way it walks or drives when W is pressed (a tank has to turn first when you look behind you).
-local function facingArrow(x, z, dx, dz)
+local function facingArrow(x, z, dx, dz, k)
 	local l = math.sqrt(dx * dx + dz * dz)
 	if l < 0.01 then return end
 	dx, dz = dx / l, dz / l
 	local px, pz = -dz, dx
 	local function at(a, b) return a, Spring.GetGroundHeight(a, b) + 8, b end
-	local l0, l1, l2, w = 25, 70, 100, 16
+	local l0, l1, l2, w = 150 * k, 175 * k, 200 * k, 10 * k -- (k = the height of the eye / 45; nearer than about 3 heights of the eye the panel hides it)
 	for pass = 1, 2 do
 		if pass == 1 then gl.Color(0, 0, 0, 0.6); gl.LineWidth(11) else gl.Color(0.2, 1, 0.3, 1); gl.LineWidth(7) end
 		gl.BeginEnd(GL.LINES, function()
@@ -581,9 +598,9 @@ end
 -- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
 -- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
 -- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
-local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true }
+local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true } -- (cannons, gauss, heat rays and the like: the crosshair is enough)
 local function lobbed(wd)
-	return LOB[wd.type] or (wd.type == "Cannon" and ((tonumber(wd.highTrajectory) or 0) >= 1 or (tonumber(wd.range) or 0) >= 800))
+	return LOB[wd.type] or false
 end
 
 local function impactPreview(ux, uy, uz, wd, color, bomb)
@@ -633,9 +650,12 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 		gl.Vertex(x - aoe * 0.5, y + 6, z); gl.Vertex(x + aoe * 0.5, y + 6, z)
 		gl.Vertex(x, y + 6, z - aoe * 0.5); gl.Vertex(x, y + 6, z + aoe * 0.5)
 	end)
-	gl.LineWidth(2)
-	gl.Color(color[1], color[2], color[3], 0.6)
-	groundLine(ux, uz, dx / d, dz / d, d)
+	if bomb then
+		-- (a bomber: the line to the landing point)
+		gl.LineWidth(2)
+		gl.Color(color[1], color[2], color[3], 0.6)
+		groundLine(ux, uz, dx / d, dz / d, d)
+	end
 end
 
 function widget:DrawWorld()
@@ -645,10 +665,15 @@ function widget:DrawWorld()
 	local ud, slots = weaponsOf(R.unit)
 	if not ud then return end
 	gl.DepthTest(false)
-	for k = #SLOTS, 1, -1 do
+	local size = math.max(0.33, math.min(1.6, (y - Spring.GetGroundHeight(x, z)) / 45)) -- (the pointers and the arrow grow with the height of the eye: a low unit sees them large)
+	local present = 0
+	for k = 1, #SLOTS do local l0 = slots[SLOTS[k][1]]; if l0 and #l0 > 0 then present = present + 1 end end
+	local rank = 0
+	for k = 1, #SLOTS do
 		local sl = SLOTS[k]
 		local list = slots[sl[1]]
 		if list and #list > 0 then
+			rank = rank + 1
 			local range = slotRange(ud, list)
 			gl.Color(sl[4][1], sl[4][2], sl[4][3], 0.95)
 			gl.LineWidth(sl[5])
@@ -662,10 +687,7 @@ function widget:DrawWorld()
 				dx, dz = fx or 0, fz or 1
 				l = math.sqrt(dx * dx + dz * dz)
 			end
-			if l > 0.01 then
-				gl.LineWidth(sl[5])
-				groundLine(x, z, dx / l, dz / l, math.min(range, 260))
-			end
+			if l > 0.01 then pointer(x, z, dx / l, dz / l, (rank - (present + 1) / 2) * 34, sl[4], size) end
 		end
 	end
 	for k = #SLOTS, 1, -1 do
@@ -722,7 +744,7 @@ function widget:DrawWorld()
 			end
 		end
 	end
-	if fx then facingArrow(x, z, fx, fz) end
+	if fx then facingArrow(x, z, fx, fz, size) end
 	gl.LineWidth(1)
 	gl.Color(1, 1, 1, 1)
 end
@@ -862,7 +884,8 @@ local function panel(vsx, vsy)
 	local drops = dropper(ud, slots)
 	local frame = Spring.GetGameFrame()
 	local s = math.max(0.7, vsy / 1080)
-	local w, h = 320 * s, 68 * s
+	local w, h = 432 * s, 80 * s
+	local tagW = 54 * s -- (the column of the buttons at the right of the cards)
 	local rows = {}
 	R.states = {} -- (for the tests: the colour of every row)
 	local allAtOnce = R.full -- FULL FIRE (Alt switches it): the left button fires every weapon
@@ -891,10 +914,14 @@ local function panel(vsx, vsy)
 					end
 				end
 				local dmg, dps = weaponStats(ud, slots, list, time)
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps }
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps, ord = #rows + 1 }
 			end
 		end
 	end
+	table.sort(rows, function(a, b) -- the shortest range on top
+		if a.range ~= b.range then return a.range < b.range end
+		return a.ord < b.ord
+	end)
 	do
 		-- the weapons that fire by themselves (anti-nuke launchers): a row with the tag AUTO, the player cannot fire them
 		local seen = {}
@@ -909,7 +936,7 @@ local function panel(vsx, vsy)
 			end
 		end
 	end
-	for _, r in ipairs(rows) do if r.pic then w = 372 * s; break end end -- (with a picture the panel is as wide as the picture of a row: 6 : 1)
+	for _, r in ipairs(rows) do if r.pic then w = 502 * s; break end end -- (with a picture the card of a row is 6 : 1)
 	local hh = 40 * s -- the health row
 	local x1, y1 = (vsx - w) / 2 + 140 * s, 18 * s -- right of the middle: the buttons of the game are at the bottom left of it
 	local total = #rows * h + hh + 8 * s
@@ -921,7 +948,7 @@ local function panel(vsx, vsy)
 	-- that runs down, the seconds left), the colour of the range on top of the picture, a strip and the tag in the colour of the button, the name, and the values with their symbols
 	for i, r in ipairs(rows) do
 		local ry = y1 + 6 * s + (#rows - i) * h
-		local cx1, cx2, cy1, cy2 = x1 + 4 * s, x1 + w - 4 * s, ry + 2 * s, ry + h - 2 * s
+		local cx1, cx2, cy1, cy2 = x1 + 4 * s, x1 + w - 4 * s - tagW, ry + 2 * s, ry + h - 2 * s
 		R.states[i] = r.state or "-"
 		card(cx1, cy1, cx2, cy2, { 0.16, 0.17, 0.21, 0.97 }, { 0.07, 0.07, 0.09, 0.97 })
 		if r.pic then
@@ -958,28 +985,28 @@ local function panel(vsx, vsy)
 		gl.Color(rc[1], rc[2], rc[3], 1)
 		gl.Rect(cx1, cy1, cx1 + 5 * s, cy2)
 		local tx = cx1 + 14 * s
-		-- the tag (the mouse button) as a badge at the top right
-		local tw = gl.GetTextWidth(r.tag) * 13 * s + 12 * s
-		gl.Color(rc[1], rc[2], rc[3], 1)
-		gl.Rect(cx2 - tw - 5 * s, cy2 - 20 * s, cx2 - 5 * s, cy2 - 4 * s)
-		gl.Color(0.05, 0.05, 0.07, 1)
-		gl.Text(r.tag, cx2 - 11 * s, cy2 - 17 * s, 13 * s, "ro")
-		local name = r.name
-		local room = (cx2 - tw - 12 * s) - tx - (r.aa and 70 * s or 0)
-		while #name > 4 and gl.GetTextWidth(name) * 17 * s > room do name = name:sub(1, -2) end
+		-- the button (or AUTO) in a column at the right of the card, in its colour; an anti-air weapon says AIR ONLY under it
+		local bx1, bx2 = cx2 + 4 * s, x1 + w - 4 * s
+		card(bx1, cy1, bx2, cy2, { rc[1] * 0.9, rc[2] * 0.9, rc[3] * 0.9, 1 }, { rc[1] * 0.45, rc[2] * 0.45, rc[3] * 0.45, 1 }, { rc[1], rc[2], rc[3], 1 }, 1.5)
 		gl.Color(1, 1, 1, 1)
-		gl.Text(name, tx, cy2 - 20 * s, 17 * s, "o")
+		gl.Text(r.tag, (bx1 + bx2) / 2, (cy1 + cy2) / 2 - (r.aa and 0 or 8 * s), 16 * s, "co")
 		if r.aa then
-			gl.Color(1, 0.6, 0.15, 1) -- (anti-air only: fires only at an aircraft in the circle)
-			gl.Text("AIR ONLY", cx2 - tw - 12 * s, cy2 - 18 * s, 11 * s, "ro")
+			gl.Color(1, 0.85, 0.4, 1) -- (anti-air only: fires only at an aircraft in the circle)
+			gl.Text("AIR", (bx1 + bx2) / 2, (cy1 + cy2) / 2 - 18 * s, 11 * s, "co")
+			gl.Text("ONLY", (bx1 + bx2) / 2, (cy1 + cy2) / 2 - 29 * s, 11 * s, "co")
 		end
+		local name = r.name
+		local room = cx2 - tx - 8 * s
+		while #name > 4 and gl.GetTextWidth(name) * 20 * s > room do name = name:sub(1, -2) end
+		gl.Color(1, 1, 1, 1)
+		gl.Text(name, tx, cy2 - 26 * s, 20 * s, "o")
 		-- the values: symbol, a small label above the number; the damage per second in orange
 		local cols = {}
 		if r.auto then
-			cols[#cols + 1] = { "range", "RANGE", r.range >= 20000 and "map" or num(r.range), false, 80 * s }
+			cols[#cols + 1] = { "range", "RANGE", r.range >= 20000 and "map" or num(r.range), false, 100 * s }
 		elseif r.attack then
-			cols[#cols + 1] = { "range", "DROPS BELOW", num(r.attack) .. " m", false, 90 * s }
-			cols[#cols + 1] = { "range", "NOW", num(r.height or 0) .. " m" }
+			cols[#cols + 1] = { "range", "DROPS BELOW", num(r.attack) .. " m", false, 104 * s }
+			cols[#cols + 1] = { "range", "NOW", num(r.height or 0) .. " m", false, 80 * s }
 		else
 			cols[#cols + 1] = { "range", "RANGE", num(r.range) }
 		end
@@ -990,22 +1017,22 @@ local function panel(vsx, vsy)
 			cols[#cols + 1] = { "damage", "DAMAGE", num(r.dmg) }
 			cols[#cols + 1] = { "dps", "DPS", num(r.dps), true }
 		end
-		local colw = (#cols >= 5 and 58 or 62) * s
+		local colw = (#cols >= 5 and 76 or 98) * s
 		local cx = tx
 		for k, c in ipairs(cols) do
 			local hot = c[4]
 			local ic = hot and { 1, 0.7, 0.2 } or { 0.6, 0.75, 0.95 }
-			if c[1] then icon(c[1], cx + 6 * s, cy1 + 15 * s, 5.5 * s, ic) end
-			local vx = c[1] and cx + 17 * s or cx
-			gl.Color(0.6, 0.65, 0.75, 1)
-			gl.Text(c[2], vx, cy1 + 28 * s, 9 * s, "o")
+			if c[1] then icon(c[1], cx + 8 * s, cy1 + 21 * s, 7 * s, ic) end
+			local vx = c[1] and cx + 22 * s or cx
+			gl.Color(0.65, 0.7, 0.8, 1)
+			gl.Text(c[2], vx, cy1 + 36 * s, 10 * s, "o")
 			if hot then gl.Color(1, 0.72, 0.25, 1) else gl.Color(0.95, 0.97, 1, 1) end
-			gl.Text(c[3], vx, cy1 + 8 * s, 15 * s, "o")
+			gl.Text(c[3], vx, cy1 + 11 * s, 17 * s, "o")
 			cx = cx + (c[5] or colw)
 		end
 		if not r.ready then
 			gl.Color(1, 1, 1, 1)
-			gl.Text(string.format("%.1f s", left * r.time), cx2 - 8 * s, cy1 + 7 * s, 15 * s, "ro") -- (the seconds left count down here)
+			gl.Text(string.format("%.1f s", left * r.time), cx2 - 8 * s, cy1 + 10 * s, 18 * s, "ro") -- (the seconds left count down here)
 		end
 	end
 	-- health: a bar from red to green, the name of the unit in front of it and the numbers at the right
@@ -1043,8 +1070,8 @@ local function debugButton(x1, top, w, s)
 		gl.Color(1, 1, 1, 1)
 		gl.Text(label, (r[1] + r[3]) / 2, r[2] + 8 * s, 15 * s, "co")
 	end
-	button(R.btn, "Unit  v", R.list and R.pickMode ~= "enemy")
-	button(R.btn2, "Spawn  v", R.list and R.pickMode == "enemy")
+	button(R.btn, "Unit", R.list and R.pickMode ~= "enemy")
+	button(R.btn2, "Spawn", R.list and R.pickMode == "enemy")
 	button(R.btn3, "Range", R.rings, R.rings and { 0.25, 0.8, 0.3 } or { 0.85, 0.25, 0.2 })
 	if not R.menu then
 		gl.Color(0.8, 0.8, 0.5, 1)
@@ -1115,6 +1142,80 @@ local function altimeter(vsx, vsy)
 		gl.Text("Space up", bx - 36 * s, y0 - 30 * s, 10 * s, "o")
 		gl.Text("Ctrl down", bx - 36 * s, y0 - 42 * s, 10 * s, "o")
 	end
+end
+
+-- The players at the right (like the overview of Evolution): the colour of the team, the name, the unit and the kills (K) and deaths (D); the one with the most kills on top, a player
+-- without a unit (waiting for the respawn) is dimmed. As many rows as fit above the altimeter, the rest is counted ("+N more"). Kills and deaths: team rules parameters renKills, renDeaths.
+local function teamName(team)
+	local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
+	if isAI then
+		local _, n = Spring.GetAIInfo(team)
+		if n and n ~= "" then return n end
+	elseif leader then
+		local n = Spring.GetPlayerInfo(leader, false)
+		if n and n ~= "" then return n end
+	end
+	return "Team " .. team
+end
+local function scoreboard(vsx, vsy)
+	local rows = {}
+	local gaia = Spring.GetGaiaTeamID()
+	for _, team in ipairs(Spring.GetTeamList()) do
+		local uid = Spring.GetTeamRulesParam(team, "renUnit")
+		if team ~= gaia and uid ~= nil then
+			local ud = uid > 0 and UnitDefs[Spring.GetUnitDefID(uid) or -1] or nil
+			rows[#rows + 1] = { team = team, name = teamName(team), unit = ud and (ud.translatedHumanName or ud.name) or "", alive = uid > 0, kills = Spring.GetTeamRulesParam(team, "renKills") or 0, deaths = Spring.GetTeamRulesParam(team, "renDeaths") or 0 }
+		end
+	end
+	if #rows == 0 then return end
+	table.sort(rows, function(a, b)
+		if a.kills ~= b.kills then return a.kills > b.kills end
+		if a.deaths ~= b.deaths then return a.deaths < b.deaths end
+		return a.team < b.team
+	end)
+	local s = math.max(0.7, vsy / 1080)
+	local w, rowH, head = 300 * s, 40 * s, 28 * s
+	local x2 = vsx - 8 * s
+	local x1 = x2 - w
+	local top = vsy - 72 * s
+	local altTop = (vsy - 320 * s) / 2 + 320 * s + 32 * s
+	local maxRows = math.max(1, math.floor((top - head - 8 * s - (altTop + 10 * s)) / rowH))
+	local shown = math.min(#rows, maxRows)
+	local more = #rows - shown
+	local y1 = top - head - shown * rowH - 6 * s - (more > 0 and 16 * s or 0)
+	card(x1, y1, x2, top, { 0.05, 0.06, 0.08, 0.75 }, { 0.02, 0.02, 0.03, 0.75 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
+	gl.Color(0.7, 0.78, 0.9, 1)
+	gl.Text("PLAYERS", x1 + 10 * s, top - 20 * s, 14 * s, "o")
+	gl.Text("K", x2 - 62 * s, top - 20 * s, 14 * s, "co")
+	gl.Text("D", x2 - 22 * s, top - 20 * s, 14 * s, "co")
+	local me = Spring.GetMyTeamID()
+	for i = 1, shown do
+		local r = rows[i]
+		local ry2 = top - head - (i - 1) * rowH
+		local ry1 = ry2 - rowH + 3 * s
+		local a = r.alive and 1 or 0.5
+		if r.team == me then card(x1 + 3 * s, ry1, x2 - 3 * s, ry2 - 2 * s, { 0.25, 0.3, 0.4, 0.8 }, { 0.12, 0.15, 0.22, 0.8 }, { 0.6, 0.75, 1, 0.8 }, 1.5) end
+		local cr, cg, cb = Spring.GetTeamColor(r.team)
+		gl.Color(cr or 1, cg or 1, cb or 1, a)
+		gl.Rect(x1 + 8 * s, ry1 + 3 * s, x1 + 15 * s, ry2 - 5 * s)
+		local name = r.name
+		while #name > 3 and gl.GetTextWidth(name) * 15 * s > 150 * s do name = name:sub(1, -2) end
+		gl.Color(1, 1, 1, a)
+		gl.Text(name, x1 + 22 * s, ry2 - 18 * s, 15 * s, "o")
+		gl.Color(0.65, 0.7, 0.8, a)
+		local unit = r.alive and r.unit or "respawning"
+		while #unit > 3 and gl.GetTextWidth(unit) * 11 * s > 150 * s do unit = unit:sub(1, -2) end
+		gl.Text(unit, x1 + 22 * s, ry1 + 5 * s, 11 * s, "o")
+		gl.Color(1, 0.8, 0.3, a)
+		gl.Text(tostring(r.kills), x2 - 62 * s, ry1 + 10 * s, 17 * s, "co")
+		gl.Color(0.9, 0.5, 0.45, a)
+		gl.Text(tostring(r.deaths), x2 - 22 * s, ry1 + 10 * s, 17 * s, "co")
+	end
+	if more > 0 then
+		gl.Color(0.7, 0.78, 0.9, 1)
+		gl.Text("+" .. more .. " more", x2 - 10 * s, y1 + 4 * s, 12 * s, "ro")
+	end
+	gl.Color(1, 1, 1, 1)
 end
 
 function widget:DrawScreen()
@@ -1211,6 +1312,7 @@ function widget:DrawScreen()
 	end
 	gl.Color(1, 1, 1, 1)
 	altimeter(vsx, vsy)
+	scoreboard(vsx, vsy)
 	local x1, top, w, ps = panel(vsx, vsy)
 	if R.debug and x1 then
 		debugButton(x1, top, w, ps)

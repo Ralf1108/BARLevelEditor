@@ -2026,8 +2026,13 @@ function gadget:GameFrame(f)
 	end
 end
 
-function gadget:UnitDestroyed(u, defID, team)
+function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attackerTeam)
+	-- the score (for the list of the players): every unit destroyed by a team counts as a kill of it (not its own or an allied one), a lost unit of the player as a death
+	if attackerTeam and attackerTeam ~= team and not Spring.AreTeamsAllied(attackerTeam, team) then
+		Spring.SetTeamRulesParam(attackerTeam, "renKills", (Spring.GetTeamRulesParam(attackerTeam, "renKills") or 0) + 1, { public = true })
+	end
 	if units[team] == u then
+		Spring.SetTeamRulesParam(team, "renDeaths", (Spring.GetTeamRulesParam(team, "renDeaths") or 0) + 1, { public = true })
 		units[team] = nil
 		Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })
 		due[team] = Spring.GetGameFrame() + RESPAWN
