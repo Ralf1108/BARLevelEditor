@@ -1552,7 +1552,7 @@ local function unblock(u, i, f)
 end
 local function aimable(ud, i)
 	local wd = WeaponDefs[ud.weapons[i].weaponDef]
-	return wd and not wd.stockpile and wd.type ~= "DGun" and wd.type ~= "AircraftBomb" -- (the D-gun is fired by hand: it has no target before the button)
+	return wd and not wd.stockpile and wd.type ~= "AircraftBomb" -- (the D-gun too: its turret follows the view with the reload held, the target is given with the manual fire flag)
 end
 
 -- Bombs are dropped by the gadget itself (Spring.SpawnProjectile at the aircraft with its velocity): the engine's bomb weapon fires only when the aircraft is low (measured: a
@@ -1675,7 +1675,8 @@ local function shoot(team, f, force)
 					if tick then
 						local t = inp.target
 						local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
-						Spring.SetUnitTarget(u, x, y, z, false, true, i)
+						local wd = WeaponDefs[ud.weapons[i].weaponDef]
+						Spring.SetUnitTarget(u, x, y, z, wd and wd.type == "DGun" or false, true, i) -- (the D-gun: a manual fire weapon, the dgun flag)
 					end
 				end
 			end
