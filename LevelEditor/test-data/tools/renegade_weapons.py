@@ -26,11 +26,10 @@ CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapons.csv")
 CRUISE_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_cruise.csv")
 CRUISE_MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-cruise.md")
 IMAGES = os.path.join(repo, "LevelEditor", "game-modes", "weapon-images")
-CATEGORIES_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_weapon_categories.csv")
 CRUISE_COLUMNS = ["Faction", "Unit", "Code", "Cruise altitude", "Cruise altitude used", "Attack altitude"]
 GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
-COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image"]
+COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Category", "Tech", "DPS"]
 BUTTONS = ("LMB", "RMB", "MMB", "")
 
 
@@ -175,8 +174,8 @@ INTRO = """# Renegade: the weapons of all units
 Which weapon of a unit is fired with which mouse button in Renegade. **Change the column Fire button in `renegade_weapons.csv`** (and nothing else): the rest is read from the game. The table below is made from the csv (between the two comment lines `BEGIN TABLE` and `END TABLE`: do not edit it); the text around it, like this, may be edited.
 
 - **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button: footsteps, script dummies). Weapons of a unit with the same button are fired together (like the three medium plasma guns of the Epoch); give the same button to as many weapons as you like.
-- **Weapon image**: empty for now; a picture of the weapon for the panel, to be filled in when the interface is made nicer.
-- **Picture** (only on this page, not in the csv): the picture of the category of the weapon (see [weapon categories](renegade-weapon-categories.md)) as the panel shows it, linked to the file; empty when the category has no picture yet. To check the assignment of the pictures by eye.
+- **Category, Weapon image, Tech, DPS** (worked out by `weapon_categories.py`: do not change them in the csv): the category of the weapon (see [weapon categories](renegade-weapon-categories.md)), the file name of its picture (`Weapon image`), the tech level of the unit and the damage per second (damage of one shot / reload). A weapon without a button has them empty.
+- **Picture** (only on this page; the file name is in the csv column Weapon image): the picture of the weapon as the panel shows it, linked to the file; `not shown` for a weapon without a button. To check the assignment of the pictures by eye.
 - **Target**: what the weapon can hit (Ground, Air, Water; All = everything; empty = nothing). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
 - The proposal: weapons with the same weapon definition are fired together; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
@@ -193,18 +192,15 @@ END_TABLE = "<!-- END TABLE -->"
 def write_md(rows):
     """only what stands between the markers is written (the count and the table); the text around it stays as it is. A file without the markers (or none) is made with the text INTRO."""
     codes = {r[2] for r in rows}
-    # the column Picture (between # and Weapon) shows the picture of the category of the weapon (renegade_weapon_categories.csv, made by weapon_categories.py), linked to the file
-    pics = {}
-    if os.path.exists(CATEGORIES_CSV) and os.path.isdir(IMAGES):
-        for c in read_table(CATEGORIES_CSV):
-            if c["Picture"]:
-                pics[(c["Code"], c["#"])] = c["Picture"]
-    head = COLUMNS[:4] + ["Picture"] + COLUMNS[4:]
+    # the column Picture (between # and Weapon) shows the picture of the weapon (the column Weapon image of the csv: the picture of its category, made by weapon_categories.py), linked to the file;
+    # the column Weapon image itself (the file name) is not repeated in the table
+    keep = [i for i, col in enumerate(COLUMNS) if col != "Weapon image"]
+    head = [COLUMNS[i] for i in keep if i < 4] + ["Picture"] + [COLUMNS[i] for i in keep if i >= 4]
     lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(head) + " |", "|" + "|".join(["---"] * len(head)) + "|"]
     for r in rows:
-        f = pics.get((r[2], r[3]))
+        f = r[12]   # Weapon image
         pic = '[<img src="weapon-images/%s" width="288">](weapon-images/%s)' % (f, f) if f else ("" if r[11] else "not shown")   # r[11]: Fire button
-        cells = [c.replace("|", "/") for c in r]
+        cells = [r[i].replace("|", "/") for i in keep]
         lines.append("| " + " | ".join(cells[:4] + [pic] + cells[4:]) + " |")
     block = BEGIN_TABLE + "\n" + "\n".join(lines) + "\n" + END_TABLE + "\n"
     old = open(MD, encoding="utf-8", newline="").read().replace("\r\n", "\n") if os.path.exists(MD) else ""
@@ -237,13 +233,16 @@ def make_table(log):
         u = units[code]
         prop = propose(u["weapons"])
         for w in sorted(u["weapons"], key=lambda w: w["n"]):
-            btn, img = old.get((code, str(w["n"])), (prop[w["n"]], ""))
+            btn, _img = old.get((code, str(w["n"])), (prop[w["n"]], ""))
             if any(x["type"] == "DGun" for x in u["weapons"]):
                 btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
             rows.append([FACTION[u["fac"]], u["human"], code, str(w["n"]), w["desc"], friendly_type(w), target(w), str(w["range"]), "%.1f s" % w["reload"],
-                         dmg, w["wname"], btn, img])
+                         dmg, w["wname"], btn, "", "", "", ""])   # (Weapon image, Category, Tech and DPS are worked out by weapon_categories.py)
     write_csv(rows)
+    import weapon_categories
+    weapon_categories.main(quiet=True)
+    rows = [[r[c] for c in COLUMNS] for r in read_table(CSV)]
     write_md(rows)
     print("%d rows, %d units" % (len(rows), len(units)))
     make_cruise(units)
@@ -333,12 +332,12 @@ def make_lua(src):
             if r["Fire button"]:
                 by[r["Fire button"]].append(int(r["#"]))
         lines.append("	%s = { L = { %s }, R = { %s }, M = { %s } }," % (code, ", ".join(map(str, sorted(by["LMB"]))), ", ".join(map(str, sorted(by["RMB"]))), ", ".join(map(str, sorted(by["MMB"])))))
-    # the pictures: the weapons whose category has a picture (weapon-images/weapon_<category>.png; categories csv made by weapon_categories.py)
+    # the pictures: the weapons that have a Weapon image (weapon-images/weapon_<category>.png, worked out by weapon_categories.py into the csv)
     pics = {}
-    if os.path.exists(CATEGORIES_CSV) and os.path.isdir(IMAGES):
+    if os.path.isdir(IMAGES):
         have = {f[len("weapon_"):-len(".png")] for f in os.listdir(IMAGES) if f.startswith("weapon_") and f.endswith(".png")}
-        for r in read_table(CATEGORIES_CSV):
-            if r["Category"] in have:
+        for r in rows:
+            if r.get("Category") and r.get("Weapon image") and r["Category"] in have:
                 pics.setdefault(r["Code"], {})[int(r["#"])] = r["Category"]
     pic_lines = "\n".join("	%s = { %s }," % (c, ", ".join('[%d] = "%s"' % (n, pics[c][n]) for n in sorted(pics[c]))) for c in sorted(pics))
     text = open(GADGET, encoding="utf-8", newline="").read()

@@ -1,7 +1,8 @@
 """Groups the weapons of Renegade (game-modes/renegade_weapons.csv) into picture categories for the weapon panel.
 
-  python weapon_categories.py        writes game-modes/renegade-weapon-categories.md (the categories with counts and examples) and game-modes/renegade_weapon_categories.csv
-                                     (every weapon on a mouse button with its proposed category and picture name; a proposal, the csv of the weapons is not changed)
+  python weapon_categories.py        fills the columns Category, Weapon image (the file name of the picture), Tech (the tech level of the unit) and DPS of game-modes/renegade_weapons.csv
+                                     (they are worked out, do not change them there; the column Fire button is not touched) and writes game-modes/renegade-weapon-categories.md (the pictures,
+                                     their limits, the categories with counts and examples)
 
 Heat rays (description with "heat ray") are one category (yellow), the lasers of the heaviest kind (tachyon, ion accelerator, "ultra" word or the ultra limit of the damage) another (laser-ultra, blue and very thick).
 A weapon gets a family (laser, plasma cannon, missile launcher ...) from its Type and its description. The families laser, plasma, cannon, missile and machine-gun have four sizes (light, medium, heavy, ultra):
@@ -16,7 +17,6 @@ repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
 GM = os.path.join(repo, "LevelEditor", "game-modes")
 SRC = os.path.join(GM, "renegade_weapons.csv")
 OUT_MD = os.path.join(GM, "renegade-weapon-categories.md")
-OUT_CSV = os.path.join(GM, "renegade_weapon_categories.csv")
 
 TECH_CSV = os.path.join(GM, "renegade_unit_tech.csv")
 LIMITS_CSV = os.path.join(GM, "renegade_weapon_limits.csv")
@@ -206,27 +206,38 @@ def limits_text(name):
     return "damage per second, by the tech level of the unit: " + "; ".join(parts) if parts else "none"
 
 
-def main():
-    rows = [r for r in read_csv(SRC) if (r["Fire button"] or "").strip() or classify(r)[0] == "anti-nuke"]
+COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Category", "Tech", "DPS"]
+
+
+def main(quiet=False):
+    allrows = read_csv(SRC)
     cat = collections.defaultdict(list)
-    out = []
-    for r in rows:
+    rows = []
+    for r in allrows:
+        # a weapon is in a category when it is shown (it has a button) or is an anti-nuke launcher (fires by itself); the others (dummies, footsteps) have empty cells
+        shown = (r["Fire button"] or "").strip() or classify(r)[0] == "anti-nuke"
+        r["Tech"] = str(TECH.get(r["Code"], "")) if r["Code"] in TECH else ""
+        r["DPS"] = "%d" % round(dps(r)) if shown else ""
+        if not shown:
+            r["Category"], r["Weapon image"] = "", ""
+            continue
         fam, _ = classify(r)
         name = ("%s-%s" % (fam, sized(fam, r))) if fam in SIZED else fam
+        r["Category"] = name
+        r["Weapon image"] = "weapon_%s.png" % name if os.path.exists(os.path.join(IMAGES, "weapon_%s.png" % name)) else ""
         cat[name].append(r)
-        out.append([r["Faction"], r["Unit"], r["Code"], r["#"], r["Weapon"], r["Type"], r["Damage"], TECH.get(r["Code"], ""), name, "weapon_%s.png" % name if os.path.exists(os.path.join(IMAGES, "weapon_%s.png" % name)) else ""])
-    out.sort(key=lambda o: (order(o[8]), o[0], o[1], int(o[3])))
-    with open(OUT_CSV, "w", encoding="utf-8-sig", newline="") as fh:
+        rows.append(r)
+    with open(SRC, "w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh, delimiter=";")
-        w.writerow(["Faction", "Unit", "Code", "#", "Weapon", "Type", "Damage", "Tech", "Category", "Picture"])
-        for o in out:
-            w.writerow(o)
+        w.writerow(COLUMNS)
+        for r in allrows:
+            w.writerow([(r.get(col) or "") for col in COLUMNS])
     names = sorted(cat, key=order)
     have = [n for n in names if os.path.exists(os.path.join(IMAGES, "weapon_%s.png" % n))]
     lines = ["# Renegade: weapon categories for the pictures of the panel", "",
              "[Renegade](renegade.md) · [Weapon table](renegade-weapons.md) · [Start page](../../README.md)", "",
              "%d weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), %d different weapon definitions, grouped into **%d categories** (a picture each, %d drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; "
-             "`renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`)." % (len(rows), len({r["Weapon name"] for r in rows}), len(cat), len(have)), "",
+             "the columns Category, Weapon image, Tech and DPS of `renegade_weapons.csv` hold the result for every weapon; the pictures are drawn by `weapon_art_build.py` (folder `weapon-images`)." % (len(rows), len({r["Weapon name"] for r in rows}), len(cat), len(have)), "",
              "## Overview of all pictures", "",
              "The pictures as the panel shows them (the name is the one in the game). Where the family has sizes, the last column tells for which damage per second (DPS = damage of one shot / reload) a weapon gets this picture, by the tech level of its unit; the limits are explained below.", "",
              "| Name | Picture | Valid for | Weapons |", "|---|---|---|---|"] + [
@@ -251,6 +262,8 @@ def main():
         lines.append("| %s | %s | %d | %d | %s |" % (name, pic, len(l), len({r["Code"] for r in l}), examples.replace("|", "/")))
     open(OUT_MD, "w", encoding="utf-8", newline="\n").write("\n".join(lines) + "\n")
     print(len(rows), "weapons,", len(cat), "categories,", len(have), "with a picture")
+    if quiet:
+        return
     for name in names:
         print("%4d %-22s %s" % (len(cat[name]), name, "; ".join(k for k, _ in collections.Counter((r["Weapon"]) for r in cat[name]).most_common(2))[:90]))
 

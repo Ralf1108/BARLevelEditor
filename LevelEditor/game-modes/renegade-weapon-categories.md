@@ -2,7 +2,7 @@
 
 [Renegade](renegade.md) · [Weapon table](renegade-weapons.md) · [Start page](../../README.md)
 
-910 weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), 831 different weapon definitions, grouped into **39 categories** (a picture each, 39 drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; `renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`).
+910 weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), 831 different weapon definitions, grouped into **39 categories** (a picture each, 39 drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; the columns Category, Weapon image, Tech and DPS of `renegade_weapons.csv` hold the result for every weapon; the pictures are drawn by `weapon_art_build.py` (folder `weapon-images`).
 
 ## Overview of all pictures
 
