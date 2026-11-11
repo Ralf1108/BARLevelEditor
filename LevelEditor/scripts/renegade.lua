@@ -79,6 +79,19 @@ end
 local function setCamera(u)
 	local px, py, pz = eye(u)
 	if not px then return end
+	if R.third then
+		-- third person (Shift): the camera orbits the unit at the same look direction: behind it and above, the unit stays where it is on the screen whatever the pitch; the aim (the
+		-- crosshair in the middle of the screen) works as before, the unit shoots at the point the crosshair points at
+		local yaw, pit = math.rad(R.yaw), math.rad(R.pitch)
+		local fx, fz = math.sin(yaw), math.cos(yaw) -- (yaw 0 looks along +z, as the camera rotation ry = YAW0 - yaw says)
+		local cp, sp = math.cos(pit), math.sin(pit)
+		local dist = math.max(100, (Spring.GetUnitRadius(u) or 30) * 3.5)
+		local up = dist * 0.12 -- (low: the unit stays above the panel at the bottom of the screen)
+		px = px - cp * fx * dist - sp * fx * up
+		py = py - sp * dist + cp * up
+		pz = pz - cp * fz * dist - sp * fz * up
+		py = math.max(py, Spring.GetGroundHeight(px, pz) + 8)
+	end
 	Spring.SetCameraState({ name = "fps", mode = 0, oldHeight = 0, px = px, py = py, pz = pz, rx = math.pi / 2 - math.rad(R.pitch), ry = R.YAW0 - math.rad(R.yaw), rz = 0 }, 0)
 end
 
@@ -378,7 +391,7 @@ function widget:Update()
 	if u ~= R.unit then
 		if R.hidden and Spring.ValidUnitID(R.unit or -1) then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 		R.unit = u
-		Spring.SetUnitNoDraw(u, true)
+		Spring.SetUnitNoDraw(u, not R.third)
 		Spring.SetUnitNoSelect(u, true)
 	end
 	-- Tab: polled, not taken from KeyPress (as a commander the game's own use of the key came first and the press never reached this widget)
@@ -393,6 +406,13 @@ function widget:Update()
 	local alt = Spring.GetModKeyState()
 	if alt and not R.altWas then R.full = not R.full end
 	R.altWas = alt
+	-- Shift switches between the first person view and the third person view (the camera behind and above the unit; the unit is drawn then); not while the menu has the keyboard (capital letters)
+	local shift = select(4, Spring.GetModKeyState())
+	if shift and not R.shiftWas and not R.menu and R.on then
+		R.third = not R.third
+		Spring.SetUnitNoDraw(u, not R.third)
+	end
+	R.shiftWas = shift
 	if not R.fake and not R.menu then
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
 		local vsx, vsy = Spring.GetViewGeometry()
@@ -1004,6 +1024,8 @@ local function panel(vsx, vsy)
 	card(x1, y1, x1 + w, y1 + total, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
 	gl.Color(1, 0.3, 0.2, 1)
 	gl.Text("Alt: FULL FIRE " .. (R.full and "ON" or "off"), x1 + w - 6 * s, y1 + total + 6 * s, 13 * s, "ro") -- (above the panel, right)
+	gl.Color(0.7, 0.85, 1, 1)
+	gl.Text("Shift: 3rd person " .. (R.third and "ON" or "off"), x1 + 6 * s, y1 + total + 6 * s, 13 * s, "o") -- (above the panel, left)
 	-- a row: a card with the picture of the weapon over the whole width as the background, the cooldown like the one of the abilities of Evolution (a grey fill from the right
 	-- that runs down, the seconds left), the colour of the range on top of the picture, a strip and the tag in the colour of the button, the name, and the values with their symbols
 	for i, r in ipairs(rows) do
