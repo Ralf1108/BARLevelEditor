@@ -1032,6 +1032,8 @@ local function panel(vsx, vsy)
 				local pn = picName(u, i)
 				local name = (pn and niceName(pn)) or (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if sameCount(ud, list) > 1 then name = name .. "  x" .. sameCount(ud, list) end
+				local cpn = wd.customParams or {}
+				if cpn.smart_backup then name = name .. "  (vertical)" elseif cpn.smart_priority then name = name .. "  (direct)" end -- (the two trajectories of the smart weapon selection units)
 				local state = (not drops) and reach(ud, slots, list, R.hit) or nil
 				local cone, coneSide = outOfCone(u, ud, i)
 				if cone and not slots.aa[i] then state = "red" else cone = false end

@@ -195,7 +195,7 @@ Armada;Flying Epoch;armfepocht4;5;Secondary rapid-fire heavy plasma cannon;Plasm
 Armada;Flying Epoch;armfepocht4;6;Pop-up rapid-fire g2a missile launcher;Missile;Air;840;1.7 s;150 (air);armfepocht4_ferret_missile;MMB;weapon_rocket-salvo.png;rocket-salvo;3;88
 Armada;Flying Epoch;armfepocht4;7;Pop-up rapid-fire g2a missile launcher;Missile;Air;840;1.7 s;150 (air);armfepocht4_ferret_missile;MMB;weapon_rocket-salvo.png;rocket-salvo;3;88
 Armada;Gauntlet;armguard;1;Heavy g2g long range plasma cannon;Plasma;Ground;1220;2.8 s;300;armguard_plasma;LMB;weapon_plasma-light.png;plasma-light;1;107
-Armada;Gauntlet;armguard;2;Heavy g2g long range plasma cannon;Plasma;Ground;1220;2.8 s;300;armguard_plasma_high;LMB;weapon_plasma-light.png;plasma-light;1;107
+Armada;Gauntlet;armguard;2;Heavy g2g long range plasma cannon;Plasma;Ground;1220;2.8 s;300;armguard_plasma_high;RMB;weapon_plasma-light.png;plasma-light;1;107
 Armada;Gauntlet;armguard;3;Heavy g2g long range plasma cannon;Plasma;Ground;1220;2.8 s;0;armguard_smart_trajectory_dummy;;;;1;
 Armada;Ghost;armspy;1;Dummy Weapon;Melee;Water;100;0.1 s;0;armspy_crawl_dummy;;;;2;
 Armada;Gorgon;armkraken;1;Rapid-fire gauss cannon;Cannon;Air+Ground;800;0.3 s;180;armkraken_armmech_cannon;LMB;weapon_gauss.png;gauss;2;600
@@ -262,7 +262,7 @@ Armada;Pulsar;armanni;1;Heavy long-range g2g tachyon accelerator beam;Beam laser
 Armada;Ragnarok;armvulc;1;Rapid-fire long-range plasma cannon;Plasma;Air+Ground;5750;0.6 s;1625;armvulc_rflrpc;LMB;weapon_plasma-ultra.png;plasma-ultra;2;2708
 Armada;Ratte;armrattet4;1;Huge g2g plasma cannon;Plasma;Ground;1000;1.5 s;1200;armrattet4_arm_bosscannon;LMB;weapon_plasma-heavy.png;plasma-heavy;3;800
 Armada;Rattlesnake;armamb;1;Pop-up heavy  long range g2g plasma cannon;Plasma;Ground;1380;1.8 s;350;armamb_armamb_gun;LMB;weapon_plasma-medium.png;plasma-medium;2;194
-Armada;Rattlesnake;armamb;2;Pop-up heavy  long range g2g plasna cannon;Cannon;Ground;1380;1.8 s;350;armamb_armamb_gun_high;LMB;weapon_cannon-medium.png;cannon-medium;2;194
+Armada;Rattlesnake;armamb;2;Pop-up heavy  long range g2g plasna cannon;Cannon;Ground;1380;1.8 s;350;armamb_armamb_gun_high;RMB;weapon_cannon-medium.png;cannon-medium;2;194
 Armada;Rattlesnake;armamb;3;Pop-up heavy  long range g2g plasma cannon;Plasma;Ground;1380;1.8 s;0;armamb_smart_trajectory_dummy;;;;2;
 Armada;Razorback;armraz;1;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;Ground;475;0.6 s;105;armraz_mech_rapidlaser;LMB;weapon_laser-heavy.png;laser-heavy;3;175
 Armada;Recluse;armsptk;1;Parabolic trajectory g2g multi-rocket launcher;Missile;Ground;575;3.7 s;200;armsptk_adv_rocket;LMB;weapon_rocket-salvo.png;rocket-salvo;2;54
@@ -316,7 +316,7 @@ Armada;units.names.armcomnew;armcomnew;3;Disintegrator;D-gun;All;250;0.9 s;99999
 Armada;units.names.armprowl;armprowl;1;Double close-quarters gauss cannon;Cannon;Air+Ground;350;0.7 s;235;armprowl_armmech_cannon;LMB;weapon_gauss.png;gauss;3;336
 Armada;units.names.armprowl;armprowl;2;Guided g2a missile launcher;Missile;Air;600;2.0 s;85 (air);armprowl_armamph_missile;RMB;weapon_missile-heavy.png;missile-heavy;3;42
 Armada;Vanguard;armvang;1;Heavy long-range g2g plasma cannon;Plasma;Ground;1450;8.0 s;1265;armvang_shocker_low;LMB;weapon_plasma-heavy.png;plasma-heavy;3;158
-Armada;Vanguard;armvang;2;Heavy long-range g2g plasma cannon;Plasma;Ground;1450;8.0 s;1265;armvang_shocker_high;LMB;weapon_plasma-heavy.png;plasma-heavy;3;158
+Armada;Vanguard;armvang;2;Heavy long-range g2g plasma cannon;Plasma;Ground;1450;8.0 s;1265;armvang_shocker_high;RMB;weapon_plasma-heavy.png;plasma-heavy;3;158
 Armada;Vanguard;armvang;3;Heavy long-range g2g plasma cannon;Plasma;Ground;1450;8.0 s;0;armvang_smart_trajectory_dummy;;;;3;
 Armada;Webber;armspid;1;Close-quarters light EMP laser;Beam laser;Air+Ground;280;1.7 s;850;armspid_spider;LMB;weapon_laser-medium.png;laser-medium;2;500
 Armada;Welder;armzeus;1;Close-quarters g2g lightning rifle;Lightning;Ground;280;1.7 s;22;armzeus_lightning;LMB;weapon_lightning.png;lightning;2;13
@@ -329,7 +329,7 @@ Cortex;Advanced Exploiter;cormexp;1;High energy g2g laser;Beam laser;Ground;650;
 Cortex;Advanced Exploiter;cormexp;2;Heavy g2g/g2a barrage missile launcher;Missile;Air+Ground;650;5.9 s;260;cormexp_cormexp_rocket;RMB;weapon_missile-medium.png;missile-medium;2;44
 Cortex;Aggravator;corstorm;1;Rockets;Missile;Air+Ground;475;3.8 s;157;corstorm_cor_bot_rocket;LMB;weapon_missile-light.png;missile-light;1;41
 Cortex;Agitator;corpun;1;Long-range g2g plasma cannon;Plasma;Ground;1245;3.2 s;350;corpun_plasma;LMB;weapon_plasma-light.png;plasma-light;1;109
-Cortex;Agitator;corpun;2;Long-range g2g plasma cannon;Plasma;Ground;1245;3.2 s;350;corpun_plasma_high;LMB;weapon_plasma-light.png;plasma-light;1;109
+Cortex;Agitator;corpun;2;Long-range g2g plasma cannon;Plasma;Ground;1245;3.2 s;350;corpun_plasma_high;RMB;weapon_plasma-light.png;plasma-light;1;109
 Cortex;Agitator;corpun;3;Long-range g2g plasma cannon;Plasma;Ground;1245;3.2 s;0;corpun_smart_trajectory_dummy;;;;1;
 Cortex;Alligator;corseal;1;PlasmaCannon;Plasma;Air+Ground;440;0.9 s;116;corseal_cor_croc;LMB;weapon_plasma-medium.png;plasma-medium;2;129
 Cortex;Angler;cortitan;1;Heavy homing torpedo launcher;Torpedo;All;400;8.0 s;1200;cortitan_heavy_torpedo;LMB;weapon_torpedo.png;torpedo;2;150
@@ -628,7 +628,7 @@ Cortex;Orthrus;coranavaldefturret;2;Heavy Plasma Blast Cannon;Plasma;Air+Ground;
 Cortex;Overlord;corhltfus;1;High energy g2g laser;Beam laser;Ground;630;0.7 s;750;corhltfus_corfhlt_laser;LMB;weapon_laser-heavy.png;laser-heavy;2;1071
 Cortex;Overseer;corgate;1;PlasmaRepulsor;Shield;;10;1.0 s;0;corgate_repulsor;;;;2;
 Cortex;Persecutor;cortoast;1;Pop-up long-range heavy g2g plasma cannon;Plasma;Ground;1390;2.1 s;420;cortoast_cortoast_gun;LMB;weapon_plasma-medium.png;plasma-medium;2;200
-Cortex;Persecutor;cortoast;2;Pop-up long-range heavy g2g plasma cannon;Plasma;Ground;1390;2.1 s;420;cortoast_cortoast_gun_high;LMB;weapon_plasma-medium.png;plasma-medium;2;200
+Cortex;Persecutor;cortoast;2;Pop-up long-range heavy g2g plasma cannon;Plasma;Ground;1390;2.1 s;420;cortoast_cortoast_gun_high;RMB;weapon_plasma-medium.png;plasma-medium;2;200
 Cortex;Persecutor;cortoast;3;Pop-up long-range heavy g2g plasma cannon;Plasma;Ground;1390;2.1 s;0;cortoast_smart_trajectory_dummy;;;;2;
 Cortex;Poison Arrow;corparrow;1;PoisonArrowCannon;Cannon;Air+Ground;575;1.8 s;370;corparrow_cor_parrow;LMB;weapon_cannon-medium.png;cannon-medium;2;206
 Cortex;Pounder;corlevlr;1;RiotCannon;Cannon;Air+Ground;315;1.8 s;190;corlevlr_corlevlr_weapon;LMB;weapon_cannon-light.png;cannon-light;1;106
@@ -692,7 +692,7 @@ Legion;Ajax;legafigdef;1;Heavy A2A Gatling Guns;Laser;Air;600;1.0 s;80 (air);leg
 Legion;Alaris;leghades;1;Dual-Feed Medium Shotgun;Laser;Air+Ground;211;1.2 s;10;leghades_legion_shotgun;LMB;weapon_shotgun.png;shotgun;1;8
 Legion;Alpheus;legah;1;Light G2A Gatling Gun;Laser;Air;700;0.4 s;5;legah_aagun;LMB;weapon_laser-light.png;laser-light;1;12
 Legion;Amputator;legcluster;1;Long-Range g2g Cluster Plasma Cannon;Plasma;Ground;1000;6.0 s;300;legcluster_plasma;LMB;weapon_plasma-light.png;plasma-light;1;50
-Legion;Amputator;legcluster;2;Long-Range g2g Cluster Plasma Cannon;Plasma;Ground;1000;6.0 s;300;legcluster_plasma_high;LMB;weapon_plasma-light.png;plasma-light;1;50
+Legion;Amputator;legcluster;2;Long-Range g2g Cluster Plasma Cannon;Plasma;Ground;1000;6.0 s;300;legcluster_plasma_high;RMB;weapon_plasma-light.png;plasma-light;1;50
 Legion;Amputator;legcluster;3;Long-Range g2g Cluster Plasma Cannon;Plasma;Ground;1000;4.0 s;0;legcluster_smart_trajectory_dummy;;;;1;
 Legion;Apollyon;legapollyon;1;Heavy rotary cannon;Laser;Air+Ground;750;0.4 s;50;legapollyon_legapollyon_gatling_big;RMB;weapon_machine-gun-heavy.png;machine-gun-heavy;3;125
 Legion;Apollyon;legapollyon;2;Heavy rotary cannon;Laser;Air+Ground;750;0.4 s;50;legapollyon_legapollyon_gatling_big;RMB;weapon_machine-gun-heavy.png;machine-gun-heavy;3;125
@@ -776,7 +776,7 @@ Legion;Epic Tyrannus;legfortt4;5;scav rapid fire plasma gun;Laser;Air+Ground;800
 Legion;Epic Tyrannus;legfortt4;6;Advanced d2a rapid missile launcher;Starburst missile;Air;1240;0.2 s;154 (air);legfortt4_aa_missiles;MMB;weapon_heavy-rocket.png;heavy-rocket;3;770
 Legion;Euryale;legctl;1;Homing Torpedo Launcher;Torpedo;All;600;1.5 s;225;legctl_torplauncher;LMB;weapon_torpedo.png;torpedo;1;150
 Legion;Eviscerator;legacluster;1;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;Ground;1380;3.5 s;414;legacluster_plasma;LMB;weapon_plasma-medium.png;plasma-medium;2;118
-Legion;Eviscerator;legacluster;2;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;Ground;1380;3.5 s;414;legacluster_plasma_high;LMB;weapon_plasma-medium.png;plasma-medium;2;118
+Legion;Eviscerator;legacluster;2;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;Ground;1380;3.5 s;414;legacluster_plasma_high;RMB;weapon_plasma-medium.png;plasma-medium;2;118
 Legion;Eviscerator;legacluster;3;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;Ground;1380;2.6 s;0;legacluster_smart_trajectory_dummy;;;;2;
 Legion;Fulmen;leganavalaaturret;1;Dual Rotary Microflak Cannons;Cannon;Air;875;0.2 s;58 (air);leganavalaaturret_leg_t2_microflak;LMB;weapon_flak.png;flak;2;290
 Legion;Gelasma;legfmg;1;Rapid-Fire Gatling Gun;Laser;Air+Ground;575;0.4 s;18;legfmg_gatling_gun;LMB;weapon_laser-light.png;laser-light;1;45
@@ -932,7 +932,7 @@ Legion;Mukade;legpede;4;Parabolic trajectory g2g multi-rocket launcher;Missile;G
 Legion;Mukade;legpede;5;Railgun;Laser;Air+Ground;850;4.5 s;500;legpede_railgunt2;RMB;weapon_railgun.png;railgun;3;111
 Legion;Mukade;legpede;6;Rapid-fire a2g machine guns;Laser;Ground;575;0.4 s;21;legpede_armmg_weapon;LMB;weapon_machine-gun-heavy.png;machine-gun-heavy;3;52
 Legion;Myrmidon;legeallterrainmech;1;Heavy Long-Range Cluster Plasma Cannon;Plasma;Air+Ground;1100;2.3 s;345;legeallterrainmech_plasma_low;LMB;weapon_plasma-heavy.png;plasma-heavy;3;150
-Legion;Myrmidon;legeallterrainmech;2;Heavy Long-Range High-Trajectory Cluster Plasma Cannon;Plasma;Air+Ground;1100;2.3 s;345;legeallterrainmech_plasma_high;LMB;weapon_plasma-heavy.png;plasma-heavy;3;150
+Legion;Myrmidon;legeallterrainmech;2;Heavy Long-Range High-Trajectory Cluster Plasma Cannon;Plasma;Air+Ground;1100;2.3 s;345;legeallterrainmech_plasma_high;RMB;weapon_plasma-heavy.png;plasma-heavy;3;150
 Legion;Myrmidon;legeallterrainmech;3;Smart Artillery Targeting System;Artillery;;1380;2.6 s;0;legeallterrainmech_smart_trajectory_dummy;;;;3;
 Legion;Myrmidon;legeallterrainmech;4;Advanced g2a Salvo Missile Launcher;Missile;Air;760;2.0 s;37 (air);legeallterrainmech_light_antiair_missile;MMB;weapon_rocket-salvo.png;rocket-salvo;3;18
 Legion;Myrmidon;legeallterrainmech;5;Dual-Unit Heatray-Drone Control Matrix;Cannon;;1300;2.5 s;0;legeallterrainmech_drone_controller;;;;3;

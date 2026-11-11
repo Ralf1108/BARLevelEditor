@@ -31,9 +31,6 @@ GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
 COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Category", "Tech", "DPS"]
 BUTTONS = ("LMB", "RMB", "MMB", "")
-# the units whose weapon 1 (low trajectory) and weapon 2 (high trajectory) are one weapon with smart selection (customParams.weapons_smart_select; the script and the gadget unit_weapon_smart_select_helper
-# of BAR choose): both on the same button (measured with zz_smart.lua; the gadget does the same with the weapon customParams smart_priority / smart_backup)
-SMART_UNITS = {"armamb", "armguard", "armvang", "corpun", "cortoast", "legacluster", "legcluster", "legeallterrainmech"}
 
 
 def clean(x):
@@ -237,8 +234,6 @@ def make_table(log):
         prop = propose(u["weapons"])
         for w in sorted(u["weapons"], key=lambda w: w["n"]):
             btn, _img = old.get((code, str(w["n"])), (prop[w["n"]], ""))
-            if code in SMART_UNITS and w["n"] == 2:
-                btn = old.get((code, "1"), (prop.get(1, ""), ""))[0]   # smart weapon selection: the high trajectory weapon (2) is fired together with the low one (1), by the same button
             if any(x["type"] == "DGun" for x in u["weapons"]):
                 btn = prop[w["n"]]   # a unit with a D-gun (the commanders): always the rule (the Disintegrator on the right button)
             dmg = "%d" % w["dmg"] if w["dmg"] > 2 else ("%d (air)" % w["vtol"] if w["vtol"] > 2 else "0")
