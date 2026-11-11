@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import weapon_art as wa
 import weapon_art2 as w2
 from weapon_art import W, H, part, mask_of, poly, rrect, mix
-from weapon_art2 import new, blur_add, sphere, smoke, shell, CY
+from weapon_art2 import new, blur_add, sphere, smoke, shell, muzzle_glow, CY
 
 
 def line_glow(out, pts, color, width, blur=6):
@@ -34,12 +34,6 @@ def bolt(x0, y0, x1, y1, rnd, jag, steps=26):
         pts.append((x0 + (x1 - x0) * t + rnd.uniform(-jag * 0.3, jag * 0.3), y0 + (y1 - y0) * t + rnd.uniform(-jag, jag)))
     pts.append((x1, y1))
     return pts
-
-
-def muzzle_glow(out, color, r=1.0):
-    gl = new()
-    ImageDraw.Draw(gl).ellipse((1224 - 20 * r, 350 - 10 * r, 1318, 492 + 10 * r), fill=color + (255,))
-    out.alpha_composite(gl.filter(ImageFilter.GaussianBlur(9)))
 
 
 def muzzle_flash(out, k=1.0, length=300):
@@ -104,6 +98,7 @@ def stun(body, tip):
 def flak(body, tip):
     """a flak cannon: muzzle flash and, far right, three air bursts: dark smoke with an orange flash and fragments"""
     out = body.copy()
+    muzzle_glow(out, (255, 160, 50))
     muzzle_flash(out, 0.8, 260)
     rnd = random.Random(6)
     sh = new()
@@ -154,6 +149,7 @@ def lightning(body, tip):
 def machine_gun(body, tip, rows, thick, count, sparks):
     """a machine gun: muzzle flash and a stream of tracers in `rows` lines"""
     out = body.copy()
+    muzzle_glow(out, (255, 160, 50))
     muzzle_flash(out, 0.55 + 0.12 * rows, 200)
     rnd = random.Random(21)
     tr = new()
@@ -193,6 +189,7 @@ def gauss(body, tip):
 def artillery(body, tip):
     """artillery: a big muzzle blast, the dotted arc of the shell and the explosion where it lands"""
     out = body.copy()
+    muzzle_glow(out, (255, 160, 50))
     muzzle_flash(out, 1.1, 380)
     smoke(out, 1330, 1900, CY - 40, 70)
     pts = [(1330 + t * (tip - 330 - 1330), CY - 4 * 240 * t * (1 - t) + 150 * t * t) for t in [i / 60 for i in range(61)]]
@@ -211,6 +208,7 @@ def artillery(body, tip):
 def shotgun(body, tip):
     """a shotgun: a large muzzle flash and a spray of pellets widening to the right"""
     out = body.copy()
+    muzzle_glow(out, (255, 160, 50))
     muzzle_flash(out, 1.0, 340)
     rnd = random.Random(31)
     sp = new()
@@ -407,11 +405,44 @@ def bomb(body_unused, tip):
     return out
 
 
+def trefoil(out, cx, cy, r):
+    """the radiation sign: a yellow disc with three black blades and a black centre"""
+    s = new()
+    d = ImageDraw.Draw(s)
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(250, 205, 30, 255))
+    for k in range(3):
+        a0 = -90 + k * 120 - 30
+        d.pieslice((cx - r * 0.86, cy - r * 0.86, cx + r * 0.86, cy + r * 0.86), a0 - 30 + 30, a0 + 30 + 30, fill=(20, 20, 22, 255))
+    d.ellipse((cx - r * 0.50, cy - r * 0.50, cx + r * 0.50, cy + r * 0.50), fill=(250, 205, 30, 255))
+    d.ellipse((cx - r * 0.2, cy - r * 0.2, cx + r * 0.2, cy + r * 0.2), fill=(20, 20, 22, 255))
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=(20, 20, 22, 255), width=max(3, int(r * 0.06)))
+    out.alpha_composite(s)
+
+
+def nuke_missile(out, cx, cy, length, rad):
+    """a nuclear missile pointing right: all white with a radiation sign, a black and yellow warning ring behind the nose, dark fins and a long flame"""
+    w2.flame(out, cx - length, cy, length * 0.55, rad * 0.9)
+    g = np.zeros((H, W, 4), np.float32)
+    white = (246, 246, 250)
+    bm = mask_of(lambda d: (d.rounded_rectangle((cx - length, cy - rad, cx - length * 0.22, cy + rad), radius=int(rad * 0.3), fill=255),
+                            d.polygon([(cx - length * 0.24, cy - rad), (cx + length * 0.12, cy), (cx - length * 0.24, cy + rad)], fill=255)))
+    fin = mask_of(lambda d: (d.polygon([(cx - length, cy - rad), (cx - length * 0.7, cy - rad), (cx - length * 0.95, cy - rad * 2.6)], fill=255),
+                             d.polygon([(cx - length, cy + rad), (cx - length * 0.7, cy + rad), (cx - length * 0.95, cy + rad * 2.6)], fill=255)))
+    part(g, fin, (120, 124, 132), (40, 42, 48), bevel=3)
+    part(g, bm, white, tuple(int(c * 0.72) for c in white), bevel=max(4, int(rad / 4)), grain=0.03, spec=1.0)
+    ring = mask_of(lambda d: d.rectangle((cx - length * 0.36, cy - rad - 2, cx - length * 0.28, cy + rad + 2), fill=255))
+    part(g, wa.ImageChops_multiply(ring, bm), (230, 190, 40), (120, 90, 20), bevel=2)
+    ring2 = mask_of(lambda d: d.rectangle((cx - length * 0.80, cy - rad - 2, cx - length * 0.78, cy + rad + 2), fill=255))
+    part(g, wa.ImageChops_multiply(ring2, bm), (40, 42, 48), (14, 15, 18), bevel=2)
+    out.alpha_composite(wa.to_img(g))
+    trefoil(out, cx - length * 0.55, cy, rad * 0.8)
+
+
 def nuclear(body_unused, tip):
-    """a nuclear missile: a big missile with flame at the left and a mushroom cloud far right"""
+    """a nuclear missile: a white missile with a radiation sign, in the middle at the left, and a mushroom cloud far right"""
     out = new()
-    w2.smoke(out, 200, 900, CY + 120, 40, seed=7, tone=(200, 200, 206))
-    w2.missile(out, 1300, CY + 120, 900, 52, flame_len=520)
+    w2.smoke(out, 150, 760, CY, 34, seed=7, tone=(200, 200, 206))
+    nuke_missile(out, 1560, CY, 1000, 72)
     cx = tip - 200
     ground = new()
     ImageDraw.Draw(ground).ellipse((cx - 260, CY + 190, cx + 260, CY + 250), fill=(120, 80, 50, 220))

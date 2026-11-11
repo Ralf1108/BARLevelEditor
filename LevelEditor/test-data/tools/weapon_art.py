@@ -1,8 +1,7 @@
 """Detailed pictures of weapons for the panel of Renegade, drawn with Pillow and numpy (no outside pictures, no AI): a metal body with bevelled plates, rust and scratches,
 hazard stripes, vents, cables and glowing parts.
 
-  python weapon_art.py [out_dir]    draws the cannon once and makes the three sizes of the laser from it (heavy: green, medium: blue, light: red; weapon_laser-<size>.png, the picture of a panel row: 768 x 128)
-                                    and writes the body of the cannon as source/laser_cannon_body.png (default out_dir: LevelEditor/game-modes/weapon-images)
+  The pictures are drawn by weapon_art_build.py (all of them, in parallel); this file has the helpers (part, hazard, hose ...), the laser cannon (gun_body) and its beam (beam_fx).
 """
 import math, os, random, sys
 import numpy as np
@@ -374,21 +373,3 @@ def gradient_bg(size):
 SIZES = [("laser-heavy", (60, 235, 90), 1.0, 2880), ("laser-medium", (70, 150, 255), 0.72, 3300), ("laser-light", (255, 70, 40), 0.45, 3900),
          ("laser-ultra", (60, 110, 255), 1.75, 2300),   # the heaviest laser: blue, a very thick beam (the Pulsar)
          ("heatray", (255, 205, 40), 1.35, 2600)]       # the heat ray: yellow (the Juggernaut)
-
-
-def main():
-    here = os.path.dirname(os.path.abspath(__file__))
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(here)), "game-modes", "weapon-images")
-    src = os.path.join(out, "source")
-    os.makedirs(src, exist_ok=True)
-    body = gun_body()
-    # the picture of the cannon without glow: the source of the pictures of the sizes (drawn by this file, kept to look at it)
-    body.crop((20, 190, 1330, 660)).save(os.path.join(src, "laser_cannon_body.png"))
-    for name, color, k, cw in SIZES:
-        big = beam_fx(body, color, k)
-        panel_banner(big, cw).save(os.path.join(out, "weapon_%s.png" % name))
-        print("weapon_%s.png" % name)
-
-
-if __name__ == "__main__":
-    main()

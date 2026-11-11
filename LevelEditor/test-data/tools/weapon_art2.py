@@ -12,6 +12,13 @@ from weapon_art import W, H, part, mask_of, poly, rrect, hazard, rivets, scratch
 CY = 421
 
 
+def muzzle_glow(out, color, r=1.0):
+    """the glow in the opening of the muzzle (so that it is not black)"""
+    gl = new()
+    ImageDraw.Draw(gl).ellipse((1224 - 20 * r, 350 - 10 * r, 1318, 492 + 10 * r), fill=color + (255,))
+    out.alpha_composite(gl.filter(ImageFilter.GaussianBlur(9)))
+
+
 def blur_add(out, layer, r):
     out.alpha_composite(layer.filter(ImageFilter.GaussianBlur(r)))
     out.alpha_composite(layer)
@@ -184,6 +191,7 @@ def smoke(out, x0, x1, cy, rad, seed=3, tone=(120, 120, 124)):
 def cannon_shot(body, k, tip):
     """a muzzle flash, a long smoke trail and the shell far to the right with a motion streak; k = size of the shell (1 = heavy)"""
     out = body.copy()
+    muzzle_glow(out, (255, 160, 50))
     fl = new()
     ImageDraw.Draw(fl).polygon([(1300, CY - 80 * k), (1560 + 120 * k, CY - 22 * k), (1740 + 180 * k, CY), (1560 + 120 * k, CY + 22 * k), (1300, CY + 80 * k)], fill=(255, 150, 40, 255))
     blur_add(out, fl, 12)

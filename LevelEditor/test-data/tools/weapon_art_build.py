@@ -4,7 +4,7 @@ missile, starburst, rocket salvo, torpedo) and weapon_art3.py (all the others); 
   python weapon_art_build.py [out_dir] [--only name,name] [--procs N]
       writes weapon_<category>.png (768 x 128) for every picture and the comparison sheets sheet1.png ... (all pictures one below the other, with their names);
       default out_dir: LevelEditor/game-modes/weapon-images (give another folder to look at the result first); --only draws only the pictures with these names; --procs: number of processes (default: the cores)
-      The body of the laser cannon is also kept as source/laser_cannon_body.png when the whole set is drawn.
+      When the whole set is drawn into weapon-images, the bodies (cannon, rocket pod, three launchers) are also kept as source/body_<name>.png (not packed into the game).
 
 Every picture: a body (the cannon, a launcher with a tube of some height, the rocket pod) or none, a function that adds the projectile or the effect (body, tip=...) where tip is the x of the front of the projectile
 (the same far right in every picture) and the width of the picture that the row shows (the lighter the weapon, the smaller it is in the row).
@@ -90,7 +90,8 @@ def main():
     if not only and not args:
         src = os.path.join(out, "source")
         os.makedirs(src, exist_ok=True)
-        wa.gun_body().crop((20, 190, 1330, 660)).save(os.path.join(src, "laser_cannon_body.png"))   # the cannon without glow, kept to look at it
+        for key in ("cannon", "pod", "launcher-90", "launcher-150", "launcher-190"):   # the bodies without glow and projectile (the cannon, the rocket pod and three launchers), kept to look at them
+            body_of(key).crop((20, 190, 1330, 660)).save(os.path.join(src, "body_%s.png" % key))
     # the pictures that need the same body are given to a process one after the other (jobs are taken in order, so a process keeps its bodies)
     with multiprocessing.Pool(min(procs, len(todo))) as pool:
         for name in pool.imap_unordered(render, [(out, j) for j in todo]):
