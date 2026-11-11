@@ -1,6 +1,6 @@
-﻿Family;Weak below;Strong from;Ultra from
-laser;100;800;6000
+﻿Family;Weak up to;Normal up to;Strong up to
+laser;100;800;3000
 plasma;60;400;1500
-cannon;60;250;600
+cannon;60;250;550
 missile;40;150;800
 machine-gun;20;80;
