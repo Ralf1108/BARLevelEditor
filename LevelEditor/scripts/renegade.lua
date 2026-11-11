@@ -1031,7 +1031,7 @@ local function panel(vsx, vsy)
 	end
 	for _, r in ipairs(rows) do if r.pic then w = 502 * s; break end end -- (with a picture the card of a row is 6 : 1)
 	local hh = 40 * s -- the health row
-	local x1, y1 = 8 * s, 210 * s -- at the left side, above the menu of the game (build / order menu at the bottom left; the minimap above): the middle of the screen stays free for the view
+	local x1, y1 = 8 * s, 8 * s -- in the bottom left corner, growing upwards (no build menu there in this mode): the middle of the screen stays free for the view
 	local total = #rows * h + hh + 8 * s
 	R.panel = { x1, y1, x1 + w, y1 + total }
 	card(x1, y1, x1 + w, y1 + total, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
