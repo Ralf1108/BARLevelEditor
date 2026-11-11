@@ -1263,6 +1263,29 @@ local function panel(vsx, vsy)
 		gl.Text(string.format("max speed %d", math.floor(ud.speed + 0.5)), (bx1 + bx2) / 2 + 20 * s, hy + 12 * s, 13 * s, "co") -- (the highest speed of the unit)
 		gl.Color(1, 1, 1, 1)
 	end
+	-- the binoculars: a unit with a range of 600 or more has them; a small card right of the weapons shows the symbol and how to use them (the mouse wheel: forward = on and closer, back = away)
+	if zoomLevels(u) > 0 then
+		local zx, zy, zw, zh = x1 + w + 8 * s, y1 + 6 * s, 76 * s, 82 * s
+		local on = (R.zoom or 0) > 0
+		card(zx, zy, zx + zw, zy + zh, { 0.16, 0.17, 0.21, 0.95 }, { 0.07, 0.07, 0.09, 0.95 }, on and { 0.4, 0.85, 1, 1 } or { 0.5, 0.55, 0.65, 0.7 }, 1.5)
+		local ic = on and { 0.4, 0.85, 1 } or { 0.7, 0.78, 0.92 }
+		local ox, oy = zx + zw / 2, zy + zh - 22 * s
+		gl.Color(ic[1], ic[2], ic[3], 1)
+		gl.LineWidth(2)
+		ring(ox - 11 * s, oy, 9 * s); ring(ox + 11 * s, oy, 9 * s)
+		gl.BeginEnd(GL.LINES, function()
+			gl.Vertex(ox - 3 * s, oy + 2 * s); gl.Vertex(ox + 3 * s, oy + 2 * s) -- the bridge
+			gl.Vertex(ox - 15 * s, oy + 9 * s); gl.Vertex(ox - 15 * s, oy + 14 * s) -- the eyepieces
+			gl.Vertex(ox + 15 * s, oy + 9 * s); gl.Vertex(ox + 15 * s, oy + 14 * s)
+		end)
+		gl.LineWidth(1)
+		gl.BeginEnd(GL.TRIANGLES, function() -- mouse wheel: up and down
+			gl.Vertex(zx + zw / 2 - 18 * s, zy + 38 * s); gl.Vertex(zx + zw / 2 - 11 * s, zy + 26 * s); gl.Vertex(zx + zw / 2 - 4 * s, zy + 38 * s)
+			gl.Vertex(zx + zw / 2 + 4 * s, zy + 26 * s); gl.Vertex(zx + zw / 2 + 11 * s, zy + 38 * s); gl.Vertex(zx + zw / 2 + 18 * s, zy + 26 * s)
+		end)
+		gl.Color(0.75, 0.82, 0.95, 1)
+		gl.Text(on and string.format("x%d", 1 + R.zoom) or "wheel", zx + zw / 2, zy + 8 * s, 14 * s, "co")
+	end
 	gl.Color(1, 1, 1, 1)
 	return x1, y1 + total, w, s
 end

@@ -11,7 +11,7 @@ function widget:GameFrame(f)
 	if f == 70 then Spring.SendLuaRulesMsg("ren|unit|armsnipe") end
 	if f == 110 then log("start: zoom", tostring(R.zoom), "fov", fov(), "baseFov", tostring(R.baseFov)) end
 	if f == 115 then R.zoomStep(true) end -- the wheel forward: on -- the middle button
-	if f == 125 then log("after the middle button: zoom", tostring(R.zoom), "fov", fov()); Spring.SendCommands("screenshot png") end
+	if f == 125 then Spring.SendCommands("screenshot png"); log("after the middle button: zoom", tostring(R.zoom), "fov", fov()); Spring.SendCommands("screenshot png") end
 	if f == 130 then R.zoomStep(true) end
 	if f == 131 then R.zoomStep(true) end
 	if f == 132 then R.zoomStep(true) end
