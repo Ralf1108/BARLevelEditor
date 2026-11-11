@@ -347,13 +347,28 @@ function widget:Update()
 		R.fire = (left and 1 or 0) + (right and 2 or 0) + (middle and 4 or 0)
 		if left and R.full then R.fire = 7 end -- FULL FIRE: the left button fires every weapon
 		if mx ~= cx or my ~= cy then
-			R.yaw = (R.yaw - (mx - cx) * SENS) % 360
-			R.pitch = math.max(-89, math.min(89, R.pitch + (my - cy) * SENS))
+			-- A jump of the cursor is not a turn (the bug "suddenly looking straight up"): after the menu, after a pause of the game or the window (the cursor was somewhere else, the
+			-- warp did not take effect while the window was not in front) and a jump of more than 40% of the screen in one frame only put the cursor back; the first frame after
+			-- one of these is skipped too.
+			local now = os.clock()
+			local gap = now - (R.lookClock or now)
+			R.lookClock = now
+			local jump = math.abs(mx - cx) > vsx * 0.4 or math.abs(my - cy) > vsy * 0.4
+			if R.skipLook or gap > 0.25 or jump then
+				R.lookSkipped = (R.lookSkipped or 0) + 1 -- (for the tests)
+				R.skipLook = false
+			else
+				R.yaw = (R.yaw - (mx - cx) * SENS) % 360
+				R.pitch = math.max(-89, math.min(89, R.pitch + (my - cy) * SENS))
+			end
 			Spring.WarpMouse(cx, cy)
+		else
+			R.lookClock = os.clock()
 		end
 		R.keys = keysNow()
 	elseif R.menu then
 		R.keys, R.fire = 0, 0 -- the menu: the mouse is free, nothing is steered or fired
+		R.skipLook = true -- (the cursor is somewhere else when the menu closes: no turn from that)
 	end
 	if not R.menu then Spring.SetMouseCursor("none") end
 	setCamera(u)
@@ -1162,11 +1177,10 @@ local function countdown(vsx, vsy)
 	gl.Text("respawn in " .. sec, vsx / 2, vsy * 0.52, vsy / 18, "co")
 end
 
--- The altimeter (always shown): a vertical scale at the right edge with the heights above the sea level (0 = the sea level). The ground is the yellow part at the bottom (its top is
--- the height of the ground under the unit), above it the height in the air (blue; orange when an aircraft is near the ground). An aircraft: the scale reaches up to the ground plus
--- its highest height (rules parameter renMaxAlt = its cruise altitude); any other unit: up to ALT_MAX. A tick every 50 or 100 m, a marker with the height, the number on top
--- (the height above the ground for an aircraft, the height of the ground for any other unit), GROUND and its height below.
-local ALT_MAX = 600
+-- The altimeter (always shown): a vertical scale at the right edge, fixed from 0 (the sea level) to 500 m above the sea level (ALT_MAX; everything plays inside it), a tick every 100 m. The ground is
+-- the yellow part at the bottom (its top is the height of the ground under the unit), above it the height in the air (blue; orange when an aircraft is near the ground), a marker with the
+-- height, the number on top (the height above the ground for an aircraft, the height of the ground for any other unit), GROUND and its height below.
+local ALT_MAX = 500
 local function altimeter(vsx, vsy)
 	local u = R.unit
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
@@ -1176,12 +1190,9 @@ local function altimeter(vsx, vsy)
 	local flies = ud.canFly
 	local ground = Spring.GetGroundHeight(x, z)
 	local air = math.max(0, flies and (y - ground) or 0)
-	local altMax = flies and tonumber(Spring.GetUnitRulesParam(u, "renMaxAlt")) or nil
-	local lo = math.min(0, ground, y)
-	local top = flies and (ground + (altMax or ALT_MAX)) or math.max(ALT_MAX, ground + 100)
-	top = math.max(top, y)
+	local lo, top = 0, ALT_MAX -- (a fixed scale: 0 = the sea level to 500 m above it; what is higher or lower stays at the edge)
 	local span = top - lo
-	local step = span <= 200 and 50 or (span <= 800 and 100 or 200)
+	local step = 100
 	local s = math.max(0.7, vsy / 1080)
 	local bx, h = vsx - 70 * s, 320 * s
 	local y0 = (vsy - h) / 2
