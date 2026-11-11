@@ -1545,7 +1545,10 @@ local function compass(vsx, vsy)
 		gl.Color(0.9, 0.9, 0.95, 1)
 		disc(gx, cy, 4 * s)
 		gl.Color(0.95, 0.97, 1, 1)
-		gl.Text(string.format("%d", math.floor(now + 0.5)), gx, cy - gr * 0.55, 15 * s, "co")
+		gl.Color(0, 0, 0, 0.5)
+		gl.Rect(gx - 20 * s, cy - gr * 0.84, gx + 20 * s, cy - gr * 0.38)
+		gl.Color(0.95, 0.97, 1, 1)
+		gl.Text(string.format("%d", math.floor(now + 0.5)), gx, cy - gr * 0.76, 24 * s, "co") -- (the digital number at the bottom of the dial)
 	end
 	gl.Color(1, 1, 1, 1)
 end
