@@ -1375,7 +1375,10 @@ local function slotsFor(ud)
 				local desc = tostring(wd.description or ""):lower()
 				-- air only: no damage against the ground, or the description names only air targets (g2a / a2a / s2a and no x2g / x2s: the Demon's shoulder rockets)
 				local airTok = desc:find("[gas]2a") ~= nil and desc:find("[gas]2[gs]") == nil
-				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = ((d <= 2 and v > d) or airTok), dgun = wd.type == "DGun" }
+				-- (or the unit definition says so: the weapon may only target aircraft, onlyTargets has vtol and not surface: the Karganeth's shoulder rockets have no "g2a" in their description)
+				local ot = wp.onlyTargets
+				local airOnly = type(ot) == "table" and ot.vtol == true and ot.surface ~= true
+				g = { range = tonumber(wd.range), list = {}, missile = MISSILE[wd.type] and true or false, aa = ((d <= 2 and v > d) or airTok or airOnly), dgun = wd.type == "DGun" }
 				-- a weapon that hits the ground and aircraft (the description says "g2a" or "a2a"): at an aircraft in the circle it locks on, at the ground the player aims
 				g.hy = not g.aa and d > 2 and v > 2 and (desc:find("g2a", 1, true) ~= nil or desc:find("a2a", 1, true) ~= nil)
 				if g.aa then g.missile = true end
