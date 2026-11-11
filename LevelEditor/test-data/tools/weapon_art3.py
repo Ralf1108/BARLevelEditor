@@ -1,4 +1,4 @@
-"""The rest of the weapon pictures for the panel of Renegade (d-gun, stun beam, flak, lightning, machine gun in three sizes, gauss, artillery, shotgun, EMP grenade, self-destruct), same style as
+"""The rest of the weapon pictures for the panel of Renegade (d-gun, stun beam, flak, lightning, machine gun in three sizes, gauss, artillery, shotgun, EMP grenade, self-destruct, railgun, flamethrower, depth charge, anti-air missile, bomb, nuclear), same style as
 weapon_art.py and weapon_art2.py: a gun or launcher on the left, the projectile or the effect far right (the same place in every picture).
 
   python weapon_art3.py [out_dir]    writes weapon_<category>.png (768 x 128) and sheet_new.png (all of them one below the other); default out_dir: LevelEditor/game-modes/weapon-images
@@ -276,6 +276,163 @@ def self_destruct(tip):
     return out
 
 
+def backdrop(body, top, bottom, rays=None):
+    """the body on a whole-picture background (water or sky) with a vertical gradient"""
+    bg = Image.fromarray(wa.vgrad((W, H), top, bottom).astype(np.uint8), "RGB").convert("RGBA")
+    if rays:
+        r = new()
+        rd = ImageDraw.Draw(r)
+        for x in range(200, W, 420):
+            rd.polygon([(x, 0), (x + 90, 0), (x - 160, H), (x - 260, H)], fill=rays)
+        bg.alpha_composite(r.filter(ImageFilter.GaussianBlur(30)))
+    bg.alpha_composite(body)
+    return bg
+
+
+def railgun(body, tip):
+    """a railgun: a very thin white-hot slug, its glowing streak and chevron shock waves behind it"""
+    out = body.copy()
+    muzzle_glow(out, (255, 190, 110), 0.7)
+    cx = tip - 40
+    streak = new()
+    ImageDraw.Draw(streak).polygon([(1330, CY - 4), (cx - 80, CY - 12), (cx - 80, CY + 12), (1330, CY + 4)], fill=(255, 210, 140, 255))
+    blur_add(out, streak, 8)
+    ch = new()
+    d = ImageDraw.Draw(ch)
+    for i in range(7):
+        x = cx - 120 - i * 260
+        if x < 1450:
+            break
+        h = 60 + i * 26
+        d.line([(x + 70, CY - h), (x, CY), (x + 70, CY + h)], fill=(190, 225, 255, 255 - i * 25), width=7)
+    blur_add(out, ch, 3)
+    needle = new()
+    ImageDraw.Draw(needle).polygon([(cx - 240, CY - 14), (cx - 40, CY - 14), (cx + 40, CY), (cx - 40, CY + 14), (cx - 240, CY + 14)], fill=(255, 250, 235, 255))
+    blur_add(out, needle, 3)
+    sphere(out, cx - 10, CY, 24, (255, 180, 90))
+    return out
+
+
+def flamethrower(body, tip):
+    """a flamethrower: a stream of fire that widens from the muzzle, with fire balls and black smoke at the end"""
+    out = body.copy()
+    muzzle_glow(out, (255, 140, 30))
+    cone = new()
+    ImageDraw.Draw(cone).polygon([(1310, CY - 30), (tip, CY - 190), (tip, CY + 190), (1310, CY + 30)], fill=(255, 120, 20, 200))
+    out.alpha_composite(cone.filter(ImageFilter.GaussianBlur(40)))
+    rnd = random.Random(13)
+    n = 16
+    for i in range(n):
+        tt = i / (n - 1)
+        x = 1360 + tt * (tip - 1500)
+        r = 26 + 130 * tt
+        fireball(out, x, CY + rnd.uniform(-1, 1) * (20 + 110 * tt), r * 0.75, 8, i)
+    smoke(out, tip - 380, tip - 20, CY - 70, 70, seed=4, tone=(50, 50, 56))
+    return out
+
+
+def depth_charge(body, tip):
+    """a depth charge: a steel barrel with hoops sinking in blue water, bubbles above and behind it"""
+    out = backdrop(body, (34, 110, 170), (8, 34, 70), (140, 210, 255, 26))
+    rnd = random.Random(17)
+    cx, cy = tip - 90, CY + 20
+    bub = new()
+    d = ImageDraw.Draw(bub)
+    for _ in range(90):
+        x = rnd.randint(1330, int(cx - 80))
+        y = cy - rnd.randint(0, 130) - (cx - x) * 0.04
+        r = rnd.randint(4, 15)
+        d.ellipse((x - r, y - r, x + r, y + r), outline=(215, 240, 255, 230), width=2, fill=(170, 215, 240, 60))
+    out.alpha_composite(bub)
+    g = np.zeros((H, W, 4), np.float32)
+    drum = mask_of(lambda dd: dd.rounded_rectangle((cx - 110, cy - 80, cx + 110, cy + 80), radius=34, fill=255))
+    part(g, drum, (110, 118, 124), (20, 26, 32), bevel=16, grain=0.05, spec=1.0, rust=0.2)
+    for dx in (-72, -4, 64):
+        part(g, wa.ImageChops_multiply(mask_of(lambda dd, dx=dx: dd.rectangle((cx + dx, cy - 86, cx + dx + 18, cy + 86), fill=255)), drum), (170, 130, 60), (70, 48, 18), bevel=3)
+    part(g, mask_of(lambda dd: dd.rounded_rectangle((cx - 36, cy - 104, cx + 36, cy - 76), radius=8, fill=255)), (200, 60, 50), (90, 24, 20), bevel=3)
+    out.alpha_composite(wa.to_img(g))
+    return out
+
+
+def aa_missile(body, tip):
+    """an anti-air missile: a slim missile with a smoke trail in the sky, a jet in front of it"""
+    out = backdrop(body, (70, 130, 210), (170, 205, 235))
+    cx = tip - 330
+    smoke(out, 1330, cx - 380, CY, 26, seed=11, tone=(235, 235, 240))
+    w2.missile(out, cx, CY, 380, 17, flame_len=240)
+    jet = new()
+    d = ImageDraw.Draw(jet)
+    j = tip - 70
+    d.polygon([(j - 180, CY - 14), (j - 30, CY - 14), (j + 60, CY), (j - 30, CY + 14), (j - 180, CY + 14)], fill=(52, 58, 68, 255))
+    d.polygon([(j - 110, CY - 12), (j - 150, CY - 100), (j - 120, CY - 100), (j - 50, CY - 12)], fill=(60, 66, 78, 255))
+    d.polygon([(j - 110, CY + 12), (j - 150, CY + 100), (j - 120, CY + 100), (j - 50, CY + 12)], fill=(60, 66, 78, 255))
+    d.polygon([(j - 180, CY - 14), (j - 215, CY - 50), (j - 195, CY - 50), (j - 150, CY - 14)], fill=(60, 66, 78, 255))
+    out.alpha_composite(jet.filter(ImageFilter.GaussianBlur(1)))
+    ex = new()
+    ImageDraw.Draw(ex).ellipse((j - 40, CY - 30, j + 40, CY + 30), fill=(255, 190, 70, 120))
+    blur_add(out, ex, 18)
+    return out
+
+
+def bomb_shape(length, rad, angle):
+    """a falling bomb (olive body, yellow band, fins) turned by `angle` degrees: an RGBA picture"""
+    g = np.zeros((H, W, 4), np.float32)
+    cx, cy = 600, CY
+    body = mask_of(lambda d: (d.rounded_rectangle((cx - length, cy - rad, cx - length * 0.15, cy + rad), radius=int(rad * 0.4), fill=255),
+                              d.polygon([(cx - length * 0.2, cy - rad), (cx + length * 0.1, cy), (cx - length * 0.2, cy + rad)], fill=255)))
+    fin = mask_of(lambda d: (d.polygon([(cx - length, cy - rad), (cx - length * 0.8, cy - rad), (cx - length * 0.95, cy - rad * 2.2)], fill=255),
+                             d.polygon([(cx - length, cy + rad), (cx - length * 0.8, cy + rad), (cx - length * 0.95, cy + rad * 2.2)], fill=255)))
+    part(g, fin, (90, 96, 100), (28, 30, 34), bevel=3)
+    part(g, body, (120, 128, 70), (34, 38, 18), bevel=max(4, rad // 4), grain=0.05, spec=1.0, rust=0.1)
+    band = mask_of(lambda d: d.rectangle((cx - length * 0.5, cy - rad - 2, cx - length * 0.42, cy + rad + 2), fill=255))
+    part(g, wa.ImageChops_multiply(band, body), (230, 190, 40), (120, 90, 20), bevel=2)
+    img = wa.to_img(g).crop((cx - length - 10, cy - int(rad * 2.4), cx + int(length * 0.15), cy + int(rad * 2.4)))
+    return img.rotate(angle, expand=True, resample=Image.BICUBIC)
+
+
+def bomb(tip):
+    """a bomb: the wing of an aircraft with a rack at the left, three bombs falling away from it in a curve"""
+    out = new()
+    wing = new()
+    d = ImageDraw.Draw(wing)
+    d.polygon([(120, CY - 200), (900, CY - 120), (900, CY - 70), (120, CY - 150)], fill=(86, 92, 102, 255))
+    d.polygon([(120, CY - 200), (900, CY - 120), (900, CY - 110), (120, CY - 188)], fill=(130, 136, 148, 255))
+    d.rectangle((420, CY - 112, 560, CY - 64), fill=(60, 64, 72, 255))
+    out.alpha_composite(wing.filter(ImageFilter.GaussianBlur(1)))
+    for i, (x, y, a) in enumerate(((560, CY - 30, -8), (1500, CY + 50, -22), (tip - 280, CY + 130, -40))):
+        b = bomb_shape(250, 38, a)
+        st = new()
+        ImageDraw.Draw(st).polygon([(x - 260, y - 10), (x - 700, y - 60 - i * 20), (x - 700, y - 20 - i * 20), (x - 260, y + 10)], fill=(255, 255, 255, 40))
+        out.alpha_composite(st.filter(ImageFilter.GaussianBlur(10)))
+        out.alpha_composite(b, (int(x - b.width / 2), int(y - b.height / 2)))
+    return out
+
+
+def nuclear(body_unused, tip):
+    """a nuclear missile: a big missile with flame at the left and a mushroom cloud far right"""
+    out = new()
+    w2.smoke(out, 200, 900, CY + 120, 40, seed=7, tone=(200, 200, 206))
+    w2.missile(out, 1300, CY + 120, 900, 52, flame_len=520)
+    cx = tip - 200
+    ground = new()
+    ImageDraw.Draw(ground).ellipse((cx - 260, CY + 190, cx + 260, CY + 250), fill=(120, 80, 50, 220))
+    out.alpha_composite(ground.filter(ImageFilter.GaussianBlur(12)))
+    stem = new()
+    ImageDraw.Draw(stem).polygon([(cx - 42, CY + 220), (cx - 24, CY - 60), (cx + 24, CY - 60), (cx + 42, CY + 220)], fill=(190, 110, 60, 255))
+    blur_add(out, stem, 14)
+    cap = new()
+    d = ImageDraw.Draw(cap)
+    for dx, dy, r in ((-90, -110, 78), (90, -110, 78), (0, -150, 100), (-50, -70, 70), (50, -70, 70), (0, -90, 90)):
+        d.ellipse((cx + dx - r, CY + dy - r, cx + dx + r, CY + dy + r), fill=(235, 130, 40, 255))
+    blur_add(out, cap, 12)
+    core = new()
+    d = ImageDraw.Draw(core)
+    for dx, dy, r in ((-60, -120, 52), (60, -120, 52), (0, -140, 70), (0, -100, 60)):
+        d.ellipse((cx + dx - r, CY + dy - r, cx + dx + r, CY + dy + r), fill=(255, 215, 120, 255))
+    blur_add(out, core, 10)
+    return out
+
+
 def make_all():
     cannon = wa.gun_body()
     pic = {}
@@ -294,6 +451,12 @@ def make_all():
     pic["shotgun"] = (shotgun(cannon, tip(3500)), 3500)
     pic["emp-grenade"] = (emp_grenade(w2.launcher_body(1, 150), tip(3300)), 3300)
     pic["self-destruct"] = (self_destruct(tip(3300)), 3300)
+    pic["railgun"] = (railgun(cannon, tip(3300)), 3300)
+    pic["flamethrower"] = (flamethrower(cannon, tip(3300)), 3300)
+    pic["depth-charge"] = (depth_charge(w2.launcher_body(1, 150), tip(3300)), 3300)
+    pic["aa-missile"] = (aa_missile(w2.launcher_body(1, 110), tip(3300)), 3300)
+    pic["bomb"] = (bomb(tip(3300)), 3300)
+    pic["nuclear"] = (nuclear(None, tip(3300)), 3300)
     only = os.environ.get("ART_ONLY")
     return {k: v for k, v in pic.items() if not only or k in only.split(",")}
 
