@@ -22,9 +22,6 @@ function widget:GameFrame(f)
 	if f == 125 then local ud = UnitDefs[Spring.GetUnitDefID(R.unit)]; log("onOffable", tostring(ud.onOffable), "activateWhenBuilt", tostring(ud.activateWhenBuilt), "isBuilding", tostring(ud.isBuilding), "stealth", tostring(ud.stealth), "cloak", tostring(ud.canCloak)); Spring.GiveOrderToUnit(R.unit, CMD.FIRE_STATE, { 2 }, 0) end
 	if f == 130 then local u = R.unit; log("beingBuilt", tostring(Spring.GetUnitIsBeingBuilt(u)), "stunned", tostring(Spring.GetUnitIsStunned(u)), "dead", tostring(Spring.GetUnitIsDead(u)), "neutral", tostring(Spring.GetUnitNeutral(u)), "pos", tostring(select(2, Spring.GetUnitPosition(u))), "ground", tostring(Spring.GetGroundHeight(Spring.GetUnitPosition(u))), "health", tostring(Spring.GetUnitHealth(u)), "hasLoS?") end
 	if f == 130 then log("hit", tostring(R.hit and R.hit.kind), "udist", tostring(R.hit and math.floor(R.hit.udist)), "sky", tostring(R.skyShot and math.floor(R.skyShot.udist))); status("start"); log("CMD.TRAJECTORY", tostring(CMD.TRAJECTORY)) end
-	if f == 132 then Spring.SendLuaRulesMsg("ren|test|7|CLOAK|1") end
-	if f == 136 then status("cloak 1") end
-	if f == 138 then Spring.SendLuaRulesMsg("ren|test|7|CLOAK|0") end
 	-- the left button held for 5 s, then the right button held for 5 s
 	if f == 140 then R.fire = 1 end
 	if f == 290 then status("after 5 s of LMB"); R.fire = 0 end

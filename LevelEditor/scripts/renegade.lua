@@ -892,6 +892,13 @@ end
 
 -- damage of one shot (all the projectiles of a shot) and damage per second of a group (its weapons fire together; a salvo counts all its shots) against the default armor
 -- (an anti-air weapon: against aircraft)
+-- how many of the weapons of a group are the same weapon (the same weapon definition as the first): a smart pair (low and high trajectory) is one weapon, only one of them fires
+local function sameCount(ud, list)
+	local def = ud.weapons[list[1]].weaponDef
+	local n = 0
+	for _, i in ipairs(list) do if ud.weapons[i].weaponDef == def then n = n + 1 end end
+	return n
+end
 local function weaponStats(ud, slots, list, time)
 	local i = list[1]
 	local wd = WeaponDefs[ud.weapons[i].weaponDef]
@@ -900,7 +907,7 @@ local function weaponStats(ud, slots, list, time)
 	local d = tonumber(wd.damages and wd.damages[armor]) or 0
 	if slots.aa[i] then d = math.max(d, tonumber(wd.damages and wd.damages[vtol]) or 0) end
 	local dmg = d * math.max(1, tonumber(wd.projectiles) or 1)
-	local dps = dmg * math.max(1, tonumber(wd.salvoSize) or 1) * #list / math.max(0.1, time)
+	local dps = dmg * math.max(1, tonumber(wd.salvoSize) or 1) * sameCount(ud, list) / math.max(0.1, time)
 	return dmg, dps, math.max(1, tonumber(wd.salvoSize) or 1) / math.max(0.1, time)
 end
 local function num(v)
@@ -1024,7 +1031,7 @@ local function panel(vsx, vsy)
 				local fill = ready and 1 or math.max(0, math.min(1, 1 - (at - frame) / math.max(1, time * 30)))
 				local pn = picName(u, i)
 				local name = (pn and niceName(pn)) or (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
-				if #list > 1 then name = name .. "  x" .. #list end
+				if sameCount(ud, list) > 1 then name = name .. "  x" .. sameCount(ud, list) end
 				local state = (not drops) and reach(ud, slots, list, R.hit) or nil
 				local cone, coneSide = outOfCone(u, ud, i)
 				if cone and not slots.aa[i] then state = "red" else cone = false end

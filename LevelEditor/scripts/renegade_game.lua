@@ -282,7 +282,7 @@ local WEAPON_BUTTONS = {
 	armaak = { L = { 2 }, R = { 1 }, M = {  } },
 	armaas = { L = { 3 }, R = { 2 }, M = {  } },
 	armah = { L = { 2 }, R = {  }, M = {  } },
-	armamb = { L = { 1 }, R = { 2 }, M = {  } },
+	armamb = { L = { 1, 2 }, R = {  }, M = {  } },
 	armamd = { L = {  }, R = {  }, M = {  } },
 	armamph = { L = { 1 }, R = { 2 }, M = {  } },
 	armanac = { L = { 1 }, R = {  }, M = {  } },
@@ -360,7 +360,7 @@ local WEAPON_BUTTONS = {
 	armgatet3 = { L = {  }, R = {  }, M = {  } },
 	armgplat = { L = { 1 }, R = {  }, M = {  } },
 	armgremlin = { L = { 1 }, R = {  }, M = {  } },
-	armguard = { L = { 1 }, R = { 2 }, M = {  } },
+	armguard = { L = { 1, 2 }, R = {  }, M = {  } },
 	armham = { L = { 1 }, R = {  }, M = {  } },
 	armhawk = { L = { 1 }, R = {  }, M = {  } },
 	armhlt = { L = { 1 }, R = {  }, M = {  } },
@@ -439,7 +439,7 @@ local WEAPON_BUTTONS = {
 	armtrident = { L = { 2 }, R = {  }, M = {  } },
 	armvader = { L = { 2 }, R = {  }, M = {  } },
 	armvadert4 = { L = { 2 }, R = { 1 }, M = {  } },
-	armvang = { L = { 1 }, R = { 2 }, M = {  } },
+	armvang = { L = { 1, 2 }, R = {  }, M = {  } },
 	armvulc = { L = { 1 }, R = {  }, M = {  } },
 	armwar = { L = { 1 }, R = {  }, M = {  } },
 	armyork = { L = { 2 }, R = {  }, M = {  } },
@@ -570,7 +570,7 @@ local WEAPON_BUTTONS = {
 	corprince = { L = { 2, 3, 4 }, R = { 1 }, M = { 5, 6 } },
 	corpship = { L = { 1 }, R = {  }, M = {  } },
 	corpt = { L = { 2 }, R = { 1 }, M = {  } },
-	corpun = { L = { 1 }, R = { 2 }, M = {  } },
+	corpun = { L = { 1, 2 }, R = {  }, M = {  } },
 	corpyro = { L = { 1 }, R = {  }, M = {  } },
 	corraid = { L = { 1 }, R = {  }, M = {  } },
 	correap = { L = { 1 }, R = {  }, M = {  } },
@@ -607,7 +607,7 @@ local WEAPON_BUTTONS = {
 	corthud = { L = { 1 }, R = {  }, M = {  } },
 	cortitan = { L = { 1 }, R = {  }, M = {  } },
 	cortl = { L = { 1 }, R = {  }, M = {  } },
-	cortoast = { L = { 1 }, R = { 2 }, M = {  } },
+	cortoast = { L = { 1, 2 }, R = {  }, M = {  } },
 	cortorch = { L = { 1 }, R = {  }, M = {  } },
 	cortrem = { L = { 1 }, R = {  }, M = {  } },
 	cortron = { L = { 1 }, R = {  }, M = {  } },
@@ -619,7 +619,7 @@ local WEAPON_BUTTONS = {
 	corwolv = { L = { 1 }, R = {  }, M = {  } },
 	legaabot = { L = { 1 }, R = {  }, M = {  } },
 	legabm = { L = {  }, R = {  }, M = {  } },
-	legacluster = { L = { 1 }, R = { 2 }, M = {  } },
+	legacluster = { L = { 1, 2 }, R = {  }, M = {  } },
 	legadvaabot = { L = { 1 }, R = { 2 }, M = {  } },
 	legafigdef = { L = { 1 }, R = {  }, M = {  } },
 	legah = { L = { 1 }, R = {  }, M = {  } },
@@ -656,7 +656,7 @@ local WEAPON_BUTTONS = {
 	legcar = { L = { 1 }, R = {  }, M = {  } },
 	legcen = { L = { 1 }, R = {  }, M = {  } },
 	legcib = { L = {  }, R = {  }, M = {  } },
-	legcluster = { L = { 1 }, R = { 2 }, M = {  } },
+	legcluster = { L = { 1, 2 }, R = {  }, M = {  } },
 	legcom = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
 	legcomecon = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
 	legcomlvl10 = { L = { 1 }, R = { 3 }, M = { 2, 4 } },
@@ -689,7 +689,7 @@ local WEAPON_BUTTONS = {
 	legdtl = { L = { 1 }, R = {  }, M = {  } },
 	legdtm = { L = { 1 }, R = {  }, M = {  } },
 	legdtr = { L = { 1 }, R = {  }, M = {  } },
-	legeallterrainmech = { L = { 1 }, R = { 2 }, M = { 4 } },
+	legeallterrainmech = { L = { 1, 2 }, R = {  }, M = { 4 } },
 	legeheatraymech = { L = { 4, 5 }, R = { 2, 3 }, M = { 6 } },
 	legeheatraymech_old = { L = { 2, 3, 4, 5 }, R = { 6 }, M = {  } },
 	legehovertank = { L = { 1 }, R = { 2, 3, 4 }, M = {  } },
@@ -1364,13 +1364,19 @@ local function slotsFor(ud)
 	local armor = (Game.armorTypes or {}).default or 0
 	local vtol = (Game.armorTypes or {}).vtol or 14
 	local groups, byDef = {}, {}
+	local smartGroup -- the group of the "smart priority" weapon (see below)
 	for i, wp in ipairs(ud.weapons or {}) do
 		local wd = WeaponDefs[wp.weaponDef]
 		local d = wd and wd.damages and tonumber(wd.damages[armor]) or 0
 		local v = wd and wd.damages and tonumber(wd.damages[vtol]) or 0
 		-- (weapons without damage are no weapons: footsteps and the dummies that the unit scripts use)
 		if wd and (tonumber(wd.range) or 0) > 0 and wd.type ~= "Shield" and (tonumber(wd.interceptor) or 0) == 0 and (d > 2 or v > 2) then
+			local cp = wd.customParams or {}
 			local g = byDef[wp.weaponDef]
+			-- Smart weapon selection (the Rattlesnake, Gauntlet, Vanguard, Agitator, Persecutor, Eviscerator, Amputator, Myrmidon): weapon 1 (low trajectory, "smart_priority") and weapon 2 (high
+			-- trajectory, "smart_backup") are ONE weapon whose script and gadget (unit_weapon_smart_select_helper) pick the one that fits; the aim script of each also refuses to fire while the OTHER
+			-- one is "reloading" (its reload frame in the future: which our held reload is). So both are fired by the same button and released together.
+			if not g and cp.smart_backup and smartGroup then g = smartGroup end
 			if not g then
 				local desc = tostring(wd.description or ""):lower()
 				-- air only: no damage against the ground, or the description names only air targets (g2a / a2a / s2a and no x2g / x2s: the Demon's shoulder rockets)
@@ -1385,6 +1391,7 @@ local function slotsFor(ud)
 				byDef[wp.weaponDef] = g
 				groups[#groups + 1] = g
 			end
+			if cp.smart_priority then smartGroup = g end
 			g.list[#g.list + 1] = i
 		end
 	end
