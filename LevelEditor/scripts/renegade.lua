@@ -86,7 +86,7 @@ local function setCamera(u)
 		local fx, fz = math.sin(yaw), math.cos(yaw) -- (yaw 0 looks along +z, as the camera rotation ry = YAW0 - yaw says)
 		local cp, sp = math.cos(pit), math.sin(pit)
 		local dist = math.max(100, (Spring.GetUnitRadius(u) or 30) * 3.5)
-		local up = dist * 0.12 -- (low: the unit stays above the panel at the bottom of the screen)
+		local up = dist * 0.3 -- (higher than before, 0.12: the panel is at the left now, so the unit can be seen from more above)
 		px = px - cp * fx * dist - sp * fx * up
 		py = py - sp * dist + cp * up
 		pz = pz - cp * fz * dist - sp * fz * up
