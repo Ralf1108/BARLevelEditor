@@ -92,12 +92,15 @@ local function setCamera(u)
 		pz = pz - cp * fz * dist - sp * fz * up
 		py = math.max(py, Spring.GetGroundHeight(px, pz) + 8)
 	end
-	Spring.SetCameraState({ name = "fps", mode = 0, oldHeight = 0, px = px, py = py, pz = pz, rx = math.pi / 2 - math.rad(R.pitch), ry = R.YAW0 - math.rad(R.yaw), rz = 0 }, 0)
+	local cs = { name = "fps", mode = 0, oldHeight = 0, px = px, py = py, pz = pz, rx = math.pi / 2 - math.rad(R.pitch), ry = R.YAW0 - math.rad(R.yaw), rz = 0 }
+	if R.fov or R.baseFov then cs.fov = R.fov or R.baseFov end -- (the binoculars narrow the field of view; the normal one is kept from the start)
+	Spring.SetCameraState(cs, 0)
 end
 
 local function enable(u)
 	local cs = Spring.GetCameraState()
 	if cs and cs.name ~= "fps" then R.savedCam = cs end -- (the camera of the normal game: it comes back with the normal mode)
+	if cs and cs.fov and not R.baseFov then R.baseFov = cs.fov end -- (the normal field of view, for the binoculars)
 	R.on = true
 	R.unit = u
 	R.hidden = true
@@ -110,6 +113,7 @@ end
 local function disable()
 	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	R.hidden = false
+	R.zoom, R.fov = 0, nil
 	R.on = false
 	R.keys, R.fire = 0, 0
 	say("normal camera")
@@ -189,6 +193,50 @@ local function weaponsOf(u)
 	local slots = slotsOf(u)
 	return ud, slots, slotRange(ud, slots.L)
 end
+
+-- The binoculars: the middle button (when the unit has no weapon on it) or the key B switch them on and off; the mouse wheel sets the zoom level (every 300 Elmo of the longest range of the
+-- unit is one level: a range of 600 has 2, 1450 has 4, at most 6; the magnification is 1 + level); only for units with a range of at least 600. The field of view of the camera gets
+-- narrower (fov), the turn of the mouse is divided by the magnification, a dark ring with a thin cross is drawn round the view.
+local ZOOM_STEP = 300
+local function zoomLevels(u)
+	local ud, slots = weaponsOf(u or -1)
+	if not ud then return 0 end
+	local range = 0
+	for _, key in ipairs({ "L", "R", "M" }) do
+		local r = slotRange(ud, slots[key])
+		if r < 20000 then range = math.max(range, r) end
+	end
+	local n = math.min(6, math.floor(range / ZOOM_STEP))
+	return n >= 2 and n or 0
+end
+local function zoomFactor()
+	return (R.zoom or 0) > 0 and (1 + R.zoom) or 1
+end
+local function applyFov()
+	if not R.baseFov then
+		local cs = Spring.GetCameraState()
+		R.baseFov = cs and cs.fov or 45
+	end
+	if (R.zoom or 0) > 0 then
+		R.fov = math.deg(2 * math.atan(math.tan(math.rad(R.baseFov / 2)) / zoomFactor()))
+	else
+		R.fov = nil
+	end
+end
+local function toggleZoom()
+	if not R.on or R.menu then return end
+	if zoomLevels(R.unit) == 0 then
+		say("no binoculars for this unit (the longest range is below 600)")
+		return
+	end
+	R.zoom = ((R.zoom or 0) > 0) and 0 or 1
+	applyFov()
+end
+local function zoomStep(up)
+	R.zoom = math.max(1, math.min(zoomLevels(R.unit), (R.zoom or 1) + (up and 1 or -1))) -- (wheel up: closer)
+	applyFov()
+end
+R.toggleZoom, R.zoomStep = toggleZoom, zoomStep -- (for the tests)
 
 -- The guns of a gunship are fixed to its body: they point (almost) along its nose and can only turn down by MAX_DOWN degrees (measured with the Roughneck: whatever
 -- the view, the barrel stays at about 27 degrees down). A point on the ground that lies steeper below the aircraft cannot be hit. fixedGun tells whether the unit is such an
@@ -429,6 +477,7 @@ function widget:Update()
 	if u ~= R.unit then
 		if R.hidden and Spring.ValidUnitID(R.unit or -1) then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 		R.unit = u
+		R.zoom, R.fov = 0, nil
 		Spring.SetUnitNoDraw(u, not R.third)
 		Spring.SetUnitNoSelect(u, true)
 	end
@@ -478,8 +527,9 @@ function widget:Update()
 				end
 				R.skipLook = false
 			else
-				R.yaw = (R.yaw - (mx - cx) * SENS) % 360
-				R.pitch = math.max(-89, math.min(89, R.pitch + (my - cy) * SENS))
+				local sens = SENS / zoomFactor() -- (zoomed in: a smaller turn for the same movement)
+				R.yaw = (R.yaw - (mx - cx) * sens) % 360
+				R.pitch = math.max(-89, math.min(89, R.pitch + (my - cy) * sens))
 			end
 			Spring.WarpMouse(cx, cy)
 		else
@@ -616,6 +666,11 @@ function widget:MousePress(x, y, button)
 		end
 		return true
 	end
+	if button == 2 then
+		-- the middle button: the binoculars when the unit has no weapon on it (a unit that has one keeps it)
+		local udm, slotsm = weaponsOf(R.unit)
+		if udm and #(slotsm.M or {}) == 0 then toggleZoom(); return true end
+	end
 	if BUTTON_BIT[button] then setBit(BUTTON_BIT[button], true) end
 	if R.shot then send(Spring.GetGameFrame(), true) end -- at once, not with the next frame
 	prevFire = R.fire
@@ -635,6 +690,10 @@ function widget:MouseWheel(up, value)
 		local g, win, filters, grid = pickerLayout()
 		if g then g:wheel(grid, up) end
 	end
+	if R.on and (R.zoom or 0) > 0 and not R.menu then
+		zoomStep(up)
+		return true
+	end
 	return R.on
 end
 
@@ -648,6 +707,10 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if R.on and key == 9 and R.debug then return true end -- Tab: the mouse is free for the debug menu, again: back to the view (switched in Update)
 	if R.on and (key == K.W or key == K.A or key == K.S or key == K.D or key == K.SPACE) then
+		return true
+	end
+	if R.on and key == 98 and not isRepeat then -- B: the binoculars for every unit with a long range (also one that uses the middle button for a weapon)
+		toggleZoom()
 		return true
 	end
 end
@@ -1190,6 +1253,11 @@ local function panel(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 	gl.Text(ud.translatedHumanName or ud.name or "?", bx1 + 8 * s, hy + 11 * s, 16 * s, "o")
 	gl.Text(string.format("%d / %d", math.ceil(hp), math.floor(mhp)), bx2 - 8 * s, hy + 11 * s, 16 * s, "ro")
+	if (ud.speed or 0) > 0 then
+		gl.Color(0.75, 0.82, 0.95, 1)
+		gl.Text(string.format("max speed %d", math.floor(ud.speed + 0.5)), (bx1 + bx2) / 2 + 20 * s, hy + 12 * s, 13 * s, "co") -- (the highest speed of the unit)
+		gl.Color(1, 1, 1, 1)
+	end
 	gl.Color(1, 1, 1, 1)
 	return x1, y1 + total, w, s
 end
@@ -1438,21 +1506,88 @@ local function compass(vsx, vsy)
 		end)
 		gl.LineWidth(1)
 	end
-	-- the speed of the unit above the dial: now / the highest (Elmo per second; an aircraft in all three directions)
+	-- the speedometer right of the compass: a dial from 0 to 150 (higher for a fast unit, in steps of 50), a needle for the speed now (Elmo per second; an aircraft in all three
+	-- directions), a yellow mark at the highest speed of the unit
 	do
 		local vx, vy, vz = Spring.GetUnitVelocity(u)
 		local now = vx and math.sqrt(vx * vx + vy * vy + vz * vz) * Game.gameSpeed or 0
 		local top = ud.speed or 0
-		local txt = string.format("%d / %d", math.floor(now + 0.5), math.floor(top + 0.5))
-		local ty = cy + r + 10 * s
-		local tw = gl.GetTextWidth(txt) * 26 * s
-		gl.Color(0, 0, 0, 0.55)
-		gl.Rect(cx - tw / 2 - 10 * s, ty - 6 * s, cx + tw / 2 + 10 * s, ty + 40 * s)
-		gl.Color(0.65, 0.7, 0.8, 1)
-		gl.Text("SPEED", cx, ty + 28 * s, 12 * s, "co")
+		local scale = math.max(150, math.ceil(top / 50) * 50)
+		local gr = 50 * s
+		local gx = cx + r + 18 * s + gr
+		local function angle(v) return math.rad(225 - 270 * math.min(1, v / scale)) end
+		gl.Color(0, 0, 0, 0.45)
+		disc(gx, cy, gr)
+		gl.Color(0.6, 0.7, 0.85, 0.9)
+		gl.LineWidth(2)
+		ring(gx, cy, gr)
+		gl.LineWidth(1)
+		for v = 0, scale, 25 do
+			local a = angle(v)
+			local long = v % 50 == 0
+			local r1 = gr * (long and 0.78 or 0.86)
+			gl.Color(0.8, 0.85, 0.95, long and 0.95 or 0.6)
+			gl.BeginEnd(GL.LINES, function() gl.Vertex(gx + math.cos(a) * gr * 0.95, cy + math.sin(a) * gr * 0.95); gl.Vertex(gx + math.cos(a) * r1, cy + math.sin(a) * r1) end)
+			if long then gl.Text(tostring(v), gx + math.cos(a) * gr * 0.62, cy + math.sin(a) * gr * 0.62 - 4 * s, 10 * s, "co") end
+		end
+		if top > 0 and top <= scale then
+			local a = angle(top)
+			gl.Color(1, 0.85, 0.25, 1)
+			gl.LineWidth(3)
+			gl.BeginEnd(GL.LINES, function() gl.Vertex(gx + math.cos(a) * gr * 0.95, cy + math.sin(a) * gr * 0.95); gl.Vertex(gx + math.cos(a) * gr * 0.72, cy + math.sin(a) * gr * 0.72) end)
+			gl.LineWidth(1)
+		end
+		local a = angle(now)
+		gl.Color(1, 0.3, 0.2, 1)
+		gl.LineWidth(3)
+		gl.BeginEnd(GL.LINES, function() gl.Vertex(gx, cy); gl.Vertex(gx + math.cos(a) * gr * 0.8, cy + math.sin(a) * gr * 0.8) end)
+		gl.LineWidth(1)
+		gl.Color(0.9, 0.9, 0.95, 1)
+		disc(gx, cy, 4 * s)
 		gl.Color(0.95, 0.97, 1, 1)
-		gl.Text(txt, cx, ty, 26 * s, "co")
+		gl.Text(string.format("%d", math.floor(now + 0.5)), gx, cy - gr * 0.55, 15 * s, "co")
 	end
+	gl.Color(1, 1, 1, 1)
+end
+
+-- The binoculars as seen: the view in a circle, dark round it, a thin cross, the magnification and the keys
+local function binoculars(vsx, vsy)
+	if (R.zoom or 0) <= 0 then return end
+	local cx, cy = vsx / 2, vsy / 2
+	local r0 = vsy * 0.46
+	local far = math.sqrt(vsx * vsx + vsy * vsy)
+	local n = 72
+	gl.BeginEnd(GL.TRIANGLE_STRIP, function() -- the soft edge
+		for k = 0, n do
+			local a = k / n * 2 * math.pi
+			local ca, sa = math.cos(a), math.sin(a)
+			gl.Color(0, 0, 0, 0); gl.Vertex(cx + ca * r0 * 0.9, cy + sa * r0 * 0.9)
+			gl.Color(0, 0, 0, 0.92); gl.Vertex(cx + ca * r0, cy + sa * r0)
+		end
+	end)
+	gl.Color(0, 0, 0, 0.92)
+	gl.BeginEnd(GL.TRIANGLE_STRIP, function() -- everything outside
+		for k = 0, n do
+			local a = k / n * 2 * math.pi
+			local ca, sa = math.cos(a), math.sin(a)
+			gl.Vertex(cx + ca * r0, cy + sa * r0)
+			gl.Vertex(cx + ca * far, cy + sa * far)
+		end
+	end)
+	gl.Color(1, 1, 1, 0.45)
+	gl.LineWidth(1)
+	gl.BeginEnd(GL.LINES, function() -- a thin cross with a gap in the middle
+		local gap = 14
+		gl.Vertex(cx - r0 * 0.9, cy); gl.Vertex(cx - gap, cy)
+		gl.Vertex(cx + gap, cy); gl.Vertex(cx + r0 * 0.9, cy)
+		gl.Vertex(cx, cy - r0 * 0.9); gl.Vertex(cx, cy - gap)
+		gl.Vertex(cx, cy + gap); gl.Vertex(cx, cy + r0 * 0.9)
+	end)
+	local s = math.max(0.7, vsy / 1080)
+	gl.Color(0.9, 0.95, 1, 1)
+	gl.Text(string.format("x%d", 1 + R.zoom), cx, cy + r0 * 0.86, 26 * s, "co")
+	gl.Color(0.7, 0.75, 0.85, 1)
+	gl.Text(string.format("mouse wheel: zoom (level %d of %d)   B or middle button: off", R.zoom, zoomLevels(R.unit)), cx, cy + r0 * 0.86 - 24 * s, 13 * s, "co")
 	gl.Color(1, 1, 1, 1)
 end
 
@@ -1569,6 +1704,7 @@ function widget:DrawScreen()
 		gl.LineWidth(1)
 	end
 	gl.Color(1, 1, 1, 1)
+	binoculars(vsx, vsy)
 	altimeter(vsx, vsy)
 	scoreboard(vsx, vsy)
 	compass(vsx, vsy)
