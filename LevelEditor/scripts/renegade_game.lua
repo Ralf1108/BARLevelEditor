@@ -2024,6 +2024,12 @@ end
 
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
+	if TEST and f == 200 then
+		for _, tm in ipairs(Spring.GetTeamList()) do
+			local e, es, _, inc = Spring.GetTeamResources(tm, "energy")
+			Spring.Echo(string.format("[Renegade] team %d energy %s storage %s income %s", tm, tostring(e), tostring(es), tostring(inc)))
+		end
+	end
 	if f >= 30 and f <= 300 and f % 15 == 0 then
 		for _, team in ipairs(Spring.GetTeamList()) do
 			if team ~= Spring.GetGaiaTeamID() then take(team) end
@@ -2037,12 +2043,19 @@ function gadget:GameFrame(f)
 			shoot(team, f)
 		end
 		processBombs(f)
-		if not energyInit[team] then
-			energyInit[team] = true
-			Spring.SetTeamResource(team, "es", ENERGY_STORE)
-			Spring.SetTeamResource(team, "energy", ENERGY_START)
+	end
+	-- the energy of every team (not only the players': a spawned enemy or a bot with an energy weapon, like the laser of the Advanced Exploiter at 50 energy a shot, ran dry on the 1000 energy and
+	-- 30 income an AI team starts with and then did not fire any more)
+	local gaia = Spring.GetGaiaTeamID()
+	for _, team in ipairs(Spring.GetTeamList()) do
+		if team ~= gaia then
+			if not energyInit[team] then
+				energyInit[team] = true
+				Spring.SetTeamResource(team, "es", ENERGY_STORE)
+				Spring.SetTeamResource(team, "energy", ENERGY_START)
+			end
+			if f % 30 == 0 then Spring.AddTeamResource(team, "energy", ENERGY_INCOME) end
 		end
-		if f % 30 == 0 then Spring.AddTeamResource(team, "energy", ENERGY_INCOME) end
 	end
 	for team, at in pairs(due) do
 		if f >= at then
