@@ -1021,7 +1021,7 @@ local function panel(vsx, vsy)
 			gl.Color(0.22, 0.22, 0.25, 0.80)
 			gl.Rect(cx2 - (cx2 - cx1) * left, cy1, cx2, cy2)
 		end
-		local rc = r.color
+		local rc = { 0.55, 0.62, 0.78 } -- (one neutral colour for every row: the colours of the buttons made the panel too colourful; the tint of the reach stays)
 		card(cx1, cy1, cx2, cy2, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { rc[1] * 0.8, rc[2] * 0.8, rc[3] * 0.8, 0.75 }, 1.5)
 		gl.Color(rc[1], rc[2], rc[3], 1)
 		gl.Rect(cx1, cy1, cx1 + 5 * s, cy2)
