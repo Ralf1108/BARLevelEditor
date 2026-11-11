@@ -588,11 +588,13 @@ local function pickerLayout()
 	local cw, ch = g:size()
 	local hb = m.HB
 	local filterH = g:filterRowCount() * (hb + 3) + m.PAD
-	local w, h = cw + 2 * m.PAD, filterH + ch + 28 * Shared.S
+	local sc = math.max(0.8, vsy / 1080) -- (the text under the pictures is as large as the one of the panel, not scaled with the small pictures)
+	local bottom = 150 * sc -- (the space under the pictures: the name, the description and the values of the unit under the mouse pointer)
+	local w, h = math.max(cw + 2 * m.PAD, 780 * sc), filterH + ch + bottom
 	local x1 = math.max(4, (vsx - w) / 2)
 	local y0 = math.max(4, (vsy - h) / 2)
 	local win = { x1 = x1, x2 = x1 + w, y0 = y0, top = y0 + h }
-	local grid = { x1 = win.x1 + m.PAD, x2 = win.x2 - m.PAD, y0 = win.y0 + 24 * Shared.S, top = win.top - filterH }
+	local grid = { x1 = win.x1 + m.PAD, x2 = win.x2 - m.PAD, y0 = win.y0 + bottom, top = win.top - filterH }
 	local filters = g:filterRects(win.x1, win.x2, win.top - m.PAD, hb)
 	return g, win, filters, grid, hb
 end
@@ -607,16 +609,55 @@ local function drawPicker()
 	local mx, my = Spring.GetMouseState()
 	local ud = UnitDefs[Spring.GetUnitDefID(R.unit or -1) or -1]
 	g:draw(grid, mx, my, R.pickMode ~= "enemy" and ud and ud.name or nil, nil, true)
-	-- the name of the unit under the mouse pointer, under the pictures
-	local i = g:at(grid, mx, my)
+	-- under the pictures, for the unit under the mouse pointer: the name (code) and the description, the speed and health, and one line for each of its weapons (the shortest range first, like the
+	-- panel): range, shots per second, damage of a shot and damage per second
+	local i = R.testHover or g:at(grid, mx, my) -- (R.testHover: an index, for the tests)
 	local e = i and g:list()[i]
+	local vsx0, vsy0 = Spring.GetViewGeometry()
+	local sc = math.max(0.8, vsy0 / 1080)
+	local ty = win.y0 + 120 * sc
 	gl.Color(1, 1, 1, 1)
 	if e then
 		local d = UnitDefs[e.id]
-		gl.Text((d.translatedHumanName or d.humanName or e.name) .. "  (" .. e.name .. ")  " .. (d.tooltip or ""), win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
+		local human = d.translatedHumanName or d.humanName or e.name
+		gl.Text(human .. " (" .. e.name .. ")", win.x1 + 12 * sc, ty, 21 * sc, "o")
+		local nameW = gl.GetTextWidth(human .. " (" .. e.name .. ")") * 21 * sc
+		gl.Color(0.8, 0.85, 0.95, 1)
+		gl.Text(tostring(d.translatedTooltip or d.tooltip or ""), win.x1 + 12 * sc + nameW + 14 * sc, ty + 1 * sc, 17 * sc, "o")
+		gl.Color(0.75, 0.82, 0.95, 1)
+		gl.Text(string.format("speed %d   health %d", math.floor((d.speed or 0) + 0.5), math.floor((d.health or 0) + 0.5)), win.x1 + 12 * sc, ty - 27 * sc, 17 * sc, "o")
+		local armor = (Game.armorTypes or {}).default or 0
+		local vtol = (Game.armorTypes or {}).vtol or 14
+		local defs, order = {}, {}
+		for _, wp in ipairs(d.weapons or {}) do
+			local wd = WeaponDefs[wp.weaponDef]
+			local dm = wd and wd.damages and tonumber(wd.damages[armor]) or 0
+			local dv = wd and wd.damages and tonumber(wd.damages[vtol]) or 0
+			if wd and (tonumber(wd.range) or 0) > 0 and wd.type ~= "Shield" and (tonumber(wd.interceptor) or 0) == 0 and (dm > 2 or dv > 2) then
+				local x = defs[wp.weaponDef]
+				if not x then
+					local airOnly = type(wp.onlyTargets) == "table" and wp.onlyTargets.vtol == true and wp.onlyTargets.surface ~= true
+					x = { wd = wd, n = 0, dmg = ((dm <= 2 or airOnly) and dv or dm) * math.max(1, tonumber(wd.projectiles) or 1), air = airOnly or dm <= 2 }
+					defs[wp.weaponDef] = x
+					order[#order + 1] = x
+				end
+				x.n = x.n + 1
+			end
+		end
+		table.sort(order, function(a, b) return (a.wd.range or 0) < (b.wd.range or 0) end)
+		for k = 1, math.min(3, #order) do
+			local x = order[k]
+			local rate = math.max(1, tonumber(x.wd.salvoSize) or 1) / math.max(0.1, tonumber(x.wd.reload) or 1)
+			local desc = tostring(x.wd.description or x.wd.name or "")
+			if #desc > 70 then desc = desc:sub(1, 70) .. "..." end
+			gl.Color(0.9, 0.93, 1, 1)
+			gl.Text(string.format("%s%s:   range %d   %s shots/s   damage %d   DPS %d%s", desc, x.n > 1 and (" x" .. x.n) or "", math.floor(x.wd.range), rate >= 10 and string.format("%.0f", rate) or string.format("%.1f", rate), math.floor(x.dmg + 0.5), math.floor(x.dmg * rate * x.n + 0.5), x.air and "   (air)" or ""),
+				win.x1 + 12 * sc, ty - 27 * sc - k * 21 * sc, 16 * sc, "o")
+		end
 	else
+		gl.Color(0.85, 0.9, 1, 1)
 		gl.Text(R.pickMode == "enemy" and "Click a unit: it appears as an enemy 1000 Elmo ahead. Search: type words or the code. Tab: back to the game."
-			or "Click a unit: you turn into it. Search: type words or the code. Tab: back to the game.", win.x1 + 10 * S, win.y0 + 6 * S, 14 * S, "o")
+			or "Click a unit: you turn into it. Search: type words or the code. Tab: back to the game.", win.x1 + 12 * sc, ty, 17 * sc, "o")
 	end
 	R.win = win
 end
