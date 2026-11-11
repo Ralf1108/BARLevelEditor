@@ -176,6 +176,7 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 
 - **Fire button**: `LMB` (left mouse button), `RMB` (right), `MMB` (middle) or empty (no button: footsteps, script dummies). Weapons of a unit with the same button are fired together (like the three medium plasma guns of the Epoch); give the same button to as many weapons as you like.
 - **Weapon image**: empty for now; a picture of the weapon for the panel, to be filled in when the interface is made nicer.
+- **Picture** (only on this page, not in the csv): the picture of the category of the weapon (see [weapon categories](renegade-weapon-categories.md)) as the panel shows it, linked to the file; empty when the category has no picture yet. To check the assignment of the pictures by eye.
 - **Target**: what the weapon can hit (Ground, Air, Water; All = everything; empty = nothing). Anti-air weapons cannot take a ground point: they fire at the aircraft you look at.
 - The proposal: weapons with the same weapon definition are fired together; missiles (missile launchers, starburst, torpedoes, anti-air weapons) and all other groups are sorted by range. Short range on LMB, long range on RMB, missiles on MMB (with two groups only: the short on LMB, the other on RMB; with three or more of the same kind: the shortest on LMB, the next on RMB, all further on MMB).
 - A unit that is not in the table (and the Scavenger copies of the units: they use the entry of the normal unit) gets the proposal worked out in the game (`slotsFor` in `renegade_game.lua`).
@@ -192,9 +193,19 @@ END_TABLE = "<!-- END TABLE -->"
 def write_md(rows):
     """only what stands between the markers is written (the count and the table); the text around it stays as it is. A file without the markers (or none) is made with the text INTRO."""
     codes = {r[2] for r in rows}
-    lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
+    # the column Picture (between # and Weapon) shows the picture of the category of the weapon (renegade_weapon_categories.csv, made by weapon_categories.py), linked to the file
+    pics = {}
+    if os.path.exists(CATEGORIES_CSV) and os.path.isdir(IMAGES):
+        for c in read_table(CATEGORIES_CSV):
+            if c["Picture"]:
+                pics[(c["Code"], c["#"])] = c["Picture"]
+    head = COLUMNS[:4] + ["Picture"] + COLUMNS[4:]
+    lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(head) + " |", "|" + "|".join(["---"] * len(head)) + "|"]
     for r in rows:
-        lines.append("| " + " | ".join(c.replace("|", "/") for c in r) + " |")
+        f = pics.get((r[2], r[3]))
+        pic = '[<img src="weapon-images/%s" width="288">](weapon-images/%s)' % (f, f) if f else ""
+        cells = [c.replace("|", "/") for c in r]
+        lines.append("| " + " | ".join(cells[:4] + [pic] + cells[4:]) + " |")
     block = BEGIN_TABLE + "\n" + "\n".join(lines) + "\n" + END_TABLE + "\n"
     old = open(MD, encoding="utf-8", newline="").read().replace("\r\n", "\n") if os.path.exists(MD) else ""
     if BEGIN_TABLE[:20] in old and END_TABLE in old:
