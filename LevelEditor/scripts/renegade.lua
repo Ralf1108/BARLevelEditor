@@ -310,6 +310,14 @@ end
 -- Anti-air: a unit with anti-air weapons gets an orange circle round the crosshair (R.AA_RADIUS of the screen height, generous: aircraft are fast). The enemy aircraft in
 -- range whose picture is nearest to the middle inside the circle is the lock (R.aaTarget): the anti-air weapons get it as their target when the button is pressed (their
 -- missiles home in on it). Without an aircraft in the circle they do not fire.
+-- An aircraft that is shot down is no target any more: no health left, dead, or crashing (the aircraft state "crashing" of its move type: it is on its way down and falls)
+local function shotDown(id)
+	if Spring.GetUnitIsDead(id) then return true end
+	local hp = Spring.GetUnitHealth(id)
+	if hp and hp <= 0 then return true end
+	local ok, md = pcall(Spring.GetUnitMoveTypeData, id)
+	return ok and type(md) == "table" and md.aircraftState == "crashing"
+end
 local function aaPick(u)
 	R.aaTarget, R.aaScreen, R.aaCircle = nil, nil, nil
 	local ud, slots = weaponsOf(u)
@@ -332,7 +340,7 @@ local function aaPick(u)
 	local best, bestD
 	for _, id in ipairs(Spring.GetVisibleUnits(Spring.ENEMY_UNITS or -4, nil, true)) do
 		local d = UnitDefs[Spring.GetUnitDefID(id) or -1]
-		if d and d.canFly and not Spring.IsUnitAllied(id) then
+		if d and d.canFly and not Spring.IsUnitAllied(id) and not shotDown(id) then
 			local x, y, z = Spring.GetUnitPosition(id, true)
 			if x and ux and (x - ux) ^ 2 + (y - uy) ^ 2 + (z - uz) ^ 2 <= range * range and (x - px) * dx + (y - py) * dy + (z - pz) * dz > 0 then
 				local sx, sy = Spring.WorldToScreenCoords(x, y, z)

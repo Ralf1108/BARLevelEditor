@@ -1473,9 +1473,17 @@ local function clearTargets(u, inp)
 end
 
 local TESTENGINE = false -- (tests: the engine's own bomb release instead of ours: ren|test|4)
+-- (an aircraft that is shot down is no target: dead, no health left or crashing)
+local function shotDown(id)
+	if Spring.GetUnitIsDead(id) then return true end
+	local hp = Spring.GetUnitHealth(id)
+	if hp and hp <= 0 then return true end
+	local ok, md = pcall(Spring.GetUnitMoveTypeData, id)
+	return ok and type(md) == "table" and md.aircraftState == "crashing"
+end
 -- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
 local function applyTarget(team, u, ud, s, i, t)
-	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit))
+	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) and not shotDown(t.unit)
 	if s.aa[i] then
 		-- anti-air: only at the aircraft the player looks at
 		if lock then Spring.SetUnitTarget(u, t.unit, false, true, i) end
