@@ -13,14 +13,14 @@ Legion;Legion Commander Level 3;legdecomlvl3;4;Anti-Air Missile Launcher;Missile
 Legion;Notus;leganavyaaship;2;Advanced Salvo Anti-Air Missile Launcher;Missile;20 (air);2;aa-missile;
 Legion;Notus;leganavyaaship;3;Advanced Salvo Anti-Air Missile Launcher;Missile;20 (air);2;aa-missile;
 Legion;Ultor;leganavymissileship;2;Salvo Anti-Air Missile Launcher;Missile;20 (air);2;aa-missile;
-Cortex;Tremor;cortrem;1;RapidArtillery;Artillery;200;2;artillery;
-Cortex;Wolverine;corwolv;1;LightArtillery;Artillery;300;1;artillery;
-Legion;Corinth;leganavyartyship;2;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;
-Legion;Corinth;leganavyartyship;3;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;
-Legion;Corinth;leganavyartyship;4;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;
-Legion;Inferno;leginf;1;Heavy Burst-Fire Napalm Artillery Tri-Cannons;Artillery;60;2;artillery;
-Legion;Octeres;legnavyartyship;1;Long-Range Naval Cluster Artillery Cannon;Artillery;300;1;artillery;
-Legion;Octeres;legnavyartyship;2;Long-Range Naval Cluster Artillery Cannon;Artillery;300;1;artillery;
+Cortex;Tremor;cortrem;1;RapidArtillery;Artillery;200;2;artillery;weapon_artillery.png
+Cortex;Wolverine;corwolv;1;LightArtillery;Artillery;300;1;artillery;weapon_artillery.png
+Legion;Corinth;leganavyartyship;2;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;weapon_artillery.png
+Legion;Corinth;leganavyartyship;3;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;weapon_artillery.png
+Legion;Corinth;leganavyartyship;4;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;weapon_artillery.png
+Legion;Inferno;leginf;1;Heavy Burst-Fire Napalm Artillery Tri-Cannons;Artillery;60;2;artillery;weapon_artillery.png
+Legion;Octeres;legnavyartyship;1;Long-Range Naval Cluster Artillery Cannon;Artillery;300;1;artillery;weapon_artillery.png
+Legion;Octeres;legnavyartyship;2;Long-Range Naval Cluster Artillery Cannon;Artillery;300;1;artillery;weapon_artillery.png
 Armada;Blizzard;armpnix;1;Heavy a2g impulse warheads;Bomb;266;2;bomb;
 Armada;Epic Stormbringer;armthundt4;1;Ultra Heavy Bombs;Bomb;900;3;bomb;
 Armada;Stiletto;armstil;1;Heavy a2g EMP warheads;Bomb;6000;2;bomb;
@@ -83,74 +83,74 @@ Legion;Sol Invictus;legeheatraymech;5;Ultra Heavy Riot Autocannon;Cannon;420;3;c
 Cortex;Cortex Commander Level 10;corcomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-ultra;weapon_cannon-ultra.png
 Cortex;Cortex Commander Level 10;cordecomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-ultra;weapon_cannon-ultra.png
 Legion;Perdition;legperdition;1;Long-Range Tactical Hellfire Napalm Shell;Cannon;1200;2;cannon-ultra;weapon_cannon-ultra.png
-Armada;Armada Commander;armcom;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander;armcomcon;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 10;armcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 10;armdecomlvl10;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 2;armcomlvl2;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 2;armdecomlvl2;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 3;armcomlvl3;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 3;armdecomlvl3;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 4;armcomlvl4;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 4;armdecomlvl4;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 5;armcomlvl5;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 5;armdecomlvl5;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 6;armcomlvl6;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 6;armdecomlvl6;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 7;armcomlvl7;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 7;armdecomlvl7;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 8;armcomlvl8;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 8;armdecomlvl8;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Armada Commander Level 9;armcomlvl9;3;Disintegrator;D-gun;99999;1;d-gun;
-Armada;Armada Commander Level 9;armdecomlvl9;3;Disintegrator;D-gun;40;1;d-gun;
-Armada;Commander;armdecom;3;Decoy-disintegrator;D-gun;40;2;d-gun;
-Armada;Epic Commander - Final Boss;armcomboss;3;Darkmatter Photon-Disruptor;D-gun;999999;4;d-gun;
-Armada;units.names.armcomnew;armcomnew;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Behemoth;corjugg;1;GaussCannon;D-gun;1200;3;d-gun;
-Cortex;Commander;cordecom;3;Disintegrator;D-gun;40;2;d-gun;
-Cortex;Cortex Commander;corcom;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander;corcomcon;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 10;corcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 10;cordecomlvl10;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 2;corcomlvl2;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 2;cordecomlvl2;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 3;corcomlvl3;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 3;cordecomlvl3;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 4;corcomlvl4;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 4;cordecomlvl4;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 5;corcomlvl5;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 5;cordecomlvl5;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 6;corcomlvl6;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 6;cordecomlvl6;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 7;corcomlvl7;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 7;cordecomlvl7;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 8;corcomlvl8;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 8;cordecomlvl8;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Cortex Commander Level 9;corcomlvl9;3;Disintegrator;D-gun;99999;1;d-gun;
-Cortex;Cortex Commander Level 9;cordecomlvl9;3;Disintegrator;D-gun;40;1;d-gun;
-Cortex;Epic Commander - Final Boss;corcomboss;3;Darkmatter Photon-Disruptor;D-gun;999999;4;d-gun;
-Cortex;Epic Commando;cormandot4;2;Disintegrator;D-gun;2400;2;d-gun;
-Legion;Legion Commander;legcom;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander;legdecom;3;Disintegrator;D-gun;40;2;d-gun;
-Legion;Legion Commander Level 10;legcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 10;legdecomlvl10;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 2;legcomlvl2;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 2;legdecomlvl2;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 3;legcomlvl3;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 3;legdecomlvl3;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 4;legcomlvl4;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 4;legdecomlvl4;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 5;legcomlvl5;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 5;legdecomlvl5;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 6;legcomlvl6;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 6;legdecomlvl6;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 7;legcomlvl7;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 7;legdecomlvl7;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 8;legcomlvl8;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 8;legdecomlvl8;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Legion Commander Level 9;legcomlvl9;3;Disintegrator;D-gun;99999;1;d-gun;
-Legion;Legion Commander Level 9;legdecomlvl9;3;Disintegrator;D-gun;40;1;d-gun;
-Legion;Pilum;legbunk;2;Hard-Plasma Mining Tool;D-gun;300;3;d-gun;
+Armada;Armada Commander;armcom;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander;armcomcon;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 10;armcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 10;armdecomlvl10;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 2;armcomlvl2;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 2;armdecomlvl2;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 3;armcomlvl3;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 3;armdecomlvl3;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 4;armcomlvl4;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 4;armdecomlvl4;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 5;armcomlvl5;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 5;armdecomlvl5;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 6;armcomlvl6;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 6;armdecomlvl6;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 7;armcomlvl7;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 7;armdecomlvl7;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 8;armcomlvl8;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 8;armdecomlvl8;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 9;armcomlvl9;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Armada;Armada Commander Level 9;armdecomlvl9;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Armada;Commander;armdecom;3;Decoy-disintegrator;D-gun;40;2;d-gun;weapon_d-gun.png
+Armada;Epic Commander - Final Boss;armcomboss;3;Darkmatter Photon-Disruptor;D-gun;999999;4;d-gun;weapon_d-gun.png
+Armada;units.names.armcomnew;armcomnew;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Behemoth;corjugg;1;GaussCannon;D-gun;1200;3;d-gun;weapon_d-gun.png
+Cortex;Commander;cordecom;3;Disintegrator;D-gun;40;2;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander;corcom;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander;corcomcon;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 10;corcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 2;corcomlvl2;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 2;cordecomlvl2;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 3;corcomlvl3;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 4;corcomlvl4;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 5;corcomlvl5;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 5;cordecomlvl5;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 6;corcomlvl6;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 7;corcomlvl7;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 8;corcomlvl8;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 9;corcomlvl9;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Cortex;Epic Commander - Final Boss;corcomboss;3;Darkmatter Photon-Disruptor;D-gun;999999;4;d-gun;weapon_d-gun.png
+Cortex;Epic Commando;cormandot4;2;Disintegrator;D-gun;2400;2;d-gun;weapon_d-gun.png
+Legion;Legion Commander;legcom;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander;legdecom;3;Disintegrator;D-gun;40;2;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 10;legcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 10;legdecomlvl10;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 2;legcomlvl2;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 2;legdecomlvl2;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 3;legcomlvl3;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 3;legdecomlvl3;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 4;legcomlvl4;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 4;legdecomlvl4;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 5;legcomlvl5;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 5;legdecomlvl5;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 6;legcomlvl6;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 6;legdecomlvl6;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 7;legcomlvl7;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 7;legdecomlvl7;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 8;legcomlvl8;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 8;legdecomlvl8;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 9;legcomlvl9;3;Disintegrator;D-gun;99999;1;d-gun;weapon_d-gun.png
+Legion;Legion Commander Level 9;legdecomlvl9;3;Disintegrator;D-gun;40;1;d-gun;weapon_d-gun.png
+Legion;Pilum;legbunk;2;Hard-Plasma Mining Tool;D-gun;300;3;d-gun;weapon_d-gun.png
 Armada;Anemone;armdl;1;Depthcharge launcher;Torpedo;225;1;depth-charge;
 Armada;Corsair;armroy;2;Depthcharge launcher;Torpedo;225;1;depth-charge;
 Armada;Depth Charge Drone;armtdrone;1;Depthcharge launcher;Torpedo;215;1;depth-charge;
@@ -168,34 +168,34 @@ Cortex;Sentinel;corsentinel;2;Depthcharge launcher;Torpedo;255;2;depth-charge;
 Legion;Charybdis;legehovertank;2;Depthcharge Launcher;Torpedo;225;3;depth-charge;
 Legion;Telchine;legamph;2;Depthcharge launcher;Torpedo;350;2;depth-charge;
 Legion;Thalassa;leganavycruiser;2;Medium depthcharge launcher;Torpedo;225;2;depth-charge;
-Armada;Shockwave;armshockwave;1;Medium EMP turret;EMP cannon;800;2;emp-grenade;
-Legion;Combat Commander;legcomt2com;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;
-Legion;Economy Commander;legcomecon;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;
-Legion;Offensive Commander;legcomoff;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;
-Legion;Tactical Defense Commander;legcomt2def;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;
-Legion;Tactical Offense Commander;legcomt2off;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;
-Armada;Arbalest;armflak;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;
-Armada;Dragonslayer;armaas;3;Heavy g2a flak cannon;Cannon;200 (air);2;flak;
-Armada;Naval Arbalest;armfflak;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;
-Armada;Shredder;armyork;2;Heavy g2a flak cannon;Cannon;200 (air);2;flak;
-Cortex;Arrow Storm;corarch;3;FlakCannon;Cannon;200 (air);2;flak;
-Cortex;Birdshot;corflak;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;
-Cortex;Black Prince;corprince;5;Anti-Air Flak Cannons;Cannon;200 (air);2;flak;
-Cortex;Black Prince;corprince;6;Anti-Air Flak Cannons;Cannon;200 (air);2;flak;
-Cortex;Fury;corsent;2;FlakCannon;Cannon;200 (air);2;flak;
-Cortex;Manticore;coraak;2;Heavy g2a flak cannon;Cannon;300 (air);2;flak;
-Cortex;Naval Birdshot;corenaa;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;
-Legion;Apollyon;legapollyon;7;Dual Rotary Microflak Cannons;Cannon;58 (air);3;flak;
-Legion;Apollyon;legapollyon;8;Dual Rotary Microflak Cannons;Cannon;58 (air);3;flak;
-Legion;Aquilon;legadvaabot;1;Rotary Microflak Cannon;Cannon;40 (air);2;flak;
-Legion;Archaic Sol Invictus;legeheatraymech_old;6;Anti-Air Flak Cannon;Cannon;190 (air);3;flak;
-Legion;Charon;legvflak;1;Dual Rotary Microflak Cannons;Cannon;40 (air);2;flak;
-Legion;Fulmen;leganavalaaturret;1;Dual Rotary Microflak Cannons;Cannon;58 (air);2;flak;
-Legion;Lupara;leglupara;1;Medium g2a Flak Blunderbuss;Cannon;255 (air);1;flak;
-Legion;Notus;leganavyaaship;1;Dual Rotary Microflak Cannons;Cannon;40 (air);2;flak;
-Legion;Pluto;legflak;1;Dual Rotary Microflak Cannons;Cannon;58 (air);2;flak;
-Legion;Praetorian;legeshotgunmech;4;Rotary Microflak Cannon;Cannon;30 (air);3;flak;
-Legion;Sol Invictus;legeheatraymech;6;Anti-Air Flak Cannon;Cannon;190 (air);3;flak;
+Armada;Shockwave;armshockwave;1;Medium EMP turret;EMP cannon;800;2;emp-grenade;weapon_emp-grenade.png
+Legion;Combat Commander;legcomt2com;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;weapon_emp-grenade.png
+Legion;Economy Commander;legcomecon;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;weapon_emp-grenade.png
+Legion;Offensive Commander;legcomoff;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;weapon_emp-grenade.png
+Legion;Tactical Defense Commander;legcomt2def;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;weapon_emp-grenade.png
+Legion;Tactical Offense Commander;legcomt2off;3;EMP Grenade;EMP cannon;10000;1;emp-grenade;weapon_emp-grenade.png
+Armada;Arbalest;armflak;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;weapon_flak.png
+Armada;Dragonslayer;armaas;3;Heavy g2a flak cannon;Cannon;200 (air);2;flak;weapon_flak.png
+Armada;Naval Arbalest;armfflak;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;weapon_flak.png
+Armada;Shredder;armyork;2;Heavy g2a flak cannon;Cannon;200 (air);2;flak;weapon_flak.png
+Cortex;Arrow Storm;corarch;3;FlakCannon;Cannon;200 (air);2;flak;weapon_flak.png
+Cortex;Birdshot;corflak;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;weapon_flak.png
+Cortex;Black Prince;corprince;5;Anti-Air Flak Cannons;Cannon;200 (air);2;flak;weapon_flak.png
+Cortex;Black Prince;corprince;6;Anti-Air Flak Cannons;Cannon;200 (air);2;flak;weapon_flak.png
+Cortex;Fury;corsent;2;FlakCannon;Cannon;200 (air);2;flak;weapon_flak.png
+Cortex;Manticore;coraak;2;Heavy g2a flak cannon;Cannon;300 (air);2;flak;weapon_flak.png
+Cortex;Naval Birdshot;corenaa;1;Heavy g2a flak cannon;Cannon;250 (air);2;flak;weapon_flak.png
+Legion;Apollyon;legapollyon;7;Dual Rotary Microflak Cannons;Cannon;58 (air);3;flak;weapon_flak.png
+Legion;Apollyon;legapollyon;8;Dual Rotary Microflak Cannons;Cannon;58 (air);3;flak;weapon_flak.png
+Legion;Aquilon;legadvaabot;1;Rotary Microflak Cannon;Cannon;40 (air);2;flak;weapon_flak.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;6;Anti-Air Flak Cannon;Cannon;190 (air);3;flak;weapon_flak.png
+Legion;Charon;legvflak;1;Dual Rotary Microflak Cannons;Cannon;40 (air);2;flak;weapon_flak.png
+Legion;Fulmen;leganavalaaturret;1;Dual Rotary Microflak Cannons;Cannon;58 (air);2;flak;weapon_flak.png
+Legion;Lupara;leglupara;1;Medium g2a Flak Blunderbuss;Cannon;255 (air);1;flak;weapon_flak.png
+Legion;Notus;leganavyaaship;1;Dual Rotary Microflak Cannons;Cannon;40 (air);2;flak;weapon_flak.png
+Legion;Pluto;legflak;1;Dual Rotary Microflak Cannons;Cannon;58 (air);2;flak;weapon_flak.png
+Legion;Praetorian;legeshotgunmech;4;Rotary Microflak Cannon;Cannon;30 (air);3;flak;weapon_flak.png
+Legion;Sol Invictus;legeheatraymech;6;Anti-Air Flak Cannon;Cannon;190 (air);3;flak;weapon_flak.png
 Cortex;Brimstone;corfship;1;Heavy long range AoE flamethrower;Flamethrower;25;2;flamethrower;
 Cortex;Cortex Commander Level 10;corcomlvl10;1;Long range AoE flamethrower;Flamethrower;120;1;flamethrower;
 Cortex;Cortex Commander Level 10;cordecomlvl10;1;Long range AoE flamethrower;Flamethrower;120;1;flamethrower;
@@ -218,20 +218,20 @@ Cortex;Forge;corforge;1;FlameThrower;Flamethrower;5;2;flamethrower;
 Cortex;Thermite;corthermite;2;Thermite heavy medium range AoE flamethrower;Flamethrower;30;3;flamethrower;
 Cortex;Vesuvius;corves;4;Demon's Maw, Heavy long range AoE flamethrower;Flamethrower;48;3;flamethrower;
 Legion;Dragon's Maw;legdtf;1;Pop-up anti-swarm AoE flamethrower;Flamethrower;16;1;flamethrower;
-Armada;Cauteriser;armnavaldefturret;1;Dual Medium Plasma Gauss Cannons;Plasma;200;1;gauss;
-Armada;Gorgon;armkraken;1;Rapid-fire gauss cannon;Cannon;180;2;gauss;
-Armada;Gremlin;armgremlin;1;Light close-quarters gauss cannon;Cannon;263;2;gauss;
-Armada;Gunslinger;armmav;1;Anti-swarm g2g gauss-impulse guns;Cannon;265;2;gauss;
-Armada;Liquifier;armanavaldefturret;2;Quad Medium Plasma Gauss Cannons;Plasma;200;2;gauss;
-Armada;Marauder;armmar;1;Double close-quarters gauss cannon;Cannon;235;3;gauss;
-Armada;Paladin;armcrus;1;Long-range g2g gauss cannon;Cannon;220;2;gauss;
-Armada;Pit Bull;armpb;1;Pop-up heavy g2g gauss cannon;Cannon;675;2;gauss;
-Armada;Turtle;armcroc;1;Medium g2g gauss-cannon;Cannon;225;2;gauss;
-Armada;units.names.armprowl;armprowl;1;Double close-quarters gauss cannon;Cannon;235;3;gauss;
-Cortex;Juggernaut;corkorg;1;GaussCannon;Cannon;165;3;gauss;
-Legion;Cetus;legamphtank;1;Light Close-quarters Gauss Cannon;Cannon;116;1;gauss;
-Legion;Phobos;legcen;1;Close-quarters g2g gauss-cannon;Cannon;75;1;gauss;
-Legion;Triton;legfloat;1;Medium g2g gauss cannon;Cannon;250;2;gauss;
+Armada;Cauteriser;armnavaldefturret;1;Dual Medium Plasma Gauss Cannons;Plasma;200;1;gauss;weapon_gauss.png
+Armada;Gorgon;armkraken;1;Rapid-fire gauss cannon;Cannon;180;2;gauss;weapon_gauss.png
+Armada;Gremlin;armgremlin;1;Light close-quarters gauss cannon;Cannon;263;2;gauss;weapon_gauss.png
+Armada;Gunslinger;armmav;1;Anti-swarm g2g gauss-impulse guns;Cannon;265;2;gauss;weapon_gauss.png
+Armada;Liquifier;armanavaldefturret;2;Quad Medium Plasma Gauss Cannons;Plasma;200;2;gauss;weapon_gauss.png
+Armada;Marauder;armmar;1;Double close-quarters gauss cannon;Cannon;235;3;gauss;weapon_gauss.png
+Armada;Paladin;armcrus;1;Long-range g2g gauss cannon;Cannon;220;2;gauss;weapon_gauss.png
+Armada;Pit Bull;armpb;1;Pop-up heavy g2g gauss cannon;Cannon;675;2;gauss;weapon_gauss.png
+Armada;Turtle;armcroc;1;Medium g2g gauss-cannon;Cannon;225;2;gauss;weapon_gauss.png
+Armada;units.names.armprowl;armprowl;1;Double close-quarters gauss cannon;Cannon;235;3;gauss;weapon_gauss.png
+Cortex;Juggernaut;corkorg;1;GaussCannon;Cannon;165;3;gauss;weapon_gauss.png
+Legion;Cetus;legamphtank;1;Light Close-quarters Gauss Cannon;Cannon;116;1;gauss;weapon_gauss.png
+Legion;Phobos;legcen;1;Close-quarters g2g gauss-cannon;Cannon;75;1;gauss;weapon_gauss.png
+Legion;Triton;legfloat;1;Medium g2g gauss cannon;Cannon;250;2;gauss;weapon_gauss.png
 Cortex;Adjudicator;coresuppt3;1;Ultra Heavy Juggernaut-Spec Heatray;Beam laser;5500;3;heatray;weapon_heatray.png
 Cortex;Adjudicator;coresuppt3;2;Ultra Heavy Juggernaut-Spec Heatray;Beam laser;5500;3;heatray;weapon_heatray.png
 Cortex;Archaic Karkinos;corkark;1;Light g2g Heat Ray;Beam laser;160;1;heatray;weapon_heatray.png
@@ -477,68 +477,68 @@ Cortex;Epic Dragon;corcrwt4;4;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultr
 Cortex;Epic Dragon;corcrwt4;5;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Dragon;corcrwt4;6;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Siegebreaker;corsiegebreaker;1;Overcharged Dreadshot Ion Accelerator;Beam laser;4000;2;laser-ultra;weapon_laser-ultra.png
-Armada;Armada Commander Level 10;armcomlvl10;5;Short-Range Lightning Discharge;Lightning;118;1;lightning;
-Armada;Armada Commander Level 10;armdecomlvl10;5;Short-Range Lightning Discharge;Lightning;118;1;lightning;
-Armada;Armada Commander Level 5;armcomlvl5;5;Short-Range Lightning Discharge;Lightning;42;1;lightning;
-Armada;Armada Commander Level 5;armdecomlvl5;5;Short-Range Lightning Discharge;Lightning;42;1;lightning;
-Armada;Armada Commander Level 6;armcomlvl6;5;Short-Range Lightning Discharge;Lightning;50;1;lightning;
-Armada;Armada Commander Level 6;armdecomlvl6;5;Short-Range Lightning Discharge;Lightning;50;1;lightning;
-Armada;Armada Commander Level 7;armcomlvl7;5;Short-Range Lightning Discharge;Lightning;57;1;lightning;
-Armada;Armada Commander Level 7;armdecomlvl7;5;Short-Range Lightning Discharge;Lightning;57;1;lightning;
-Armada;Armada Commander Level 8;armcomlvl8;5;Short-Range Lightning Discharge;Lightning;72;1;lightning;
-Armada;Armada Commander Level 8;armdecomlvl8;5;Short-Range Lightning Discharge;Lightning;72;1;lightning;
-Armada;Armada Commander Level 9;armcomlvl9;5;Short-Range Lightning Discharge;Lightning;88;1;lightning;
-Armada;Armada Commander Level 9;armdecomlvl9;5;Short-Range Lightning Discharge;Lightning;88;1;lightning;
-Armada;Dragon's Claw;armclaw;1;Close-quarters g2g lightning turret;Lightning;18;1;lightning;
-Armada;Dragon's Fury;armlwall;1;Medium Lightning Cannon;Lightning;64;2;lightning;
-Armada;Jaguar;armlatnk;1;Close-quarters lightning turret;Lightning;22;2;lightning;
-Armada;Maelstrom;armlship;1;Close-quarters lightning turret;Lightning;35;2;lightning;
-Armada;Thor;armthor;1;Heavy Lighting Cannon;Lightning;300;3;lightning;
-Armada;Welder;armzeus;1;Close-quarters g2g lightning rifle;Lightning;22;2;lightning;
-Legion;Dragon's Claw;legdtl;1;Close-quarters g2g lightning turret;Lightning;21;1;lightning;
-Armada;Attack Drone;armdrone;1;Rapid-fire a2g machine guns;Laser;11;1;machine-gun-light;
-Legion;Cacophony;legmg;1;Heavy Rapid-fire Machine Gun;Laser;17;1;machine-gun-light;
-Legion;Decurion;leggat;1;Rapid-fire Machine Gun;Laser;12;1;machine-gun-light;
-Legion;Goblin;leggob;1;Rapid-fire a2g machine guns;Laser;12;1;machine-gun-light;
-Legion;Hippocampus;legnavyscout;1;Twin Rapid-fire Machine Guns;Laser;12;1;machine-gun-light;
-Legion;Hoplite;legstr;1;Twin Rapid-fire Machine Guns;Laser;8;2;machine-gun-light;
-Legion;Legion Commander Level 2;legcomlvl2;1;Rapid-Fire Machine Gun;Laser;25;1;machine-gun-light;
-Legion;Legion Commander Level 2;legdecomlvl2;1;Rapid-Fire Machine Gun;Laser;25;1;machine-gun-light;
-Legion;Legion Commander Level 3;legcomlvl3;1;Rapid-Fire Machine Gun;Laser;30;1;machine-gun-light;
-Legion;Legion Commander Level 3;legdecomlvl3;1;Rapid-Fire Machine Gun;Laser;30;1;machine-gun-light;
-Legion;Legion Drone;legdrone;1;Burst-fire Machine Gun;Laser;12;1;machine-gun-light;
-Legion;Noctua;legfig;1;Burst-Fire A2A Machine Gun;Laser;36 (air);1;machine-gun-light;
-Legion;Offensive Commander;legcomoff;1;Rapid-fire a2g machine guns;Laser;26;1;machine-gun-light;
-Legion;Tactical Offense Commander;legcomt2off;1;Rapid-fire a2g machine guns;Laser;26;1;machine-gun-light;
-Legion;Triton;legfloat;2;Rapid-fire machine gun;Laser;7;2;machine-gun-light;
-Legion;Wheelie;legscout;1;Burst-fire Machine Gun;Laser;11;1;machine-gun-light;
-Legion;Chimera;legapopupdef;2;Dual Rotary Machine Guns;Laser;10;2;machine-gun-medium;
-Legion;Chimera;legapopupdef;3;Dual Rotary Machine Guns;Laser;10;2;machine-gun-medium;
-Legion;Combat Commander;legcomt2com;1;Rapid-fire a2g machine guns;Laser;20;1;machine-gun-medium;
-Legion;Epic Goblin;leggobt3;1;Rapid-fire close quarters machine guns;Laser;224;1;machine-gun-medium;
-Legion;Gladiator;legaskirmtank;1;Heavy Rotary Plasma Cannon;Plasma;70;2;machine-gun-medium;
-Legion;Ionia;leganavaldefturret;1;Dual Rotary Heavy-Calibre Machine Guns;Laser;24;2;machine-gun-medium;
-Legion;Legion Commander Level 4;legcomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-medium;
-Legion;Legion Commander Level 4;legdecomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-medium;
-Legion;Legion Commander Level 5;legcomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-medium;
-Legion;Legion Commander Level 5;legdecomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-medium;
-Legion;Legionnaire;legionnaire;1;Rapid-fire dual A2A machine guns;Laser;80 (air);2;machine-gun-medium;
-Legion;Thalassa;leganavycruiser;1;Twin Rapid-fire Machine Guns;Laser;24;2;machine-gun-medium;
-Legion;Tyrannus;legfort;3;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;
-Legion;Tyrannus;legfort;4;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;
-Legion;Tyrannus;legfort;5;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;
-Legion;Apollyon;legapollyon;1;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;
-Legion;Apollyon;legapollyon;2;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;
-Legion;Apollyon;legapollyon;3;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;
-Legion;Apollyon;legapollyon;4;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;
-Legion;Apollyon;legapollyon;5;Heavy rotary cannon;Laser;20;3;machine-gun-heavy;
-Legion;Apollyon;legapollyon;6;Heavy rotary cannon;Laser;20;3;machine-gun-heavy;
-Legion;Javelin;legjav;1;Twin Rapid-fire Machine Guns;Laser;12;3;machine-gun-heavy;
-Legion;Javelin;legjav;2;Light AA Rotary Gun;Laser;10 (air);3;machine-gun-heavy;
-Legion;Keres;legkeres;2;Heavy rotary cannon;Laser;10;3;machine-gun-heavy;
-Legion;Keres;legkeres;3;Heavy rotary cannon;Laser;10;3;machine-gun-heavy;
-Legion;Mukade;legpede;1;Rapid-fire a2g machine guns;Laser;21;3;machine-gun-heavy;
-Legion;Mukade;legpede;6;Rapid-fire a2g machine guns;Laser;21;3;machine-gun-heavy;
+Armada;Armada Commander Level 10;armcomlvl10;5;Short-Range Lightning Discharge;Lightning;118;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 10;armdecomlvl10;5;Short-Range Lightning Discharge;Lightning;118;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 5;armcomlvl5;5;Short-Range Lightning Discharge;Lightning;42;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 5;armdecomlvl5;5;Short-Range Lightning Discharge;Lightning;42;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 6;armcomlvl6;5;Short-Range Lightning Discharge;Lightning;50;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 6;armdecomlvl6;5;Short-Range Lightning Discharge;Lightning;50;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 7;armcomlvl7;5;Short-Range Lightning Discharge;Lightning;57;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 7;armdecomlvl7;5;Short-Range Lightning Discharge;Lightning;57;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 8;armcomlvl8;5;Short-Range Lightning Discharge;Lightning;72;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 8;armdecomlvl8;5;Short-Range Lightning Discharge;Lightning;72;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 9;armcomlvl9;5;Short-Range Lightning Discharge;Lightning;88;1;lightning;weapon_lightning.png
+Armada;Armada Commander Level 9;armdecomlvl9;5;Short-Range Lightning Discharge;Lightning;88;1;lightning;weapon_lightning.png
+Armada;Dragon's Claw;armclaw;1;Close-quarters g2g lightning turret;Lightning;18;1;lightning;weapon_lightning.png
+Armada;Dragon's Fury;armlwall;1;Medium Lightning Cannon;Lightning;64;2;lightning;weapon_lightning.png
+Armada;Jaguar;armlatnk;1;Close-quarters lightning turret;Lightning;22;2;lightning;weapon_lightning.png
+Armada;Maelstrom;armlship;1;Close-quarters lightning turret;Lightning;35;2;lightning;weapon_lightning.png
+Armada;Thor;armthor;1;Heavy Lighting Cannon;Lightning;300;3;lightning;weapon_lightning.png
+Armada;Welder;armzeus;1;Close-quarters g2g lightning rifle;Lightning;22;2;lightning;weapon_lightning.png
+Legion;Dragon's Claw;legdtl;1;Close-quarters g2g lightning turret;Lightning;21;1;lightning;weapon_lightning.png
+Armada;Attack Drone;armdrone;1;Rapid-fire a2g machine guns;Laser;11;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Cacophony;legmg;1;Heavy Rapid-fire Machine Gun;Laser;17;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Decurion;leggat;1;Rapid-fire Machine Gun;Laser;12;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Goblin;leggob;1;Rapid-fire a2g machine guns;Laser;12;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Hippocampus;legnavyscout;1;Twin Rapid-fire Machine Guns;Laser;12;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Hoplite;legstr;1;Twin Rapid-fire Machine Guns;Laser;8;2;machine-gun-light;weapon_machine-gun-light.png
+Legion;Legion Commander Level 2;legcomlvl2;1;Rapid-Fire Machine Gun;Laser;25;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Legion Commander Level 2;legdecomlvl2;1;Rapid-Fire Machine Gun;Laser;25;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Legion Commander Level 3;legcomlvl3;1;Rapid-Fire Machine Gun;Laser;30;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Legion Commander Level 3;legdecomlvl3;1;Rapid-Fire Machine Gun;Laser;30;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Legion Drone;legdrone;1;Burst-fire Machine Gun;Laser;12;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Noctua;legfig;1;Burst-Fire A2A Machine Gun;Laser;36 (air);1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Offensive Commander;legcomoff;1;Rapid-fire a2g machine guns;Laser;26;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Tactical Offense Commander;legcomt2off;1;Rapid-fire a2g machine guns;Laser;26;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Triton;legfloat;2;Rapid-fire machine gun;Laser;7;2;machine-gun-light;weapon_machine-gun-light.png
+Legion;Wheelie;legscout;1;Burst-fire Machine Gun;Laser;11;1;machine-gun-light;weapon_machine-gun-light.png
+Legion;Chimera;legapopupdef;2;Dual Rotary Machine Guns;Laser;10;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Chimera;legapopupdef;3;Dual Rotary Machine Guns;Laser;10;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Combat Commander;legcomt2com;1;Rapid-fire a2g machine guns;Laser;20;1;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Epic Goblin;leggobt3;1;Rapid-fire close quarters machine guns;Laser;224;1;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Gladiator;legaskirmtank;1;Heavy Rotary Plasma Cannon;Plasma;70;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Ionia;leganavaldefturret;1;Dual Rotary Heavy-Calibre Machine Guns;Laser;24;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 4;legcomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 4;legdecomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 5;legcomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legion Commander Level 5;legdecomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Legionnaire;legionnaire;1;Rapid-fire dual A2A machine guns;Laser;80 (air);2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Thalassa;leganavycruiser;1;Twin Rapid-fire Machine Guns;Laser;24;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tyrannus;legfort;3;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tyrannus;legfort;4;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Tyrannus;legfort;5;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;weapon_machine-gun-medium.png
+Legion;Apollyon;legapollyon;1;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;2;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;3;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;4;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;5;Heavy rotary cannon;Laser;20;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Apollyon;legapollyon;6;Heavy rotary cannon;Laser;20;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Javelin;legjav;1;Twin Rapid-fire Machine Guns;Laser;12;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Javelin;legjav;2;Light AA Rotary Gun;Laser;10 (air);3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Keres;legkeres;2;Heavy rotary cannon;Laser;10;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Keres;legkeres;3;Heavy rotary cannon;Laser;10;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Mukade;legpede;1;Rapid-fire a2g machine guns;Laser;21;3;machine-gun-heavy;weapon_machine-gun-heavy.png
+Legion;Mukade;legpede;6;Rapid-fire a2g machine guns;Laser;21;3;machine-gun-heavy;weapon_machine-gun-heavy.png
 Armada;Crossbow;armjeth;1;Light g2a missile launcher;Missile;110 (air);1;missile-light;weapon_missile-light.png
 Armada;Cyclone;armsfig;1;Guided a2a missile launcher;Missile;12;1;missile-light;weapon_missile-light.png
 Armada;Cyclone;armsfig2;1;Guided a2a missile launcher;Missile;12;1;missile-light;weapon_missile-light.png
@@ -791,52 +791,52 @@ Legion;Tactical Defense Commander;legcomt2def;4;Pop-up rapid-fire g2a missile la
 Legion;Tactical Offense Commander;legcomt2off;4;Pop-up rapid-fire g2a missile launcher;Missile;150 (air);1;rocket-salvo;weapon_rocket-salvo.png
 Legion;Toxotai;legaabot;1;Advanced g2a Salvo Missile Launcher;Missile;37 (air);1;rocket-salvo;weapon_rocket-salvo.png
 Legion;Ultor;leganavymissileship;1;Heavy Long-Range Vertical Salvo Rocket Launcher;Cannon;450;2;rocket-salvo;weapon_rocket-salvo.png
-Armada;Epic Tumbleweed;armvadert4;1;Crawlingbomb Dummy Weapon;Melee;20000;3;self-destruct;
-Armada;Epic Tumbleweed;armvadert4;2;Self-destruction;Cannon;2000;3;self-destruct;
-Armada;Tumbleweed;armvader;2;Self-destruction;Cannon;1000;2;self-destruct;
-Legion;Martyr;legkam;2;Mine Detonator;Cannon;1000 (air);1;self-destruct;
-Legion;Martyr;legkam;3;Crawlingbomb Dummy Weapon;Bomb;440;1;self-destruct;
-Legion;Alaris;leghades;1;Dual-Feed Medium Shotgun;Laser;10;1;shotgun;
-Legion;Cardea;legcar;1;Medium Shotgun;Laser;40;1;shotgun;
-Legion;Ionia;leganavaldefturret;2;Dual Heavy Assault Kinetic Shotgun;Laser;30;2;shotgun;
-Legion;Karkinos;legkark;2;Dual-Feed Medium Shotgun;Laser;20;1;shotgun;
-Legion;Praetorian;legeshotgunmech;2;Dual Heavy Assault Kinetic Shotgun;Laser;60;3;shotgun;
-Legion;Scylla;leganavybattleship;3;Medium Shotgun;Laser;20;2;shotgun;
-Legion;Scylla;leganavybattleship;4;Medium Shotgun;Laser;20;2;shotgun;
-Legion;Stronghold;legstronghold;1;Medium Shotgun;Laser;30;2;shotgun;
-Armada;Abductor;armdfly;1;Heavy a2g EMP beam;Beam laser;10500;2;stun-beam;
-Armada;Armada Commander Level 10;armcomlvl10;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;
-Armada;Armada Commander Level 10;armdecomlvl10;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;
-Armada;Armada Commander Level 10;armcomlvl10;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 10;armdecomlvl10;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 3;armcomlvl3;4;Arcing Stun Beam;Beam laser;16000;1;stun-beam;
-Armada;Armada Commander Level 3;armdecomlvl3;4;Arcing Stun Beam;Beam laser;16000;1;stun-beam;
-Armada;Armada Commander Level 3;armcomlvl3;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 3;armdecomlvl3;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 4;armcomlvl4;4;Arcing Stun Beam;Beam laser;22000;1;stun-beam;
-Armada;Armada Commander Level 4;armdecomlvl4;4;Arcing Stun Beam;Beam laser;22000;1;stun-beam;
-Armada;Armada Commander Level 4;armcomlvl4;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 4;armdecomlvl4;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 5;armcomlvl5;4;Arcing Stun Beam;Beam laser;30000;1;stun-beam;
-Armada;Armada Commander Level 5;armdecomlvl5;4;Arcing Stun Beam;Beam laser;30000;1;stun-beam;
-Armada;Armada Commander Level 5;armcomlvl5;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 5;armdecomlvl5;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 6;armcomlvl6;4;Arcing Stun Beam;Beam laser;40000;1;stun-beam;
-Armada;Armada Commander Level 6;armdecomlvl6;4;Arcing Stun Beam;Beam laser;40000;1;stun-beam;
-Armada;Armada Commander Level 6;armcomlvl6;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 6;armdecomlvl6;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 7;armcomlvl7;4;Arcing Stun Beam;Beam laser;56000;1;stun-beam;
-Armada;Armada Commander Level 7;armdecomlvl7;4;Arcing Stun Beam;Beam laser;56000;1;stun-beam;
-Armada;Armada Commander Level 7;armcomlvl7;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 7;armdecomlvl7;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 8;armcomlvl8;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;
-Armada;Armada Commander Level 8;armdecomlvl8;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;
-Armada;Armada Commander Level 8;armcomlvl8;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 8;armdecomlvl8;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 9;armcomlvl9;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;
-Armada;Armada Commander Level 9;armdecomlvl9;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;
-Armada;Armada Commander Level 9;armcomlvl9;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
-Armada;Armada Commander Level 9;armdecomlvl9;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;
+Armada;Epic Tumbleweed;armvadert4;1;Crawlingbomb Dummy Weapon;Melee;20000;3;self-destruct;weapon_self-destruct.png
+Armada;Epic Tumbleweed;armvadert4;2;Self-destruction;Cannon;2000;3;self-destruct;weapon_self-destruct.png
+Armada;Tumbleweed;armvader;2;Self-destruction;Cannon;1000;2;self-destruct;weapon_self-destruct.png
+Legion;Martyr;legkam;2;Mine Detonator;Cannon;1000 (air);1;self-destruct;weapon_self-destruct.png
+Legion;Martyr;legkam;3;Crawlingbomb Dummy Weapon;Bomb;440;1;self-destruct;weapon_self-destruct.png
+Legion;Alaris;leghades;1;Dual-Feed Medium Shotgun;Laser;10;1;shotgun;weapon_shotgun.png
+Legion;Cardea;legcar;1;Medium Shotgun;Laser;40;1;shotgun;weapon_shotgun.png
+Legion;Ionia;leganavaldefturret;2;Dual Heavy Assault Kinetic Shotgun;Laser;30;2;shotgun;weapon_shotgun.png
+Legion;Karkinos;legkark;2;Dual-Feed Medium Shotgun;Laser;20;1;shotgun;weapon_shotgun.png
+Legion;Praetorian;legeshotgunmech;2;Dual Heavy Assault Kinetic Shotgun;Laser;60;3;shotgun;weapon_shotgun.png
+Legion;Scylla;leganavybattleship;3;Medium Shotgun;Laser;20;2;shotgun;weapon_shotgun.png
+Legion;Scylla;leganavybattleship;4;Medium Shotgun;Laser;20;2;shotgun;weapon_shotgun.png
+Legion;Stronghold;legstronghold;1;Medium Shotgun;Laser;30;2;shotgun;weapon_shotgun.png
+Armada;Abductor;armdfly;1;Heavy a2g EMP beam;Beam laser;10500;2;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armcomlvl10;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armdecomlvl10;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armcomlvl10;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 10;armdecomlvl10;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armcomlvl3;4;Arcing Stun Beam;Beam laser;16000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armdecomlvl3;4;Arcing Stun Beam;Beam laser;16000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armcomlvl3;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 3;armdecomlvl3;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armcomlvl4;4;Arcing Stun Beam;Beam laser;22000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armdecomlvl4;4;Arcing Stun Beam;Beam laser;22000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armcomlvl4;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 4;armdecomlvl4;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armcomlvl5;4;Arcing Stun Beam;Beam laser;30000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armdecomlvl5;4;Arcing Stun Beam;Beam laser;30000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armcomlvl5;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 5;armdecomlvl5;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armcomlvl6;4;Arcing Stun Beam;Beam laser;40000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armdecomlvl6;4;Arcing Stun Beam;Beam laser;40000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armcomlvl6;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 6;armdecomlvl6;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armcomlvl7;4;Arcing Stun Beam;Beam laser;56000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armdecomlvl7;4;Arcing Stun Beam;Beam laser;56000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armcomlvl7;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 7;armdecomlvl7;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armcomlvl8;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armdecomlvl8;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armcomlvl8;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 8;armdecomlvl8;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armcomlvl9;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armdecomlvl9;4;Arcing Stun Beam;Beam laser;60000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armcomlvl9;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
+Armada;Armada Commander Level 9;armdecomlvl9;6;EMP Damage-Mitigating Flashbang;Laser;20000;1;stun-beam;weapon_stun-beam.png
 Armada;Barracuda;armsubk;1;Rapid armor-piercing torpedoes;Torpedo;350;2;torpedo;weapon_torpedo.png
 Armada;Cormorant;armlance;1;Light homing torpedo launcher;Torpedo;375;2;torpedo;weapon_torpedo.png
 Armada;Eel;armsub;1;Light torpedo launcher;Torpedo;342;1;torpedo;weapon_torpedo.png
