@@ -13,6 +13,18 @@ Legion;Legion Commander Level 3;legdecomlvl3;4;Anti-Air Missile Launcher;Missile
 Legion;Notus;leganavyaaship;2;Advanced Salvo Anti-Air Missile Launcher;Missile;20 (air);2;aa-missile;weapon_aa-missile.png
 Legion;Notus;leganavyaaship;3;Advanced Salvo Anti-Air Missile Launcher;Missile;20 (air);2;aa-missile;weapon_aa-missile.png
 Legion;Ultor;leganavymissileship;2;Salvo Anti-Air Missile Launcher;Missile;20 (air);2;aa-missile;weapon_aa-missile.png
+Armada;Citadel;armamd;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Armada;Haven;armantiship;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Armada;Haven;armcarry;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Armada;Umbrella;armscab;1;ICBM intercepting missile launcher;Starburst missile;500;2;anti-nuke;weapon_anti-nuke.png
+Cortex;Oasis;corantiship;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Cortex;Oasis;corcarry;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Cortex;Prevailer;corfmd;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Cortex;Saviour;cormabm;1;ICBM intercepting missile launcher;Starburst missile;500;2;anti-nuke;weapon_anti-nuke.png
+Legion;Aegis;legabm;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Legion;Hecate;leganavyantinukecarrier;2;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
+Legion;Hera;legavantinuke;1;ICBM Interceptor Missile Launcher;Starburst missile;500;2;anti-nuke;weapon_anti-nuke.png
+Legion;Rampart;legrampart;1;ICBM intercepting missile launcher;Starburst missile;1500;2;anti-nuke;weapon_anti-nuke.png
 Cortex;Tremor;cortrem;1;RapidArtillery;Artillery;200;2;artillery;weapon_artillery.png
 Cortex;Wolverine;corwolv;1;LightArtillery;Artillery;300;1;artillery;weapon_artillery.png
 Legion;Corinth;leganavyartyship;2;Heavy Artillery Cluster Plasma Cannon;Plasma;250;2;artillery;weapon_artillery.png

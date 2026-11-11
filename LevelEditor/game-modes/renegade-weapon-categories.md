@@ -2,7 +2,7 @@
 
 [Renegade](renegade.md) · [Weapon table](renegade-weapons.md) · [Start page](../../README.md)
 
-898 weapons on a mouse button, 819 different weapon definitions, grouped into **38 categories** (a picture each, 38 drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; `renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`).
+910 weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), 831 different weapon definitions, grouped into **39 categories** (a picture each, 39 drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; `renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`).
 
 ## How a weapon gets its category
 
@@ -28,6 +28,7 @@
 | Category | Picture | Weapons | Units | Examples |
 |---|---|---|---|---|
 | aa-missile | <img src="weapon-images/weapon_aa-missile.png" width="384"> | 14 | 12 | Legion Commander: Anti-Air Missile Launcher; Legion Commander Level 2: Anti-Air Missile Launcher; Legion Commander Level 3: Anti-Air Missile Launcher |
+| anti-nuke | <img src="weapon-images/weapon_anti-nuke.png" width="384"> | 12 | 12 | Haven: ICBM intercepting missile launcher; Oasis: ICBM intercepting missile launcher; Citadel: ICBM intercepting missile launcher |
 | artillery | <img src="weapon-images/weapon_artillery.png" width="384"> | 8 | 5 | Corinth: Heavy Artillery Cluster Plasma Cannon; Octeres: Long-Range Naval Cluster Artillery Cannon; Tremor: RapidArtillery |
 | bomb | <img src="weapon-images/weapon_bomb.png" width="384"> | 11 | 11 | Blizzard: Heavy a2g impulse warheads; Epic Stormbringer: Ultra Heavy Bombs; Stiletto: Heavy a2g EMP warheads |
 | cannon-light | <img src="weapon-images/weapon_cannon-light.png" width="384"> | 24 | 24 | Cortex Commander Level 4: HeavyCannon; Cortex Commander Level 5: HeavyCannon; Cortex Commander Level 6: HeavyCannon |

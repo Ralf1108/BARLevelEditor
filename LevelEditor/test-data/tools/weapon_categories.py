@@ -113,6 +113,8 @@ def classify(r):
         if "nuclear" in d or "atomic" in d:
             return "nuclear", None
         return "bomb", (None, size(d, r, (150, 400)))
+    if "icbm" in d and "intercept" in d:
+        return "anti-nuke", None   # (the launchers that shoot down nuclear missiles: they fire by themselves, no button, but the picture is prepared)
     if "nuclear" in d or "icbm" in d or "thermonuclear" in d or "nuclear" in wn or "nuke" in d:
         return "nuclear", None
     if t == "Torpedo" or "torpedo" in d or "depthcharge" in d or "depth charge" in d:
@@ -155,7 +157,7 @@ def order(name):
 
 
 def main():
-    rows = [r for r in read_csv(SRC) if (r["Fire button"] or "").strip()]
+    rows = [r for r in read_csv(SRC) if (r["Fire button"] or "").strip() or classify(r)[0] == "anti-nuke"]
     cat = collections.defaultdict(list)
     out = []
     for r in rows:
@@ -173,7 +175,7 @@ def main():
     have = [n for n in names if os.path.exists(os.path.join(IMAGES, "weapon_%s.png" % n))]
     lines = ["# Renegade: weapon categories for the pictures of the panel", "",
              "[Renegade](renegade.md) · [Weapon table](renegade-weapons.md) · [Start page](../../README.md)", "",
-             "%d weapons on a mouse button, %d different weapon definitions, grouped into **%d categories** (a picture each, %d drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; "
+             "%d weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), %d different weapon definitions, grouped into **%d categories** (a picture each, %d drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; "
              "`renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`)." % (len(rows), len({r["Weapon name"] for r in rows}), len(cat), len(have)), "",
              "## How a weapon gets its category", "",
              "1. **Family** from the type and the description of the weapon: laser, plasma, cannon, missile, machine gun, torpedo, bomb, flak, d-gun ... and so on (the table below). The heat rays (description with \"heat ray\") are the family heatray (yellow).",

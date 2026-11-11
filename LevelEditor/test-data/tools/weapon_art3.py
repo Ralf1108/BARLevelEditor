@@ -461,3 +461,16 @@ def nuclear(body_unused, tip):
         d.ellipse((cx + dx - r, CY + dy - r, cx + dx + r, CY + dy + r), fill=(255, 215, 120, 255))
     blur_add(out, core, 10)
     return out
+
+
+def anti_nuke(body, tip):
+    """an anti-nuke launcher: a slim interceptor missile and, far right, the incoming nuclear warhead (white, radiation sign) hit in an explosion"""
+    out = body.copy()
+    cx = tip - 560
+    smoke(out, 1330, cx - 520, CY, 26, seed=14, tone=(205, 205, 212))
+    w2.missile(out, cx, CY, 520, 28, flame_len=300)
+    wh = new()
+    nuke_missile(wh, W - 1 - (tip - 180), CY, 420, 40)
+    out.alpha_composite(wh.transpose(Image.FLIP_LEFT_RIGHT))
+    fireball(out, tip - 270, CY, 95, 14, 7)
+    return out

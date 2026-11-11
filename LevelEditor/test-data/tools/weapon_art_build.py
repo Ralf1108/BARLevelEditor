@@ -42,7 +42,7 @@ def jobs():
           ("gauss", 3300, "cannon", w3.gauss), ("artillery", 3300, "cannon", w3.artillery), ("shotgun", 3500, "cannon", w3.shotgun),
           ("emp-grenade", 3300, "launcher-150", w3.emp_grenade), ("self-destruct", 3300, None, w3.self_destruct),
           ("railgun", 3300, "cannon", w3.railgun), ("flamethrower", 3300, "cannon", w3.flamethrower), ("depth-charge", 3300, "launcher-150", w3.depth_charge),
-          ("aa-missile", 3300, "launcher-110", w3.aa_missile), ("bomb", 3300, None, w3.bomb), ("nuclear", 3300, None, w3.nuclear)]
+          ("aa-missile", 3300, "launcher-110", w3.aa_missile), ("anti-nuke", 3300, "launcher-110", w3.anti_nuke), ("bomb", 3300, None, w3.bomb), ("nuclear", 3300, None, w3.nuclear)]
     return j
 
 

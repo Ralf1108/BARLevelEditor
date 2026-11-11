@@ -203,7 +203,7 @@ def write_md(rows):
     lines = ["%d weapons of %d units." % (len(rows), len(codes)), "", "| " + " | ".join(head) + " |", "|" + "|".join(["---"] * len(head)) + "|"]
     for r in rows:
         f = pics.get((r[2], r[3]))
-        pic = '[<img src="weapon-images/%s" width="288">](weapon-images/%s)' % (f, f) if f else ""
+        pic = '[<img src="weapon-images/%s" width="288">](weapon-images/%s)' % (f, f) if f else ("" if r[11] else "not shown")   # r[11]: Fire button
         cells = [c.replace("|", "/") for c in r]
         lines.append("| " + " | ".join(cells[:4] + [pic] + cells[4:]) + " |")
     block = BEGIN_TABLE + "\n" + "\n".join(lines) + "\n" + END_TABLE + "\n"
