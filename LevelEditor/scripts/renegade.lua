@@ -778,6 +778,29 @@ local function reach(ud, slots, list, h)
 	if h.udist <= range * (1 + EDGE) then return "yellow" end
 	return "red"
 end
+-- The firing cone of a weapon (a turret that cannot turn all the way round, e.g. the Mauser's artillery: +-90 degrees): maxAngleDif of the weapon is the cosine of the angle it may differ
+-- from its main direction mainDir (in the frame of the unit: z = forward, x = right); -1 = no limit. The aim is the look direction (the camera). Returns whether the aim is outside the cone and on
+-- which side the vehicle has to turn (1 = right, -1 = left).
+local function outOfCone(u, ud, i)
+	local wp = ud.weapons[i]
+	local lim = wp and tonumber(wp.maxAngleDif) or -1
+	if lim <= -0.999 then return false end
+	local fv, uv, rv = Spring.GetUnitVectors(u) -- (three tables { x, y, z })
+	local fx, fy, fz = fv and fv[1], fv and fv[2], fv and fv[3]
+	local ux, uy, uz = uv and uv[1], uv and uv[2], uv and uv[3]
+	local rx, ry, rz = rv and rv[1], rv and rv[2], rv and rv[3]
+	local cam = Spring.GetCameraVectors()
+	local a = cam and cam.forward
+	if not (fx and ux and rx and a) then return false end
+	local mx, my, mz = tonumber(wp.mainDirX) or 0, tonumber(wp.mainDirY) or 0, tonumber(wp.mainDirZ) or 1
+	local dx, dy, dz = rx * mx + ux * my + fx * mz, ry * mx + uy * my + fy * mz, rz * mx + uz * my + fz * mz
+	local dl = math.sqrt(dx * dx + dy * dy + dz * dz)
+	local al = math.sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3])
+	if dl < 0.01 or al < 0.01 then return false end
+	local cosA = (dx * a[1] + dy * a[2] + dz * a[3]) / (dl * al)
+	if cosA >= lim - 0.01 then return false end
+	return true, ((a[1] * rx + a[2] * ry + a[3] * rz) >= 0) and 1 or -1
+end
 local REACH_COLOR = { green = { 0.25, 0.85, 0.3 }, yellow = { 0.95, 0.8, 0.15 }, red = { 0.9, 0.2, 0.15 } }
 
 -- The pictures of the weapons: the gadget publishes "<weapon number>=<picture>,..." (renPics); a picture is the file LuaUI/Images/renegade/weapons/weapon_<picture>.png of the game
@@ -944,6 +967,8 @@ local function panel(vsx, vsy)
 				local name = (pn and niceName(pn)) or (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
 				if #list > 1 then name = name .. "  x" .. #list end
 				local state = (not drops) and reach(ud, slots, list, R.hit) or nil
+				local cone, coneSide = outOfCone(u, ud, i)
+				if cone and not slots.aa[i] then state = "red" else cone = false end
 				local attack, height
 				if wd.type == "AircraftBomb" then
 					-- a bomber drops only up to its attack altitude: green up to it, yellow up to 15% above, red higher (nothing is dropped)
@@ -955,7 +980,7 @@ local function panel(vsx, vsy)
 					end
 				end
 				local dmg, dps, rate = weaponStats(ud, slots, list, time)
-				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps, rate = rate, ord = #rows + 1 }
+				rows[#rows + 1] = { name = name, range = slotRange(ud, list), fill = fill, ready = ready, time = time, tag = allAtOnce and "LMB" or sl[2], color = allAtOnce and SLOTS[1][4] or sl[4], aa = slots.aa[i], hy = slots.hy[i], state = state, attack = attack, height = height, pic = weaponPicture(u, i), dmg = dmg, dps = dps, rate = rate, cone = cone, coneSide = coneSide, ord = #rows + 1 }
 			end
 		end
 	end
@@ -1041,6 +1066,10 @@ local function panel(vsx, vsy)
 		while #name > 4 and gl.GetTextWidth(name) * 20 * s > room do name = name:sub(1, -2) end
 		gl.Color(1, 1, 1, 1)
 		gl.Text(name, tx, cy2 - 26 * s, 20 * s, "o")
+		if r.cone then
+			gl.Color(1, 0.3, 0.25, 1)
+			gl.Text(r.coneSide > 0 and "TURN VEHICLE >>" or "<< TURN VEHICLE", cx2 - 8 * s, cy2 - 24 * s, 14 * s, "ro")
+		end
 		-- the values: symbol, a small label above the number; the damage per second in orange
 		local cols = {}
 		if r.auto then
@@ -1284,6 +1313,24 @@ function widget:DrawScreen()
 			end
 		end
 	end
+	-- a turret that cannot turn all the way round: when no weapon can point where you look, the vehicle has to turn (the crosshair says so and on which side)
+	local coneAll, coneSide = false, 0
+	do
+		local ud0, sl0 = weaponsOf(R.unit)
+		if ud0 then
+			local n, out = 0, 0
+			for _, sl in ipairs(SLOTS) do
+				local list = sl0[sl[1]]
+				if list and #list > 0 and not sl0.aa[list[1]] then
+					n = n + 1
+					local o, sd = outOfCone(R.unit, ud0, list[1])
+					if o then out = out + 1; coneSide = sd end
+				end
+			end
+			coneAll = n > 0 and out == n
+		end
+	end
+	R.coneOut = coneAll -- (for the tests)
 	R.best = best -- (for the tests)
 	local inReach = h and (dropped or best == "green")
 	if not h then
@@ -1297,6 +1344,7 @@ function widget:DrawScreen()
 	end
 	-- a gunship with fixed guns: an aim point steeper below it than the guns can turn is moved out to the edge of the dead zone (correctShot)
 	local steep = R.corrected ~= nil
+	if coneAll then text = (coneSide > 0 and "TURN THE VEHICLE >>  " or "<<  TURN THE VEHICLE  ") .. "(outside of the turret angle)" end
 	if steep then text = text .. string.format("  STEEP: the shot lands %d m out (guns reach %d deg down)", math.floor(R.corrected.d), MAX_DOWN) end
 	local r, g, b = 1, 1, 1
 	if h then
@@ -1305,6 +1353,7 @@ function widget:DrawScreen()
 		elseif best == "yellow" then r, g, b = 1, 0.9, 0.2
 		else r, g, b = 1, 0.3, 0.25 end
 	end
+	if coneAll then r, g, b = 1, 0.25, 0.2 end
 	gl.Color(r, g, b, 0.95)
 	gl.LineWidth(3)
 	gl.BeginEnd(GL.LINES, function()
