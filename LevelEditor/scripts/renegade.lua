@@ -221,14 +221,19 @@ end
 -- fired high (highTrajectory 1) and a cannon whose shell has to leave at 20 degrees or more to reach its maximum range (sin 2a = range x gravity / speed^2 from 0.64: the Mauser 29 degrees, the
 -- tank guns 18 to 21, a Pawn 2); cannons, gauss, heat rays and the like that shoot flat have only the crosshair.
 local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true }
--- (the categories of the weapon pictures that shoot in an arc whatever their numbers say: artillery, starburst rockets, rocket salvos, nuclear missiles, EMP grenades)
-local ARC_PICS = { artillery = true, ["heavy-rocket"] = true, ["rocket-salvo"] = true, nuclear = true, ["emp-grenade"] = true }
+-- (the categories of the weapon pictures that shoot in an arc whatever their numbers say: artillery, nuclear missiles, EMP grenades)
+local ARC_PICS = { artillery = true, nuclear = true, ["emp-grenade"] = true }
 local function arcPic(u, i)
 	local name = u and i and (Spring.GetUnitRulesParam(u, "renPics") or ""):match("%f[%d]" .. i .. "=([%w%-_]+)")
 	return name and ARC_PICS[name] or false
 end
 local function lobbed(wd, u, i)
-	if LOB[wd.type] or arcPic(u, i) then return true end
+	if arcPic(u, i) then return true end
+	-- missiles: a missile launcher flies an arc when its trajectoryHeight is above 0 (Janus, Banisher), otherwise it flies straight at the target (Karganeth, Rocko, anti-air); a starburst
+	-- rocket climbs for `uptime` seconds and then dives: from 2 s that is an indirect weapon (Merl, Catapult, the nuclear missiles), a short climb (the Titan's guided starburst, 0.9 s) is direct
+	if wd.type == "MissileLauncher" then return (tonumber(wd.trajectoryHeight) or 0) > 0 end
+	if wd.type == "StarburstLauncher" then return (tonumber(wd.uptime) or 0) >= 2 end
+	if LOB[wd.type] then return true end
 	if wd.type ~= "Cannon" then return false end
 	if (tonumber(wd.highTrajectory) or 0) == 1 then return true end
 	local g = (tonumber(wd.myGravity) or 0) > 0 and wd.myGravity or (Game.gravity or 120) / 900
@@ -236,6 +241,7 @@ local function lobbed(wd, u, i)
 	return v > 0 and (tonumber(wd.range) or 0) * g / (v * v) >= 0.64
 end
 -- whether every weapon group of the unit (the anti-air ones aside) shoots in an arc, and the longest range of them: a unit like that can be fired at the sky (a point on the ground at that range)
+R.lobbed = lobbed -- (for the tests)
 local function lobbedAll(u, ud, slots)
 	local n, range = 0, 0
 	for _, key in ipairs({ "L", "R", "M" }) do
