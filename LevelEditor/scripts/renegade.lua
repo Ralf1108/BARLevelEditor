@@ -96,6 +96,8 @@ local function setCamera(u)
 end
 
 local function enable(u)
+	local cs = Spring.GetCameraState()
+	if cs and cs.name ~= "fps" then R.savedCam = cs end -- (the camera of the normal game: it comes back with the normal mode)
 	R.on = true
 	R.unit = u
 	R.hidden = true
@@ -111,6 +113,26 @@ local function disable()
 	R.on = false
 	R.keys, R.fire = 0, 0
 	say("normal camera")
+end
+
+-- The key next to Shift ("<", scan code 100 on a German keyboard; Insert and the text command do the same) switches between Renegade (first or third person view, the keys and the
+-- mouse are taken) and the normal game (the camera of the game, the keys and the mouse as always, the unit is an ordinary unit that can be given orders). The gadget is told
+-- ("ren|mode|0" / "ren|mode|1").
+local function toggleMode()
+	local now = os.clock()
+	if R.modeAt and now - R.modeAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
+	R.modeAt = now
+	if R.on then
+		R.off = true
+		disable()
+		Spring.SendLuaRulesMsg("ren|mode|0")
+		if R.savedCam then Spring.SetCameraState(R.savedCam, 0.5) end
+		say("normal game (press the key next to Shift to come back)")
+	else
+		R.off = false
+		Spring.SendLuaRulesMsg("ren|mode|1")
+		say("Renegade")
+	end
 end
 
 local function send(f, force)
@@ -398,6 +420,10 @@ function widget:Update()
 		if R.on then disable() end
 		return
 	end
+	-- the key next to Shift ("<"): polled as well (the game may take the key press before the widget sees it, as with Tab)
+	local lt = Spring.GetKeyState(60)
+	if lt and not R.ltWas then toggleMode() end
+	R.ltWas = lt
 	if not R.on and not R.off then enable(u) end
 	if not R.on then return end
 	if u ~= R.unit then
@@ -613,8 +639,8 @@ function widget:MouseWheel(up, value)
 end
 
 function widget:KeyPress(key, mods, isRepeat)
-	if key == 277 then -- Insert
-		if R.on then R.off = true; disable() else R.off = false end
+	if key == 277 or key == 60 or key == 62 then -- Insert, "<" and ">" (the key next to Shift; a scan code 100 key reports one of them)
+		toggleMode()
 		return true
 	end
 	if R.on and R.picker and R.picker.focus and key ~= 9 then
@@ -646,7 +672,7 @@ function widget:TextCommand(cmd)
 		table.sort(t)
 		say("camera", table.concat(t, " "))
 	else
-		if R.on then R.off = true; disable() else R.off = false end
+		toggleMode()
 	end
 	return true
 end

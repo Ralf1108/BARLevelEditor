@@ -1769,6 +1769,24 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return
 	end
+	local mode = msg:match("^ren|mode|([01])$")
+	if mode then
+		-- the player switches between Renegade (1) and the normal game (0): in the normal game the unit is an ordinary unit again (stop, fire at will, no held reloads), the view and the keys
+		-- are not used; back in Renegade it is held again and steered from the next message on
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local u, inp = units[team], input[team]
+		if u and inp and not spec and Spring.ValidUnitID(u) then
+			inp.normal = (mode == "0")
+			inp.hold, inp.aimed, inp.keys, inp.fire = {}, false, 0, 0
+			Spring.SetUnitTarget(u, nil)
+			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+			Spring.GiveOrderToUnit(u, CMD.FIRE_STATE, { inp.normal and 2 or 0 }, 0)
+			local ud = UnitDefs[Spring.GetUnitDefID(u)]
+			for i = 1, #(ud and ud.weapons or {}) do unblock(u, i, Spring.GetGameFrame()) end
+			Spring.SetTeamRulesParam(team, "renNormal", inp.normal and 1 or 0, { public = true })
+		end
+		return
+	end
 	local want = msg:match("^ren|unit|([%w_]+)$")
 	if want then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
@@ -1780,6 +1798,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 	local _, active, spec, team = Spring.GetPlayerInfo(playerID, false)
 	if spec or not units[team] then return end
 	local inp = input[team]
+	if inp.normal then return end
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
 	inp.keys, inp.fire = math.max(0, math.min(63, tonumber(keys))), math.max(0, math.min(7, tonumber(fire)))
 	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
@@ -1837,7 +1856,7 @@ local function giveUnit(team, defName, x, y, z, face)
 	input[team].moving, input[team].mask = false, 0
 	input[team].hold = {}
 	input[team].fire = 0
-	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { 0 }, 0) -- hold fire: only the player aims
+	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { (input[team] and input[team].normal) and 2 or 0 }, 0) -- hold fire: only the player aims (the normal game: fire at will)
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
 	-- the groups of weapons of the buttons for the widget: "left;right;middle" (weapon numbers), and the anti-air weapons
 	local s = slotsFor(UnitDefNames[defName])
@@ -2011,10 +2030,12 @@ function gadget:GameFrame(f)
 		end
 	end
 	for team in pairs(units) do
-		faceView(team, f)
-		steer(team, f)
-		lift(team, f)
-		shoot(team, f)
+		if not (input[team] and input[team].normal) then -- (the normal mode of the game, switched with the key next to Shift: nothing is steered or aimed here)
+			faceView(team, f)
+			steer(team, f)
+			lift(team, f)
+			shoot(team, f)
+		end
 		processBombs(f)
 		if not energyInit[team] then
 			energyInit[team] = true
