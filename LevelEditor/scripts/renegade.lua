@@ -221,8 +221,14 @@ end
 -- fired high (highTrajectory 1) and a cannon whose shell has to leave at 20 degrees or more to reach its maximum range (sin 2a = range x gravity / speed^2 from 0.64: the Mauser 29 degrees, the
 -- tank guns 18 to 21, a Pawn 2); cannons, gauss, heat rays and the like that shoot flat have only the crosshair.
 local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true }
-local function lobbed(wd)
-	if LOB[wd.type] then return true end
+-- (the categories of the weapon pictures that shoot in an arc whatever their numbers say: artillery, starburst rockets, rocket salvos, nuclear missiles, EMP grenades)
+local ARC_PICS = { artillery = true, ["heavy-rocket"] = true, ["rocket-salvo"] = true, nuclear = true, ["emp-grenade"] = true }
+local function arcPic(u, i)
+	local name = u and i and (Spring.GetUnitRulesParam(u, "renPics") or ""):match("%f[%d]" .. i .. "=([%w%-_]+)")
+	return name and ARC_PICS[name] or false
+end
+local function lobbed(wd, u, i)
+	if LOB[wd.type] or arcPic(u, i) then return true end
 	if wd.type ~= "Cannon" then return false end
 	if (tonumber(wd.highTrajectory) or 0) == 1 then return true end
 	local g = (tonumber(wd.myGravity) or 0) > 0 and wd.myGravity or (Game.gravity or 120) / 900
@@ -230,14 +236,14 @@ local function lobbed(wd)
 	return v > 0 and (tonumber(wd.range) or 0) * g / (v * v) >= 0.64
 end
 -- whether every weapon group of the unit (the anti-air ones aside) shoots in an arc, and the longest range of them: a unit like that can be fired at the sky (a point on the ground at that range)
-local function lobbedAll(ud, slots)
+local function lobbedAll(u, ud, slots)
 	local n, range = 0, 0
 	for _, key in ipairs({ "L", "R", "M" }) do
 		local list = slots[key]
 		local i = list and list[1]
 		local wd = i and not slots.aa[i] and ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
 		if wd then
-			if not lobbed(wd) then return false, 0 end
+			if not lobbed(wd, u, list[1]) then return false, 0 end
 			n = n + 1
 			range = math.max(range, slotRange(ud, list))
 		end
@@ -304,7 +310,7 @@ local function aim(u)
 		local ud0, sl0 = weaponsOf(u)
 		local ux, uy, uz = Spring.GetUnitPosition(u, true)
 		if ud0 and ux then
-			local all, range = lobbedAll(ud0, sl0)
+			local all, range = lobbedAll(u, ud0, sl0)
 			if all and range > 50 then
 				local hl = math.sqrt(dx * dx + dz * dz)
 				local nx, nz
@@ -429,8 +435,15 @@ function widget:Update()
 			local gap = now - (R.lookClock or now)
 			R.lookClock = now
 			local jump = math.abs(mx - cx) > vsx * 0.4 or math.abs(my - cy) > vsy * 0.4
+			-- (and a turn of more than 35 degrees up or down or 70 degrees sideways in one frame, which a hand cannot make: a glitch of the cursor; the first one that is ignored is
+			-- written to the log with the numbers so that the cause can be found: "look jump ignored")
+			jump = jump or math.abs((my - cy) * SENS) > 35 or math.abs((mx - cx) * SENS) > 70
 			if R.skipLook or gap > 0.25 or jump then
 				R.lookSkipped = (R.lookSkipped or 0) + 1 -- (for the tests)
+				if jump and (R.jumpLogged or 0) < 5 then
+					R.jumpLogged = (R.jumpLogged or 0) + 1
+					say("look jump ignored: mouse", mx, my, "middle", cx, cy, "gap", string.format("%.2f", gap), "pitch", string.format("%.1f", R.pitch))
+				end
 				R.skipLook = false
 			else
 				R.yaw = (R.yaw - (mx - cx) * SENS) % 360
@@ -723,7 +736,7 @@ function widget:DrawWorld()
 		local wd = wp and WeaponDefs[wp.weaponDef]
 		if wd and not slots.aa[list[1]] then
 			if wd.type == "AircraftBomb" then impactPreview(x, y, z, wd, SLOTS[k][4], true)
-			elseif lobbed(wd) then impactPreview(x, y, z, wd, SLOTS[k][4]) end
+			elseif lobbed(wd, R.unit, list[1]) then impactPreview(x, y, z, wd, SLOTS[k][4]) end
 		end
 	end
 	if fixedGun(ud, slots) then
