@@ -807,6 +807,19 @@ local function panel(vsx, vsy)
 			end
 		end
 	end
+	do
+		-- the weapons that fire by themselves (anti-nuke launchers): a row with the tag AUTO, the player cannot fire them
+		local seen = {}
+		for n in (Spring.GetUnitRulesParam(u, "renAuto") or ""):gmatch("%d+") do
+			local i = tonumber(n)
+			local wd = ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
+			if wd and not seen[wd.id] then
+				seen[wd.id] = true
+				local name = (wd.description and wd.description ~= "" and wd.description) or wd.name or "weapon"
+				rows[#rows + 1] = { name = name, range = tonumber(wd.range) or 0, fill = 1, ready = true, time = wd.reload or 1, tag = "AUTO", color = { 0.62, 0.64, 0.7 }, auto = true, pic = weaponPicture(u, i) }
+			end
+		end
+	end
 	local anyPic = false
 	for _, r in ipairs(rows) do if r.pic then anyPic = true; w = 372 * s; break end end -- (with a picture the panel is as wide as the picture of a row: 6 : 1)
 	local hh = 40 * s -- the health row
@@ -863,7 +876,9 @@ local function panel(vsx, vsy)
 			gl.Text("AIR ONLY", cx2 - 8 * s, cy2 - 35 * s, 12 * s, "ro")
 		end
 		gl.Color(0.92, 0.95, 1, 1)
-		if r.attack then
+		if r.auto then
+			gl.Text(r.range >= 20000 and "range: the whole map   fires by itself" or string.format("range %d   fires by itself", r.range), tx, cy1 + 8 * s, 12 * s, "o")
+		elseif r.attack then
 			gl.Text(string.format("drops below %d m (now %d m)   reload %.1f s", r.attack, r.height, r.time), tx, cy1 + 8 * s, 12 * s, "o")
 		else
 			gl.Text(string.format("range %d   reload %.1f s%s", r.range, r.time, (r.aa or anyPic or not r.hy) and "" or "   (aircraft in the circle: lock; ground: aim)"), tx, cy1 + 8 * s, 12 * s, "o")

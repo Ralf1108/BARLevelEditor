@@ -1831,6 +1831,13 @@ local function giveUnit(team, defName, x, y, z, face)
 		for n, name in pairs(pics or {}) do list[#list + 1] = n .. "=" .. name end
 		table.sort(list)
 		Spring.SetUnitRulesParam(id, "renPics", table.concat(list, ","), { public = true })
+		-- the weapons that fire by themselves (the anti-nuke launchers: interceptor weapons) are only shown in the panel, the player cannot fire them: "<weapon number>,..."
+		local auto = {}
+		for i, wp in ipairs(ud0 and ud0.weapons or {}) do
+			local wd = WeaponDefs[wp.weaponDef]
+			if wd and (tonumber(wd.interceptor) or 0) ~= 0 and (tonumber(wd.range) or 0) > 0 then auto[#auto + 1] = i end
+		end
+		Spring.SetUnitRulesParam(id, "renAuto", table.concat(auto, ","), { public = true })
 	end
 	if flyer(id) then
 		Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true })
