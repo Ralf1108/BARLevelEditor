@@ -232,8 +232,13 @@ local function toggleZoom()
 	R.zoom = ((R.zoom or 0) > 0) and 0 or 1
 	applyFov()
 end
+-- The mouse wheel: forward (up) switches the binoculars on (level 1) and zooms in, back zooms out; at level 1 one more step back switches them off. Works for every unit with a range of 600 or
+-- more, also one that uses the middle button for a weapon.
 local function zoomStep(up)
-	R.zoom = math.max(1, math.min(zoomLevels(R.unit), (R.zoom or 1) + (up and 1 or -1))) -- (wheel up: closer)
+	local n = zoomLevels(R.unit)
+	if n == 0 then return end
+	local z = (R.zoom or 0) + (up and 1 or -1)
+	R.zoom = math.max(0, math.min(n, z))
 	applyFov()
 end
 R.toggleZoom, R.zoomStep = toggleZoom, zoomStep -- (for the tests)
@@ -690,7 +695,7 @@ function widget:MouseWheel(up, value)
 		local g, win, filters, grid = pickerLayout()
 		if g then g:wheel(grid, up) end
 	end
-	if R.on and (R.zoom or 0) > 0 and not R.menu then
+	if R.on and not R.menu then
 		zoomStep(up)
 		return true
 	end
@@ -1590,7 +1595,7 @@ local function binoculars(vsx, vsy)
 	gl.Color(0.9, 0.95, 1, 1)
 	gl.Text(string.format("x%d", 1 + R.zoom), cx, cy + r0 * 0.86, 26 * s, "co")
 	gl.Color(0.7, 0.75, 0.85, 1)
-	gl.Text(string.format("mouse wheel: zoom (level %d of %d)   B or middle button: off", R.zoom, zoomLevels(R.unit)), cx, cy + r0 * 0.86 - 24 * s, 13 * s, "co")
+	gl.Text(string.format("mouse wheel: zoom (level %d of %d), at level 1 back = off   B or middle button: off", R.zoom, zoomLevels(R.unit)), cx, cy + r0 * 0.86 - 24 * s, 13 * s, "co")
 	gl.Color(1, 1, 1, 1)
 end
 

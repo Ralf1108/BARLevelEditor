@@ -10,7 +10,7 @@ function widget:GameFrame(f)
 	if f == 60 then R.fake = true; R.yaw, R.pitch = 90, 0 end
 	if f == 70 then Spring.SendLuaRulesMsg("ren|unit|armsnipe") end
 	if f == 110 then log("start: zoom", tostring(R.zoom), "fov", fov(), "baseFov", tostring(R.baseFov)) end
-	if f == 115 then R.toggleZoom() end -- the middle button
+	if f == 115 then R.zoomStep(true) end -- the wheel forward: on -- the middle button
 	if f == 125 then log("after the middle button: zoom", tostring(R.zoom), "fov", fov()); Spring.SendCommands("screenshot png") end
 	if f == 130 then R.zoomStep(true) end
 	if f == 131 then R.zoomStep(true) end
@@ -18,7 +18,7 @@ function widget:GameFrame(f)
 	if f == 145 then log("after 3 wheel steps up: zoom", tostring(R.zoom), "fov", fov()); Spring.SendCommands("screenshot png") end
 	if f == 150 then R.zoomStep(false) end
 	if f == 160 then log("one step down: zoom", tostring(R.zoom), "fov", fov()) end
-	if f == 165 then R.toggleZoom() end
+	if f == 165 then R.zoomStep(false); R.zoomStep(false) end -- two steps back from level 2: level 1, then off
 	if f == 175 then log("middle button again: zoom", tostring(R.zoom), "fov", fov()) end
 	if f == 180 then Spring.SendLuaRulesMsg("ren|unit|corjugg") end
 	if f == 230 then R.toggleZoom() end
