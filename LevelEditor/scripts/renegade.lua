@@ -605,8 +605,7 @@ function widget:TextCommand(cmd)
 end
 
 ---------------------------------------------------------------- drawing
--- on the ground: the range rings round the unit (on request) and, for each group of weapons, a small pointer in the colour of its button that shows the way its barrel points now
--- (it turns slower than you look round: fire when the pointer points where you look). A pointer is a flat arrowhead with a dark edge; the pointers of the groups stand side by side.
+-- on the ground: the range rings round the unit (on request); where the vehicle and the weapons point is shown by the compass on the screen (`compass`)
 local function groundLine(x, z, dx, dz, len)
 	gl.BeginEnd(GL.LINE_STRIP, function()
 		for k = 0, 16 do
@@ -615,48 +614,6 @@ local function groundLine(x, z, dx, dz, len)
 		end
 	end)
 end
-local function pointer(x, z, dx, dz, side, c, k)
-	local px, pz = -dz, dx
-	local cx, cz = x + dx * 250 * k + px * side * k, z + dz * 250 * k + pz * side * k
-	local function at(a, b) return a, Spring.GetGroundHeight(a, b) + 7, b end
-	local function pt(f, l) return at(cx + dx * f * k + px * l * k, cz + dz * f * k + pz * l * k) end
-	-- the arrowhead: the tip, the two wings and the notch
-	gl.Color(c[1], c[2], c[3], 0.95)
-	gl.BeginEnd(GL.TRIANGLES, function()
-		gl.Vertex(pt(30, 0)); gl.Vertex(pt(-14, 20)); gl.Vertex(pt(-2, 0))
-		gl.Vertex(pt(30, 0)); gl.Vertex(pt(-2, 0)); gl.Vertex(pt(-14, -20))
-	end)
-	gl.Color(0, 0, 0, 0.85)
-	gl.LineWidth(2)
-	gl.BeginEnd(GL.LINE_LOOP, function()
-		gl.Vertex(pt(30, 0)); gl.Vertex(pt(-14, 20)); gl.Vertex(pt(-2, 0)); gl.Vertex(pt(-14, -20))
-	end)
-end
-
--- A small thick green arrow on the ground: the way the unit faces, the way it walks or drives when W is pressed (a tank has to turn first when you look behind you).
-local function facingArrow(x, z, dx, dz, k)
-	local l = math.sqrt(dx * dx + dz * dz)
-	if l < 0.01 then return end
-	dx, dz = dx / l, dz / l
-	local px, pz = -dz, dx
-	local function at(a, b) return a, Spring.GetGroundHeight(a, b) + 8, b end
-	local l0, l1, l2, w = 150 * k, 175 * k, 200 * k, 10 * k -- (k = the height of the eye / 45; nearer than about 3 heights of the eye the panel hides it)
-	for pass = 1, 2 do
-		if pass == 1 then gl.Color(0, 0, 0, 0.6); gl.LineWidth(11) else gl.Color(0.2, 1, 0.3, 1); gl.LineWidth(7) end
-		gl.BeginEnd(GL.LINES, function()
-			gl.Vertex(at(x + dx * l0, z + dz * l0))
-			gl.Vertex(at(x + dx * l1, z + dz * l1))
-		end)
-		if pass == 2 then
-			gl.BeginEnd(GL.TRIANGLES, function()
-				gl.Vertex(at(x + dx * l2, z + dz * l2))
-				gl.Vertex(at(x + dx * l1 + px * w, z + dz * l1 + pz * w))
-				gl.Vertex(at(x + dx * l1 - px * w, z + dz * l1 - pz * w))
-			end)
-		end
-	end
-end
-
 -- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
 -- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
 -- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
@@ -722,29 +679,14 @@ function widget:DrawWorld()
 	local ud, slots = weaponsOf(R.unit)
 	if not ud then return end
 	gl.DepthTest(false)
-	local size = math.max(0.33, math.min(1.6, (y - Spring.GetGroundHeight(x, z)) / 45)) -- (the pointers and the arrow grow with the height of the eye: a low unit sees them large)
-	local present = 0
-	for k = 1, #SLOTS do local l0 = slots[SLOTS[k][1]]; if l0 and #l0 > 0 then present = present + 1 end end
-	local rank = 0
 	for k = 1, #SLOTS do
 		local sl = SLOTS[k]
 		local list = slots[sl[1]]
 		if list and #list > 0 then
-			rank = rank + 1
 			local range = slotRange(ud, list)
 			gl.Color(sl[4][1], sl[4][2], sl[4][3], 0.95)
 			gl.LineWidth(sl[5])
 			if R.rings then gl.DrawGroundCircle(x, y, z, range, 64) end -- (the range rings only on request: /renegade rings)
-			-- the barrel
-			-- (a weapon that is not aiming reports straight up: then the unit's facing counts)
-			local _, _, _, dx, _, dz = Spring.GetUnitWeaponVectors(R.unit, list[1])
-			local l = dx and math.sqrt(dx * dx + dz * dz) or 0
-			if l < 0.2 then
-				local fx, _, fz = Spring.GetUnitDirection(R.unit)
-				dx, dz = fx or 0, fz or 1
-				l = math.sqrt(dx * dx + dz * dz)
-			end
-			if l > 0.01 then pointer(x, z, dx / l, dz / l, (rank - (present + 1) / 2) * 34, sl[4], size) end
 		end
 	end
 	for k = #SLOTS, 1, -1 do
@@ -789,19 +731,6 @@ function widget:DrawWorld()
 			end)
 		end
 	end
-	local fx, _, fz = Spring.GetUnitDirection(R.unit)
-	if not ud.canMove then
-		-- a turret does not move: the arrow shows where its weapon points now (the first weapon of the left, right or middle button), not the way the building faces
-		for _, sl in ipairs(SLOTS) do
-			local l1 = slots[sl[1]]
-			if l1 and l1[1] then
-				local _, _, _, wx, _, wz = Spring.GetUnitWeaponVectors(R.unit, l1[1])
-				if wx and wx * wx + wz * wz > 0.04 then fx, fz = wx, wz end
-				break
-			end
-		end
-	end
-	if fx then facingArrow(x, z, fx, fz, size) end
 	gl.LineWidth(1)
 	gl.Color(1, 1, 1, 1)
 end
@@ -1341,6 +1270,91 @@ local function scoreboard(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
+-- The compass in front of the player (always in the field of view): a small round dial; the green arrow is the way the vehicle drives (where W takes it), the coloured arrowheads at the
+-- rim are the barrels of the groups of weapons (the colour of their buttons; the turrets turn slower than you look round). Up = the way you look: an arrow that points up means the
+-- vehicle drives where you look. (It replaces the two arrows on the ground.)
+local function compass(vsx, vsy)
+	local u = R.unit
+	local ud, slots = weaponsOf(u)
+	local cam = Spring.GetCameraVectors()
+	if not (ud and cam and cam.forward and cam.right) then return end
+	local fw, rt = cam.forward, cam.right
+	local fl = math.sqrt(fw[1] * fw[1] + fw[3] * fw[3])
+	local rl = math.sqrt(rt[1] * rt[1] + rt[3] * rt[3])
+	if fl < 0.01 or rl < 0.01 then return end
+	-- a world direction on the dial: x to the right, y up (the way you look)
+	local function onDial(dx, dz)
+		local l = math.sqrt(dx * dx + dz * dz)
+		if l < 0.01 then return nil end
+		dx, dz = dx / l, dz / l
+		return (dx * rt[1] + dz * rt[3]) / rl, (dx * fw[1] + dz * fw[3]) / fl
+	end
+	local s = math.max(0.7, vsy / 1080)
+	local cx, cy, r = vsx / 2, vsy / 2 - vsy * 0.2, 48 * s
+	gl.Color(0, 0, 0, 0.45)
+	disc(cx, cy, r)
+	gl.Color(0.6, 0.7, 0.85, 0.9)
+	gl.LineWidth(2)
+	ring(cx, cy, r)
+	gl.LineWidth(1)
+	gl.BeginEnd(GL.LINES, function() -- the ticks: front, right, back, left
+		gl.Vertex(cx, cy + r); gl.Vertex(cx, cy + r * 0.82)
+		gl.Vertex(cx + r, cy); gl.Vertex(cx + r * 0.88, cy)
+		gl.Vertex(cx, cy - r); gl.Vertex(cx, cy - r * 0.88)
+		gl.Vertex(cx - r, cy); gl.Vertex(cx - r * 0.88, cy)
+	end)
+	-- the barrels (a weapon that is not aiming reports straight up: then the facing of the unit counts)
+	local ffx, _, ffz = Spring.GetUnitDirection(u)
+	for _, sl in ipairs(SLOTS) do
+		local list = slots[sl[1]]
+		if list and #list > 0 then
+			local _, _, _, wx, _, wz = Spring.GetUnitWeaponVectors(u, list[1])
+			if not wx or wx * wx + wz * wz < 0.04 then wx, wz = ffx or 0, ffz or 1 end
+			local sx, sy = onDial(wx, wz)
+			if sx then
+				local px, py = -sy, sx -- (across)
+				local tip, base, w = r * 1.0, r * 0.6, r * 0.22
+				gl.Color(sl[4][1], sl[4][2], sl[4][3], 1)
+				gl.BeginEnd(GL.TRIANGLES, function()
+					gl.Vertex(cx + sx * tip, cy + sy * tip)
+					gl.Vertex(cx + sx * base + px * w, cy + sy * base + py * w)
+					gl.Vertex(cx + sx * base - px * w, cy + sy * base - py * w)
+				end)
+			end
+		end
+	end
+	-- the way the vehicle drives: a turret does not drive, its arrow shows where its first weapon points
+	local fx, fz = ffx, ffz
+	if not ud.canMove then
+		for _, sl in ipairs(SLOTS) do
+			local l1 = slots[sl[1]]
+			if l1 and l1[1] then
+				local _, _, _, wx, _, wz = Spring.GetUnitWeaponVectors(u, l1[1])
+				if wx and wx * wx + wz * wz > 0.04 then fx, fz = wx, wz end
+				break
+			end
+		end
+	end
+	local ax, ay = onDial(fx or 0, fz or 1)
+	if ax then
+		local px, py = -ay, ax
+		local len, hw = r * 0.72, r * 0.2
+		gl.Color(0, 0, 0, 0.7)
+		gl.LineWidth(9)
+		gl.BeginEnd(GL.LINES, function() gl.Vertex(cx, cy); gl.Vertex(cx + ax * len * 0.6, cy + ay * len * 0.6) end)
+		gl.Color(0.2, 1, 0.3, 1)
+		gl.LineWidth(5)
+		gl.BeginEnd(GL.LINES, function() gl.Vertex(cx, cy); gl.Vertex(cx + ax * len * 0.6, cy + ay * len * 0.6) end)
+		gl.BeginEnd(GL.TRIANGLES, function()
+			gl.Vertex(cx + ax * len, cy + ay * len)
+			gl.Vertex(cx + ax * len * 0.55 + px * hw, cy + ay * len * 0.55 + py * hw)
+			gl.Vertex(cx + ax * len * 0.55 - px * hw, cy + ay * len * 0.55 - py * hw)
+		end)
+		gl.LineWidth(1)
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
 function widget:DrawScreen()
 	local vsx0, vsy0 = Spring.GetViewGeometry()
 	if not Spring.GetSpectatingState() then countdown(vsx0, vsy0) end
@@ -1456,6 +1470,7 @@ function widget:DrawScreen()
 	gl.Color(1, 1, 1, 1)
 	altimeter(vsx, vsy)
 	scoreboard(vsx, vsy)
+	compass(vsx, vsy)
 	local x1, top, w, ps = panel(vsx, vsy)
 	if R.debug and x1 then
 		debugButton(x1, top, w, ps)
