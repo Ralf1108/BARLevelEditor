@@ -135,7 +135,17 @@ local function followGround(u, inp, f)
 	local gnow = Spring.GetGroundHeight(x, z)
 	if y - gnow < 25 then return end
 	local gmax = gnow
-	for k = 1, 3 do gmax = math.max(gmax, Spring.GetGroundHeight(x + vx * 20 * k, z + vz * 20 * k)) end
+	-- the ground ahead: along the velocity 1 to 6 seconds... (6 samples of 20 frames, before 3: a big slow aircraft like the Flying Black Hydra, radius 55 and 1.2 Elmo a frame, saw only 70 Elmo ahead
+	-- and began to climb at the foot of a mountain) and the ground at the front edge of its body (1.5 radii ahead)
+	for k = 1, 6 do gmax = math.max(gmax, Spring.GetGroundHeight(x + vx * 20 * k, z + vz * 20 * k)) end
+	do
+		local sp = math.sqrt(vx * vx + vz * vz)
+		local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+		if sp > 0.05 and ud then
+			local reach = (ud.radius or 20) * 1.5
+			for k = 1, 3 do gmax = math.max(gmax, Spring.GetGroundHeight(x + vx / sp * reach * k, z + vz / sp * reach * k)) end
+		end
+	end
 	local gnear = Spring.GetGroundHeight(x + vx * 10, z + vz * 10)
 	local want
 	if y < gmax + inp.alt - 8 and y - gnow < maxAlt(u) - 5 then -- (climbing ahead of a slope, but never over the highest height above the ground it is under now)
