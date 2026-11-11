@@ -4,6 +4,52 @@
 
 910 weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), 831 different weapon definitions, grouped into **39 categories** (a picture each, 39 drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; `renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`).
 
+## Overview of all pictures
+
+The pictures as the panel shows them (the name is the one in the game). Where the family has sizes, the last column tells for which damage per second (DPS = damage of one shot / reload) a weapon gets this picture, by the tech level of its unit; the limits are explained below.
+
+| Name | Picture | Valid for | Weapons |
+|---|---|---|---|
+| **Anti-Air Missile**<br>`aa-missile` | <img src="weapon-images/weapon_aa-missile.png" width="576"> | no limits (one picture for the whole family) | 14 |
+| **Anti-Nuke Missile**<br>`anti-nuke` | <img src="weapon-images/weapon_anti-nuke.png" width="576"> | no limits (one picture for the whole family) | 12 |
+| **Artillery**<br>`artillery` | <img src="weapon-images/weapon_artillery.png" width="576"> | no limits (one picture for the whole family) | 8 |
+| **Bomb**<br>`bomb` | <img src="weapon-images/weapon_bomb.png" width="576"> | no limits (one picture for the whole family) | 11 |
+| **Light Cannon**<br>`cannon-light` | <img src="weapon-images/weapon_cannon-light.png" width="576"> | damage per second, by the tech level of the unit: T1: up to 250; T2: up to 60 | 24 |
+| **Medium Cannon**<br>`cannon-medium` | <img src="weapon-images/weapon_cannon-medium.png" width="576"> | damage per second, by the tech level of the unit: T1: 250 to 550; T2: 60 to 250; T3 and T4: up to 60 | 17 |
+| **Heavy Cannon**<br>`cannon-heavy` | <img src="weapon-images/weapon_cannon-heavy.png" width="576"> | damage per second, by the tech level of the unit: T2: 250 to 550; T3 and T4: 60 to 550 | 7 |
+| **Ultra Cannon**<br>`cannon-ultra` | <img src="weapon-images/weapon_cannon-ultra.png" width="576"> | **551 DPS and more** (above 550, whatever the unit is) | 3 |
+| **D-Gun**<br>`d-gun` | <img src="weapon-images/weapon_d-gun.png" width="576"> | no limits (one picture for the whole family) | 68 |
+| **Depth Charge**<br>`depth-charge` | <img src="weapon-images/weapon_depth-charge.png" width="576"> | no limits (one picture for the whole family) | 17 |
+| **EMP Grenade**<br>`emp-grenade` | <img src="weapon-images/weapon_emp-grenade.png" width="576"> | no limits (one picture for the whole family) | 6 |
+| **Flak**<br>`flak` | <img src="weapon-images/weapon_flak.png" width="576"> | no limits (one picture for the whole family) | 22 |
+| **Flamethrower**<br>`flamethrower` | <img src="weapon-images/weapon_flamethrower.png" width="576"> | no limits (one picture for the whole family) | 22 |
+| **Gauss**<br>`gauss` | <img src="weapon-images/weapon_gauss.png" width="576"> | no limits (one picture for the whole family) | 14 |
+| **Heatray**<br>`heatray` | <img src="weapon-images/weapon_heatray.png" width="576"> | no limits (one picture for the whole family) | 27 |
+| **Heavy Rocket**<br>`heavy-rocket` | <img src="weapon-images/weapon_heavy-rocket.png" width="576"> | no limits (one picture for the whole family) | 36 |
+| **Light Laser**<br>`laser-light` | <img src="weapon-images/weapon_laser-light.png" width="576"> | damage per second, by the tech level of the unit: T1: up to 600; T2: up to 100 | 66 |
+| **Medium Laser**<br>`laser-medium` | <img src="weapon-images/weapon_laser-medium.png" width="576"> | damage per second, by the tech level of the unit: T1: 600 to 1500; T2: 100 to 600; T3 and T4: up to 100 | 51 |
+| **Heavy Laser**<br>`laser-heavy` | <img src="weapon-images/weapon_laser-heavy.png" width="576"> | damage per second, by the tech level of the unit: T2: 600 to 1500; T3 and T4: 100 to 1500 | 25 |
+| **Ultra Laser**<br>`laser-ultra` | <img src="weapon-images/weapon_laser-ultra.png" width="576"> | **1501 DPS and more** (above 1500, whatever the unit is) | 40 |
+| **Lightning**<br>`lightning` | <img src="weapon-images/weapon_lightning.png" width="576"> | no limits (one picture for the whole family) | 19 |
+| **Light Machine Gun**<br>`machine-gun-light` | <img src="weapon-images/weapon_machine-gun-light.png" width="576"> | damage per second, by the tech level of the unit: T1: up to 80; T2: up to 20 | 16 |
+| **Medium Machine Gun**<br>`machine-gun-medium` | <img src="weapon-images/weapon_machine-gun-medium.png" width="576"> | damage per second, by the tech level of the unit: T1: above 80; T2: 20 to 80; T3 and T4: up to 20 | 15 |
+| **Heavy Machine Gun**<br>`machine-gun-heavy` | <img src="weapon-images/weapon_machine-gun-heavy.png" width="576"> | damage per second, by the tech level of the unit: T2: above 80; T3 and T4: above 20 | 12 |
+| **Light Missile**<br>`missile-light` | <img src="weapon-images/weapon_missile-light.png" width="576"> | damage per second, by the tech level of the unit: T1: up to 150; T2: up to 40 | 37 |
+| **Medium Missile**<br>`missile-medium` | <img src="weapon-images/weapon_missile-medium.png" width="576"> | damage per second, by the tech level of the unit: T1: 150 to 800; T2: 40 to 150; T3 and T4: up to 40 | 17 |
+| **Heavy Missile**<br>`missile-heavy` | <img src="weapon-images/weapon_missile-heavy.png" width="576"> | damage per second, by the tech level of the unit: T2: 150 to 800; T3 and T4: 40 to 800 | 15 |
+| **Ultra Missile**<br>`missile-ultra` | <img src="weapon-images/weapon_missile-ultra.png" width="576"> | **801 DPS and more** (above 800, whatever the unit is) | 1 |
+| **Nuclear**<br>`nuclear` | <img src="weapon-images/weapon_nuclear.png" width="576"> | no limits (one picture for the whole family) | 8 |
+| **Light Plasma**<br>`plasma-light` | <img src="weapon-images/weapon_plasma-light.png" width="576"> | damage per second, by the tech level of the unit: T1: up to 400; T2: up to 60 | 34 |
+| **Medium Plasma**<br>`plasma-medium` | <img src="weapon-images/weapon_plasma-medium.png" width="576"> | damage per second, by the tech level of the unit: T1: 400 to 1500; T2: 60 to 400; T3 and T4: up to 60 | 42 |
+| **Heavy Plasma**<br>`plasma-heavy` | <img src="weapon-images/weapon_plasma-heavy.png" width="576"> | damage per second, by the tech level of the unit: T2: 400 to 1500; T3 and T4: 60 to 1500 | 24 |
+| **Ultra Plasma**<br>`plasma-ultra` | <img src="weapon-images/weapon_plasma-ultra.png" width="576"> | **1501 DPS and more** (above 1500, whatever the unit is) | 8 |
+| **Railgun**<br>`railgun` | <img src="weapon-images/weapon_railgun.png" width="576"> | no limits (one picture for the whole family) | 32 |
+| **Rocket Salvo**<br>`rocket-salvo` | <img src="weapon-images/weapon_rocket-salvo.png" width="576"> | no limits (one picture for the whole family) | 34 |
+| **Self-Destruct**<br>`self-destruct` | <img src="weapon-images/weapon_self-destruct.png" width="576"> | no limits (one picture for the whole family) | 5 |
+| **Shotgun**<br>`shotgun` | <img src="weapon-images/weapon_shotgun.png" width="576"> | no limits (one picture for the whole family) | 8 |
+| **Stun Beam**<br>`stun-beam` | <img src="weapon-images/weapon_stun-beam.png" width="576"> | no limits (one picture for the whole family) | 33 |
+| **Torpedo**<br>`torpedo` | <img src="weapon-images/weapon_torpedo.png" width="576"> | no limits (one picture for the whole family) | 60 |
+
 ## How a weapon gets its category
 
 1. **Family** from the type and the description of the weapon: laser, plasma, cannon, missile, machine gun, torpedo, bomb, flak, d-gun ... and so on (the table below). The heat rays (description with "heat ray") are the family heatray (yellow).

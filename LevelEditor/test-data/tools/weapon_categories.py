@@ -156,6 +156,56 @@ def order(name):
     return (name, -1)
 
 
+NICE = {"d-gun": "D-Gun", "emp-grenade": "EMP Grenade", "aa-missile": "Anti-Air Missile", "anti-nuke": "Anti-Nuke Missile", "self-destruct": "Self-Destruct"}
+
+
+def nice(name):
+    """the name the panel shows for a picture (the same as niceName in renegade.lua): laser-light = Light Laser"""
+    size = None
+    for s in SIZES:
+        if name.endswith("-" + s):
+            size, name = s, name[:-len(s) - 1]
+    n = NICE.get(name) or " ".join(w.capitalize() for w in name.split("-"))
+    return (size.capitalize() + " " + n) if size else n
+
+
+def limits_text(name):
+    """for which damage per second a category is valid (only the sized families have limits): for the tech levels T1, T2, T3 and T4 the bands of weak / normal / strong / ultra that give this size"""
+    fam = order(name)[0]
+    if fam not in LIMITS:
+        return "no limits (one picture for the whole family)"
+    weak, normal, strong = LIMITS[fam]
+    size = name[len(fam) + 1:]
+    edges = [0, weak, normal, strong if strong is not None else 10 ** 9, 10 ** 9]
+    parts = []
+    for label, base in (("T1", 0), ("T2", 1), ("T3 and T4", 2)):
+        got = []
+        for k in range(4):
+            if k == 3 and strong is None:
+                continue
+            lo, hi = edges[k], edges[k + 1]
+            if k == 3:
+                res = "ultra"
+            else:
+                res = SIZES[max(0, min(2, base + (-1, 0, 1)[k]))]
+            if res == size:
+                got.append([lo, hi])
+        merged = []
+        for lo, hi in got:
+            if merged and merged[-1][1] == lo:
+                merged[-1][1] = hi
+            else:
+                merged.append([lo, hi])
+        for lo, hi in merged:
+            txt = ("up to %d" % hi) if lo == 0 and hi < 10 ** 9 else (("above %d" % lo) if hi >= 10 ** 9 else ("%d to %d" % (lo, hi)))
+            if lo == 0 and hi >= 10 ** 9:
+                txt = "any"
+            parts.append("%s: %s" % (label, txt))
+    if size == "ultra":
+        return "**%s DPS and more** (above %d, whatever the unit is)" % ("%d" % (strong + 1), strong) if strong is not None else "-"
+    return "damage per second, by the tech level of the unit: " + "; ".join(parts) if parts else "none"
+
+
 def main():
     rows = [r for r in read_csv(SRC) if (r["Fire button"] or "").strip() or classify(r)[0] == "anti-nuke"]
     cat = collections.defaultdict(list)
@@ -177,6 +227,10 @@ def main():
              "[Renegade](renegade.md) · [Weapon table](renegade-weapons.md) · [Start page](../../README.md)", "",
              "%d weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), %d different weapon definitions, grouped into **%d categories** (a picture each, %d drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; "
              "`renegade_weapon_categories.csv` has every weapon with its category (sorted by category and strength) and the picture; the pictures are drawn by `weapon_art.py` and `weapon_art2.py` (folder `weapon-images`)." % (len(rows), len({r["Weapon name"] for r in rows}), len(cat), len(have)), "",
+             "## Overview of all pictures", "",
+             "The pictures as the panel shows them (the name is the one in the game). Where the family has sizes, the last column tells for which damage per second (DPS = damage of one shot / reload) a weapon gets this picture, by the tech level of its unit; the limits are explained below.", "",
+             "| Name | Picture | Valid for | Weapons |", "|---|---|---|---|"] + [
+             "| **%s**<br>`%s` | <img src=\"weapon-images/weapon_%s.png\" width=\"576\"> | %s | %d |" % (nice(n), n, n, limits_text(n), len(cat[n])) for n in have] + ["",
              "## How a weapon gets its category", "",
              "1. **Family** from the type and the description of the weapon: laser, plasma, cannon, missile, machine gun, torpedo, bomb, flak, d-gun ... and so on (the table below). The heat rays (description with \"heat ray\") are the family heatray (yellow).",
              "2. **Size** (light, medium, heavy, ultra) only for the families laser, plasma, cannon, missile and machine-gun (all other families have one picture):",
