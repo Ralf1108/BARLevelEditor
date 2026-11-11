@@ -204,6 +204,34 @@ local function correctShot(u)
 end
 
 
+-- Which weapons shoot in an arc (they need the impact preview and can be fired at the sky, see aim): the missiles, starburst rockets and artillery (by type), a cannon that is always
+-- fired high (highTrajectory 1) and a cannon whose shell has to leave at 20 degrees or more to reach its maximum range (sin 2a = range x gravity / speed^2 from 0.64: the Mauser 29 degrees, the
+-- tank guns 18 to 21, a Pawn 2); cannons, gauss, heat rays and the like that shoot flat have only the crosshair.
+local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true }
+local function lobbed(wd)
+	if LOB[wd.type] then return true end
+	if wd.type ~= "Cannon" then return false end
+	if (tonumber(wd.highTrajectory) or 0) == 1 then return true end
+	local g = (tonumber(wd.myGravity) or 0) > 0 and wd.myGravity or (Game.gravity or 120) / 900
+	local v = tonumber(wd.projectilespeed) or 0
+	return v > 0 and (tonumber(wd.range) or 0) * g / (v * v) >= 0.64
+end
+-- whether every weapon group of the unit (the anti-air ones aside) shoots in an arc, and the longest range of them: a unit like that can be fired at the sky (a point on the ground at that range)
+local function lobbedAll(ud, slots)
+	local n, range = 0, 0
+	for _, key in ipairs({ "L", "R", "M" }) do
+		local list = slots[key]
+		local i = list and list[1]
+		local wd = i and not slots.aa[i] and ud.weapons[i] and WeaponDefs[ud.weapons[i].weaponDef]
+		if wd then
+			if not lobbed(wd) then return false, 0 end
+			n = n + 1
+			range = math.max(range, slotRange(ud, list))
+		end
+	end
+	return n > 0, range
+end
+
 -- What the crosshair points at, and where a shot goes. R.hit = what is under the crosshair (a unit, the ground; nil = nothing), R.shot = where the shot goes:
 -- the hit, or a far point along the view ray in the sky; the gadget shortens it to the reach of each weapon, so the unit can fire anywhere (sky, far
 -- mountains, beyond its range), like in a shooter. The engine's ray TraceScreenRay answers "sky" for terrain it does not know (the scenery beyond the edge of
@@ -257,7 +285,26 @@ local function aim(u)
 		hit.udist = ux and math.sqrt((hit.x - ux) ^ 2 + (hit.y - uy) ^ 2 + (hit.z - uz) ^ 2) or hit.dist
 	end
 	R.hit = hit
-	R.shot = hit or { kind = "air", x = px + dx * FAR, y = py + dy * FAR, z = pz + dz * FAR, unit = -1, dist = FAR, udist = FAR }
+	R.skyShot = nil
+	if not hit then
+		-- looking at the sky with a unit that only has arc weapons (the Mauser, an artillery tower): the shot goes to a point on the ground at the maximum range, in the direction of the view
+		local ud0, sl0 = weaponsOf(u)
+		local ux, uy, uz = Spring.GetUnitPosition(u, true)
+		if ud0 and ux then
+			local all, range = lobbedAll(ud0, sl0)
+			if all and range > 50 then
+				local hl = math.sqrt(dx * dx + dz * dz)
+				local nx, nz
+				if hl > 0.05 then nx, nz = dx / hl, dz / hl else nx, nz = Spring.GetUnitDirection(u) end
+				nx, nz = nx or 0, nz or 1
+				local d = range * 0.95
+				local x = math.max(1, math.min(Game.mapSizeX - 1, ux + nx * d))
+				local z = math.max(1, math.min(Game.mapSizeZ - 1, uz + nz * d))
+				R.skyShot = { kind = "ground", x = x, y = Spring.GetGroundHeight(x, z), z = z, unit = -1, dist = d, udist = d }
+			end
+		end
+	end
+	R.shot = hit or R.skyShot or { kind = "air", x = px + dx * FAR, y = py + dy * FAR, z = pz + dz * FAR, unit = -1, dist = FAR, udist = FAR }
 end
 
 -- Anti-air: a unit with anti-air weapons gets an orange circle round the crosshair (R.AA_RADIUS of the screen height, generous: aircraft are fast). The enemy aircraft in
@@ -613,11 +660,6 @@ end
 -- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
 -- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
 -- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
-local LOB = { MissileLauncher = true, StarburstLauncher = true, ArtilleryShell = true } -- (cannons, gauss, heat rays and the like: the crosshair is enough)
-local function lobbed(wd)
-	return LOB[wd.type] or false
-end
-
 local function impactPreview(ux, uy, uz, wd, color, bomb)
 	local x, z, dx, dz, d
 	if bomb then
@@ -636,7 +678,7 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 		d = math.sqrt(dx * dx + dz * dz)
 		if d < 1 then dx, dz, d = 0, 1, 1 end
 	else
-		local h = R.hit
+		local h = R.hit or R.skyShot
 		if not h then return end
 		local range = (tonumber(wd.range) or 0) - 8
 		dx, dz = h.x - ux, h.z - uz
