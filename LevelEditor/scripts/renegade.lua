@@ -1438,6 +1438,21 @@ local function compass(vsx, vsy)
 		end)
 		gl.LineWidth(1)
 	end
+	-- the speed of the unit above the dial: now / the highest (Elmo per second; an aircraft in all three directions)
+	do
+		local vx, vy, vz = Spring.GetUnitVelocity(u)
+		local now = vx and math.sqrt(vx * vx + vy * vy + vz * vz) * Game.gameSpeed or 0
+		local top = ud.speed or 0
+		local txt = string.format("%d / %d", math.floor(now + 0.5), math.floor(top + 0.5))
+		local ty = cy + r + 10 * s
+		local tw = gl.GetTextWidth(txt) * 26 * s
+		gl.Color(0, 0, 0, 0.55)
+		gl.Rect(cx - tw / 2 - 10 * s, ty - 6 * s, cx + tw / 2 + 10 * s, ty + 40 * s)
+		gl.Color(0.65, 0.7, 0.8, 1)
+		gl.Text("SPEED", cx, ty + 28 * s, 12 * s, "co")
+		gl.Color(0.95, 0.97, 1, 1)
+		gl.Text(txt, cx, ty, 26 * s, "co")
+	end
 	gl.Color(1, 1, 1, 1)
 end
 
