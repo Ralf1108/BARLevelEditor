@@ -35,14 +35,14 @@ def jobs():
     j.append(("torpedo", 3300, "launcher-170", functools.partial(w2.torpedo_shot, k=1.0)))
     for name, color, k, cw in wa.SIZES:
         j.append((name, cw, "cannon", functools.partial(laser, color=color, k=k)))
-    j += [("d-gun", 3300, "cannon", w3.dgun), ("stun-beam", 3300, "cannon", w3.stun), ("flak", 3500, "cannon", w3.flak), ("lightning", 3300, "cannon", w3.lightning),
+    j += [("d-gun", 3300, "cannon", w3.dgun), ("stun-beam", 3300, "cannon", w3.stun), ("flak", 3500, "cannon", functools.partial(w3.on_sky, fn=w3.flak)), ("lightning", 3300, "cannon", w3.lightning),
           ("machine-gun-light", 3900, "cannon", functools.partial(w3.machine_gun, rows=1, thick=9, count=16, sparks=0)),
           ("machine-gun-medium", 3500, "cannon", functools.partial(w3.machine_gun, rows=2, thick=11, count=20, sparks=0)),
           ("machine-gun-heavy", 3200, "cannon", functools.partial(w3.machine_gun, rows=3, thick=14, count=24, sparks=0)),
           ("gauss", 3300, "cannon", w3.gauss), ("artillery", 3300, "cannon", w3.artillery), ("shotgun", 3500, "cannon", w3.shotgun),
           ("emp-grenade", 3300, "launcher-150", w3.emp_grenade), ("self-destruct", 3300, None, w3.self_destruct),
           ("railgun", 3300, "cannon", w3.railgun), ("flamethrower", 3300, "cannon", w3.flamethrower), ("depth-charge", 3300, "launcher-150", w3.depth_charge),
-          ("aa-missile", 3300, "launcher-110", w3.aa_missile), ("anti-nuke", 3300, "launcher-110", w3.anti_nuke), ("bomb", 3300, None, w3.bomb), ("nuclear", 3300, None, w3.nuclear)]
+          ("aa-missile", 3300, "launcher-110", w3.aa_missile), ("anti-nuke", 3300, "launcher-110", functools.partial(w3.on_sky, fn=w3.anti_nuke)), ("bomb", 3300, None, functools.partial(w3.on_sky, fn=w3.bomb)), ("nuclear", 3300, None, functools.partial(w3.on_sky, fn=w3.nuclear))]
     return j
 
 

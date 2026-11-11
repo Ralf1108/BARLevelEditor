@@ -351,9 +351,19 @@ def depth_charge(body, tip):
     return out
 
 
+SKY = ((70, 130, 210), (170, 205, 235))   # the sky of the weapons against aircraft (anti-air missile, flak, anti-nuke, bomb, nuclear): a light blue that gets paler downwards
+
+
+def on_sky(body, tip, fn):
+    """the picture of fn on the sky backdrop (a module function so that functools.partial(on_sky, fn=...) can be sent to the processes of weapon_art_build.py)"""
+    bg = backdrop(new(), SKY[0], SKY[1])
+    bg.alpha_composite(fn(body, tip))
+    return bg
+
+
 def aa_missile(body, tip):
     """an anti-air missile: a slim missile with a smoke trail in the sky, a jet in front of it"""
-    out = backdrop(body, (70, 130, 210), (170, 205, 235))
+    out = backdrop(body, SKY[0], SKY[1])
     cx = tip - 330
     smoke(out, 1330, cx - 380, CY, 26, seed=11, tone=(235, 235, 240))
     w2.missile(out, cx, CY, 380, 17, flame_len=240)
