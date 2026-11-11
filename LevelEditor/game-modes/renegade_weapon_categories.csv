@@ -40,6 +40,8 @@ Cortex;Cortex Commander Level 4;corcomlvl4;6;HeavyCannon;Cannon;450;1;cannon-lig
 Cortex;Cortex Commander Level 4;cordecomlvl4;6;HeavyCannon;Cannon;450;1;cannon-light;weapon_cannon-light.png
 Cortex;Cortex Commander Level 5;corcomlvl5;6;HeavyCannon;Cannon;450;1;cannon-light;weapon_cannon-light.png
 Cortex;Cortex Commander Level 5;cordecomlvl5;6;HeavyCannon;Cannon;450;1;cannon-light;weapon_cannon-light.png
+Cortex;Cortex Commander Level 6;corcomlvl6;6;HeavyCannon;Cannon;675;1;cannon-light;weapon_cannon-light.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;6;HeavyCannon;Cannon;675;1;cannon-light;weapon_cannon-light.png
 Cortex;Cutlass;corcut;1;RiotCannon;Cannon;47;1;cannon-light;weapon_cannon-light.png
 Cortex;Garpike;corgarp;1;PincerCannon;Cannon;116;1;cannon-light;weapon_cannon-light.png
 Cortex;Oppressor;corroy;1;HeavyCannon;Cannon;385;1;cannon-light;weapon_cannon-light.png
@@ -47,6 +49,7 @@ Cortex;Pounder;corlevlr;1;RiotCannon;Cannon;190;1;cannon-light;weapon_cannon-lig
 Cortex;Riptide;corpship;1;LightCannon;Cannon;96;1;cannon-light;weapon_cannon-light.png
 Cortex;Trapper;cormlv;1;Seismic charge;Cannon;15;1;cannon-light;weapon_cannon-light.png
 Legion;Barrage;legbar;1;Napalm Launcher;Cannon;60;1;cannon-light;weapon_cannon-light.png
+Legion;Belcher;legbart;1;Heavy Napalm Launcher;Cannon;60;2;cannon-light;weapon_cannon-light.png
 Legion;Dragon's Jaw;legdtr;1;Area Control Riot Cannon;Cannon;240;1;cannon-light;weapon_cannon-light.png
 Legion;Economy Commander;legcomecon;1;RiotCannon;Cannon;190;1;cannon-light;weapon_cannon-light.png
 Legion;Enyo;legspsurfacegunship;1;Area Control Riot Cannon;Cannon;200;1;cannon-light;weapon_cannon-light.png
@@ -54,36 +57,33 @@ Legion;Sapper;legmlv;1;Seismic charge;Cannon;15;1;cannon-light;weapon_cannon-lig
 Legion;Tactical Defense Commander;legcomt2def;1;RiotCannon;Cannon;190;1;cannon-light;weapon_cannon-light.png
 Legion;Venator;legvenator;1;Birdshot Cannon;Cannon;24;2;cannon-light;weapon_cannon-light.png
 Armada;Rattlesnake;armamb;2;Pop-up heavy  long range g2g plasna cannon;Cannon;350;2;cannon-medium;weapon_cannon-medium.png
-Cortex;Cortex Commander Level 6;corcomlvl6;6;HeavyCannon;Cannon;675;1;cannon-medium;weapon_cannon-medium.png
-Cortex;Cortex Commander Level 6;cordecomlvl6;6;HeavyCannon;Cannon;675;1;cannon-medium;weapon_cannon-medium.png
+Armada;Sharpshooter;armsnipe;1;SniperWeapon;Cannon;2500;2;cannon-medium;weapon_cannon-medium.png
+Cortex;Black Hydra;corblackhy;1;BattleshipCannon;Cannon;600;2;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 10;corcomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Cortex Commander Level 7;corcomlvl7;6;HeavyCannon;Cannon;900;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Cortex Commander Level 7;cordecomlvl7;6;HeavyCannon;Cannon;900;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Cortex Commander Level 8;corcomlvl8;6;HeavyCannon;Cannon;1050;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Cortex Commander Level 8;cordecomlvl8;6;HeavyCannon;Cannon;1050;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 9;corcomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-medium;weapon_cannon-medium.png
+Cortex;Cortex Commander Level 9;cordecomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-medium;weapon_cannon-medium.png
 Cortex;Despot;corbats;1;BattleshipCannon;Cannon;450;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Despot;corbats;2;BattleshipCannon;Cannon;450;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Despot;corbats;3;BattleshipCannon;Cannon;450;2;cannon-medium;weapon_cannon-medium.png
 Cortex;Poison Arrow;corparrow;1;PoisonArrowCannon;Cannon;370;2;cannon-medium;weapon_cannon-medium.png
-Legion;Belcher;legbart;1;Heavy Napalm Launcher;Cannon;60;2;cannon-medium;weapon_cannon-medium.png
+Cortex;Tzar;corgol;1;HeavyCannon;Cannon;900;2;cannon-medium;weapon_cannon-medium.png
 Legion;Bombardier;legbombard;1;Pop-up heavy g2g grenade launcher;Cannon;375;2;cannon-medium;weapon_cannon-medium.png
 Legion;Chimera;legapopupdef;1;Heavy Riot Blast Cannon;Cannon;280;2;cannon-medium;weapon_cannon-medium.png
 Legion;Leocampus;leganavyantiswarm;1;Medium Blast Riot Cannon;Cannon;210;2;cannon-medium;weapon_cannon-medium.png
 Legion;Martyr;legkam;2;Mine Detonator;Cannon;1000 (air);1;cannon-medium;weapon_cannon-medium.png
 Legion;Phalanx;legshot;1;Medium Blast Riot Cannon;Cannon;210;2;cannon-medium;weapon_cannon-medium.png
 Armada;Lunkhead;armlun;1;Heavy ballistic underwater cannon;Cannon;370;3;cannon-heavy;weapon_cannon-heavy.png
-Cortex;Black Hydra;corblackhy;1;BattleshipCannon;Cannon;600;2;cannon-heavy;weapon_cannon-heavy.png
 Cortex;Flying Black Hydra;corfblackhyt4;1;BattleshipCannon;Cannon;600;3;cannon-heavy;weapon_cannon-heavy.png
 Cortex;Shiva;corshiva;1;HeavyCannon;Cannon;600;3;cannon-heavy;weapon_cannon-heavy.png
-Cortex;Tzar;corgol;1;HeavyCannon;Cannon;900;2;cannon-heavy;weapon_cannon-heavy.png
 Legion;Keres;legkeres;1;Heavy riot cannon;Cannon;400;3;cannon-heavy;weapon_cannon-heavy.png
+Legion;Perdition;legperdition;1;Long-Range Tactical Hellfire Napalm Shell;Cannon;1200;2;cannon-heavy;weapon_cannon-heavy.png
 Legion;Sol Invictus;legeheatraymech;4;Ultra Heavy Riot Autocannon;Cannon;420;3;cannon-heavy;weapon_cannon-heavy.png
 Legion;Sol Invictus;legeheatraymech;5;Ultra Heavy Riot Autocannon;Cannon;420;3;cannon-heavy;weapon_cannon-heavy.png
-Armada;Sharpshooter;armsnipe;1;SniperWeapon;Cannon;2500;2;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 10;corcomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 10;cordecomlvl10;6;HeavyCannon;Cannon;2000;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 9;corcomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-ultra;weapon_cannon-ultra.png
-Cortex;Cortex Commander Level 9;cordecomlvl9;6;HeavyCannon;Cannon;1350;1;cannon-ultra;weapon_cannon-ultra.png
-Legion;Perdition;legperdition;1;Long-Range Tactical Hellfire Napalm Shell;Cannon;1200;2;cannon-ultra;weapon_cannon-ultra.png
 Armada;Armada Commander;armcom;3;Disintegrator;D-gun;99999;1;d-gun;
 Armada;Armada Commander;armcomcon;3;Disintegrator;D-gun;99999;1;d-gun;
 Armada;Armada Commander Level 10;armcomlvl10;3;Disintegrator;D-gun;99999;1;d-gun;
@@ -302,6 +302,8 @@ Armada;Armada Commander;armcom;2;Light underwater-combat laser;Beam laser;200;1;
 Armada;Armada Commander;armcomcon;2;Light underwater-combat laser;Beam laser;200;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 2;armcomlvl2;1;Scatter Beamer;Beam laser;14;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 2;armdecomlvl2;1;Scatter Beamer;Beam laser;14;1;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 2;armcomlvl2;2;Light underwater-combat laser;Beam laser;400;1;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 2;armdecomlvl2;2;Light underwater-combat laser;Beam laser;400;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 3;armcomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 3;armdecomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 3;armcomlvl3;5;Scatter Beamer;Beam laser;15;1;laser-light;weapon_laser-light.png
@@ -310,6 +312,7 @@ Armada;Armada Commander Level 4;armcomlvl4;5;Scatter Beamer;Beam laser;25;1;lase
 Armada;Armada Commander Level 4;armdecomlvl4;5;Scatter Beamer;Beam laser;25;1;laser-light;weapon_laser-light.png
 Armada;Beamer;armbeamer;1;Anti-swarm constant wave g2g laser;Beam laser;27;1;laser-light;weapon_laser-light.png
 Armada;Centurion;armwar;1;Dual close-quarters g2g laser;Beam laser;55;1;laser-light;weapon_laser-light.png
+Armada;Commander;armdecom;2;J7NSLaser;Beam laser;63;2;laser-light;weapon_laser-light.png
 Armada;Manta;armfhlt;1;HighEnergyLaser;Beam laser;210;1;laser-light;weapon_laser-light.png
 Armada;Overwatch;armhlt;1;Heavy g2g high energy laser;Beam laser;387;1;laser-light;weapon_laser-light.png
 Armada;Rover;armfav;1;Light Close-Quarters g2g Laser;Beam laser;35;1;laser-light;weapon_laser-light.png
@@ -318,22 +321,19 @@ Armada;Seeker;armsh;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;36;1
 Armada;Sentry;armllt;1;Light g2g laser turret;Beam laser;75;1;laser-light;weapon_laser-light.png
 Armada;Skater;armpt;1;Light close-quarters laser;Beam laser;24;1;laser-light;weapon_laser-light.png
 Armada;Tick;armflea;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;24;1;laser-light;weapon_laser-light.png
+Armada;Zapper;armzapper;1;Light EMP laser;Beam laser;800;1;laser-light;weapon_laser-light.png
 Armada;units.names.armcomnew;armcomnew;1;Light close-quarters g2g/g2a laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Armada;units.names.armcomnew;armcomnew;2;Light underwater-combat laser;Beam laser;200;1;laser-light;weapon_laser-light.png
-Cortex;Bulwark;cordoom;3;Light close-quarters g2g laser;Beam laser;40;2;laser-light;weapon_laser-light.png
+Cortex;Commander;cordecom;2;J7NSLaser;Beam laser;63;2;laser-light;weapon_laser-light.png
 Cortex;Coral;corfhlt;1;High energy g2g laser;Beam laser;231;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander;corcom;1;J7Laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander;corcomcon;1;J7Laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander;corcom;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander;corcomcon;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 10;corcomlvl10;5;EyeLaser;Beam laser;80;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 10;cordecomlvl10;5;EyeLaser;Beam laser;80;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;corcomlvl2;1;HighEnergyLaser;Beam laser;215;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;cordecomlvl2;1;HighEnergyLaser;Beam laser;215;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;corcomlvl2;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;cordecomlvl2;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 3;corcomlvl3;1;HighEnergyLaser;Beam laser;380;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 3;cordecomlvl3;1;HighEnergyLaser;Beam laser;380;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 3;corcomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 3;cordecomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 3;corcomlvl3;5;Eye laser;Beam laser;75;1;laser-light;weapon_laser-light.png
@@ -350,8 +350,7 @@ Cortex;Cortex Commander Level 8;corcomlvl8;5;EyeLaser;Beam laser;42;1;laser-ligh
 Cortex;Cortex Commander Level 8;cordecomlvl8;5;EyeLaser;Beam laser;42;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 9;corcomlvl9;5;EyeLaser;Beam laser;58;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 9;cordecomlvl9;5;EyeLaser;Beam laser;58;1;laser-light;weapon_laser-light.png
-Cortex;Devastator;corfdoom;3;Light close-quarters g2g laser;Beam laser;40;2;laser-light;weapon_laser-light.png
-Cortex;Epic Grunt;corakt4;1;Laser;Beam laser;100;1;laser-light;weapon_laser-light.png
+Cortex;Deadeye;cordeadeye;1;HeavyBlaster;Laser;834;2;laser-light;weapon_laser-light.png
 Cortex;Exploiter;corexp;1;Light close-quarters g2g laser turret;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Goon;corsh;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;36;1;laser-light;weapon_laser-light.png
 Cortex;Grunt;corak;1;Laser;Beam laser;37;1;laser-light;weapon_laser-light.png
@@ -359,19 +358,17 @@ Cortex;Guard;corllt;1;Light g2g laser;Beam laser;75;1;laser-light;weapon_laser-l
 Cortex;Halberd;corhal;1;HighEnergyLaser;Beam laser;275;1;laser-light;weapon_laser-light.png
 Cortex;Incisor;corgator;1;Laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Rascal;corfav;1;Light Close-Quarters g2g Laser;Beam laser;35;1;laser-light;weapon_laser-light.png
+Cortex;Shuriken;corbw;1;Light EMP laser;Beam laser;600;1;laser-light;weapon_laser-light.png
 Cortex;Supporter;coresupp;1;LightLaser;Beam laser;41;1;laser-light;weapon_laser-light.png
 Cortex;Supporter;coresupp;2;LightLaser;Beam laser;41;1;laser-light;weapon_laser-light.png
 Cortex;Twin Guard;corhllt;1;Close-quarters light g2g laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Twin Guard;corhllt;2;Close-quarters light g2g laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Warden;corhlt;1;High energy g2g laser;Beam laser;261;1;laser-light;weapon_laser-light.png
+Legion;Ajax;legafigdef;1;Heavy A2A Gatling Guns;Laser;80 (air);2;laser-light;weapon_laser-light.png
 Legion;Alpheus;legah;1;Light G2A Gatling Gun;Laser;5;1;laser-light;weapon_laser-light.png
 Legion;Gelasma;legfmg;1;Rapid-Fire Gatling Gun;Laser;18;1;laser-light;weapon_laser-light.png
-Legion;Neptune;leganavyflagship;2;Dual Experimental Thermal Ordnance Generators;Beam laser;33;2;laser-light;weapon_laser-light.png
-Legion;Neptune;leganavyflagship;3;Dual Experimental Thermal Ordnance Generators;Beam laser;33;2;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 10;armcomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 10;armdecomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 2;armcomlvl2;2;Light underwater-combat laser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 2;armdecomlvl2;2;Light underwater-combat laser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 4;armcomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 4;armdecomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 5;armcomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
@@ -385,10 +382,9 @@ Armada;Armada Commander Level 8;armdecomlvl8;2;UWSupernovaBeam;Beam laser;1400;1
 Armada;Armada Commander Level 9;armcomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 9;armdecomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
 Armada;Commander;armdecom;1;Light close-quarters g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
-Armada;Commander;armdecom;2;J7NSLaser;Beam laser;63;2;laser-medium;weapon_laser-medium.png
 Armada;Paladin;armcrus;2;Light close-quarters g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Armada;Platypus;armamph;1;Light close-quarters laser;Beam laser;80;2;laser-medium;weapon_laser-medium.png
-Armada;Zapper;armzapper;1;Light EMP laser;Beam laser;800;1;laser-medium;weapon_laser-medium.png
+Armada;Webber;armspid;1;Close-quarters light EMP laser;Beam laser;850;2;laser-medium;weapon_laser-medium.png
 Cortex;Advanced Exploiter;cormexp;1;High energy g2g laser;Beam laser;215;2;laser-medium;weapon_laser-medium.png
 Cortex;Archaic Dragon;corcrw;1;High energy a2g laser;Beam laser;250;2;laser-medium;weapon_laser-medium.png
 Cortex;Archaic Dragon;corcrw;2;HighEnergyLaser;Beam laser;90;2;laser-medium;weapon_laser-medium.png
@@ -399,11 +395,15 @@ Cortex;Black Hydra;corblackhy;5;HighEnergyLaser;Beam laser;270;2;laser-medium;we
 Cortex;Buccaneer;corcrus;1;HighEnergyLaser;Beam laser;200;2;laser-medium;weapon_laser-medium.png
 Cortex;Buccaneer;corcrus;2;L2DeckLaser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Cortex;Bulwark;cordoom;2;High energy g2g laser;Beam laser;247;2;laser-medium;weapon_laser-medium.png
+Cortex;Bulwark;cordoom;3;Light close-quarters g2g laser;Beam laser;40;2;laser-medium;weapon_laser-medium.png
 Cortex;Commander;cordecom;1;J7Laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
-Cortex;Commander;cordecom;2;J7NSLaser;Beam laser;63;2;laser-medium;weapon_laser-medium.png
 Cortex;Commando;cormando;1;CommandoBlaster;Laser;100;2;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 10;corcomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 10;cordecomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 10;corcomlvl10;5;EyeLaser;Beam laser;80;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;5;EyeLaser;Beam laser;80;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 3;corcomlvl3;1;HighEnergyLaser;Beam laser;380;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;1;HighEnergyLaser;Beam laser;380;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 4;corcomlvl4;1;HighEnergyLaser;Beam laser;550;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 4;cordecomlvl4;1;HighEnergyLaser;Beam laser;550;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 4;corcomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
@@ -420,40 +420,34 @@ Cortex;Cortex Commander Level 9;corcomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;l
 Cortex;Cortex Commander Level 9;cordecomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
 Cortex;Despot;corbats;4;HighEnergyLaser;Beam laser;300;2;laser-medium;weapon_laser-medium.png
 Cortex;Devastator;corfdoom;2;High energy g2g laser;Beam laser;231;2;laser-medium;weapon_laser-medium.png
+Cortex;Devastator;corfdoom;3;Light close-quarters g2g laser;Beam laser;40;2;laser-medium;weapon_laser-medium.png
 Cortex;Dragon;corcrwh;3;HighEnergyLaser;Beam laser;90;2;laser-medium;weapon_laser-medium.png
 Cortex;Dragon;corcrwh;4;HighEnergyLaser;Beam laser;90;2;laser-medium;weapon_laser-medium.png
 Cortex;Dragon;corcrwh;5;HighEnergyLaser;Beam laser;90;2;laser-medium;weapon_laser-medium.png
 Cortex;Dragon;corcrwh;6;HighEnergyLaser;Beam laser;90;2;laser-medium;weapon_laser-medium.png
 Cortex;Duck;coramph;2;HighEnergyLaser;Beam laser;150;2;laser-medium;weapon_laser-medium.png
+Cortex;Epic Grunt;corakt4;1;Laser;Beam laser;100;1;laser-medium;weapon_laser-medium.png
 Cortex;Laser Tiger;corgatreap;1;High energy g2g laser;Beam laser;261;2;laser-medium;weapon_laser-medium.png
 Cortex;Mammoth;corsumo;1;HighEnergyLaser;Beam laser;302;2;laser-medium;weapon_laser-medium.png
+Cortex;Orthrus;coranavaldefturret;1;Disruptor Bolt;Laser;900;2;laser-medium;weapon_laser-medium.png
 Cortex;Quad Guard;corhllllt;1;Close-quarters light g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Cortex;Quad Guard;corhllllt;2;Close-quarters light g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Cortex;Quad Guard;corhllllt;3;Close-quarters light g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Cortex;Quad Guard;corhllllt;4;Close-quarters light g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
-Cortex;Shuriken;corbw;1;Light EMP laser;Beam laser;600;1;laser-medium;weapon_laser-medium.png
 Cortex;Sumo;corcan;1;HighEnergyLaser;Beam laser;275;2;laser-medium;weapon_laser-medium.png
-Legion;Ajax;legafigdef;1;Heavy A2A Gatling Guns;Laser;80 (air);2;laser-medium;weapon_laser-medium.png
-Legion;Archaic Sol Invictus;legeheatraymech_old;2;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-medium;weapon_laser-medium.png
-Legion;Archaic Sol Invictus;legeheatraymech_old;3;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-medium;weapon_laser-medium.png
-Legion;Archaic Sol Invictus;legeheatraymech_old;4;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-medium;weapon_laser-medium.png
-Legion;Archaic Sol Invictus;legeheatraymech_old;5;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-medium;weapon_laser-medium.png
-Legion;Sol Invictus;legeheatraymech;2;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-medium;weapon_laser-medium.png
-Legion;Sol Invictus;legeheatraymech;3;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-medium;weapon_laser-medium.png
-Armada;Epic Commander - Final Boss;armcomboss;1;J8Laser;Beam laser;1000;4;laser-heavy;weapon_laser-heavy.png
-Armada;Epic Commander - Final Boss;armcomboss;2;J8NSLaser;Beam laser;1000;4;laser-heavy;weapon_laser-heavy.png
+Legion;Neptune;leganavyflagship;2;Dual Experimental Thermal Ordnance Generators;Beam laser;33;2;laser-medium;weapon_laser-medium.png
+Legion;Neptune;leganavyflagship;3;Dual Experimental Thermal Ordnance Generators;Beam laser;33;2;laser-medium;weapon_laser-medium.png
 Armada;Epic Ellysaw;armpshipt3;1;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;116;3;laser-heavy;weapon_laser-heavy.png
 Armada;Epic Ellysaw;armpshipt3;2;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;116;3;laser-heavy;weapon_laser-heavy.png
 Armada;Razorback;armraz;1;Rapid-fire close quarters g2g armor-piercing laser;Beam laser;105;3;laser-heavy;weapon_laser-heavy.png
 Armada;Thor;armthor;3;Long Range EMP laser;Beam laser;300;3;laser-heavy;weapon_laser-heavy.png
 Armada;Thor;armthor;4;Long Range EMP laser;Beam laser;300;3;laser-heavy;weapon_laser-heavy.png
 Armada;Titan;armbanth;1;Close-quarters impulsion blaster;Laser;730;3;laser-heavy;weapon_laser-heavy.png
-Armada;Webber;armspid;1;Close-quarters light EMP laser;Beam laser;850;2;laser-heavy;weapon_laser-heavy.png
+Armada;Titan;armbanth;2;High-energy long-range g2g/g2a lazor of DEEEEEEWWWWWWMMMMMM;Beam laser;6000;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Behemoth;corjugg;2;LightLaser;Beam laser;75;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Behemoth;corjugg;3;LightLaser;Beam laser;75;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Behemoth;corjugg;4;LightLaser;Beam laser;150;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Cataphract;corsok;1;Disruptor Bolt;Laser;750;3;laser-heavy;weapon_laser-heavy.png
-Cortex;Deadeye;cordeadeye;1;HeavyBlaster;Laser;834;2;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Bulwark;cordoomt3;3;High energy g2g laser;Beam laser;247;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Commander - Final Boss;corcomboss;1;J8Laser;Beam laser;200;4;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Commander - Final Boss;corcomboss;2;J8NSLaser;Beam laser;200;4;laser-heavy;weapon_laser-heavy.png
@@ -463,14 +457,20 @@ Cortex;Epic Tzar;corgolt4;3;HighEnergyLaser;Beam laser;750;3;laser-heavy;weapon_
 Cortex;Flying Black Hydra;corfblackhyt4;2;HighEnergyLaser;Beam laser;270;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Flying Black Hydra;corfblackhyt4;4;HighEnergyLaser;Beam laser;270;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Flying Black Hydra;corfblackhyt4;5;HighEnergyLaser;Beam laser;270;3;laser-heavy;weapon_laser-heavy.png
-Cortex;Orthrus;coranavaldefturret;1;Disruptor Bolt;Laser;900;2;laser-heavy;weapon_laser-heavy.png
 Cortex;Overlord;corhltfus;1;High energy g2g laser;Beam laser;750;2;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;2;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;3;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;4;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
+Legion;Archaic Sol Invictus;legeheatraymech_old;5;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
+Legion;Sol Invictus;legeheatraymech;2;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
+Legion;Sol Invictus;legeheatraymech;3;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
+Armada;Epic Commander - Final Boss;armcomboss;1;J8Laser;Beam laser;1000;4;laser-ultra;weapon_laser-ultra.png
+Armada;Epic Commander - Final Boss;armcomboss;2;J8NSLaser;Beam laser;1000;4;laser-ultra;weapon_laser-ultra.png
 Armada;Epic Pulsar;armannit3;1;Heavy long-range g2g tachyon accelerator beam;Beam laser;48000;3;laser-ultra;weapon_laser-ultra.png
 Armada;Excalibur;armexcalibur;1;Caliburn s2g tachyon accelerator beam;Beam laser;800;2;laser-ultra;weapon_laser-ultra.png
 Armada;Liquifier;armanavaldefturret;1;Long-Range Tachyon Emitter;Beam laser;2500;2;laser-ultra;weapon_laser-ultra.png
 Armada;Pulsar;armanni;1;Heavy long-range g2g tachyon accelerator beam;Beam laser;10800;2;laser-ultra;weapon_laser-ultra.png
 Armada;Starlight;armmanni;1;Heavy long-range g2g tachyon beam;Beam laser;2500;2;laser-ultra;weapon_laser-ultra.png
-Armada;Titan;armbanth;2;High-energy long-range g2g/g2a lazor of DEEEEEEWWWWWWMMMMMM;Beam laser;6000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Bulwark;cordoom;1;Long-range g2g tachyon accelerator;Beam laser;4500;2;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Bulwark;cordoomt3;2;Long-range g2g tachyon accelerator;Beam laser;4500;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Dragon;corcrwt4;3;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
@@ -478,7 +478,6 @@ Cortex;Epic Dragon;corcrwt4;4;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultr
 Cortex;Epic Dragon;corcrwt4;5;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Dragon;corcrwt4;6;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Siegebreaker;corsiegebreaker;1;Overcharged Dreadshot Ion Accelerator;Beam laser;4000;2;laser-ultra;weapon_laser-ultra.png
-Legion;Epic Arquebus;legsrailt4;1;Railgun;Laser;6000;3;laser-ultra;weapon_laser-ultra.png
 Armada;Armada Commander Level 10;armcomlvl10;5;Short-Range Lightning Discharge;Lightning;118;1;lightning;
 Armada;Armada Commander Level 10;armdecomlvl10;5;Short-Range Lightning Discharge;Lightning;118;1;lightning;
 Armada;Armada Commander Level 5;armcomlvl5;5;Short-Range Lightning Discharge;Lightning;42;1;lightning;
@@ -500,33 +499,30 @@ Armada;Welder;armzeus;1;Close-quarters g2g lightning rifle;Lightning;22;2;lightn
 Legion;Dragon's Claw;legdtl;1;Close-quarters g2g lightning turret;Lightning;21;1;lightning;
 Armada;Attack Drone;armdrone;1;Rapid-fire a2g machine guns;Laser;11;1;machine-gun-light;
 Legion;Cacophony;legmg;1;Heavy Rapid-fire Machine Gun;Laser;17;1;machine-gun-light;
-Legion;Chimera;legapopupdef;2;Dual Rotary Machine Guns;Laser;10;2;machine-gun-light;
-Legion;Chimera;legapopupdef;3;Dual Rotary Machine Guns;Laser;10;2;machine-gun-light;
-Legion;Combat Commander;legcomt2com;1;Rapid-fire a2g machine guns;Laser;20;1;machine-gun-light;
 Legion;Decurion;leggat;1;Rapid-fire Machine Gun;Laser;12;1;machine-gun-light;
 Legion;Goblin;leggob;1;Rapid-fire a2g machine guns;Laser;12;1;machine-gun-light;
 Legion;Hippocampus;legnavyscout;1;Twin Rapid-fire Machine Guns;Laser;12;1;machine-gun-light;
-Legion;Hoplite;legstr;1;Twin Rapid-fire Machine Guns;Laser;8;2;machine-gun-light;
 Legion;Legion Commander Level 2;legcomlvl2;1;Rapid-Fire Machine Gun;Laser;25;1;machine-gun-light;
 Legion;Legion Commander Level 2;legdecomlvl2;1;Rapid-Fire Machine Gun;Laser;25;1;machine-gun-light;
 Legion;Legion Commander Level 3;legcomlvl3;1;Rapid-Fire Machine Gun;Laser;30;1;machine-gun-light;
 Legion;Legion Commander Level 3;legdecomlvl3;1;Rapid-Fire Machine Gun;Laser;30;1;machine-gun-light;
-Legion;Legion Commander Level 4;legcomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-light;
-Legion;Legion Commander Level 4;legdecomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-light;
-Legion;Legion Commander Level 5;legcomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-light;
-Legion;Legion Commander Level 5;legdecomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-light;
 Legion;Legion Drone;legdrone;1;Burst-fire Machine Gun;Laser;12;1;machine-gun-light;
 Legion;Noctua;legfig;1;Burst-Fire A2A Machine Gun;Laser;36 (air);1;machine-gun-light;
 Legion;Offensive Commander;legcomoff;1;Rapid-fire a2g machine guns;Laser;26;1;machine-gun-light;
 Legion;Tactical Offense Commander;legcomt2off;1;Rapid-fire a2g machine guns;Laser;26;1;machine-gun-light;
 Legion;Triton;legfloat;2;Rapid-fire machine gun;Laser;7;2;machine-gun-light;
 Legion;Wheelie;legscout;1;Burst-fire Machine Gun;Laser;11;1;machine-gun-light;
+Legion;Chimera;legapopupdef;2;Dual Rotary Machine Guns;Laser;10;2;machine-gun-medium;
+Legion;Chimera;legapopupdef;3;Dual Rotary Machine Guns;Laser;10;2;machine-gun-medium;
+Legion;Combat Commander;legcomt2com;1;Rapid-fire a2g machine guns;Laser;20;1;machine-gun-medium;
 Legion;Epic Goblin;leggobt3;1;Rapid-fire close quarters machine guns;Laser;224;1;machine-gun-medium;
+Legion;Gladiator;legaskirmtank;1;Heavy Rotary Plasma Cannon;Plasma;70;2;machine-gun-medium;
+Legion;Hoplite;legstr;1;Twin Rapid-fire Machine Guns;Laser;8;2;machine-gun-medium;
 Legion;Ionia;leganavaldefturret;1;Dual Rotary Heavy-Calibre Machine Guns;Laser;24;2;machine-gun-medium;
-Legion;Javelin;legjav;1;Twin Rapid-fire Machine Guns;Laser;12;3;machine-gun-medium;
-Legion;Javelin;legjav;2;Light AA Rotary Gun;Laser;10 (air);3;machine-gun-medium;
-Legion;Keres;legkeres;2;Heavy rotary cannon;Laser;10;3;machine-gun-medium;
-Legion;Keres;legkeres;3;Heavy rotary cannon;Laser;10;3;machine-gun-medium;
+Legion;Legion Commander Level 4;legcomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-medium;
+Legion;Legion Commander Level 4;legdecomlvl4;1;Rapid-Fire Machine Gun;Laser;40;1;machine-gun-medium;
+Legion;Legion Commander Level 5;legcomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-medium;
+Legion;Legion Commander Level 5;legdecomlvl5;1;Rapid-Fire Machine Gun;Laser;50;1;machine-gun-medium;
 Legion;Thalassa;leganavycruiser;1;Twin Rapid-fire Machine Guns;Laser;24;2;machine-gun-medium;
 Legion;Tyrannus;legfort;3;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;
 Legion;Tyrannus;legfort;4;Burst-fire Machine Gun;Laser;36;2;machine-gun-medium;
@@ -537,7 +533,10 @@ Legion;Apollyon;legapollyon;3;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;
 Legion;Apollyon;legapollyon;4;Heavy rotary cannon;Laser;50;3;machine-gun-heavy;
 Legion;Apollyon;legapollyon;5;Heavy rotary cannon;Laser;20;3;machine-gun-heavy;
 Legion;Apollyon;legapollyon;6;Heavy rotary cannon;Laser;20;3;machine-gun-heavy;
-Legion;Gladiator;legaskirmtank;1;Heavy Rotary Plasma Cannon;Plasma;70;2;machine-gun-heavy;
+Legion;Javelin;legjav;1;Twin Rapid-fire Machine Guns;Laser;12;3;machine-gun-heavy;
+Legion;Javelin;legjav;2;Light AA Rotary Gun;Laser;10 (air);3;machine-gun-heavy;
+Legion;Keres;legkeres;2;Heavy rotary cannon;Laser;10;3;machine-gun-heavy;
+Legion;Keres;legkeres;3;Heavy rotary cannon;Laser;10;3;machine-gun-heavy;
 Legion;Legionnaire;legionnaire;1;Rapid-fire dual A2A machine guns;Laser;80 (air);2;machine-gun-heavy;
 Legion;Mukade;legpede;1;Rapid-fire a2g machine guns;Laser;21;3;machine-gun-heavy;
 Legion;Mukade;legpede;6;Rapid-fire a2g machine guns;Laser;21;3;machine-gun-heavy;
@@ -553,6 +552,7 @@ Armada;Nettle;armrl;1;Light g2a missile launcher;Missile;115 (air);1;missile-lig
 Armada;Rocketeer;armrock;1;Medium g2g rocket launcher;Missile;157;1;missile-light;weapon_missile-light.png
 Armada;Skater;armpt;2;Light g2a missile launcher;Missile;80 (air);1;missile-light;weapon_missile-light.png
 Armada;Sweeper;armah;2;Light g2a missile launcher;Missile;62 (air);1;missile-light;weapon_missile-light.png
+Armada;Turtle;armcroc;2;Light g2a missile launcher;Missile;60 (air);2;missile-light;weapon_missile-light.png
 Armada;Whistler;armsam;1;Light g2a missile launcher;Missile;160 (air);1;missile-light;weapon_missile-light.png
 Armada;Whistler;armsam;2;Light g2g missile launcher;Missile;86;1;missile-light;weapon_missile-light.png
 Cortex;Aggravator;corstorm;1;Rockets;Missile;157;1;missile-light;weapon_missile-light.png
@@ -560,13 +560,12 @@ Cortex;Bat;corsfig;1;Guided a2a missile launcher;Missile;12;1;missile-light;weap
 Cortex;Bat;corsfig2;1;Guided a2a missile launcher;Missile;12;1;missile-light;weapon_missile-light.png
 Cortex;Bat;corsfig2;2;Guided a2a missile launcher;Missile;12;1;missile-light;weapon_missile-light.png
 Cortex;Birdeater;corah;2;Missiles;Missile;62 (air);1;missile-light;weapon_missile-light.png
+Cortex;Dragon's Rage;cormwall;1;CatapultRockets;Missile;450;2;missile-light;weapon_missile-light.png
 Cortex;Herring;corpt;1;Light g2a missile launcher;Missile;120 (air);1;missile-light;weapon_missile-light.png
 Cortex;Herring;corpt;2;Missiles;Missile;47;1;missile-light;weapon_missile-light.png
-Cortex;Janitor;corfrock;1;Advanced g2a rapid missile launcher;Missile;76 (air);1;missile-light;weapon_missile-light.png
 Cortex;Lasher;cormist;1;Light g2a missile launcher;Missile;120 (air);1;missile-light;weapon_missile-light.png
 Cortex;Lasher;cormist;2;Light g2g missile launcher;Missile;63;1;missile-light;weapon_missile-light.png
 Cortex;Nighthawk;corvamp;1;Guided a2a/a2g missile launcher;Missile;24;2;missile-light;weapon_missile-light.png
-Cortex;SAM;cormadsam;1;Advanced g2a rapid missile launcher;Missile;90 (air);1;missile-light;weapon_missile-light.png
 Cortex;Slingshot;corfrt;1;Light g2a missile launcher;Missile;115 (air);1;missile-light;weapon_missile-light.png
 Cortex;Thistle;corrl;1;Light g2a missile launcher;Missile;115 (air);1;missile-light;weapon_missile-light.png
 Cortex;Torch;cortorch;1;Flamethrower;Missile;85;1;missile-light;weapon_missile-light.png
@@ -577,40 +576,40 @@ Legion;Bramble;legrl;1;Light g2a Missile Launcher;Missile;115 (air);1;missile-li
 Legion;Epic Mosquito;legmost3;1;CatapultRockets;Missile;200;1;missile-light;weapon_missile-light.png
 Legion;Mosquito;legmos;1;Rockets;Missile;44;1;missile-light;weapon_missile-light.png
 Legion;Polybolos;legfrl;1;Light g2a Missile Launcher;Missile;115 (air);1;missile-light;weapon_missile-light.png
+Legion;Thanatos;leghrk;1;CatapultRockets;Missile;150;2;missile-light;weapon_missile-light.png
 Armada;Dragonslayer;armaas;2;Long-range g2a guided missile launcher;Missile;63 (air);2;missile-medium;weapon_missile-medium.png
 Armada;Hornet;armblade;1;Heavy a2g armor-piercing sabot missile launcher;Missile;190;2;missile-medium;weapon_missile-medium.png
 Armada;Jaguar;armlatnk;2;Light g2a missile launcher;Missile;90 (air);2;missile-medium;weapon_missile-medium.png
 Armada;Maelstrom;armlship;2;Light g2a missile launcher;Missile;138 (air);2;missile-medium;weapon_missile-medium.png
 Armada;Nexus;armdronecarry;2;Missiles;Missile;138 (air);2;missile-medium;weapon_missile-medium.png
 Armada;Platypus;armamph;2;Light g2a missile launcher;Missile;90 (air);2;missile-medium;weapon_missile-medium.png
-Armada;Turtle;armcroc;2;Light g2a missile launcher;Missile;60 (air);2;missile-medium;weapon_missile-medium.png
 Cortex;Advanced Exploiter;cormexp;2;Heavy g2g/g2a barrage missile launcher;Missile;260;2;missile-medium;weapon_missile-medium.png
 Cortex;Arrow Storm;corarch;2;AA2Missile;Missile;125;2;missile-medium;weapon_missile-medium.png
+Cortex;Banisher;corban;1;Banisher;Missile;1000;2;missile-medium;weapon_missile-medium.png
 Cortex;Brimstone;corfship;2;Missiles;Missile;138 (air);2;missile-medium;weapon_missile-medium.png
+Cortex;Catapult;corcat;1;CatapultRockets;Missile;450;3;missile-medium;weapon_missile-medium.png
 Cortex;Disperser;cordronecarry;2;Missiles;Missile;138 (air);2;missile-medium;weapon_missile-medium.png
 Cortex;Dragon;corcrwh;2;Advanced d2a rapid missile launcher;Missile;76 (air);2;missile-medium;weapon_missile-medium.png
-Cortex;Manticore;coraak;1;Missiles;Missile;250 (air);2;missile-medium;weapon_missile-medium.png
+Cortex;Janitor;corfrock;1;Advanced g2a rapid missile launcher;Missile;76 (air);1;missile-medium;weapon_missile-medium.png
 Cortex;Obligator;corobligator;1;Long range missile battery;Missile;255;2;missile-medium;weapon_missile-medium.png
+Cortex;SAM;cormadsam;1;Advanced g2a rapid missile launcher;Missile;90 (air);1;missile-medium;weapon_missile-medium.png
 Cortex;Wasp;corape;1;Heavy a2g shrapnel rockets;Missile;122;2;missile-medium;weapon_missile-medium.png
-Legion;Thanatos;leghrk;1;CatapultRockets;Missile;150;2;missile-medium;weapon_missile-medium.png
 Armada;Marauder;armmar;2;Guided g2a missile launcher;Missile;90 (air);3;missile-heavy;weapon_missile-heavy.png
 Armada;Meatball;armmeatball;2;Guided g2a missile launcher;Missile;85 (air);3;missile-heavy;weapon_missile-heavy.png
 Armada;Mercury;armmercury;1;Heavy long-range g2a guided missile launcher;Missile;750 (air);2;missile-heavy;weapon_missile-heavy.png
 Armada;units.names.armprowl;armprowl;2;Guided g2a missile launcher;Missile;85 (air);3;missile-heavy;weapon_missile-heavy.png
-Cortex;Catapult;corcat;1;CatapultRockets;Missile;450;3;missile-heavy;weapon_missile-heavy.png
 Cortex;Demon;cordemon;2;ShoulderRockets;Missile;100;3;missile-heavy;weapon_missile-heavy.png
-Cortex;Dragon's Rage;cormwall;1;CatapultRockets;Missile;450;2;missile-heavy;weapon_missile-heavy.png
-Cortex;Epic Karganeth;corkarganetht4;1;KarganethMissiles;Missile;700;3;missile-heavy;weapon_missile-heavy.png
 Cortex;Epic Karganeth;corkarganetht4;2;ShoulderRockets;Missile;750 (air);3;missile-heavy;weapon_missile-heavy.png
 Cortex;Karganeth;corkarg;1;KarganethMissiles;Missile;180;3;missile-heavy;weapon_missile-heavy.png
 Cortex;Karganeth;corkarg;2;ShoulderRockets;Missile;100;3;missile-heavy;weapon_missile-heavy.png
+Cortex;Manticore;coraak;1;Missiles;Missile;250 (air);2;missile-heavy;weapon_missile-heavy.png
 Cortex;Scorpion;corvipe;1;Heavy g2g sabot rocket launcher;Missile;825;2;missile-heavy;weapon_missile-heavy.png
 Cortex;Screamer;corscreamer;1;Long-range heavy g2a missile launcher;Missile;750 (air);2;missile-heavy;weapon_missile-heavy.png
+Cortex;Vesuvius;corves;2;Banisher;Missile;1000;3;missile-heavy;weapon_missile-heavy.png
+Cortex;Vesuvius;corves;3;Banisher;Missile;1000;3;missile-heavy;weapon_missile-heavy.png
 Legion;Apollyon;legapollyon;9;CatapultRockets;Missile;465;3;missile-heavy;weapon_missile-heavy.png
 Legion;Apollyon;legapollyon;10;CatapultRockets;Missile;465;3;missile-heavy;weapon_missile-heavy.png
-Cortex;Banisher;corban;1;Banisher;Missile;1000;2;missile-ultra;weapon_missile-ultra.png
-Cortex;Vesuvius;corves;2;Banisher;Missile;1000;3;missile-ultra;weapon_missile-ultra.png
-Cortex;Vesuvius;corves;3;Banisher;Missile;1000;3;missile-ultra;weapon_missile-ultra.png
+Cortex;Epic Karganeth;corkarganetht4;1;KarganethMissiles;Missile;700;3;missile-ultra;weapon_missile-ultra.png
 Armada;Armageddon;armsilo;1;Intercontinental ballistic nuclear warhead;Starburst missile;12500;2;nuclear;
 Armada;Epic Liche;armlichet4;1;Intercontinental ballistic nuclear warhead;Bomb;9500;3;nuclear;
 Armada;Liche;armliche;1;Tactical nuclear homing missile;Missile;5625;2;nuclear;
@@ -645,60 +644,60 @@ Cortex;Gun Platform;corgplat;1;Light g2g plasma cannon;Plasma;97;1;plasma-light;
 Cortex;Thug;corthud;1;PlasmaCannon;Plasma;104;1;plasma-light;weapon_plasma-light.png
 Legion;Amputator;legcluster;1;Long-Range g2g Cluster Plasma Cannon;Plasma;300;1;plasma-light;weapon_plasma-light.png
 Legion;Amputator;legcluster;2;Long-Range g2g Cluster Plasma Cannon;Plasma;300;1;plasma-light;weapon_plasma-light.png
-Legion;Legion Commander Level 6;legcomlvl6;1;Rapid-Fire Plasma Cannon;Plasma;360;1;plasma-light;weapon_plasma-light.png
-Legion;Legion Commander Level 6;legdecomlvl6;1;Rapid-Fire Plasma Cannon;Plasma;360;1;plasma-light;weapon_plasma-light.png
-Legion;Legion Commander Level 7;legcomlvl7;1;Rapid-Fire Plasma Cannon;Plasma;400;1;plasma-light;weapon_plasma-light.png
-Legion;Legion Commander Level 7;legdecomlvl7;1;Rapid-Fire Plasma Cannon;Plasma;400;1;plasma-light;weapon_plasma-light.png
-Legion;Legion Commander Level 8;legcomlvl8;1;Rapid-Fire Plasma Cannon;Plasma;475;1;plasma-light;weapon_plasma-light.png
-Legion;Legion Commander Level 8;legdecomlvl8;1;Rapid-Fire Plasma Cannon;Plasma;475;1;plasma-light;weapon_plasma-light.png
+Legion;Cleaver;legamcluster;1;Long-range g2g plasma cannon;Plasma;300;2;plasma-light;weapon_plasma-light.png
+Legion;Corinth;leganavyartyship;1;Dual Quad-Barrelled Long-Range Cluster Plasma Cannon;Plasma;350;2;plasma-light;weapon_plasma-light.png
+Legion;Mini Starfall;legministarfall;1;Long-Range High-Trajectory 63-Salvo Plasma Launcher;Plasma;125;2;plasma-light;weapon_plasma-light.png
 Legion;Nereus;legner;1;Medium g2g plasma cannon;Plasma;55;1;plasma-light;weapon_plasma-light.png
+Legion;Olympus;leglrpc;1;Long-Range g2g Heavy Cluster Plasma Cannon;Plasma;600;2;plasma-light;weapon_plasma-light.png
 Legion;Satyr;leglob;1;Forwards Plasma Cannon;Plasma;75;1;plasma-light;weapon_plasma-light.png
-Armada;Assimilator;armassimilator;1;scav rapid fire plasma gun;Laser;33;3;plasma-medium;weapon_plasma-medium.png
+Legion;Starfall;legstarfall;1;Very Long-Range High-Trajectory 63-Salvo Plasma Launcher;Plasma;600;2;plasma-light;weapon_plasma-light.png
+Armada;Basilica;armbrtha;1;Long-range plasma cannon;Plasma;1625;2;plasma-medium;weapon_plasma-medium.png
 Armada;Bull;armbull;1;Heavy g2g plasma cannon;Plasma;270;2;plasma-medium;weapon_plasma-medium.png
 Armada;Dreadnought;armbats;1;Heavy long-range g2g plasma cannon;Plasma;300;2;plasma-medium;weapon_plasma-medium.png
 Armada;Dreadnought;armbats;2;Heavy long-range g2g plasma cannon;Plasma;300;2;plasma-medium;weapon_plasma-medium.png
+Armada;Epoch;armepoch;1;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;2;plasma-medium;weapon_plasma-medium.png
 Armada;Epoch;armepoch;2;Secondary rapid-fire heavy plasma cannon;Plasma;270;2;plasma-medium;weapon_plasma-medium.png
+Armada;Epoch;armepoch;3;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;2;plasma-medium;weapon_plasma-medium.png
 Armada;Epoch;armepoch;4;Secondary rapid-fire heavy plasma cannon;Plasma;270;2;plasma-medium;weapon_plasma-medium.png
 Armada;Epoch;armepoch;5;Secondary rapid-fire heavy plasma cannon;Plasma;270;2;plasma-medium;weapon_plasma-medium.png
+Armada;Fatboy;armfboy;1;Heavy AoE g2g plasma cannon;Plasma;800;2;plasma-medium;weapon_plasma-medium.png
 Armada;Hound;armfido;1;Ballistic g2g AoE plasma cannon;Plasma;255;2;plasma-medium;weapon_plasma-medium.png
 Armada;Mauser;armmart;1;Long-range g2g plasma cannon;Plasma;260;2;plasma-medium;weapon_plasma-medium.png
-Armada;Mini Ragnarok;armminivulc;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;2;plasma-medium;weapon_plasma-medium.png
 Armada;Rattlesnake;armamb;1;Pop-up heavy  long range g2g plasma cannon;Plasma;350;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Alligator;corseal;1;PlasmaCannon;Plasma;116;2;plasma-medium;weapon_plasma-medium.png
+Cortex;Basilisk;corint;1;Long-range plasma cannon;Plasma;2000;2;plasma-medium;weapon_plasma-medium.png
+Cortex;Black Prince;corprince;1;Heavy Long-Range Plasma Bombardment Cannon;Plasma;2000;2;plasma-medium;weapon_plasma-medium.png
+Cortex;Black Prince;corprince;2;Long-Range Plasma Bombardment Cannons;Plasma;1000;2;plasma-medium;weapon_plasma-medium.png
+Cortex;Black Prince;corprince;3;Long-Range Plasma Bombardment Cannons;Plasma;1000;2;plasma-medium;weapon_plasma-medium.png
+Cortex;Black Prince;corprince;4;Long-Range Plasma Bombardment Cannons;Plasma;1000;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Cerberus;corbhmth;1;Heavy g2g barrage plasma battery;Plasma;450;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Cerberus;corbhmth;2;Heavy g2g barrage plasma battery;Plasma;450;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Cerberus;corbhmth;3;Heavy g2g barrage plasma battery;Plasma;450;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Devastator;corfdoom;1;Medium-range g2g plasma cannon;Plasma;420;2;plasma-medium;weapon_plasma-medium.png
-Cortex;Mini Calamity;corminibuzz;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;2;plasma-medium;weapon_plasma-medium.png
+Cortex;Orthrus;coranavaldefturret;2;Heavy Plasma Blast Cannon;Plasma;525;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Persecutor;cortoast;1;Pop-up long-range heavy g2g plasma cannon;Plasma;420;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Persecutor;cortoast;2;Pop-up long-range heavy g2g plasma cannon;Plasma;420;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Quaker;cormart;1;PlasmaCannon;Plasma;420;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Sheldon;cormort;1;PlasmaCannon;Plasma;105;2;plasma-medium;weapon_plasma-medium.png
 Cortex;Tiger;correap;1;PlasmaCannon;Plasma;120;2;plasma-medium;weapon_plasma-medium.png
-Legion;Cleaver;legamcluster;1;Long-range g2g plasma cannon;Plasma;300;2;plasma-medium;weapon_plasma-medium.png
-Legion;Corinth;leganavyartyship;1;Dual Quad-Barrelled Long-Range Cluster Plasma Cannon;Plasma;350;2;plasma-medium;weapon_plasma-medium.png
-Legion;Epic Tyrannus;legfortt4;3;scav rapid fire plasma gun;Laser;50;3;plasma-medium;weapon_plasma-medium.png
-Legion;Epic Tyrannus;legfortt4;4;scav rapid fire plasma gun;Laser;50;3;plasma-medium;weapon_plasma-medium.png
-Legion;Epic Tyrannus;legfortt4;5;scav rapid fire plasma gun;Laser;50;3;plasma-medium;weapon_plasma-medium.png
+Legion;Astraeus;legelrpcmech;1;Long-Range g2g Heavy Cluster Plasma Cannon;Plasma;600;3;plasma-medium;weapon_plasma-medium.png
 Legion;Eviscerator;legacluster;1;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;414;2;plasma-medium;weapon_plasma-medium.png
 Legion;Eviscerator;legacluster;2;Pop-Up Long-range g2g Cluster Plasma Cannon;Plasma;414;2;plasma-medium;weapon_plasma-medium.png
-Legion;Legion Commander Level 10;legcomlvl10;1;Rapid-Fire Plasma Cannon;Plasma;500;1;plasma-medium;weapon_plasma-medium.png
-Legion;Legion Commander Level 10;legdecomlvl10;1;Rapid-Fire Plasma Cannon;Plasma;500;1;plasma-medium;weapon_plasma-medium.png
+Legion;Legion Commander Level 6;legcomlvl6;1;Rapid-Fire Plasma Cannon;Plasma;360;1;plasma-medium;weapon_plasma-medium.png
+Legion;Legion Commander Level 6;legdecomlvl6;1;Rapid-Fire Plasma Cannon;Plasma;360;1;plasma-medium;weapon_plasma-medium.png
+Legion;Legion Commander Level 7;legcomlvl7;1;Rapid-Fire Plasma Cannon;Plasma;400;1;plasma-medium;weapon_plasma-medium.png
+Legion;Legion Commander Level 7;legdecomlvl7;1;Rapid-Fire Plasma Cannon;Plasma;400;1;plasma-medium;weapon_plasma-medium.png
 Legion;Legion Commander Level 9;legcomlvl9;1;Rapid-Fire Plasma Cannon;Plasma;500;1;plasma-medium;weapon_plasma-medium.png
 Legion;Legion Commander Level 9;legdecomlvl9;1;Rapid-Fire Plasma Cannon;Plasma;500;1;plasma-medium;weapon_plasma-medium.png
-Legion;Mini Starfall;legministarfall;1;Long-Range High-Trajectory 63-Salvo Plasma Launcher;Plasma;125;2;plasma-medium;weapon_plasma-medium.png
 Legion;Quickshot;legmrv;1;Two-Round Burst Fire Plasma Cannon;Plasma;72;2;plasma-medium;weapon_plasma-medium.png
 Legion;Scylla;leganavybattleship;1;Heavy long-range g2g plasma cannon;Plasma;270;2;plasma-medium;weapon_plasma-medium.png
 Legion;Scylla;leganavybattleship;2;Heavy long-range g2g plasma cannon;Plasma;300;2;plasma-medium;weapon_plasma-medium.png
 Legion;Tyrannus;legfort;1;PlasmaCannon;Plasma;166;2;plasma-medium;weapon_plasma-medium.png
 Legion;Tyrannus;legfort;2;PlasmaCannon;Plasma;166;2;plasma-medium;weapon_plasma-medium.png
-Armada;Basilica;armbrtha;1;Long-range plasma cannon;Plasma;1625;2;plasma-heavy;weapon_plasma-heavy.png
+Armada;Assimilator;armassimilator;1;scav rapid fire plasma gun;Laser;33;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Epic Dolphin;armdecadet3;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Epic Dolphin;armdecadet3;2;Mini Rapid-fire long-range plasma cannon;Plasma;210;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Epic Pawn;armpwt4;1;Rapid-fire huge g2g plasma guns;Plasma;200;3;plasma-heavy;weapon_plasma-heavy.png
-Armada;Epoch;armepoch;1;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;2;plasma-heavy;weapon_plasma-heavy.png
-Armada;Epoch;armepoch;3;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;2;plasma-heavy;weapon_plasma-heavy.png
-Armada;Fatboy;armfboy;1;Heavy AoE g2g plasma cannon;Plasma;800;2;plasma-heavy;weapon_plasma-heavy.png
 Armada;Flying Epoch;armfepocht4;1;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Flying Epoch;armfepocht4;2;Secondary rapid-fire heavy plasma cannon;Plasma;270;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Flying Epoch;armfepocht4;3;Primary rapid-fire heavy long-range plasma cannon;Plasma;500;3;plasma-heavy;weapon_plasma-heavy.png
@@ -706,27 +705,27 @@ Armada;Flying Epoch;armfepocht4;4;Secondary rapid-fire heavy plasma cannon;Plasm
 Armada;Flying Epoch;armfepocht4;5;Secondary rapid-fire heavy plasma cannon;Plasma;270;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Lunchbox;armlunchbox;1;Heavy long-range g2g plasma cannon;Plasma;1265;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Meatball;armmeatball;1;Long range g2g plasma cannon;Plasma;200;3;plasma-heavy;weapon_plasma-heavy.png
-Armada;Ragnarok;armvulc;1;Rapid-fire long-range plasma cannon;Plasma;1625;2;plasma-heavy;weapon_plasma-heavy.png
+Armada;Mini Ragnarok;armminivulc;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;2;plasma-heavy;weapon_plasma-heavy.png
 Armada;Ratte;armrattet4;1;Huge g2g plasma cannon;Plasma;1200;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Vanguard;armvang;1;Heavy long-range g2g plasma cannon;Plasma;1265;3;plasma-heavy;weapon_plasma-heavy.png
 Armada;Vanguard;armvang;2;Heavy long-range g2g plasma cannon;Plasma;1265;3;plasma-heavy;weapon_plasma-heavy.png
-Cortex;Black Prince;corprince;2;Long-Range Plasma Bombardment Cannons;Plasma;1000;2;plasma-heavy;weapon_plasma-heavy.png
-Cortex;Black Prince;corprince;3;Long-Range Plasma Bombardment Cannons;Plasma;1000;2;plasma-heavy;weapon_plasma-heavy.png
-Cortex;Black Prince;corprince;4;Long-Range Plasma Bombardment Cannons;Plasma;1000;2;plasma-heavy;weapon_plasma-heavy.png
-Cortex;Orthrus;coranavaldefturret;2;Heavy Plasma Blast Cannon;Plasma;525;2;plasma-heavy;weapon_plasma-heavy.png
-Legion;Astraeus;legelrpcmech;1;Long-Range g2g Heavy Cluster Plasma Cannon;Plasma;600;3;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Leviathan;corslrpc;1;Heavy long range g2g AoE plasma cannon;Plasma;2000;3;plasma-heavy;weapon_plasma-heavy.png
+Cortex;Mini Calamity;corminibuzz;1;Mini Rapid-fire long-range plasma cannon;Plasma;210;2;plasma-heavy;weapon_plasma-heavy.png
 Legion;Epic Tyrannus;legfortt4;1;PlasmaCannon;Plasma;480;3;plasma-heavy;weapon_plasma-heavy.png
 Legion;Epic Tyrannus;legfortt4;2;PlasmaCannon;Plasma;480;3;plasma-heavy;weapon_plasma-heavy.png
+Legion;Epic Tyrannus;legfortt4;3;scav rapid fire plasma gun;Laser;50;3;plasma-heavy;weapon_plasma-heavy.png
+Legion;Epic Tyrannus;legfortt4;4;scav rapid fire plasma gun;Laser;50;3;plasma-heavy;weapon_plasma-heavy.png
+Legion;Epic Tyrannus;legfortt4;5;scav rapid fire plasma gun;Laser;50;3;plasma-heavy;weapon_plasma-heavy.png
 Legion;Myrmidon;legeallterrainmech;1;Heavy Long-Range Cluster Plasma Cannon;Plasma;345;3;plasma-heavy;weapon_plasma-heavy.png
 Legion;Myrmidon;legeallterrainmech;2;Heavy Long-Range High-Trajectory Cluster Plasma Cannon;Plasma;345;3;plasma-heavy;weapon_plasma-heavy.png
-Legion;Olympus;leglrpc;1;Long-Range g2g Heavy Cluster Plasma Cannon;Plasma;600;2;plasma-heavy;weapon_plasma-heavy.png
-Legion;Starfall;legstarfall;1;Very Long-Range High-Trajectory 63-Salvo Plasma Launcher;Plasma;600;2;plasma-heavy;weapon_plasma-heavy.png
-Cortex;Basilisk;corint;1;Long-range plasma cannon;Plasma;2000;2;plasma-ultra;weapon_plasma-ultra.png
-Cortex;Black Prince;corprince;1;Heavy Long-Range Plasma Bombardment Cannon;Plasma;2000;2;plasma-ultra;weapon_plasma-ultra.png
+Armada;Ragnarok;armvulc;1;Rapid-fire long-range plasma cannon;Plasma;1625;2;plasma-ultra;weapon_plasma-ultra.png
 Cortex;Calamity;corbuzz;1;Rapid-fire long-range plasma cannon;Plasma;2000;2;plasma-ultra;weapon_plasma-ultra.png
 Cortex;Epic Tzar;corgolt4;1;Huge g2g plasma cannon;Plasma;8000;3;plasma-ultra;weapon_plasma-ultra.png
-Cortex;Leviathan;corslrpc;1;Heavy long range g2g AoE plasma cannon;Plasma;2000;3;plasma-ultra;weapon_plasma-ultra.png
 Cortex;Vesuvius;corves;1;Huge g2g plasma cannon;Plasma;8000;3;plasma-ultra;weapon_plasma-ultra.png
+Legion;Legion Commander Level 10;legcomlvl10;1;Rapid-Fire Plasma Cannon;Plasma;500;1;plasma-ultra;weapon_plasma-ultra.png
+Legion;Legion Commander Level 10;legdecomlvl10;1;Rapid-Fire Plasma Cannon;Plasma;500;1;plasma-ultra;weapon_plasma-ultra.png
+Legion;Legion Commander Level 8;legcomlvl8;1;Rapid-Fire Plasma Cannon;Plasma;475;1;plasma-ultra;weapon_plasma-ultra.png
+Legion;Legion Commander Level 8;legdecomlvl8;1;Rapid-Fire Plasma Cannon;Plasma;475;1;plasma-ultra;weapon_plasma-ultra.png
 Armada;Attack Drone;armdroneold;1;Railgun;Laser;100;1;railgun;
 Legion;Aquilon;legadvaabot;2;Light Anti-Air Railgun;Laser;225 (air);2;railgun;
 Legion;Arquebus;legsrail;1;Railgun;Laser;850;2;railgun;
@@ -734,6 +733,7 @@ Legion;Daedalus;legerailtank;1;Siege Rail Accelerator;Laser;800;3;railgun;
 Legion;Daedalus;legerailtank;2;Siege Rail Accelerator;Laser;800;3;railgun;
 Legion;Daedalus;legerailtank;3;Siege Rail Accelerator;Laser;800;3;railgun;
 Legion;Dragon's Constitution;legrwall;1;Compact Railgun;Laser;1000;2;railgun;
+Legion;Epic Arquebus;legsrailt4;1;Railgun;Laser;6000;3;railgun;
 Legion;Lance;legrail;1;Railgun;Laser;200;1;railgun;
 Legion;Lance;legrail;2;Railgun;Laser;300 (air);1;railgun;
 Legion;Legion Commander Level 10;legcomlvl10;4;Railgun;Laser;500;1;railgun;

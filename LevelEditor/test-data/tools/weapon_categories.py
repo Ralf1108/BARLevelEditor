@@ -6,7 +6,7 @@
 Heat rays (description with "heat ray") are one category (yellow), the lasers of the heaviest kind (tachyon, ion accelerator, "ultra" word or the ultra limit of the damage) another (laser-ultra, blue and very thick).
 A weapon gets a family (laser, plasma cannon, missile launcher ...) from its Type and its description. The families laser, plasma, cannon, missile and machine-gun have four sizes (light, medium, heavy, ultra):
 the size comes from the tech level of the unit (T1 light, T2 medium, T3 and above heavy; renegade_unit_tech.csv, read from the game by test-data/tools/zz_tech.lua), moved one step down by a weak shot
-and one step up by a strong shot (damage of one shot against the limits of the family in renegade_weapon_limits.csv); a shot at the ultra limit is ultra whatever the unit is.
+and one step up by a strong shot (damage per second against the limits of the family in renegade_weapon_limits.csv); a shot at the ultra limit is ultra whatever the unit is.
 Weapons without a button (footsteps, dummies) are left out.
 """
 import csv, os, re, sys, collections
@@ -25,9 +25,9 @@ IMAGES = os.path.join(GM, "weapon-images")
 # the families with a picture for each size; every other family has one picture
 SIZED = ("laser", "plasma", "cannon", "missile", "machine-gun")
 SIZES = ("light", "medium", "heavy", "ultra")
-# the start values of renegade_weapon_limits.csv (damage of one shot): below Weak a size less, from Strong a size more, from Ultra the ultra size (empty: no ultra size by damage)
-DEFAULT_LIMITS = {"laser": (60, 400, 2500), "plasma": (60, 500, 2000), "cannon": (60, 600, 1200), "missile": (50, 400, 1000), "machine-gun": (15, 60, "")}
-LIMIT_COLUMNS = ["Family", "Weak below", "Strong from", "Ultra from"]
+# the start values of renegade_weapon_limits.csv (damage per second): below Weak a size less, from Strong a size more, from Ultra the ultra size (empty: no ultra size by damage)
+DEFAULT_LIMITS = {"laser": (100, 800, 6000), "plasma": (60, 400, 1500), "cannon": (60, 300, 3000), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
+LIMIT_COLUMNS = ["Family", "Weak below", "Strong from", "Ultra from"]   # damage per second
 
 
 def read_csv(path):
@@ -57,6 +57,13 @@ LIMITS = load_limits()
 TECH = load_tech()
 
 
+def dps(r):
+    """damage per second of the weapon: the damage of one shot divided by the reload time (the number of projectiles of a salvo is not in the table)"""
+    m = re.match(r"\s*([\d.]+)", r["Reload"] or "")
+    rl = max(float(m.group(1)), 0.1) if m else 1.0
+    return dmg(r) / rl
+
+
 def dmg(r):
     m = re.match(r"\s*(\d+)", r["Damage"] or "")
     return int(m.group(1)) if m else 0
@@ -70,7 +77,7 @@ def size(d, r, bounds):
 def sized(fam, r):
     """light / medium / heavy / ultra of a weapon of a sized family: from the tech level of the unit, one step down for a weak and one up for a strong shot, ultra from the ultra limit"""
     weak, strong, ultra = LIMITS[fam]
-    x = dmg(r)
+    x = dps(r)
     if ultra is not None and x >= ultra:
         return "ultra"
     tech = TECH.get(r["Code"], 2)
@@ -98,7 +105,7 @@ def classify(r):
         return "stun-beam", None
     if "heat ray" in d or "heatray" in d:
         return "heatray", None   # (yellow: the Juggernaut, the Adjudicator, Thermite ...)
-    if t in ("Beam laser", "Laser") and ("tachyon" in d or "ion accelerator" in d or re.search(chr(92) + "bultra" + chr(92) + "b", d) or dmg(r) >= (LIMITS["laser"][2] or 10 ** 9)):
+    if t in ("Beam laser", "Laser") and ("tachyon" in d or "ion accelerator" in d or re.search(chr(92) + "bultra" + chr(92) + "b", d) or dps(r) >= (LIMITS["laser"][2] or 10 ** 9)):
         return "laser-ultra", None   # (blue and very thick: the Pulsar, the tachyon beams ...)
     if t == "Melee" or "self-destruct" in d or "dummy" in d or "crawlingbomb" in d:
         return "self-destruct", None
@@ -172,13 +179,13 @@ def main():
              "1. **Family** from the type and the description of the weapon: laser, plasma, cannon, missile, machine gun, torpedo, bomb, flak, d-gun ... and so on (the table below). The heat rays (description with \"heat ray\") are the family heatray (yellow).",
              "2. **Size** (light, medium, heavy, ultra) only for the families laser, plasma, cannon, missile and machine-gun (all other families have one picture):",
              "   - the base size comes from the **tech level of the unit** that carries the weapon: T1 light, T2 medium, T3 and T4 heavy (`renegade_unit_tech.csv`; a unit that is not in it counts as T2);",
-             "   - a **weak shot** (damage of one shot below *Weak below*) moves it one size down, a **strong shot** (from *Strong from*) one size up (never beyond heavy);",
+             "   - a **weak shot** (damage per second below *Weak below*) moves it one size down, a **strong shot** (from *Strong from*) one size up (never beyond heavy);",
              "   - a shot from *Ultra from* is **ultra** whatever the unit is. For the lasers also the tachyon and ion beams and every weapon with the word \"ultra\" in its description are ultra (laser-ultra: blue, very thick).",
              "3. The limits are in `renegade_weapon_limits.csv` (change them in Excel, then run `update_renegade_weapons.bat`... or `python test-data/tools/weapon_categories.py`):", "",
              "| Family | Weak below | Strong from | Ultra from |", "|---|---|---|---|"]
     for f, (a, b, c) in LIMITS.items():
         lines.append("| %s | %d | %d | %s |" % (f, a, b, c if c is not None else ""))
-    lines += ["", "(damage of one shot; an empty field means: no ultra size by damage)", "",
+    lines += ["", "(damage per second; an empty field means: no ultra size by damage)", "",
               "## The categories", "", "| Category | Picture | Weapons | Units | Examples |", "|---|---|---|---|---|"]
     for name in names:
         l = cat[name]
