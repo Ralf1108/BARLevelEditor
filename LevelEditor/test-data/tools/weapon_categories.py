@@ -26,7 +26,7 @@ IMAGES = os.path.join(GM, "weapon-images")
 SIZED = ("laser", "plasma", "cannon", "missile", "machine-gun")
 SIZES = ("light", "medium", "heavy", "ultra")
 # the start values of renegade_weapon_limits.csv (damage per second): up to Weak a size less than the tech level gives, up to Normal the size of the tech level, up to Strong a size more, above Strong ultra (empty: no ultra size by damage)
-DEFAULT_LIMITS = {"laser": (100, 800, 3000), "plasma": (60, 400, 1500), "cannon": (60, 250, 550), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
+DEFAULT_LIMITS = {"laser": (100, 600, 1500), "plasma": (60, 400, 1500), "cannon": (60, 250, 550), "missile": (40, 150, 800), "machine-gun": (20, 80, "")}
 LIMIT_COLUMNS = ["Family", "Weak up to", "Normal up to", "Strong up to"]   # damage per second
 
 
@@ -185,7 +185,7 @@ def main():
              "| Family | Weak up to | Normal up to | Strong up to | Ultra above |", "|---|---|---|---|---|"]
     for f, (a, b, c) in LIMITS.items():
         lines.append("| %s | %d | %d | %s | %s |" % (f, a, b, c if c is not None else "", ("above " + str(c)) if c is not None else "none"))
-    lines += ["", "(damage per second: a weapon with up to 100 DPS is weak, up to 800 normal, up to 3000 strong (laser example), above that ultra; an empty *Strong up to* means: no ultra size by damage)", "",
+    lines += ["", "(damage per second: a weapon with up to 100 DPS is weak, up to 600 normal, up to 1500 strong (laser example), above that ultra; an empty *Strong up to* means: no ultra size by damage)", "",
               "## The categories", "", "| Category | Picture | Weapons | Units | Examples |", "|---|---|---|---|---|"]
     for name in names:
         l = cat[name]

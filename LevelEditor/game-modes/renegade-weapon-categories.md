@@ -15,13 +15,13 @@
 
 | Family | Weak up to | Normal up to | Strong up to | Ultra above |
 |---|---|---|---|---|
-| laser | 100 | 800 | 3000 | above 3000 |
+| laser | 100 | 600 | 1500 | above 1500 |
 | plasma | 60 | 400 | 1500 | above 1500 |
 | cannon | 60 | 250 | 550 | above 550 |
 | missile | 40 | 150 | 800 | above 800 |
 | machine-gun | 20 | 80 |  | none |
 
-(damage per second: a weapon with up to 100 DPS is weak, up to 800 normal, up to 3000 strong (laser example), above that ultra; an empty *Strong up to* means: no ultra size by damage)
+(damage per second: a weapon with up to 100 DPS is weak, up to 600 normal, up to 1500 strong (laser example), above that ultra; an empty *Strong up to* means: no ultra size by damage)
 
 ## The categories
 
@@ -42,10 +42,10 @@
 | gauss |  | 14 | 14 | Cauteriser: Dual Medium Plasma Gauss Cannons; Gorgon: Rapid-fire gauss cannon; Gremlin: Light close-quarters gauss cannon |
 | heatray | <img src="weapon-images/weapon_heatray.png" width="384"> | 27 | 26 | Adjudicator: Ultra Heavy Juggernaut-Spec Heatray; Attack Drone: HeatRay; Legion Commander: Close-Quarters Heatray |
 | heavy-rocket | <img src="weapon-images/weapon_heavy-rocket.png" width="384"> | 36 | 36 | Armada Commander Level 10: HeavyRockets; Armada Commander Level 3: HeavyRockets; Armada Commander Level 4: HeavyRockets |
-| laser-light | <img src="weapon-images/weapon_laser-light.png" width="384"> | 73 | 58 | Armada Commander: Light close-quarters g2g/g2a laser; Armada Commander: Light underwater-combat laser; Armada Commander Level 2: Scatter Beamer |
-| laser-medium | <img src="weapon-images/weapon_laser-medium.png" width="384"> | 58 | 42 | Dragon: HighEnergyLaser; Quad Guard: Close-quarters light g2g laser; Black Hydra: HighEnergyLaser |
-| laser-heavy | <img src="weapon-images/weapon_laser-heavy.png" width="384"> | 27 | 14 | Archaic Sol Invictus: Experimental Thermal Ordnance Generators; Behemoth: LightLaser; Flying Black Hydra: HighEnergyLaser |
-| laser-ultra | <img src="weapon-images/weapon_laser-ultra.png" width="384"> | 24 | 20 | Epic Dragon: Ultra HighEnergyLaser; Armada Commander Level 10: UWSupernovaBeam; Armada Commander Level 8: UWSupernovaBeam |
+| laser-light | <img src="weapon-images/weapon_laser-light.png" width="384"> | 66 | 55 | Armada Commander: Light close-quarters g2g/g2a laser; Armada Commander: Light underwater-combat laser; Armada Commander Level 2: Scatter Beamer |
+| laser-medium | <img src="weapon-images/weapon_laser-medium.png" width="384"> | 51 | 35 | Dragon: HighEnergyLaser; Quad Guard: Close-quarters light g2g laser; Black Hydra: HighEnergyLaser |
+| laser-heavy | <img src="weapon-images/weapon_laser-heavy.png" width="384"> | 25 | 13 | Archaic Sol Invictus: Experimental Thermal Ordnance Generators; Behemoth: LightLaser; Flying Black Hydra: HighEnergyLaser |
+| laser-ultra | <img src="weapon-images/weapon_laser-ultra.png" width="384"> | 40 | 35 | Epic Dragon: Ultra HighEnergyLaser; Armada Commander Level 10: UWSupernovaBeam; Armada Commander Level 5: UltravioletRayBeam |
 | lightning |  | 19 | 19 | Armada Commander Level 10: Short-Range Lightning Discharge; Armada Commander Level 5: Short-Range Lightning Discharge; Armada Commander Level 6: Short-Range Lightning Discharge |
 | machine-gun-light |  | 16 | 16 | Legion Commander Level 2: Rapid-Fire Machine Gun; Legion Commander Level 3: Rapid-Fire Machine Gun; Attack Drone: Rapid-fire a2g machine guns |
 | machine-gun-medium |  | 15 | 12 | Tyrannus: Burst-fire Machine Gun; Chimera: Dual Rotary Machine Guns; Legion Commander Level 4: Rapid-Fire Machine Gun |

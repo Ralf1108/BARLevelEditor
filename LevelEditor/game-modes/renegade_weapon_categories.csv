@@ -303,8 +303,6 @@ Armada;Armada Commander Level 2;armcomlvl2;1;Scatter Beamer;Beam laser;14;1;lase
 Armada;Armada Commander Level 2;armdecomlvl2;1;Scatter Beamer;Beam laser;14;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 2;armcomlvl2;2;Light underwater-combat laser;Beam laser;400;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 2;armdecomlvl2;2;Light underwater-combat laser;Beam laser;400;1;laser-light;weapon_laser-light.png
-Armada;Armada Commander Level 3;armcomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
-Armada;Armada Commander Level 3;armdecomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 3;armcomlvl3;5;Scatter Beamer;Beam laser;15;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 3;armdecomlvl3;5;Scatter Beamer;Beam laser;15;1;laser-light;weapon_laser-light.png
 Armada;Armada Commander Level 4;armcomlvl4;5;Scatter Beamer;Beam laser;25;1;laser-light;weapon_laser-light.png
@@ -320,7 +318,6 @@ Armada;Seeker;armsh;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;36;1
 Armada;Sentry;armllt;1;Light g2g laser turret;Beam laser;75;1;laser-light;weapon_laser-light.png
 Armada;Skater;armpt;1;Light close-quarters laser;Beam laser;24;1;laser-light;weapon_laser-light.png
 Armada;Tick;armflea;1;Light Close-Quarters Fast-Firing g2g Laser;Beam laser;24;1;laser-light;weapon_laser-light.png
-Armada;Zapper;armzapper;1;Light EMP laser;Beam laser;800;1;laser-light;weapon_laser-light.png
 Armada;units.names.armcomnew;armcomnew;1;Light close-quarters g2g/g2a laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Armada;units.names.armcomnew;armcomnew;2;Light underwater-combat laser;Beam laser;200;1;laser-light;weapon_laser-light.png
 Cortex;Commander;cordecom;2;J7NSLaser;Beam laser;63;2;laser-light;weapon_laser-light.png
@@ -329,14 +326,10 @@ Cortex;Cortex Commander;corcom;1;J7Laser;Beam laser;75;1;laser-light;weapon_lase
 Cortex;Cortex Commander;corcomcon;1;J7Laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander;corcom;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander;corcomcon;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 10;corcomlvl10;5;EyeLaser;Beam laser;80;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 10;cordecomlvl10;5;EyeLaser;Beam laser;80;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;corcomlvl2;1;HighEnergyLaser;Beam laser;215;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;cordecomlvl2;1;HighEnergyLaser;Beam laser;215;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;corcomlvl2;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 2;cordecomlvl2;2;J7NSLaser;Beam laser;200;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 3;corcomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
-Cortex;Cortex Commander Level 3;cordecomlvl3;2;J7NSLaser;Beam laser;300;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 3;corcomlvl3;5;Eye laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 3;cordecomlvl3;5;Eye laser;Beam laser;75;1;laser-light;weapon_laser-light.png
 Cortex;Cortex Commander Level 4;corcomlvl4;5;Eye laser;Beam laser;85;1;laser-light;weapon_laser-light.png
@@ -368,18 +361,15 @@ Cortex;Warden;corhlt;1;High energy g2g laser;Beam laser;261;1;laser-light;weapon
 Legion;Ajax;legafigdef;1;Heavy A2A Gatling Guns;Laser;80 (air);2;laser-light;weapon_laser-light.png
 Legion;Alpheus;legah;1;Light G2A Gatling Gun;Laser;5;1;laser-light;weapon_laser-light.png
 Legion;Gelasma;legfmg;1;Rapid-Fire Gatling Gun;Laser;18;1;laser-light;weapon_laser-light.png
+Armada;Armada Commander Level 3;armcomlvl3;2;J7NSLaser;Beam laser;300;1;laser-medium;weapon_laser-medium.png
+Armada;Armada Commander Level 3;armdecomlvl3;2;J7NSLaser;Beam laser;300;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 4;armcomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
 Armada;Armada Commander Level 4;armdecomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 5;armcomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 5;armdecomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 6;armcomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 6;armdecomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 7;armcomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Armada;Armada Commander Level 7;armdecomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
 Armada;Commander;armdecom;1;Light close-quarters g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Armada;Paladin;armcrus;2;Light close-quarters g2g laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Armada;Platypus;armamph;1;Light close-quarters laser;Beam laser;80;2;laser-medium;weapon_laser-medium.png
 Armada;Webber;armspid;1;Close-quarters light EMP laser;Beam laser;850;2;laser-medium;weapon_laser-medium.png
+Armada;Zapper;armzapper;1;Light EMP laser;Beam laser;800;1;laser-medium;weapon_laser-medium.png
 Cortex;Advanced Exploiter;cormexp;1;High energy g2g laser;Beam laser;215;2;laser-medium;weapon_laser-medium.png
 Cortex;Archaic Dragon;corcrw;1;High energy a2g laser;Beam laser;250;2;laser-medium;weapon_laser-medium.png
 Cortex;Archaic Dragon;corcrw;2;HighEnergyLaser;Beam laser;90;2;laser-medium;weapon_laser-medium.png
@@ -393,20 +383,16 @@ Cortex;Bulwark;cordoom;2;High energy g2g laser;Beam laser;247;2;laser-medium;wea
 Cortex;Bulwark;cordoom;3;Light close-quarters g2g laser;Beam laser;40;2;laser-medium;weapon_laser-medium.png
 Cortex;Commander;cordecom;1;J7Laser;Beam laser;75;2;laser-medium;weapon_laser-medium.png
 Cortex;Commando;cormando;1;CommandoBlaster;Laser;100;2;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 10;corcomlvl10;5;EyeLaser;Beam laser;80;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 10;cordecomlvl10;5;EyeLaser;Beam laser;80;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 3;corcomlvl3;1;HighEnergyLaser;Beam laser;380;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 3;cordecomlvl3;1;HighEnergyLaser;Beam laser;380;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 4;corcomlvl4;1;HighEnergyLaser;Beam laser;550;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 4;cordecomlvl4;1;HighEnergyLaser;Beam laser;550;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 3;corcomlvl3;2;J7NSLaser;Beam laser;300;1;laser-medium;weapon_laser-medium.png
+Cortex;Cortex Commander Level 3;cordecomlvl3;2;J7NSLaser;Beam laser;300;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 4;corcomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 4;cordecomlvl4;2;J7NSLaser;Beam laser;400;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 5;corcomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
 Cortex;Cortex Commander Level 5;cordecomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 6;corcomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 6;cordecomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 7;corcomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 7;cordecomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 8;corcomlvl8;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
-Cortex;Cortex Commander Level 8;cordecomlvl8;2;UWSupernovaBeam;Beam laser;1400;1;laser-medium;weapon_laser-medium.png
 Cortex;Despot;corbats;4;HighEnergyLaser;Beam laser;300;2;laser-medium;weapon_laser-medium.png
 Cortex;Devastator;corfdoom;2;High energy g2g laser;Beam laser;231;2;laser-medium;weapon_laser-medium.png
 Cortex;Devastator;corfdoom;3;Light close-quarters g2g laser;Beam laser;40;2;laser-medium;weapon_laser-medium.png
@@ -438,8 +424,6 @@ Cortex;Behemoth;corjugg;3;LightLaser;Beam laser;75;3;laser-heavy;weapon_laser-he
 Cortex;Behemoth;corjugg;4;LightLaser;Beam laser;150;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Cataphract;corsok;1;Disruptor Bolt;Laser;750;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Bulwark;cordoomt3;3;High energy g2g laser;Beam laser;247;3;laser-heavy;weapon_laser-heavy.png
-Cortex;Epic Commander - Final Boss;corcomboss;1;J8Laser;Beam laser;200;4;laser-heavy;weapon_laser-heavy.png
-Cortex;Epic Commander - Final Boss;corcomboss;2;J8NSLaser;Beam laser;200;4;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Commando;cormandot4;1;Close-quarters EMP Scattergun;Beam laser;2000;2;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Tzar;corgolt4;2;HighEnergyLaser;Beam laser;750;3;laser-heavy;weapon_laser-heavy.png
 Cortex;Epic Tzar;corgolt4;3;HighEnergyLaser;Beam laser;750;3;laser-heavy;weapon_laser-heavy.png
@@ -455,6 +439,12 @@ Legion;Sol Invictus;legeheatraymech;2;Experimental Thermal Ordnance Generators;B
 Legion;Sol Invictus;legeheatraymech;3;Experimental Thermal Ordnance Generators;Beam laser;33;3;laser-heavy;weapon_laser-heavy.png
 Armada;Armada Commander Level 10;armcomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Armada;Armada Commander Level 10;armdecomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
+Armada;Armada Commander Level 5;armcomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Armada;Armada Commander Level 5;armdecomlvl5;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Armada;Armada Commander Level 6;armcomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Armada;Armada Commander Level 6;armdecomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Armada;Armada Commander Level 7;armcomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Armada;Armada Commander Level 7;armdecomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
 Armada;Armada Commander Level 8;armcomlvl8;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Armada;Armada Commander Level 8;armdecomlvl8;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Armada;Armada Commander Level 9;armcomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
@@ -469,9 +459,19 @@ Armada;Starlight;armmanni;1;Heavy long-range g2g tachyon beam;Beam laser;2500;2;
 Cortex;Bulwark;cordoom;1;Long-range g2g tachyon accelerator;Beam laser;4500;2;laser-ultra;weapon_laser-ultra.png
 Cortex;Cortex Commander Level 10;corcomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Cortex;Cortex Commander Level 10;cordecomlvl10;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 4;corcomlvl4;1;HighEnergyLaser;Beam laser;550;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 4;cordecomlvl4;1;HighEnergyLaser;Beam laser;550;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 6;corcomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 6;cordecomlvl6;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 7;corcomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 7;cordecomlvl7;2;UltravioletRayBeam;Beam laser;1200;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 8;corcomlvl8;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
+Cortex;Cortex Commander Level 8;cordecomlvl8;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Cortex;Cortex Commander Level 9;corcomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Cortex;Cortex Commander Level 9;cordecomlvl9;2;UWSupernovaBeam;Beam laser;1400;1;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Bulwark;cordoomt3;2;Long-range g2g tachyon accelerator;Beam laser;4500;3;laser-ultra;weapon_laser-ultra.png
+Cortex;Epic Commander - Final Boss;corcomboss;1;J8Laser;Beam laser;200;4;laser-ultra;weapon_laser-ultra.png
+Cortex;Epic Commander - Final Boss;corcomboss;2;J8NSLaser;Beam laser;200;4;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Dragon;corcrwt4;3;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Dragon;corcrwt4;4;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
 Cortex;Epic Dragon;corcrwt4;5;Ultra HighEnergyLaser;Beam laser;2000;3;laser-ultra;weapon_laser-ultra.png
