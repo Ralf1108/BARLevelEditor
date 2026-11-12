@@ -199,8 +199,10 @@ end
 local function send(f, force)
 	local yaw, pitch = math.floor(R.yaw + 0.5) % 360, math.floor(R.pitch + 0.5)
 	local h = R.shot -- (always: the turret follows the view even when nothing is fired)
-	local msg = string.format("ren|%d|%d|%d|%d|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire,
-		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, R.aaTarget or (h and h.unit) or -1)
+	local far = h and h.far or (h and { h.x, h.y, h.z }) or { 0, 0, 0 } -- (behind the aimed unit: for the beams)
+	local msg = string.format("ren|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", yaw, pitch, R.keys, R.fire,
+		h and math.floor(h.x) or 0, h and math.floor(h.y) or 0, h and math.floor(h.z) or 0, R.aaTarget or (h and h.unit) or -1,
+		math.floor(far[1]), math.floor(far[2]), math.floor(far[3]))
 	if msg == R.sent then return end
 	if not force and f - R.sentAt < SEND_GAP then return end
 	Spring.SendLuaRulesMsg(msg)
@@ -425,7 +427,16 @@ local function aim(u)
 	local hit
 	if kind == "unit" and v ~= u then
 		local x, y, z = Spring.GetUnitPosition(v, true)
-		if x then hit = { kind = "unit", x = x, y = y, z = z, unit = v } end
+		if x then
+			hit = { kind = "unit", x = x, y = y, z = z, unit = v }
+			-- the point BEHIND the unit on the view ray (the ground there, or a far point in the sky): beams and lasers are aimed at it, so that the beam goes through the unit
+			local k2, v2 = Spring.TraceScreenRay(cx, cy, true, false, true)
+			local fx, fy, fz
+			if k2 == "ground" and type(v2) == "table" then fx, fy, fz = v2[1], v2[2], v2[3] else fx, fy, fz = march(px, py, pz, dx, dy, dz, 6000) end
+			if fx and (fx < 0 or fz < 0 or fx > Game.mapSizeX or fz > Game.mapSizeZ) then fx = nil end -- (the ray left the map: the engine answers with a point far below the scenery)
+			if not fx then fx, fy, fz = px + dx * FAR, py + dy * FAR, pz + dz * FAR end
+			if not R.third then hit.far = { fx, fy, fz } end -- (the third person camera sits away from the weapons: there the beam is aimed at the unit itself)
+		end
 	end
 	if not hit then
 		local gx, gy, gz
@@ -1464,7 +1475,8 @@ local function altimeter(vsx, vsy)
 	local bx, h = vsx - 70 * s, 320 * s
 	local y0 = (vsy - h) / 2
 	local function at(a) return y0 + h * math.max(0, math.min(1, (a - lo) / span)) end
-	card(bx - 46 * s, y0 - 52 * s, bx + 48 * s, y0 + h + 32 * s, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
+	local mid = bx + 1 * s -- (the middle of the card: the texts are centred on it)
+	card(bx - 46 * s, y0 - 72 * s, bx + 48 * s, y0 + h + 32 * s, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
 	gl.Color(0.15, 0.15, 0.15, 0.9)
 	gl.Rect(bx - 6 * s, y0, bx + 6 * s, y0 + h)
 	gl.Color(0.85, 0.68, 0.2, 1) -- the ground (up to its height)
@@ -1477,18 +1489,27 @@ local function altimeter(vsx, vsy)
 		gl.Rect(bx + 6 * s, at(a) - 1, bx + 16 * s, at(a) + 1)
 		gl.Text(tostring(a), bx + 20 * s, at(a) - 5 * s, 11 * s, "o")
 	end
+	-- the highest height of the aircraft (it cannot climb over the red mark; it moves with the ground under the unit)
+	local maxAlt = flies and tonumber((Spring.GetUnitRulesParam(u, "renMaxAlt")))
+	if maxAlt and maxAlt > 0 then
+		local my2 = at(ground + maxAlt)
+		gl.Color(1, 0.2, 0.15, 1)
+		gl.Rect(bx - 12 * s, my2 - 1.5 * s, bx + 12 * s, my2 + 1.5 * s)
+		gl.Text("MAX", bx - 28 * s, my2 - 4 * s, 10 * s, "ro")
+	end
 	local my = at(y)
 	if low then gl.Color(1, 0.55, 0.15, 1) else gl.Color(1, 1, 1, 1) end
 	gl.BeginEnd(GL.TRIANGLES, function()
 		gl.Vertex(bx - 7 * s, my); gl.Vertex(bx - 24 * s, my + 8 * s); gl.Vertex(bx - 24 * s, my - 8 * s)
 	end)
-	gl.Text(string.format("%d m", flies and air or math.max(0, y)), bx - 8 * s, y0 + h + 10 * s, 15 * s, "ro")
+	gl.Text(string.format("%d m", flies and air or math.max(0, y)), mid, y0 + h + 10 * s, 15 * s, "co")
 	gl.Color(1, 0.85, 0.3, 1)
-	gl.Text(string.format("GROUND %d m", ground), bx - 8 * s, y0 - 16 * s, 12 * s, "ro")
+	gl.Text("GROUND", mid, y0 - 16 * s, 12 * s, "co")
+	gl.Text(string.format("%d m", ground), mid, y0 - 30 * s, 12 * s, "co")
 	gl.Color(0.7, 0.7, 0.7, 0.95)
 	if flies then
-		gl.Text("Space up", bx - 36 * s, y0 - 30 * s, 10 * s, "o")
-		gl.Text("Ctrl down", bx - 36 * s, y0 - 42 * s, 10 * s, "o")
+		gl.Text("Space up", mid, y0 - 46 * s, 10 * s, "co")
+		gl.Text("Ctrl down", mid, y0 - 58 * s, 10 * s, "co")
 	end
 end
 

@@ -19,5 +19,6 @@ function widget:GameFrame(f)
 		if st == "green" and not R.s1 and f > 300 then R.s1 = true; Spring.SendCommands("screenshot") end
 		if st == "red" and not R.s2 and f > 300 then R.s2 = true; Spring.SendCommands("screenshot") end
 	end
+	if f == 700 then Spring.SendCommands("screenshot") end
 	if f == 1020 then Spring.SendCommands("quitforce") end
 end

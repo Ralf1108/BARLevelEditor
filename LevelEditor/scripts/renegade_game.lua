@@ -1498,6 +1498,7 @@ local function shotDown(id)
 	return ok and type(md) == "table" and md.aircraftState == "crashing"
 end
 -- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
+local BEAMS = { BeamLaser = true, LaserCannon = true, LightningCannon = true } -- (direct weapons without a ballistic arc: aimed through the target at the point behind it)
 local function applyTarget(team, u, ud, s, i, t)
 	local lock = t.unit >= 0 and Spring.ValidUnitID(t.unit) and not Spring.AreTeamsAllied(team, Spring.GetUnitTeam(t.unit)) and not shotDown(t.unit)
 	if s.aa[i] then
@@ -1530,8 +1531,11 @@ local function applyTarget(team, u, ud, s, i, t)
 			Spring.SetUnitTarget(u, x, Spring.GetGroundHeight(x, z), z, false, true, i)
 		end
 	else
-		local x, y, z = shortened(u, ud, i, t.x, t.y, t.z)
 		local wd = WeaponDefs[ud.weapons[i].weaponDef]
+		local tx, ty, tz = t.x, t.y, t.z
+		-- a beam / laser at a unit: aimed at the point behind the unit on the view ray (the ground there), so the beam goes through the unit and hits it in the middle
+		if t.far and wd and BEAMS[wd.type] then tx, ty, tz = t.far[1], t.far[2], t.far[3] end
+		local x, y, z = shortened(u, ud, i, tx, ty, tz)
 		local ok
 		if wd and wd.type == "DGun" then
 			ok = Spring.SetUnitTarget(u, x, y, z, true, true, i) -- the D-gun: a manual fire weapon (the dgun flag)
@@ -1838,7 +1842,10 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if DEBUG and not spec then turnInto(team, want) end
 		return
 	end
-	local yaw, pitch, keys, fire, tx, ty, tz, tu = msg:match("^ren|(-?%d+)|(-?%d+)|(%d+)|(%d)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)$")
+	local yaw, pitch, keys, fire, tx, ty, tz, tu, fx, fy, fz = msg:match("^ren|(-?%d+)|(-?%d+)|(%d+)|(%d)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)$")
+	if not yaw then
+		yaw, pitch, keys, fire, tx, ty, tz, tu = msg:match("^ren|(-?%d+)|(-?%d+)|(%d+)|(%d)|(-?%d+)|(-?%d+)|(-?%d+)|(-?%d+)$") -- (tests: without the point behind)
+	end
 	if not yaw then return end
 	local _, active, spec, team = Spring.GetPlayerInfo(playerID, false)
 	if spec or not units[team] then return end
@@ -1847,6 +1854,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 	inp.yaw, inp.pitch = tonumber(yaw) % 360, math.max(-89, math.min(89, tonumber(pitch)))
 	inp.keys, inp.fire = math.max(0, math.min(63, tonumber(keys))), math.max(0, math.min(7, tonumber(fire)))
 	inp.target = { x = tonumber(tx), y = tonumber(ty), z = tonumber(tz), unit = tonumber(tu) }
+	if fx then inp.target.far = { tonumber(fx), tonumber(fy), tonumber(fz) } end
 	inp.aimed = true -- (from the first message on the turret follows the view)
 	if TEST and inp.fire ~= 0 and not inp.said then inp.said = true; Spring.Echo("[Renegade] first message with a button: fire " .. inp.fire .. " at frame " .. Spring.GetGameFrame() .. ", weapons " .. #weaponsFor(units[team], inp.fire)) end
 	shoot(team, Spring.GetGameFrame(), true)
@@ -1936,6 +1944,7 @@ local function giveUnit(team, defName, x, y, z, face)
 	if flyer(id) then
 		Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true })
 		Spring.SetUnitRulesParam(id, "renAttackAlt", attackAlt(id), { public = true }) -- (nil: no limit)
+		Spring.SetUnitRulesParam(id, "renMaxAlt", maxAlt(id), { public = true }) -- (the highest height above the ground: the red mark of the altimeter)
 	end
 	local hy = {}
 	for i in pairs(s.hy) do hy[#hy + 1] = i end
