@@ -41,7 +41,7 @@ local energyInit = {}
 local MO = Spring.GetModOptions() or {}
 local DEBUG = MO.lanrenedebug == "1"
 -- the game option lanrenesingle: "1" or missing = the single unit mode (every human is one unit for the whole game, a lost unit comes back); "0" = the jump mode (the players play the
--- normal game and jump into a unit with the key Q (widget) and out of it again)
+-- normal game and jump into a unit with the key left of the 1 (widget) and out of it again)
 local SINGLE = MO.lanrenesingle ~= "0"
 -- with Evolution (game option lanevolution) the unit of a player is replaced when it evolves and when it comes back after a death: in the jump mode the player jumps into the next
 -- one by itself (follow: team -> the frame until which the next unit is waited for; the unit is the team rules parameter evoUnit of evo_game.lua)

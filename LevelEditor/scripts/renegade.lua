@@ -55,7 +55,7 @@ function widget:Initialize()
 	end
 	WG.renegade = R
 	R.debug = mo.lanrenedebug == "1"
-	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the jump mode, Q jumps into the unit under the cursor and out of it)
+	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the jump mode, the key left of the 1 jumps into the unit under the cursor and out of it)
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
@@ -195,7 +195,7 @@ end
 -- mouse are taken) and the normal game (the camera of the game, the keys and the mouse as always, the unit is an ordinary unit that can be given orders). The gadget is told
 -- ("ren|mode|0" / "ren|mode|1").
 local function toggleMode()
-	if not R.single then return end -- (the jump mode has the key Q instead)
+	if not R.single then return end -- (the jump mode jumps with the key left of the 1 instead)
 	local now = os.clock()
 	if R.modeAt and now - R.modeAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
 	R.modeAt = now
@@ -550,7 +550,7 @@ local function keysNow()
 	return k
 end
 
--- The jump mode: Q jumps into the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, out of it again (back in the normal game, the camera
+-- The jump mode: the key left of the 1 jumps into the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, out of it again (back in the normal game, the camera
 -- flies back over the unit)
 local function jumpKey()
 	local now = os.clock()
@@ -575,11 +575,12 @@ function widget:Update()
 	end
 	if Spring.GetSpectatingState() then return end
 	do
-		local q = Spring.GetKeyState(113)
-		if q and not R.qWas and not (R.picker and R.picker.focus) and (not R.single or R.on) then
-			if R.single then toggleMode() else jumpKey() end -- (single unit mode: Q also leaves the unit, like the key next to Shift; coming back needs that key)
+		-- the mode key (the key left of the 1, the circumflex "^" on a German keyboard, scan code 53), polled as well: the game may take the press before the widget sees it
+		local k = Spring.GetKeyState(94) or (Spring.GetScanKeyState and Spring.GetScanKeyState(53))
+		if k and not R.qWas and not (R.picker and R.picker.focus) then
+			if R.single then toggleMode() else jumpKey() end
 		end
-		R.qWas = q
+		R.qWas = k
 	end
 	local u = myUnit()
 	R.waiting = false
@@ -896,13 +897,11 @@ function widget:MouseWheel(up, value)
 	return R.on
 end
 
-function widget:KeyPress(key, mods, isRepeat)
-	if R.single and key == 113 and R.on and not isRepeat and not (R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
-		toggleMode()
-		return true
-	end
-	if not R.single and key == 113 and not isRepeat and not (R.on and R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
-		jumpKey()
+function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
+	-- the mode key: left of the 1 (scan code 53; "^" on a German keyboard): the single unit mode switches between Renegade and the normal game, the jump mode jumps into the unit under the
+	-- cursor and out of it
+	if (scanCode == 53 or key == 94) and not isRepeat and not (R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
+		if R.single then toggleMode() else jumpKey() end
 		return true
 	end
 	if key == 277 or key == 60 or key == 62 then -- Insert, "<" and ">" (the key next to Shift; a scan code 100 key reports one of them)
