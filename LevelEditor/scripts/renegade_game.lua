@@ -1478,11 +1478,13 @@ local function shortened(u, ud, i, x, y, z)
 	local dx, dy, dz = x - ux, y - uy, z - uz
 	local d = math.sqrt(dx * dx + dy * dy + dz * dz)
 	local r = ((wd and wd.range) or 0) - 8
+	local cut = false
 	if d > r and d > 0 then
 		local k = math.max(0, r) / d
 		x, y, z = ux + dx * k, uy + dy * k, uz + dz * k
+		cut = true
 	end
-	return math.max(1, math.min(Game.mapSizeX - 1, x)), y, math.max(1, math.min(Game.mapSizeZ - 1, z))
+	return math.max(1, math.min(Game.mapSizeX - 1, x)), y, math.max(1, math.min(Game.mapSizeZ - 1, z)), cut
 end
 
 -- clear the targets of all weapons: SetUnitTarget(unit, nil) does not clear a target that was set for one weapon number, a stop order does (it clears the
@@ -1544,7 +1546,14 @@ local function applyTarget(team, u, ud, s, i, t)
 		local tx, ty, tz = t.x, t.y, t.z
 		-- a beam / laser at a unit: aimed at the point behind the unit on the view ray (the ground there), so the beam goes through the unit and hits it in the middle
 		if t.far and wd and BEAMS[wd.type] then tx, ty, tz = t.far[1], t.far[2], t.far[3] end
-		local x, y, z = shortened(u, ud, i, tx, ty, tz)
+		local x, y, z, cut = shortened(u, ud, i, tx, ty, tz)
+		-- a beam at a far mountain: the point at the range lies in the air over the valley, and the line to it may clip the terrain in front of the unit (the weapon sits lower than
+		-- the eye), which the weapon refuses ("no free line of fire"); the sky works because it is steeper. The point is raised until the line is free (up to 200 Elmo).
+		if cut and wd and BEAMS[wd.type] and Spring.GetUnitWeaponHaveFreeLineOfFire and Spring.GetUnitWeaponHaveFreeLineOfFire(u, i, x, y, z) == false then
+			for up = 15, 200, 15 do
+				if Spring.GetUnitWeaponHaveFreeLineOfFire(u, i, x, y + up, z) then y = y + up; break end
+			end
+		end
 		local ok
 		if wd and wd.type == "DGun" then
 			ok = Spring.SetUnitTarget(u, x, y, z, true, true, i) -- the D-gun: a manual fire weapon (the dgun flag)
