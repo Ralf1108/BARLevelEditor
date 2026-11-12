@@ -627,7 +627,8 @@ function widget:Update()
 	end
 	R.shiftWas = shift
 	-- the Windows key (the start menu or another program takes the focus): the mouse is free at once, and stays free (also when it comes back over the window) until the player clicks in the window
-	local meta = select(3, Spring.GetModKeyState()) or Spring.GetKeyState(310) or Spring.GetKeyState(311) or Spring.GetKeyState(312)
+	-- (not GetModKeyState "meta": in the engine the Space bar is the meta key, so Space freed the mouse)
+		local meta = Spring.GetKeyState(310) or Spring.GetKeyState(311) or Spring.GetKeyState(312)
 	if meta ~= R.metaWas then say("Windows / meta key", tostring(meta)) end
 	if meta and not R.metaWas then
 		R.away = true
