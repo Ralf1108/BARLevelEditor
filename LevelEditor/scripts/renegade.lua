@@ -862,7 +862,19 @@ end
 -- Impact preview of the weapons that lob their shots (artillery, rockets, missiles): where the shot comes down. The point under the crosshair on the ground, shortened to
 -- the reach of the weapon, as a filled disc of the size of the explosion with a ring, a cross and a tall beam (like a laser pointer, only bigger), in the color of the
 -- button, and a line from the unit to it. Not for beams, plasma lines and flames: they hit what is on the line, the barrel lines show them.
+-- A bomber drops only up to its attack altitude (gadget: renAttackAlt): "green" up to it, "yellow" up to 15% above, "red" higher; nil = no limit / not a bomber
+local function bombState(u)
+	if not u then return nil end
+	local attack = tonumber((Spring.GetUnitRulesParam(u, "renAttackAlt")))
+	local ux, uy, uz = Spring.GetUnitPosition(u)
+	if not (attack and ux) then return nil end
+	local height = uy - Spring.GetGroundHeight(ux, uz)
+	return height <= attack and "green" or (height <= attack * 1.15 and "yellow" or "red"), attack, height
+end
+local STATE_COLOR = { green = { 0.35, 1, 0.4 }, yellow = { 1, 0.9, 0.2 }, red = { 1, 0.3, 0.25 } }
+
 local function impactPreview(ux, uy, uz, wd, color, bomb)
+	if bomb then color = STATE_COLOR[bombState(R.unit) or ""] or color end -- (the bomb sight: green = bombs fall, yellow = nearly, red = too high)
 	local x, z, dx, dz, d
 	if bomb then
 		-- a bomb keeps the speed of the aircraft and falls: where it lands if it were dropped now (the fall time from the height over the ground, a few passes)
@@ -1212,7 +1224,7 @@ local function panel(vsx, vsy)
 				local attack, height
 				if wd.type == "AircraftBomb" then
 					-- a bomber drops only up to its attack altitude: green up to it, yellow up to 15% above, red higher (nothing is dropped)
-					attack = tonumber(Spring.GetUnitRulesParam(u, "renAttackAlt"))
+					attack = tonumber((Spring.GetUnitRulesParam(u, "renAttackAlt")))
 					local ux, uy, uz = Spring.GetUnitPosition(u)
 					if attack and ux then
 						height = uy - Spring.GetGroundHeight(ux, uz)
@@ -1792,6 +1804,16 @@ function widget:DrawScreen()
 		else r, g, b = 1, 0.3, 0.25 end
 	end
 	if coneAll then r, g, b = 1, 0.25, 0.2 end
+	do -- a bomber: the crosshair says whether the bombs fall at this height
+		local bs, attack, height = bombState(R.unit)
+		if bs then
+			local c = STATE_COLOR[bs]
+			r, g, b = c[1], c[2], c[3]
+			if bs == "red" then text = string.format("TOO HIGH  %d m  (fly below %d m to drop bombs)", math.floor(height), attack)
+			elseif bs == "yellow" then text = string.format("almost  %d m  (bombs fall below %d m)", math.floor(height), attack)
+			else text = string.format("BOMBS READY  %d m", math.floor(height)) end
+		end
+	end
 	gl.Color(r, g, b, 0.95)
 	gl.LineWidth(3)
 	gl.BeginEnd(GL.LINES, function()

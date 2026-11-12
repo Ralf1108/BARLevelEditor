@@ -86,11 +86,14 @@ local CRUISE_ALT -- (filled in the block WEAPON_BUTTONS below: the highest heigh
 
 -- The height of an aircraft that flies (gunships hover where they are): Space raises it, Ctrl lowers it (LIFT_RATE Elmo a frame, between MIN_ALT and MAX_ALT above the
 -- ground). The height is the flying height the move type wants (Spring.MoveCtrl.SetGunshipMoveTypeData / SetAirMoveTypeData "wantedHeight"); a landed aircraft takes off.
+local BOMBER_CEILING = 1.5 -- (the highest height of a bomber, times its attack altitude)
 local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED, TAKEOFF_ALT = 4, 4, 1000, 2.3, 400
 -- the highest height of an aircraft: its cruise altitude (column Cruise altitude used of the table; a unit that is not in it: 3 times the cruiseAltitude of its definition); never over MAX_ALT
 local function maxAlt(u)
 	local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	local v = ud and ((CRUISE_ALT and CRUISE_ALT[(ud.name:gsub("_scav$", ""))]) or (tonumber(ud.cruiseAltitude) or 0) * 3)
+	local an = ud and ATTACK_ALT and ATTACK_ALT[(ud.name:gsub("_scav$", ""))]
+	if an and v then v = math.min(v, an * BOMBER_CEILING) end -- (a bomber cannot climb far above the height it drops from)
 	return math.max(MIN_ALT + 20, math.min(MAX_ALT, (v and v > 0) and v or 660))
 end
 local LAND_HOLD = 60 -- frames: the lower key held at the bottom (2 s) lands the aircraft
