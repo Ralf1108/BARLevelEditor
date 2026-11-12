@@ -556,9 +556,11 @@ end
 
 function widget:Update()
 	if Spring.GetSpectatingState() then return end
-	if not R.single then
+	do
 		local q = Spring.GetKeyState(113)
-		if q and not R.qWas and not (R.picker and R.picker.focus) then jumpKey() end
+		if q and not R.qWas and not (R.picker and R.picker.focus) and (not R.single or R.on) then
+			if R.single then toggleMode() else jumpKey() end -- (single unit mode: Q also leaves the unit, like the key next to Shift; coming back needs that key)
+		end
 		R.qWas = q
 	end
 	local u = myUnit()
@@ -862,6 +864,10 @@ function widget:MouseWheel(up, value)
 end
 
 function widget:KeyPress(key, mods, isRepeat)
+	if R.single and key == 113 and R.on and not isRepeat and not (R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
+		toggleMode()
+		return true
+	end
 	if not R.single and key == 113 and not isRepeat and not (R.on and R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
 		jumpKey()
 		return true
@@ -961,7 +967,7 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 		x, z = ux + dx, uz + dz
 	end
 	local y = Spring.GetGroundHeight(x, z)
-	local aoe = math.max(16, tonumber(wd.damageAreaOfEffect) or 16)
+	local aoe = math.max(8, (tonumber(wd.damageAreaOfEffect) or 16) / 2) -- (areaOfEffect is the DIAMETER of the explosion: the circle has half of it as radius)
 	gl.Color(color[1], color[2], color[3], 0.22)
 	gl.BeginEnd(GL.TRIANGLE_FAN, function()
 		gl.Vertex(x, y + 4, z)

@@ -6,7 +6,7 @@ local R
 local function state(tag)
 	local u = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renUnit")
 	local cs = Spring.GetCameraState()
-	log(tag, "R.on", tostring(R and R.on), "renUnit", tostring(u), "camera", tostring(cs and cs.name), "firestate", u and u > 0 and tostring(select(1, Spring.GetUnitStates(u, false))) or "-", "my units", #Spring.GetTeamUnits(Spring.GetMyTeamID()))
+	log(tag, "R.on", tostring(R and R.on), "renUnit", tostring(u), "camera", tostring(cs and cs.name), "cam", tostring(cs and cs.px), tostring(cs and cs.py), tostring(cs and cs.pz), "dist", tostring(cs and cs.dist), "h", tostring(cs and cs.height), "mode", tostring(cs and cs.mode), "firestate", u and u > 0 and tostring(select(1, Spring.GetUnitStates(u, false))) or "-", "my units", #Spring.GetTeamUnits(Spring.GetMyTeamID()))
 end
 function widget:GameFrame(f)
 	R = WG.renegade
