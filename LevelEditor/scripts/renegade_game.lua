@@ -304,20 +304,46 @@ local function canReverse(ud)
 	if fam == "ship" or name:find("^boat") or name:find("^uboat") then return false end
 	return true
 end
+local PRIME_FRAMES = 5 -- (a unit that stands first drives forward for this many frames: the script of the model starts its walk animation then, which the hand-moved reverse never does)
 local function stopReverse(u, inp)
-	if inp.rev then
-		inp.rev = nil
+	if inp.rev or inp.primeU then
+		local was = inp.rev
+		inp.rev, inp.primeU, inp.primeN = nil, nil, nil
 		if Spring.ValidUnitID(u) then
-			pcall(Spring.MoveCtrl.Disable, u)
-			Spring.SetUnitVelocity(u, 0, 0, 0)
+			if was then
+				pcall(Spring.MoveCtrl.Disable, u)
+				Spring.SetUnitVelocity(u, 0, 0, 0)
+			end
+			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0) -- (also ends the walk animation and the forward order of the first frames)
+			inp.moving = false
 		end
 	end
 end
 local function reverse(u, inp, ud, turn)
 	local mc = Spring.MoveCtrl
 	if not inp.rev then
+		-- the engine tells the model script "StartMoving" only for a unit that moves by its own move type: under MoveCtrl there is no walk animation, unless the unit was already walking
+		-- (the animation goes on). So a unit that stands drives forward for a few frames first (a short move order), then the reverse takes over without a stop order
+		if inp.primeU ~= u then
+			inp.primeU, inp.primeN = u, 0
+			local vx, vy, vz = Spring.GetUnitVelocity(u)
+			local now = vx and math.sqrt(vx * vx + vy * vy + vz * vz) * Game.gameSpeed or 0
+			if now >= 0.15 * (ud.speed or 0) then
+				inp.primeN = PRIME_FRAMES -- (already walking)
+			else
+				local x0, _, z0 = Spring.GetUnitPosition(u)
+				local h0 = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
+				local tx = math.max(16, math.min(Game.mapSizeX - 16, x0 + math.sin(h0) * 150))
+				local tz = math.max(16, math.min(Game.mapSizeZ - 16, z0 + math.cos(h0) * 150))
+				Spring.GiveOrderToUnit(u, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
+				inp.moving = true
+			end
+		end
+		if inp.primeN < PRIME_FRAMES then
+			inp.primeN = inp.primeN + 1
+			return
+		end
 		inp.rev = u
-		Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
 		inp.moving = false
 		mc.Enable(u)
 		pcall(mc.SetTrackGround, u, true)
