@@ -264,10 +264,82 @@ local function lift(team, f)
 	if TEST and (inp.liftLogged or 0) < 3 and inp.alt ~= before then inp.liftLogged = (inp.liftLogged or 0) + 1; Spring.Echo(string.format("[Renegade] lift: wanted height %.0f (now %.0f)", inp.alt, y - Spring.GetGroundHeight(x, z))) end
 end
 
+-- Reverse gear: S alone (no W) drives a tank, a bot, a spider or a hovercraft backward at REVERSE_SPEED of its speed, the body turned toward the view (the engine would turn the unit around
+-- and drive forward: it has no reverse for these). The unit is moved by hand (MoveCtrl): every frame it goes along the wished direction (S, with A / D to the side), as far as the
+-- terrain allows (TestMoveOrder) and no other unit is in the way, and its heading turns toward the view at its turn rate. Not for ships, aircraft and buildings (gunships have their own).
+local REVERSE_SPEED = 0.6
+local function canReverse(ud)
+	if not ud or ud.canFly or (ud.speed or 0) <= 0 then return false end
+	local md = ud.moveDef
+	if not md then return false end
+	local fam = tostring(md.family or "")
+	local name = tostring(md.name or "")
+	if fam == "ship" or name:find("^boat") or name:find("^uboat") then return false end
+	return true
+end
+local function stopReverse(u, inp)
+	if inp.rev then
+		inp.rev = nil
+		if Spring.ValidUnitID(u) then
+			pcall(Spring.MoveCtrl.Disable, u)
+			Spring.SetUnitVelocity(u, 0, 0, 0)
+		end
+	end
+end
+local function reverse(u, inp, ud, dx, dz)
+	local mc = Spring.MoveCtrl
+	if not inp.rev then
+		inp.rev = u
+		Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+		inp.moving = false
+		mc.Enable(u)
+	end
+	local x, y, z = Spring.GetUnitPosition(u)
+	local sp = (ud.speed or 0) / 30 * REVERSE_SPEED
+	local nx, nz = x + dx * sp, z + dz * sp
+	local ok = nx > 16 and nz > 16 and nx < Game.mapSizeX - 16 and nz < Game.mapSizeZ - 16
+	local ny = Spring.GetGroundHeight(nx, nz)
+	if ok and Spring.TestMoveOrder then ok = Spring.TestMoveOrder(ud.id, nx, ny, nz, dx, 0, dz, true, false, true) end
+	if ok then
+		-- another unit in the way (not aircraft): stop; units that are very small do not count
+		local r = (Spring.GetUnitRadius(u) or 20) * 0.8
+		for _, o in ipairs(Spring.GetUnitsInCylinder(nx, nz, r + 60)) do
+			if o ~= u then
+				local od = UnitDefs[Spring.GetUnitDefID(o) or -1]
+				if od and not od.canFly then
+					local ox, _, oz = Spring.GetUnitPosition(o)
+					if ox and (ox - nx) ^ 2 + (oz - nz) ^ 2 < (r + (Spring.GetUnitRadius(o) or 10) * 0.8) ^ 2 and (ox - x) ^ 2 + (oz - z) ^ 2 > (nx - ox) ^ 2 + (nz - oz) ^ 2 then ok = false break end
+				end
+			end
+		end
+	end
+	-- the heading: toward the view at the turn rate (BAR turn rates are in 1/65536 of a circle per frame: 182 per degree)
+	local want = math.rad(inp.yaw)
+	local h = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
+	local diff = (want - h + math.pi) % (2 * math.pi) - math.pi
+	local maxTurn = math.rad(math.max(1, (ud.turnRate or 1000) / 182.04))
+	h = h + math.max(-maxTurn, math.min(maxTurn, diff))
+	mc.SetHeading(u, math.floor(h / (2 * math.pi) * 65536 + 0.5) % 65536)
+	if ok then
+		mc.SetPosition(u, nx, ny, nz)
+		mc.SetVelocity(u, dx * sp, 0, dz * sp)
+	else
+		mc.SetVelocity(u, 0, 0, 0)
+	end
+end
+
 local function steer(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
 	local dx, dz = wish(inp)
+	local ud0 = UnitDefs[Spring.GetUnitDefID(u) or -1]
+	if inp.rev and inp.rev ~= u then inp.rev = nil end
+	local back = math.floor(inp.keys / 4) % 2 >= 1 and inp.keys % 2 < 1
+	if dx and back and canReverse(ud0) then
+		reverse(u, inp, ud0, dx, dz)
+		return
+	end
+	stopReverse(u, inp)
 	if not dx then
 		if inp.moving then
 			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
@@ -1844,6 +1916,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 		local u, inp = units[team], input[team]
 		if u and inp and not spec and Spring.ValidUnitID(u) then
 			inp.normal = (mode == "0")
+			stopReverse(u, inp)
 			inp.hold, inp.aimed, inp.keys, inp.fire = {}, false, 0, 0
 			Spring.SetUnitTarget(u, nil)
 			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
