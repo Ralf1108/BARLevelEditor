@@ -286,7 +286,7 @@ local function stopReverse(u, inp)
 		end
 	end
 end
-local function reverse(u, inp, ud, dx, dz)
+local function reverse(u, inp, ud, turn)
 	local mc = Spring.MoveCtrl
 	if not inp.rev then
 		inp.rev = u
@@ -297,6 +297,12 @@ local function reverse(u, inp, ud, dx, dz)
 		pcall(mc.SetGravity, u, 0)
 	end
 	local x, y, z = Spring.GetUnitPosition(u)
+	-- the heading: A / D turn the hull (left = the heading grows) at 60 % of the turn rate (BAR turn rates are in 1/65536 of a circle per frame: 182 per degree); the unit goes back along it
+	local h = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
+	local maxTurn = math.rad(math.max(1, (ud.turnRate or 1000) / 182.04))
+	h = h + turn * maxTurn * REVERSE_SPEED
+	mc.SetHeading(u, math.floor(h / (2 * math.pi) * 65536 + 0.5) % 65536)
+	local dx, dz = -math.sin(h), -math.cos(h)
 	local sp = (ud.speed or 0) / 30 * REVERSE_SPEED
 	local nx, nz = x + dx * sp, z + dz * sp
 	local ok = nx > 16 and nz > 16 and nx < Game.mapSizeX - 16 and nz < Game.mapSizeZ - 16
@@ -315,13 +321,6 @@ local function reverse(u, inp, ud, dx, dz)
 			end
 		end
 	end
-	-- the heading: toward the view at the turn rate (BAR turn rates are in 1/65536 of a circle per frame: 182 per degree)
-	local want = math.rad(inp.yaw)
-	local h = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
-	local diff = (want - h + math.pi) % (2 * math.pi) - math.pi
-	local maxTurn = math.rad(math.max(1, (ud.turnRate or 1000) / 182.04))
-	h = h + math.max(-maxTurn, math.min(maxTurn, diff))
-	mc.SetHeading(u, math.floor(h / (2 * math.pi) * 65536 + 0.5) % 65536)
 	if ok then
 		-- only the velocity is set: with the unit under MoveCtrl the engine moves it by it every frame and draws it between the frames (SetPosition on top moved it twice
 		-- and in jumps); the ground is followed by SetTrackGround
@@ -331,17 +330,70 @@ local function reverse(u, inp, ud, dx, dz)
 	end
 end
 
+-- Hull controls (ground units and ships with a turret, or without weapons): W S A D drive the HULL like a tank (W forward along the hull, S backward, A / D turn it left / right
+-- while driving or on the spot) and the mouse only aims the weapons and the camera; so the vehicle can drive in one direction and shoot in another. Units whose weapons are all fixed
+-- to the hull (no turret) are steered as before (the wished direction relative to the view, the hull follows it), as are aircraft.
+local HULL = {}
+local function hullControl(ud)
+	if not ud or ud.canFly or (ud.speed or 0) <= 0 then return false end
+	local r = HULL[ud.name]
+	if r == nil then
+		r = #(ud.weapons or {}) == 0
+		for _, wp in ipairs(ud.weapons or {}) do
+			local wd = WeaponDefs[wp.weaponDef]
+			if wd and wd.turret then r = true break end
+		end
+		HULL[ud.name] = r
+	end
+	return r
+end
+local TURN_ANGLE = math.rad(45) -- (driving: the move order points this far to the side of the hull's front; turning on the spot: 90 degrees)
+local function hullSteer(u, inp, ud, f)
+	local k = inp.keys
+	local w, a, s, d = k % 2 >= 1, math.floor(k / 2) % 2 >= 1, math.floor(k / 4) % 2 >= 1, math.floor(k / 8) % 2 >= 1
+	local turn = (a and 1 or 0) - (d and 1 or 0) -- (left = +1: the heading grows)
+	if s and not w then
+		if canReverse(ud) then
+			reverse(u, inp, ud, turn)
+			return
+		end
+		-- (a ship has no reverse: it stops)
+		w, turn = false, 0
+	end
+	stopReverse(u, inp)
+	if w and s then w = false end
+	if not w and turn == 0 then
+		if inp.moving then
+			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+			inp.moving = false
+		end
+		return
+	end
+	local l = inp.last
+	local keys4 = k % 16
+	-- (the order points relative to the hull's heading, so it is given again often while a turn key is down: the unit keeps turning)
+	if inp.moving and l.keys == keys4 and f - l.frame < (turn ~= 0 and 4 or REISSUE) then return end
+	local h = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
+	local ang = h + turn * (w and TURN_ANGLE or math.pi / 2)
+	local dist = w and STEP or 120
+	local x, _, z = Spring.GetUnitPosition(u)
+	local tx = math.max(16, math.min(Game.mapSizeX - 16, x + math.sin(ang) * dist))
+	local tz = math.max(16, math.min(Game.mapSizeZ - 16, z + math.cos(ang) * dist))
+	Spring.GiveOrderToUnit(u, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
+	inp.moving = true
+	l.frame, l.yaw, l.keys = f, inp.yaw, keys4
+end
+
 local function steer(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
-	local dx, dz = wish(inp)
 	local ud0 = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	if inp.rev and inp.rev ~= u then inp.rev = nil end
-	local back = math.floor(inp.keys / 4) % 2 >= 1 and inp.keys % 2 < 1
-	if dx and back and canReverse(ud0) then
-		reverse(u, inp, ud0, dx, dz)
+	if hullControl(ud0) then
+		hullSteer(u, inp, ud0, f)
 		return
 	end
+	local dx, dz = wish(inp)
 	stopReverse(u, inp)
 	if not dx then
 		if inp.moving then
