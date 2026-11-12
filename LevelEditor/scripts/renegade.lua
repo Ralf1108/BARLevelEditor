@@ -641,6 +641,13 @@ function widget:Update()
 		if R.camNow then R.tr = { t0 = os.clock(), dur = 0.6, from = R.camNow } end -- (fly out of the unit / back into it)
 	end
 	R.shiftWas = shift
+	-- the Windows key (the start menu or another program takes the focus): the mouse is free at once, and stays free (also when it comes back over the window) until the player clicks in the window
+	local meta = select(3, Spring.GetModKeyState())
+	if meta and not R.metaWas then
+		R.away = true
+		say("Windows key: the mouse is free until a click in the window")
+	end
+	R.metaWas = meta
 	if not R.fake and not R.menu then
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
 		local vsx, vsy = Spring.GetViewGeometry()
