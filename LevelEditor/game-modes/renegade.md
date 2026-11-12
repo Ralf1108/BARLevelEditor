@@ -67,4 +67,6 @@ Jumping (planned, see the specification), several human players in the LAN, lobb
 
 - **Damage numbers:** every hit on a unit you can see shows its damage as a red number over the unit that rises and fades (hits in quick succession are added up; paralyzing damage is blue).
 
-- **Wrecks heal:** your unit reclaims wrecks by itself: when it is hurt and wrecks lie within 300 Elmo, their metal heals it (1 metal = 1 health, up to 150 health a second), shown as green plus signs and a rising green "+number". It stops at full health and when an armed enemy is near (a little more than the range of your weapons). Not in Evolution (there the same exists already).
+- **Wrecks heal:** your unit reclaims wrecks by itself: when it is hurt and wrecks lie within 300 Elmo, their metal heals it (1 metal = 1 health, 1 % of its health a second, at most 150), shown as green plus signs and a rising green "+number". It stops at full health and when an armed enemy is near (a little more than the range of your weapons). Not in Evolution (there the same exists already).
+
+- **Wreck heal rate:** at most 1 % of the health the unit has now per second (and at most 150 a second); the green numbers of the heals in quick succession are added up to one number.

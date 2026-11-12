@@ -1140,7 +1140,7 @@ local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before 
 --   radars: neutral, cannot be destroyed, placed until COVER of the land is in their range; a player's unit within RANGE for TAKE frames (no enemy player
 --     unit as near) takes one; when more than half of the players are on stage T2_STAGE or higher they become T2 radars one by one
 local R = {
-	ENERGY_BASE = 5, ENERGY = 3, GIFT_ENERGY = 1000, STORE = 1000, STORE_BIG = 2000, RECLAIM_RANGE = 100, RECLAIM_RATE = 60, RECLAIM_ENEMY = 700, -- (STORE_BIG on level 10 and with the option Long range: the big beam weapons cost up to 1500 per shot)
+	ENERGY_BASE = 5, ENERGY = 3, GIFT_ENERGY = 1000, STORE = 1000, STORE_BIG = 2000, RECLAIM_RANGE = 100, RECLAIM_RATE = 60, RECLAIM_HEAL_PERCENT = 0.01, RECLAIM_HEAL_MAX = 150, RECLAIM_ENEMY = 700, -- (STORE_BIG on level 10 and with the option Long range: the big beam weapons cost up to 1500 per shot)
 	GENERATORS = { "armsolar", "corsolar", "legsolar", "armwin", "corwin", "legwin" }, GEN_AREA = 1536, GEN_MIN = 6, GEN_MAX = 30,
 	TOWER = 0.15, TOWER_DAMAGE = 0.5, CHECK = 10 * FPS, UPGRADE = 3 * FPS, SAFE = 900, CATCH_UP = 0.5,
 	WANDER = 5 * FPS, WANDER_SHARE = 0.6, WANDER_DIST = 700, STILL = 0.2, -- every WANDER frames a part of the idle walking wild units goes to a place nearby;
@@ -2272,7 +2272,7 @@ local function autoReclaim()
 				local energy, store = Spring.GetTeamResources(p.team, "energy")
 				local hp, maxHp = Spring.GetUnitHealth(id)
 				local roomE, roomH = (store or 0) - (energy or 0), (maxHp or 0) - (hp or 0)
-				local budgetE, budgetH = R.RECLAIM_RATE, R.RECLAIM_RATE
+				local budgetE, budgetH = R.RECLAIM_RATE, math.min(R.RECLAIM_HEAL_MAX, (hp or 0) * R.RECLAIM_HEAL_PERCENT) -- (health: 1 % of the health it has now a second, at most RECLAIM_HEAL_MAX)
 				for _, fid in ipairs(Spring.GetFeaturesInCylinder(x, z, R.RECLAIM_RANGE)) do
 					local fd = FeatureDefs[Spring.GetFeatureDefID(fid)]
 					local _, defM, _, defE, left = Spring.GetFeatureResources(fid)

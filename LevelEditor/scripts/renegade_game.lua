@@ -2385,8 +2385,8 @@ function gadget:Explosion(wdid, px, py, pz, owner)
 end
 
 -- Every unit that a human steers reclaims wrecks by itself (not with Evolution, which has its own reclaim): once a second the metal of the wrecks within RECLAIM_RANGE heals the unit,
--- 1 metal = 1 health, at most RECLAIM_RATE a second; it stops when the unit is fully healed or an armed enemy is within 1.25 times the longest range of the unit's weapons.
-local RECLAIM_RANGE, RECLAIM_RATE = 300, 150
+-- 1 metal = 1 health, at most 1 % of the health the unit has now a second, and at most RECLAIM_RATE; it stops when the unit is fully healed or an armed enemy is within 1.25 times the longest range of the unit's weapons.
+local RECLAIM_RANGE, RECLAIM_RATE, RECLAIM_PERCENT = 300, 150, 0.01
 local function autoReclaim()
 	for team, u in pairs(units) do
 		if Spring.ValidUnitID(u) and not (input[team] and input[team].normal) then
@@ -2406,7 +2406,7 @@ local function autoReclaim()
 					if ot and ot ~= Spring.GetGaiaTeamID() and not Spring.AreTeamsAllied(ot, team) and od and #(od.weapons or {}) > 0 then enemy = true break end
 				end
 				if not enemy then
-					local room, budget, healed = maxHp - hp, RECLAIM_RATE, 0
+					local room, budget, healed = maxHp - hp, math.min(RECLAIM_RATE, hp * RECLAIM_PERCENT), 0 -- (1 % of the health it has now, at most RECLAIM_RATE)
 					for _, fid in ipairs(Spring.GetFeaturesInCylinder(x, z, RECLAIM_RANGE)) do
 						local fd = FeatureDefs[Spring.GetFeatureDefID(fid)]
 						local _, defM, _, _, left = Spring.GetFeatureResources(fid)
