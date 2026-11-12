@@ -3,10 +3,11 @@
 #   -Map "Hooked 1.1"   the map (the name as BAR knows it)
 #   -Ai SimpleAI        the computer player (SimpleAI, SimpleDefenderAI, ... or NullAI)
 #   -DebugMode 0            without the debug mode
-param([Parameter(Mandatory)][string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'SimpleAI', [int]$DebugMode = 1)
+param([string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'SimpleAI', [int]$DebugMode = 1)
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
+if (-not $Data) { $memo = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor\bar_path.txt'; $Data = Join-Path (Find-Bar @() $memo) 'data' }   # no -Data: the installation is searched (and remembered)
 $pointer = Join-Path $Data "games\$ScenarioGamePointer"
 if (-not (Test-Path $pointer)) { Fail 'The extra game of the Level Editor is not installed: run install_editor.bat first.' }
 $game = (Get-Content $pointer)[1].Trim()

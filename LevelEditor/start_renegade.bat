@@ -5,7 +5,6 @@ rem All units are loaded (also Legion, the extra units of the release candidates
 rem Keys in the game: mouse = look, W A S D = walk, left / right / middle mouse button = short range weapons / long range weapons / missiles, Insert = normal camera and back, Tab = free mouse for the debug menu (turn into another unit). The setup runs by itself (ensure_installed.ps1) when the code or the BAR version changed.
 setlocal
 set "L=%~dp0"
-set "DATA=C:\Games\Beyond-All-Reason\data"
 set "MAP=%~1"
 if not defined MAP set "MAP=Hooked 1.1"
 set "AI=%~2"
@@ -15,7 +14,7 @@ if not defined BOTS set "BOTS=3"
 set "QUICK="
 if /i "%~4"=="quick" set "QUICK=-QuickTest"
 echo Checking the installation ...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\ensure_installed.ps1" -Data "%DATA%"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\start_renegade.ps1" -Data "%DATA%" -Map "%MAP%" -Ai "%AI%" -Bots %BOTS% %QUICK%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\ensure_installed.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%L%scripts\start_renegade.ps1" -Map "%MAP%" -Ai "%AI%" -Bots %BOTS% %QUICK%
 if errorlevel 1 pause
 endlocal

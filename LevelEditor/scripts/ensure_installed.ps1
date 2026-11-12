@@ -1,9 +1,10 @@
 # Called by start_level_editor.bat before every start: runs the setup (install_editor.ps1 -Quick) when the extra game is missing or does not
 # match the files of this folder (changed code, new BAR version). Nothing is done while the game is running (it holds the file).
-param([Parameter(Mandatory)][string]$Data)
+param([string]$Data)
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent   # repository
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
+if (-not $Data) { $memo = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor\bar_path.txt'; $Data = Join-Path (Find-Bar @() $memo) 'data' }   # no -Data: the installation is searched (and remembered)
 . (Join-Path $here 'editor_manifest.ps1')
 $game = Get-GameVersion $Data
 $sdz = Join-Path $Data 'games\LevelEditorMod.sdz'

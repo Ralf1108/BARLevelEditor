@@ -69,7 +69,13 @@ function Read-GzBytes([string]$file) {
 $script:VersionsText = @{}
 function Get-VersionsText([string]$data) {
     if (-not $script:VersionsText.ContainsKey($data)) {
+        # the usual place first; the name of the repository folder differs between launcher versions, so any rapid\<repository>\byar\versions.gz is taken (newest first)
         $file = Join-Path $data 'rapid\repos-cdn.beyondallreason.dev\byar\versions.gz'
+        if (-not (Test-Path $file) -and (Test-Path (Join-Path $data 'rapid'))) {
+            $found = Get-ChildItem (Join-Path $data 'rapid') -Recurse -Filter 'versions.gz' -ErrorAction SilentlyContinue |
+                Where-Object { $_.Directory.Name -eq 'byar' } | Sort-Object LastWriteTime | Select-Object -Last 1
+            if ($found) { $file = $found.FullName }
+        }
         $script:VersionsText[$data] = if (Test-Path $file) { [Text.Encoding]::UTF8.GetString((Read-GzBytes $file)) } else { $null }
     }
     return $script:VersionsText[$data]
@@ -79,7 +85,15 @@ function Get-VersionsText([string]$data) {
 function Get-GameVersion($data) {
     if ($env:BAR_GAME_VERSION) { return $env:BAR_GAME_VERSION }   # forced (tests): when the lobby has announced a newer game that is not downloaded yet
     $text = Get-VersionsText $data
-    if ($null -eq $text) { Fail 'No game data found (rapid\...\byar\versions.gz). Please start BAR once and let a game load.' }
+    if ($null -eq $text) {
+        $rapid = Join-Path $data 'rapid'
+        Write-Host "Data folder used: $data" -ForegroundColor Yellow
+        if (Test-Path $rapid) {
+            Write-Host 'Version lists found in rapid:' -ForegroundColor Yellow
+            Get-ChildItem $rapid -Recurse -Filter 'versions.gz' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
+        } else { Write-Host "There is no rapid folder in it." -ForegroundColor Yellow }
+        Fail 'No game data found (rapid\...\byar\versions.gz). Please start BAR once and let a game load. If the folder above is not the one BAR really uses, pass the right BAR folder with -BarPath.'
+    }
     $game = $null; $fallback = $null
     foreach ($tag in @('byar:test', 'byar:stable')) {
         foreach ($line in ($text -split "`n")) {
