@@ -92,7 +92,23 @@ local function setCamera(u)
 		pz = pz - cp * fz * dist - sp * fz * up
 		py = math.max(py, Spring.GetGroundHeight(px, pz) + 8)
 	end
-	local cs = { name = "fps", mode = 0, oldHeight = 0, px = px, py = py, pz = pz, rx = math.pi / 2 - math.rad(R.pitch), ry = R.YAW0 - math.rad(R.yaw), rz = 0 }
+	local rx, ry = math.pi / 2 - math.rad(R.pitch), R.YAW0 - math.rad(R.yaw)
+	-- camera flight: a short blend from the camera the player had (the normal game camera on entering, the last frame's camera when Shift switches the view) to the wanted one
+	local tr = R.tr
+	if tr then
+		local k = (os.clock() - tr.t0) / tr.dur
+		if k >= 1 then
+			R.tr = nil
+		else
+			local s = k * k * (3 - 2 * k) -- (smoothstep: slow start, slow end)
+			local f = tr.from
+			local dr = (ry - f.ry + math.pi) % (2 * math.pi) - math.pi -- (the short way round)
+			px, py, pz = f.px + (px - f.px) * s, f.py + (py - f.py) * s, f.pz + (pz - f.pz) * s
+			rx, ry = f.rx + (rx - f.rx) * s, f.ry + dr * s
+		end
+	end
+	R.camNow = { px = px, py = py, pz = pz, rx = rx, ry = ry }
+	local cs = { name = "fps", mode = 0, oldHeight = 0, px = px, py = py, pz = pz, rx = rx, ry = ry, rz = 0 }
 	if R.fov or R.baseFov then cs.fov = R.fov or R.baseFov end -- (the binoculars narrow the field of view; the normal one is kept from the start)
 	Spring.SetCameraState(cs, 0)
 end
@@ -101,6 +117,13 @@ local function enable(u)
 	local cs = Spring.GetCameraState()
 	if cs and cs.name ~= "fps" then R.savedCam = cs end -- (the camera of the normal game: it comes back with the normal mode)
 	if cs and cs.fov and not R.baseFov then R.baseFov = cs.fov end -- (the normal field of view, for the binoculars)
+	-- fly into the unit: from where the normal camera is now (position and direction) to the view
+	local cx, cy, cz = Spring.GetCameraPosition()
+	local dx, dy, dz = Spring.GetCameraDirection()
+	if cx and dx and not R.noFly then
+		R.tr = { t0 = os.clock(), dur = 1.1, from = { px = cx, py = cy, pz = cz,
+			rx = math.acos(math.max(-1, math.min(1, dy))), ry = R.YAW0 - math.atan2(dx, dz) } }
+	end
 	R.on = true
 	R.unit = u
 	R.hidden = true
@@ -503,6 +526,7 @@ function widget:Update()
 	if shift and not R.shiftWas and not R.menu and R.on then
 		R.third = not R.third
 		Spring.SetUnitNoDraw(u, not R.third)
+		if R.camNow then R.tr = { t0 = os.clock(), dur = 0.6, from = R.camNow } end -- (fly out of the unit / back into it)
 	end
 	R.shiftWas = shift
 	if not R.fake and not R.menu then
