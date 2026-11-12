@@ -104,10 +104,12 @@ local function setCamera(u)
 		local fx, fz = math.sin(yaw), math.cos(yaw) -- (yaw 0 looks along +z, as the camera rotation ry = YAW0 - yaw says)
 		local cp, sp = math.cos(pit), math.sin(pit)
 		local dist = math.max(100, (Spring.GetUnitRadius(u) or 30) * 6)
-		local up = dist * 0.12 -- (the unit stands about 7 degrees below the crosshair on the screen: above the compass at the bottom, whole for a T1 or T2 unit)
-		px = px - cp * fx * dist - sp * fx * up
+		local up = dist * 0.16 -- (the unit stands below the crosshair on the screen, above the compass at the bottom, whole for a T1 or T2 unit)
+		local side = dist * 0.17 -- over the shoulder: the camera is to the right of the unit, so the unit stands left of the crosshair and the line of fire stays free
+		local rx, rz = -fz, fx -- (right of the look direction: yaw 0 looks along +z, and right is -x)
+		px = px - cp * fx * dist - sp * fx * up + rx * side
 		py = py - sp * dist + cp * up
-		pz = pz - cp * fz * dist - sp * fz * up
+		pz = pz - cp * fz * dist - sp * fz * up + rz * side
 		py = math.max(py, Spring.GetGroundHeight(px, pz) + 8)
 	end
 	local rx, ry = math.pi / 2 - math.rad(R.pitch), R.YAW0 - math.rad(R.yaw)
