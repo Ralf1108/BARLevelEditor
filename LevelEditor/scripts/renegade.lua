@@ -1342,6 +1342,17 @@ local function panel(vsx, vsy)
 	for _, r in ipairs(rows) do if r.pic then w = 502 * s; break end end -- (with a picture the card of a row is 6 : 1)
 	local hh = 40 * s -- the health row
 	local x1, y1 = 8 * s, 8 * s -- in the bottom left corner, growing upwards (no build menu there in this mode): the middle of the screen stays free for the view
+	-- the info panel of the game (the unit under the cursor: the crosshair) sits there too: ours starts above its top edge (WG.info.getPosition returns the width and the height as fractions of the screen)
+	do
+		local info = WG["info"]
+		if info and info.getPosition then
+			local ok, _, ih = pcall(info.getPosition)
+			if ok and type(ih) == "number" and ih > 0 and ih < 1 then
+				local _, vsyI = Spring.GetViewGeometry()
+				y1 = y1 + ih * vsyI + 6 * s
+			end
+		end
+	end
 	local total = #rows * h + hh + 8 * s
 	R.panel = { x1, y1, x1 + w, y1 + total }
 	card(x1, y1, x1 + w, y1 + total, { 0.05, 0.06, 0.08, 0.7 }, { 0.02, 0.02, 0.03, 0.7 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
