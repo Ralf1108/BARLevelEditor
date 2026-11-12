@@ -1813,14 +1813,14 @@ function widget:DrawScreen()
 	elseif h.kind == "unit" then
 		local d = UnitDefs[Spring.GetUnitDefID(h.unit) or -1]
 		local hp, mhp = Spring.GetUnitHealth(h.unit)
-		text = string.format("%s%s  %d%%  %d m", d and (d.translatedHumanName or d.name) or "unit", Spring.IsUnitAllied(h.unit) and " (ally)" or "", hp and mhp and math.floor(100 * hp / mhp) or 0, math.floor(h.udist))
+		text = string.format("%s%s\n%d%%\n%d m", d and (d.translatedHumanName or d.name) or "unit", Spring.IsUnitAllied(h.unit) and " (ally)" or "", hp and mhp and math.floor(100 * hp / mhp) or 0, math.floor(h.udist))
 	else
-		text = string.format("ground  %d m", math.floor(h.udist))
+		text = string.format("ground\n%d m", math.floor(h.udist))
 	end
 	-- a gunship with fixed guns: an aim point steeper below it than the guns can turn is moved out to the edge of the dead zone (correctShot)
 	local steep = R.corrected ~= nil
-	if coneAll then text = (coneSide > 0 and "TURN THE VEHICLE >>  " or "<<  TURN THE VEHICLE  ") .. "(outside of the turret angle)" end
-	if steep then text = text .. string.format("  STEEP: the shot lands %d m out (guns reach %d deg down)", math.floor(R.corrected.d), MAX_DOWN) end
+	if coneAll then text = (coneSide > 0 and "TURN THE VEHICLE >>" or "<<  TURN THE VEHICLE") .. "\n(outside of the turret angle)" end
+	if steep then text = text .. string.format("\nSTEEP: the shot lands %d m out\n(guns reach %d deg down)", math.floor(R.corrected.d), MAX_DOWN) end
 	local r, g, b = 1, 1, 1
 	if h then
 		if steep then r, g, b = 1, 0.75, 0.2
@@ -1834,9 +1834,9 @@ function widget:DrawScreen()
 		if bs then
 			local c = STATE_COLOR[bs]
 			r, g, b = c[1], c[2], c[3]
-			if bs == "red" then text = string.format("TOO HIGH  %d m  (fly below %d m to drop bombs)", math.floor(height), attack)
-			elseif bs == "yellow" then text = string.format("almost  %d m  (bombs fall below %d m)", math.floor(height), attack)
-			else text = string.format("BOMBS READY  %d m", math.floor(height)) end
+			if bs == "red" then text = string.format("TOO HIGH\n%d m\nfly below %d m to drop bombs", math.floor(height), attack)
+			elseif bs == "yellow" then text = string.format("almost\n%d m\nbombs fall below %d m", math.floor(height), attack)
+			else text = string.format("BOMBS READY\n%d m", math.floor(height)) end
 		end
 	end
 	gl.Color(r, g, b, 0.95)
@@ -1848,7 +1848,15 @@ function widget:DrawScreen()
 		gl.Vertex(cx, cy + s / 3); gl.Vertex(cx, cy + s)
 	end)
 	gl.LineWidth(1)
-	gl.Text(text, cx, cy - s * 2.2, math.max(12, vsy / 70), "co")
+	-- the information: one line each, below and to the right of the crosshair with some distance, so that the crosshair stays free and a long text runs away from it
+	do
+		local fs = math.max(12, vsy / 70)
+		local ly = cy - s * 2.2
+		for line in (text .. "\n"):gmatch("(.-)\n") do
+			gl.Text(line, cx + s * 1.8, ly, fs, "o")
+			ly = ly - fs * 1.25
+		end
+	end
 	-- anti-air: the orange circle (put the aircraft in it and press the button) and the lock on the aircraft
 	if R.aaCircle then
 		local function ring(radius)
