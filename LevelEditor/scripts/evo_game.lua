@@ -188,10 +188,23 @@ end
 if not gadgetHandler:IsSyncedCode() then
 	-- ---------------------------------------------------------------- unsynced: the score lines, Armageddon, the missile targets, the selection and the camera
 	local lastUnit, lastSpawn = nil, nil
+	local overviewDone = false
+
+	-- The camera at the start: the game's own camera type (spring) from above over the middle of the map, so that the whole map is seen. (A camera left in another type - the first person
+	-- view of a game before, which the game keeps in its settings - made Evolution start in a view from inside of the unit.)
+	local function overview()
+		local mx, mz = Game.mapSizeX, Game.mapSizeZ
+		Spring.SetCameraState({ name = "spring", mode = 2, px = mx / 2, py = Spring.GetGroundHeight(mx / 2, mz / 2), pz = mz / 2,
+			rx = 2.75, ry = 0, rz = 0, dist = math.max(mx, mz) * 1.15 }, 0)
+	end
 
 	function gadget:Update()
 		if (Spring.GetGameRulesParam("evoState") or "") == "" or Spring.GetSpectatingState() then
 			return
+		end
+		if not overviewDone and Spring.GetGameFrame() >= 1 then
+			overviewDone = true
+			overview()
 		end
 		local team = Spring.GetMyTeamID()
 		local id = Spring.GetTeamRulesParam(team, "evoUnit")
@@ -201,9 +214,10 @@ if not gadgetHandler:IsSyncedCode() then
 		end
 		local spawn = Spring.GetTeamRulesParam(team, "evoSpawn")
 		if spawn and spawn ~= lastSpawn then
+			local first = lastSpawn == nil -- (the first one is the start: the camera shows the whole map then)
 			lastSpawn = spawn
 			local x, y, z = Spring.GetUnitPosition(id or -1)
-			if x then
+			if x and not first then
 				Spring.SetCameraTarget(x, y, z, 0.5) -- the unit is at a new place of the map
 			end
 		end
