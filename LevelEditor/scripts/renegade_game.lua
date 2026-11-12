@@ -2065,6 +2065,17 @@ function gadget:Explosion(wdid, px, py, pz, owner)
 end
 
 function gadget:GameFrame(f)
+	-- unlimited sight for the humans (first person: enemies must not pop up at the edge of the line of sight): global line of sight for every ally team that has a human team
+	if f == 2 then
+		local seen = {}
+		for _, tm in ipairs(Spring.GetTeamList()) do
+			local _, _, _, isAI, _, ally = Spring.GetTeamInfo(tm)
+			if not isAI and tm ~= Spring.GetGaiaTeamID() and not seen[ally] then
+				seen[ally] = true
+				Spring.SetGlobalLos(ally, true)
+			end
+		end
+	end
 	if TEST and f == 40 then census() end
 	if TEST and f == 200 then
 		for _, tm in ipairs(Spring.GetTeamList()) do

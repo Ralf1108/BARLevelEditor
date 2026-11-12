@@ -57,7 +57,24 @@ function widget:Initialize()
 	R.debug = mo.lanrenedebug == "1"
 end
 
+-- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
+local function farView(on)
+	if on and not R.farSaved then
+		local ok, fs = pcall(Spring.GetAtmosphere, "fogStart")
+		local _, fe = pcall(Spring.GetAtmosphere, "fogEnd")
+		R.farSaved = { fs = ok and fs or nil, fe = ok and fe or nil }
+		pcall(Spring.SendCommands, "disticon 100000")
+		if R.farSaved.fe then pcall(Spring.SetAtmosphere, { fogStart = 1e6, fogEnd = 2e6 }) end
+	elseif not on and R.farSaved then
+		local s = R.farSaved
+		R.farSaved = nil
+		pcall(Spring.SendCommands, "disticon 200")
+		if s.fe then pcall(Spring.SetAtmosphere, { fogStart = s.fs, fogEnd = s.fe }) end
+	end
+end
+
 function widget:Shutdown()
+	farView(false)
 	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	WG.renegade = nil
 end
@@ -114,6 +131,7 @@ local function setCamera(u)
 end
 
 local function enable(u)
+	farView(true)
 	local cs = Spring.GetCameraState()
 	if cs and cs.name ~= "fps" then R.savedCam = cs end -- (the camera of the normal game: it comes back with the normal mode)
 	if cs and cs.fov and not R.baseFov then R.baseFov = cs.fov end -- (the normal field of view, for the binoculars)
@@ -136,6 +154,7 @@ end
 local function disable()
 	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	R.hidden = false
+	farView(false)
 	R.zoom, R.fov = 0, nil
 	R.on = false
 	R.keys, R.fire = 0, 0
