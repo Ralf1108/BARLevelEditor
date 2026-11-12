@@ -55,6 +55,7 @@ function widget:Initialize()
 	end
 	WG.renegade = R
 	R.debug = mo.lanrenedebug == "1"
+	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the jump mode, Q jumps into the unit under the cursor and out of it)
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
@@ -180,6 +181,7 @@ end
 -- mouse are taken) and the normal game (the camera of the game, the keys and the mouse as always, the unit is an ordinary unit that can be given orders). The gadget is told
 -- ("ren|mode|0" / "ren|mode|1").
 local function toggleMode()
+	if not R.single then return end -- (the jump mode has the key Q instead)
 	local now = os.clock()
 	if R.modeAt and now - R.modeAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
 	R.modeAt = now
@@ -534,11 +536,42 @@ local function keysNow()
 	return k
 end
 
+-- The jump mode: Q jumps into the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, out of it again (back in the normal game, the camera
+-- flies back over the unit)
+local function jumpKey()
+	local now = os.clock()
+	if R.qAt and now - R.qAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
+	R.qAt = now
+	if R.on then
+		Spring.SendLuaRulesMsg("ren|release")
+		return
+	end
+	local mx, my = Spring.GetMouseState()
+	local kind, id = Spring.TraceScreenRay(mx, my)
+	if kind == "unit" and id and Spring.GetUnitTeam(id) == Spring.GetMyTeamID() then
+		Spring.SendLuaRulesMsg("ren|possess|" .. id)
+		say("jump into unit", id)
+	end
+end
+
 function widget:Update()
 	if Spring.GetSpectatingState() then return end
+	if not R.single then
+		local q = Spring.GetKeyState(113)
+		if q and not R.qWas and not (R.picker and R.picker.focus) then jumpKey() end
+		R.qWas = q
+	end
 	local u = myUnit()
 	if not u then
-		if R.on then disable() end
+		if R.on then
+			local was = R.unit
+			disable()
+			if not R.single then
+				-- out of the unit (or it died): the camera of the normal game comes back, over the unit when it is still there
+				if was and Spring.ValidUnitID(was) then overviewCam(was)
+				elseif R.savedCam then Spring.SetCameraState(R.savedCam, 1.0) end
+			end
+		end
 		return
 	end
 	-- the key next to Shift ("<"): polled as well (the game may take the key press before the widget sees it, as with Tab)
@@ -822,6 +855,10 @@ function widget:MouseWheel(up, value)
 end
 
 function widget:KeyPress(key, mods, isRepeat)
+	if not R.single and key == 113 and not isRepeat and not (R.on and R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
+		jumpKey()
+		return true
+	end
 	if key == 277 or key == 60 or key == 62 then -- Insert, "<" and ">" (the key next to Shift; a scan code 100 key reports one of them)
 		toggleMode()
 		return true

@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 29, stamp = "2026-11-10 09:00" }
+local LAN_VERSION = { number = 30, stamp = "2026-11-12 12:30" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -477,6 +477,11 @@ selectScenario = function(name)
 	if not (map and team and ally) then say("Scenario '" .. name .. "' has no player team (map " .. tostring(map) .. ")."); return end
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
 	if S.battle.modoptions.lanevolution then S.battle.modoptions.lanevolution = nil; toBattle("SETSCRIPTTAGS game/modoptions/lanevolution=") end -- a scenario has its own rules
+	if S.battle.modoptions.lanrenegade then
+		S.battle.modoptions.lanrenegade, S.battle.modoptions.lanrenesingle = nil, nil
+		toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=")
+		toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=")
+	end
 	for _, c in ipairs(S.conns) do c.versusSet = nil end
 	-- Capture the Flag and Reclaim the Fame are played human against human (a computer opponent does not play them): the opponent team of the scenario
 	-- (the team of its AI) is taken by the humans who chose another ally team in the room than the host
@@ -704,8 +709,10 @@ end
 -- "late join" (!latejoin on, chosen before the start) also needs the extra game: its gadget lan_latejoin.lua puts a player who comes into the running game into a team;
 -- so does the game mode Evolution (the button Evolution of the room: the game option lanevolution=1, gadget evo_game.lua)
 local function evolutionOn() return S.battle.modoptions.lanevolution == "1" end
+-- and the game mode Renegade (the button Renegade of the room: lanrenegade=1 and lanrenesingle=0 / 1, gadget renegade_game.lua and widget renegade.lua)
+local function renegadeOn() return S.battle.modoptions.lanrenegade == "1" end
 local function needsExtraGame()
-	return hasPveBot() or S.battle.lateJoin or evolutionOn()
+	return hasPveBot() or S.battle.lateJoin or evolutionOn() or renegadeOn()
 end
 
 function syncPveGame() -- (the local declared above autohostCommand)
@@ -1204,7 +1211,7 @@ local function hookConnect()
 		if lan and lan.role == "client" and self.modoptions and self.modoptions.lansync and self.modoptions.lansync ~= "" then
 			local want = gameOfTag((self.modoptions.lansync or ""):match("^(%x+)|"))
 			if not want then
-				local msg = "The host plays " .. ((self.modoptions.lanscenario and self.modoptions.lanscenario ~= "") and ("the scenario '" .. self.modoptions.lanscenario .. "'") or (self.modoptions.lanevolution == "1" and "the game mode Evolution" or "an extra game")) .. " with another version of the Level Editor (no game version announced): please update the Level Editor manually."
+				local msg = "The host plays " .. ((self.modoptions.lanscenario and self.modoptions.lanscenario ~= "") and ("the scenario '" .. self.modoptions.lanscenario .. "'") or (self.modoptions.lanevolution == "1" and "the game mode Evolution" or (self.modoptions.lanrenegade == "1" and "the game mode Renegade" or "an extra game"))) .. " with another version of the Level Editor (no game version announced): please update the Level Editor manually."
 				log("cannot join the scenario:", msg)
 				bigPopup(msg)
 				return
@@ -1426,7 +1433,7 @@ local function updateSync()
 	local function yes() lan.syncGame = want; startFetch(hash, tonumber(size)) end
 	local function no() lan.syncFailed = ver; setStatus("You did not load the scenario game: the scenario cannot start for you.") end
 	if cfg.autoAccept then yes(); return end
-	local q = "The host plays " .. ((mo.lanscenario and mo.lanscenario ~= "") and ("the scenario '" .. mo.lanscenario .. "'") or (mo.lanevolution == "1" and "the game mode Evolution" or "an extra game (Scavengers / Raptors AI, late join)")) .. " with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
+	local q = "The host plays " .. ((mo.lanscenario and mo.lanscenario ~= "") and ("the scenario '" .. mo.lanscenario .. "'") or (mo.lanevolution == "1" and "the game mode Evolution" or (mo.lanrenegade == "1" and "the game mode Renegade" or "an extra game (Scavengers / Raptors AI, late join)"))) .. " with the game '" .. want.name .. "', which you have not got. Load it from the host (" .. math.ceil(tonumber(size) / 1024) .. " KB, gadgets of the scenarios)? Only do this with a host you trust."
 	if WG.Chobby and WG.Chobby.ConfirmationPopup then WG.Chobby.ConfirmationPopup(yes, q, nil, 480, 260, "Load it", "No", no) else yes() end
 end
 
@@ -2185,10 +2192,62 @@ local function closeEvoMenu()
 	ui.evoMenu = nil
 end
 
+local function closeRenMenu()
+	if ui.renMenu then pcall(function() ui.renMenu:Dispose() end) end
+	ui.renMenu = nil
+end
+
 local function closeLanMenu()
 	closeEvoMenu()
+	closeRenMenu()
 	if ui.lanMenu then pcall(function() ui.lanMenu:Dispose() end) end
-	ui.lanMenu, ui.evoMenuBtn = nil, nil
+	ui.lanMenu, ui.evoMenuBtn, ui.renMenuBtn = nil, nil, nil
+end
+
+---------------------------------------------------------------- "Renegade": every player steers a unit from the inside (gadget renegade_game.lua, widget renegade.lua of the extra game)
+local REN_TIP = "Renegade: you steer a unit from the inside (first or third person view, W A S D drive it like a tank, the mouse aims the weapons). On: in the normal game press Q over one of " ..
+	"your units to jump into it and Q again to jump out. Always in unit: every player is one unit for the whole game (instead of the commander; a lost unit comes back 5 s later). The host switches it on or off."
+local function renSingle() return S and S.battle.modoptions.lanrenesingle == "1" end
+local function renShown()
+	if S then return renegadeOn() end
+	local l = lobby()
+	return l and l.modoptions and l.modoptions.lanrenegade == "1" or false
+end
+-- on: the game options lanrenegade=1 and lanrenesingle=0 (the jump mode) for everybody in the room; off: both removed. lanrenesingle is always written when it is on (a missing one means the single unit mode)
+local function setRenOptions(on, single)
+	if not S or S.battle.scenario then return end
+	S.battle.modoptions.lanrenegade = on and "1" or nil
+	S.battle.modoptions.lanrenesingle = on and (single and "1" or "0") or nil
+	toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=" .. (on and "1" or ""))
+	toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=" .. (on and (single and "1" or "0") or ""))
+	syncPveGame()
+	log("Renegade", on and (single and "on, always in unit" or "on, jump mode") or "off")
+	say(on and (single and "The game mode Renegade is on: every player steers one unit for the whole game (instead of the commander)." or "The game mode Renegade is on: in the game press Q over one of your units to jump into it, Q again to jump out.") or "The game mode Renegade is off.")
+end
+
+local function openRenMenu()
+	closeRenMenu()
+	closeEvoMenu() -- (only one submenu is open at a time)
+	local b = ui.renMenuBtn
+	if not b or not S then return end
+	local sx, sy = b:LocalToScreen(b.width + 4, 0)
+	local on, single = renegadeOn(), renSingle()
+	local items = {
+		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Renegade is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch it for everybody in the room: in the game Q jumps into the unit under the cursor and out of it.",
+			fn = function() setRenOptions(not renegadeOn(), renSingle()); openRenMenu() end },
+		{ caption = "Always in unit: " .. (single and "On" or "Off"), class = single and "action_button" or "negative_button",
+			tip = "Always in unit " .. (single and "on" or "off") .. ": on = every player is one unit for the whole game (it replaces the commander; Q does not jump out; a lost unit comes back after 5 s); off (the default) = the normal game, Q jumps into a unit and out of it. Click to change.",
+			fn = function() setRenOptions(renegadeOn(), not renSingle()); openRenMenu() end },
+	}
+	local w = 270
+	ui.renMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
+		resizable = false, draggable = false, classname = "main_window" }
+	for i, it in ipairs(items) do
+		Button:New { parent = ui.renMenu, x = 2, right = 2, y = (i - 1) * 44, height = 40, caption = it.caption, objectOverrideFont = Config():GetFont(2),
+			classname = it.class or "action_button", tooltip = it.tip, OnClick = { function(self) it.fn(self) end } }
+	end
+	ui.renMenu:BringToFront()
+	log("Renegade menu opened:", #items, "buttons")
 end
 
 -- The settings of Evolution (the submenu of the button Evolution; the host only): On (green) / Off (red), Unit multiplier (1x to 10x: the wild units and towers on the map
@@ -2210,6 +2269,7 @@ end
 
 local function openEvoMenu()
 	closeEvoMenu()
+	closeRenMenu() -- (only one submenu is open at a time)
 	local b = ui.evoMenuBtn
 	if not b or not S then return end
 	local sx, sy = b:LocalToScreen(b.width + 4, 0)
@@ -2270,7 +2330,9 @@ local function openLanMenu()
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
 		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
-			fn = function() if S then if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
+			fn = function() if S then closeRenMenu(); if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
+		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
+			fn = function() if S then closeEvoMenu(); if ui.renMenu then closeRenMenu() else openRenMenu() end end end }
 	end
 	local w = 230
 	ui.lanMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
@@ -2279,6 +2341,7 @@ local function openLanMenu()
 		local btn = Button:New { parent = ui.lanMenu, x = 2, right = 2, y = (i - 1) * 44, height = 40, caption = it.caption, objectOverrideFont = Config():GetFont(2),
 			classname = it.class or "action_button", tooltip = it.tip, OnClick = { function(self) it.fn(self) end } }
 		if it.evo then ui.evoMenuBtn = btn end
+		if it.ren then ui.renMenuBtn = btn end
 	end
 	ui.lanMenu:BringToFront()
 	log("LAN Play menu opened:", #items, "buttons")
@@ -2298,7 +2361,7 @@ local function ensureLanMenuUi()
 	end
 	if not ui.lanButton then
 		ui.lanButton = Button:New { parent = screen0, x = 0, y = 0, width = 160, height = leave.height, caption = "LAN Play", objectOverrideFont = Config():GetFont(2),
-			classname = "action_button", tooltip = "LAN Play: Custom Scenario, Copilot and the game mode Evolution",
+			classname = "action_button", tooltip = "LAN Play: Custom Scenario, Copilot and the game modes Evolution and Renegade",
 			OnClick = { function() if ui.lanMenu then closeLanMenu() else openLanMenu() end end } }
 		log("LAN Play button added")
 	end
@@ -2313,7 +2376,7 @@ end
 -- buttons that open them; the click itself goes on)
 local lastDown = false
 local function closeMenusOnOutsideClick()
-	if not (ui.lanMenu or ui.evoMenu) then lastDown = false; return end
+	if not (ui.lanMenu or ui.evoMenu or ui.renMenu) then lastDown = false; return end
 	local mx, my, down = Spring.GetMouseState()
 	local pressed = down and not lastDown
 	lastDown = down
@@ -2324,7 +2387,7 @@ local function closeMenusOnOutsideClick()
 		local ok, x, y = pcall(function() return c:LocalToScreen(0, 0) end)
 		return ok and x and cx >= x and cx <= x + c.width and cy >= y and cy <= y + c.height
 	end
-	if inside(ui.lanMenu) or inside(ui.evoMenu) or inside(ui.lanButton) or inside(ui.evoMenuBtn) or inside(ui.popup) then return end -- (also the window with the rules: its OK leaves the menu open)
+	if inside(ui.lanMenu) or inside(ui.evoMenu) or inside(ui.renMenu) or inside(ui.lanButton) or inside(ui.evoMenuBtn) or inside(ui.renMenuBtn) or inside(ui.popup) then return end -- (also the window with the rules: its OK leaves the menu open)
 	log("menus closed by a click outside")
 	closeLanMenu()
 end
@@ -2373,6 +2436,15 @@ function widget:Update()
 		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode) is opened, with 2x set (a picture of it)
 		setEvoOption("lanevomult", "2")
 		openEvoMenu()
+	end
+	if cfg.renegade == "1" and S and lan and lan.step == "in" and not cfg.renegadeSet and clock() > 10 then
+		cfg.renegadeSet = true
+		log("test: Renegade on")
+		setRenOptions(true, cfg.renegadeSingle == "1")
+	end
+	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then
+		cfg.renMenu = nil -- test: the submenu of Renegade (On / Off, Always in unit) is opened (a picture of it)
+		openRenMenu()
 	end
 	if tonumber(cfg.evolutionClose) and ui.popup and clock() > tonumber(cfg.evolutionClose) then
 		cfg.evolutionClose = nil -- test: the window with the rules is closed (a picture of the room with the button)

@@ -40,11 +40,15 @@ local ENERGY_START, ENERGY_STORE, ENERGY_INCOME = 200000, 200000, 5000 -- energy
 local energyInit = {}
 local MO = Spring.GetModOptions() or {}
 local DEBUG = MO.lanrenedebug == "1"
+-- the game option lanrenesingle: "1" or missing = the single unit mode (every human is one unit for the whole game, a lost unit comes back); "0" = the jump mode (the players play the
+-- normal game and jump into a unit with the key Q (widget) and out of it again)
+local SINGLE = MO.lanrenesingle ~= "0"
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
 local RESPAWN = 150 -- frames until a player's unit comes back (5 s; the widget counts down, team rules parameter renRespawn = the frame)
 local lastPos = {} -- team -> where its unit was lost (when no place is found, e.g. for a ship on land)
 local BOT_RESPAWN = 150
 local turnInto -- (defined below: the debug message of RecvLuaMsg needs it)
+local possess, release -- (the jump mode: defined below)
 local units = {} -- team -> unit id
 local kind = {} -- team -> unit definition name of the player's unit (a lost unit comes back as the same one)
 local due = {} -- team -> frame at which the unit comes back
@@ -1963,6 +1967,15 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return
 	end
+	-- the jump mode: the player jumps into the unit under the cursor (the widget sends its id) or out of its unit
+	local jump = msg:match("^ren|possess|(%d+)$")
+	if jump or msg == "ren|release" then
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		if not spec and not SINGLE then
+			if jump then possess(team, tonumber(jump)) else release(team) end
+		end
+		return
+	end
 	local mode = msg:match("^ren|mode|([01])$")
 	if mode then
 		-- the player switches between Renegade (1) and the normal game (0): in the normal game the unit is an ordinary unit again (stop, fire at will, no held reloads), the view and the keys
@@ -2047,16 +2060,9 @@ end
 
 local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
-local function giveUnit(team, defName, x, y, z, face)
-	-- a big unit made at the edge of the map (the start point of the commander, 10 Elmo from it) would stand half outside and could not move: it is put inside by its size
-	local dd = UnitDefNames[defName]
-	if dd and x and z and not dd.canFly then
-		local m = math.max(48, (tonumber(dd.radius) or 0) * 1.4 + 24)
-		x, z = math.max(m, math.min(Game.mapSizeX - m, x)), math.max(m, math.min(Game.mapSizeZ - m, z))
-		y = Spring.GetGroundHeight(x, z)
-	end
-	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
-	if not id then return nil end
+local sightBase = {} -- unit id -> its own sight radii (the jump mode gives them back when the player leaves the unit)
+-- the unit is the player's: bookkeeping, hold fire, the data for the widget (the unit of the start, of a respawn, a debug turn and, in the jump mode, a unit the player jumped into)
+local function adopt(team, id, defName)
 	units[team] = id
 	kind[team] = defName
 	input[team] = input[team] or { yaw = 0, pitch = 0, keys = 0, fire = 0, last = { frame = 0, yaw = 0, keys = 0 }, moving = false, target = { x = 0, y = 0, z = 0, unit = -1 }, mask = 0, hold = {} }
@@ -2066,9 +2072,13 @@ local function giveUnit(team, defName, x, y, z, face)
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { (input[team] and input[team].normal) and 2 or 0 }, 0) -- hold fire: only the player aims (the normal game: fire at will)
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
 	-- three times the sight of the unit type (first person: enemies must not pop up at the edge of the sight); the radar stays as it is, the map and the minimap show what is within this sight
+	sightBase[id] = sightBase[id] or {}
 	for _, k in ipairs({ "los", "airLos" }) do
-		local base = Spring.GetUnitSensorRadius(id, k)
-		if base and base > 0 then pcall(Spring.SetUnitSensorRadius, id, k, base * SIGHT_FACTOR) end
+		local base = sightBase[id][k] or Spring.GetUnitSensorRadius(id, k)
+		if base and base > 0 then
+			sightBase[id][k] = base
+			pcall(Spring.SetUnitSensorRadius, id, k, base * SIGHT_FACTOR)
+		end
 	end
 	if TEST then Spring.Echo(string.format("[Renegade] sight of %s: los %s airLos %s", defName, tostring(Spring.GetUnitSensorRadius(id, "los")), tostring(Spring.GetUnitSensorRadius(id, "airLos")))) end
 	-- the groups of weapons of the buttons for the widget: "left;right;middle" (weapon numbers), and the anti-air weapons
@@ -2104,6 +2114,50 @@ local function giveUnit(team, defName, x, y, z, face)
 	table.sort(hy)
 	Spring.SetUnitRulesParam(id, "renHY", table.concat(hy, ","), { public = true })
 	return id
+end
+
+local function giveUnit(team, defName, x, y, z, face)
+	-- a big unit made at the edge of the map (the start point of the commander, 10 Elmo from it) would stand half outside and could not move: it is put inside by its size
+	local dd = UnitDefNames[defName]
+	if dd and x and z and not dd.canFly then
+		local m = math.max(48, (tonumber(dd.radius) or 0) * 1.4 + 24)
+		x, z = math.max(m, math.min(Game.mapSizeX - m, x)), math.max(m, math.min(Game.mapSizeZ - m, z))
+		y = Spring.GetGroundHeight(x, z)
+	end
+	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
+	if not id then return nil end
+	return adopt(team, id, defName)
+end
+
+-- Jump mode: the player's own unit (any unit with a weapon or that moves) becomes the steered one: hold fire, the weapons and the displays as for the unit of the single mode,
+-- three times the sight; released: it is an ordinary unit again (fire at will, no held reloads, no target, its own sight)
+possess = function(team, id)
+	if SINGLE or units[team] ~= nil or not Spring.ValidUnitID(id) or Spring.GetUnitTeam(id) ~= team then return end
+	local ud = UnitDefs[Spring.GetUnitDefID(id) or -1]
+	if not ud or ((ud.speed or 0) <= 0 and #(ud.weapons or {}) == 0) or Spring.GetUnitIsBeingBuilt(id) then return end
+	if input[team] then input[team].normal = false end
+	adopt(team, id, ud.name)
+	if TEST then Spring.Echo("[Renegade] team " .. team .. " jumps into a " .. ud.name .. " (unit " .. id .. ")") end
+end
+
+release = function(team)
+	local u = units[team]
+	if SINGLE or not u then return end
+	local inp = input[team]
+	if Spring.ValidUnitID(u) then
+		stopReverse(u, inp)
+		Spring.SetUnitTarget(u, nil)
+		Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+		Spring.GiveOrderToUnit(u, CMD.FIRE_STATE, { 2 }, 0)
+		local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+		for i = 1, #(ud and ud.weapons or {}) do unblock(u, i, Spring.GetGameFrame()) end
+		for k, v in pairs(sightBase[u] or {}) do pcall(Spring.SetUnitSensorRadius, u, k, v) end
+		sightBase[u] = nil
+	end
+	units[team], kind[team] = nil, nil
+	inp.hold, inp.aimed, inp.keys, inp.fire, inp.moving = {}, false, 0, 0, false
+	Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })
+	if TEST then Spring.Echo("[Renegade] team " .. team .. " left its unit " .. tostring(u)) end
 end
 
 turnInto = function(team, defName)
@@ -2244,7 +2298,7 @@ function gadget:GameFrame(f)
 			Spring.Echo(string.format("[Renegade] team %d energy %s storage %s income %s", tm, tostring(e), tostring(es), tostring(inc)))
 		end
 	end
-	if f >= 30 and f <= 300 and f % 15 == 0 then
+	if SINGLE and f >= 30 and f <= 300 and f % 15 == 0 then
 		for _, team in ipairs(Spring.GetTeamList()) do
 			if team ~= Spring.GetGaiaTeamID() then take(team) end
 		end
@@ -2306,10 +2360,12 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 		Spring.SetTeamRulesParam(team, "renDeaths", (Spring.GetTeamRulesParam(team, "renDeaths") or 0) + 1, { public = true })
 		units[team] = nil
 		Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })
-		due[team] = Spring.GetGameFrame() + RESPAWN
-		Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
-		local x, y, z = Spring.GetUnitPosition(u)
-		if x then lastPos[team] = { x, y, z } end
+		if SINGLE then
+			due[team] = Spring.GetGameFrame() + RESPAWN
+			Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
+			local x, y, z = Spring.GetUnitPosition(u)
+			if x then lastPos[team] = { x, y, z } end
+		end -- (the jump mode: the player is back in the normal game, the widget sees renUnit = 0)
 	elseif bots[u] then
 		bots[u] = nil
 		botDue[#botDue + 1] = Spring.GetGameFrame() + BOT_RESPAWN
