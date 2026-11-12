@@ -293,6 +293,8 @@ local function reverse(u, inp, ud, dx, dz)
 		Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
 		inp.moving = false
 		mc.Enable(u)
+		pcall(mc.SetTrackGround, u, true)
+		pcall(mc.SetGravity, u, 0)
 	end
 	local x, y, z = Spring.GetUnitPosition(u)
 	local sp = (ud.speed or 0) / 30 * REVERSE_SPEED
@@ -321,7 +323,8 @@ local function reverse(u, inp, ud, dx, dz)
 	h = h + math.max(-maxTurn, math.min(maxTurn, diff))
 	mc.SetHeading(u, math.floor(h / (2 * math.pi) * 65536 + 0.5) % 65536)
 	if ok then
-		mc.SetPosition(u, nx, ny, nz)
+		-- only the velocity is set: with the unit under MoveCtrl the engine moves it by it every frame and draws it between the frames (SetPosition on top moved it twice
+		-- and in jumps); the ground is followed by SetTrackGround
 		mc.SetVelocity(u, dx * sp, 0, dz * sp)
 	else
 		mc.SetVelocity(u, 0, 0, 0)
