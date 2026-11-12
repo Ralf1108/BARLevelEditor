@@ -183,9 +183,27 @@ local function ceiling(u, inp)
 	end
 end
 
+-- A unit with no health left (or one the engine has set to crash) is not held in the air any more: the height control stops, so that a gunship, which would hover on, falls like the
+-- others (measured: a gunship with Space held stayed at 300 Elmo for 8 s with "crashing" and health below 0).
+local function downed(u)
+	local hp = Spring.GetUnitHealth(u)
+	if hp and hp <= 0 then return true end
+	local ok, md = pcall(Spring.GetUnitMoveTypeData, u)
+	return ok and type(md) == "table" and md.aircraftState == "crashing"
+end
 local function lift(team, f)
 	local u, inp = units[team], input[team]
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
+	if downed(u) then
+		if inp.crashUnit ~= u then
+			inp.crashUnit = u
+			local mc = Spring.MoveCtrl
+			if mc.SetGunshipMoveTypeData then pcall(mc.SetGunshipMoveTypeData, u, "wantedHeight", 0) end
+			if mc.SetAirMoveTypeData then pcall(mc.SetAirMoveTypeData, u, "wantedHeight", 0) end
+			if TEST then Spring.Echo("[Renegade] the unit is shot down: no height control") end
+		end
+		return
+	end
 	if inp.keys % 32 > 0 and inp.takeoffUnit ~= u and flyer(u) then -- (the lower key alone does not take off)
 		-- the first key of an aircraft that stands on the ground: it takes off once, up to TAKEOFF_ALT; from then on only Space and Ctrl change the height
 		inp.takeoffUnit = u
@@ -1944,6 +1962,15 @@ function gadget:RecvLuaMsg(msg, playerID)
 	if TEST and msg == "ren|test|2" then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end
+		return
+	end
+	if TEST and msg == "ren|test|5" then -- the unit takes more damage than it has health (a shot-down aircraft must crash)
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local u = units[team]
+		if u and not spec and Spring.ValidUnitID(u) then
+			local hp = Spring.GetUnitHealth(u)
+			Spring.AddUnitDamage(u, (hp or 0) + 100000)
+		end
 		return
 	end
 	local spawn = msg:match("^ren|spawn|([%w_]+)$")
