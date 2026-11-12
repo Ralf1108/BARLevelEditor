@@ -584,10 +584,14 @@ function widget:Update()
 		local vsx, vsy = Spring.GetViewGeometry()
 		local cx, cy = math.floor(vsx / 2), math.floor(vsy / 2)
 		local mx, my, left, middle, right = Spring.GetMouseState()
+		-- the cursor is outside of the game window (the player works in another program): no look, no firing and above all no WarpMouse, which would pull the cursor into the window
+		local outside = mx < 0 or my < 0 or mx > vsx or my > vsy
 		-- the buttons are read every frame too: a release that did not come must not keep the unit firing
-		R.fire = (left and 1 or 0) + (right and 2 or 0) + (middle and 4 or 0)
-		if left and R.full then R.fire = 7 end -- FULL FIRE: the left button fires every weapon
-		if mx ~= cx or my ~= cy then
+		R.fire = outside and 0 or ((left and 1 or 0) + (right and 2 or 0) + (middle and 4 or 0))
+		if left and R.full and not outside then R.fire = 7 end -- FULL FIRE: the left button fires every weapon
+		if outside then
+			R.skipLook = true
+		elseif mx ~= cx or my ~= cy then
 			-- A jump of the cursor is not a turn (the bug "suddenly looking straight up"): after the menu, after a pause of the game or the window (the cursor was somewhere else, the
 			-- warp did not take effect while the window was not in front) and a jump of more than 40% of the screen in one frame only put the cursor back; the first frame after
 			-- one of these is skipped too.

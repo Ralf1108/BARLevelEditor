@@ -86,7 +86,7 @@ local CRUISE_ALT -- (filled in the block WEAPON_BUTTONS below: the highest heigh
 
 -- The height of an aircraft that flies (gunships hover where they are): Space raises it, Ctrl lowers it (LIFT_RATE Elmo a frame, between MIN_ALT and MAX_ALT above the
 -- ground). The height is the flying height the move type wants (Spring.MoveCtrl.SetGunshipMoveTypeData / SetAirMoveTypeData "wantedHeight"); a landed aircraft takes off.
-local BOMBER_CEILING = 1.5 -- (the highest height of a bomber, times its attack altitude)
+local BOMBER_CEILING = 0.95 -- (the highest height of a bomber, times its attack altitude: it cannot climb where its bombs do not fall)
 local LIFT_RATE, MIN_ALT, MAX_ALT, DOWN_SPEED, TAKEOFF_ALT = 4, 4, 1000, 2.3, 400
 -- the highest height of an aircraft: its cruise altitude (column Cruise altitude used of the table; a unit that is not in it: 3 times the cruiseAltitude of its definition); never over MAX_ALT
 local function maxAlt(u)
@@ -205,6 +205,15 @@ local function lift(team, f)
 	if flyer(u) then ceiling(u, inp) end
 	followGround(u, inp, f)
 	local up, down = inp.keys % 32 >= 16, inp.keys % 64 >= 32
+	-- a bomber with a button pressed that is too high to drop sinks to its attack altitude by itself (as if Ctrl were held)
+	if inp.fire and inp.fire ~= 0 and flyer(u) then
+		local ud0 = UnitDefs[Spring.GetUnitDefID(u) or -1]
+		local an = ud0 and ATTACK_ALT and ATTACK_ALT[(ud0.name:gsub("_scav$", ""))]
+		if an then
+			local x, y, z = Spring.GetUnitPosition(u)
+			if x and y - Spring.GetGroundHeight(x, z) > an - 5 then up, down = false, true end
+		end
+	end
 	if not (up or down) then
 		if inp.lifting and Spring.ValidUnitID(u) then
 			-- the key is let go: hold the height it has now (the move type would climb on to the old wanted height and beyond)
@@ -1902,6 +1911,13 @@ end
 local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
 local function giveUnit(team, defName, x, y, z, face)
+	-- a big unit made at the edge of the map (the start point of the commander, 10 Elmo from it) would stand half outside and could not move: it is put inside by its size
+	local dd = UnitDefNames[defName]
+	if dd and x and z and not dd.canFly then
+		local m = math.max(48, (tonumber(dd.radius) or 0) * 1.4 + 24)
+		x, z = math.max(m, math.min(Game.mapSizeX - m, x)), math.max(m, math.min(Game.mapSizeZ - m, z))
+		y = Spring.GetGroundHeight(x, z)
+	end
 	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
 	if not id then return nil end
 	units[team] = id
