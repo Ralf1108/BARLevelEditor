@@ -127,7 +127,7 @@ local function enable(u)
 	R.on = true
 	R.unit = u
 	R.hidden = true
-	Spring.SetUnitNoDraw(u, true) -- the own model is not drawn and the screen ray and the mouse skip it (local only)
+	Spring.SetUnitNoDraw(u, not R.third) -- the own model is not drawn (in the third person view it is: after a respawn the view was wrong until Shift was pressed twice) and the screen ray and the mouse skip it (local only)
 	Spring.SetUnitNoSelect(u, true)
 	Spring.SelectUnitArray({}) -- the game draws the range rings of selected units: ours are drawn instead
 	say("first person view on, unit", u, "camera fps")
@@ -500,6 +500,17 @@ function widget:Update()
 	local lt = Spring.GetKeyState(60)
 	if lt and not R.ltWas then toggleMode() end
 	R.ltWas = lt
+	-- a new unit (the first one, or after a death) while the normal game is on: the game camera flies to it, so the player sees where the unit is; the key next to Shift goes in
+	if R.off and u ~= R.seen then
+		local cs = Spring.GetCameraState()
+		local ux, _, uz = Spring.GetUnitPosition(u)
+		if cs and ux and cs.name ~= "fps" then
+			cs.px, cs.pz = ux, uz
+			cs.py = Spring.GetGroundHeight(ux, uz)
+			Spring.SetCameraState(cs, 1.0)
+		end
+	end
+	R.seen = u
 	if not R.on and not R.off then enable(u) end
 	if not R.on then return end
 	if u ~= R.unit then
