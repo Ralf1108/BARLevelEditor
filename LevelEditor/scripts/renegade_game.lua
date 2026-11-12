@@ -1888,7 +1888,7 @@ local function place(defName, list, wanted)
 	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
 end
 
-local SIGHT = 4000 -- (Elmo: the sight radius of a player's unit)
+local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
 local function giveUnit(team, defName, x, y, z, face)
 	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
@@ -1901,9 +1901,11 @@ local function giveUnit(team, defName, x, y, z, face)
 	input[team].fire = 0
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { (input[team] and input[team].normal) and 2 or 0 }, 0) -- hold fire: only the player aims (the normal game: fire at will)
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
-	-- a long sight for the unit (first person: enemies must not pop up at the edge of the sight); the radar stays as it is, the map and the minimap show what is within this sight
-	pcall(Spring.SetUnitSensorRadius, id, "los", SIGHT)
-	pcall(Spring.SetUnitSensorRadius, id, "airLos", SIGHT)
+	-- three times the sight of the unit type (first person: enemies must not pop up at the edge of the sight); the radar stays as it is, the map and the minimap show what is within this sight
+	for _, k in ipairs({ "los", "airLos" }) do
+		local base = Spring.GetUnitSensorRadius(id, k)
+		if base and base > 0 then pcall(Spring.SetUnitSensorRadius, id, k, base * SIGHT_FACTOR) end
+	end
 	if TEST then Spring.Echo(string.format("[Renegade] sight of %s: los %s airLos %s", defName, tostring(Spring.GetUnitSensorRadius(id, "los")), tostring(Spring.GetUnitSensorRadius(id, "airLos")))) end
 	-- the groups of weapons of the buttons for the widget: "left;right;middle" (weapon numbers), and the anti-air weapons
 	local s = slotsFor(UnitDefNames[defName])
