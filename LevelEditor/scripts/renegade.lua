@@ -642,7 +642,8 @@ function widget:Update()
 	end
 	R.shiftWas = shift
 	-- the Windows key (the start menu or another program takes the focus): the mouse is free at once, and stays free (also when it comes back over the window) until the player clicks in the window
-	local meta = select(3, Spring.GetModKeyState())
+	local meta = select(3, Spring.GetModKeyState()) or Spring.GetKeyState(310) or Spring.GetKeyState(311) or Spring.GetKeyState(312)
+	if meta ~= R.metaWas then say("Windows / meta key", tostring(meta)) end
 	if meta and not R.metaWas then
 		R.away = true
 		say("Windows key: the mouse is free until a click in the window")
@@ -660,6 +661,11 @@ function widget:Update()
 		if left and R.full and not outside then R.fire = 7 end -- FULL FIRE: the left button fires every weapon
 		-- Another window has the focus while the cursor is over this one: the WarpMouse does not take effect, so the cursor stays away from the middle for many frames. Then the mouse is
 		-- left alone (no look, no firing, the cursor shows, nothing is warped) until the player clicks in the window.
+		if outside and not R.away then
+			-- the cursor left the window (the player works elsewhere): the mouse stays free, also when the cursor comes back over the window, until a click in it
+			R.away, R.farN = true, 0
+			say("cursor left the window: the mouse is free until a click in it")
+		end
 		if not outside and not R.away then
 			if math.abs(mx - cx) > vsx * 0.1 or math.abs(my - cy) > vsy * 0.1 then R.farN = (R.farN or 0) + 1 else R.farN = 0 end
 			if R.farN >= 6 then R.away, R.farN = true, 0; say("window has no focus: the mouse is free until a click") end
@@ -905,6 +911,13 @@ function widget:MouseWheel(up, value)
 end
 
 function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
+	-- the Windows key (key codes 310 / 311 / 312, scan codes 227 / 231): the mouse is free at once; the first keys are written to the log (to find the codes of other keyboards)
+	R.keyLog = (R.keyLog or 0) + 1
+	if R.keyLog <= 12 or key == 310 or key == 311 or key == 312 or scanCode == 227 or scanCode == 231 then say("key", key, "scan", tostring(scanCode), "meta", tostring(mods and mods.meta)) end
+	if key == 310 or key == 311 or key == 312 or scanCode == 227 or scanCode == 231 then
+		R.away = true
+		R.metaWas = true
+	end
 	-- the mode key: left of the 1 (scan code 53; "^" on a German keyboard): the single unit mode switches between Renegade and the normal game, the jump mode jumps into the unit under the
 	-- cursor and out of it
 	if (scanCode == 53 or key == 94) and not isRepeat and not (R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
