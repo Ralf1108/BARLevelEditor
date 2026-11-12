@@ -130,6 +130,21 @@ local function setCamera(u)
 	Spring.SetCameraState(cs, 0)
 end
 
+-- The overview camera of the normal game: the game's own camera type, over the unit, at the usual distance so that the battlefield is seen
+local function overviewCam(u)
+	local cs = Spring.GetCameraState()
+	local ux, _, uz = Spring.GetUnitPosition(u)
+	if not (cs and ux) then return end
+	if cs.name == "fps" then cs = R.savedCam or { name = "spring", mode = 2, rx = 2.6, ry = 0, rz = 0 } end
+	cs = Spring.Utilities and Spring.Utilities.CopyTable and Spring.Utilities.CopyTable(cs) or cs
+	cs.px, cs.pz = ux, uz
+	cs.py = Spring.GetGroundHeight(ux, uz)
+	if cs.dist then cs.dist = 2200 end
+	if cs.height then cs.height = 2200 end
+	if not cs.dist and not cs.height then cs.dist = 2200 end
+	Spring.SetCameraState(cs, 1.0)
+end
+
 local function enable(u)
 	farView(true)
 	local cs = Spring.GetCameraState()
@@ -172,7 +187,7 @@ local function toggleMode()
 		R.off = true
 		disable()
 		Spring.SendLuaRulesMsg("ren|mode|0")
-		if R.savedCam then Spring.SetCameraState(R.savedCam, 0.5) end
+		overviewCam(R.unit)
 		say("normal game (press the key next to Shift to come back)")
 	else
 		R.off = false
@@ -521,13 +536,7 @@ function widget:Update()
 	R.ltWas = lt
 	-- a new unit (the first one, or after a death) while the normal game is on: the game camera flies to it, so the player sees where the unit is; the key next to Shift goes in
 	if R.off and u ~= R.seen then
-		local cs = Spring.GetCameraState()
-		local ux, _, uz = Spring.GetUnitPosition(u)
-		if cs and ux and cs.name ~= "fps" then
-			cs.px, cs.pz = ux, uz
-			cs.py = Spring.GetGroundHeight(ux, uz)
-			Spring.SetCameraState(cs, 1.0)
-		end
+		overviewCam(u)
 	end
 	R.seen = u
 	if not R.on and not R.off then enable(u) end

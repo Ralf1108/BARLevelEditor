@@ -1888,6 +1888,7 @@ local function place(defName, list, wanted)
 	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
 end
 
+local SIGHT = 4000 -- (Elmo: the sight radius of a player's unit)
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
 local function giveUnit(team, defName, x, y, z, face)
 	local id = Spring.CreateUnit(defName, x, y, z, face or 0, team)
@@ -1900,6 +1901,10 @@ local function giveUnit(team, defName, x, y, z, face)
 	input[team].fire = 0
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { (input[team] and input[team].normal) and 2 or 0 }, 0) -- hold fire: only the player aims (the normal game: fire at will)
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
+	-- a long sight for the unit (first person: enemies must not pop up at the edge of the sight); the radar stays as it is, the map and the minimap show what is within this sight
+	pcall(Spring.SetUnitSensorRadius, id, "los", SIGHT)
+	pcall(Spring.SetUnitSensorRadius, id, "airLos", SIGHT)
+	if TEST then Spring.Echo(string.format("[Renegade] sight of %s: los %s airLos %s", defName, tostring(Spring.GetUnitSensorRadius(id, "los")), tostring(Spring.GetUnitSensorRadius(id, "airLos")))) end
 	-- the groups of weapons of the buttons for the widget: "left;right;middle" (weapon numbers), and the anti-air weapons
 	local s = slotsFor(UnitDefNames[defName])
 	local aa = {}
@@ -2065,17 +2070,6 @@ function gadget:Explosion(wdid, px, py, pz, owner)
 end
 
 function gadget:GameFrame(f)
-	-- unlimited sight for the humans (first person: enemies must not pop up at the edge of the line of sight): global line of sight for every ally team that has a human team
-	if f == 2 then
-		local seen = {}
-		for _, tm in ipairs(Spring.GetTeamList()) do
-			local _, _, _, isAI, _, ally = Spring.GetTeamInfo(tm)
-			if not isAI and tm ~= Spring.GetGaiaTeamID() and not seen[ally] then
-				seen[ally] = true
-				Spring.SetGlobalLos(ally, true)
-			end
-		end
-	end
 	if TEST and f == 40 then census() end
 	if TEST and f == 200 then
 		for _, tm in ipairs(Spring.GetTeamList()) do
