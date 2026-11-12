@@ -56,6 +56,7 @@ function widget:Initialize()
 	WG.renegade = R
 	R.debug = mo.lanrenedebug == "1"
 	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the jump mode, the key left of the 1 jumps into the unit under the cursor and out of it)
+	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
@@ -75,6 +76,7 @@ local function farView(on)
 end
 
 function widget:Shutdown()
+	pcall(widgetHandler.DeregisterGlobal, widgetHandler, "renDamage")
 	farView(false)
 	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	WG.renegade = nil
@@ -1859,9 +1861,64 @@ local function binoculars(vsx, vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
+-- Damage numbers: every unit that takes damage and can be seen (the gadget sends each hit: global renDamage) shows the damage as a red number over it that rises and fades. Hits on the same
+-- unit within DMG_JOIN seconds are added up, so the number counts up while a weapon keeps hitting. Not for the own unit (its health bar shows that).
+local DMG_JOIN, DMG_LIFE, DMG_MAX = 0.7, 1.6, 80
+local dmgNums = {} -- unit id -> { dmg, t0 (first hit of the number), t1 (last hit), para }
+function R.damaged(unitID, damage, paralyzer)
+	if not damage or damage < 1 or unitID == R.unit then return end
+	if not Spring.GetSpectatingState() then
+		local los = Spring.GetUnitLosState(unitID, Spring.GetMyAllyTeamID(), false) -- (only what can be seen)
+		if not (los and los.los) then return end
+	end
+	local now = os.clock()
+	local e = dmgNums[unitID]
+	if e and now - e.t1 <= DMG_JOIN and (e.para or false) == (paralyzer or false) then
+		e.dmg, e.t1 = e.dmg + damage, now
+	else
+		if not e then
+			local n = 0
+			for _ in pairs(dmgNums) do n = n + 1 end
+			if n >= DMG_MAX then return end
+		end
+		dmgNums[unitID] = { dmg = damage, t0 = now, t1 = now, para = paralyzer or false }
+	end
+	local x, y, z = Spring.GetUnitPosition(unitID, true)
+	if x then dmgNums[unitID].x, dmgNums[unitID].y, dmgNums[unitID].z = x, y + (Spring.GetUnitHeight(unitID) or 20) * 0.5, z end
+end
+local function drawDamageNumbers(vsy)
+	local now = os.clock()
+	local px, py, pz = Spring.GetCameraPosition()
+	local cdx, cdy, cdz = Spring.GetCameraDirection()
+	for id, e in pairs(dmgNums) do
+		local age = now - e.t1
+		if age > DMG_LIFE then
+			dmgNums[id] = nil
+		else
+			local x, y, z = e.x, e.y, e.z
+			if Spring.ValidUnitID(id) then
+				local ux, uy, uz = Spring.GetUnitPosition(id, true)
+				if ux then x, y, z = ux, uy + (Spring.GetUnitHeight(id) or 20) * 0.5, uz end
+			end
+			if x and (x - px) * cdx + (y - py) * cdy + (z - pz) * cdz > 0 then
+				local sx, sy = Spring.WorldToScreenCoords(x, y, z)
+				if sx then
+					local k = (now - e.t0) / (DMG_LIFE + (e.t1 - e.t0))
+					local size = vsy / 45 * (0.8 + math.min(1.2, math.log10(math.max(10, e.dmg)) / 3))
+					local a = math.min(1, (DMG_LIFE - age) / 0.6)
+					if e.para then gl.Color(0.45, 0.65, 1, a) else gl.Color(1, 0.15, 0.1, a) end
+					gl.Text(tostring(math.floor(e.dmg + 0.5)), sx, sy + vsy * 0.08 * k + size * 0.5, size, "co")
+				end
+			end
+		end
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
 function widget:DrawScreen()
 	local vsx0, vsy0 = Spring.GetViewGeometry()
 	if not Spring.GetSpectatingState() then countdown(vsx0, vsy0) end
+	drawDamageNumbers(vsy0)
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()
 	local cx, cy, s = vsx / 2, vsy / 2, math.max(8, vsy / 90)

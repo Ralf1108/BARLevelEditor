@@ -26,14 +26,24 @@ if opt ~= "1" and opt ~= 1 then
 end
 
 if not gadgetHandler:IsSyncedCode() then
-	return false -- everything is synchronized; the view is the job of the widget renegade.lua
+	-- everything is synchronized; the view is the job of the widget renegade.lua. Only the hits come here (SendToUnsynced) and go on to the widget, which shows the damage numbers
+	function gadget:Initialize()
+		gadgetHandler:AddSyncAction("renDmg", function(_, unitID, damage, paralyzer)
+			if Script.LuaUI("renDamage") then Script.LuaUI.renDamage(unitID, damage, paralyzer) end
+		end)
+	end
+	return
+end
+
+function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer)
+	if damage and damage >= 1 then SendToUnsynced("renDmg", unitID, damage, paralyzer and true or false) end
 end
 
 local START_UNIT = "armpw"
 local STEP = 200 -- Elmo: how far ahead of the unit the move order points
 local REISSUE = 10 -- frames: a move order is given again after that time while a key is down
 local TURN = 6 -- degrees: the order is given again at once when the wished direction turned by more than that
-local SNAP_ANGLE = 10 -- degrees: a hull that drives straight ahead and is this close to the view is ordered along the view exactly
+local SNAP_ANGLE = 20 -- degrees: a hull that drives straight ahead and is this close to the view is ordered along the view exactly
 
 local TEST = (Spring.GetModOptions() or {}).lanrenotest == "1"
 local AIM_EVERY = 3 -- frames: the target is given again (a move order may drop it)
