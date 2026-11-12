@@ -66,3 +66,5 @@ With `start_renegade.bat` three buttons **Unit**, **Spawn** and **Range** sit si
 Jumping (planned, see the specification), several human players in the LAN, lobby button, score, teams and a real game goal, all unit types steered equally well (aircraft and ships are only tried), sound and a fuller HUD. The plan and what was measured in the game are in the [specification](../../specs/renegade.md).
 
 - **Damage numbers:** every hit on a unit you can see shows its damage as a red number over the unit that rises and fades (hits in quick succession are added up; paralyzing damage is blue).
+
+- **Wrecks heal:** your unit reclaims wrecks by itself: when it is hurt and wrecks lie within 300 Elmo, their metal heals it (1 metal = 1 health, up to 150 health a second), shown as green plus signs and a rising green "+number". It stops at full health and when an armed enemy is near (a little more than the range of your weapons). Not in Evolution (there the same exists already).

@@ -156,3 +156,5 @@ The table shows one unit of each faction per level as an example (the help windo
 ## Unit candidates
 
 The table of all units that can be used for Evolution, with their type, tech level, damage per second and the level they would get: [Unit candidates](evolution-units.md) (also as [evolution_units.csv](evolution_units.csv) for Excel).
+
+Repair (and the health that wrecks give) shows green plus signs round your unit and a rising green "+number" with the health gained.

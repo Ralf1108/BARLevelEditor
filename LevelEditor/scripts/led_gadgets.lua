@@ -256,4 +256,72 @@ function G.option(name)
 	return nil
 end
 
+-- The heal effect (unsynced, for the gadgets that heal a unit): green plus signs rise round the unit and a green "+N" climbs over it. The synced part sends each heal with
+-- SendToUnsynced(<name>, unit, amount); the unsynced part calls G.healAdd(unit, amount) for it and G.healDraw(vsy) from gadget:DrawScreen.
+local HEAL_LIFE, HEAL_MAX = 1.6, 40
+local heals = {}
+function G.healAdd(unitID, amount)
+	if not unitID or not amount or amount < 1 or #heals >= HEAL_MAX then return end
+	if Spring.GetSpectatingState and not Spring.GetSpectatingState() then
+		local los = Spring.GetUnitLosState(unitID, Spring.GetMyAllyTeamID(), false) -- (only what can be seen)
+		if not (los and los.los) then return end
+	end
+	heals[#heals + 1] = { unit = unitID, amount = amount, t0 = os.clock() }
+end
+function G.healDraw(vsy)
+	if #heals == 0 then return end
+	local now = os.clock()
+	local px, py, pz = Spring.GetCameraPosition()
+	local cdx, cdy, cdz = Spring.GetCameraDirection()
+	local function project(x, y, z)
+		if (x - px) * cdx + (y - py) * cdy + (z - pz) * cdz <= 0 then return nil end
+		return Spring.WorldToScreenCoords(x, y, z)
+	end
+	local i = 1
+	while i <= #heals do
+		local e = heals[i]
+		local age = now - e.t0
+		if age > HEAL_LIFE or not Spring.ValidUnitID(e.unit) then
+			table.remove(heals, i)
+		else
+			local x, y, z = Spring.GetUnitPosition(e.unit)
+			local r, h = Spring.GetUnitRadius(e.unit) or 20, Spring.GetUnitHeight(e.unit) or 30
+			if x and (x - px) ^ 2 + (y + h / 2 - py) ^ 2 + (z - pz) ^ 2 < (r + 30) ^ 2 then
+				-- the camera is in the unit (first person view): the effect is drawn round the middle of the screen
+				local vsx = select(1, Spring.GetViewGeometry())
+				local fade = math.min(1, (HEAL_LIFE - age) / 0.5)
+				for k = 0, 11 do
+					local tt = (age * 0.8 + k / 12) % 1
+					local a = k * 2.4 + age * 1.5
+					gl.Color(0.25, 1, 0.35, math.sin(tt * math.pi) * fade)
+					gl.Text("+", vsx / 2 + math.cos(a) * vsy * 0.2, vsy * 0.5 + math.sin(a) * vsy * 0.12 - vsy * 0.05 + tt * vsy * 0.12, vsy / 28 * (0.7 + 0.5 * math.sin(k * 1.7) ^ 2), "co")
+				end
+				gl.Color(0.3, 1, 0.4, fade)
+				gl.Text("+" .. math.floor(e.amount + 0.5), vsx / 2, vsy * 0.62 + vsy * 0.09 * (age / HEAL_LIFE), vsy / 20, "co")
+			elseif x then
+				local fade = math.min(1, (HEAL_LIFE - age) / 0.5)
+				-- the plus signs: they circle round the unit and rise, each one fades in and out
+				for k = 0, 11 do
+					local tt = (age * 0.8 + k / 12) % 1
+					local a = k * 2.4 + age * 2.5
+					local rad = r * (0.9 + 0.3 * math.sin(k + age * 3))
+					local sx, sy = project(x + math.cos(a) * rad, y + tt * h * 1.4, z + math.sin(a) * rad)
+					if sx then
+						gl.Color(0.25, 1, 0.35, math.sin(tt * math.pi) * fade)
+						gl.Text("+", sx, sy, vsy / 28 * (0.7 + 0.5 * math.sin(k * 1.7) ^ 2), "co")
+					end
+				end
+				-- the number: "+30" rises over the unit
+				local sx, sy = project(x, y + h, z)
+				if sx then
+					gl.Color(0.3, 1, 0.4, fade)
+					gl.Text("+" .. math.floor(e.amount + 0.5), sx, sy + vsy * 0.09 * (age / HEAL_LIFE) + vsy / 40, vsy / 26, "co")
+				end
+			end
+			i = i + 1
+		end
+	end
+	gl.Color(1, 1, 1, 1)
+end
+
 return G

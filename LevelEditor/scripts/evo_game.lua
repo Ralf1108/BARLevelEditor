@@ -189,6 +189,7 @@ if not gadgetHandler:IsSyncedCode() then
 	-- ---------------------------------------------------------------- unsynced: the score lines, Armageddon, the missile targets, the selection and the camera
 	local lastUnit, lastSpawn = nil, nil
 	local overviewDone = false
+	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the heal effect (G.healAdd, G.healDraw)
 
 	-- The camera at the start: the game's own camera type (spring) from above over the middle of the map, so that the whole map is seen. (A camera left in another type - the first person
 	-- view of a game before, which the game keeps in its settings - made Evolution start in a view from inside of the unit.)
@@ -1004,7 +1005,12 @@ if not gadgetHandler:IsSyncedCode() then
 		return false
 	end
 
+	function gadget:Initialize()
+		gadgetHandler:AddSyncAction("evoHeal", function(_, unitID, amount) G.healAdd(unitID, amount) end)
+	end
+
 	function gadget:DrawScreen()
+		G.healDraw((select(2, Spring.GetViewGeometry())))
 		local state = Spring.GetGameRulesParam("evoState") or ""
 		if state == "" then
 			return
@@ -1467,7 +1473,9 @@ function A.start(p, i)
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
 	elseif a.key == "repair" then
 		local hp, maxHp = Spring.GetUnitHealth(id)
-		Spring.SetUnitHealth(id, math.min(maxHp, hp + maxHp * A.HEAL))
+		local newHp = math.min(maxHp, hp + maxHp * A.HEAL)
+		Spring.SetUnitHealth(id, newHp)
+		SendToUnsynced("evoHeal", id, newHp - hp) -- (green plus signs and "+N" over the unit)
 	elseif a.key == "pulse" then
 		sensor(id, "los", A.PULSE)
 		sensor(id, "airLos", A.PULSE)
@@ -2260,6 +2268,7 @@ local function autoReclaim()
 				end
 			end
 			if not enemy then
+				local healed = 0
 				local energy, store = Spring.GetTeamResources(p.team, "energy")
 				local hp, maxHp = Spring.GetUnitHealth(id)
 				local roomE, roomH = (store or 0) - (energy or 0), (maxHp or 0) - (hp or 0)
@@ -2285,6 +2294,7 @@ local function autoReclaim()
 							if takeM > 0 then
 								Spring.SetUnitHealth(id, math.min(maxHp, (select(1, Spring.GetUnitHealth(id)) or hp) + takeM))
 								roomH, budgetH = roomH - takeM, budgetH - takeM
+								healed = healed + takeM
 							end
 							if left - frac <= 0.002 then
 								Spring.DestroyFeature(fid)
@@ -2297,6 +2307,7 @@ local function autoReclaim()
 						end
 					end
 				end
+				if healed >= 1 then SendToUnsynced("evoHeal", id, healed) end
 			end
 		end
 	end

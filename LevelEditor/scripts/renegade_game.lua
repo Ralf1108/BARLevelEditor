@@ -27,10 +27,15 @@ end
 
 if not gadgetHandler:IsSyncedCode() then
 	-- everything is synchronized; the view is the job of the widget renegade.lua. Only the hits come here (SendToUnsynced) and go on to the widget, which shows the damage numbers
+	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the heal effect (G.healAdd, G.healDraw)
 	function gadget:Initialize()
 		gadgetHandler:AddSyncAction("renDmg", function(_, unitID, damage, paralyzer)
 			if Script.LuaUI("renDamage") then Script.LuaUI.renDamage(unitID, damage, paralyzer) end
 		end)
+		gadgetHandler:AddSyncAction("renHeal", function(_, unitID, amount) G.healAdd(unitID, amount) end)
+	end
+	function gadget:DrawScreen()
+		G.healDraw((select(2, Spring.GetViewGeometry())))
 	end
 	return
 end
@@ -2007,6 +2012,20 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end
 		return
 	end
+	if TEST and msg == "ren|test|6" then -- the unit is hurt (30 % health) and three wrecks lie 100 Elmo ahead of it (the automatic reclaim must heal it)
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		local u = units[team]
+		if u and not spec then
+			local x, y, z = Spring.GetUnitPosition(u)
+			local _, mhp = Spring.GetUnitHealth(u)
+			Spring.SetUnitHealth(u, mhp * 0.3)
+			for k = -1, 1 do
+				local fid = Spring.CreateFeature("armbull_dead", x + 100, Spring.GetGroundHeight(x + 100, z + k * 60), z + k * 60, 0, team)
+				Spring.Echo("[Renegade] test wreck " .. tostring(fid) .. " metal " .. tostring(fid and (Spring.GetFeatureResources(fid))))
+			end
+		end
+		return
+	end
 	if TEST and msg == "ren|test|5" then -- the unit takes more damage than it has health (a shot-down aircraft must crash)
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 		local u = units[team]
@@ -2365,8 +2384,55 @@ function gadget:Explosion(wdid, px, py, pz, owner)
 	return false
 end
 
+-- Every unit that a human steers reclaims wrecks by itself (not with Evolution, which has its own reclaim): once a second the metal of the wrecks within RECLAIM_RANGE heals the unit,
+-- 1 metal = 1 health, at most RECLAIM_RATE a second; it stops when the unit is fully healed or an armed enemy is within 1.25 times the longest range of the unit's weapons.
+local RECLAIM_RANGE, RECLAIM_RATE = 300, 150
+local function autoReclaim()
+	for team, u in pairs(units) do
+		if Spring.ValidUnitID(u) and not (input[team] and input[team].normal) then
+			local hp, maxHp = Spring.GetUnitHealth(u)
+			if hp and maxHp and hp < maxHp - 0.5 and hp > 0 then
+				local x, _, z = Spring.GetUnitPosition(u)
+				local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
+				local reach = 300
+				for _, wp in ipairs(ud and ud.weapons or {}) do
+					local wd = WeaponDefs[wp.weaponDef]
+					if wd and (tonumber(wd.range) or 0) > reach / 1.25 then reach = (tonumber(wd.range) or 0) * 1.25 end
+				end
+				local enemy = false
+				for _, o in ipairs(Spring.GetUnitsInCylinder(x, z, reach)) do
+					local ot = Spring.GetUnitTeam(o)
+					local od = UnitDefs[Spring.GetUnitDefID(o) or -1]
+					if ot and ot ~= Spring.GetGaiaTeamID() and not Spring.AreTeamsAllied(ot, team) and od and #(od.weapons or {}) > 0 then enemy = true break end
+				end
+				if not enemy then
+					local room, budget, healed = maxHp - hp, RECLAIM_RATE, 0
+					for _, fid in ipairs(Spring.GetFeaturesInCylinder(x, z, RECLAIM_RANGE)) do
+						local fd = FeatureDefs[Spring.GetFeatureDefID(fid)]
+						local _, defM, _, _, left = Spring.GetFeatureResources(fid)
+						if fd and fd.reclaimable and left and left > 0 and (defM or 0) > 0 and room > 0.5 and budget > 0.5 then
+							local frac = math.min(left, math.min(budget, room) / defM)
+							if frac > 0.001 then
+								local take = defM * frac
+								room, budget, healed = room - take, budget - take, healed + take
+								if left - frac <= 0.002 then Spring.DestroyFeature(fid) else Spring.SetFeatureReclaim(fid, left - frac) end
+							end
+						end
+					end
+					if healed >= 1 then
+						Spring.SetUnitHealth(u, math.min(maxHp, hp + healed))
+						SendToUnsynced("renHeal", u, healed)
+						if TEST then Spring.Echo(string.format("[Renegade] reclaim: %.0f health from wrecks (%.0f of %.0f)", healed, hp + healed, maxHp)) end
+					end
+				end
+			end
+		end
+	end
+end
+
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
+	if not EVO and f % 30 == 0 then autoReclaim() end
 	if TEST and f == 200 then
 		for _, tm in ipairs(Spring.GetTeamList()) do
 			local e, es, _, inc = Spring.GetTeamResources(tm, "energy")
