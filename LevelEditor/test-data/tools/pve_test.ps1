@@ -11,11 +11,12 @@
 #   -Ren                              a Renegade game (game option lanrenegade=1, the human and a NullAI in its own ally team; with -Widget zz_ren.lua)
 #   -RenJump                          with -Ren: game option lanrenesingle=0 (the jump mode: the normal game, Q jumps into a unit and out of it; with -Widget zz_ren80.lua)
 #   -RenTest                          with -Ren: game option lanrenotest=1 (the hook ren|test|1 puts an enemy in front of the unit; with -Widget zz_ren3.lua)
+#   -Live                             the widget renegade.lua as a loose file and the watcher zz_live.lua: the game keeps running and live.ps1 -Reload loads a changed widget (start with a long -WaitSec)
 #   -RenBots n                        with -Ren: game option lanrenebots=n (computer Peewees that fight the player; with -Widget zz_ren5.lua)
 #   -Evo [-EvoStage n]                an Evolution game instead (game option lanevolution=1, every player starts on level n): the human and a NullAI in its own
 #                                     ally team, a larger window (with -Widget zz_evoshot.lua: a picture of the panels in <Work>\data\screenshots)
 param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'pve_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7',
-      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [string]$Widget = 'zz_pve.lua', [switch]$Evo, [switch]$Ren, [switch]$Quick, [switch]$RenTest, [switch]$RenJump, [int]$RenBots = 0, [int]$EvoStage = 1, [switch]$EvoTest, [int]$Bots = 1, [string]$Shot = '', [switch]$Debug, [int]$WildHp = 0, [switch]$NoRegen, [switch]$Long, [switch]$Gods, [int]$Gift = 1, [int]$Mult = 1)
+      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [string]$Widget = 'zz_pve.lua', [switch]$Evo, [switch]$Ren, [switch]$Quick, [switch]$Live, [switch]$RenTest, [switch]$RenJump, [int]$RenBots = 0, [int]$EvoStage = 1, [switch]$EvoTest, [int]$Bots = 1, [string]$Shot = '', [switch]$Debug, [int]$WildHp = 0, [switch]$NoRegen, [switch]$Long, [switch]$Gods, [int]$Gift = 1, [int]$Mult = 1)
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
@@ -23,6 +24,10 @@ $Data = Resolve-TestData $Data   # the data folder of the installation (-Data, o
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = New-SandboxData $Work $Data @('LuaUI\Config')
 Copy-Item "$tools\$Widget" "$d\LuaUI\Widgets\"
+if ($Live) {   # the widget of the repository as a loose file (it is loaded before the one in the game package) and the watcher zz_live.lua: live.ps1 changes it and reloads the widgets
+    Copy-Item "$tools\zz_live.lua" "$d\LuaUI\Widgets\"
+    Copy-Item (Join-Path $repo 'LevelEditor\scripts\renegade.lua') "$d\LuaUI\Widgets\renegade.lua" -Force
+}
 $game = Get-GameVersion $Data
 $sg = Write-ScenarioGame $d $game (Get-ScenarioGameDirs)
 $short = if ($Ai -eq 'Scavengers') { 'ScavengersAI' } else { 'RaptorsAI' }
