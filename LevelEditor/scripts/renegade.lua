@@ -59,19 +59,6 @@ function widget:Initialize()
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
--- The bars over the units (widget "Health Bars GL4" of the game) stay: the enemies' bars are useful. But the bar over the own unit, which was drawn while the unit was seen in the normal
--- game, stays when the unit is hidden for the first person view and then hangs at the crosshair (the camera is in the unit). The widget is switched off and on again (one frame each), so that it
--- forgets the hidden unit.
-local BARS = "Health Bars GL4"
-local function barsRestart()
-	local wh = widgetHandler
-	if not wh or not wh.GetActiveWidgetFiles then return end
-	local ok, files = pcall(wh.GetActiveWidgetFiles, wh)
-	for _, f in pairs(ok and files or {}) do
-		if tostring(f):find("gui_healthbars_gl4", 1, true) then R.barsStep = 2 return end
-	end
-end
-
 local function farView(on)
 	if on and not R.farSaved then
 		local ok, fs = pcall(Spring.GetAtmosphere, "fogStart")
@@ -175,7 +162,6 @@ local function enable(u)
 	R.unit = u
 	R.hidden = true
 	Spring.SetUnitNoDraw(u, not R.third) -- the own model is not drawn (in the third person view it is: after a respawn the view was wrong until Shift was pressed twice) and the screen ray and the mouse skip it (local only)
-	if not R.third then barsRestart() end
 	Spring.SetUnitNoSelect(u, true)
 	Spring.SelectUnitArray({}) -- the game draws the range rings of selected units: ours are drawn instead
 	say("first person view on, unit", u, "camera fps")
@@ -569,10 +555,6 @@ local function jumpKey()
 end
 
 function widget:Update()
-	if R.barsStep then
-		if R.barsStep == 2 then Spring.SendCommands("luaui disablewidget " .. BARS) else Spring.SendCommands("luaui enablewidget " .. BARS) end
-		R.barsStep = R.barsStep > 1 and R.barsStep - 1 or nil
-	end
 	if Spring.GetSpectatingState() then return end
 	do
 		-- the mode key (the key left of the 1, the circumflex "^" on a German keyboard, scan code 53), polled as well: the game may take the press before the widget sees it
@@ -637,7 +619,6 @@ function widget:Update()
 	if shift and not R.shiftWas and not R.menu and R.on then
 		R.third = not R.third
 		Spring.SetUnitNoDraw(u, not R.third)
-		if not R.third then barsRestart() end
 		if R.camNow then R.tr = { t0 = os.clock(), dur = 0.6, from = R.camNow } end -- (fly out of the unit / back into it)
 	end
 	R.shiftWas = shift
@@ -661,15 +642,18 @@ function widget:Update()
 		if left and R.full and not outside then R.fire = 7 end -- FULL FIRE: the left button fires every weapon
 		-- Another window has the focus while the cursor is over this one: the WarpMouse does not take effect, so the cursor stays away from the middle for many frames. Then the mouse is
 		-- left alone (no look, no firing, the cursor shows, nothing is warped) until the player clicks in the window.
-		if outside and not R.away then
+		-- (the game reports the cursor at the edge of the window when it leaves it, not outside: the cursor is at the middle all the time otherwise, so near the edge it can only be on its way out)
+		local edge = math.max(30, math.min(vsx, vsy) * 0.04)
+		local leaving = outside or mx < edge or my < edge or mx > vsx - edge or my > vsy - edge
+		if leaving and not R.away then
 			-- the cursor left the window (the player works elsewhere): the mouse stays free, also when the cursor comes back over the window, until a click in it
 			R.away, R.farN = true, 0
-			say("cursor left the window: the mouse is free until a click in it")
+			say("cursor left the window: the mouse is free until a click in it", "mouse", mx, my)
 		end
 		if not outside and not R.away then
 			if math.abs(mx - cx) > vsx * 0.1 or math.abs(my - cy) > vsy * 0.1 then R.farN = (R.farN or 0) + 1 else R.farN = 0 end
 			if R.farN >= 6 then R.away, R.farN = true, 0; say("window has no focus: the mouse is free until a click") end
-		elseif R.away and not outside and left then
+		elseif R.away and not leaving and left then
 			R.away, R.farN, R.skipLook = false, 0, true
 			say("click: the mouse is taken again")
 			left = false
