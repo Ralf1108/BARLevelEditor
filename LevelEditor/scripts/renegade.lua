@@ -59,27 +59,20 @@ function widget:Initialize()
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
--- The bars over the units (widget "Health Bars GL4" of the game: health, energy, reload) are off in the first and third person view: the panel has the own health, and a bar left over the own
--- (hidden) unit hung at the crosshair. They come back with the normal game.
+-- The bars over the units (widget "Health Bars GL4" of the game) stay: the enemies' bars are useful. But the bar over the own unit, which was drawn while the unit was seen in the normal
+-- game, stays when the unit is hidden for the first person view and then hangs at the crosshair (the camera is in the unit). The widget is switched off and on again (one frame each), so that it
+-- forgets the hidden unit.
 local BARS = "Health Bars GL4"
-local function unitBars(on)
+local function barsRestart()
 	local wh = widgetHandler
 	if not wh or not wh.GetActiveWidgetFiles then return end
-	if not on and R.barsWere == nil then
-		R.barsWere = false
-		local ok, files = pcall(wh.GetActiveWidgetFiles, wh)
-		for _, f in pairs(ok and files or {}) do
-			if tostring(f):find("gui_healthbars_gl4", 1, true) then R.barsWere = true end
-		end
-		if R.barsWere then pcall(Spring.SendCommands, "luaui disablewidget " .. BARS) end
-	elseif on and R.barsWere ~= nil then
-		if R.barsWere then pcall(Spring.SendCommands, "luaui enablewidget " .. BARS) end
-		R.barsWere = nil
+	local ok, files = pcall(wh.GetActiveWidgetFiles, wh)
+	for _, f in pairs(ok and files or {}) do
+		if tostring(f):find("gui_healthbars_gl4", 1, true) then R.barsStep = 2 return end
 	end
 end
 
 local function farView(on)
-	unitBars(not on)
 	if on and not R.farSaved then
 		local ok, fs = pcall(Spring.GetAtmosphere, "fogStart")
 		local _, fe = pcall(Spring.GetAtmosphere, "fogEnd")
@@ -182,6 +175,7 @@ local function enable(u)
 	R.unit = u
 	R.hidden = true
 	Spring.SetUnitNoDraw(u, not R.third) -- the own model is not drawn (in the third person view it is: after a respawn the view was wrong until Shift was pressed twice) and the screen ray and the mouse skip it (local only)
+	if not R.third then barsRestart() end
 	Spring.SetUnitNoSelect(u, true)
 	Spring.SelectUnitArray({}) -- the game draws the range rings of selected units: ours are drawn instead
 	say("first person view on, unit", u, "camera fps")
@@ -575,6 +569,10 @@ local function jumpKey()
 end
 
 function widget:Update()
+	if R.barsStep then
+		if R.barsStep == 2 then Spring.SendCommands("luaui disablewidget " .. BARS) else Spring.SendCommands("luaui enablewidget " .. BARS) end
+		R.barsStep = R.barsStep > 1 and R.barsStep - 1 or nil
+	end
 	if Spring.GetSpectatingState() then return end
 	do
 		local q = Spring.GetKeyState(113)
@@ -638,6 +636,7 @@ function widget:Update()
 	if shift and not R.shiftWas and not R.menu and R.on then
 		R.third = not R.third
 		Spring.SetUnitNoDraw(u, not R.third)
+		if not R.third then barsRestart() end
 		if R.camNow then R.tr = { t0 = os.clock(), dur = 0.6, from = R.camNow } end -- (fly out of the unit / back into it)
 	end
 	R.shiftWas = shift
@@ -651,7 +650,21 @@ function widget:Update()
 		-- the buttons are read every frame too: a release that did not come must not keep the unit firing
 		R.fire = outside and 0 or ((left and 1 or 0) + (right and 2 or 0) + (middle and 4 or 0))
 		if left and R.full and not outside then R.fire = 7 end -- FULL FIRE: the left button fires every weapon
-		if outside then
+		-- Another window has the focus while the cursor is over this one: the WarpMouse does not take effect, so the cursor stays away from the middle for many frames. Then the mouse is
+		-- left alone (no look, no firing, the cursor shows, nothing is warped) until the player clicks in the window.
+		if not outside and not R.away then
+			if math.abs(mx - cx) > vsx * 0.1 or math.abs(my - cy) > vsy * 0.1 then R.farN = (R.farN or 0) + 1 else R.farN = 0 end
+			if R.farN >= 6 then R.away, R.farN = true, 0; say("window has no focus: the mouse is free until a click") end
+		elseif R.away and not outside and left then
+			R.away, R.farN, R.skipLook = false, 0, true
+			say("click: the mouse is taken again")
+			left = false
+			R.fire = 0
+		end
+		if R.away then
+			R.fire, R.keys = 0, 0
+			R.skipLook = true
+		elseif outside then
 			R.skipLook = true
 		elseif mx ~= cx or my ~= cy then
 			-- A jump of the cursor is not a turn (the bug "suddenly looking straight up"): after the menu, after a pause of the game or the window (the cursor was somewhere else, the
@@ -680,12 +693,12 @@ function widget:Update()
 		else
 			R.lookClock = os.clock()
 		end
-		R.keys = keysNow()
+		R.keys = R.away and 0 or keysNow()
 	elseif R.menu then
 		R.keys, R.fire = 0, 0 -- the menu: the mouse is free, nothing is steered or fired
 		R.skipLook = true -- (the cursor is somewhere else when the menu closes: no turn from that)
 	end
-	if not R.menu then Spring.SetMouseCursor("none") end
+	if not R.menu and not R.away then Spring.SetMouseCursor("none") end
 	setCamera(u)
 	aim(u)
 	correctShot(u)
@@ -1340,7 +1353,7 @@ local function panel(vsx, vsy)
 		end
 	end
 	for _, r in ipairs(rows) do if r.pic then w = 502 * s; break end end -- (with a picture the card of a row is 6 : 1)
-	local hh = 40 * s -- the health row
+	local hh = 0 -- (the health bar is under the compass and the speedometer)
 	local x1, y1 = 8 * s, 8 * s -- in the bottom left corner, growing upwards (no build menu there in this mode): the middle of the screen stays free for the view
 	-- the info panel of the game (the unit under the cursor: the crosshair) sits there too: ours starts above its top edge (WG.info.getPosition returns the width and the height as fractions of the screen)
 	do
@@ -1454,26 +1467,6 @@ local function panel(vsx, vsy)
 			gl.Color(1, 1, 1, 1)
 			gl.Text(string.format("%.1f s", left * r.time), cx2 - 8 * s, cy1 + 10 * s, 18 * s, "ro") -- (the seconds left count down here)
 		end
-	end
-	-- health: a bar from red to green, the name of the unit in front of it and the numbers at the right
-	local hp, mhp = Spring.GetUnitHealth(u)
-	hp, mhp = hp or 0, math.max(1, mhp or 1)
-	local frac = math.max(0, math.min(1, hp / mhp))
-	local hy = y1 + 8 * s + #rows * h
-	local bx1, bx2 = x1 + 8 * s, x1 + w - 8 * s
-	card(bx1, hy + 4 * s, bx2, hy + 32 * s, { 0.2, 0.2, 0.22, 0.95 }, { 0.08, 0.08, 0.09, 0.95 }, { 0.5, 0.55, 0.65, 0.6 }, 1.5)
-	if frac > 0 then
-		local fx = bx1 + (bx2 - bx1) * frac
-		local r0, g0 = 1 - frac, 0.25 + 0.65 * frac
-		card(bx1, hy + 4 * s, fx, hy + 32 * s, { r0, g0, 0.25, 1 }, { r0 * 0.45, g0 * 0.45, 0.1, 1 })
-	end
-	gl.Color(1, 1, 1, 1)
-	gl.Text(ud.translatedHumanName or ud.name or "?", bx1 + 8 * s, hy + 11 * s, 16 * s, "o")
-	gl.Text(string.format("%d / %d", math.ceil(hp), math.floor(mhp)), bx2 - 8 * s, hy + 11 * s, 16 * s, "ro")
-	if (ud.speed or 0) > 0 then
-		gl.Color(0.75, 0.82, 0.95, 1)
-		gl.Text(string.format("max speed %d", math.floor(ud.speed + 0.5)), (bx1 + bx2) / 2 + 20 * s, hy + 12 * s, 13 * s, "co") -- (the highest speed of the unit)
-		gl.Color(1, 1, 1, 1)
 	end
 	-- the binoculars: a unit with a range of 600 or more has them; a small card right of the weapons shows the symbol and how to use them (the mouse wheel: forward = on and closer, back = away)
 	if zoomLevels(u) > 0 then
@@ -1694,7 +1687,8 @@ local function compass(vsx, vsy)
 	local s = math.max(0.7, vsy / 1080)
 	local r = 62 * s
 	-- at the bottom in the middle: free there, the panel of the weapons is at the left side
-	local cx, cy = vsx / 2, 18 * s + r + 8 * s
+	local hbH = 30 * s -- the health bar under the two dials
+	local cx, cy = vsx / 2, 18 * s + r + 8 * s + hbH
 	gl.Color(0, 0, 0, 0.45)
 	disc(cx, cy, r)
 	gl.Color(0.6, 0.7, 0.85, 0.9)
@@ -1799,6 +1793,22 @@ local function compass(vsx, vsy)
 		gl.Rect(gx - 20 * s, cy - gr * 0.84, gx + 20 * s, cy - gr * 0.38)
 		gl.Color(0.95, 0.97, 1, 1)
 		gl.Text(string.format("%d", math.floor(now + 0.5)), gx, cy - gr * 0.76, 24 * s, "co") -- (the digital number at the bottom of the dial)
+		-- health: a bar from red to green under the compass and the speedometer, the name of the unit at the left and the numbers at the right
+		local hp, mhp = Spring.GetUnitHealth(u)
+		hp, mhp = hp or 0, math.max(1, mhp or 1)
+		local frac = math.max(0, math.min(1, hp / mhp))
+		local bx1, bx2 = cx - r, gx + gr
+		local by1, by2 = 14 * s, 14 * s + hbH - 6 * s
+		card(bx1, by1, bx2, by2, { 0.2, 0.2, 0.22, 0.95 }, { 0.08, 0.08, 0.09, 0.95 }, { 0.5, 0.55, 0.65, 0.6 }, 1.5)
+		if frac > 0 then
+			local fx = bx1 + (bx2 - bx1) * frac
+			local r0, g0 = 1 - frac, 0.25 + 0.65 * frac
+			card(bx1, by1, fx, by2, { r0, g0, 0.25, 1 }, { r0 * 0.45, g0 * 0.45, 0.1, 1 })
+		end
+		gl.Color(1, 1, 1, 1)
+		local ty = by1 + (by2 - by1) / 2 - 7 * s
+		gl.Text(ud.translatedHumanName or ud.name or "?", bx1 + 8 * s, ty, 15 * s, "o")
+		gl.Text(string.format("%d / %d", math.ceil(hp), math.floor(mhp)), bx2 - 8 * s, ty, 15 * s, "ro")
 	end
 	gl.Color(1, 1, 1, 1)
 end
