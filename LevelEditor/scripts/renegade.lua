@@ -562,6 +562,12 @@ function widget:Update()
 		R.qWas = q
 	end
 	local u = myUnit()
+	R.waiting = false
+	if not u and R.on and not R.single and Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renFollow") == 1 then
+		-- Evolution: the unit evolved or was lost and the next one is on its way (the gadget jumps into it): the view stays and nothing is drawn for the old unit
+		R.waiting = true
+		return
+	end
 	if not u then
 		if R.on then
 			local was = R.unit
@@ -589,6 +595,7 @@ function widget:Update()
 		if R.hidden and Spring.ValidUnitID(R.unit or -1) then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 		R.unit = u
 		R.zoom, R.fov = 0, nil
+		if R.camNow then R.tr = { t0 = os.clock(), dur = 0.9, from = R.camNow } end -- (the camera flies from the old unit to the new one, in the same view: first or third person)
 		Spring.SetUnitNoDraw(u, not R.third)
 		Spring.SetUnitNoSelect(u, true)
 	end
@@ -982,7 +989,7 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 end
 
 function widget:DrawWorld()
-	if not R.on or not R.unit then return end
+	if not R.on or R.waiting or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
 	if not x then return end
 	local ud, slots = weaponsOf(R.unit)
@@ -1803,7 +1810,7 @@ end
 function widget:DrawScreen()
 	local vsx0, vsy0 = Spring.GetViewGeometry()
 	if not Spring.GetSpectatingState() then countdown(vsx0, vsy0) end
-	if not R.on then return end
+	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()
 	local cx, cy, s = vsx / 2, vsy / 2, math.max(8, vsy / 90)
 	-- what the crosshair points at and whether the main weapon reaches it: green = within reach, red = too far, white = the sky

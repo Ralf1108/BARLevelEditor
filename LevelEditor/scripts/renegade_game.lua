@@ -43,6 +43,11 @@ local DEBUG = MO.lanrenedebug == "1"
 -- the game option lanrenesingle: "1" or missing = the single unit mode (every human is one unit for the whole game, a lost unit comes back); "0" = the jump mode (the players play the
 -- normal game and jump into a unit with the key Q (widget) and out of it again)
 local SINGLE = MO.lanrenesingle ~= "0"
+-- with Evolution (game option lanevolution) the unit of a player is replaced when it evolves and when it comes back after a death: in the jump mode the player jumps into the next
+-- one by itself (follow: team -> the frame until which the next unit is waited for; the unit is the team rules parameter evoUnit of evo_game.lua)
+local EVO = MO.lanevolution == "1"
+local follow = {}
+local FOLLOW_FRAMES = 450 -- (15 s: a respawn takes its time)
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
 local RESPAWN = 150 -- frames until a player's unit comes back (5 s; the widget counts down, team rules parameter renRespawn = the frame)
 local lastPos = {} -- team -> where its unit was lost (when no place is found, e.g. for a ship on land)
@@ -2298,6 +2303,19 @@ function gadget:GameFrame(f)
 			Spring.Echo(string.format("[Renegade] team %d energy %s storage %s income %s", tm, tostring(e), tostring(es), tostring(inc)))
 		end
 	end
+	for team, untilFrame in pairs(follow) do
+		local id = Spring.GetTeamRulesParam(team, "evoUnit")
+		if units[team] then
+			follow[team] = nil
+		elseif id and id > 0 and Spring.ValidUnitID(id) and Spring.GetUnitTeam(id) == team and not Spring.GetUnitIsDead(id) then
+			possess(team, id)
+			follow[team] = nil
+			Spring.SetTeamRulesParam(team, "renFollow", 0, { public = true })
+		elseif f > untilFrame then
+			follow[team] = nil
+			Spring.SetTeamRulesParam(team, "renFollow", 0, { public = true })
+		end
+	end
 	if SINGLE and f >= 30 and f <= 300 and f % 15 == 0 then
 		for _, team in ipairs(Spring.GetTeamList()) do
 			if team ~= Spring.GetGaiaTeamID() then take(team) end
@@ -2360,6 +2378,10 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 		Spring.SetTeamRulesParam(team, "renDeaths", (Spring.GetTeamRulesParam(team, "renDeaths") or 0) + 1, { public = true })
 		units[team] = nil
 		Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })
+		if not SINGLE and EVO then
+			follow[team] = Spring.GetGameFrame() + FOLLOW_FRAMES
+			Spring.SetTeamRulesParam(team, "renFollow", 1, { public = true }) -- (the widget keeps the view and waits)
+		end
 		if SINGLE then
 			due[team] = Spring.GetGameFrame() + RESPAWN
 			Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
