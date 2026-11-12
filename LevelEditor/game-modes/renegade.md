@@ -15,7 +15,7 @@ A game mode in the making: **you are one unit of Beyond All Reason, seen from th
 | Input | Effect |
 |---|---|
 | Mouse | look round (the cursor stays in the middle) |
-| W A S D | **drive the vehicle** like a tank: W forward along the hull, S reverse (60 % of the speed), A and D turn it left and right (while driving or on the spot); the mouse only aims the weapons and the camera, so you can drive one way and shoot another. Ships have no reverse. Aircraft, gunships and units whose weapons are fixed to the hull are steered as before (W goes where you look) |
+| W A S D | **drive the vehicle** like a tank: W forward along the hull, S reverse (60 % of the speed), A and D turn it left and right (while driving or on the spot); the mouse only aims the weapons and the camera, so you can drive one way and shoot another. When you drive straight ahead and look within 10 degrees of the hull direction, the vehicle drives exactly where you look. Ships have no reverse. Aircraft, gunships and units whose weapons are fixed to the hull are steered as before (W goes where you look) |
 | Left mouse button | fire the **short range weapons** at the point under the crosshair (red) |
 | Right mouse button | fire the **long range weapons** (yellow) |
 | Middle mouse button | fire the **missiles** (green); anti-air missiles only at the aircraft you look at |

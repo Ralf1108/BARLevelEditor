@@ -33,6 +33,7 @@ local START_UNIT = "armpw"
 local STEP = 200 -- Elmo: how far ahead of the unit the move order points
 local REISSUE = 10 -- frames: a move order is given again after that time while a key is down
 local TURN = 6 -- degrees: the order is given again at once when the wished direction turned by more than that
+local SNAP_ANGLE = 10 -- degrees: a hull that drives straight ahead and is this close to the view is ordered along the view exactly
 
 local TEST = (Spring.GetModOptions() or {}).lanrenotest == "1"
 local AIM_EVERY = 3 -- frames: the target is given again (a move order may drop it)
@@ -427,6 +428,12 @@ local function hullSteer(u, inp, ud, f)
 	-- (the order points relative to the hull's heading, so it is given again often while a turn key is down: the unit keeps turning)
 	if inp.moving and l.keys == keys4 and f - l.frame < (turn ~= 0 and 4 or REISSUE) then return end
 	local h = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
+	-- driving straight ahead (no A / D) with the hull within SNAP_ANGLE of the view: the order points exactly along the view, so the hull turns into it and then drives where the player looks
+	-- (SetUnitDirection on the hull was tried: the unit then turned away by itself to 50 degrees)
+	if w and turn == 0 and inp.yaw then
+		local yaw = math.rad(inp.yaw)
+		if math.abs(math.deg(((yaw - h + math.pi) % (2 * math.pi)) - math.pi)) <= SNAP_ANGLE then h = yaw end
+	end
 	local ang = h + turn * (w and TURN_ANGLE or math.pi / 2)
 	local dist = w and STEP or 120
 	local x, _, z = Spring.GetUnitPosition(u)
