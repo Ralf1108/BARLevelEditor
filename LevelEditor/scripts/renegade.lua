@@ -59,7 +59,27 @@ function widget:Initialize()
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
+-- The bars over the units (widget "Health Bars GL4" of the game: health, energy, reload) are off in the first and third person view: the panel has the own health, and a bar left over the own
+-- (hidden) unit hung at the crosshair. They come back with the normal game.
+local BARS = "Health Bars GL4"
+local function unitBars(on)
+	local wh = widgetHandler
+	if not wh or not wh.GetActiveWidgetFiles then return end
+	if not on and R.barsWere == nil then
+		R.barsWere = false
+		local ok, files = pcall(wh.GetActiveWidgetFiles, wh)
+		for _, f in pairs(ok and files or {}) do
+			if tostring(f):find("gui_healthbars_gl4", 1, true) then R.barsWere = true end
+		end
+		if R.barsWere then pcall(Spring.SendCommands, "luaui disablewidget " .. BARS) end
+	elseif on and R.barsWere ~= nil then
+		if R.barsWere then pcall(Spring.SendCommands, "luaui enablewidget " .. BARS) end
+		R.barsWere = nil
+	end
+end
+
 local function farView(on)
+	unitBars(not on)
 	if on and not R.farSaved then
 		local ok, fs = pcall(Spring.GetAtmosphere, "fogStart")
 		local _, fe = pcall(Spring.GetAtmosphere, "fogEnd")
