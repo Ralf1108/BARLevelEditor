@@ -2207,7 +2207,8 @@ end
 ---------------------------------------------------------------- "Renegade": every player steers a unit from the inside (gadget renegade_game.lua, widget renegade.lua of the extra game)
 local REN_TIP = "Renegade: you steer a unit from the inside (first or third person view, W A S D drive it like a tank, the mouse aims the weapons). On: in the normal game press Q over one of " ..
 	"your units to jump into it and Q again to jump out. Always in unit: every player is one unit for the whole game (instead of the commander; a lost unit comes back 5 s later). The host switches it on or off."
-local function renSingle() return S and S.battle.modoptions.lanrenesingle == "1" end
+-- Always in unit is on by default (the choice is kept in S.renSingleOff, also while Renegade is off; the game options are written when Renegade is switched on)
+local function renSingle() return not (S and S.renSingleOff) end
 local function renShown()
 	if S then return renegadeOn() end
 	local l = lobby()
@@ -2236,8 +2237,12 @@ local function openRenMenu()
 		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Renegade is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch it for everybody in the room: in the game Q jumps into the unit under the cursor and out of it.",
 			fn = function() setRenOptions(not renegadeOn(), renSingle()); openRenMenu() end },
 		{ caption = "Always in unit: " .. (single and "On" or "Off"), class = single and "action_button" or "negative_button",
-			tip = "Always in unit " .. (single and "on" or "off") .. ": on = every player is one unit for the whole game (it replaces the commander; Q does not jump out; a lost unit comes back after 5 s); off (the default) = the normal game, Q jumps into a unit and out of it. Click to change.",
-			fn = function() setRenOptions(renegadeOn(), not renSingle()); openRenMenu() end },
+			tip = "Always in unit " .. (single and "on" or "off") .. " (the default is on): on = every player is one unit for the whole game (it replaces the commander; Q does not jump out; a lost unit comes back after 5 s); off = the normal game, Q jumps into a unit and out of it. Default: on. Click to change.",
+			fn = function()
+				S.renSingleOff = renSingle() or nil -- (on -> off, off -> on)
+				if renegadeOn() then setRenOptions(true, renSingle()) end
+				openRenMenu()
+			end },
 	}
 	local w = 270
 	ui.renMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
@@ -2440,7 +2445,8 @@ function widget:Update()
 	if cfg.renegade == "1" and S and lan and lan.step == "in" and not cfg.renegadeSet and clock() > 10 then
 		cfg.renegadeSet = true
 		log("test: Renegade on")
-		setRenOptions(true, cfg.renegadeSingle == "1")
+		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the jump mode unless renegadeSingle=1)
+		setRenOptions(true, renSingle())
 	end
 	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then
 		cfg.renMenu = nil -- test: the submenu of Renegade (On / Off, Always in unit) is opened (a picture of it)
