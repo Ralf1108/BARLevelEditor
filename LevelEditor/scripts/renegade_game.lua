@@ -309,6 +309,33 @@ local function lift(team, f)
 	if TEST and (inp.liftLogged or 0) < 3 and inp.alt ~= before then inp.liftLogged = (inp.liftLogged or 0) + 1; Spring.Echo(string.format("[Renegade] lift: wanted height %.0f (now %.0f)", inp.alt, y - Spring.GetGroundHeight(x, z))) end
 end
 
+-- Helpers for the units that are moved by hand (the reverse gear, the jump): a place kept inside the map, and the test whether one step to a new place is possible.
+local EDGE = 16 -- Elmo from the edge of the map that a unit is not moved beyond
+local function clampMap(x, z)
+	return math.max(EDGE, math.min(Game.mapSizeX - EDGE, x)), math.max(EDGE, math.min(Game.mapSizeZ - EDGE, z))
+end
+-- Is another unit (not an aircraft) in the way at nx, nz, nearer to it than the unit is now (x, z)? Units that are very small do not count.
+local function blockedByUnit(u, x, z, nx, nz)
+	local r = (Spring.GetUnitRadius(u) or 20) * 0.8
+	for _, o in ipairs(Spring.GetUnitsInCylinder(nx, nz, r + 60)) do
+		if o ~= u then
+			local od = UnitDefs[Spring.GetUnitDefID(o) or -1]
+			if od and not od.canFly then
+				local ox, _, oz = Spring.GetUnitPosition(o)
+				if ox and (ox - nx) ^ 2 + (oz - nz) ^ 2 < (r + (Spring.GetUnitRadius(o) or 10) * 0.8) ^ 2 and (ox - x) ^ 2 + (oz - z) ^ 2 > (nx - ox) ^ 2 + (nz - oz) ^ 2 then return true end
+			end
+		end
+	end
+	return false
+end
+-- Can the unit (definition ud) step from x, z to nx, nz (direction dx, dz): inside the map, the terrain lets its movement class stand there (TestMoveOrder: terrain only) and no
+-- other ground unit is in the way
+local function canStep(u, ud, x, z, nx, nz, dx, dz)
+	if not (nx > EDGE and nz > EDGE and nx < Game.mapSizeX - EDGE and nz < Game.mapSizeZ - EDGE) then return false end
+	if Spring.TestMoveOrder and not Spring.TestMoveOrder(ud.id, nx, Spring.GetGroundHeight(nx, nz), nz, dx, 0, dz, true, false, true) then return false end
+	return not blockedByUnit(u, x, z, nx, nz)
+end
+
 -- Reverse gear: S alone (no W) drives a tank, a bot, a spider or a hovercraft backward at REVERSE_SPEED of its speed, the body turned toward the view (the engine would turn the unit around
 -- and drive forward: it has no reverse for these). The unit is moved by hand (MoveCtrl): every frame it goes along the wished direction (S, with A / D to the side), as far as the
 -- terrain allows (TestMoveOrder) and no other unit is in the way, and its heading turns toward the view at its turn rate. Not for ships, aircraft and buildings (gunships have their own).
@@ -346,8 +373,7 @@ local function reverse(u, inp, ud, turn)
 			else
 				local x0, _, z0 = Spring.GetUnitPosition(u)
 				local h0 = Spring.GetUnitHeading(u) * 2 * math.pi / 65536
-				local tx = math.max(16, math.min(Game.mapSizeX - 16, x0 + math.sin(h0) * 150))
-				local tz = math.max(16, math.min(Game.mapSizeZ - 16, z0 + math.cos(h0) * 150))
+				local tx, tz = clampMap(x0 + math.sin(h0) * 150, z0 + math.cos(h0) * 150)
 				Spring.GiveOrderToUnit(u, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
 				inp.moving = true
 			end
@@ -371,22 +397,7 @@ local function reverse(u, inp, ud, turn)
 	local dx, dz = -math.sin(h), -math.cos(h)
 	local sp = (ud.speed or 0) / 30 * REVERSE_SPEED
 	local nx, nz = x + dx * sp, z + dz * sp
-	local ok = nx > 16 and nz > 16 and nx < Game.mapSizeX - 16 and nz < Game.mapSizeZ - 16
-	local ny = Spring.GetGroundHeight(nx, nz)
-	if ok and Spring.TestMoveOrder then ok = Spring.TestMoveOrder(ud.id, nx, ny, nz, dx, 0, dz, true, false, true) end
-	if ok then
-		-- another unit in the way (not aircraft): stop; units that are very small do not count
-		local r = (Spring.GetUnitRadius(u) or 20) * 0.8
-		for _, o in ipairs(Spring.GetUnitsInCylinder(nx, nz, r + 60)) do
-			if o ~= u then
-				local od = UnitDefs[Spring.GetUnitDefID(o) or -1]
-				if od and not od.canFly then
-					local ox, _, oz = Spring.GetUnitPosition(o)
-					if ox and (ox - nx) ^ 2 + (oz - nz) ^ 2 < (r + (Spring.GetUnitRadius(o) or 10) * 0.8) ^ 2 and (ox - x) ^ 2 + (oz - z) ^ 2 > (nx - ox) ^ 2 + (nz - oz) ^ 2 then ok = false break end
-				end
-			end
-		end
-	end
+	local ok = canStep(u, ud, x, z, nx, nz, dx, dz)
 	if ok then
 		-- only the velocity is set: with the unit under MoveCtrl the engine moves it by it every frame and draws it between the frames (SetPosition on top moved it twice
 		-- and in jumps); the ground is followed by SetTrackGround
@@ -449,8 +460,7 @@ local function hullSteer(u, inp, ud, f)
 	local ang = h + turn * (w and TURN_ANGLE or math.pi / 2)
 	local dist = w and STEP or 120
 	local x, _, z = Spring.GetUnitPosition(u)
-	local tx = math.max(16, math.min(Game.mapSizeX - 16, x + math.sin(ang) * dist))
-	local tz = math.max(16, math.min(Game.mapSizeZ - 16, z + math.cos(ang) * dist))
+	local tx, tz = clampMap(x + math.sin(ang) * dist, z + math.cos(ang) * dist)
 	Spring.GiveOrderToUnit(u, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
 	inp.moving = true
 	l.frame, l.yaw, l.keys = f, inp.yaw, keys4
@@ -482,8 +492,7 @@ local function steer(team, f)
 	local turned = math.abs(((inp.yaw - l.yaw + 180) % 360) - 180) > TURN
 	if inp.moving and not turned and l.keys == inp.keys % 16 and f - l.frame < REISSUE then return end
 	local x, _, z = Spring.GetUnitPosition(u)
-	local tx = math.max(16, math.min(Game.mapSizeX - 16, x + dx * STEP))
-	local tz = math.max(16, math.min(Game.mapSizeZ - 16, z + dz * STEP))
+	local tx, tz = clampMap(x + dx * STEP, z + dz * STEP)
 	Spring.GiveOrderToUnit(u, CMD.MOVE, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
 	inp.moving = true
 	l.frame, l.yaw, l.keys = f, inp.yaw, inp.keys % 16
@@ -1169,8 +1178,7 @@ local function steerBots()
 				local d = (ux - x) ^ 2 + (uz - z) ^ 2
 				if d < best then best, bx, bz = d, ux, uz end
 			end
-			local tx = math.max(16, math.min(Game.mapSizeX - 16, bx + (math.random() - 0.5) * 300))
-			local tz = math.max(16, math.min(Game.mapSizeZ - 16, bz + (math.random() - 0.5) * 300))
+			local tx, tz = clampMap(bx + (math.random() - 0.5) * 300, bz + (math.random() - 0.5) * 300)
 			Spring.GiveOrderToUnit(id, CMD.FIGHT, { tx, Spring.GetGroundHeight(tx, tz), tz }, 0)
 		end
 	end
