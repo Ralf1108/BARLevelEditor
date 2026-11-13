@@ -57,6 +57,11 @@ function widget:Initialize()
 	R.keyPress = function(...) return widget:KeyPress(...) end -- (the test widgets press keys with it)
 	R.debug = mo.lanrenedebug == "1"
 	R.evo = mo.lanevolution == "1" -- (with Evolution: the keys 1 to 5 use its power-ups)
+	R.powerups = mo.lanrenepowerups == "1" and not R.evo -- (without Evolution: the power-ups of Renegade, the bar and the beacons are drawn here)
+	if R.powerups then
+		local ok, U = pcall(VFS.Include, "luaui/Include/powerups_ui.lua", nil, VFS.ZIP_FIRST)
+		R.U = ok and U or nil
+	end
 	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the takeover mode, the key left of the 1 takes over the unit under the cursor and leaves it)
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 end
@@ -921,10 +926,10 @@ function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
 		return true
 	end
 	-- the keys 1 to 5 (also the number pad): the power-ups of Evolution (Sprint, Repair, Radar Pulse, Cloak, Jammer), the game message of the buttons of its bar
-	if R.on and R.evo and not (mods and (mods.ctrl or mods.alt or mods.meta)) and not (R.picker and R.picker.focus) then
+	if R.on and (R.evo or R.powerups) and not (mods and (mods.ctrl or mods.alt or mods.meta)) and not (R.picker and R.picker.focus) then
 		local n = (key >= 49 and key <= 53) and key - 48 or ((key >= 257 and key <= 261) and key - 256 or nil)
 		if n then
-			if not isRepeat then Spring.SendLuaRulesMsg("evo|use|" .. n) end
+			if not isRepeat then Spring.SendLuaRulesMsg((R.evo and "evo|use|" or "ren|use|") .. n) end
 			return true
 		end
 	end
@@ -1040,6 +1045,7 @@ local function impactPreview(ux, uy, uz, wd, color, bomb)
 end
 
 function widget:DrawWorld()
+	if R.U then R.U.drawBeacons("renBeacons") end -- (the beacons of the power-ups also in the normal game)
 	if not R.on or R.waiting or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
 	if not x then return end
@@ -1926,6 +1932,11 @@ function widget:DrawScreen()
 	drawDamageNumbers(vsy0)
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()
+	if R.U then
+		-- the bar of the power-ups (keys 1 to 5), at the bottom right of the middle, a gap of 40 x scale right of the speedometer
+		local sc = math.min(vsx / 1920, vsy / 1080) * (Spring.GetConfigFloat("ui_scale", 1) or 1)
+		R.U.bar({ team = Spring.GetMyTeamID(), rule = "renAbilities", unit = R.unit, slots = {}, labels = true }, vsx / 2 + 230 * sc, 12 * sc, vsx / 2 + 630 * sc, 76 * sc, sc)
+	end
 	local cx, cy, s = vsx / 2, vsy / 2, math.max(8, vsy / 90)
 	-- what the crosshair points at and whether the main weapon reaches it: green = within reach, red = too far, white = the sky
 	local h = R.hit

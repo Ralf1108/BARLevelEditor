@@ -74,6 +74,19 @@ How a player gets a unit and how it drives: the synchronized part of the game mo
 - **Measured with `zz_ren90.lua`** (`pve_test.ps1 -Ren -RenTest -Quick -Widget zz_ren90.lua`): Pawn standing: peak 66.2 Elmo, 59 frames, lands at height 0.1; Pawn walking (87 Elmo/s): the speed stays 87 in the air, 59 frames, then it walks on at 87 after 9 frames; Titan (`armbanth`): peak 33.6, 42 frames; Bulldog (tank) and Webber (spider): height 0.0 the whole time.
 - **Not measured:** the walk animation in the air, a jump against a wall or a cliff (the sideways stop), a jump onto a unit, two players; the feel of the height, the speed of the fall and the pause (`JUMP_HEIGHT`, `jumpGravity`, `JUMP_COOLDOWN`).
 
+## Power-ups (`lanrenepowerups`)
+
+- **Option:** `lanrenepowerups=1` without `lanevolution` (`POWERUPS`); with Evolution its own power-ups run (`evo_game.lua`, keys 1 to 5 of the widget send `evo|use|<n>`).
+- **Logic:** `powerups.lua` (shared with Evolution, see [shared-code.md](shared-code.md)): the gadget gives `P.new` its player records (`pu.recs`: team -> `{ team, name, unit, ai = false }`, `pu.list`, `pu.owner`: unit id -> record, rebuilt every 15 frames from `units`), `say` (`G.sayer("Renegade")`), `randomSpot` (`G.randomPlace`, 10 tries, 200 from the edge, ground above 2), `count` (2 to 6 beacons of each kind: one per 3000 x 3000 Elmo, at least one per two players), `healMsg = "renHeal"` (the green plus signs of the heal effect), `abilitiesRule = "renAbilities"` (team rule), `beaconsRule = "renBeacons"` (game rule), `testing`, `fireAfter`.
+- **Beacons:** placed at frame 40 (`puFrame`: 5 kinds x `count`, 30 on Comet Catcher); a unit of a player within 80 Elmo takes the power-up it does not have; a taken beacon lies somewhere else 45 s later; the power-ups are lost with the unit (`UnitDestroyed`: `A.lose`), not when the player leaves it (takeover mode).
+- **Use:** the widget sends `ren|use|<n>` (keys 1 to 5, only with the view on); the gadget calls `A.use(puRecord(team), n)`: ready, not on cooldown, the energy (the 200000 of a Renegade team: the costs are no limit, the cooldowns are).
+- **Cloak:** the unit of a human is on hold fire while it is cloaked and **stays on hold fire** after it (`fireAfter`: 0; 2 in the normal mode of the game), firing ends the cloak; the end of Radar Pulse leaves the three times sight (`G.setSight`); a jump in a sprint keeps the speed of the sprint (`GetUnitMoveTypeData` `maxSpeed`).
+- **Widget (`R.powerups`, `R.U`):** `powerups_ui.lua` draws the bar of five buttons (`U.bar`, labels = the key numbers) at the bottom right of the middle (from 230 to 630 x scale right of the screen middle, a gap of about 40 x scale to the speedometer, 12 to 76 x scale above the bottom) while the view is on, and the beacons (`U.drawBeacons("renBeacons")`) in `DrawWorld` also in the normal game.
+- **Lobby:** the third button of the Renegade submenu (**Power-ups: On / Off**, `S.renPowerups`), `LAN_VERSION` 31.
+- **Test hooks (`lanrenotest`):** `ren|test|7` all five power-ups for the team, `ren|test|8` the unit onto the nearest beacon.
+- **Measured with `zz_ren92.lua`** (`pve_test.ps1 -Ren -RenTest -RenPowerups -Quick -Widget zz_ren92.lua`): 30 beacons; on the beacon: "Player found Radar Pulse."; Repair 111 -> 189 of 370 health (20 % = 74 and the reclaim); Sprint 130.5 of 87 Elmo/s; Radar Pulse sight 2500, then back to 1287 (3 x 429); the fire state is 0 before, during and after the 15 s of the Cloak; picture: bar with the numbers, a beacon column and ring, the heal effect.
+- **Not measured:** two players, a computer team that takes beacons (the bots do not), the look in the normal game of the takeover mode, the bar next to the dials at other screen sizes.
+
 ## Takeover mode and single unit mode
 
 - **Takeover mode and single unit mode (`SINGLE`, `lanrenesingle`, `possess`, `release`, `adopt`, `takeoverKey`):** game option `lanrenegade=1` switches the mode on;

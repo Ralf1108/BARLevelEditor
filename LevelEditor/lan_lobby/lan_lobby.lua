@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 30, stamp = "2026-11-12 12:30" }
+local LAN_VERSION = { number = 31, stamp = "2026-11-13 22:30" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -478,9 +478,10 @@ selectScenario = function(name)
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
 	if S.battle.modoptions.lanevolution then S.battle.modoptions.lanevolution = nil; toBattle("SETSCRIPTTAGS game/modoptions/lanevolution=") end -- a scenario has its own rules
 	if S.battle.modoptions.lanrenegade then
-		S.battle.modoptions.lanrenegade, S.battle.modoptions.lanrenesingle = nil, nil
+		S.battle.modoptions.lanrenegade, S.battle.modoptions.lanrenesingle, S.battle.modoptions.lanrenepowerups = nil, nil, nil
 		toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=")
 		toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=")
+		toBattle("SETSCRIPTTAGS game/modoptions/lanrenepowerups=")
 	end
 	for _, c in ipairs(S.conns) do c.versusSet = nil end
 	-- Capture the Flag and Reclaim the Fame are played human against human (a computer opponent does not play them): the opponent team of the scenario
@@ -2209,20 +2210,24 @@ local REN_TIP = "Renegade: you steer a unit from the inside (first or third pers
 	"your units to take it over and the same key again to leave it. Always in unit: every player is one unit for the whole game (instead of the commander; a lost unit comes back 5 s later). The host switches it on or off."
 -- Always in unit is on by default (the choice is kept in S.renSingleOff, also while Renegade is off; the game options are written when Renegade is switched on)
 local function renSingle() return not (S and S.renSingleOff) end
+-- Power-ups (Sprint, Repair, Radar Pulse, Cloak, Jammer with beacons on the map, keys 1 to 5) are off by default (the choice is kept in S.renPowerups; with Evolution its own power-ups are used)
+local function renPowerups() return S and S.renPowerups or false end
 local function renShown()
 	if S then return renegadeOn() end
 	local l = lobby()
 	return l and l.modoptions and l.modoptions.lanrenegade == "1" or false
 end
 -- on: the game options lanrenegade=1 and lanrenesingle=0 (the takeover mode) for everybody in the room; off: both removed. lanrenesingle is always written when it is on (a missing one means the single unit mode)
-local function setRenOptions(on, single)
+local function setRenOptions(on, single, powerups)
 	if not S or S.battle.scenario then return end
 	S.battle.modoptions.lanrenegade = on and "1" or nil
 	S.battle.modoptions.lanrenesingle = on and (single and "1" or "0") or nil
+	S.battle.modoptions.lanrenepowerups = (on and powerups) and "1" or nil
 	toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=" .. (on and "1" or ""))
 	toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=" .. (on and (single and "1" or "0") or ""))
+	toBattle("SETSCRIPTTAGS game/modoptions/lanrenepowerups=" .. ((on and powerups) and "1" or ""))
 	syncPveGame()
-	log("Renegade", on and (single and "on, always in unit" or "on, takeover mode") or "off")
+	log("Renegade", on and ((single and "on, always in unit" or "on, takeover mode") .. (powerups and ", power-ups" or "")) or "off")
 	say(on and (single and "The game mode Renegade is on: every player steers one unit for the whole game (instead of the commander)." or "The game mode Renegade is on: in the game press the key left of the 1 over one of your units to take it over, the same key again to leave it.") or "The game mode Renegade is off.")
 end
 
@@ -2232,15 +2237,22 @@ local function openRenMenu()
 	local b = ui.renMenuBtn
 	if not b or not S then return end
 	local sx, sy = b:LocalToScreen(b.width + 4, 0)
-	local on, single = renegadeOn(), renSingle()
+	local on, single, power = renegadeOn(), renSingle(), renPowerups()
 	local items = {
 		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Renegade is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch it for everybody in the room: in the game the key left of the 1 takes over the unit under the cursor and leaves it again.",
-			fn = function() setRenOptions(not renegadeOn(), renSingle()); openRenMenu() end },
+			fn = function() setRenOptions(not renegadeOn(), renSingle(), renPowerups()); openRenMenu() end },
 		{ caption = "Always in unit: " .. (single and "On" or "Off"), class = single and "action_button" or "negative_button",
 			tip = "Always in unit " .. (single and "on" or "off") .. " (the default is on): on = every player is one unit for the whole game (it replaces the commander; the key left of the 1 does not leave the unit; a lost unit comes back after 5 s); off = the normal game, the key left of the 1 takes over a unit and leaves it again. Default: on. Click to change.",
 			fn = function()
 				S.renSingleOff = renSingle() or nil -- (on -> off, off -> on)
-				if renegadeOn() then setRenOptions(true, renSingle()) end
+				if renegadeOn() then setRenOptions(true, renSingle(), renPowerups()) end
+				openRenMenu()
+			end },
+		{ caption = "Power-ups: " .. (power and "On" or "Off"), class = power and "action_button" or "negative_button",
+			tip = "Power-ups " .. (power and "on" or "off") .. " (the default is off): on = beacons of five colors lie on the map, a unit that drives over one gets the power-up until it is lost (Sprint, Repair, Radar Pulse, Cloak, Jammer); in the game the keys 1 to 5 use them. With the game mode Evolution on, its own power-ups are used instead. Click to change.",
+			fn = function()
+				S.renPowerups = (not renPowerups()) or nil
+				if renegadeOn() then setRenOptions(true, renSingle(), renPowerups()) end
 				openRenMenu()
 			end },
 	}

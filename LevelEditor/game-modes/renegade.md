@@ -24,6 +24,12 @@ Two ways to play in LAN Play (settings of the button **Renegade**):
 - **Always in unit On** (the default): every player is one unit for the whole game.
 - **Always in unit Off** (takeover mode): you play the normal game with all your units. Hold the mouse over one of your units and press **the key left of the 1** to take it over, the same key to leave it. If the unit is lost you are out of it.
 
+Third setting of the button **Renegade**: **Power-ups** (Off by default):
+- **On:** five colors of beacons lie on the map (Sprint blue, Repair green, Radar Pulse orange, Cloak yellow, Jammer violet).
+  - Drive your unit over a beacon: you have that power-up until your unit is lost.
+  - Keys **1 to 5** use them (the bar at the bottom shows the numbers, the cooldown and the time left); a taken beacon comes back somewhere else after 45 s.
+  - With the game mode **Evolution** on, its own power-ups are used instead (the same five, the same keys).
+
 ## Controls
 
 | Input | Effect |

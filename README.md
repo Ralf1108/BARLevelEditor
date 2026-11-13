@@ -115,7 +115,7 @@ Both run on any map, in LAN Play or alone with a start file.
 |---|---|---|
 | Idea | every player has **one unit**; kills evolve it through 10 levels up to a tier 3 giant | you **are one unit**, seen from the inside: first or third person, like a shooter |
 | Highlights | power-ups, regeneration, a gift and **Armageddon** at level 10 | W A S D drives, the mouse aims, three mouse buttons fire the weapons; aircraft, bombs, binoculars |
-| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods | On / Off, Always in unit (or take over any of your units with the key left of the 1) |
+| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups |
 | Try it alone | `LevelEditor\start_evolution.bat` | `LevelEditor\start_renegade.bat` |
 | Status | playable | experimental, not tested with several humans |
 

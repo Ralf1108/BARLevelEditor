@@ -27,6 +27,7 @@
 
 - `lanrenegade=1`: the mode (gadget and widget load only with it).
   - `lanrenebots=<n>` (0 to 30): computer Peewees that hunt the players.
+  - `lanrenepowerups=1`: the power-ups without Evolution (see [renegade-units.md](renegade-units.md), Power-ups); with `lanevolution` Evolution's own are used.
   - `lanrenedebug=1`: the debug menu (turn into a unit, spawn an enemy).
   - `lanrenotest=1`: test hooks (see Tests below).
 - **Start scripts:** both quick start scripts (`start_renegade.ps1`, `start_evolution.ps1`) use `Resolve-ExtraGame` and `Start-ExtraGame` of `shared/bar_common.ps1` (data folder, extra game, engine, writing and starting the start script); `-DryRun` only writes the start script (tests: `ps_test.ps1`).
@@ -47,7 +48,7 @@ Widget -> gadget (`SendLuaRulesMsg`; the sender's team must own a unit):
 
 - `ren|<yaw>|<pitch>|<keys>|<fire>|<x>|<y>|<z>|<unit>`: the view in whole degrees (yaw 0 looks along +z, 90 along +x), keys W 1, A 2, S 4, D 8, `fire` bits left 1, right 2, middle 4; always (also without a button: the turret follows the view) the point under the crosshair, or a far point in the sky, and the unit there (an aircraft in the anti-air circle: the lock) or -1.
   - Sent at once when keys or buttons change, otherwise at most every 3 frames and only when the text changed.
-- `ren|unit|<name>`: debug, turn into that unit. `ren|spawn|<name>`: debug, an enemy of that kind. `ren|test|1`, `ren|test|2`, `ren|test|3`: `lanrenotest` only.
+- `ren|unit|<name>`: debug, turn into that unit. `ren|spawn|<name>`: debug, an enemy of that kind. `ren|test|1` to `ren|test|8`: `lanrenotest` only; `ren|use|<n>`: a power-up (only with `lanrenepowerups`, see renegade-units.md).
 
 Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRespawn` (frame of the return after a loss, 0 = alive); unit rules `renSlots` ("left;right;middle", each a comma list of weapon numbers), `renAA` and `renHY` (comma lists, see Anti-air in [renegade-shooting.md](renegade-shooting.md)).
 
@@ -62,7 +63,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 
 ## 5. Tests (sandbox, `pve_test.ps1 -Ren ...`, lines in the infolog)
 
-- `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`.
+- `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`, `-RenPowerups` = `lanrenepowerups=1`, `-RenTakeover` = `lanrenesingle=0`.
 - Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
 
 | Widget | Checks |
@@ -80,6 +81,10 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | `zz_ren9.lua` | respawn with the countdown, `GetUnitWeaponVectors` |
 | `zz_ren10.lua`, `zz_ren11.lua`, `zz_ren13.lua` | anti-air circle and lock (turret `armrl`), Titan starburst (point only), Titan laser (lock) |
 | `zz_ren12.lua` | the menu in the mode "Spawn enemy", spawned units: distance 1001 Elmo, aircraft 200 up |
+| `zz_ren90.lua` | the jump (Space) of a two-legged bot; tank and spider do not jump |
+| `zz_ren91.lua` | Renegade with Evolution: the keys 1 to 5 use the power-ups (`-Ren -RenTakeover -RenTest -Evo -EvoTest -Debug`) |
+| `zz_ren92.lua` | Renegade power-ups without Evolution: beacon, the five keys, the bar (`-Ren -RenTest -RenPowerups`) |
+| `zz_sight.lua` | the sight of the unit: Renegade 3 times, Radar Pulse, back (`G.setSight`) |
 | `zz_weapondump.lua` | one `[zzwep]` line per weapon (for the table) |
 
 ## 6. Not done and open

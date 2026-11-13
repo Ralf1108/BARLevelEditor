@@ -64,6 +64,7 @@ local SINGLE = MO.lanrenesingle ~= "0"
 -- with Evolution (game option lanevolution) the unit of a player is replaced when it evolves and when it comes back after a death: in the takeover mode the player takes over the next
 -- one by itself (follow: team -> the frame until which the next unit is waited for; the unit is the team rules parameter evoUnit of evo_game.lua)
 local EVO = MO.lanevolution == "1"
+local POWERUPS = MO.lanrenepowerups == "1" and not EVO -- the power-ups without Evolution (game option lanrenepowerups; with Evolution its own are used)
 local follow = {}
 local FOLLOW_FRAMES = 450 -- (15 s: a respawn takes its time)
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
@@ -975,12 +976,84 @@ local function shoot(team, f, force)
 	end
 end
 
+-- Power-ups without Evolution (game option lanrenepowerups=1): Sprint, Repair, Radar Pulse, Cloak and Jammer, the beacons that give them lie on the map and the keys 1 to 5 of the widget
+-- use them (message ren|use|<n>); the data and the logic are powerups.lua (shared with Evolution). pu.recs: team -> player record, pu.list: the same as a list, pu.owner: unit id -> record
+local P = POWERUPS and VFS.Include("luaui/Include/powerups.lua", nil, VFS.ZIP_FIRST) or nil
+local pu = { recs = {}, list = {}, owner = {} }
+local function puRecord(team)
+	local r = pu.recs[team]
+	if not r then
+		local _, leader = Spring.GetTeamInfo(team, false)
+		local name = leader and Spring.GetPlayerInfo(leader, false)
+		r = { team = team, name = (name and name ~= "") and name or ("Team " .. team), ai = false }
+		pu.recs[team] = r
+		pu.list[#pu.list + 1] = r
+	end
+	r.unit = units[team]
+	return r
+end
+local function puFrame(f)
+	if not POWERUPS or f < 40 then return end
+	if not pu.A then
+		pu.A = P.new({
+			players = pu.list, owner = pu.owner, say = G.sayer("Renegade"), testing = TEST, healMsg = "renHeal", abilitiesRule = "renAbilities", beaconsRule = "renBeacons",
+			-- a Renegade unit is on hold fire (the player aims and fires), also after the Cloak; in the normal mode of the game it fires at will
+			fireAfter = function(p) local inp = input[p.team]; return (inp and inp.normal) and 2 or 0 end,
+			randomSpot = function() local x, _, z = G.randomPlace(UnitDefNames[START_UNIT].id, { tries = 10, margin = 200, minY = 2 }); return x, z end,
+			-- beacons of every power-up at the start: one per 3000 x 3000 Elmo and at least one per two players, 2 to 6 of each kind
+			count = function() return math.max(2, math.min(6, math.max(math.floor(Game.mapSizeX * Game.mapSizeZ / (3000 * 3000) + 0.5), math.ceil((#Spring.GetTeamList() - 1) / 2)))) end,
+		})
+		for kindNo = 1, #P.ABILITIES do
+			for _ = 1, pu.A.count() do pu.A.place(kindNo) end
+		end
+		pu.A.publish()
+	end
+	if f % 15 == 0 then
+		for team in pairs(units) do puRecord(team) end
+		pu.owner = pu.owner or {}
+		for k in pairs(pu.owner) do pu.owner[k] = nil end
+		for _, r in ipairs(pu.list) do
+			r.unit = units[r.team]
+			if r.unit then pu.owner[r.unit] = r end
+		end
+		pu.A.update(f)
+	end
+end
+
 -- the test hooks "ren|test|n" (renegade_test.lua, loaded only with lanrenotest=1)
 local testHooks = TEST and VFS.Include("luaui/Include/renegade_test.lua", nil, VFS.ZIP_FIRST)({ units = units, input = input, startUnit = START_UNIT,
-	engineBombs = function() TESTENGINE = true end }) or nil
+	engineBombs = function() TESTENGINE = true end,
+	-- the power-ups: all five at once for the team; the unit onto the nearest beacon
+	givePowerups = function(team)
+		if not pu.A then return end
+		local r = puRecord(team)
+		r.abilities = r.abilities or {}
+		for i = 1, #P.ABILITIES do r.abilities[i] = true end
+		pu.A.publish()
+	end,
+	toBeacon = function(team)
+		local u = units[team]
+		if not (pu.A and u) then return end
+		local x, _, z = Spring.GetUnitPosition(u)
+		local best, bd
+		for _, b in ipairs(pu.A.beacons) do
+			local d = (b.x - x) ^ 2 + (b.z - z) ^ 2
+			if not bd or d < bd then best, bd = b, d end
+		end
+		if best then
+			Spring.SetUnitPosition(u, best.x, Spring.GetGroundHeight(best.x, best.z), best.z)
+			Spring.Echo(string.format("[Renegade] test: the unit is put on the beacon of kind %d at %d %d (%d beacons)", best.kind, best.x, best.z, #pu.A.beacons))
+		end
+	end }) or nil
 
 function gadget:RecvLuaMsg(msg, playerID)
 	if testHooks and testHooks(msg, playerID) then return end
+	local useN = POWERUPS and msg:match("^ren|use|(%d+)$")
+	if useN then
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		if not spec and units[team] and pu.A then pu.A.use(puRecord(team), tonumber(useN)) end
+		return
+	end
 	local spawn = msg:match("^ren|spawn|([%w_]+)$")
 	if spawn then
 		-- debug: an enemy unit 1000 Elmo ahead of the player's view, a ground unit on the ground, an aircraft 200 Elmo up; it fights toward the player
@@ -1349,6 +1422,7 @@ end
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
 	if not EVO and f % 30 == 0 then autoReclaim() end
+	puFrame(f)
 	for team, untilFrame in pairs(follow) do
 		local id = Spring.GetTeamRulesParam(team, "evoUnit")
 		if units[team] then
@@ -1421,6 +1495,11 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 		Spring.SetTeamRulesParam(attackerTeam, "renKills", (Spring.GetTeamRulesParam(attackerTeam, "renKills") or 0) + 1, { public = true })
 	end
 	if units[team] == u then
+		if pu.A and pu.recs[team] then
+			pu.A.lose(pu.recs[team]) -- (the power-ups are gone with the unit)
+			pu.recs[team].unit = nil
+			pu.A.publish()
+		end
 		Spring.SetTeamRulesParam(team, "renDeaths", (Spring.GetTeamRulesParam(team, "renDeaths") or 0) + 1, { public = true })
 		units[team] = nil
 		Spring.SetTeamRulesParam(team, "renUnit", 0, { public = true })

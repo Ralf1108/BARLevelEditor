@@ -1,11 +1,13 @@
 -- Test hooks of Renegade (messages "ren|test|<n>" of the test widgets of test-data/tools): only loaded by renegade_game.lua with the game option lanrenotest=1.
--- Returns a function that takes the state of the gadget (env = { units, input, startUnit, engineBombs }) and gives back handler(msg, playerID) -> true when the message was a hook.
+-- Returns a function that takes the state of the gadget (env = { units, input, startUnit, engineBombs, givePowerups, toBeacon }) and gives back handler(msg, playerID) -> true when the message was a hook.
 --   ren|test|1  an enemy unit (hold fire) 150 Elmo in front of the unit of the player
 --   ren|test|2  the unit of the player is destroyed (respawn)
 --   ren|test|3  an enemy gunship (hold fire) 250 Elmo ahead, 100 Elmo up
 --   ren|test|4  the engine's own bomb release instead of the one of the gadget
 --   ren|test|5  the unit takes more damage than it has health (a shot-down aircraft must crash)
 --   ren|test|6  the unit is hurt to 30 % health and three wrecks lie 100 Elmo ahead of it (the automatic reclaim must heal it)
+--   ren|test|7  the team gets all five power-ups (lanrenepowerups)
+--   ren|test|8  the unit is put onto the nearest beacon of the power-ups (it takes the power-up)
 return function(env)
 	local units, input, startUnit = env.units, env.input, env.startUnit
 	local hooks = {}
@@ -61,6 +63,14 @@ return function(env)
 			local fid = Spring.CreateFeature("armbull_dead", x + 100, Spring.GetGroundHeight(x + 100, z + k * 60), z + k * 60, 0, team)
 			Spring.Echo("[Renegade] test wreck " .. tostring(fid) .. " metal " .. tostring(fid and (Spring.GetFeatureResources(fid))))
 		end
+	end
+	hooks["ren|test|7"] = function(playerID)
+		local _, team = own(playerID)
+		if team then env.givePowerups(team) end
+	end
+	hooks["ren|test|8"] = function(playerID)
+		local _, team = own(playerID)
+		if team then env.toBeacon(team) end
 	end
 	hooks["ren|test|5"] = function(playerID)
 		local u = own(playerID)
