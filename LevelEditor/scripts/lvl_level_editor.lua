@@ -2038,6 +2038,11 @@ local function panelPress(mx, my, button)
 	return true
 end
 
+-- The pointer is over the map: not over the menu, a team button, a side button or the help board (the mouse modes only take clicks there)
+local function onMap(mx, my)
+	return not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen
+end
+
 function widget:MousePress(mx, my, button)
 	rescale()
 	if tm.menuPress(mx, my, button) then
@@ -2046,7 +2051,7 @@ function widget:MousePress(mx, my, button)
 	if gen.edit and not inPanel(mx, my) then
 		gen.finish(true)
 	end
-	if gen.armed and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if gen.armed and onMap(mx, my) then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
@@ -2059,7 +2064,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if search.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if search.pick and onMap(mx, my) then
 		if button == 1 then
 			local kind, id = Spring.TraceScreenRay(mx, my)
 			if kind == "unit" and Spring.ValidUnitID(id) then
@@ -2084,12 +2089,12 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if area:armed() and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if area:armed() and onMap(mx, my) then
 		if area:press(button) then
 			return true
 		end
 	end
-	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick and not ar.pick then
+	if button == 1 and onMap(mx, my) and not td.pick and not ctf.pick and not ar.pick then
 		local alt, ctrl, _, shift = Spring.GetModKeyState()
 		local i = alt and not ctrl and not shift and td.dragAt()
 		if i and canEdit() then
@@ -2097,7 +2102,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if button == 1 and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen and not td.pick and not ctf.pick and not ar.pick then
+	if button == 1 and onMap(mx, my) and not td.pick and not ctf.pick and not ar.pick then
 		local alt, ctrl, _, shift = Spring.GetModKeyState()
 		if alt and not ctrl and not shift and ctf.grab() then
 			return true -- the point follows the mouse while the button is held (ctf.sample)
@@ -2106,7 +2111,7 @@ function widget:MousePress(mx, my, button)
 			return true -- the Arena Point follows the mouse while the button is held (ar.sample)
 		end
 	end
-	if td.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if td.pick and onMap(mx, my) then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
@@ -2124,7 +2129,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if ctf.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if ctf.pick and onMap(mx, my) then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
@@ -2136,7 +2141,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if ar.pick and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if ar.pick and onMap(mx, my) then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
@@ -2148,7 +2153,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if delMode and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if delMode and onMap(mx, my) then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
@@ -2160,7 +2165,7 @@ function widget:MousePress(mx, my, button)
 			return true
 		end
 	end
-	if mazeKind and not inPanel(mx, my) and not teamAt(mx, my) and not sideAt(mx, my) and not helpOpen then
+	if mazeKind and onMap(mx, my) then
 		if button == 1 then
 			local _, pos = Spring.TraceScreenRay(mx, my, true)
 			if pos and canEdit() then
