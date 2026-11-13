@@ -180,6 +180,25 @@ function Get-AiSpec([string]$name) {
     return [pscustomobject]@{ Short = 'NullAI'; Version = '0.1'; Profile = '' }
 }
 
+# The installation for a quick start (start_renegade.ps1, start_evolution.ps1): the data folder (without -Data: BAR is searched and remembered), the name of the extra game
+# "Level Editor Scenarios" of the setup and the engine. Returns @{ Data; Game; Exe }.
+function Resolve-ExtraGame([string]$data) {
+    if (-not $data) { $memo = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor\bar_path.txt'; $data = Join-Path (Find-Bar @() $memo) 'data' }
+    $pointer = Join-Path $data "games\$ScenarioGamePointer"
+    if (-not (Test-Path $pointer)) { Fail 'The extra game of the Level Editor is not installed: run install_editor.bat first.' }
+    return @{ Data = $data; Game = (Get-Content $pointer)[1].Trim(); Exe = (Join-Path (Get-Engine $data).FullName 'spring.exe') }
+}
+
+# Writes the start script of a quick start and starts the game with it (the game window is waited for). -DryRun: only writes the file and says where it is.
+function Start-ExtraGame($ctx, [string]$scriptText, [string]$file, [string]$message, [switch]$dryRun) {
+    [IO.File]::WriteAllText($file, $scriptText, (New-Object Text.UTF8Encoding $false))
+    Write-Host $message -ForegroundColor Cyan
+    if ($dryRun) { Write-Host "Dry run: the start script is $file"; return }
+    # (spring.exe is a window application: "&" does not wait for it and $LASTEXITCODE stays empty, so Start-Process -Wait)
+    $proc = Start-Process -FilePath $ctx.Exe -ArgumentList @('--write-dir', "`"$($ctx.Data)`"", "`"$file`"") -Wait -PassThru
+    if ($proc.ExitCode -ne 0) { Write-Host "The game ended with an error, see $($ctx.Data)\infolog.txt" -ForegroundColor Yellow; exit 1 }
+}
+
 # ---------------------------------------------------------------- The extra game of the scenarios: "Level Editor Scenarios <version>"
 # One game for every scenario (Tower Defense, Capture the Flag, Reclaim the Fame, Evolution, restrictions, indestructible buildings, the briefing): the gadgets
 # and widgets switch themselves on only by the game options of a scenario. The version is made of the texts of its files and of the BAR version it builds on

@@ -29,6 +29,7 @@
   - `lanrenebots=<n>` (0 to 30): computer Peewees that hunt the players.
   - `lanrenedebug=1`: the debug menu (turn into a unit, spawn an enemy).
   - `lanrenotest=1`: test hooks (see Tests below).
+- **Start scripts:** both quick start scripts (`start_renegade.ps1`, `start_evolution.ps1`) use `Resolve-ExtraGame` and `Start-ExtraGame` of `shared/bar_common.ps1` (data folder, extra game, engine, writing and starting the start script); `-DryRun` only writes the start script (tests: `ps_test.ps1`).
 - **Quick start:** `LevelEditor\start_renegade.bat [map] [AI] [bots]` (default `Hooked 1.1`, `NullAI`, 3 bots) runs `ensure_installed.ps1` and `scripts\start_renegade.ps1`, which writes `LevelEditor\renegade_script_installed.txt` (ignored by git) and starts the engine on it: you in team 0 (Armada), the computer player in team 1 (Cortex), options `lanrenegade=1; lanplay=1; deathmode=neverend; lanrenebots=<n>; lanrenedebug=1` (`-DebugMode 0` without the debug menu).
   - Do not change the bat file while the game runs (cmd reads it by position).
 

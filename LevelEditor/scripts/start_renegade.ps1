@@ -5,16 +5,14 @@
 #   -Bots 3             computer Peewees of that player that walk around and fight you (a lost one comes back; 0 = none)
 #   -DebugMode 0        without the debug menu (the button above the weapon: turn into another unit)
 #   -QuickTest          for quick tests: without the Legion units, the extra units of the release candidates and the Scavenger and Raptor units (they take time to load); without it all of them are loaded
-param([string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'NullAI', [int]$Bots = 3, [int]$DebugMode = 1, [switch]$QuickTest)
+param([switch]$DryRun, [string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'NullAI', [int]$Bots = 3, [int]$DebugMode = 1, [switch]$QuickTest)
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
-if (-not $Data) { $memo = Join-Path $env:LOCALAPPDATA 'BAR-Level-Editor\bar_path.txt'; $Data = Join-Path (Find-Bar @() $memo) 'data' }   # no -Data: the installation is searched (and remembered)
-$pointer = Join-Path $Data "games\$ScenarioGamePointer"
-if (-not (Test-Path $pointer)) { Fail 'The extra game of the Level Editor is not installed: run install_editor.bat first.' }
-$game = (Get-Content $pointer)[1].Trim()
+$ctx = Resolve-ExtraGame $Data
+$Data = $ctx.Data
+$game = $ctx.Game
 $spec = Get-AiSpec $Ai
-$exe = Join-Path (Get-Engine $Data).FullName 'spring.exe'
 $script = @"
 [game]
 {
@@ -37,7 +35,5 @@ $script = @"
 }
 "@
 $file = Join-Path $repo 'LevelEditor\renegade_script_installed.txt'
-[IO.File]::WriteAllText($file, $script, (New-Object Text.UTF8Encoding $false))
-Write-Host "Renegade on $Map against $($spec.Short) with $Bots Peewees: mouse = look, W A S D = walk, left / right / middle button = short range / long range / missiles, Insert (or the key left of the 1) = normal camera and back$(if ($DebugMode) { ", Tab = free mouse for the debug menu" }) ..." -ForegroundColor Cyan
-$proc = Start-Process -FilePath $exe -ArgumentList @('--write-dir', "`"$Data`"", "`"$file`"") -Wait -PassThru
-if ($proc.ExitCode -ne 0) { Write-Host "The game ended with an error, see $Data\infolog.txt" -ForegroundColor Yellow; exit 1 }
+$message = "Renegade on $Map against $($spec.Short) with $Bots Peewees: mouse = look, W A S D = walk, left / right / middle button = short range / long range / missiles, Insert (or the key left of the 1) = normal camera and back$(if ($DebugMode) { ", Tab = free mouse for the debug menu" }) ..."
+Start-ExtraGame $ctx $script $file $message -dryRun:$DryRun
