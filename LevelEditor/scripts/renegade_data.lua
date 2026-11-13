@@ -1,7 +1,7 @@
 -- The weapon tables of Renegade (data only, loaded by renegade_game.lua with VFS.Include("luaui/Include/renegade_data.lua")): which weapon of a unit is on which mouse button,
--- the highest height and the bomb height of aircraft, the picture of a weapon. The block below is written by test-data/tools/renegade_weapons.py
+-- the highest height and the bomb height of aircraft, the picture of a weapon. The block below is written by test-data/generators/renegade_weapons.py
 -- (update_renegade_weapons.bat in game-modes) from the tables in game-modes: change those, not this file.
--- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)
+-- BEGIN WEAPONS (made by test-data/generators/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)
 local WEAPON_BUTTONS = {
 	armaak = { L = { 2 }, R = { 1 }, M = {  } },
 	armaas = { L = { 3 }, R = { 2 }, M = {  } },

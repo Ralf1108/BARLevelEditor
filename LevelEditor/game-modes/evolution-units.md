@@ -2,7 +2,7 @@
 
 [Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)
 
-The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); the csv is the source (change *Level*, *Long range* and *Note* there, then double-click `update_evolution_units.bat` in this folder: it writes this page and the lists of `evo_game.lua`); it is made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.
+The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); the csv is the source (change *Level*, *Long range* and *Note* there, then double-click `update_evolution_units.bat` in this folder: it writes this page and the lists of `evo_game.lua`); it is made by `LevelEditor/test-data/generators/evolution_units.py` from the numbers of the game.
 
 **Which units are candidates**
 
@@ -25,7 +25,7 @@ The selection of the units that can appear in Evolution (the candidates) and the
 - A new unit gets the level whose score is closest to its own (on a logarithmic scale): the ranges are in the table below
 - One manual change: Telchine on level 7 (1107 DPS but only 2750 health)
 
-<!-- BEGIN TABLE (made from evolution_units.csv by test-data/tools/evolution_units.py: change the csv, not what stands between the markers; the text above may be edited) -->
+<!-- BEGIN TABLE (made from evolution_units.csv by test-data/generators/evolution_units.py: change the csv, not what stands between the markers; the text above may be edited) -->
 **The ranges of the levels** (DPS x health)
 
 | Level | Reference (3 units in the game) | From | To |

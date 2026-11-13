@@ -236,7 +236,7 @@ def main(quiet=False):
     have = [n for n in names if os.path.exists(os.path.join(IMAGES, "weapon_%s.png" % n))]
     lines = ["# Renegade: weapon categories for the pictures of the panel", "",
              "[Renegade](renegade.md) · [Weapon table](renegade-weapons.md) · [Start page](../../README.md)", "",
-             "%d weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), %d different weapon definitions, grouped into **%d categories** (a picture each, %d drawn so far). Made by `test-data/tools/weapon_categories.py` from `renegade_weapons.csv`; "
+             "%d weapons on a mouse button (and the anti-nuke launchers, which fire by themselves), %d different weapon definitions, grouped into **%d categories** (a picture each, %d drawn so far). Made by `test-data/generators/weapon_categories.py` from `renegade_weapons.csv`; "
              "the columns Category, Weapon image, Tech and DPS of `renegade_weapons.csv` hold the result for every weapon; the pictures are drawn by `weapon_art_build.py` (folder `weapon-images`)." % (len(rows), len({r["Weapon name"] for r in rows}), len(cat), len(have)), "",
              "## Overview of all pictures", "",
              "The pictures as the panel shows them (the name is the one in the game). Where the family has sizes, the last column tells for which damage per second (DPS = damage of one shot / reload) a weapon gets this picture, by the tech level of its unit; the limits are explained below.", "",
@@ -248,7 +248,7 @@ def main(quiet=False):
              "   - the base size comes from the **tech level of the unit** that carries the weapon: T1 light, T2 medium, T3 and T4 heavy (`renegade_unit_tech.csv`; a unit that is not in it counts as T2);",
              "   - the damage per second (DPS: damage of one shot / reload) moves it: up to *Weak up to* one size down (a weak weapon), up to *Normal up to* it stays, up to *Strong up to* one size up (a strong weapon); never beyond heavy;",
              "   - a weapon above *Strong up to* is **ultra** whatever the unit is. For the lasers also the tachyon and ion beams and every weapon with the word \"ultra\" in its description are ultra (laser-ultra: blue, very thick).",
-             "3. The limits are in `renegade_weapon_limits.csv` (change them in Excel, then run `update_renegade_weapons.bat`... or `python test-data/tools/weapon_categories.py`):", "",
+             "3. The limits are in `renegade_weapon_limits.csv` (change them in Excel, then run `update_renegade_weapons.bat`... or `python test-data/generators/weapon_categories.py`):", "",
              "| Family | Weak up to | Normal up to | Strong up to | Ultra above |", "|---|---|---|---|---|"]
     for f, (a, b, c) in LIMITS.items():
         lines.append("| %s | %d | %d | %s | %s |" % (f, a, b, c if c is not None else "", ("above " + str(c)) if c is not None else "none"))

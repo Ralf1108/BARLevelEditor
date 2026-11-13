@@ -19,9 +19,9 @@ powershell -File scenario\scenario_builder.ps1 -Level ctf_test -LevelDir ..\test
 
 The LAN Play test (two instances of the game, host and joiner, real lobby) takes the `scenario.txt` of such a bundle as the scenario of the host.
 
-## Demo levels (`tools\make_demo_levels.py`)
+## Demo levels (`generators\make_demo_levels.py`)
 
-- `python tools\make_demo_levels.py [folder]` writes the three playable demo levels `demo_td_serpentine.lua`, `demo_ctf_crossroads.lua` and `demo_rtf_crystal_fields.lua` into `LevelEditor\levels` (they are the only files of that folder that git keeps, `.gitignore`).
+- `python generators\make_demo_levels.py [folder]` writes the three playable demo levels `demo_td_serpentine.lua`, `demo_ctf_crossroads.lua` and `demo_rtf_crystal_fields.lua` into `LevelEditor\levels` (they are the only files of that folder that git keeps, `.gitignore`).
 - Base map: *Full Metal Plate 1.7* (flat metal map).
 - Positions, waves and settings are at the top of each function in the script: change them there and run it again.
 - Checked 2026-10-27 in a sandbox game: all three load in the editor, the Tower Defense waves walk the whole corridor to the goal, the flags and crystals appear when the test is started, and the scenario builder packs all three.
@@ -34,6 +34,15 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 - Results of 2026-10-27: CTF (PlayerA and PlayerB as opponents, flags taken and held, score equal on both), Reclaim the Fame (both teams earn points, equal on both), Tower Defense (both humans in one team, waves, state "won"), Copilot (both humans in team 0, one commander, orders of both arrive).
 
 What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
+
+## Generators (`generators`)
+
+- Scripts that **make** data and pictures from tables; they are not tests. Run them through the `update_*.bat` files in `game-modes` (the tables are the source, Excel opens the csv).
+- `renegade_weapons.py`, `weapon_categories.py`: the weapon tables of Renegade and `scripts/renegade_data.lua`.
+- `weapon_art.py`, `weapon_art2.py`, `weapon_art3.py`, `weapon_art_build.py`: the pictures of the weapons (`weapon-images`).
+- `evolution_units.py`: the unit candidates of Evolution and the pool in `evo_game.lua`.
+- `make_demo_levels.py`: the three demo levels.
+- A generator writes only between its `BEGIN` and `END` marks; a second run changes nothing (checked for the weapon tables, the pool and the demo levels).
 
 ## Checks without the game (`tools\run_checks.ps1`)
 

@@ -3,9 +3,9 @@ rem Renegade: reads renegade_weapons.csv (the column Fire button), renegade_crui
 rem renegade-weapons.md, renegade-cruise.md, renegade-weapon-categories.md and fills the columns Category, Weapon image, Tech and DPS of renegade_weapons.csv and the blocks WEAPON_BUTTONS, CRUISE_ALT, ATTACK_ALT and WEAPON_PICS of scripts\renegade_data.lua.
 rem Close the csv files in Excel first. Then start Renegade as usual (start_renegade.bat): the game takes the new file.
 setlocal
-python "%~dp0..\test-data\tools\weapon_categories.py"
+python "%~dp0..\test-data\generators\weapon_categories.py"
 if errorlevel 1 goto failed
-python "%~dp0..\test-data\tools\renegade_weapons.py" update
+python "%~dp0..\test-data\generators\renegade_weapons.py" update
 if errorlevel 1 goto failed
 goto done
 :failed

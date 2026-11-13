@@ -503,7 +503,7 @@ end
 -- anti-air weapons) and all others are sorted by range. With both kinds: the shortest weapon of the others on the left button, the rest of the others on the right
 -- button (the right button takes the missiles when there is no second one), the missiles on the middle button. With only one kind: the shortest on the left,
 -- the next on the right, all further ones on the middle button.
--- The weapon tables (data only, made by test-data/tools/renegade_weapons.py from the tables in game-modes; the file renegade_data.lua lies in luaui/Include)
+-- The weapon tables (data only, made by test-data/generators/renegade_weapons.py from the tables in game-modes; the file renegade_data.lua lies in luaui/Include)
 local WEAPON_DATA = VFS.Include("luaui/Include/renegade_data.lua", nil, VFS.ZIP_FIRST)
 assert(WEAPON_DATA, "renegade_data.lua missing (run the installer again)")
 local WEAPON_BUTTONS = WEAPON_DATA.WEAPON_BUTTONS

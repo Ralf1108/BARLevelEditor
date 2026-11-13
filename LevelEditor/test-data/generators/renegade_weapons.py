@@ -185,7 +185,7 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 """
 
 
-BEGIN_TABLE = "<!-- BEGIN TABLE (made from renegade_weapons.csv by test-data/tools/renegade_weapons.py: change the csv, not what stands between the markers; the text around may be edited) -->"
+BEGIN_TABLE = "<!-- BEGIN TABLE (made from renegade_weapons.csv by test-data/generators/renegade_weapons.py: change the csv, not what stands between the markers; the text around may be edited) -->"
 END_TABLE = "<!-- END TABLE -->"
 
 
@@ -344,7 +344,7 @@ def make_lua(src):
     nl = "\r\n" if "\r\n" in text else "\n"
     text = text.replace("\r\n", "\n")
     a, b = text.index("-- BEGIN WEAPONS"), text.index("-- END WEAPONS")
-    head = "-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
+    head = "-- BEGIN WEAPONS (made by test-data/generators/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
     alts = "local CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n" + "local ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the ground (column Attack altitude)\n" + "\n".join("	%s = %d," % (c, attack[c]) for c in sorted(attack)) + "\n}\n"
     text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + "local WEAPON_PICS = { -- the picture of a weapon of the panel (weapon-images/weapon_<name>.png)\n" + pic_lines + "\n}\n" + text[b:]
     open(GADGET, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))

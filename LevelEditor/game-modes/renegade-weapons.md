@@ -13,7 +13,7 @@ Which weapon of a unit is fired with which mouse button in Renegade. **Change th
 
 **How to change it:** the source is `renegade_weapons.csv` (open it in Excel, columns separated by semicolons): change **Group** and **Fire button**, save, then double-click `update_renegade_weapons.bat` (in this folder). It writes this page (only the table between the markers `BEGIN TABLE` and `END TABLE` is rewritten, the text around it stays) and the block between `-- BEGIN WEAPONS` and `-- END WEAPONS` in `renegade_game.lua` (do not edit that by hand either); the game takes the new file as usual (`start_renegade.bat`). New units or changed weapons: run `pve_test.ps1 -Ren -Widget zz_weapondump.lua` and `python renegade_weapons.py table <infolog.txt>`; your entries stay.
 
-<!-- BEGIN TABLE (made from renegade_weapons.csv by test-data/tools/renegade_weapons.py: change the csv, not what stands between the markers; the text around may be edited) -->
+<!-- BEGIN TABLE (made from renegade_weapons.csv by test-data/generators/renegade_weapons.py: change the csv, not what stands between the markers; the text around may be edited) -->
 1035 weapons of 497 units.
 
 | Faction | Unit | Code | # | Picture | Weapon | Type | Target | Range | Reload | Damage | Weapon name | Fire button | Category | Tech | DPS |

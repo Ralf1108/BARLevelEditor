@@ -154,7 +154,7 @@ def pool(kindlong):
             out.append("\t[%d] = { %s }," % (l, ", ".join(lists)))
     out.append("}")
     return "\n".join(out)
-gen = ["-- BEGIN POOL (made by test-data/tools/evolution_units.py from game-modes/evolution_units.csv: change the csv, then update_evolution_units.bat, not this block)",
+gen = ["-- BEGIN POOL (made by test-data/generators/evolution_units.py from game-modes/evolution_units.csv: change the csv, then update_evolution_units.bat, not this block)",
        "-- Every level: the candidates of Armada, Cortex and Legion (a spawn takes a random faction, then a random unit of it); POOL_LONG: the units that join with the game option Long range",
        "local POOL = " + pool(False), "local POOL_LONG = " + pool(True),
        "for name, title in pairs({"]
@@ -179,7 +179,7 @@ if not UPDATE:
 nl = "\r\n"
 tab = ["# Evolution: unit candidates", "",
        "[Evolution](evolution.md) · [Specification](../../specs/evolution.md) · [Start page](../../README.md)", "",
-       "The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); the csv is the source (change *Level*, *Long range* and *Note* there, then double-click `update_evolution_units.bat` in this folder: it writes this page and the lists of `evo_game.lua`); it is made by `LevelEditor/test-data/tools/evolution_units.py` from the numbers of the game.", "",
+       "The selection of the units that can appear in Evolution (the candidates) and the level each one gets. Also as a table for Excel: [evolution_units.csv](evolution_units.csv); the csv is the source (change *Level*, *Long range* and *Note* there, then double-click `update_evolution_units.bat` in this folder: it writes this page and the lists of `evo_game.lua`); it is made by `LevelEditor/test-data/generators/evolution_units.py` from the numbers of the game.", "",
        "**Which units are candidates**", "",
        "- Looked at: every mobile unit of Armada, Cortex and Legion (the Scavenger and Raptor copies are not listed)",
        "- Candidates: bots, vehicles and hovercraft with a ground weapon; they have a level in the table",
@@ -210,7 +210,7 @@ for u in rows:
     tab.append("| " + " | ".join(str(c) for c in cells(u)) + " |")
 # only the generated part (the ranges of the levels and the table of all units) is written between the markers; the text above stays as it is. A file without the
 # markers gets them in front of "**The ranges of the levels**" (its text above is kept); a missing file is made whole.
-BEGIN_MARK = "<!-- BEGIN TABLE (made from evolution_units.csv by test-data/tools/evolution_units.py: change the csv, not what stands between the markers; the text above may be edited) -->"
+BEGIN_MARK = "<!-- BEGIN TABLE (made from evolution_units.csv by test-data/generators/evolution_units.py: change the csv, not what stands between the markers; the text above may be edited) -->"
 END_MARK = "<!-- END TABLE -->"
 mdpath = os.path.join(repo, "LevelEditor", "game-modes", "evolution-units.md")
 ri = tab.index("**The ranges of the levels** (DPS x health)")
