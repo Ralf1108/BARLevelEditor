@@ -45,7 +45,7 @@
 
 - Installed as `luaui/Include/bar_rules.lua` in the extra games and in `LuaUI\Include` for the BluePrinter.
 - `editor_common.lua`, all gadgets (through `led_gadgets.lua`) load it.
-- Functions: `techLevel(ud)` (1 to 3; every unit named "Epic ..." or with an epic movement class counts as 3, because BAR files a few of them under T1 / T2), `buildClass(ud)` ("economy", "tower", "radar" or nil, for the Tower Defense build restriction and its list), `decode64(text)` (base64url game options), `hitsGround(ud)` (a weapon that can attack the ground), `headingToFacing(h)`.
+- Functions: `techLevel(ud)` (1 to 3; every unit named "Epic ..." or with an epic movement class counts as 3, because BAR files a few of them under T1 / T2), `buildClass(ud)` ("economy", "tower", "radar" or nil, for the Tower Defense build restriction and its list), `decode64(text)` (base64url game options), `hitsGround(ud)` (a weapon that can attack the ground), `headingToFacing(h)`, `factionOf(name)` (arm / cor / leg, scv for the _scav copies, rap for raptors; also `M.factionOf`), `commandCount(id)` (length of the order queue, the engine function changed its name), `dist2(x1, z1, x2, z2)`, `shotDown(id)` (an aircraft that is dead, has no health or is crashing; Renegade widget and gadget).
 - `editor_common.lua` exposes `M.techLevel` and `M.buildClass`.
 
 ## 3. Scaling and dimensions (`M.rescale`, `M.m`, `M.S`)

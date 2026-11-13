@@ -100,5 +100,30 @@ do
 	check(R.headingToFacing(0) == 0 and R.headingToFacing(16384) == 1 and R.headingToFacing(-32768) == 2 and R.headingToFacing(-16384) == 3, "headingToFacing: south, east, north, west")
 	check(R.techLevel({ customParams = { techlevel = 1 }, humanName = "Epic Grunt" }) == 3, "techLevel: an Epic unit counts as T3")
 	check(R.techLevel({ customParams = { techlevel = 2 }, humanName = "Pawn" }) == 2, "techLevel: a normal T2 stays")
+	local fac, base = R.factionOf("armpw_scav")
+	check(fac == "scv" and base == "armpw", "factionOf: a Scavenger copy (" .. tostring(fac) .. ", " .. tostring(base) .. ")")
+	fac, base = R.factionOf("raptor_land_swarmer_basic_t1_v1")
+	check(fac == "rap" and base == "raptor_land_swarmer_basic_t1_v1", "factionOf: a raptor keeps its name")
+	check(R.factionOf("corak") == "cor" and R.factionOf("legcom") == "leg", "factionOf: the first three letters")
+	check(R.dist2(0, 0, 3, 4) == 25 and R.dist2(5, 5, 5, 5) == 0, "dist2: the square of the distance")
+	local realSpring = Spring
+	Spring = { GetUnitCommandCount = function() return 3 end }
+	check(R.commandCount(1) == 3, "commandCount: the new engine function")
+	Spring = { GetUnitCommands = function(_, count) return count == 0 and 2 or {} end }
+	check(R.commandCount(1) == 2, "commandCount: the old function that returns a number for 0")
+	Spring = { GetUnitCommands = function() return { 1, 2, 3, 4 } end }
+	check(R.commandCount(1) == 4, "commandCount: the old function that returns a table")
+	Spring = realSpring
+	local dead, hp, mt = false, 100, nil
+	Spring.GetUnitIsDead = function() return dead end
+	Spring.GetUnitHealth = function() return hp end
+	Spring.GetUnitMoveTypeData = function() return mt end
+	check(not R.shotDown(1), "shotDown: a healthy aircraft is not shot down")
+	mt = { aircraftState = "crashing" }
+	check(R.shotDown(1), "shotDown: a crashing aircraft")
+	mt, hp = nil, 0
+	check(R.shotDown(1), "shotDown: no health left")
+	hp, dead = 50, true
+	check(R.shotDown(1), "shotDown: a dead unit")
 	ok("bar_rules")
 end

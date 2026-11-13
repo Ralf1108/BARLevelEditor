@@ -21,21 +21,9 @@ local function newAreaAttack(o)
 	local areaDrag = nil -- { x, z }: start point of the line, rectangle corner or circle center
 	local toggleArea
 
-	local function commandCount(id)
-		if Spring.GetUnitCommandCount then
-			return Spring.GetUnitCommandCount(id) or 0
-		end
-		local c = Spring.GetUnitCommands(id, 0)
-		if type(c) == "table" then
-			return #c
-		end
-		return c or 0
-	end
+	local commandCount = Rules.commandCount
 
-	local function dist2(x1, z1, x2, z2)
-		local dx, dz = x1 - x2, z1 - z2
-		return dx * dx + dz * dz
-	end
+	local dist2 = Rules.dist2
 
 	-- Selected armed units spread evenly over a line A -> B. Each gets a piece of the line. Bombers (aircraft with a bomb
 	-- weapon) approach it from behind, i.e. along the line: move to a point BEFORE the piece, then attack its center; this

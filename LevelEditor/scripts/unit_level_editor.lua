@@ -173,14 +173,7 @@ local function factionOfTeam(team)
 end
 
 -- The faction of a unit name: "arm", "cor", "leg", "scv" (the *_scav copies; base = the name without _scav) or "rap" (raptor_*)
-local function factionOf(name)
-	if name:sub(-5) == "_scav" then
-		return "scv", name:sub(1, -6)
-	elseif name:sub(1, 7) == "raptor_" then
-		return "rap", name
-	end
-	return name:sub(1, 3), name
-end
+local factionOf = Rules.factionOf
 
 local function generatePool(faction, techs, kind)
 	local pool = {}

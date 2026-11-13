@@ -1715,15 +1715,19 @@ local function fmtRate(v)
 	return t
 end
 
--- The faction key of a unit name: arm / cor / leg, scv for the *_scav copies, rap for the raptors (nil: not offered, e.g. critters)
-function M.factionOf(name)
-	if name:sub(-5) == "_scav" then
-		return "scv", name:sub(1, -6)
-	elseif name:sub(1, 7) == "raptor_" then
-		return "rap", name
+-- A list with a search field (units, features, blueprints) gets or loses the focus of the field; ownText(on) tells the field that shows it
+local function setSearchFocus(self, on)
+	on = on and true or false
+	if self.focus ~= on then
+		self.focus = on
+		if self.ownText then
+			self.ownText(on)
+		end
 	end
-	return name:sub(1, 3), name
 end
+
+-- The faction key of a unit name: arm / cor / leg, scv for the *_scav copies, rap for the raptors (nil: not offered, e.g. critters)
+M.factionOf = Rules.factionOf
 
 -- A copy of a list of unit names, sorted by faction (order of M.FACTIONS), then group (order of M.GROUPS), then the name shown for the unit
 function M.sortUnitNames(names)
@@ -1921,15 +1925,7 @@ function M.newUnits(o)
 		return nil, name .. " is not in the list"
 	end
 
-	function u:setFocus(on)
-		on = on and true or false
-		if self.focus ~= on then
-			self.focus = on
-			if self.ownText then
-				self.ownText(on)
-			end
-		end
-	end
+	u.setFocus = setSearchFocus
 
 	-- Text input for the search field (only active while it has the focus)
 	function u:textInput(ch)
@@ -2812,15 +2808,7 @@ function M.newFeatures(o)
 		return rects
 	end
 
-	function f:setFocus(on)
-		on = on and true or false
-		if self.focus ~= on then
-			self.focus = on
-			if self.ownText then
-				self.ownText(on)
-			end
-		end
-	end
+	f.setFocus = setSearchFocus
 
 	function f:applyFilter(r)
 		if r.kind == "search" then

@@ -49,6 +49,43 @@ function R.headingToFacing(h)
 	return math.floor(((tonumber(h) or 0) + 8192) / 16384) % 4
 end
 
+-- The faction key of a unit name: "arm", "cor", "leg", "scv" (the *_scav copies) or "rap" (raptor_*); the second value is the name without "_scav"
+function R.factionOf(name)
+	if name:sub(-5) == "_scav" then
+		return "scv", name:sub(1, -6)
+	elseif name:sub(1, 7) == "raptor_" then
+		return "rap", name
+	end
+	return name:sub(1, 3), name
+end
+
+-- The number of orders in the queue of a unit (the engine function changed its name between versions)
+function R.commandCount(id)
+	if Spring.GetUnitCommandCount then
+		return Spring.GetUnitCommandCount(id) or 0
+	end
+	local c = Spring.GetUnitCommands(id, 0)
+	if type(c) == "table" then
+		return #c
+	end
+	return c or 0
+end
+
+-- The square of the distance of two points on the ground
+function R.dist2(x1, z1, x2, z2)
+	local dx, dz = x1 - x2, z1 - z2
+	return dx * dx + dz * dz
+end
+
+-- An aircraft that is shot down is no target any more: dead, no health left, or crashing (the aircraft state "crashing" of its move type: it is on its way down and falls)
+function R.shotDown(id)
+	if Spring.GetUnitIsDead(id) then return true end
+	local hp = Spring.GetUnitHealth(id)
+	if hp and hp <= 0 then return true end
+	local ok, md = pcall(Spring.GetUnitMoveTypeData, id)
+	return ok and type(md) == "table" and md.aircraftState == "crashing"
+end
+
 -- Text from base64url (the form the scenario builder puts into game options: "-" and "_" instead of "+" and "/", no "=")
 local ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local B64 = {}

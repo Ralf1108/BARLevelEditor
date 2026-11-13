@@ -24,6 +24,7 @@ local Echo = Spring.Echo
 local BPDIRS = { "LuaUI/Config/BluePrinter/", "LuaUI/Config/LevelEditorBlueprints/" }
 -- Shared code (blueprint library, tile grid, unit catalog, 3D preview) lives in editor_common.lua
 local Shared = VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)
+local Rules = VFS.Include("LuaUI/Include/bar_rules.lua", nil, VFS.RAW_FIRST) -- rules and small helpers shared with the gadgets (bar_rules.lua)
 assert(Shared, "editor_common.lua missing (run install_blueprinter.bat again)")
 local rotateOffset, headingToFacing, FACING_NAME = Shared.rotateOffset, Shared.headingToFacing, Shared.FACING_NAME
 
@@ -552,21 +553,9 @@ local function builderInfo(defID)
 	return c
 end
 
-local function commandCount(id)
-	if Spring.GetUnitCommandCount then
-		return Spring.GetUnitCommandCount(id) or 0
-	end
-	local c = Spring.GetUnitCommands(id, 0)
-	if type(c) == "table" then
-		return #c
-	end
-	return c or 0
-end
+local commandCount = Rules.commandCount
 
-local function dist2(x1, z1, x2, z2)
-	local dx, dz = x1 - x2, z1 - z2
-	return dx * dx + dz * dz
-end
+local dist2 = Rules.dist2
 
 -- Detect finished buildings (all around, only part of the plans per pass)
 local function checkDone(maxChecks)
@@ -1155,13 +1144,7 @@ local function pressButton(id)
 	end
 end
 
-local function mouseGround()
-	local mx, my = Spring.GetMouseState()
-	local _, pos = Spring.TraceScreenRay(mx, my, true)
-	if pos then
-		return pos[1], pos[3]
-	end
-end
+local mouseGround = Shared.mouseGround
 
 local function halfSize(ud, f)
 	local hx, hz = (ud.xsize or 4) * 4, (ud.zsize or 4) * 4

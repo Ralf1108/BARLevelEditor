@@ -1705,13 +1705,7 @@ end
 
 local TESTENGINE = false -- (tests: the engine's own bomb release instead of ours: ren|test|4)
 -- (an aircraft that is shot down is no target: dead, no health left or crashing)
-local function shotDown(id)
-	if Spring.GetUnitIsDead(id) then return true end
-	local hp = Spring.GetUnitHealth(id)
-	if hp and hp <= 0 then return true end
-	local ok, md = pcall(Spring.GetUnitMoveTypeData, id)
-	return ok and type(md) == "table" and md.aircraftState == "crashing"
-end
+local shotDown = G.Rules.shotDown
 -- The target of one weapon: the point (or, for an anti-air weapon and a weapon that also hits aircraft, the locked aircraft)
 local BEAMS = { BeamLaser = true, LaserCannon = true, LightningCannon = true } -- (direct weapons without a ballistic arc: aimed through the target at the point behind it)
 local function applyTarget(team, u, ud, s, i, t)

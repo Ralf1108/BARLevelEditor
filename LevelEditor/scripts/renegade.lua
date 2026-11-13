@@ -485,13 +485,7 @@ end
 -- range whose picture is nearest to the middle inside the circle is the lock (R.aaTarget): the anti-air weapons get it as their target when the button is pressed (their
 -- missiles home in on it). Without an aircraft in the circle they do not fire.
 -- An aircraft that is shot down is no target any more: no health left, dead, or crashing (the aircraft state "crashing" of its move type: it is on its way down and falls)
-local function shotDown(id)
-	if Spring.GetUnitIsDead(id) then return true end
-	local hp = Spring.GetUnitHealth(id)
-	if hp and hp <= 0 then return true end
-	local ok, md = pcall(Spring.GetUnitMoveTypeData, id)
-	return ok and type(md) == "table" and md.aircraftState == "crashing"
-end
+local shotDown = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST).shotDown
 local function aaPick(u)
 	R.aaTarget, R.aaScreen, R.aaCircle = nil, nil, nil
 	local ud, slots = weaponsOf(u)
