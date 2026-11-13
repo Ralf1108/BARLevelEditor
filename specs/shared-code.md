@@ -13,6 +13,10 @@
   - It returns a table `M` and uses only the Lua 5.1 environment of BAR (`Spring`, `gl`, `GL`, `UnitDefs`, `UnitDefNames`, `WeaponDefs`, `VFS`, `io`, `os`, `math`, `string`, `table`).
   - `WG` is not used globally but passed in through the option `wg`.
 - On a second computer the folders `shared`, `LevelEditor` and `BluePrinter` must lie next to each other.
+- **Long factory functions are on purpose:** `M.newUnits`, `M.newGrid`, `M.newLibrary`, `M.newFeatures` and `newAreaAttack` (in `area_attack.lua`) each build one object whose methods share the local state of the factory (about 100 locals and upvalues).
+  - Their length is the number of methods; the biggest single method is about 120 lines (`focusPlan`).
+  - Splitting them would mean passing that state around explicitly, with no gain; `mock_area_attack.lua` and `mock_editor_common.lua` cover the parts that can be tested without the game.
+  - A new long function that is a chain of cases (messages, modes) is made a table of small functions instead, as `LED.<command>` in `unit_level_editor.lua`.
 
 ## 2. Loading and installation
 
