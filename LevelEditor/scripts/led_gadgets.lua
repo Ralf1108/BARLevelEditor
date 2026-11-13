@@ -345,8 +345,14 @@ end
 -- The sight of a unit (los and airLos), changed for a reason: G.setSight(id, "renegade", { factor = 3 }) (three times its own sight), G.setSight(id, "pulse", { radius = 2500 }) (this
 -- many Elmo), G.setSight(id, "pulse", nil) takes the reason away. The largest of all reasons counts, and with none left the unit has its own sight again, so two game modes on
 -- the same unit (the Radar Pulse of Evolution in Renegade's three times the sight) do not undo each other. The own sight is read when the first reason comes.
-local sights = {} -- unit id -> { base = { los, airLos }, why = { reason -> { factor | radius } } }
+-- Every gadget loads its own copy of this file, so the reasons are kept in GG (shared by the synced gadgets): GG.ledSights[unit id] = { base = { los, airLos }, why = { reason -> { factor | radius } } }
+local ownSights = {} -- (without GG, e.g. in a test)
 function G.setSight(id, reason, o)
+	local sights = ownSights
+	if GG then
+		GG.ledSights = GG.ledSights or {}
+		sights = GG.ledSights
+	end
 	local s = sights[id]
 	if not Spring.ValidUnitID(id) then sights[id] = nil return end
 	if not s then

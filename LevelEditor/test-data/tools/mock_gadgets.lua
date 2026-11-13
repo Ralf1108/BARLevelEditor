@@ -165,6 +165,16 @@ do
 	check(radius.airLos == 1000, "setSight: a radius also works where the unit has no air sight")
 	G.setSight(2, "pulse", nil)
 	check(radius.airLos == 0 and radius.los == 400, "setSight: and goes back to none")
+	-- two gadgets, each with its own copy of led_gadgets.lua: the reasons are shared through GG (Evolution's pulse while Renegade takes a unit over, and the other way round)
+	local G2 = dofile(REPO .. "/LevelEditor/scripts/led_gadgets.lua")
+	radius = { los = 400, airLos = 300 }
+	G2.setSight(3, "pulse", { radius = 2500 })
+	G.setSight(3, "renegade", { factor = 3 })
+	check(radius.los == 2500, "setSight: two copies of the file, the pulse running when the unit is taken over (" .. radius.los .. ")")
+	G2.setSight(3, "pulse", nil)
+	check(radius.los == 1200 and radius.airLos == 900, "setSight: the end of the pulse of the other copy leaves three times the own sight (" .. radius.los .. ")")
+	G.setSight(3, "renegade", nil)
+	check(radius.los == 400 and radius.airLos == 300, "setSight: and the own sight, not the sight of the pulse, is back (" .. radius.los .. ")")
 	Spring = realSpring
 	ok("setSight")
 end
