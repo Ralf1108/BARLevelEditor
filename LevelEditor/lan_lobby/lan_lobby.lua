@@ -2398,86 +2398,8 @@ local function closeMenusOnOutsideClick()
 end
 
 ---------------------------------------------------------------- per frame
-function widget:Update()
-	closeMenusOnOutsideClick()
-	if ui.leave and ui.back then
-		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Close" then moves to the right of it
-		local want = S ~= nil or lan ~= nil
-		if ui.leave.visible ~= want then
-			ui.leave:SetVisibility(want)
-			ui.back:SetPos(want and 276 or 0, ui.back.y, ui.back.width, ui.back.height)
-		end
-	end
-	if ui.spin then
-		-- one place under the button Find LAN games shows: the busy indicator while the search runs, "No LAN game found", or nothing (then the list of the games stands there)
-		local frame, text = 0, ""
-		if scan ~= nil then
-			frame = math.floor(clock() * 8) % 4 + 1
-			text = "Searching for LAN games  " .. ({ "|", "/", "-", "\\" })[frame]
-		elseif not (S or lan) and lastFoundCount == 0 then
-			frame, text = -1, "No LAN game found (retry in 3 seconds)"
-		end
-		if frame ~= ui.spinFrame then
-			ui.spinFrame = frame
-			ui.spin:SetText(text)
-		end
-	end
-	ensureSlotUi()
-	ensureLanMenuUi()
-	if cfg.evolution == "1" and S and lan and lan.step == "in" and not cfg.evolutionSet and clock() > 10 then
-		cfg.evolutionSet = true
-		log("test: Evolution on")
-		if tonumber(cfg.evolutionStage) then S.battle.modoptions.lanevolutionstage = cfg.evolutionStage end -- test: every player starts on that stage
-		setEvolution(true)
-	end
-	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and clock() > tonumber(cfg.lanMenu) then
-		cfg.lanMenu = nil -- test: the menu of the button LAN Play is opened (a picture of it)
-		local cx, cy = ui.lanButton:LocalToScreen(ui.lanButton.width / 2, ui.lanButton.height / 2)
-		local ok, hit = pcall(function() return screen0:HitTest(cx, cy) end)
-		log("test: the control under the middle of the button LAN Play:", tostring(ok and hit and (hit.caption or hit.text or hit.classname)))
-		openLanMenu()
-	end
-	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
-		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode) is opened, with 2x set (a picture of it)
-		setEvoOption("lanevomult", "2")
-		openEvoMenu()
-	end
-	if cfg.renegade == "1" and S and lan and lan.step == "in" and not cfg.renegadeSet and clock() > 10 then
-		cfg.renegadeSet = true
-		log("test: Renegade on")
-		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the jump mode unless renegadeSingle=1)
-		setRenOptions(true, renSingle())
-	end
-	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then
-		cfg.renMenu = nil -- test: the submenu of Renegade (On / Off, Always in unit) is opened (a picture of it)
-		openRenMenu()
-	end
-	if tonumber(cfg.evolutionClose) and ui.popup and clock() > tonumber(cfg.evolutionClose) then
-		cfg.evolutionClose = nil -- test: the window with the rules is closed (a picture of the room with the button)
-		pcall(function() ui.popup:Dispose() end); ui.popup = nil
-		log("test: window closed")
-	end
-	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and clock() > 14 then
-		cfg.scenarioPicked = true
-		log("test: choosing the scenario", cfg.scenario)
-		selectScenario(cfg.scenario)
-	end
-	if lan and lan.left and clock() > lan.left + 0.3 then
-		log("left the battle room: back to the LAN Play page")
-		lanStop("left the room")
-		openLanPage()
-		setStatus("You left the LAN game.")
-	end
-	if returnAt and tabAdded and clock() > returnAt then returnAt = nil; log("back from the game: the LAN Play page"); openLanPage() end
-	if not ui.panel and not uiTried and clock() > 3 then uiTried = buildUi() or false end
-	ensureTab()
-	autoScan()
-	if S then updateServer() end
-	updateLan()
-	updateScan()
-	updateCopilotPoll()
-
-	-- test automation
+-- The test automation of the lobby (lanlobby_cfg.txt: lan_test.ps1 switches single steps on; without such an entry none of this does anything), called from widget:Update
+local function testAutomation()
 	if cfg.openTab and tabAdded and not cfg.opened and clock() > tabAdded + 2 then
 		cfg.opened = true
 		local root = WG.Chobby and WG.Chobby.interfaceRoot
@@ -2688,6 +2610,88 @@ function widget:Update()
 		lan.chatted = true
 		l:SayBattle("hello from " .. lan.name)
 	end
+end
+
+function widget:Update()
+	closeMenusOnOutsideClick()
+	if ui.leave and ui.back then
+		-- "Leave LAN play" only makes sense while this computer hosts or plays a LAN game; "Close" then moves to the right of it
+		local want = S ~= nil or lan ~= nil
+		if ui.leave.visible ~= want then
+			ui.leave:SetVisibility(want)
+			ui.back:SetPos(want and 276 or 0, ui.back.y, ui.back.width, ui.back.height)
+		end
+	end
+	if ui.spin then
+		-- one place under the button Find LAN games shows: the busy indicator while the search runs, "No LAN game found", or nothing (then the list of the games stands there)
+		local frame, text = 0, ""
+		if scan ~= nil then
+			frame = math.floor(clock() * 8) % 4 + 1
+			text = "Searching for LAN games  " .. ({ "|", "/", "-", "\\" })[frame]
+		elseif not (S or lan) and lastFoundCount == 0 then
+			frame, text = -1, "No LAN game found (retry in 3 seconds)"
+		end
+		if frame ~= ui.spinFrame then
+			ui.spinFrame = frame
+			ui.spin:SetText(text)
+		end
+	end
+	ensureSlotUi()
+	ensureLanMenuUi()
+	if cfg.evolution == "1" and S and lan and lan.step == "in" and not cfg.evolutionSet and clock() > 10 then
+		cfg.evolutionSet = true
+		log("test: Evolution on")
+		if tonumber(cfg.evolutionStage) then S.battle.modoptions.lanevolutionstage = cfg.evolutionStage end -- test: every player starts on that stage
+		setEvolution(true)
+	end
+	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and clock() > tonumber(cfg.lanMenu) then
+		cfg.lanMenu = nil -- test: the menu of the button LAN Play is opened (a picture of it)
+		local cx, cy = ui.lanButton:LocalToScreen(ui.lanButton.width / 2, ui.lanButton.height / 2)
+		local ok, hit = pcall(function() return screen0:HitTest(cx, cy) end)
+		log("test: the control under the middle of the button LAN Play:", tostring(ok and hit and (hit.caption or hit.text or hit.classname)))
+		openLanMenu()
+	end
+	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
+		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode) is opened, with 2x set (a picture of it)
+		setEvoOption("lanevomult", "2")
+		openEvoMenu()
+	end
+	if cfg.renegade == "1" and S and lan and lan.step == "in" and not cfg.renegadeSet and clock() > 10 then
+		cfg.renegadeSet = true
+		log("test: Renegade on")
+		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the jump mode unless renegadeSingle=1)
+		setRenOptions(true, renSingle())
+	end
+	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then
+		cfg.renMenu = nil -- test: the submenu of Renegade (On / Off, Always in unit) is opened (a picture of it)
+		openRenMenu()
+	end
+	if tonumber(cfg.evolutionClose) and ui.popup and clock() > tonumber(cfg.evolutionClose) then
+		cfg.evolutionClose = nil -- test: the window with the rules is closed (a picture of the room with the button)
+		pcall(function() ui.popup:Dispose() end); ui.popup = nil
+		log("test: window closed")
+	end
+	if cfg.scenario and S and lan and lan.step == "in" and not cfg.scenarioPicked and clock() > 14 then
+		cfg.scenarioPicked = true
+		log("test: choosing the scenario", cfg.scenario)
+		selectScenario(cfg.scenario)
+	end
+	if lan and lan.left and clock() > lan.left + 0.3 then
+		log("left the battle room: back to the LAN Play page")
+		lanStop("left the room")
+		openLanPage()
+		setStatus("You left the LAN game.")
+	end
+	if returnAt and tabAdded and clock() > returnAt then returnAt = nil; log("back from the game: the LAN Play page"); openLanPage() end
+	if not ui.panel and not uiTried and clock() > 3 then uiTried = buildUi() or false end
+	ensureTab()
+	autoScan()
+	if S then updateServer() end
+	updateLan()
+	updateScan()
+	updateCopilotPoll()
+
+	testAutomation()
 end
 
 ---------------------------------------------------------------- the main menu entry
