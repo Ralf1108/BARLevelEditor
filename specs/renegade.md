@@ -56,7 +56,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | Document | Content |
 |---|---|
 | [renegade-widget.md](renegade-widget.md) | the widget `renegade.lua`: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers, debug menu |
-| [renegade-units.md](renegade-units.md) | the gadget `renegade_game.lua`: units, moving, hull controls, reverse, takeover mode, healing, debug messages |
+| [renegade-units.md](renegade-units.md) | the gadget `renegade_game.lua`: units, moving, hull controls, reverse, jump, takeover mode, healing, debug messages |
 | [renegade-aircraft.md](renegade-aircraft.md) | aircraft: steering, height, bombs, shot down aircraft |
 | [renegade-shooting.md](renegade-shooting.md) | the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 
@@ -86,8 +86,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 
 - **Several humans, not tested:** two players in the LAN (host + one joiner): each steers one unit, they fight, no desync.
   - Needs the lobby button, the game option for every player, `LAN_VERSION`, teams, one unit per human without a commander, scoring.
-- **Jumping:** the engine has no jump for ground units; ideas: a short hop with `Spring.SetUnitVelocity` (the movement type may overwrite it), or `Spring.MoveCtrl` only for the duration of the jump (own ballistic curve, back to normal movement on landing), or the unit scripts (`CallCOBScript`) for the animation.
-  - To decide: how ground movement reacts to a velocity impulse, landing detection, firing in the air, determinism; the input message would get a key bit (Space = 16).
+- **Jump:** done for two-legged bots, see [renegade-units.md](renegade-units.md); not seen in a real window: the walk animation in the air, the feel of the height and of the pause.
 - Not checked by a human or not seen: the barrel lines on a picture, the Tab key as a commander, flying units as the player's unit (steering by move orders), whether the Titan starburst can hit an aircraft at all, how the lock feels against fast aircraft.
 - Open questions: a feel for the move orders (lag, the unit's heading against the view), traffic and determinism of the messages with many players, what the lobby and team setup need.
 - Not planned for the first steps: hundreds of players, an own lobby/matchmaking/dedicated server, new weapons, projectiles or damage model, full HUD, sound, animations, progression.

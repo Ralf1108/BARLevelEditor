@@ -26,7 +26,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [evolution.md](evolution.md) | the game mode Evolution of LAN Play (any map) |
 | [renegade.md](renegade.md) | the game mode Renegade of LAN Play (steer one unit from the inside): parts, game options, messages, tests, open points |
 | [renegade-widget.md](renegade-widget.md) | Renegade, the widget: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers |
-| [renegade-units.md](renegade-units.md) | Renegade, the gadget: units, moving, hull controls, reverse, takeover mode, healing |
+| [renegade-units.md](renegade-units.md) | Renegade, the gadget: units, moving, hull controls, reverse, jump, takeover mode, healing |
 | [renegade-aircraft.md](renegade-aircraft.md) | Renegade, aircraft: steering, height, bombs |
 | [renegade-shooting.md](renegade-shooting.md) | Renegade, weapons: the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 | [arena.md](arena.md) | the Arena tool (button A) |

@@ -407,6 +407,88 @@ local function reverse(u, inp, ud, turn)
 	end
 end
 
+-- Jump: Space makes a unit with two legs (Rules.moveKind "bot": not the spiders) jump. The unit is moved by hand (MoveCtrl, like the reverse gear): it leaves the ground with an upward
+-- speed that takes it JUMP_HEIGHT Elmo high (less for a big unit), keeps the sideways speed it had, falls with JUMP_GRAVITY and lands where the ground is; a wall, a cliff, the edge
+-- of the map or another unit in the way stops the sideways part (canStep). Then JUMP_COOLDOWN frames pass before the next jump. The shots go on in the air.
+local JUMP_HEIGHT, JUMP_REF_RADIUS, JUMP_MIN_FACTOR, JUMP_COOLDOWN = 64, 24, 0.4, 30
+local function jumpGravity() return (Game.gravity or 120) / 900 * 2 end -- (Elmo per frame per frame; twice the gravity of the game: a quick jump)
+local function endJump(u, inp)
+	if inp.jump then
+		local j = inp.jump
+		inp.jump = nil
+		if Spring.ValidUnitID(j.u) then
+			pcall(Spring.MoveCtrl.SetVelocity, j.u, 0, 0, 0)
+			pcall(Spring.MoveCtrl.Disable, j.u)
+			Spring.GiveOrderToUnit(j.u, CMD.STOP, {}, 0)
+		end
+		inp.moving = false
+	end
+end
+local function startJump(u, inp, ud, f)
+	local x, y, z = Spring.GetUnitPosition(u)
+	if not x or y - Spring.GetGroundHeight(x, z) > 4 then return false end -- (only from the ground)
+	stopReverse(u, inp)
+	local vx, _, vz = Spring.GetUnitVelocity(u)
+	vx, vz = vx or 0, vz or 0
+	local top = (ud.speed or 0) / 30
+	local v = math.sqrt(vx * vx + vz * vz)
+	if v > top and v > 0 then vx, vz = vx * top / v, vz * top / v end
+	local radius = Spring.GetUnitRadius(u) or JUMP_REF_RADIUS
+	local height = JUMP_HEIGHT * math.max(JUMP_MIN_FACTOR, math.min(1, JUMP_REF_RADIUS / radius))
+	local vy = math.sqrt(2 * jumpGravity() * height)
+	Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
+	local mc = Spring.MoveCtrl
+	mc.Enable(u)
+	pcall(mc.SetTrackGround, u, false)
+	pcall(mc.SetGravity, u, 0)
+	mc.SetVelocity(u, vx, vy, vz)
+	inp.jump = { u = u, vx = vx, vy = vy, vz = vz, y0 = y, top = y, frame = f }
+	inp.moving = false
+	if TEST then Spring.Echo(string.format("[Renegade] jump: %s speed %.1f up %.2f (height %.0f) at frame %d", ud.name, 30 * math.sqrt(vx * vx + vz * vz), vy, height, f)) end
+	return true
+end
+-- one frame of the flight; true while the unit is in the air (then it is not steered otherwise)
+local function jumpFlight(u, inp, ud, f)
+	local j = inp.jump
+	if j.landed then
+		if TEST then Spring.Echo(string.format("[Renegade] jump over: %s peak %.1f above the start, %d frames, landed at height %.1f", ud.name, j.top - j.y0, f - j.frame, (select(2, Spring.GetUnitPosition(u))) - Spring.GetGroundHeight(Spring.GetUnitPosition(u)))) end
+		endJump(u, inp)
+		inp.jumpReady = f + JUMP_COOLDOWN
+		return false
+	end
+	local x, y, z = Spring.GetUnitPosition(u)
+	if not x then endJump(u, inp) return false end
+	j.top = math.max(j.top, y)
+	local vy = j.vy - jumpGravity()
+	local v = math.sqrt(j.vx * j.vx + j.vz * j.vz)
+	if v > 0 and not canStep(u, ud, x, z, x + j.vx, z + j.vz, j.vx / v, j.vz / v) then
+		j.vx, j.vz = 0, 0 -- (a wall, a cliff, the edge of the map or a unit: only up and down)
+	end
+	local gy = Spring.GetGroundHeight(x + j.vx, z + j.vz)
+	if y + vy <= gy then
+		if vy > 0 then
+			vy = 0 -- (the head against a slope: the rise ends)
+		else
+			Spring.MoveCtrl.SetVelocity(u, j.vx, gy - y, j.vz) -- (exactly onto the ground; the next frame gives the unit back to the movement)
+			j.landed, j.vy = true, 0
+			return true
+		end
+	end
+	j.vy = vy
+	Spring.MoveCtrl.SetVelocity(u, j.vx, vy, j.vz)
+	return true
+end
+-- called every frame of a steered unit: starts the jump on the press of Space (a new press, from the ground, not before the cooldown) and flies it; true = the unit is in the air
+local function jumpTick(inp, u, ud, f)
+	if inp.jump and inp.jump.u ~= u then endJump(inp.jump.u, inp) end
+	local space = inp.keys % 32 >= 16
+	local pressed = space and not inp.spaceWas
+	inp.spaceWas = space
+	if inp.jump then return jumpFlight(u, inp, ud, f) end
+	if pressed and f >= (inp.jumpReady or 0) and G.Rules.moveKind(ud) == "bot" then return startJump(u, inp, ud, f) end
+	return false
+end
+
 -- Hull controls (ground units and ships with a turret, or without weapons): W S A D drive the HULL like a tank (W forward along the hull, S backward, A / D turn it left / right
 -- while driving or on the spot) and the mouse only aims the weapons and the camera; so the vehicle can drive in one direction and shoot in another. Units whose weapons are all fixed
 -- to the hull (no turret) are steered as before (the wished direction relative to the view, the hull follows it), as are aircraft.
@@ -471,6 +553,7 @@ local function steer(team, f)
 	if not u or not inp or not Spring.ValidUnitID(u) then return end
 	local ud0 = UnitDefs[Spring.GetUnitDefID(u) or -1]
 	if inp.rev and inp.rev ~= u then inp.rev = nil end
+	if jumpTick(inp, u, ud0, f) then return end
 	if hullControl(ud0) then
 		hullSteer(u, inp, ud0, f)
 		return
@@ -940,6 +1023,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 		if u and inp and not spec and Spring.ValidUnitID(u) then
 			inp.normal = (mode == "0")
 			stopReverse(u, inp)
+			endJump(u, inp)
 			inp.hold, inp.aimed, inp.keys, inp.fire = {}, false, 0, 0
 			Spring.SetUnitTarget(u, nil)
 			Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
@@ -1082,6 +1166,7 @@ release = function(team)
 	local inp = input[team]
 	if Spring.ValidUnitID(u) then
 		stopReverse(u, inp)
+		endJump(u, inp)
 		Spring.SetUnitTarget(u, nil)
 		Spring.GiveOrderToUnit(u, CMD.STOP, {}, 0)
 		Spring.GiveOrderToUnit(u, CMD.FIRE_STATE, { 2 }, 0)

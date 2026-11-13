@@ -60,6 +60,20 @@ How a player gets a unit and how it drives: the synchronized part of the game mo
     - a body that keeps its heading while it walks backwards would need the unit to be moved by hand (`MoveCtrl`, free of the path finding and of the collisions with other units) or a script that turns the legs: both left out.
   - The test code was removed again.
 
+## Jump (Space)
+
+- **Who jumps:** a unit with two legs, `Rules.moveKind(ud) == "bot"` (bot2, bot3, abot3, hbot4, hbot7, habot5, vbot6, epicbot, commanderbot: Pawn, Grunt, Fido, commanders, Titan, Juggernaut ...); spiders (tbot3, epicallterrain, htbot6, abotbomb2, sbot2: Webber, Recluse, Karganeth, Vanguard, crawling bombs, flea), tanks, hovercraft, ships and aircraft do not.
+- **Key:** Space is bit 16 of the keys of the message `ren|...` (it raises aircraft); `jumpTick` takes a new press (not the held key), from the ground (at most 4 Elmo above it), not before the pause `JUMP_COOLDOWN` = 30 frames after the landing.
+- **Flight (`startJump`, `jumpFlight`, `endJump`):** the unit is moved by hand like in the reverse gear: `MoveCtrl.Enable`, `SetTrackGround(false)`, `SetGravity(0)`, and every frame only `SetVelocity` (the engine integrates it; no `SetPosition`).
+  - Start: the upward speed `sqrt(2 g h)` with `g` = `Game.gravity / 900 x 2` Elmo per frame per frame (a quick jump) and the height `h` = `JUMP_HEIGHT` 64 Elmo x `min(1, 24 / radius of the unit)`, at least 40 % of it (a big unit jumps lower).
+  - Sideways: the speed the unit had (at most its own speed) stays during the whole flight; no steering in the air.
+  - A wall, a cliff, the edge of the map or another ground unit in the way (`canStep`) stops the sideways part: the unit goes up and down on the spot; a slope above the head ends the rise.
+  - Landing: when the next step would reach the ground, the velocity is set to land exactly on it, the frame after that `MoveCtrl.Disable`, speed 0, `CMD.STOP`; the normal move orders go on with the next frame (W held: the unit walks on at once).
+  - The shots, the turret and the view go on in the air (`faceView`, `shoot` run as always); `steer` does nothing else while the unit is in the air.
+  - `endJump` also runs when the player leaves the unit (`release`), switches to the normal game or the unit changes.
+- **Measured with `zz_ren90.lua`** (`pve_test.ps1 -Ren -RenTest -Quick -Widget zz_ren90.lua`): Pawn standing: peak 66.2 Elmo, 59 frames, lands at height 0.1; Pawn walking (87 Elmo/s): the speed stays 87 in the air, 59 frames, then it walks on at 87 after 9 frames; Titan (`armbanth`): peak 33.6, 42 frames; Bulldog (tank) and Webber (spider): height 0.0 the whole time.
+- **Not measured:** the walk animation in the air, a jump against a wall or a cliff (the sideways stop), a jump onto a unit, two players; the feel of the height, the speed of the fall and the pause (`JUMP_HEIGHT`, `jumpGravity`, `JUMP_COOLDOWN`).
+
 ## Takeover mode and single unit mode
 
 - **Takeover mode and single unit mode (`SINGLE`, `lanrenesingle`, `possess`, `release`, `adopt`, `takeoverKey`):** game option `lanrenegade=1` switches the mode on;

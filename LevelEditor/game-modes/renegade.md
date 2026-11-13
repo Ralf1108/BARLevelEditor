@@ -34,6 +34,7 @@ Two ways to play in LAN Play (settings of the button **Renegade**):
 | Shift | third person view (camera behind your unit) and back |
 | Alt | **FULL FIRE** on / off: the left button fires every weapon at once |
 | Space / Ctrl | aircraft: higher / lower; Ctrl held at the bottom for 2 s lands a gunship |
+| Space | a unit with two legs (Pawn, Grunt, commander, Titan ...): jump; the walking speed is kept in the air, a big unit jumps lower, one second of pause before the next jump; spiders, tanks, hovercraft and ships do not jump |
 | Mouse wheel, B | binoculars (units with a range of 600 or more): wheel forward zooms in, back zooms out |
 | Key left of the 1 ("^" on a German keyboard) | switch between Renegade and the normal game; in takeover mode: take over the unit under the mouse and leave it |
 | Insert, or the key next to the left Shift | switch between Renegade and the normal game |
@@ -130,6 +131,6 @@ With `start_renegade.bat` three buttons sit above the panel. Press **Tab** to fr
 
 ## Not yet there
 
-- Jumping, games with several humans (not tested), score, teams and a real game goal, sound.
+- Games with several humans (not tested), score, teams and a real game goal, sound.
 - Aircraft and ships are steered less well than ground units.
 - The plan and what was measured in the game: [specification](../../specs/renegade.md).
