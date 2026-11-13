@@ -107,6 +107,8 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - Repair (and the health that wrecks give) shows green plus signs round your unit and a rising green "+number" with the health gained
 - At the start there are 2 to 6 beacons of every color, more on a bigger map and with more players; a taken beacon comes back 45 seconds later somewhere else, in the same color; a beacon of an ability you already have stays for the others, but **while that ability cools down** driving over it uses the beacon up and the cooldown is gone at once (it comes back somewhere else 45 seconds later)
 
+- **Together with the game mode Renegade** (you steer the unit from the inside): the keys **1 to 5** use the abilities in the order of the table (the bar shows the numbers); a Cloak does not set the unit to Fire at Will afterwards (it stays on Hold Fire, you fire yourself), and a Radar Pulse keeps the larger sight of Renegade afterwards
+
 **Computer players**
 - Every team without a human is steered by the game (its own AI is switched off for this unit)
 - It picks up the beacons it drives over and uses its abilities by itself

@@ -14,7 +14,7 @@ kept up to date with every change. They are not the manuals: the READMEs and `do
 - No names or private matters of persons in code, texts or file names (example players are PlayerA, PlayerB, PlayerC).
 - No backward compatibility for level files: only the known fields are read (`knownFields`).
 - Shared code belongs in `shared/` (`editor_common.lua` and `area_attack.lua` for both widgets, `bar_rules.lua` for widgets and gadgets, `bar_common.ps1` for the scripts),
-  what the gadgets share in `LevelEditor/scripts/led_gadgets.lua`. Which file goes where is listed once: `LevelEditor/scripts/editor_manifest.ps1` and
+  what the gadgets share in `LevelEditor/scripts/led_gadgets.lua`, the power-ups of Evolution and Renegade in `powerups.lua` (logic) and `powerups_ui.lua` (drawing). Which file goes where is listed once: `LevelEditor/scripts/editor_manifest.ps1` and
   `$ScenarioGameFiles` in `shared/bar_common.ps1`; a new file is added there, not in the scripts that use the lists.
 - Lua 5.1 allows at most 200 local variables per function: `lvl_level_editor.lua` is close to it at top level. Count the `^local` lines before adding
   one; put new values into an existing table or a page module (`led_td.lua`, `led_ctf.lua`, `led_rtf.lua`, `led_save.lua`, `led_gen.lua`, `led_scenario.lua`, `led_export.lua`, `led_restrictions.lua`, `led_place.lua`, `led_level.lua`).

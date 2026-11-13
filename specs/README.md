@@ -26,7 +26,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [evolution.md](evolution.md) | the game mode Evolution of LAN Play (any map) |
 | [renegade.md](renegade.md) | the game mode Renegade of LAN Play (steer one unit from the inside): parts, game options, messages, tests, open points |
 | [renegade-widget.md](renegade-widget.md) | Renegade, the widget: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers |
-| [renegade-units.md](renegade-units.md) | Renegade, the gadget: units, moving, hull controls, reverse, jump, takeover mode, healing |
+| [renegade-units.md](renegade-units.md) | Renegade, the gadget: units, moving, hull controls, reverse, jump, power-ups, takeover mode, healing |
 | [renegade-aircraft.md](renegade-aircraft.md) | Renegade, aircraft: steering, height, bombs |
 | [renegade-shooting.md](renegade-shooting.md) | Renegade, weapons: the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 | [arena.md](arena.md) | the Arena tool (button A) |
@@ -34,7 +34,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [scenario-multiplayer.md](scenario-multiplayer.md) | console lobby, split screen, bundle and map transfer |
 | [lan-play.md](lan-play.md) | the lobby widget for LAN Play |
 | [blueprinter.md](blueprinter.md) | the BluePrinter widget |
-| [shared-code.md](shared-code.md) | `editor_common.lua`, `area_attack.lua`, `bar_rules.lua`, `led_gadgets.lua`, `bar_common.ps1` |
+| [shared-code.md](shared-code.md) | `editor_common.lua`, `area_attack.lua`, `bar_rules.lua`, `led_gadgets.lua`, `powerups.lua`, `powerups_ui.lua`, `bar_common.ps1` |
 | [testing.md](testing.md) | how changes are checked |
 
 ## Where things live

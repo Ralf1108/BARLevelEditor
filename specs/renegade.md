@@ -14,13 +14,16 @@
 | Part | File | Job |
 |---|---|---|
 | Game widget | `LevelEditor/scripts/renegade.lua` (`luaui/widgets`) | camera on the eye of the unit, mouse and keys, crosshair, ray, HUD, anti-air circle, debug menu, sends the input |
-| Gadget | `LevelEditor/scripts/renegade_game.lua` (`luarules/gadgets`) | unit of every human, moving, shooting (the buttons), respawn, energy, bots, debug messages |
+| Gadget | `LevelEditor/scripts/renegade_game.lua` (`luarules/gadgets`) | unit of every human, moving, jump, shooting (the buttons), respawn, energy, bots, power-ups (`lanrenepowerups`), debug messages |
+| Weapon data | `LevelEditor/scripts/renegade_data.lua` | the weapon tables, loaded by the gadget (made from the csv) |
+| Test hooks | `LevelEditor/scripts/renegade_test.lua` | `ren\|test\|n`, loaded by the gadget only with `lanrenotest=1` |
+| Power-ups | `LevelEditor/scripts/powerups.lua` (synced logic and the list), `powerups_ui.lua` (drawing), shared with [Evolution](evolution.md) | Sprint, Repair, Radar Pulse, Cloak, Jammer: beacons, use, effect; the bar and the beacons on the map (see [shared-code.md](shared-code.md)) |
 | Weapon table | `LevelEditor/game-modes/renegade_weapons.csv` (source), `renegade-weapons.md` (made from it) | which weapon of which unit is fired with which button |
 | Table tools | `test-data/generators/renegade_weapons.py`, `zz_weapondump.lua`, `game-modes/update_renegade_weapons.bat` | table <-> `renegade_data.lua` (the weapon tables, loaded by the gadget) |
 | Start | `LevelEditor/start_renegade.bat`, `scripts/start_renegade.ps1` | a game at once (see 2) |
-| Lobby | `lan_lobby.lua` | not done: button and game option like `lanevolution` (needs a `LAN_VERSION` bump) |
+| Lobby | `lan_lobby.lua` | the button Renegade of the room with a submenu: On / Off, Always in unit, Power-ups (game options `lanrenegade`, `lanrenesingle`, `lanrenepowerups`; `LAN_VERSION` 31) |
 
-- Widget and gadget are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
+- Widget, gadget, `renegade_data.lua`, `renegade_test.lua`, `powerups.lua` and `powerups_ui.lua` are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
 - Tests: sandbox `test-data/tools/pve_test.ps1 -Ren [-RenTest] [-RenBots n] -Widget zz_ren*.lua` (see Tests below).
 
 ## 2. Game options and start
@@ -57,14 +60,14 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | Document | Content |
 |---|---|
 | [renegade-widget.md](renegade-widget.md) | the widget `renegade.lua`: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers, debug menu |
-| [renegade-units.md](renegade-units.md) | the gadget `renegade_game.lua`: units, moving, hull controls, reverse, jump, takeover mode, healing, debug messages |
+| [renegade-units.md](renegade-units.md) | the gadget `renegade_game.lua`: units, moving, hull controls, reverse, jump, power-ups, takeover mode, healing, debug messages |
 | [renegade-aircraft.md](renegade-aircraft.md) | aircraft: steering, height, bombs, shot down aircraft |
 | [renegade-shooting.md](renegade-shooting.md) | the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 
 ## 5. Tests (sandbox, `pve_test.ps1 -Ren ...`, lines in the infolog)
 
 - `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`, `-RenPowerups` = `lanrenepowerups=1`, `-RenTakeover` = `lanrenesingle=0`.
-- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
+- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents, `|7` and `|8` give all power-ups and put the unit onto a beacon): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
 
 | Widget | Checks |
 |---|---|
@@ -90,7 +93,8 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 ## 6. Not done and open
 
 - **Several humans, not tested:** two players in the LAN (host + one joiner): each steers one unit, they fight, no desync.
-  - Needs the lobby button, the game option for every player, `LAN_VERSION`, teams, one unit per human without a commander, scoring.
+  - The lobby button and the game options exist; still missing: teams, scoring and a goal of the game.
+- **Both modes together:** the speedometer of Renegade overlaps the level badge of the character panel of Evolution at the bottom of the screen (the keys 1 to 5 and the bar of Evolution work).
 - **Jump:** done for two-legged bots, see [renegade-units.md](renegade-units.md); not seen in a real window: the walk animation in the air, the feel of the height and of the pause.
 - Not checked by a human or not seen: the barrel lines on a picture, the Tab key as a commander, flying units as the player's unit (steering by move orders), whether the Titan starburst can hit an aircraft at all, how the lock feels against fast aircraft.
 - Open questions: a feel for the move orders (lag, the unit's heading against the view), traffic and determinism of the messages with many players, what the lobby and team setup need.
