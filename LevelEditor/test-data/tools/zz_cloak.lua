@@ -8,7 +8,7 @@ local function unit() return Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evo
 function widget:GameFrame(f)
 	if f == 60 then Spring.SendLuaRulesMsg("evo|test|1"); Spring.SendLuaRulesMsg("evo|test|3") end
 	if f == 90 or f == 150 or f == 240 or f == 330 then
-		log("frame", f, "unit", tostring(unit()), "cloaked", tostring(Spring.GetUnitIsCloaked(unit() or -1)), "fire state", tostring((Spring.GetUnitStates(unit() or -1) or {}).firestate), "abilities", tostring(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoAbilities")))
+		log("frame", f, "unit", tostring(unit()), "cloaked", tostring((Spring.GetUnitIsCloaked(unit() or -1))), "fire state", tostring((Spring.GetUnitStates(unit() or -1) or {}).firestate), "abilities", tostring(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoAbilities")))
 		Spring.SendLuaRulesMsg("evo|test|2")
 	end
 	if f == 120 then

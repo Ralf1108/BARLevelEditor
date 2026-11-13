@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-140 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+141 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -12,6 +12,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_arena.lua` | plays through the Arena page | `arena_test.ps1` |
 | `zz_arena_fight.lua` | what the armies shoot at after the area attack | `arena_test.ps1 -Widget zz_arena_fight.lua` |
 | `zz_arena_shots.lua` | sets up the Arena pictures of the README | `arena_test.ps1 -Shots` |
+| `zz_beacon.lua` | Evolution power-up beacons of powerups.lua: a unit drives over one, takes the power-up, the beacon comes back | `pve_test.ps1 -Evo -EvoTest -Widget zz_beacon.lua` |
 | `zz_bld.lua` | Evolution buildings change to T2 and back | `pve_test.ps1 -Evo -EvoStage 6 -EvoTest -Debug -Widget zz_bld.lua (one instance, speed 10)` |
 | `zz_bpfaction.lua` | BluePrinter turns a blueprint into the faction of the builders | `bp_test.ps1 -Widget zz_bpfaction.lua (player and commander of Cortex)` |
 | `zz_bpg.lua` | ghosts after undo |  |
