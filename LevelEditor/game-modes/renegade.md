@@ -99,7 +99,7 @@ Good to know about driving:
 
 - **Long sight:** your unit sees three times as far as its type normally does. There is no fog, and units far away stay units (no icons). Radar and minimap show only what your sight covers.
 - **Wrecks heal:** a hurt unit reclaims wrecks within 300 Elmo by itself (1 metal = 1 health).
-  - Rate: 1 % of the health it has now per second, at most 150.
+  - Rate: 1 % of its maximum health per second (at least 1, at most 150): big units heal faster.
   - Shown as green plus signs and a rising green "+number".
   - It stops at full health and when an armed enemy is near (a little more than the range of your weapons).
   - Evolution has its own version of this.

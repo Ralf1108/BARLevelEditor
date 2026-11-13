@@ -40,6 +40,8 @@ if not gadgetHandler:IsSyncedCode() then
 	return
 end
 
+local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the wreck reclaim (G.reclaimFeatures)
+
 function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer)
 	if damage and damage >= 1 then SendToUnsynced("renDmg", unitID, damage, paralyzer and true or false) end
 end
@@ -2385,8 +2387,8 @@ function gadget:Explosion(wdid, px, py, pz, owner)
 end
 
 -- Every unit that a human steers reclaims wrecks by itself (not with Evolution, which has its own reclaim): once a second the metal of the wrecks within RECLAIM_RANGE heals the unit,
--- 1 metal = 1 health, at most 1 % of the health the unit has now a second, and at most RECLAIM_RATE; it stops when the unit is fully healed or an armed enemy is within 1.25 times the longest range of the unit's weapons.
-local RECLAIM_RANGE, RECLAIM_RATE, RECLAIM_PERCENT = 300, 150, 0.01
+-- 1 metal = 1 health, at most 1 % of the maximum health a second (at least RECLAIM_MIN, at most RECLAIM_RATE: so a big unit heals faster); it stops when the unit is fully healed or an armed enemy is within 1.25 times the longest range of the unit's weapons.
+local RECLAIM_RANGE, RECLAIM_MIN, RECLAIM_RATE, RECLAIM_PERCENT = 300, 1, 150, 0.01
 local function autoReclaim()
 	for team, u in pairs(units) do
 		if Spring.ValidUnitID(u) and not (input[team] and input[team].normal) then
@@ -2406,20 +2408,9 @@ local function autoReclaim()
 					if ot and ot ~= Spring.GetGaiaTeamID() and not Spring.AreTeamsAllied(ot, team) and od and #(od.weapons or {}) > 0 then enemy = true break end
 				end
 				if not enemy then
-					local room, budget, healed = maxHp - hp, math.min(RECLAIM_RATE, hp * RECLAIM_PERCENT), 0 -- (1 % of the health it has now, at most RECLAIM_RATE)
-					for _, fid in ipairs(Spring.GetFeaturesInCylinder(x, z, RECLAIM_RANGE)) do
-						local fd = FeatureDefs[Spring.GetFeatureDefID(fid)]
-						local _, defM, _, _, left = Spring.GetFeatureResources(fid)
-						if fd and fd.reclaimable and left and left > 0 and (defM or 0) > 0 and room > 0.5 and budget > 0.5 then
-							local frac = math.min(left, math.min(budget, room) / defM)
-							if frac > 0.001 then
-								local take = defM * frac
-								room, budget, healed = room - take, budget - take, healed + take
-								if left - frac <= 0.002 then Spring.DestroyFeature(fid) else Spring.SetFeatureReclaim(fid, left - frac) end
-							end
-						end
-					end
-					if healed >= 1 then
+					local rate = math.max(RECLAIM_MIN, math.min(RECLAIM_RATE, maxHp * RECLAIM_PERCENT)) -- (1 % of the maximum health, 1 to RECLAIM_RATE)
+					local healed = G.reclaimFeatures(x, z, RECLAIM_RANGE, { health = maxHp - hp, healthRate = rate })
+					if healed > 0 then
 						Spring.SetUnitHealth(u, math.min(maxHp, hp + healed))
 						SendToUnsynced("renHeal", u, healed)
 						if TEST then Spring.Echo(string.format("[Renegade] reclaim: %.0f health from wrecks (%.0f of %.0f)", healed, hp + healed, maxHp)) end

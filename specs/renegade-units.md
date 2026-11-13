@@ -81,13 +81,13 @@ How a player gets a unit and how it drives: the synchronized part of the game mo
 
 - **Heal effect and wreck reclaim:** `G.healAdd(unit, amount)` and `G.healDraw(vsy)` in `led_gadgets.lua` (unsynced, called from `gadget:DrawScreen`): 12 green plus signs circle round the unit and rise, a green "+N" climbs over it (1.6 s; in the first person view, with the camera inside the unit, the same round the middle of the screen).
   - The synced part sends `SendToUnsynced("renHeal" / "evoHeal", unit, amount)`.
-  - `autoReclaim` in `renegade_game.lua` (not with Evolution, which has its own): once a second the unit of a human that is hurt takes the metal of the wrecks within `RECLAIM_RANGE` = 300 Elmo as health, 1 metal = 1 health, at most `RECLAIM_RATE` = 150 a second (the wreck shrinks or is gone);
+  - `autoReclaim` in `renegade_game.lua` (not with Evolution, which has its own): once a second the unit of a human that is hurt takes the metal of the wrecks within `RECLAIM_RANGE` = 300 Elmo as health, 1 metal = 1 health, at most 1 % of the maximum health a second, at least `RECLAIM_MIN` = 1 and at most `RECLAIM_RATE` = 150 (the wreck shrinks or is gone); the work is done by `G.reclaimFeatures` of `led_gadgets.lua`, which Evolution uses too;
     - it stops at full health and while an armed enemy is within 1.25 times the longest weapon range of the unit (at least 375 Elmo).
-  - Test hook `ren|test|6` (unit at 30 %, three Bull wrecks ahead), `zz_ren89.lua`: 109 and 150 health in two seconds, then 370 of 370 and nothing more.
+  - Test hook `ren|test|6` (unit at 30 %, three Bull wrecks ahead), `zz_ren89.lua`: the health rises by the rate every second until it is full.
   - Not for computer Peewees.
   - The third person view of the effect was not seen.
-- **Reclaim rate and one heal number (changed):** the health a unit takes from wrecks is at most 1 % of the health it has now per second (`RECLAIM_PERCENT` = 0.01), at most `RECLAIM_RATE` = 150 (before: 150 flat); Evolution the same (`R.RECLAIM_HEAL_PERCENT`, `R.RECLAIM_HEAL_MAX`).
-  - Measured with `zz_ren89.lua`: a Pawn at 111 of 370 gets 1 health a second (reads as very slow: the rate is the lower, the more hurt the unit is).
+- **Reclaim rate and one heal number:** the health a unit takes from wrecks per second is 1 % of its **maximum** health (`RECLAIM_PERCENT` = 0.01), at least `RECLAIM_MIN` = 1 and at most `RECLAIM_RATE` = 150, so a big unit heals faster and a small one still at least 1 a second; Evolution the same (`R.RECLAIM_HEAL_PERCENT`, `R.RECLAIM_HEAL_MIN`, `R.RECLAIM_HEAL_MAX`).
+  - Measured with `zz_ren89.lua`: a Pawn (370 health) at 111 gets 3.7 health a second (111, 115, 118, 122, 126 ... every 30 frames).
   - `G.healAdd` joins the heals of one unit within 1.3 s into one number that counts up (before: one number per second, so two were seen at the same time).
 
 ## Debug messages (only with `lanrenedebug`)

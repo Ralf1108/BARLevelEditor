@@ -331,4 +331,46 @@ function G.healDraw(vsy)
 	gl.Color(1, 1, 1, 1)
 end
 
+-- The wreck reclaim of a unit that heals itself (Renegade, Evolution): the metal of the reclaimable features within range heals the unit (1 metal = 1 health) and, when
+-- o.energy is given, their energy goes to the team. o = { health = room (max health - health now), healthRate = most health in this call, energy = room, energyRate = most
+-- energy in this call } (the energy fields are optional). A feature is taken only by the part that fits. A resource without room or budget is left out (its part of the
+-- feature is lost, so a unit at full health still takes the energy of a wreck), but a feature is used only when at least one of its resources can be taken.
+-- Returns healed, energy: what was taken (the caller sets the health and adds the energy).
+function G.reclaimFeatures(x, z, range, o)
+	local roomH, budgetH = o.health or 0, o.healthRate or 0
+	local roomE, budgetE = o.energy or 0, o.energyRate or 0
+	local healed, energy = 0, 0
+	for _, fid in ipairs(Spring.GetFeaturesInCylinder(x, z, range)) do
+		local fd = FeatureDefs[Spring.GetFeatureDefID(fid)]
+		local _, defM, _, defE, left = Spring.GetFeatureResources(fid)
+		defM, defE = defM or 0, defE or 0
+		if fd and fd.reclaimable and left and left > 0 then
+			local capH = defM > 0 and math.min(budgetH, roomH) or 0
+			local capE = defE > 0 and math.min(budgetE, roomE) or 0
+			local useH, useE = capH > 0.05, capE > 0.05
+			if useH or useE then
+				local frac = left
+				if useH then frac = math.min(frac, capH / defM) end
+				if useE then frac = math.min(frac, capE / defE) end
+				if frac > 0.001 then
+					if useH then
+						local take = defM * frac
+						healed, roomH, budgetH = healed + take, roomH - take, budgetH - take
+					end
+					if useE then
+						local take = defE * frac
+						energy, roomE, budgetE = energy + take, roomE - take, budgetE - take
+					end
+					if left - frac <= 0.002 then
+						Spring.DestroyFeature(fid)
+					else
+						Spring.SetFeatureReclaim(fid, left - frac)
+					end
+				end
+			end
+		end
+	end
+	return healed, energy
+end
+
 return G

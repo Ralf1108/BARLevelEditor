@@ -14,7 +14,7 @@ local function state(tag)
 	local st = u and Spring.GetUnitStates(u)
 	local hp, maxHp = Spring.GetUnitHealth(u or -1)
 	local e, store = Spring.GetTeamResources(me(), "energy")
-	log(tag, "frame", Spring.GetGameFrame(), "fire state", tostring(st and st.firestate), "cloaked", tostring(Spring.GetUnitIsCloaked(u or -1)), "health", tostring(hp and math.floor(hp)), "of", tostring(maxHp and math.floor(maxHp)), "energy", math.floor(e or 0), "storage", math.floor(store or 0))
+	log(tag, "frame", Spring.GetGameFrame(), "fire state", tostring(st and st.firestate), "cloaked", tostring((Spring.GetUnitIsCloaked(u or -1))), "health", tostring(hp and math.floor(hp)), "of", tostring(maxHp and math.floor(maxHp)), "energy", math.floor(e or 0), "storage", math.floor(store or 0))
 end
 function widget:GameFrame(f)
 	if f == 5 then Spring.SendCommands("setmaxspeed 10", "setminspeed 10") end

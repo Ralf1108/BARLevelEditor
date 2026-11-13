@@ -81,9 +81,9 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 - **More energy**: solar collectors and wind turbines of nobody stand around the map; they cannot be destroyed. Stand next to one for 5 seconds ("Taking 3/5") and its energy is yours (a solar collector about 20 per second, a wind turbine as much as the wind gives); an enemy takes it the same way
 
 **Reclaim by itself**
-- Your unit reclaims by itself the **trees and wrecks** within 100 Elmo, as long as no enemy player's unit is within 700 Elmo (at most 60 per second)
+- Your unit reclaims by itself the **trees and wrecks** within 100 Elmo, as long as no enemy player's unit is within 700 Elmo (at most 60 energy per second)
 - Trees give **energy** 1 to 1, but only while your energy storage is not full
-- The **metal** of a wreck does not go into the metal storage: it **heals** your unit 1 to 1, but only while it is hurt (the chat shows nothing, the health bar rises)
+- The **metal** of a wreck does not go into the metal storage: it **heals** your unit 1 to 1, but only while it is hurt: 1 % of your maximum health per second (at least 1, at most 150), so big units heal faster (a green "+number" shows it)
 
 **Radars**
 - Radars of nobody stand all over the map, until it is covered; they **cannot be destroyed**
