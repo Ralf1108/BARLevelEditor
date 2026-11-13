@@ -223,6 +223,7 @@ $ScenarioGameFiles = @(
     @('renegade_data.lua', 'luaui/Include/renegade_data.lua'),   # Renegade: the weapon tables (made from the tables in game-modes by renegade_weapons.py)
     @('evo_ui.lua', 'luaui/Include/evo_ui.lua'),   # Evolution: the unsynced part of the gadget evo_game.lua (panels, camera, score lines)
     @('powerups.lua', 'luaui/Include/powerups.lua'),   # the power-ups (Sprint, Repair, Radar Pulse, Cloak, Jammer): data and synced logic, used by Evolution and Renegade
+    @('powerups_ui.lua', 'luaui/Include/powerups_ui.lua'),   # the drawing of the power-ups (shapes, button bar, beacons): evo_ui.lua and the Renegade widget
     @('renegade_test.lua', 'luaui/Include/renegade_test.lua'),   # Renegade: the test hooks ren|test|n (loaded only with the game option lanrenotest)
     @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the window of the gift of stage 10
     @('renegade.lua', 'luaui/widgets/renegade.lua'),   # Renegade (LAN Play): the first person view and the steering of the own unit

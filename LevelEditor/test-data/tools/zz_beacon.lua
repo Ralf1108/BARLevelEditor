@@ -25,8 +25,11 @@ function widget:GameFrame(f)
 		if best then
 			goal, kindWanted = best.b, best.b.kind
 			Spring.GiveOrderToUnit(unit, CMD.MOVE, { goal.x, Spring.GetGroundHeight(goal.x, goal.z), goal.z }, 0)
+			-- a picture of the beacon (a column of light and a ring in the color of its power-up)
+			Spring.SetCameraState({ name = "spring", mode = 2, px = goal.x, py = Spring.GetGroundHeight(goal.x, goal.z), pz = goal.z, rx = 2.3, ry = 0, rz = 0, dist = 600 }, 0)
 		end
 	end
+	if f == 75 and goal then Spring.SendCommands("screenshot png") end
 	if goal and f > 60 and f % 300 == 0 then
 		local ux, _, uz = Spring.GetUnitPosition(unit)
 		log("frame", tostring(f), "distance to the beacon", ux and string.format("%.0f", math.sqrt((goal.x - ux) ^ 2 + (goal.z - uz) ^ 2)) or "?", "abilities", tostring(Spring.GetTeamRulesParam(team, "evoAbilities")), "beacons", tostring(#beacons()))
