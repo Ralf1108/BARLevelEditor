@@ -448,6 +448,11 @@ end
 -- ---------------------------------------------------------------- abilities and their beacons: powerups.lua (shared with Renegade); the players are Evolution's records
 local A = P.new({
 	players = players, owner = owner, say = say, testing = TESTING, healMsg = "evoHeal", abilitiesRule = "evoAbilities", beaconsRule = "evoBeacons",
+	-- after the cloak a unit that Renegade steers stays on hold fire (the player aims and fires); every other unit fires at will again
+	fireAfter = function(p)
+		local steered = (Spring.GetTeamRulesParam(p.team, "renUnit") or 0) == p.unit and (Spring.GetTeamRulesParam(p.team, "renNormal") or 0) ~= 1
+		return steered and 0 or 2
+	end,
 	-- a random place of the land where a unit can stand (10 tries)
 	randomSpot = function()
 		local ref = UnitDefNames.armpw

@@ -54,7 +54,9 @@ function widget:Initialize()
 		return
 	end
 	WG.renegade = R
+	R.keyPress = function(...) return widget:KeyPress(...) end -- (the test widgets press keys with it)
 	R.debug = mo.lanrenedebug == "1"
+	R.evo = mo.lanevolution == "1" -- (with Evolution: the keys 1 to 5 use its power-ups)
 	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the takeover mode, the key left of the 1 takes over the unit under the cursor and leaves it)
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 end
@@ -917,6 +919,14 @@ function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
 	if R.on and key == 9 and R.debug then return true end -- Tab: the mouse is free for the debug menu, again: back to the view (switched in Update)
 	if R.on and (key == K.W or key == K.A or key == K.S or key == K.D or key == K.SPACE) then
 		return true
+	end
+	-- the keys 1 to 5 (also the number pad): the power-ups of Evolution (Sprint, Repair, Radar Pulse, Cloak, Jammer), the game message of the buttons of its bar
+	if R.on and R.evo and not (mods and (mods.ctrl or mods.alt or mods.meta)) and not (R.picker and R.picker.focus) then
+		local n = (key >= 49 and key <= 53) and key - 48 or ((key >= 257 and key <= 261) and key - 256 or nil)
+		if n then
+			if not isRepeat then Spring.SendLuaRulesMsg("evo|use|" .. n) end
+			return true
+		end
 	end
 	if R.on and key == 98 and not isRepeat then -- B: the binoculars for every unit with a long range (also one that uses the middle button for a weapon)
 		toggleZoom()

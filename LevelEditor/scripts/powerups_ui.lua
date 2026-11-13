@@ -131,7 +131,7 @@ end
 -- The buttons of the own abilities in the rectangle x1, y1 - x2, y2: five in the order of ABILITIES, each with its color and symbol; grey and pale while the
 -- team does not have it, dimmed with the seconds while it cools down, a bright border while it works; a click uses it (game message "evo|use|<n>"), the
 -- mouse over a button shows what it does (above it). o = { team, rule (team rule of the abilities), unit (the unit of the player or nil), slots (a table that gets the rectangles of the buttons
--- for the mouse) }.
+-- for the mouse), labels (true: the number of the key 1 to 5 stands at the top of each button) }.
 function U.bar(o, x1, y1, x2, y2, s)
 	local mine = o.team
 	local have = U.state(mine, o.rule)
@@ -179,6 +179,11 @@ function U.bar(o, x1, y1, x2, y2, s)
 				U.icon(a.key, cx, iy, 14 * s, 1)
 			end
 			gl.Color(1, 1, 1, cooling and 0.6 or 1)
+		end
+		if o.labels then
+			gl.Color(1, 1, 1, h and 0.9 or 0.4)
+			gl.Text(tostring(i), cx, by2 - 9 * s, 11 * s, "cvo") -- (the key that uses it)
+			gl.Color(1, 1, 1, 1)
 		end
 		local w1, w2 = a.name:match("^(%S+)%s+(%S+)$")
 		if w1 then

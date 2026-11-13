@@ -267,7 +267,8 @@ return function(gadget, S)
 	function H.bar(x1, y1, x2, y2, s)
 		local mine = Spring.GetMyTeamID()
 		local unit = Spring.GetTeamRulesParam(mine, "evoUnit")
-		U.bar({ team = mine, rule = "evoAbilities", unit = (unit and unit > 0) and unit or nil, slots = H.slots }, x1, y1, x2, y2, s)
+		local steering = (Spring.GetModOptions() or {}).lanrenegade == "1" and (Spring.GetTeamRulesParam(mine, "renUnit") or 0) > 0 -- (Renegade: the keys 1 to 5 use the power-ups)
+		U.bar({ team = mine, rule = "evoAbilities", unit = (unit and unit > 0) and unit or nil, slots = H.slots, labels = steering }, x1, y1, x2, y2, s)
 	end
 
 	-- The own character at the bottom in the middle (where the game shows the selected units: only one unit is played): a big level badge, the unit, the

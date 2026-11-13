@@ -2,7 +2,8 @@
 -- map that give a power-up to the unit that drives over them, the use of a power-up, its effect and its end, the computer players. P.new(ctx) returns the table A; the game mode gives
 -- it (ctx): players (the list of the player records { team, unit, name, ai, out, abilities, cool, active }), owner (unit id -> player record), say(text), randomSpot() (x, z of a free
 -- place for a beacon or nil), count() (beacons of every kind at the start), testing (log lines), healMsg (the name of the message SendToUnsynced for the heal effect),
--- abilitiesRule (team rule with the state of the abilities of a team) and beaconsRule (game rule with the beacons). Loaded by evo_game.lua, which also uses it unsynced for the list.
+-- abilitiesRule (team rule with the state of the abilities of a team), beaconsRule (game rule with the beacons) and fireAfter(p) (the fire state a human's unit gets back when the cloak
+-- ends: 2 fire at will, 0 hold fire for a unit that Renegade steers; default 2). Loaded by evo_game.lua, which also uses it unsynced for the list.
 local P = {}
 
 -- The abilities: a beacon of the color of an ability lies on the map; a player's unit that drives over it gets the ability until it dies (a button in the
@@ -145,7 +146,7 @@ function P.new(ctx)
 			pcall(Spring.SetUnitCloak, id, 0)
 			A.hide(id, false)
 			if p.holdFire then
-				Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { 2 }, 0) -- (2 = fire at will)
+				Spring.GiveOrderToUnit(id, CMD_FIRE_STATE, { ctx.fireAfter and ctx.fireAfter(p) or 2 }, 0) -- (2 = fire at will)
 				p.holdFire = nil
 			end
 		elseif key == "sprint" then

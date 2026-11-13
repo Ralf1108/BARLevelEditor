@@ -34,6 +34,7 @@ Two ways to play in LAN Play (settings of the button **Renegade**):
 | Shift | third person view (camera behind your unit) and back |
 | Alt | **FULL FIRE** on / off: the left button fires every weapon at once |
 | Space / Ctrl | aircraft: higher / lower; Ctrl held at the bottom for 2 s lands a gunship |
+| 1 to 5 | with Evolution: Sprint, Repair, Radar Pulse, Cloak, Jammer (the numbers stand on the buttons of the bar at the bottom; the beacons that give them lie on the map, see the Evolution manual) |
 | Space | a unit with two legs (Pawn, Grunt, commander, Titan ...): jump; the walking speed is kept in the air, a big unit jumps lower, one second of pause before the next jump; spiders, tanks, hovercraft and ships do not jump |
 | Mouse wheel, B | binoculars (units with a range of 600 or more): wheel forward zooms in, back zooms out |
 | Key left of the 1 ("^" on a German keyboard) | switch between Renegade and the normal game; in takeover mode: take over the unit under the mouse and leave it |

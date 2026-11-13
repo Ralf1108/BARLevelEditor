@@ -431,6 +431,8 @@ local function startJump(u, inp, ud, f)
 	local vx, _, vz = Spring.GetUnitVelocity(u)
 	vx, vz = vx or 0, vz or 0
 	local top = (ud.speed or 0) / 30
+	local okMove, md = pcall(Spring.GetUnitMoveTypeData, u)
+	if okMove and type(md) == "table" and tonumber(md.maxSpeed) then top = math.max(top, md.maxSpeed / 30) end -- (a sprint of Evolution raises the maximum speed of the unit)
 	local v = math.sqrt(vx * vx + vz * vz)
 	if v > top and v > 0 then vx, vz = vx * top / v, vz * top / v end
 	local radius = Spring.GetUnitRadius(u) or JUMP_REF_RADIUS

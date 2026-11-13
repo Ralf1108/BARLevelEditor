@@ -57,6 +57,9 @@ What the player sees and presses: camera, mouse, crosshair, panel, dials. All of
 - **Mouse free, third version (`leaving`):** the game does not report the cursor outside of the window when it leaves it (the coordinates stay inside, near the edge: logged "mouse 1299 18", "1007 23"), and no key event comes for the Windows key.
   - The cursor is at the middle all the time otherwise, so a position within 4 % (at least 30 px) of an edge counts as leaving and sets `R.away` (latched; only a left click away from the edge ends it).
   - **Not measured with the real window.**
+- **Power-up keys (`R.evo`, `KeyPress`):** with the game option `lanevolution` the keys 1 to 5 (also the number pad, not with Ctrl, Alt or the Windows key, not while the search field is typed in) send `evo|use|<n>` (the buttons of the bar of Evolution, `powerups.lua`) while the view is on and return true (the game does not get them);
+  - the bar of Evolution (`evo_ui.lua`, `H.bar`) writes the number on each button while the player steers a unit in Renegade (`labels` of `U.bar`);
+  - `R.keyPress` (a function of `WG.renegade`) is the key press of the widget for the test widgets (`zz_ren91.lua`).
 - **Space is the engine's meta key:** `GetModKeyState` reports the Space bar as "meta", so the Windows key poll (commit `73fc9c4`) took every Space for the Windows key: the mouse was free and Space did not lift aircraft (found in the infolog: "Windows / meta key true" with no key 310 to 312).
   - The poll now uses only `GetKeyState(310 / 311 / 312)` and the KeyPress codes.
   - `mods.meta` in the mode key test of `KeyPress` stays (Space + mode key does nothing).
