@@ -14,7 +14,7 @@
 #         evo = Evolution on an official map (-Map, default Comet Catcher Remake 1.8): the host presses the button Evolution, PlayerA, PlayerB and a BARb computer
 #               (-Ai, default BARb) play each other; zz_lantest.lua logs the stages and sends the units of both players into the middle and takes screenshots;
 #               -EvoStage 10: everybody starts on that stage (Armageddon at once; PlayerA chooses the gift Gates of Hell, PlayerB Hell on Earth)
-#   -RenRoom   (evoroom) the host also switches Renegade on (jump mode) and its menu opens at 18 s
+#   -RenRoom   (evoroom) the host also switches Renegade on (take-over mode) and its menu opens at 18 s
 #         evoroom = one instance, the host's room with Evolution switched on (the rules go into the chat; at 14 s of the lobby the menu of the button LAN Play opens, at 16 s the Evolution menu) and a BARb computer, no game: pictures with -Shots, -WaitSec ends it
 #         readystart = host and joiner: Start while somebody is not ready is refused, the joiner is made boss, everybody ready: the boss starts (log lines "test: ..." and "autohost: start by ... refused" in lan_status.txt of the host)
 #         boss = the host makes the joiner boss (the menu's Make Boss: !boss <name>) and takes it away again; log lines "test: ... isBoss" in the infolog of the host

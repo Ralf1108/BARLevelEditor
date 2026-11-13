@@ -29,7 +29,7 @@ Play with computers in the same network. No account, no server in the cloud.
   - Any map, best a small one (size M or smaller).
   - Rules: [Evolution](../LevelEditor/game-modes/evolution.md)
 - **Renegade:** the host presses **LAN Play**, then **Renegade** (On / Off, Always in unit): every player steers one unit from the inside, like a shooter.
-  - With Always in unit Off you play the normal game and jump into any of your units with the key left of the 1.
+  - With Always in unit Off you play the normal game and take over any of your units with the key left of the 1.
   - Experimental, not tested with several humans.
   - Rules: [Renegade](../LevelEditor/game-modes/renegade.md)
 - **Boss:** the host can make another player a boss (menu of a player, **Make Boss**); a boss can change the map and teams and press **Start**, but the game only starts when **every player has pressed Ready** (the room says who is not ready yet); the host can always start

@@ -22,7 +22,7 @@
 Two ways to play in LAN Play (settings of the button **Renegade**):
 
 - **Always in unit On** (the default): every player is one unit for the whole game.
-- **Always in unit Off** (jump mode): you play the normal game with all your units. Hold the mouse over one of your units and press **the key left of the 1** to jump into it, the same key to jump out. If the unit is lost you are out of it.
+- **Always in unit Off** (take-over mode): you play the normal game with all your units. Hold the mouse over one of your units and press **the key left of the 1** to take it over, the same key to leave it. If the unit is lost you are out of it.
 
 ## Controls
 
@@ -35,7 +35,7 @@ Two ways to play in LAN Play (settings of the button **Renegade**):
 | Alt | **FULL FIRE** on / off: the left button fires every weapon at once |
 | Space / Ctrl | aircraft: higher / lower; Ctrl held at the bottom for 2 s lands a gunship |
 | Mouse wheel, B | binoculars (units with a range of 600 or more): wheel forward zooms in, back zooms out |
-| Key left of the 1 ("^" on a German keyboard) | switch between Renegade and the normal game; in jump mode: jump into the unit under the mouse and out |
+| Key left of the 1 ("^" on a German keyboard) | switch between Renegade and the normal game; in take-over mode: take over the unit under the mouse and leave it |
 | Insert, or the key next to the left Shift | switch between Renegade and the normal game |
 | Tab | free the mouse for the debug menu, again: back |
 | Windows key | free the mouse (to reach another window) |

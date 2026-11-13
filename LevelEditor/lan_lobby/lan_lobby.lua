@@ -2206,7 +2206,7 @@ end
 
 ---------------------------------------------------------------- "Renegade": every player steers a unit from the inside (gadget renegade_game.lua, widget renegade.lua of the extra game)
 local REN_TIP = "Renegade: you steer a unit from the inside (first or third person view, W A S D drive it like a tank, the mouse aims the weapons). On: in the normal game press the key left of the 1 over one of " ..
-	"your units to jump into it and the same key again to jump out. Always in unit: every player is one unit for the whole game (instead of the commander; a lost unit comes back 5 s later). The host switches it on or off."
+	"your units to take it over and the same key again to leave it. Always in unit: every player is one unit for the whole game (instead of the commander; a lost unit comes back 5 s later). The host switches it on or off."
 -- Always in unit is on by default (the choice is kept in S.renSingleOff, also while Renegade is off; the game options are written when Renegade is switched on)
 local function renSingle() return not (S and S.renSingleOff) end
 local function renShown()
@@ -2214,7 +2214,7 @@ local function renShown()
 	local l = lobby()
 	return l and l.modoptions and l.modoptions.lanrenegade == "1" or false
 end
--- on: the game options lanrenegade=1 and lanrenesingle=0 (the jump mode) for everybody in the room; off: both removed. lanrenesingle is always written when it is on (a missing one means the single unit mode)
+-- on: the game options lanrenegade=1 and lanrenesingle=0 (the take-over mode) for everybody in the room; off: both removed. lanrenesingle is always written when it is on (a missing one means the single unit mode)
 local function setRenOptions(on, single)
 	if not S or S.battle.scenario then return end
 	S.battle.modoptions.lanrenegade = on and "1" or nil
@@ -2222,8 +2222,8 @@ local function setRenOptions(on, single)
 	toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=" .. (on and "1" or ""))
 	toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=" .. (on and (single and "1" or "0") or ""))
 	syncPveGame()
-	log("Renegade", on and (single and "on, always in unit" or "on, jump mode") or "off")
-	say(on and (single and "The game mode Renegade is on: every player steers one unit for the whole game (instead of the commander)." or "The game mode Renegade is on: in the game press the key left of the 1 over one of your units to jump into it, the same key again to jump out.") or "The game mode Renegade is off.")
+	log("Renegade", on and (single and "on, always in unit" or "on, take-over mode") or "off")
+	say(on and (single and "The game mode Renegade is on: every player steers one unit for the whole game (instead of the commander)." or "The game mode Renegade is on: in the game press the key left of the 1 over one of your units to take it over, the same key again to leave it.") or "The game mode Renegade is off.")
 end
 
 local function openRenMenu()
@@ -2234,10 +2234,10 @@ local function openRenMenu()
 	local sx, sy = b:LocalToScreen(b.width + 4, 0)
 	local on, single = renegadeOn(), renSingle()
 	local items = {
-		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Renegade is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch it for everybody in the room: in the game the key left of the 1 jumps into the unit under the cursor and out of it.",
+		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Renegade is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch it for everybody in the room: in the game the key left of the 1 takes over the unit under the cursor and leaves it again.",
 			fn = function() setRenOptions(not renegadeOn(), renSingle()); openRenMenu() end },
 		{ caption = "Always in unit: " .. (single and "On" or "Off"), class = single and "action_button" or "negative_button",
-			tip = "Always in unit " .. (single and "on" or "off") .. " (the default is on): on = every player is one unit for the whole game (it replaces the commander; the key left of the 1 does not jump out; a lost unit comes back after 5 s); off = the normal game, the key left of the 1 jumps into a unit and out of it. Default: on. Click to change.",
+			tip = "Always in unit " .. (single and "on" or "off") .. " (the default is on): on = every player is one unit for the whole game (it replaces the commander; the key left of the 1 does not leave the unit; a lost unit comes back after 5 s); off = the normal game, the key left of the 1 takes over a unit and leaves it again. Default: on. Click to change.",
 			fn = function()
 				S.renSingleOff = renSingle() or nil -- (on -> off, off -> on)
 				if renegadeOn() then setRenOptions(true, renSingle()) end
@@ -2659,7 +2659,7 @@ function widget:Update()
 	if cfg.renegade == "1" and S and lan and lan.step == "in" and not cfg.renegadeSet and clock() > 10 then
 		cfg.renegadeSet = true
 		log("test: Renegade on")
-		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the jump mode unless renegadeSingle=1)
+		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the take-over mode unless renegadeSingle=1)
 		setRenOptions(true, renSingle())
 	end
 	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then

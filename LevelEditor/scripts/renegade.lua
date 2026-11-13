@@ -55,7 +55,7 @@ function widget:Initialize()
 	end
 	WG.renegade = R
 	R.debug = mo.lanrenedebug == "1"
-	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the jump mode, the key left of the 1 jumps into the unit under the cursor and out of it)
+	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the take-over mode, the key left of the 1 takes over the unit under the cursor and leaves it)
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 end
 
@@ -185,7 +185,7 @@ end
 -- mouse are taken) and the normal game (the camera of the game, the keys and the mouse as always, the unit is an ordinary unit that can be given orders). The gadget is told
 -- ("ren|mode|0" / "ren|mode|1").
 local function toggleMode()
-	if not R.single then return end -- (the jump mode jumps with the key left of the 1 instead)
+	if not R.single then return end -- (the take-over mode uses the key left of the 1 instead)
 	local now = os.clock()
 	if R.modeAt and now - R.modeAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
 	R.modeAt = now
@@ -534,9 +534,9 @@ local function keysNow()
 	return k
 end
 
--- The jump mode: the key left of the 1 jumps into the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, out of it again (back in the normal game, the camera
+-- The take-over mode: the key left of the 1 takes over the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, leaves it again (back in the normal game, the camera
 -- flies back over the unit)
-local function jumpKey()
+local function takeKey()
 	local now = os.clock()
 	if R.qAt and now - R.qAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
 	R.qAt = now
@@ -548,7 +548,7 @@ local function jumpKey()
 	local kind, id = Spring.TraceScreenRay(mx, my)
 	if kind == "unit" and id and Spring.GetUnitTeam(id) == Spring.GetMyTeamID() then
 		Spring.SendLuaRulesMsg("ren|possess|" .. id)
-		say("jump into unit", id)
+		say("take over unit", id)
 	end
 end
 
@@ -558,14 +558,14 @@ function widget:Update()
 		-- the mode key (the key left of the 1, the circumflex "^" on a German keyboard, scan code 53), polled as well: the game may take the press before the widget sees it
 		local k = Spring.GetKeyState(94) or (Spring.GetScanKeyState and Spring.GetScanKeyState(53))
 		if k and not R.qWas and not (R.picker and R.picker.focus) then
-			if R.single then toggleMode() else jumpKey() end
+			if R.single then toggleMode() else takeKey() end
 		end
 		R.qWas = k
 	end
 	local u = myUnit()
 	R.waiting = false
 	if not u and R.on and not R.single and Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renFollow") == 1 then
-		-- Evolution: the unit evolved or was lost and the next one is on its way (the gadget jumps into it): the view stays and nothing is drawn for the old unit
+		-- Evolution: the unit evolved or was lost and the next one is on its way (the gadget takes it over): the view stays and nothing is drawn for the old unit
 		R.waiting = true
 		return
 	end
@@ -670,14 +670,14 @@ function widget:Update()
 			local now = os.clock()
 			local gap = now - (R.lookClock or now)
 			R.lookClock = now
-			local jump = math.abs(mx - cx) > vsx * 0.4 or math.abs(my - cy) > vsy * 0.4
+			local cursorJump = math.abs(mx - cx) > vsx * 0.4 or math.abs(my - cy) > vsy * 0.4
 			-- (and a turn of more than 35 degrees up or down or 70 degrees sideways in one frame, which a hand cannot make: a glitch of the cursor; the first one that is ignored is
 			-- written to the log with the numbers so that the cause can be found: "look jump ignored")
-			jump = jump or math.abs((my - cy) * SENS) > 35 or math.abs((mx - cx) * SENS) > 70
-			if R.skipLook or gap > 0.25 or jump then
+			cursorJump = cursorJump or math.abs((my - cy) * SENS) > 35 or math.abs((mx - cx) * SENS) > 70
+			if R.skipLook or gap > 0.25 or cursorJump then
 				R.lookSkipped = (R.lookSkipped or 0) + 1 -- (for the tests)
-				if jump and (R.jumpLogged or 0) < 5 then
-					R.jumpLogged = (R.jumpLogged or 0) + 1
+				if cursorJump and (R.lookJumpLogged or 0) < 5 then
+					R.lookJumpLogged = (R.lookJumpLogged or 0) + 1
 					say("look jump ignored: mouse", mx, my, "middle", cx, cy, "gap", string.format("%.2f", gap), "pitch", string.format("%.1f", R.pitch))
 				end
 				R.skipLook = false
@@ -901,10 +901,10 @@ function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
 		R.away = true
 		R.metaWas = true
 	end
-	-- the mode key: left of the 1 (scan code 53; "^" on a German keyboard): the single unit mode switches between Renegade and the normal game, the jump mode jumps into the unit under the
-	-- cursor and out of it
+	-- the mode key: left of the 1 (scan code 53; "^" on a German keyboard): the single unit mode switches between Renegade and the normal game, the take-over mode takes over the unit under the
+	-- cursor and leaves it
 	if (scanCode == 53 or key == 94) and not isRepeat and not (R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
-		if R.single then toggleMode() else jumpKey() end
+		if R.single then toggleMode() else takeKey() end
 		return true
 	end
 	if key == 277 or key == 60 or key == 62 then -- Insert, "<" and ">" (the key next to Shift; a scan code 100 key reports one of them)

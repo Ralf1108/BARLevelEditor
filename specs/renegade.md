@@ -56,7 +56,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | Document | Content |
 |---|---|
 | [renegade-widget.md](renegade-widget.md) | the widget `renegade.lua`: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers, debug menu |
-| [renegade-units.md](renegade-units.md) | the gadget `renegade_game.lua`: units, moving, hull controls, reverse, jump mode, healing, debug messages |
+| [renegade-units.md](renegade-units.md) | the gadget `renegade_game.lua`: units, moving, hull controls, reverse, take-over mode, healing, debug messages |
 | [renegade-aircraft.md](renegade-aircraft.md) | aircraft: steering, height, bombs, shot down aircraft |
 | [renegade-shooting.md](renegade-shooting.md) | the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 
