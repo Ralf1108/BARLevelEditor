@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-139 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+140 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -133,6 +133,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_save.lua` | works the Save page (button S) | `arena_test.ps1 -Widget zz_save.lua` |
 | `zz_scenario.lua` | works the Scenario info page (button I) | `arena_test.ps1 -Widget zz_scenario.lua` |
 | `zz_shots_all.lua` | sets up the scenes of the pictures of the README | `arena_test.ps1 -Widget zz_shots_all.lua (with -Map "Full Metal Plate 1.7")` |
+| `zz_sight.lua` | the sight of a unit with Renegade (3 times) and the Radar Pulse of Evolution (G.setSight) | `pve_test.ps1 -Ren -RenTakeover -Evo -EvoTest -Debug -Widget zz_sight.lua` |
 | `zz_smart.lua` | units with smart weapon selection (priority / backup trajectory weapons) | `pve_test.ps1 -Widget zz_smart.lua (without -Quick` |
 | `zz_spider.lua` | the movement classes of the units (spiders) | `pve_test.ps1 -Widget zz_spider.lua (without -Quick)` |
 | `zz_split.lua` | the split attack (XS) on two Arena armies | `arena_test.ps1 -Widget zz_split.lua` |

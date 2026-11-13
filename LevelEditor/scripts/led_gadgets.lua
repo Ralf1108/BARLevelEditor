@@ -342,6 +342,28 @@ function G.randomPlace(defID, o)
 	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
 end
 
+-- The sight of a unit (los and airLos), changed for a reason: G.setSight(id, "renegade", { factor = 3 }) (three times its own sight), G.setSight(id, "pulse", { radius = 2500 }) (this
+-- many Elmo), G.setSight(id, "pulse", nil) takes the reason away. The largest of all reasons counts, and with none left the unit has its own sight again, so two game modes on
+-- the same unit (the Radar Pulse of Evolution in Renegade's three times the sight) do not undo each other. The own sight is read when the first reason comes.
+local sights = {} -- unit id -> { base = { los, airLos }, why = { reason -> { factor | radius } } }
+function G.setSight(id, reason, o)
+	local s = sights[id]
+	if not Spring.ValidUnitID(id) then sights[id] = nil return end
+	if not s then
+		if not o then return end
+		s = { base = {}, why = {} }
+		for _, k in ipairs({ "los", "airLos" }) do s.base[k] = Spring.GetUnitSensorRadius(id, k) or 0 end
+		sights[id] = s
+	end
+	s.why[reason] = o
+	for k, base in pairs(s.base) do
+		local r = base
+		for _, w in pairs(s.why) do r = math.max(r, w.radius or base * (w.factor or 1)) end
+		pcall(Spring.SetUnitSensorRadius, id, k, r)
+	end
+	if next(s.why) == nil then sights[id] = nil end
+end
+
 -- The heal effect (unsynced, for the gadgets that heal a unit): green plus signs rise round the unit and a green "+N" climbs over it. The synced part sends each heal with
 -- SendToUnsynced(<name>, unit, amount); the unsynced part calls G.healAdd(unit, amount) for it and G.healDraw(vsy) from gadget:DrawScreen.
 local HEAL_LIFE, HEAL_MAX, HEAL_JOIN = 1.6, 40, 1.3 -- (heals of the same unit within HEAL_JOIN seconds are one number)

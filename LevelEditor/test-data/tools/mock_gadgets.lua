@@ -141,6 +141,34 @@ do
 		ok("bar_rules")
 end
 
+-- ---------------------------------------------------------------- G.setSight
+do
+	local realSpring = Spring
+	local radius = { los = 400, airLos = 300 }
+	Spring = setmetatable({
+		ValidUnitID = function() return true end,
+		GetUnitSensorRadius = function(_, k) return radius[k] end,
+		SetUnitSensorRadius = function(_, k, v) radius[k] = v end,
+	}, { __index = realSpring })
+	G.setSight(1, "renegade", { factor = 3 })
+	check(radius.los == 1200 and radius.airLos == 900, "setSight: three times the own sight (" .. radius.los .. ", " .. radius.airLos .. ")")
+	G.setSight(1, "pulse", { radius = 2500 })
+	check(radius.los == 2500 and radius.airLos == 2500, "setSight: the larger reason counts (a pulse of 2500)")
+	G.setSight(1, "pulse", nil)
+	check(radius.los == 1200 and radius.airLos == 900, "setSight: the end of the pulse keeps the three times sight")
+	G.setSight(1, "renegade", nil)
+	check(radius.los == 400 and radius.airLos == 300, "setSight: no reason left, the own sight is back (" .. radius.los .. ", " .. radius.airLos .. ")")
+	G.setSight(1, "pulse", nil)
+	check(radius.los == 400, "setSight: taking away a reason that is not there changes nothing")
+	radius = { los = 400, airLos = 0 }
+	G.setSight(2, "pulse", { radius = 1000 })
+	check(radius.airLos == 1000, "setSight: a radius also works where the unit has no air sight")
+	G.setSight(2, "pulse", nil)
+	check(radius.airLos == 0 and radius.los == 400, "setSight: and goes back to none")
+	Spring = realSpring
+	ok("setSight")
+end
+
 -- ---------------------------------------------------------------- G.fits and G.randomPlace
 do
 	local realSpring = Spring

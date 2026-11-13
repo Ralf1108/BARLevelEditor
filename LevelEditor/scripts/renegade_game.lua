@@ -995,7 +995,6 @@ end
 
 local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
-local sightBase = {} -- unit id -> its own sight radii (the takeover mode gives them back when the player leaves the unit)
 -- the unit is the player's: bookkeeping, hold fire, the data for the widget (the unit of the start, of a respawn, a debug turn and, in the takeover mode, a unit the player took over)
 local function adopt(team, id, defName)
 	units[team] = id
@@ -1007,14 +1006,7 @@ local function adopt(team, id, defName)
 	Spring.GiveOrderToUnit(id, CMD.FIRE_STATE, { (input[team] and input[team].normal) and 2 or 0 }, 0) -- hold fire: only the player aims (the normal game: fire at will)
 	Spring.SetTeamRulesParam(team, "renUnit", id, { public = true })
 	-- three times the sight of the unit type (first person: enemies must not pop up at the edge of the sight); the radar stays as it is, the map and the minimap show what is within this sight
-	sightBase[id] = sightBase[id] or {}
-	for _, k in ipairs({ "los", "airLos" }) do
-		local base = sightBase[id][k] or Spring.GetUnitSensorRadius(id, k)
-		if base and base > 0 then
-			sightBase[id][k] = base
-			pcall(Spring.SetUnitSensorRadius, id, k, base * SIGHT_FACTOR)
-		end
-	end
+	G.setSight(id, "renegade", { factor = SIGHT_FACTOR }) -- (the takeover mode gives the own sight back when the player leaves the unit)
 	if TEST then Spring.Echo(string.format("[Renegade] sight of %s: los %s airLos %s", defName, tostring(Spring.GetUnitSensorRadius(id, "los")), tostring(Spring.GetUnitSensorRadius(id, "airLos")))) end
 	-- the groups of weapons of the buttons for the widget: "left;right;middle" (weapon numbers), and the anti-air weapons
 	local s = slotsFor(UnitDefNames[defName])
@@ -1086,8 +1078,7 @@ release = function(team)
 		Spring.GiveOrderToUnit(u, CMD.FIRE_STATE, { 2 }, 0)
 		local ud = UnitDefs[Spring.GetUnitDefID(u) or -1]
 		for i = 1, #(ud and ud.weapons or {}) do unblock(u, i, Spring.GetGameFrame()) end
-		for k, v in pairs(sightBase[u] or {}) do pcall(Spring.SetUnitSensorRadius, u, k, v) end
-		sightBase[u] = nil
+		G.setSight(u, "renegade", nil)
 	end
 	units[team], kind[team] = nil, nil
 	inp.hold, inp.aimed, inp.keys, inp.fire, inp.moving = {}, false, 0, 0, false

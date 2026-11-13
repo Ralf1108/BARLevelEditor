@@ -547,8 +547,7 @@ function A.start(p, i)
 		Spring.SetUnitHealth(id, newHp)
 		SendToUnsynced("evoHeal", id, newHp - hp) -- (green plus signs and "+N" over the unit)
 	elseif a.key == "pulse" then
-		sensor(id, "los", A.PULSE)
-		sensor(id, "airLos", A.PULSE)
+		G.setSight(id, "pulse", { radius = A.PULSE }) -- (a mode that makes the sight larger, Renegade, keeps its own reason)
 	end
 	if a.time > 0 then
 		p.active = p.active or {}
@@ -590,8 +589,7 @@ function A.stop(p, i)
 	elseif key == "sprint" then
 		pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed, maxWantedSpeed = ud.speed })
 	elseif key == "pulse" then
-		sensor(id, "los", ud.losRadius or ud.sightDistance or 400)
-		sensor(id, "airLos", ud.airLosRadius or ud.airSightDistance or 400)
+		G.setSight(id, "pulse", nil)
 	end
 end
 

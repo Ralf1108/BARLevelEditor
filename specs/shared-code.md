@@ -55,11 +55,12 @@
 ### `led_gadgets.lua`
 
 - Installed as `luaui/Include/led_gadgets.lua`; every gadget of the extra games loads it (`local G = VFS.Include(...)`), and it loads `bar_rules.lua` as `G.Rules`.
-- Places for units (synced):
+- Places and sight of units (synced):
 
 | Function | Job | Used by |
 |---|---|---|
 | `G.fits(defID, x, z, objects, minY)` | can a unit of this kind stand and move there (a building: can it be built there); `objects == false`: units and features do not count; `minY` the lowest ground that counts as land (default -5) | Evolution (`fits`: land grid, spawns, beacons), `G.randomPlace` |
+| `G.setSight(id, reason, o)` | the sight (los, airLos) of a unit for a reason: `{ factor = 3 }` or `{ radius = 2500 }`, `nil` takes the reason away; the largest counts, with none left the own sight is back | Renegade (`"renegade"`, 3 x), Evolution (`"pulse"`, 2500) |
 | `G.randomPlace(defID, o)` | the best of `o.tries` random places (24) inside `o.margin` (200) where the unit fits, by `o.score(x, z)` (default: the first); `o.relax`: a second pass that only wants dry ground (a ship on land, a turret); returns `x, y, z` or nil | Renegade (`place`: start of the bots, respawn) |
 
 - Other functions: messages and texts (`G.sayer`, `G.split`, `G.fields`, `G.teamMessenger`, `G.handleMessage`), alliances (`G.allyOf`, `G.teamsOfAlliance`, `G.allianceList`, `G.allianceName`, `G.wonBy`), scores (`G.publishScores`, `G.scoreLine`, `G.drawScoreLine`, `G.drawScreenPost`, `G.stopper`), game options (`G.option`), the heal effect (`G.healAdd`, `G.healDraw`) and the wreck reclaim (`G.reclaimFeatures`).
