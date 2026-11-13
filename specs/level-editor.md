@@ -284,6 +284,7 @@ The Place / Generate menus are `kind = "top"` rectangles; `headerRowCount` knows
 
 - **Messages** through `Spring.SendLuaRulesMsg` with the prefix `led|`: `step`, `place`, `delete`, `deleteids`, `boomids`, `boom`, `undo`, `redo`, `clear`, `clearrect`, `clearcircle`, `clearline`, `clearids` (units `u<id>` and features `f<id>` in the way), `fix`, `tdroute`, `ctfpts`, `arenastate`, `arenastart`, `arenastop`, `teams`, `order`, `load`, `generate`, `generaterect`, `builders`, `assign`, `feature`, `loadfeature`, `clearfeatures`, `move`, `movefeatures`, `xform`.
   - Only with cheat or in editor mode; otherwise the message "Cheat mode is off: please type /cheat".
+  - `gadget:RecvLuaMsg` only splits the message at `|`; every command is a function `LED.<command>(parts, playerID)` in the table `LED` above it (a new command is a new function there).
 - `GG.LevelEditor` offers the same functions for tests; `GG.LevelEditorSpawnBuilders(x, z, team)` creates the builders (manually without markers, in the team of the call).
 - **No gravestone when a unit is taken away:** moving, rotating, mirroring, deleting and undoing set the unit rules parameter `remove_decorations = 1` before `Spring.DestroyUnit` (`destroyUnit`); the game's gadget `unit_tombstones.lua` leaves a tombstone feature next to every destroyed commander unless that parameter is 1.
   - A real explosion (`boom`) keeps wreck and tombstone.

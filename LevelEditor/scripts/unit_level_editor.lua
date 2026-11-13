@@ -981,6 +981,335 @@ local function arenaStep(n)
 	end
 end
 
+-- The messages "led|<command>|<fields>" of the widget: one function per command, called with the fields of the message and the number of the player
+local LED = {}
+LED.place = function(parts, playerID)
+	local id = place(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]) or 0, playerID)
+	if id and parts[8] == "1" then
+		Spring.SetUnitNeutral(id, true)
+	end
+	if id and parts[9] == "1" then
+		setIndestructible(id)
+	end
+	if id and parts[10] == "1" then
+		setArena(id)
+	end
+end
+
+LED.delete = function(parts, playerID)
+	-- first the nearest unit; if there is none, the nearest wreck or feature in range
+	local dx, dz, dr = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])
+	if not remove(dx, dz, dr) then
+		local best, bd
+		if dx and dz then
+			for _, fid in ipairs(Spring.GetFeaturesInCylinder(dx, dz, dr or 64)) do
+				local fx, _, fz = Spring.GetFeaturePosition(fid)
+				local d = (fx - dx) ^ 2 + (fz - dz) ^ 2
+				if d <= (dr or 64) ^ 2 and (not bd or d < bd) then
+					best, bd = fid, d
+				end
+			end
+		end
+		if best then
+			local snap = featureSnapshot(best)
+			Spring.DestroyFeature(best)
+			if snap then
+				record({ k = "fdel", fid = best, name = snap.name, snap = snap })
+			end
+		else
+			tell(playerID, "nothing nearby")
+		end
+	end
+end
+
+LED.clearrect = function(parts, playerID)
+	-- led|clearrect|x1|z1|x2|z2: delete all units and features (wrecks, trees, rocks) in the rectangle, note in the history
+	local x1, z1, x2, z2 = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6])
+	if x1 and z1 and x2 and z2 then
+		clearThese(Spring.GetUnitsInRectangle(x1, z1, x2, z2), Spring.GetFeaturesInRectangle(x1, z1, x2, z2), playerID)
+	end
+end
+
+LED.fix = function(parts, playerID)
+	-- led|fix|x1|z1|x2|z2|on: buildings in the rectangle become indestructible (on = 1) or destructible again (0), one history step
+	local x1, z1, x2, z2, on = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), parts[7] == "1"
+	if x1 and z1 and x2 and z2 then
+		local n = 0
+		for _, id in ipairs(Spring.GetUnitsInRectangle(x1, z1, x2, z2)) do
+			local ud = UnitDefs[Spring.GetUnitDefID(id)]
+			if ud and (ud.isBuilding or ud.speed == 0) and (indestructible[id] == true) ~= on then
+				record({ k = "fix", id = id, name = ud.name, old = not on, new = on })
+				if on then setIndestructible(id) else clearIndestructible(id) end
+				n = n + 1
+			end
+		end
+		tell(playerID, n .. " buildings " .. (on and "indestructible" or "destructible again"))
+	end
+end
+
+LED.clearids = function(parts, playerID)
+	-- led|clearids|u12,u13,f7: delete these units (u) and features (f): what is in the way of a blueprint or wall pieces, one history step
+	local units, features = {}, {}
+	for kind, n in tostring(parts[3] or ""):gmatch("([uf])(%d+)") do
+		local id = tonumber(n)
+		if kind == "u" and Spring.ValidUnitID(id) then
+			units[#units + 1] = id
+		elseif kind == "f" and Spring.ValidFeatureID(id) then
+			features[#features + 1] = id
+		end
+	end
+	if #units + #features > 0 then
+		clearThese(units, features, playerID, true)
+	end
+end
+
+LED.clearcircle = function(parts, playerID)
+	-- led|clearcircle|x|z|radius: the same for a circle
+	local x, z, r = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])
+	if x and z and r then
+		clearThese(Spring.GetUnitsInCylinder(x, z, r), Spring.GetFeaturesInCylinder(x, z, r), playerID)
+	end
+end
+
+LED.clearline = function(parts, playerID)
+	-- led|clearline|x1|z1|x2|z2|halfwidth: the same for a corridor along the line from (x1, z1) to (x2, z2)
+	local x1, z1, x2, z2, hw = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7])
+	if x1 and z1 and x2 and z2 and hw then
+		local dx, dz = x2 - x1, z2 - z1
+		local len2 = dx * dx + dz * dz
+		local function near(x, z)
+			local t = 0
+			if len2 > 0 then
+				t = math.max(0, math.min(1, ((x - x1) * dx + (z - z1) * dz) / len2))
+			end
+			local px, pz = x1 + dx * t, z1 + dz * t
+			return (x - px) ^ 2 + (z - pz) ^ 2 <= hw * hw
+		end
+		local ax, bx = math.min(x1, x2) - hw, math.max(x1, x2) + hw
+		local az, bz = math.min(z1, z2) - hw, math.max(z1, z2) + hw
+		local units, features = {}, {}
+		for _, id in ipairs(Spring.GetUnitsInRectangle(ax, az, bx, bz)) do
+			local x, _, z = Spring.GetUnitPosition(id)
+			if x and near(x, z) then
+				units[#units + 1] = id
+			end
+		end
+		for _, fid in ipairs(Spring.GetFeaturesInRectangle(ax, az, bx, bz)) do
+			local x, _, z = Spring.GetFeaturePosition(fid)
+			if x and near(x, z) then
+				features[#features + 1] = fid
+			end
+		end
+		clearThese(units, features, playerID)
+	end
+end
+
+LED.clear = function(parts, playerID)
+	clearAll()
+end
+
+LED.load = function(parts, playerID)
+	loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1", parts[12] == "1")
+end
+
+LED.deleteids = function(parts, playerID)
+	removeIds(parts[3] or "", false)
+end
+
+LED.boomids = function(parts, playerID)
+	removeIds(parts[3] or "", true)
+end
+
+LED.generaterect = function(parts, playerID)
+	-- led|generaterect|team|x1|z1|x2|z2|count|techs|faction|kind|neutral   (like generate, but evenly in the rectangle)
+	local techs
+	if parts[9] and parts[9] ~= "-" then
+		techs = {}
+		for t in parts[9]:gmatch("%d+") do
+			techs[tonumber(t)] = true
+		end
+	end
+	local rect = { tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]) }
+	if rect[1] and rect[2] and rect[3] and rect[4] then
+		local made = generate(tonumber(parts[3]), nil, nil, tonumber(parts[8]), nil, techs, (parts[10] ~= "-" and parts[10]) or nil, parts[11] or "units",
+			playerID, rect, parts[12] == "1")
+		tell(playerID, made .. " created")
+	end
+end
+
+LED.generate = function(parts, playerID)
+	-- led|generate|team|x|z|count|radius|techs|faction|kind[|neutral]   (techs: "1,2" or "-" = all; faction: "arm"/"cor"/"leg" or "-")
+	local techs
+	if parts[8] and parts[8] ~= "-" then
+		techs = {}
+		for t in parts[8]:gmatch("%d+") do
+			techs[tonumber(t)] = true
+		end
+	end
+	local made = generate(tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]),
+		techs, (parts[9] ~= "-" and parts[9]) or nil, parts[10] or "units", playerID, nil, parts[11] == "1")
+	tell(playerID, made .. " created")
+end
+
+LED.builders = function(parts, playerID)
+	if GG.LevelEditorSpawnBuilders and parts[3] and parts[4] then
+		GG.LevelEditorSpawnBuilders(tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]) or 0)
+	end
+end
+
+LED.feature = function(parts, playerID)
+	placeFeature(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), playerID)
+end
+
+LED.loadfeature = function(parts, playerID)
+	-- Loading a level: do not note in the history
+	suppress = suppress + 1
+	placeFeature(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), playerID)
+	suppress = suppress - 1
+end
+
+LED.tdroute = function(parts, playerID)
+	-- led|tdroute|before|after: the widget changed spawn point, goal or waypoints (state texts, see the widget), note it in the history
+	record({ k = "tdroute", before = parts[3] or "-;-;-", after = parts[4] or "-;-;-" })
+end
+
+LED.ctfpts = function(parts, playerID)
+	-- led|ctfpts|before|after: the widget changed collection points or flag points (state texts, see led_ctf.lua)
+	record({ k = "ctfpts", before = parts[3] or "-;-", after = parts[4] or "-;-" })
+end
+
+LED.arenastart = function(parts, playerID)
+	-- led|arenastart|x|z|t1,t2|formation: the fight begins (see startArena); the widget has saved the state as _beforeplay before and loads it again on Stop
+	local x, z = tonumber(parts[3]), tonumber(parts[4])
+	if x and z then
+		local n = startArena(x, z, parts[5] or "", parts[6] == "1")
+		tell(playerID, n .. " units march to the Arena Point")
+	end
+end
+
+LED.teams = function(parts, playerID)
+	-- led|teams|g0,...,g9: the alliance group of every team (0 = none); teams with the same group are allied, all others are enemies
+	-- (the engine cannot move a team into another ally team: Spring.SetAlly between the ally teams)
+	local groups = {}
+	local n = 0
+	for g in tostring(parts[3] or ""):gmatch("%d+") do
+		groups[n] = tonumber(g)
+		n = n + 1
+	end
+	GG.LedGroups = groups
+	for a = 0, n - 1 do
+		for b = a + 1, n - 1 do
+			local aa, ab = select(6, Spring.GetTeamInfo(a, false)), select(6, Spring.GetTeamInfo(b, false))
+			if aa and ab and aa ~= ab then
+				local allied = groups[a] > 0 and groups[a] == groups[b]
+				Spring.SetAlly(aa, ab, allied)
+				Spring.SetAlly(ab, aa, allied)
+			end
+		end
+	end
+end
+
+LED.arenastop = function(parts, playerID)
+	arenaRun = nil
+	Spring.SetGameRulesParam("arenaState", "")
+end
+
+LED.arenastate = function(parts, playerID)
+	-- led|arenastate|before|after: the widget changed the Arena Point or the armies (state texts, see led_arena.lua)
+	record({ k = "arena", before = parts[3] or "-;-", after = parts[4] or "-;-" })
+end
+
+LED.step = function(parts, playerID)
+	-- new action of the user: everything up to the next "step" belongs to one step (undo takes it back as a whole)
+	current = nil
+	sticky = true
+end
+
+LED.clearfeatures = function(parts, playerID)
+	clearFeatures()
+end
+
+LED.assign = function(parts, playerID)
+	local moved = assignTeam(tonumber(parts[3]), parts[4] or "", playerID)
+	tell(playerID, moved .. " units changed team")
+end
+
+LED.boom = function(parts, playerID)
+	if not boom(tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])) then
+		tell(playerID, "no unit nearby")
+	end
+end
+
+LED.move = function(parts, playerID)
+	-- led|move|dx|dz|ids
+	transformUnits(parseIds(parts[5] or ""), "move", tonumber(parts[3]) or 0, tonumber(parts[4]) or 0)
+end
+
+LED.movefeatures = function(parts, playerID)
+	-- led|movefeatures|dx|dz|fids: moves features (trees, rocks, wrecks): the feature is deleted and made again at the new place (the
+	-- rotation stays); both are steps of the history, so undo and redo bring it back
+	local dx, dz = tonumber(parts[3]) or 0, tonumber(parts[4]) or 0
+	local n = 0
+	for idStr in tostring(parts[5] or ""):gmatch("%d+") do
+		local fid = tonumber(idStr)
+		local snap = Spring.ValidFeatureID(fid) and featureSnapshot(fid)
+		if snap then
+			Spring.DestroyFeature(fid)
+			record({ k = "fdel", fid = fid, name = snap.name, snap = snap })
+			placeFeature(snap.name, snap.x + dx, snap.z + dz, snap.heading, playerID)
+			n = n + 1
+		end
+	end
+	tell(playerID, n .. " features moved")
+end
+
+LED.xform = function(parts, playerID)
+	-- led|xform|l|r|m|ids
+	local mode = parts[3]
+	if mode == "l" or mode == "r" or mode == "m" then
+		transformUnits(parseIds(parts[4] or ""), mode)
+	end
+end
+
+LED.order = function(parts, playerID)
+	-- led|order|cmdID|options|p1,p2,...|ids ("-" = no parameters): an order of the player for units of other teams (the engine only
+	-- sends orders for the own units); the widget forwards what the command menu or the right click gives to the selected units
+	local params = {}
+	for n in (parts[5] or ""):gmatch("[^,]+") do
+		params[#params + 1] = tonumber(n)
+	end
+	for _, id in ipairs(parseIds(parts[6] or "")) do
+		if Spring.ValidUnitID(id) then
+			Spring.GiveOrderToUnit(id, tonumber(parts[3]), params, tonumber(parts[4]) or 0)
+		end
+	end
+end
+
+LED.redo = function(parts, playerID)
+	local any = false
+	for _ = 1, math.max(1, math.min(1000, tonumber(parts[3]) or 1)) do
+		if redo() then
+			any = true
+		end
+	end
+	if not any then
+		tell(playerID, "nothing to redo")
+	end
+end
+
+LED.undo = function(parts, playerID)
+	-- led|undo|N undoes the last N steps (one step = one action, e.g. a whole row)
+	local any = false
+	for _ = 1, math.max(1, math.min(1000, tonumber(parts[3]) or 1)) do
+		if undo() then
+			any = true
+		end
+	end
+	if not any then
+		tell(playerID, "nothing to undo")
+	end
+end
+
 function gadget:RecvLuaMsg(msg, playerID)
 	if msg:sub(1, 4) ~= "led|" then
 		return
@@ -994,269 +1323,9 @@ function gadget:RecvLuaMsg(msg, playerID)
 		parts[#parts + 1] = p
 	end
 	local cmd = parts[2]
-	if cmd == "place" then
-		local id = place(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]) or 0, playerID)
-		if id and parts[8] == "1" then
-			Spring.SetUnitNeutral(id, true)
-		end
-		if id and parts[9] == "1" then
-			setIndestructible(id)
-		end
-		if id and parts[10] == "1" then
-			setArena(id)
-		end
-	elseif cmd == "delete" then
-		-- first the nearest unit; if there is none, the nearest wreck or feature in range
-		local dx, dz, dr = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])
-		if not remove(dx, dz, dr) then
-			local best, bd
-			if dx and dz then
-				for _, fid in ipairs(Spring.GetFeaturesInCylinder(dx, dz, dr or 64)) do
-					local fx, _, fz = Spring.GetFeaturePosition(fid)
-					local d = (fx - dx) ^ 2 + (fz - dz) ^ 2
-					if d <= (dr or 64) ^ 2 and (not bd or d < bd) then
-						best, bd = fid, d
-					end
-				end
-			end
-			if best then
-				local snap = featureSnapshot(best)
-				Spring.DestroyFeature(best)
-				if snap then
-					record({ k = "fdel", fid = best, name = snap.name, snap = snap })
-				end
-			else
-				tell(playerID, "nothing nearby")
-			end
-		end
-	elseif cmd == "clearrect" then
-		-- led|clearrect|x1|z1|x2|z2: delete all units and features (wrecks, trees, rocks) in the rectangle, note in the history
-		local x1, z1, x2, z2 = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6])
-		if x1 and z1 and x2 and z2 then
-			clearThese(Spring.GetUnitsInRectangle(x1, z1, x2, z2), Spring.GetFeaturesInRectangle(x1, z1, x2, z2), playerID)
-		end
-	elseif cmd == "fix" then
-		-- led|fix|x1|z1|x2|z2|on: buildings in the rectangle become indestructible (on = 1) or destructible again (0), one history step
-		local x1, z1, x2, z2, on = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), parts[7] == "1"
-		if x1 and z1 and x2 and z2 then
-			local n = 0
-			for _, id in ipairs(Spring.GetUnitsInRectangle(x1, z1, x2, z2)) do
-				local ud = UnitDefs[Spring.GetUnitDefID(id)]
-				if ud and (ud.isBuilding or ud.speed == 0) and (indestructible[id] == true) ~= on then
-					record({ k = "fix", id = id, name = ud.name, old = not on, new = on })
-					if on then setIndestructible(id) else clearIndestructible(id) end
-					n = n + 1
-				end
-			end
-			tell(playerID, n .. " buildings " .. (on and "indestructible" or "destructible again"))
-		end
-	elseif cmd == "clearids" then
-		-- led|clearids|u12,u13,f7: delete these units (u) and features (f): what is in the way of a blueprint or wall pieces, one history step
-		local units, features = {}, {}
-		for kind, n in tostring(parts[3] or ""):gmatch("([uf])(%d+)") do
-			local id = tonumber(n)
-			if kind == "u" and Spring.ValidUnitID(id) then
-				units[#units + 1] = id
-			elseif kind == "f" and Spring.ValidFeatureID(id) then
-				features[#features + 1] = id
-			end
-		end
-		if #units + #features > 0 then
-			clearThese(units, features, playerID, true)
-		end
-	elseif cmd == "clearcircle" then
-		-- led|clearcircle|x|z|radius: the same for a circle
-		local x, z, r = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])
-		if x and z and r then
-			clearThese(Spring.GetUnitsInCylinder(x, z, r), Spring.GetFeaturesInCylinder(x, z, r), playerID)
-		end
-	elseif cmd == "clearline" then
-		-- led|clearline|x1|z1|x2|z2|halfwidth: the same for a corridor along the line from (x1, z1) to (x2, z2)
-		local x1, z1, x2, z2, hw = tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7])
-		if x1 and z1 and x2 and z2 and hw then
-			local dx, dz = x2 - x1, z2 - z1
-			local len2 = dx * dx + dz * dz
-			local function near(x, z)
-				local t = 0
-				if len2 > 0 then
-					t = math.max(0, math.min(1, ((x - x1) * dx + (z - z1) * dz) / len2))
-				end
-				local px, pz = x1 + dx * t, z1 + dz * t
-				return (x - px) ^ 2 + (z - pz) ^ 2 <= hw * hw
-			end
-			local ax, bx = math.min(x1, x2) - hw, math.max(x1, x2) + hw
-			local az, bz = math.min(z1, z2) - hw, math.max(z1, z2) + hw
-			local units, features = {}, {}
-			for _, id in ipairs(Spring.GetUnitsInRectangle(ax, az, bx, bz)) do
-				local x, _, z = Spring.GetUnitPosition(id)
-				if x and near(x, z) then
-					units[#units + 1] = id
-				end
-			end
-			for _, fid in ipairs(Spring.GetFeaturesInRectangle(ax, az, bx, bz)) do
-				local x, _, z = Spring.GetFeaturePosition(fid)
-				if x and near(x, z) then
-					features[#features + 1] = fid
-				end
-			end
-			clearThese(units, features, playerID)
-		end
-	elseif cmd == "clear" then
-		clearAll()
-	elseif cmd == "load" then
-		loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1", parts[12] == "1")
-	elseif cmd == "deleteids" then
-		removeIds(parts[3] or "", false)
-	elseif cmd == "boomids" then
-		removeIds(parts[3] or "", true)
-	elseif cmd == "generaterect" then
-		-- led|generaterect|team|x1|z1|x2|z2|count|techs|faction|kind|neutral   (like generate, but evenly in the rectangle)
-		local techs
-		if parts[9] and parts[9] ~= "-" then
-			techs = {}
-			for t in parts[9]:gmatch("%d+") do
-				techs[tonumber(t)] = true
-			end
-		end
-		local rect = { tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]) }
-		if rect[1] and rect[2] and rect[3] and rect[4] then
-			local made = generate(tonumber(parts[3]), nil, nil, tonumber(parts[8]), nil, techs, (parts[10] ~= "-" and parts[10]) or nil, parts[11] or "units",
-				playerID, rect, parts[12] == "1")
-			tell(playerID, made .. " created")
-		end
-	elseif cmd == "generate" then
-		-- led|generate|team|x|z|count|radius|techs|faction|kind[|neutral]   (techs: "1,2" or "-" = all; faction: "arm"/"cor"/"leg" or "-")
-		local techs
-		if parts[8] and parts[8] ~= "-" then
-			techs = {}
-			for t in parts[8]:gmatch("%d+") do
-				techs[tonumber(t)] = true
-			end
-		end
-		local made = generate(tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]),
-			techs, (parts[9] ~= "-" and parts[9]) or nil, parts[10] or "units", playerID, nil, parts[11] == "1")
-		tell(playerID, made .. " created")
-	elseif cmd == "builders" then
-		if GG.LevelEditorSpawnBuilders and parts[3] and parts[4] then
-			GG.LevelEditorSpawnBuilders(tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]) or 0)
-		end
-	elseif cmd == "feature" then
-		placeFeature(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), playerID)
-	elseif cmd == "loadfeature" then
-		-- Loading a level: do not note in the history
-		suppress = suppress + 1
-		placeFeature(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), playerID)
-		suppress = suppress - 1
-	elseif cmd == "tdroute" then
-		-- led|tdroute|before|after: the widget changed spawn point, goal or waypoints (state texts, see the widget), note it in the history
-		record({ k = "tdroute", before = parts[3] or "-;-;-", after = parts[4] or "-;-;-" })
-	elseif cmd == "ctfpts" then
-		-- led|ctfpts|before|after: the widget changed collection points or flag points (state texts, see led_ctf.lua)
-		record({ k = "ctfpts", before = parts[3] or "-;-", after = parts[4] or "-;-" })
-	elseif cmd == "arenastart" then
-		-- led|arenastart|x|z|t1,t2|formation: the fight begins (see startArena); the widget has saved the state as _beforeplay before and loads it again on Stop
-		local x, z = tonumber(parts[3]), tonumber(parts[4])
-		if x and z then
-			local n = startArena(x, z, parts[5] or "", parts[6] == "1")
-			tell(playerID, n .. " units march to the Arena Point")
-		end
-	elseif cmd == "teams" then
-		-- led|teams|g0,...,g9: the alliance group of every team (0 = none); teams with the same group are allied, all others are enemies
-		-- (the engine cannot move a team into another ally team: Spring.SetAlly between the ally teams)
-		local groups = {}
-		local n = 0
-		for g in tostring(parts[3] or ""):gmatch("%d+") do
-			groups[n] = tonumber(g)
-			n = n + 1
-		end
-		GG.LedGroups = groups
-		for a = 0, n - 1 do
-			for b = a + 1, n - 1 do
-				local aa, ab = select(6, Spring.GetTeamInfo(a, false)), select(6, Spring.GetTeamInfo(b, false))
-				if aa and ab and aa ~= ab then
-					local allied = groups[a] > 0 and groups[a] == groups[b]
-					Spring.SetAlly(aa, ab, allied)
-					Spring.SetAlly(ab, aa, allied)
-				end
-			end
-		end
-	elseif cmd == "arenastop" then
-		arenaRun = nil
-		Spring.SetGameRulesParam("arenaState", "")
-	elseif cmd == "arenastate" then
-		-- led|arenastate|before|after: the widget changed the Arena Point or the armies (state texts, see led_arena.lua)
-		record({ k = "arena", before = parts[3] or "-;-", after = parts[4] or "-;-" })
-	elseif cmd == "step" then
-		-- new action of the user: everything up to the next "step" belongs to one step (undo takes it back as a whole)
-		current = nil
-		sticky = true
-	elseif cmd == "clearfeatures" then
-		clearFeatures()
-	elseif cmd == "assign" then
-		local moved = assignTeam(tonumber(parts[3]), parts[4] or "", playerID)
-		tell(playerID, moved .. " units changed team")
-	elseif cmd == "boom" then
-		if not boom(tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5])) then
-			tell(playerID, "no unit nearby")
-		end
-	elseif cmd == "move" then
-		-- led|move|dx|dz|ids
-		transformUnits(parseIds(parts[5] or ""), "move", tonumber(parts[3]) or 0, tonumber(parts[4]) or 0)
-	elseif cmd == "movefeatures" then
-		-- led|movefeatures|dx|dz|fids: moves features (trees, rocks, wrecks): the feature is deleted and made again at the new place (the
-		-- rotation stays); both are steps of the history, so undo and redo bring it back
-		local dx, dz = tonumber(parts[3]) or 0, tonumber(parts[4]) or 0
-		local n = 0
-		for idStr in tostring(parts[5] or ""):gmatch("%d+") do
-			local fid = tonumber(idStr)
-			local snap = Spring.ValidFeatureID(fid) and featureSnapshot(fid)
-			if snap then
-				Spring.DestroyFeature(fid)
-				record({ k = "fdel", fid = fid, name = snap.name, snap = snap })
-				placeFeature(snap.name, snap.x + dx, snap.z + dz, snap.heading, playerID)
-				n = n + 1
-			end
-		end
-		tell(playerID, n .. " features moved")
-	elseif cmd == "xform" then
-		-- led|xform|l|r|m|ids
-		local mode = parts[3]
-		if mode == "l" or mode == "r" or mode == "m" then
-			transformUnits(parseIds(parts[4] or ""), mode)
-		end
-	elseif cmd == "order" then
-		-- led|order|cmdID|options|p1,p2,...|ids ("-" = no parameters): an order of the player for units of other teams (the engine only
-		-- sends orders for the own units); the widget forwards what the command menu or the right click gives to the selected units
-		local params = {}
-		for n in (parts[5] or ""):gmatch("[^,]+") do
-			params[#params + 1] = tonumber(n)
-		end
-		for _, id in ipairs(parseIds(parts[6] or "")) do
-			if Spring.ValidUnitID(id) then
-				Spring.GiveOrderToUnit(id, tonumber(parts[3]), params, tonumber(parts[4]) or 0)
-			end
-		end
-	elseif cmd == "redo" then
-		local any = false
-		for _ = 1, math.max(1, math.min(1000, tonumber(parts[3]) or 1)) do
-			if redo() then
-				any = true
-			end
-		end
-		if not any then
-			tell(playerID, "nothing to redo")
-		end
-	elseif cmd == "undo" then
-		-- led|undo|N undoes the last N steps (one step = one action, e.g. a whole row)
-		local any = false
-		for _ = 1, math.max(1, math.min(1000, tonumber(parts[3]) or 1)) do
-			if undo() then
-				any = true
-			end
-		end
-		if not any then
-			tell(playerID, "nothing to undo")
-		end
+	local handle = cmd and LED[cmd]
+	if handle then
+		handle(parts, playerID)
 	end
 	return true
 end
