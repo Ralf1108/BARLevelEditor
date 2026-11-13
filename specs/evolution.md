@@ -2,6 +2,7 @@
 
 - A game mode of LAN Play on any map (button **Evolution** in the menu **LAN Play** of the room, gadget `evo_game.lua` and game widget `evo_gift.lua` of the extra game "Level Editor Scenarios").
 - Every team plays one unit that evolves through 10 stages by kills.
+- **Files:** `evo_game.lua` is the synchronized part (about 2,100 lines); the unsynced part (score lines, panels of the abilities and the experience bar, Armageddon, the missile targets, the selection, the camera, the heal effect) is `evo_ui.lua` (`luaui/Include/evo_ui.lua`, in `$ScenarioGameFiles`): `evo_game.lua` calls it with `(gadget, { NAMES, LADDERS, ABILITIES, teamName })`, the lists and names that both parts use.
 - User view: [Evolution manual](../LevelEditor/game-modes/evolution.md).
 
 ## 1. LAN Play room (`lan_lobby.lua`)
