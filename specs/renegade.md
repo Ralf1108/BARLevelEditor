@@ -16,7 +16,7 @@
 | Game widget | `LevelEditor/scripts/renegade.lua` (`luaui/widgets`) | camera on the eye of the unit, mouse and keys, crosshair, ray, HUD, anti-air circle, debug menu, sends the input |
 | Gadget | `LevelEditor/scripts/renegade_game.lua` (`luarules/gadgets`) | unit of every human, moving, shooting (the buttons), respawn, energy, bots, debug messages |
 | Weapon table | `LevelEditor/game-modes/renegade_weapons.csv` (source), `renegade-weapons.md` (made from it) | which weapon of which unit is fired with which button |
-| Table tools | `test-data/tools/renegade_weapons.py`, `zz_weapondump.lua`, `game-modes/update_renegade_weapons.bat` | table <-> `renegade_game.lua` |
+| Table tools | `test-data/tools/renegade_weapons.py`, `zz_weapondump.lua`, `game-modes/update_renegade_weapons.bat` | table <-> `renegade_data.lua` (the weapon tables, loaded by the gadget) |
 | Start | `LevelEditor/start_renegade.bat`, `scripts/start_renegade.ps1` | a game at once (see 2) |
 | Lobby | `lan_lobby.lua` | not done: button and game option like `lanevolution` (needs a `LAN_VERSION` bump) |
 

@@ -24,7 +24,7 @@ Which weapon is on which mouse button, how a shot is aimed, and the table and pi
 - Every weapon can fire at a point in the air (Total Annihilation style, a hit is luck): a Pawn fired at a point 99 Elmo up, the weapon had its target and reloaded.
 
 **Which weapon on which button (`slotsFor`, per unit definition, cached):**
-- The table: the block `WEAPON_BUTTONS` (between `-- BEGIN WEAPONS` and `-- END WEAPONS`; made by `renegade_weapons.py` from the columns Group and Fire button of `renegade_weapons.csv`) lists for a unit code the weapon numbers of `L`, `R`, `M`; a Scavenger copy uses the entry of the normal unit.
+- The table: the block `WEAPON_BUTTONS` in `scripts/renegade_data.lua` (a data file next to the gadget, loaded with `VFS.Include("luaui/Include/renegade_data.lua")`; it also holds `CRUISE_ALT`, `ATTACK_ALT` and `WEAPON_PICS`; between `-- BEGIN WEAPONS` and `-- END WEAPONS`; made by `renegade_weapons.py` from the columns Group and Fire button of `renegade_weapons.csv`) lists for a unit code the weapon numbers of `L`, `R`, `M`; a Scavenger copy uses the entry of the normal unit.
   - 497 units, 1035 weapons.
 - Without an entry the rule (the python proposal is the same): weapons with the same weapon definition are one group (they fire together); dummies (no damage: footsteps, `krogweaponaim`), shields and interceptors are no weapons.
   - Missiles (`MissileLauncher`, `StarburstLauncher`, `TorpedoLauncher`) and anti-air weapons count as missiles, all others as "others"; both are sorted by range.

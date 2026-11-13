@@ -1,7 +1,7 @@
 """The weapon table of Renegade (LevelEditor/game-modes/renegade-weapons.md and renegade_weapons.csv) and the block of renegade_game.lua made from it.
 
   python renegade_weapons.py update                makes the table game-modes/renegade-weapons.md (for reading) and the block WEAPON_BUTTONS (between -- BEGIN WEAPONS and
-                                                   -- END WEAPONS) of scripts/renegade_game.lua from game-modes/renegade_weapons.csv, which is the source: change the columns
+                                                   -- END WEAPONS) of scripts/renegade_data.lua (the weapon tables of renegade_game.lua) from game-modes/renegade_weapons.csv, which is the source: change the columns
                                                    Fire button there (Excel) and run update_renegade_weapons.bat in game-modes.
   python renegade_weapons.py table <infolog.txt>   makes the csv (and the md and the block) new from the lines "[zzwep] ..." that tools/zz_weapondump.lua writes into the
                                                    infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Fire button and Weapon image of a row that is in the csv
@@ -9,7 +9,7 @@
 
 The second table, game-modes/renegade_cruise.csv (and renegade-cruise.md): every aircraft of Armada, Cortex and Legion (also those without a weapon) with Cruise altitude (the cruiseAltitude of the
 unit definition; the dump of zz_weapondump.lua carries it as a 17th field) and Cruise altitude used (the highest height above the ground the aircraft may fly in Renegade; a new row gets 3 times the
-cruise altitude: measured, a gunship and a fighter really fly at 3 times it; change it in the csv). `update` makes the block CRUISE_ALT of the gadget from it; `table` adds the aircraft of the dump
+cruise altitude: measured, a gunship and a fighter really fly at 3 times it; change it in the csv). `update` makes the block CRUISE_ALT of renegade_data.lua from it; `table` adds the aircraft of the dump
 that are not in it and sets their Cruise altitude (a value of Cruise altitude used that is there stays).
 The D-gun (type DGun: the Disintegrator of the commanders) is always on RMB; then the shortest other group is on LMB and everything else on MMB.
 The proposal (the same as slotsFor in renegade_game.lua, which is used for a unit that is not in the table): weapons with the same weapon definition are fired together; missiles
@@ -27,7 +27,7 @@ CRUISE_CSV = os.path.join(repo, "LevelEditor", "game-modes", "renegade_cruise.cs
 CRUISE_MD = os.path.join(repo, "LevelEditor", "game-modes", "renegade-cruise.md")
 IMAGES = os.path.join(repo, "LevelEditor", "game-modes", "weapon-images")
 CRUISE_COLUMNS = ["Faction", "Unit", "Code", "Cruise altitude", "Cruise altitude used", "Attack altitude"]
-GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_game.lua")
+GADGET = os.path.join(repo, "LevelEditor", "scripts", "renegade_data.lua") # (the weapon tables of the gadget renegade_game.lua)
 FACTION = {"arm": "Armada", "cor": "Cortex", "leg": "Legion"}
 COLUMNS = ["Faction", "Unit", "Code", "#", "Weapon", "Type", "Target", "Range", "Reload", "Damage", "Weapon name", "Fire button", "Weapon image", "Category", "Tech", "DPS"]
 BUTTONS = ("LMB", "RMB", "MMB", "")
@@ -345,8 +345,8 @@ def make_lua(src):
     text = text.replace("\r\n", "\n")
     a, b = text.index("-- BEGIN WEAPONS"), text.index("-- END WEAPONS")
     head = "-- BEGIN WEAPONS (made by test-data/tools/renegade_weapons.py from game-modes/renegade_weapons.csv: change the table, not this block)\nlocal WEAPON_BUTTONS = {\n"
-    alts = "CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n" + "ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the ground (column Attack altitude)\n" + "\n".join("	%s = %d," % (c, attack[c]) for c in sorted(attack)) + "\n}\n"
-    text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + "WEAPON_PICS = { -- the picture of a weapon of the panel (weapon-images/weapon_<name>.png)\n" + pic_lines + "\n}\n" + text[b:]
+    alts = "local CRUISE_ALT = { -- the highest height above the ground an aircraft may fly (table renegade_cruise.csv, column Cruise altitude used)\n" + "\n".join("	%s = %d," % (c, cruise[c]) for c in sorted(cruise)) + "\n}\n" + "local ATTACK_ALT = { -- an aircraft drops its bombs only up to this height above the ground (column Attack altitude)\n" + "\n".join("	%s = %d," % (c, attack[c]) for c in sorted(attack)) + "\n}\n"
+    text = text[:a] + head + "\n".join(lines) + "\n}\n" + alts + "local WEAPON_PICS = { -- the picture of a weapon of the panel (weapon-images/weapon_<name>.png)\n" + pic_lines + "\n}\n" + text[b:]
     open(GADGET, "w", encoding="utf-8", newline="").write(text.replace("\n", nl))
     print("%d units written" % len(lines))
 
