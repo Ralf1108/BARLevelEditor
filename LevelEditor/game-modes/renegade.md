@@ -1,72 +1,135 @@
 # Renegade
 
-[Specification](../../specs/renegade.md) · [Start page](../../README.md)
+[Start page](../../README.md) · [Specification](../../specs/renegade.md)
 
-A game mode in the making: **you are one unit of Beyond All Reason, seen from the inside** - first person, mouse look, W A S D, crosshair, fire. Named after Command & Conquer Renegade, where the units of the strategy game were played as a shooter. Every human steers exactly one original unit (model, speed, weapon, range, armor and damage stay as they are in the game); later several players fight each other in the same world.
+**You are one unit of Beyond All Reason, seen from the inside.**
 
-**Status: first test (proof of concept), for one player against computer units. In the LAN Play room there is a button Renegade (On / Off, Always in unit); not tested with several humans.**
+- First or third person, mouse look, W A S D, crosshair, three mouse buttons for the weapons.
+- Every unit is the original: model, speed, weapons, range, armor and damage stay as they are in the game.
+- Named after Command & Conquer Renegade, where the units of a strategy game were played as a shooter.
+
+**Status: experimental.** Tested with one human against computer units. The LAN Play room has the button, but games with several humans are not tested yet.
 
 ## Start it
 
-`LevelEditor\start_renegade.bat` in the folder LevelEditor starts at once a game on **Hooked 1.1**: you with a Peewee against 3 computer Peewees that walk around and hunt you (a lost one comes back after a few seconds, so does yours). Another map, computer player or number of enemies: `start_renegade.bat "Comet Catcher Remake 1.8" SimpleAI 5` (0 = nobody).
+| Way | How |
+|---|---|
+| Quick start | double-click `LevelEditor\start_renegade.bat`: you as a Peewee on **Hooked 1.1** against 3 computer Peewees that hunt you |
+| Other map, computer player, number of enemies | `start_renegade.bat "Comet Catcher Remake 1.8" SimpleAI 5` (0 = no enemies) |
+| Faster start | add `quick` as the fourth parameter: `start_renegade.bat "Hooked 1.1" NullAI 3 quick` (without Legion, extra, Scavenger and Raptor units) |
+| LAN Play | green button **LAN Play** in the room > **Renegade** > On |
+
+Two ways to play in LAN Play (settings of the button **Renegade**):
+
+- **Always in unit On** (the default): every player is one unit for the whole game.
+- **Always in unit Off** (jump mode): you play the normal game with all your units. Hold the mouse over one of your units and press **the key left of the 1** to jump into it, the same key to jump out. If the unit is lost you are out of it.
 
 ## Controls
 
 | Input | Effect |
 |---|---|
-| Mouse | look round (the cursor stays in the middle) |
-| W A S D | **drive the vehicle** like a tank: W forward along the hull, S reverse (60 % of the speed), A and D turn it left and right (while driving or on the spot); the mouse only aims the weapons and the camera, so you can drive one way and shoot another. When you drive straight ahead and look within 20 degrees of the hull direction, the vehicle drives exactly where you look. Ships have no reverse. Aircraft, gunships and units whose weapons are fixed to the hull are steered as before (W goes where you look) |
-| Left mouse button | fire the **short range weapons** at the point under the crosshair (red) |
-| Right mouse button | fire the **long range weapons** (yellow) |
-| Middle mouse button | fire the **missiles** (green); anti-air missiles only at the aircraft you look at |
-| Insert (or `/renegade`) | normal camera and back |
-| Alt | switch **FULL FIRE** on / off: while on, the left mouse button fires **every weapon at once** (the panel shows LMB on all rows and "FULL FIRE ON" above it; anti-air weapons still need an aircraft in the circle) |
-| Space / Ctrl | aircraft that hover (gunships): **higher / lower**; Ctrl held at the bottom for 2 s **lands** it; the **altimeter** at the right edge (always shown; for a ground unit the height of the ground it stands on) shows how high you are above the sea level (fixed scale 0 to 500 m) (the **ground is the yellow part** at the bottom, the blue part above it is the height in the air, the number on top is the height above the ground; `GROUND n m` below the bar); an aircraft cannot fly higher than its **cruise altitude** (a hard limit: even with Space held it is pushed back at once) (column Cruise altitude used in `renegade_cruise.csv`: 3 times the cruise altitude of the unit definition, which is about what aircraft really fly at: gunship 300, fighter 375), above the ground, so it follows the terrain |
-| Tab | free the mouse for the debug menu, again: back to the game |
+| Mouse | look round and aim (the cursor stays in the middle) |
+| W A S D | drive like a tank: W forward, S reverse (60 % of the speed), A and D turn the vehicle |
+| Left / right / middle mouse button | fire the **short range weapons** (red) / **long range weapons** (yellow) / **missiles** (green) |
+| Shift | third person view (camera behind your unit) and back |
+| Alt | **FULL FIRE** on / off: the left button fires every weapon at once |
+| Space / Ctrl | aircraft: higher / lower; Ctrl held at the bottom for 2 s lands a gunship |
+| Mouse wheel, B | binoculars (units with a range of 600 or more): wheel forward zooms in, back zooms out |
+| Key left of the 1 ("^" on a German keyboard) | switch between Renegade and the normal game; in jump mode: jump into the unit under the mouse and out |
+| Insert, or the key next to the left Shift | switch between Renegade and the normal game |
+| Tab | free the mouse for the debug menu, again: back |
+| Windows key | free the mouse (to reach another window) |
+
+Good to know about driving:
+
+- The mouse only aims: you can drive one way and shoot another.
+- Driving straight ahead and looking within 20 degrees of the hull: the vehicle drives exactly where you look.
+- Ships have no reverse.
+- Aircraft, gunships and units with weapons fixed to the hull go where you look when you press W.
+
+## Shooting
+
+- **You can always fire**, also into the sky or at far mountains. The shot goes where the crosshair points, as far as the weapon reaches. Nothing is "targeted" as in the strategy game.
+- **One click is one shot**, holding the button is continuous fire. A weapon fires only when it is loaded **and** the button is down: a click during the reload is forgotten.
+- **The turret follows your view** all the time, so it is ready when you press the button.
+- **Which weapon is on which button:** weapons of the same kind fire together. Short range left, long range right, missiles in the middle.
+  - Exception: the commander's Disintegrator (D-gun) is always on the right button, the laser on the left.
+  - Units with two trajectories (Rattlesnake, Gauntlet, Vanguard, Agitator, Persecutor, Eviscerator, Amputator, Myrmidon): left = direct shot, right = vertical shot.
+  - The full list is a table you can change in Excel: [renegade-weapons.md](renegade-weapons.md).
+- **Anti-air:** a unit with anti-air weapons has a large orange circle round the crosshair.
+  - Bring an aircraft into the circle: it glows and "AA LOCK" shows. Press the button and the homing missiles go for it.
+  - Without an aircraft in the circle these weapons do not fire (the panel marks them **AIR ONLY**).
+  - Weapons that hit ground and aircraft (e.g. the Titan's big laser) use the same circle for aircraft; at the ground you aim yourself.
+  - An aircraft that is already shot down is no target any more.
+- **Arc weapons** (artillery, lofted and vertical missiles, nuclear missiles, long-range cannons): a disc on the ground shows where the shot comes down. Aim a bit ahead of a moving enemy.
+- **Turret angle:** some turrets cannot turn all the way round (e.g. the Mauser, 90 degrees to each side). The crosshair turns red and says **TURN THE VEHICLE** with the side (`>>` or `<<`).
+- **Beam weapons** are aimed through the unit under the crosshair, so the beam hits it in the middle.
+- **Energy:** laser units need energy; your team gets plenty of it by itself.
+
+## Aircraft
+
+- **Altimeter** at the right edge: fixed scale 0 to 500 m above the sea level. Yellow = the ground, blue = your height in the air, the number on top = height above the ground, the red line **MAX** = the highest your aircraft can fly here.
+- **Highest height:** an aircraft cannot fly above its cruise altitude (a hard limit, it follows the terrain). The values are a table: [cruise altitudes](renegade-cruise.md).
+- **Gunships:** the guns are fixed to the body and point at most about 27 degrees down. You fly forward, backward and sideways with the nose toward where you look.
+  - Aiming steeper: the crosshair turns orange (**STEEP**) and the shot goes to the nearest point the guns can reach.
+  - A red disc under you is the zone you cannot hit: go lower, or fly away and aim flatter.
+- **Bombers:** one click drops the whole salvo; hold the button for the next one.
+  - Bombs fall only below the **attack altitude** (the panel says DROPS BELOW). Bomb sight and crosshair: green = bombs fall, yellow = just above, red "TOO HIGH".
+  - A disc on the ground shows where the bombs would land now.
+  - A bomber cannot climb far above that altitude (at most 1.5 times).
 
 ## What you see
 
-- **Crosshair** in the middle: **green** as soon as one of your weapons that can hit what you look at (an aircraft: only anti-air weapons) reaches it, **yellow** when the best one is just at its limit, **red** when none reaches it, white for the sky. Under it: what you point at (unit, health) and the distance. The rows of the **weapon panel** get the same colour for their own weapon (so you see which weapons reach the target: usually all red until the enemy is near, then the long-range ones turn green first); aircraft have no colours (bombers show where the bombs land).
-- **Lines on the ground** (the range rings are gone: the colours of the crosshair and the panel tell what reaches the target; `/renegade rings` or the debug button **Range** over the panel (green = on, red = off) shows them again; off at the start): a **line** in the color of the button (left red, right yellow, middle green) shows where the barrel of that group points now: you look round faster than the turret turns, fire when the line points where you look.
-- **Gunships** have their guns fixed to the body: they can only point about **27 degrees down**, and you fly them freely: forward, **backward and sideways with the nose (and the guns) always toward where you look**. When you aim steeper than that the crosshair turns orange (STEEP) and the shot goes to the nearest point the guns can reach: a ring and a beam on the ground show where. A red disc under you shows the zone you cannot hit (it shrinks when you go lower with Ctrl): go lower, or fly away from the target and aim flatter.
-- **Anti-air circle**: a unit with anti-air weapons has a large **orange circle** round the crosshair. Bring the aircraft into the circle: it **glows** (bright with a pulsing halo), an orange square and "AA LOCK" show on it; press the button of the anti-air weapons and the homing missiles go for it. Without an aircraft in the circle they do not fire. The panel marks such a weapon with an orange **AIR ONLY** under its button tag.
-- Weapons that hit the ground **and** aircraft (description "g2g/g2a", e.g. the Titan's big laser) use the same circle: an aircraft inside it is locked, at the ground you aim yourself. All other weapons can be fired into the air too, like in Total Annihilation: you only hit by luck, and the range limits it.
-- **The turret follows your view**, also when you do not fire (the line on the ground shows where it points): when you press the button it fires as soon as it points where you look. A small thick **green arrow** on the ground in front of you shows the way the unit faces, i.e. the way it walks or drives when you press W (a tank turns first when you look behind you). For a turret, which cannot move, the arrow shows where its gun points.
-- **Panel** at the bottom: your health, then one row for every button group with the weapon's name, LMB / RMB / MMB, range, reload time and a **reload bar** in the color of the button (full = ready to fire).
-- Which weapons are on which button: weapons of the same kind fire together; the short range ones are on the left, the long range ones on the right, missiles in the middle (Titan: impulsion blaster, long-range laser, starburst rocket; Epoch: medium plasma, heavy plasma, anti-air missiles). Exception: the **commander's Disintegrator** (D-gun) is always on the right button, the laser on the left. Three buttons are enough for every unit of the game. The full list of all weapons of all units with the proposal of the buttons, which you can change, is in [renegade-weapons.md](renegade-weapons.md); to change it edit `renegade_weapons.csv` (Excel) and double-click `update_renegade_weapons.bat` in the same folder (it updates the page and the game file). Hold the button for continuous fire (as fast as the weapon reloads); one click is **one shot**: the weapon turns to the aim and fires once, even if you let go at once. Let go of the button and the unit stops firing. If your unit is lost, a big **respawn countdown** (5 to 1) shows and you come back as the same unit at a place far from the enemies.
-- **Turret angle:** some turrets cannot turn all the way round (e.g. the artillery of the Mauser, 90 degrees to each side). When you look outside of that angle the crosshair turns red and says **TURN THE VEHICLE** with the side (`>>` right, `<<` left), and the row of the weapon says it too: turn the vehicle (steer) until the hint goes away. The compass shows where the vehicle drives (green arrow) and where the weapons point (coloured arrowheads).
-- **Clicking while a weapon reloads:** a weapon fires only when it is **loaded and the button is down**. A click on a weapon that is still reloading is forgotten when you let go of the button (nothing is stored); hold the button to fire as soon as the weapon is ready. A short click on a loaded weapon still gives one shot.
-- **Speed:** a **speedometer** (0 to 150, the needle is your speed now, the yellow mark your highest speed) sits right of the compass (in Elmo per second); the **health bar** is under the compass and the speedometer.
-- **Unit menu (Unit / Spawn):** under the pictures the unit under the mouse pointer is described in larger letters: name (code) and description, speed and health, and for each of its weapons range, shots per second, damage and damage per second.
-- **Binoculars:** (A small card with a binoculars symbol and the mouse wheel right of the weapons shows that your unit has them.) units with a range of 600 or more can zoom: **turn the mouse wheel forward** to look through them and to zoom in (one level for every 300 Elmo of range, up to x7), **turn it back** to zoom out; one step back from the first level switches them off. The middle mouse button (if the unit has no weapon on it) and **B** switch them on and off too. The view is narrower, the mouse turns more slowly, a dark ring and a cross are drawn.
-- **Normal game:** the key **next to the left Shift** (the "<" key on a German keyboard; **Insert** does the same) switches Renegade off: the normal camera of the game and the normal controls are back, your unit is an ordinary unit that you can select and give orders to (it fires at will). Press the key again to come back to the first or third person view.
-- **All units:** `start_renegade.bat` starts the game with the Legion units, the extra units of the release candidates and the Scavenger and Raptor units, so they are all in the unit menu of the debug mode (Unit and Spawn). For a faster start without them: `start_renegade.bat "Hooked 1.1" NullAI 3 quick`.
-- **Units with two trajectories** (Rattlesnake, Gauntlet, Vanguard, Agitator, Persecutor, Eviscerator, Amputator, Myrmidon): the left button is the **direct** shot (low trajectory), the right button the **vertical** shot (high trajectory, over walls); the rows of the panel say "(direct)" and "(vertical)".
-- **Jump into a unit (Renegade On, Always in unit switched Off; the room starts with Renegade Off and Always in unit On):** you play the normal game with all your units; hold the mouse over one of your units and press **the key left of the 1** (the circumflex "^" on a German keyboard) to jump into it (the camera flies in and you steer it as described here), press **the same key** again to jump out (the camera flies back over it and you are in the normal game again). If the unit is lost you are out of it. With **Always in unit On** every player is one unit for the whole game and that key switches between Renegade and the normal game. Both are settings of the button **Renegade** in the LAN Play menu of the room.
-- **Altimeter and lasers:** the altimeter shows a red line (MAX) at the highest height of your aircraft; it moves with the ground, so you see when you cannot climb any more. Beam weapons (lasers) are aimed through the unit under the crosshair at the point behind it (first person view), so the beam hits the unit in the middle.
-- **Bombers:** a bomber drops bombs only below its attack altitude (shown in the panel as DROPS BELOW). The bomb sight and the crosshair are green when the bombs fall, yellow shortly above it, and red with the text "TOO HIGH" when you are too high. A bomber cannot climb far above that altitude (at most 1.5 times).
-- **Long sight:** your unit sees three times as far as its type normally does (a scout sees far, a heavy tank less): enemy units do not pop up at the edge of the sight, there is no fog and units far away stay units (no icons). The radar and the minimap show only what your sight covers. When you switch to the normal game (the key left of the 1, or the key next to Shift), the camera goes over your unit at the usual distance, so that you see the battlefield.
-- **Third person view:** press **Shift** to switch to a camera behind and above your unit (you see it from the back; press Shift again to go back to the first person view). Everything else stays the same: the crosshair in the middle, the previews, the weapons shoot where the crosshair points. The camera flies smoothly: into your unit when Renegade starts or comes back, and out of the unit (up and back) or back into it when you press Shift.
-- **Anti-air:** an aircraft that is already shot down (no health left, or crashing) is no target any more: the circle does not lock on it.
-- **Where things are:** the weapon panel is in the bottom left corner, the list of the players and the altimeter at the right, the compass at the bottom in the middle; the middle of the screen is free.
-- **Panel and list of players:** the weapons are listed with the shortest range on top; the mouse button of a weapon is the coloured box at the right of its card. At the top right a **list of the players** shows each one with the unit, **kills (crosshair) and deaths (skull)**. At the bottom in the middle a round **compass** shows, with up = the way you look, the **green arrow** = the way the vehicle drives and **coloured arrowheads** at the rim = where each group of weapons points; the landing disc is shown for bombs and for everything that shoots in an arc (artillery, lofted and vertical-launch missiles, nuclear missiles, long-range cannons like the Mauser; missiles that fly straight at the target, like the Karganeth's, have only the crosshair); a unit that only has such weapons also fires when you look at the sky (at its maximum range in that direction).
-- **Weapon pictures:** all of them one below the other, with their in-game names and the damage limits of each size: [weapon categories](renegade-weapon-categories.md#overview-of-all-pictures).
-- **Weapon pictures:** a weapon of the panel has its picture as the background of its whole row when its category has one (the name and the button stand in front of it; there is no reload bar any more: while the weapon reloads a grey fill runs down from the right and the seconds left count at the bottom right, like the abilities of Evolution) (`weapon-images` in this folder: `weapon_<category>.png`; the categories are in `renegade-weapon-categories.md`). All 39 categories have one (also the anti-nuke launchers of the Citadel, Haven and others: they fire by themselves, so the panel shows them as a grey row `AUTO` that you cannot fire): railgun, flamethrower, depth charge, anti-air missile, bomb, nuclear, d-gun, stun beam, flak, lightning, machine gun, gauss, artillery, shotgun, EMP grenade, self-destruct, the lasers (light red, medium blue, heavy green, the heaviest - the Pulsar - blue and very thick), the heat rays (the Juggernaut: yellow), cannon, missile, plasma (each in four sizes light, medium, heavy, ultra), starburst, rocket salvo and torpedo. Which size a weapon gets depends on the tech level of its unit and on its damage per second; the limits are in `renegade_weapon_limits.csv` (change them in Excel). Put more pictures with that name into the folder, run `update_renegade_weapons.bat` and start the game again.
-- **Bombers:** one click drops the whole salvo of bombs (the bombs are dropped by the game mode); hold the button and the next salvo comes as soon as the weapon is ready (the bar in the panel shows the reload). Bombs fall only when you fly **lower than the attack altitude** of the aircraft (column Attack altitude in `renegade_cruise.csv`, as a start the cruise altitude of the unit definition): the row of the bomb in the panel is **green** up to it, **yellow** just above it and **red** higher, and says "drops below N m (now M m)".
-- **Impact preview**: for artillery, rockets and missiles a translucent disc with a ring and a cross shows on the ground where the shot comes down (the size of the explosion, in the color of the button; as far as the weapon reaches). Aim at the ground a bit ahead of a moving enemy to lead the shot. A bomber gets the same disc where its bombs would land if it dropped them now (ahead of the aircraft, as far as its speed carries them); press the button and the bombs fall at once, onto that disc.
-- You can **always fire**, also into the sky or at far mountains: the shot goes where the crosshair points, as far as the weapon reaches, and the weapon's own reload is the only limit. Nothing is "targeted" as in the strategy game (only anti-air missiles need the aircraft in the crosshair).
-- Laser units need energy: for the tests you get **500 energy per second**.
+- **Crosshair:** green = a weapon reaches what you look at, yellow = just at its limit, red = out of range. Under it: what you point at, its health and the distance.
+- **Weapon panel** (bottom left): one card per weapon with its picture, name, mouse button, range, shots per second, damage per shot and damage per second.
+  - Sorted by range, the shortest on top. The card has the colour of the crosshair for its own weapon.
+  - While a weapon reloads a grey fill runs down and the seconds left count.
+  - Weapons that fire by themselves (anti-nuke) are a grey row **AUTO**.
+  - All pictures with their damage limits: [weapon categories](renegade-weapon-categories.md#overview-of-all-pictures).
+- **Compass** (bottom middle): up = where you look, green arrow = where the vehicle drives, coloured arrowheads = where each group of weapons points.
+- **Speedometer** (right of the compass): 0 to 150 Elmo per second, the yellow mark is your highest speed.
+- **Health bar** under compass and speedometer.
+- **List of the players** (top right): unit, kills and deaths.
+- **Lines on the ground:** where each group of weapons points. The range rings are off; `/renegade rings` or the debug button **Range** switches them on.
+- **Green arrow on the ground:** the way the unit faces (for a turret: where its gun points).
+- **Damage numbers:** every hit on a unit you can see rises as a red number (blue = paralyzing damage). Hits in quick succession are added up.
+- **Respawn:** when your unit is lost, a countdown (5 to 1) shows and you come back as the same unit far from the enemies.
+
+## More rules
+
+- **Long sight:** your unit sees three times as far as its type normally does. There is no fog, and units far away stay units (no icons). Radar and minimap show only what your sight covers.
+- **Wrecks heal:** a hurt unit reclaims wrecks within 300 Elmo by itself (1 metal = 1 health).
+  - Rate: 1 % of the health it has now per second, at most 150.
+  - Shown as green plus signs and a rising green "+number".
+  - It stops at full health and when an armed enemy is near (a little more than the range of your weapons).
+  - Evolution has its own version of this.
+- **Normal game:** switching to it puts the camera over your unit at the usual distance, so you see the battlefield.
 
 ## Debug menu
 
-With `start_renegade.bat` three buttons **Unit**, **Spawn** and **Range** sit side by side above the panel. The panel itself (above the info panel of the game) shows one card per weapon with its name (the name of the weapon picture, e.g. "Heavy Laser"), the button and **range, shots per second, damage per shot and damage per second**. Press **Tab** (the mouse is free), click the button: the unit menu of the Level Editor opens (faction, group - Turrets, Bots, Vehicles, Hover, Air, Ships -, tech level, a **search field** and the pictures of the units that have a weapon). The button **Spawn** opens the same menu: a click on a picture makes that unit appear as an **enemy 1000 Elmo ahead of you** (an aircraft 200 up, a ground unit or turret on the ground; the menu stays open for more), so you can fight it. A click on a picture after **Unit** **turns you into that unit** at the same place with the same share of health; as a turret you cannot move but you can fire; a ship lies on the land (for the tests) and fires.
+With `start_renegade.bat` three buttons sit above the panel. Press **Tab** to free the mouse, then click one:
+
+| Button | Effect |
+|---|---|
+| **Unit** | the unit menu of the Level Editor (faction, group, tech level, search, pictures): a click **turns you into that unit**, same place, same share of health |
+| **Spawn** | the same menu: a click makes that unit appear as an **enemy 1000 Elmo ahead** (an aircraft 200 up); the menu stays open |
+| **Range** | range rings on (green) / off (red) |
+
+- Under the pictures the unit under the mouse is described: name, speed, health and the values of each weapon.
+- As a turret you cannot move but you can fire. A ship lies on the land (for the tests) and fires.
+
+## Change the tables (Excel)
+
+| Table | What it sets | Apply |
+|---|---|---|
+| `renegade_weapons.csv` | which weapon is on which button, its category | double-click `update_renegade_weapons.bat` |
+| `renegade_weapon_limits.csv` | which size of picture a weapon gets (by tech level and damage per second) | the same |
+| `renegade_cruise.csv` | highest height and attack altitude of every aircraft | the same |
+
+- Pictures: `weapon-images\weapon_<category>.png` (39 categories). Put your own picture with that name into the folder, run the update and start the game again.
 
 ## Not yet there
 
-Jumping (planned, see the specification), several human players in the LAN, lobby button, score, teams and a real game goal, all unit types steered equally well (aircraft and ships are only tried), sound and a fuller HUD. The plan and what was measured in the game are in the [specification](../../specs/renegade.md).
-
-- **Damage numbers:** every hit on a unit you can see shows its damage as a red number over the unit that rises and fades (hits in quick succession are added up; paralyzing damage is blue).
-
-- **Wrecks heal:** your unit reclaims wrecks by itself: when it is hurt and wrecks lie within 300 Elmo, their metal heals it (1 metal = 1 health, 1 % of its health a second, at most 150), shown as green plus signs and a rising green "+number". It stops at full health and when an armed enemy is near (a little more than the range of your weapons). Not in Evolution (there the same exists already).
-
-- **Wreck heal rate:** at most 1 % of the health the unit has now per second (and at most 150 a second); the green numbers of the heals in quick succession are added up to one number.
+- Jumping, games with several humans (not tested), score, teams and a real game goal, sound.
+- Aircraft and ships are steered less well than ground units.
+- The plan and what was measured in the game: [specification](../../specs/renegade.md).

@@ -17,18 +17,28 @@ cost and build time apply as usual.
    `shared/editor_common.lua`, `shared/area_attack.lua` and `shared/bar_rules.lua` to `data\LuaUI\Include` and creates the junctions `data\LuaUI\Config\BluePrinter` -> `blueprints` and `data\LuaUI\Config\LevelEditorBlueprints` -> blueprints of the Level Editor (BAR only allows user widgets to write under `LuaUI\Config` and to read under `LuaUI`).
    The folder `shared` must lie next to `BluePrinter`.
 3. In the game switch on "Allow user widgets" in the settings, then switch BluePrinter on in the widget list (F11).
-After a change to `bluePrinter.lua` or `shared\editor_common.lua`: the BluePrinter is installed and kept up to date only by its own scripts: `start_blueprinter.bat` and `start_blueprinter_test.bat` update it before every start (the Level Editor does not touch it); otherwise run `install_blueprinter.bat` again after a change. A game that is already running keeps the old files until a new start or `/luaui reload`.
+- After a change to `bluePrinter.lua` or `shared\editor_common.lua`: the BluePrinter is installed and kept up to date only by its own scripts: `start_blueprinter.bat` and `start_blueprinter_test.bat` update it before every start (the Level Editor does not touch it); otherwise run `install_blueprinter.bat` again after a change.
+- A game that is already running keeps the old files until a new start or `/luaui reload`.
 
-**Removing:** run `uninstall_blueprinter.bat` (it asks first). It removes the widget, the shared code in `data\LuaUI\Include` and the two junctions; the blueprints stay. With `-WithSettings` the settings file `LuaUI\Config\BluePrinterUI.lua` is deleted too, with `-Yes` the confirmation is skipped.
+- **Removing:** run `uninstall_blueprinter.bat` (it asks first).
+- It removes the widget, the shared code in `data\LuaUI\Include` and the two junctions; the blueprints stay.
+- With `-WithSettings` the settings file `LuaUI\Config\BluePrinterUI.lua` is deleted too, with `-Yes` the confirmation is skipped.
 
 ## Trying it out
-**`start_blueprinter.bat`** makes sure the newest BluePrinter is installed (it compares the files with the installed ones and runs the setup when they differ) and then starts the normal Beyond All Reason. The BluePrinter is a widget: once it is installed and switched on (see above) it is active in every normal game, you can also start BAR in the usual way, but then nobody checks that the installed version is the newest. **`start_blueprinter_test.bat`** does the same check and then starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change. Start it from a command line with a map name to choose the map: `start_blueprinter_test.bat "Map Name"`.
+
+- **`start_blueprinter.bat`** makes sure the newest BluePrinter is installed (it compares the files with the installed ones and runs the setup when they differ) and then starts the normal Beyond All Reason.
+- The BluePrinter is a widget: once it is installed and switched on (see above) it is active in every normal game, you can also start BAR in the usual way, but then nobody checks that the installed version is the newest.
+- **`start_blueprinter_test.bat`** does the same check and then starts a small test game (one player against a passive AI on the first installed map), so you can look at the menu after a change.
+- Start it from a command line with a map name to choose the map: `start_blueprinter_test.bat "Map Name"`.
 
 ## Blueprints
 Files `<name>.lua` are read from `data\LuaUI\Config\BluePrinter` (that is from `BluePrinter\blueprints`) and from
 `data\LuaUI\Config\LevelEditorBlueprints` (the blueprints of the Level Editor, if the folder `LevelEditor` lies next to `BluePrinter`). Only buildings are used,
 units in a blueprint are skipped. The team in the blueprint does not matter, it is built for you.
-**Faction (button F, on by default):** a blueprint is turned into the buildings of the faction of your builders: for Cortex builders `armsolar` becomes `corsolar`, for Legion `legsolar` (the faction of the selected builders, otherwise of your own). Buildings that the faction does not have are left out and the message says how many. The buildings of the other factions are not always the same size, so a blueprint made for one faction may not fit exactly; switch F off to build the blueprint as it is.
+
+- **Faction (button F, on by default):** a blueprint is turned into the buildings of the faction of your builders: for Cortex builders `armsolar` becomes `corsolar`, for Legion `legsolar` (the faction of the selected builders, otherwise of your own).
+- Buildings that the faction does not have are left out and the message says how many.
+- The buildings of the other factions are not always the same size, so a blueprint made for one faction may not fit exactly; switch F off to build the blueprint as it is.
 
 ## Usage
 - Menu on the right (with `/bp_side left` to the left): click a blueprint in the list, then left click on the map = queue it
@@ -39,23 +49,31 @@ units in a blueprint are skipped. The team in the blueprint does not matter, it 
 - The button **O** (in the column next to the menu) opens the settings: columns and rows of the grid (default 3 and 4) with - and +. They are stored in `LuaUI\Config\BluePrinterUI.lua` in the game folder.
 - Drag a tile with the mouse button held down = sort (a yellow mark shows the place, the order is remembered).
   Double click on the name = rename (type, Enter accepts, Esc cancels).
-- **Painting:** with an armed building hold the left mouse button and move: a plan is queued after every footprint of mouse movement (plus the spacing); spots where the building cannot be placed are left out. The whole stroke is one step for Undo.
+- **Painting:** with an armed building hold the left mouse button and move: a plan is queued after every footprint of mouse movement (plus the spacing); spots where the building cannot be placed are left out.
+  - The whole stroke is one step for Undo.
 - **Rows and rectangles:** with an armed blueprint or building hold **Shift** and drag (a row) or **Shift + Alt** and drag (a rectangle); all copies are queued on release as one step for Undo. **Shift + mouse wheel** changes the spacing.
 - **Create Blueprint** (button at the top right of the title row, Ctrl+Alt+P or `/bp_create`): the selected buildings are saved as `bp_001`, `bp_002` ... in `BluePrinter\blueprints`
   and made ready for placing right away.
 - When placing, the widget shows the 3D models of the buildings in addition to the frames (semi-transparent, for large blueprints the 150 closest to the center). With `/bp_ghost` you check the mode (`gl` or `wg`, if the models are missing).
-- A **search field** sits above the blueprint tiles (and in the building catalog): type words of the description or the code, the list filters at once (Enter = done, Esc or X = clear; sorting is off while searching). The lists have a **scrollbar** at the right edge.
+- A **search field** sits above the blueprint tiles (and in the building catalog): type words of the description or the code, the list filters at once (Enter = done, Esc or X = clear; sorting is off while searching).
+  - The lists have a **scrollbar** at the right edge.
 - Rotate: the BAR keys `[` and `]` (build rotation), or Alt + mouse wheel (there is no button; the direction is visible in the 3D preview at the mouse pointer).
-- **Choose a blueprint with the mouse wheel:** hold **Ctrl** and turn the wheel on the map (not over the menu): the next / previous blueprint of the list gets armed (at the end it goes round; with a search text only the shown ones count); the camera does not zoom then. Alt + wheel still rotates, Shift + wheel changes the spacing.
+- **Choose a blueprint with the mouse wheel:** hold **Ctrl** and turn the wheel on the map (not over the menu): the next / previous blueprint of the list gets armed (at the end it goes round; with a search text only the shown ones count); the camera does not zoom then.
+  - Alt + wheel still rotates, Shift + wheel changes the spacing.
 - Blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later). Every open plan also shows a semi-transparent 3D ghost of the building (the 150 closest to the mouse pointer if there are more).
-- **Right click on a plan** with builders selected: exactly these builders build exactly this plan now (Shift = add it behind their current orders). Builders that cannot build it give a message; without a selected builder the click keeps its normal meaning.
+- **Right click on a plan** with builders selected: exactly these builders build exactly this plan now (Shift = add it behind their current orders).
+  - Builders that cannot build it give a message; without a selected builder the click keeps its normal meaning.
 - **Moving the menu:** drag the title ("BluePrinter") with the left mouse button, the menu moves with its button column. A right click on the title puts it back. The position is remembered.
-- Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **Q** queue order, **C** commanders help build yes/no, **F** faction of your builders (hover for a tooltip). In the menu: Undo, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
+- Buttons at the screen edge next to the menu: **V** collapse, **O** settings, **?** help, **A** auto-build on/off, **Q** queue order, **C** commanders help build yes/no, **F** faction of your builders (hover for a tooltip).
+  - In the menu: Undo, Clear all and the radius field (builders react to plans within this radius; click the number to type one, or use - and +).
 - Only builders that are idle and can build the building take part (e.g. no T2 buildings with a T1 builder).
   If a builder has several plans nearby, it gets up to four in a row. When all plans are taken,
   it helps with one in progress.
 - Queued plans are kept for the same match (a `/luaui reload` or a rejoin); a new match starts without plans.
-- You set the display (columns/rows) with the **O** button; the menu keeps the width it has with 3 columns, so with **more columns** the pictures get smaller (3 columns = the size as before). Under the 3D preview the info of the building under the mouse pointer is shown (name and code, description, metal and energy with the **Eco time**, damage per second, explosion), the same as in the Level Editor. **Eco time** is how long your **stable** income (metal extractors, converters, generators, builders, the commander; not reclaim or gifts) needs to produce the metal and energy of the building (or of a whole blueprint); it counts the worst case, the stock in your store is not counted, and it shows `-` without income. Every blueprint tile shows it as its fourth line (`Eco 1:25`).
+- You set the display (columns/rows) with the **O** button; the menu keeps the width it has with 3 columns, so with **more columns** the pictures get smaller (3 columns = the size as before).
+  - Under the 3D preview the info of the building under the mouse pointer is shown (name and code, description, metal and energy with the **Eco time**, damage per second, explosion), the same as in the Level Editor.
+  - **Eco time** is how long your **stable** income (metal extractors, converters, generators, builders, the commander; not reclaim or gifts) needs to produce the metal and energy of the building (or of a whole blueprint); it counts the worst case, the stock in your store is not counted, and it shows `-` without income.
+  - Every blueprint tile shows it as its fourth line (`Eco 1:25`).
 
 ## Queueing single buildings
 At the top of the menu use **Buildings** to switch to the catalog view: choose the faction (preselected by your builders; only factions your builders can build for are shown) and the tech tier,
@@ -63,16 +81,30 @@ click a building, then every left click on the map queues one (hold the button a
 your builders cannot build right now are dimmed (queueing works anyway). The builders work through them like all plans.
 
 ## Managing the queued plans
-A left click on a plan in the world selects that building, a **double click** selects the whole blueprint it belongs to (so you can remove it together); **Shift+click** adds or removes, **Ctrl+drag** draws a rectangle. Then **Del** removes the plans from the queue, **[** and **]** rotate them (not the ones already being built), **Page up / Page down** move them one place forward or back in the queue (the numbers in the world change), **Home / End** to the very front or back. **Undo** takes every one of these steps back. A removed plan also stops the builder that had it, and a building that was already started is reclaimed.
+
+- A left click on a plan in the world selects that building, a **double click** selects the whole blueprint it belongs to (so you can remove it together); **Shift+click** adds or removes, **Ctrl+drag** draws a rectangle.
+- Then **Del** removes the plans from the queue, **[** and **]** rotate them (not the ones already being built), **Page up / Page down** move them one place forward or back in the queue (the numbers in the world change), **Home / End** to the very front or back.
+- **Undo** takes every one of these steps back.
+- A removed plan also stops the builder that had it, and a building that was already started is reclaimed.
 
 A plan that has another building on its spot (also a half-built one) is removed from the queue by itself, and Undo does not bring back such plans.
 
-Whatever you place (**blueprint, single building, row, rectangle or painted stroke**) **on top of other plans replaces them**: the plans below leave the queue and the new blueprint comes on top (Undo brings the old ones back). A building of the blueprint that would lie on a real building (or on bad ground) is simply left out, the rest is placed. Before the blueprint is placed, numbers at its buildings show the order in which it builds.
+- Whatever you place (**blueprint, single building, row, rectangle or painted stroke**) **on top of other plans replaces them**: the plans below leave the queue and the new blueprint comes on top (Undo brings the old ones back).
+- A building of the blueprint that would lie on a real building (or on bad ground) is simply left out, the rest is placed.
+- Before the blueprint is placed, numbers at its buildings show the order in which it builds.
 
-The button **Q** (Queue order, in the column next to the menu between A and C) decides who builds what first: off (default) = idle builders take the nearest plan, on = they take the plan with the lowest number first. Only with it on the reordering matters. Without auto-build (button **A**) you can select builders and **right click on a plan**: they go there and build it, a plan of a blueprint sends them to build the whole blueprint copy. The commander helps with plans too (button **C**), but stops building and fights when an enemy comes near.
+- The button **Q** (Queue order, in the column next to the menu between A and C) decides who builds what first: off (default) = idle builders take the nearest plan, on = they take the plan with the lowest number first.
+- Only with it on the reordering matters.
+- Without auto-build (button **A**) you can select builders and **right click on a plan**: they go there and build it, a plan of a blueprint sends them to build the whole blueprint copy.
+- The commander helps with plans too (button **C**), but stops building and fights when an enemy comes near.
 
 ## Experimental attacks
-The buttons **XL**, **XR**, **XC** (area attacks: spread the selected units over a line, rectangle or circle), **XS** (split attack: spread the damage per second evenly over the enemies in a circle) and **XF** (focus attack: kill the enemies in a circle one after the other, the most dangerous first) are below the other buttons next to the menu. They work with armed units of any kind. Select the units, press the button, drag the shape on the map, right click cancels. The command menu of the game has three more buttons for the circle modes: **Area Attack** (like XC), **Split Attack** (XS) and **Focus Attack** (XF). Also Ctrl+Alt+K (= XL) and `/bp_carpet [line|rect|circle|split|focus]`.
+
+- The buttons **XL**, **XR**, **XC** (area attacks: spread the selected units over a line, rectangle or circle), **XS** (split attack: spread the damage per second evenly over the enemies in a circle) and **XF** (focus attack: kill the enemies in a circle one after the other, the most dangerous first) are below the other buttons next to the menu.
+- They work with armed units of any kind.
+- Select the units, press the button, drag the shape on the map, right click cancels.
+- The command menu of the game has three more buttons for the circle modes: **Area Attack** (like XC), **Split Attack** (XS) and **Focus Attack** (XF).
+- Also Ctrl+Alt+K (= XL) and `/bp_carpet [line|rect|circle|split|focus]`.
 
 All details, rules and pictures: [Experimental Attacks](../docs/experimental-attacks.md).
 

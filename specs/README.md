@@ -1,8 +1,18 @@
 # Specifications
 
-The specifications describe the **current state** of the code for whoever develops it further (in practice: the AI agent working on this repository). They are not manuals: the instructions for players are in the READMEs next to the programs and in `docs/`, and are not repeated here. Keep a specification up to date with every change. There is no backward compatibility to document: only what exists now.
+- The specifications describe the **current state** of the code for whoever develops it further (in practice: the AI agent working on this repository).
+- They are not manuals: the instructions for players are in the READMEs next to the programs and in `docs/`, and are not repeated here.
+- Keep a specification up to date with every change.
+- There is no backward compatibility to document: only what exists now.
 
 Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered inside each document only; documents refer to each other by file and heading, not by number.
+
+## How they are written
+
+- Short bullets: one fact per bullet, the details as sub-bullets. No long paragraphs.
+- The name of the function, table or file in backticks at the start of a bullet, so it can be searched.
+- Only the current state. What was tried and did not work goes under a heading **Tried and rejected** (it saves the next attempt), not into the description.
+- A document that grows over about 40 KB is split by topic (as Renegade is).
 
 ## Documents
 
@@ -14,13 +24,17 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [restrictions.md](restrictions.md) | what the player may not build, the R window |
 | [tower-defense.md](tower-defense.md), [capture-the-flag.md](capture-the-flag.md), [reclaim-the-fame.md](reclaim-the-fame.md) | the three game modes of a level |
 | [evolution.md](evolution.md) | the game mode Evolution of LAN Play (any map) |
-| [renegade.md](renegade.md) | the game mode Renegade (first test): one unit per player in the first or third person, three mouse buttons for the weapons, the panel (cards, sorted by range, name from the picture, range / shots per second / damage / DPS), compass, speedometer, altimeter, list of the players, binoculars, the weapon table with its categories (39 pictures, sizes by tech level and damage per second, the generator `weapon_art_build.py`), the flight heights and bombs of aircraft, arc weapons and their preview, the turret angle, the smart weapon selection units (direct / vertical), the AUTO row of the anti-nuke launchers, anti-air lock, the switch to the normal game, the start script (all units, `quick`), debug menu, bots |
+| [renegade.md](renegade.md) | the game mode Renegade of LAN Play (steer one unit from the inside): parts, game options, messages, tests, open points |
+| [renegade-widget.md](renegade-widget.md) | Renegade, the widget: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers |
+| [renegade-units.md](renegade-units.md) | Renegade, the gadget: units, moving, hull controls, reverse, jump mode, healing |
+| [renegade-aircraft.md](renegade-aircraft.md) | Renegade, aircraft: steering, height, bombs |
+| [renegade-shooting.md](renegade-shooting.md) | Renegade, weapons: the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 | [arena.md](arena.md) | the Arena tool (button A) |
 | [scenario-builder.md](scenario-builder.md) | scenario info, the builder, `scenario.txt`, the extra game of the scenarios |
 | [scenario-multiplayer.md](scenario-multiplayer.md) | console lobby, split screen, bundle and map transfer |
 | [lan-play.md](lan-play.md) | the lobby widget for LAN Play |
 | [blueprinter.md](blueprinter.md) | the BluePrinter widget |
-| [shared-code.md](shared-code.md) | `editor_common.lua`, `bar_rules.lua`, `bar_common.ps1` |
+| [shared-code.md](shared-code.md) | `editor_common.lua`, `area_attack.lua`, `bar_rules.lua`, `led_gadgets.lua`, `bar_common.ps1` |
 | [testing.md](testing.md) | how changes are checked |
 
 ## Where things live

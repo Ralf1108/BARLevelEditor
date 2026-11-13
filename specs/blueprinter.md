@@ -1,70 +1,123 @@
 # BluePrinter
 
-Widget `BluePrinter\bluePrinter.lua` for the **official** Beyond All Reason: blueprint templates and single buildings are queued on the map as build plans; idle own builders nearby carry them out on their own. Shared code: [Shared code](shared-code.md) (the area attacks XL, XR, XC live there as `Shared.newAreaAttack` and are also used by the [Level Editor](level-editor.md)). User view: [BluePrinter manual](../BluePrinter/README.md), [Experimental Attacks](../docs/experimental-attacks.md).
+- Widget `BluePrinter\bluePrinter.lua` for the **official** Beyond All Reason: blueprint templates and single buildings are queued on the map as build plans; idle own builders nearby carry them out on their own.
+- Shared code: [Shared code](shared-code.md) (the area attacks XL, XR, XC live there as `Shared.newAreaAttack` and are also used by the [Level Editor](level-editor.md)).
+- User view: [BluePrinter manual](../BluePrinter/README.md), [Experimental Attacks](../docs/experimental-attacks.md).
 
 ## 1. Goals and basic rules
 
 - Name: **BluePrinter** (file `bluePrinter.lua`, folder `BluePrinter`). All visible texts are English, no umlauts in game texts; no names or private matters of persons.
 - Runs in the normal, official game. Everything happens through normal build orders (`Spring.GiveOrderToUnit` with a negative UnitDefID and a position): cost and build time as usual, no cheat needed. The game is not changed.
 - Only buildings are planned. Units in blueprints are skipped; mobile units have no build plan. The team in a blueprint does not matter, it is built for the own team.
-- As a spectator the widget is pointless and removes itself. In the Level Editor (game option `leveleditor=1`, or when `WG.LevelEditorWidget` is set) it removes itself too, because the editor brings the same interface. The Level Editor does not remove it from its side (that removed the Level Editor as well).
+- As a spectator the widget is pointless and removes itself.
+  - In the Level Editor (game option `leveleditor=1`, or when `WG.LevelEditorWidget` is set) it removes itself too, because the editor brings the same interface.
+  - The Level Editor does not remove it from its side (that removed the Level Editor as well).
 - Automatic building may count as automation in ranked or tournament games, hence the **Auto-build** switch.
 
 ## 2. Installation
 
-- `install_blueprinter.bat` → `install_blueprinter.ps1`: searches BAR on all fixed drives, copies `bluePrinter.lua` to `data\LuaUI\Widgets` (with `enabled = true`), the shared code `editor_common.lua`, `area_attack.lua` and `bar_rules.lua` to `data\LuaUI\Include`, and creates the junctions `data\LuaUI\Config\BluePrinter` → `BluePrinter\blueprints` and, if the folder `LevelEditor` lies next to `BluePrinter`, `data\LuaUI\Config\LevelEditorBlueprints` → `LevelEditor\blueprints`. The widget loads the shared code with `VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)`.
+- `install_blueprinter.bat` → `install_blueprinter.ps1`: searches BAR on all fixed drives, copies `bluePrinter.lua` to `data\LuaUI\Widgets` (with `enabled = true`), the shared code `editor_common.lua`, `area_attack.lua` and `bar_rules.lua` to `data\LuaUI\Include`, and creates the junctions `data\LuaUI\Config\BluePrinter` → `BluePrinter\blueprints` and, if the folder `LevelEditor` lies next to `BluePrinter`, `data\LuaUI\Config\LevelEditorBlueprints` → `LevelEditor\blueprints`.
+  - The widget loads the shared code with `VFS.Include("LuaUI/Include/editor_common.lua", nil, VFS.RAW_FIRST)`.
 - The folder `shared` must lie next to `BluePrinter` (also on a second computer); the setup scripts use `shared\bar_common.ps1`. In the game "Allow user widgets" must be on and the widget active in the widget list (F11).
-- `update_blueprinter.ps1` (dot-sourced by the two start scripts) compares the installed files with the repository by hash and runs `install_blueprinter.ps1` when they differ or the BluePrinter is not installed. A running game keeps the old files (`/luaui reload`). The Level Editor neither installs nor updates the BluePrinter (it packs the shared code into its own `.sdz`).
+- `update_blueprinter.ps1` (dot-sourced by the two start scripts) compares the installed files with the repository by hash and runs `install_blueprinter.ps1` when they differ or the BluePrinter is not installed.
+  - A running game keeps the old files (`/luaui reload`).
+  - The Level Editor neither installs nor updates the BluePrinter (it packs the shared code into its own `.sdz`).
 - `uninstall_blueprinter.bat` → `uninstall_blueprinter.ps1` lists what is there (`LuaUI\Widgets\bluePrinter.lua`, `LuaUI\Include\editor_common.lua`, `area_attack.lua`, `bar_rules.lua`, the junctions; with `-WithSettings` also `BluePrinterUI.lua`), asks (`-Yes` skips) and removes it; junctions are only unhooked, the blueprints stay.
 - Files: `bluePrinter.lua`; `install_blueprinter.*`, `uninstall_blueprinter.*`, `update_blueprinter.ps1`; `start_blueprinter.bat` / `.ps1` (update, then start the normal BAR launcher `Beyond-All-Reason.exe`); `start_blueprinter_test.bat` / `.ps1` (update, then a small test game: one player against a passive AI on the first installed map or `start_blueprinter_test.bat "Map Name"`); `blueprints\` (own blueprints, `_order.txt`, `_trash\`).
 
 ## 3. Sources for blueprints
 
-- Files `<name>.lua` from `LuaUI/Config/BluePrinter/` (new blueprints are created there too) and `LuaUI/Config/LevelEditorBlueprints/` (the blueprints of the Level Editor, if set up). With the same name `BluePrinter/` wins. Order (`_order.txt`) in the first folder, trash `<folder>_trash/` of the respective folder. Blueprints without buildings do not appear.
-- **File access of user widgets in BAR:** reading only under `LuaUI/`, writing only under `LuaUI/Config/` (also through junctions to it); every other access is rejected with "is outside the read/write paths for user widgets". That is why the installer creates the junctions under `data\LuaUI\Config\`; `io.open`, `os.remove`, `os.date` and `VFS.DirList` work there. The Level Editor is a game widget and has no such restriction.
+- Files `<name>.lua` from `LuaUI/Config/BluePrinter/` (new blueprints are created there too) and `LuaUI/Config/LevelEditorBlueprints/` (the blueprints of the Level Editor, if set up).
+  - With the same name `BluePrinter/` wins.
+  - Order (`_order.txt`) in the first folder, trash `<folder>_trash/` of the respective folder.
+  - Blueprints without buildings do not appear.
+- **File access of user widgets in BAR:** reading only under `LuaUI/`, writing only under `LuaUI/Config/` (also through junctions to it); every other access is rejected with "is outside the read/write paths for user widgets".
+  - That is why the installer creates the junctions under `data\LuaUI\Config\`; `io.open`, `os.remove`, `os.date` and `VFS.DirList` work there.
+  - The Level Editor is a game widget and has no such restriction.
 
 ## 4. Interface
 
 ### 4.1 Panel
 
-- Position right (default) or left (`/bp_side left|right`), top edge at 90 % of the screen height. Width at least 600·S, at most 60 % of the screen. Bottom edge at most at 5 %; in the blueprints and buildings view at least 20 % of the screen height above the bottom, so the info lines below the panel stay clear of the BAR boxes at the bottom right. Scales with the screen height and `ui_scale`.
-- **Movable:** the title row (except the Create button) is the handle: left button drags, right click resets; `panelRect()` = `basePanelRect()` plus the offset of `panelMover`, kept on the screen; the button column sits next to the menu on its outer side (`columnX`). The offset is part of the config data (`panel`).
-- **Button column** at the screen edge next to the menu (all buttons use `Shared.drawButtons`, height `HB`, font 26·S): **V** (collapse / expand), **O** (settings), **?** (help), **A** (auto-build, default on), **Q** (queue order, section 5), **C** (commanders help build, default yes), a free slot, the experimental area attacks **XL**, **XR**, **XC**, a free slot, the split attack **XS** and the focus attack **XF**. Every button has a tooltip (A, Q and C show the state). Active switches are light blue. No buttons for rotating and for the side of the menu (keys, chat commands).
+- Position right (default) or left (`/bp_side left|right`), top edge at 90 % of the screen height.
+  - Width at least 600·S, at most 60 % of the screen.
+  - Bottom edge at most at 5 %; in the blueprints and buildings view at least 20 % of the screen height above the bottom, so the info lines below the panel stay clear of the BAR boxes at the bottom right.
+  - Scales with the screen height and `ui_scale`.
+- **Movable:** the title row (except the Create button) is the handle: left button drags, right click resets; `panelRect()` = `basePanelRect()` plus the offset of `panelMover`, kept on the screen; the button column sits next to the menu on its outer side (`columnX`).
+  - The offset is part of the config data (`panel`).
+- **Button column** at the screen edge next to the menu (all buttons use `Shared.drawButtons`, height `HB`, font 26·S): **V** (collapse / expand), **O** (settings), **?** (help), **A** (auto-build, default on), **Q** (queue order, section 5), **C** (commanders help build, default yes), a free slot, the experimental area attacks **XL**, **XR**, **XC**, a free slot, the split attack **XS** and the focus attack **XF**.
+  - Every button has a tooltip (A, Q and C show the state).
+  - Active switches are light blue.
+  - No buttons for rotating and for the side of the menu (keys, chat commands).
 - **Order from the top:** title "BluePrinter" with **Create Blueprint** at the right; status row **Open** | **In progress** | **Done** (label and a dark number box each); mode row **Blueprints | Buildings**; **Undo** | **Clear all**; **Radius** | **-** | input field | **+** (click the field, type digits (up to 5), Enter accepts, Esc cancels, a click elsewhere accepts; limited to 200–6000; - and + change by 200); the lines "Left click = queue" (only while a stamp is armed) and "Remaining: ..."; then the content (grid or catalog).
 - **Tooltips:** `Shared.tooltipBox`, drawn last ([Shared code](shared-code.md)). **Help button `?`** (action `bp_helpbox`): the help board (`HELP_SECTIONS`), drawn after the menu; every click closes it.
 
 ### 4.2 Mode "Blueprints"
 
-- Grid as in the shared code ("Tile grid for blueprints"): thumbnails with unit pictures, growing from top to bottom up to 3 columns × 4 rows (adjustable), then the mouse wheel scrolls. A click on a tile chooses the blueprint and arms the stamp; a left click on the map queues it (any number of times), right click ends. Sorting by dragging, deleting with x, renaming by double click as in the Level Editor.
-- Search field above the tiles (from `shared`): all words must appear in the blueprint name or in code, name and description of its buildings; Enter = done, Esc or X = clear; sorting is off while searching. Scrollbar at the right edge when the list is longer than the area.
-- **Create** (button at the top right of the title row, **Ctrl+Alt+P**, `/bp_create`): saves the selected buildings (other units are ignored) as `bp_001`, `bp_002` ... in `BluePrinter\blueprints` (position relative to the center, team 0), chooses it and arms the stamp. Without selected buildings a message appears.
+- Grid as in the shared code ("Tile grid for blueprints"): thumbnails with unit pictures, growing from top to bottom up to 3 columns × 4 rows (adjustable), then the mouse wheel scrolls.
+  - A click on a tile chooses the blueprint and arms the stamp; a left click on the map queues it (any number of times), right click ends.
+  - Sorting by dragging, deleting with x, renaming by double click as in the Level Editor.
+- Search field above the tiles (from `shared`): all words must appear in the blueprint name or in code, name and description of its buildings; Enter = done, Esc or X = clear; sorting is off while searching.
+  - Scrollbar at the right edge when the list is longer than the area.
+- **Create** (button at the top right of the title row, **Ctrl+Alt+P**, `/bp_create`): saves the selected buildings (other units are ignored) as `bp_001`, `bp_002` ... in `BluePrinter\blueprints` (position relative to the center, team 0), chooses it and arms the stamp.
+  - Without selected buildings a message appears.
 - Every tile shows below the name and the number of buildings the total cost (`M`, `E`) and as a fourth line the Eco time (`Eco 1:25`). If the list is empty: "No blueprints found".
 
 ### 4.3 Mode "Buildings"
 
-- The catalog of the Level Editor with only the groups buildings and turrets and only Armada, Cortex and Legion (Scavenger and Raptor units exist only with `forceallunits`). Filters for faction and tech, pictures, sorting, the info block of the shared code. The restriction marks (red X) do not exist here: the list is created without the option `restrict`, so the restrictions of a level are ignored. The hint text above the menu: "Click a building, then on the map" / "Left click queues, right click ends, [ and ] rotate", above it "Shift = row, Shift+Alt = rectangle, Shift+Mouse wheel = spacing (N)". Search field and scrollbar as above.
-- A faction gets a button only if the own builders can build at least one building of it (`factionUsable` of `Shared.newUnits`, `factionBuildable` in `bluePrinter.lua`; as long as there is no builder all three are offered). The faction is preselected by the own builders (until you click one yourself). Buildings the own builders cannot build right now are dimmed but can still be queued (abilities refreshed every 60 game frames from the build options of the own mobile builders).
-- A click on a building arms the stamp; every left click queues one building (at the build position snapped by the game, with the chosen rotation), right click ends. If a plan already stands there: "There is already a plan there". Every queueing is a step for Undo.
-- **Painting:** while the left button is held after the click (`paint`, `widget:Update`) a plan is added after every footprint of movement (footprint + spacing · 16 Elmo per axis; `Shared.paintChain`); a spot is left out when `TestBuildOrder` gives 0 or a plan is already there. The whole stroke is one step for Undo (`addSingle(…, batch)`). Blueprints are not painted.
-- **Rows and rectangles:** Shift + drag = row, Shift+Alt = rectangle (one step for Undo); spacing 0 to 20 with Alt+Z / Alt+X, `buildspacing`, side buttons 4 / 5 with Shift, Shift + mouse wheel or `/bp_spacing`. Also for blueprints (copies in a row or rectangle, at most 100; single buildings at most 2000; the preview shows all copies, up to 500 frames).
+- The catalog of the Level Editor with only the groups buildings and turrets and only Armada, Cortex and Legion (Scavenger and Raptor units exist only with `forceallunits`).
+  - Filters for faction and tech, pictures, sorting, the info block of the shared code.
+  - The restriction marks (red X) do not exist here: the list is created without the option `restrict`, so the restrictions of a level are ignored.
+  - The hint text above the menu: "Click a building, then on the map" / "Left click queues, right click ends, [ and ] rotate", above it "Shift = row, Shift+Alt = rectangle, Shift+Mouse wheel = spacing (N)".
+  - Search field and scrollbar as above.
+- A faction gets a button only if the own builders can build at least one building of it (`factionUsable` of `Shared.newUnits`, `factionBuildable` in `bluePrinter.lua`; as long as there is no builder all three are offered).
+  - The faction is preselected by the own builders (until you click one yourself).
+  - Buildings the own builders cannot build right now are dimmed but can still be queued (abilities refreshed every 60 game frames from the build options of the own mobile builders).
+- A click on a building arms the stamp; every left click queues one building (at the build position snapped by the game, with the chosen rotation), right click ends.
+  - If a plan already stands there: "There is already a plan there".
+  - Every queueing is a step for Undo.
+- **Painting:** while the left button is held after the click (`paint`, `widget:Update`) a plan is added after every footprint of movement (footprint + spacing · 16 Elmo per axis; `Shared.paintChain`); a spot is left out when `TestBuildOrder` gives 0 or a plan is already there.
+  - The whole stroke is one step for Undo (`addSingle(…, batch)`).
+  - Blueprints are not painted.
+- **Rows and rectangles:** Shift + drag = row, Shift+Alt = rectangle (one step for Undo); spacing 0 to 20 with Alt+Z / Alt+X, `buildspacing`, side buttons 4 / 5 with Shift, Shift + mouse wheel or `/bp_spacing`.
+  - Also for blueprints (copies in a row or rectangle, at most 100; single buildings at most 2000; the preview shows all copies, up to 500 frames).
 - **Range circles:** a building or blueprint at the mouse pointer shows the two circles of the Level Editor (`Shared.drawRangeCircles`): red = weapon range, blue = line of sight; for a blueprint those of all its buildings (at most 120), for a row the first 40 copies.
 
 ### 4.4 Preview and rotating
 
-- **Queued plans** as frames (footprint, with rotation): blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later). Every open plan is also drawn as a 3D ghost (`drawPlanGhosts`, at most `ghost.max` = 150, the ones closest to the mouse pointer; every plan has its own ghost key).
-- **Stamp at the mouse pointer:** green frame if buildable (`Spring.TestBuildOrder` ≠ 0), otherwise red, plus the 3D models (semi-transparent, at most 150). Yellow numbers at the buildings of an armed blueprint show the order in which it builds (1 to n per copy, `drawPreviewNumbers`); placed, the plans get the next numbers of the queue. `/bp_ghost` shows / sets the mode. Positions snap to the build grid with `Spring.Pos2BuildPos`; the blueprint center is set to a 16 grid.
+- **Queued plans** as frames (footprint, with rotation): blue = planned, yellow = a builder is working on it, red = blocked right now (tried again later).
+  - Every open plan is also drawn as a 3D ghost (`drawPlanGhosts`, at most `ghost.max` = 150, the ones closest to the mouse pointer; every plan has its own ghost key).
+- **Stamp at the mouse pointer:** green frame if buildable (`Spring.TestBuildOrder` ≠ 0), otherwise red, plus the 3D models (semi-transparent, at most 150).
+  - Yellow numbers at the buildings of an armed blueprint show the order in which it builds (1 to n per copy, `drawPreviewNumbers`); placed, the plans get the next numbers of the queue.
+  - `/bp_ghost` shows / sets the mode.
+  - Positions snap to the build grid with `Spring.Pos2BuildPos`; the blueprint center is set to a 16 grid.
 - **Visible queue:** a status line "Remaining: metal M, energy E, build time about T" (sum of all open plans; build time = build effort divided by the build power of the own builders; every 30 frames) and in the world a number on every open plan (order of the queue, up to 250).
-- **Faction (button F, `adaptFaction`, saved with the settings):** `addPlan` turns every building of a blueprint into the one of the faction `targetPrefix()` (the first selected builder of arm / cor / leg, otherwise `ownPrefix` = faction of the own builders from `refreshBuildable`): `adaptedName` swaps the three-letter prefix (`armsolar` - `corsolar` - `legsolar`); a name without a counterpart in `UnitDefNames` is left out and counted (`noMatch`, 5th result, shown in the message). Footprints may differ between the factions, positions and offsets stay as they are (`testBuild` then leaves out what does not fit). Test: `bp_test.ps1 -Widget zz_bpfaction.lua` (`DebugSetAdapt`).
-- **Rotating:** BAR keys `[` and `]` (`buildfacing inc/dec`; BAR gets the key too), Alt + mouse wheel (with an armed stamp), `/bp_rotate`. **Ctrl + mouse wheel** on the map (menu open, not collapsed, not over the panel, blueprint view) calls `bpGrid:cycle(rect, up)` of `editor_common.lua`: the next (wheel down) / previous (wheel up) blueprint of the list shown (search filter counts, round at the ends) is selected, armed (`setArmed(true)`, `onSelect`) and scrolled into view; widget:MouseWheel returns true so the camera does not zoom. Test `zz_cycle.lua` (calls `cycle` directly through `DebugGrid()`: the modifier cannot be faked). Steps of 90°; offset and facing of all buildings of a blueprint rotate along.
+- **Faction (button F, `adaptFaction`, saved with the settings):** `addPlan` turns every building of a blueprint into the one of the faction `targetPrefix()` (the first selected builder of arm / cor / leg, otherwise `ownPrefix` = faction of the own builders from `refreshBuildable`): `adaptedName` swaps the three-letter prefix (`armsolar` - `corsolar` - `legsolar`);
+  - a name without a counterpart in `UnitDefNames` is left out and counted (`noMatch`, 5th result, shown in the message).
+  - Footprints may differ between the factions, positions and offsets stay as they are (`testBuild` then leaves out what does not fit).
+  - Test: `bp_test.ps1 -Widget zz_bpfaction.lua` (`DebugSetAdapt`).
+- **Rotating:** BAR keys `[` and `]` (`buildfacing inc/dec`; BAR gets the key too), Alt + mouse wheel (with an armed stamp), `/bp_rotate`.
+  - **Ctrl + mouse wheel** on the map (menu open, not collapsed, not over the panel, blueprint view) calls `bpGrid:cycle(rect, up)` of `editor_common.lua`: the next (wheel down) / previous (wheel up) blueprint of the list shown (search filter counts, round at the ends) is selected, armed (`setArmed(true)`, `onSelect`) and scrolled into view;
+    - widget:MouseWheel returns true so the camera does not zoom.
+  - Test `zz_cycle.lua` (calls `cycle` directly through `DebugGrid()`: the modifier cannot be faked).
+  - Steps of 90°; offset and facing of all buildings of a blueprint rotate along.
 - **Settings (O):** columns and rows for Blueprints and Buildings (`bpCols`, `bpRows`, `uCols`, `uRows`), default 3 and 4, limits 1–6 and 1–8, `LuaUI\Config\BluePrinterUI.lua`, immediately on every change.
 
 ## 5. Plans and auto-build
 
-A plan (`site`): `def` (UnitDefID), `name`, `x`, `y`, `z`, `f` (facing 0–3), `batch` (number of the queueing step; one blueprint or one single building = one step), `grp` (one number per queued blueprint copy), `done`, `blocked` (until a pass number), `claim` (builder ID), `claimFrame`, `tries`. Duplicate plans (the same building at the same place, deviation < 4) are not created.
+- A plan (`site`): `def` (UnitDefID), `name`, `x`, `y`, `z`, `f` (facing 0–3), `batch` (number of the queueing step; one blueprint or one single building = one step), `grp` (one number per queued blueprint copy), `done`, `blocked` (until a pass number), `claim` (builder ID), `claimFrame`, `tries`.
+- Duplicate plans (the same building at the same place, deviation < 4) are not created.
 
-- **Rhythm:** every 30 game frames a pass `workPass` (not as a spectator; on an error auto-build is switched off for this game and a message is shown, the saved setting stays on, `autoBuildStopped`, button A switches it on again); every 60 frames the builder abilities are refreshed. In every pass: (1) detect finished buildings (at most 30 plans per pass, in turn): an own building of the same kind within 24 Elmo, no longer under construction → `done`; (2) clean up claims: a plan loses its builder when the builder is invalid or dead or has stood without an order for at least 90 frames; (3) with auto-build on and open plans: give orders to every idle builder (no commands, not building), at most 12 builders per pass.
+- **Rhythm:** every 30 game frames a pass `workPass` (not as a spectator; on an error auto-build is switched off for this game and a message is shown, the saved setting stays on, `autoBuildStopped`, button A switches it on again); every 60 frames the builder abilities are refreshed.
+  - In every pass: (1) detect finished buildings (at most 30 plans per pass, in turn): an own building of the same kind within 24 Elmo, no longer under construction → `done`;
+    - (2) clean up claims: a plan loses its builder when the builder is invalid or dead or has stood without an order for at least 90 frames;
+    - (3) with auto-build on and open plans: give orders to every idle builder (no commands, not building), at most 12 builders per pass.
 - **Which builders:** mobile, can build, no factory, has build options; commanders only if the button C is on. A builder only gets plans it can build and that lie at most **radius** away (default 1000 Elmo, 200–6000).
-- **Assignment:** the nearest free (not claimed, not blocked) plan, behind it a chain of up to 3 more free plans within 300 Elmo of the previous one, at most 4 orders in total, the first without, the others with Shift. If all plans within range are claimed, the builder helps with the nearest claimed plan. Before every order `TestBuildOrder` is checked; 0 → the plan is blocked for 10 passes; more than 8 unsuccessful assignments → blocked for 40 passes. Reclaim obstacles (wrecks, trees) and units in the way (`TestBuildOrder` 1 and 2) are allowed; the builder solves that itself. Several builders share the work.
+- **Assignment:** the nearest free (not claimed, not blocked) plan, behind it a chain of up to 3 more free plans within 300 Elmo of the previous one, at most 4 orders in total, the first without, the others with Shift.
+  - If all plans within range are claimed, the builder helps with the nearest claimed plan.
+  - Before every order `TestBuildOrder` is checked; 0 → the plan is blocked for 10 passes; more than 8 unsuccessful assignments → blocked for 40 passes.
+  - Reclaim obstacles (wrecks, trees) and units in the way (`TestBuildOrder` 1 and 2) are allowed; the builder solves that itself.
+  - Several builders share the work.
 - **Queue order** (button Q, saved with the widget settings; default off): off = an idle builder takes the nearest free plan; on = it takes the free open plan with the lowest number within its radius, and the chain of up to three plans behind it follows the numbers too.
 - **Commander and enemies:** with a visible enemy within 750 Elmo of it (`enemyNear`) the commander gets no plans, and when one comes near while it builds its orders are stopped and its plans released, so it fights.
 - **Persistence:** settings and open plans are saved through the widget configuration (`GetConfigData` / `SetConfigData`): side, auto-build, radius, commander, queue order, menu visible, rotation, open plans (name, position, facing) only for the same match (`Game.gameID` and map).
@@ -73,43 +126,99 @@ A plan (`site`): `def` (UnitDefID), `name`, `x`, `y`, `z`, `f` (facing 0–3), `
 
 Plans are no units of the game, so the widget has its own selection (`selected`, a set of plans).
 
-- **Select:** a left click on a plan (nothing armed, no unit under the pointer) selects that building; a double click (within 0.4 s, `lastClick`) selects the whole blueprint copy (`grp`); Shift+click adds or removes (Shift+double click adds the group); Ctrl+drag draws a rectangle (a Ctrl+click shorter than 24 Elmo counts as a click on that building). A click on the ground clears the selection and passes through. Selected plans have a thick white frame and a white number.
-- **Del** removes the selected plans (`removeSelected`); **[ and ]** rotate them 90° around the center of the selection (only when no stamp is armed; `rotateSelected`; plans being built are skipped and counted); **Page up / Page down** move the selection one place in the queue, **Home / End** to the front / back (`orderSelected`; a selected group moves together). Keys are used only while nothing is typed into a search field.
-- **Undo** takes back every step (`opStack`: kinds `remove` with the old positions in the queue, `rotate` with old positions and facings, `order` with the old order). Each step stores the highest open batch number (`mark`); Undo takes the step back if its mark is not below the highest open batch, otherwise the last queueing, so the newest step goes first. **Clear all** empties the stack and deletes all open plans.
+- **Select:** a left click on a plan (nothing armed, no unit under the pointer) selects that building; a double click (within 0.4 s, `lastClick`) selects the whole blueprint copy (`grp`); Shift+click adds or removes (Shift+double click adds the group); Ctrl+drag draws a rectangle (a Ctrl+click shorter than 24 Elmo counts as a click on that building).
+  - A click on the ground clears the selection and passes through.
+  - Selected plans have a thick white frame and a white number.
+- **Del** removes the selected plans (`removeSelected`); **[ and ]** rotate them 90° around the center of the selection (only when no stamp is armed; `rotateSelected`; plans being built are skipped and counted); **Page up / Page down** move the selection one place in the queue, **Home / End** to the front / back (`orderSelected`; a selected group moves together).
+  - Keys are used only while nothing is typed into a search field.
+- **Undo** takes back every step (`opStack`: kinds `remove` with the old positions in the queue, `rotate` with old positions and facings, `order` with the old order).
+  - Each step stores the highest open batch number (`mark`); Undo takes the step back if its mark is not below the highest open batch, otherwise the last queueing, so the newest step goes first.
+  - **Clear all** empties the stack and deletes all open plans.
 - **A removed plan stops its builder** (`dropPlan`, used by Undo, remove and Clear all): the build order of that plan leaves the queue of the builder that had it (found by the tag of the command), and a building already started (`GetUnitIsBeingBuilt`) is reclaimed by that builder.
-- **Replacing:** a blueprint copy is queued as one step by `addPlan`. A building of it that would lie on a real building or on bad ground (`TestBuildOrder` 0) is left out (counted, "n left out"), the others are placed. Open plans under a building of the new copy (`plansUnder`; footprints that only touch do not count) are replaced: they leave the queue, their builders drop the order, the new plans come on top; `batchReplaced[batch]` keeps them and Undo of that step removes the copy and puts the replaced plans back (also for a row, whose steps are merged). Single buildings, rows, rectangles and strokes replace open plans below them the same way (`replaceBelow`). A plan whose building is already started counts as a real building and is never replaced. The same building at the same spot is skipped ("already present").
-- A plan with another building on its spot (`buildingOn`) is removed from the queue by `checkDone` ("n plans removed: a building stands there"); Undo does not bring back replaced plans that have a building on them now ("n dropped"). A wreck, a tree or a mobile unit in the way do not block.
-- **Right click on a plan** with own builders selected (`assignToPlan`; no stamp or area attack armed): the plan under the pointer (footprint plus 8 Elmo) is given as a build order (`giveBuild`; with Shift behind their queue) to all selected builders that can build it, regardless of radius, auto-build and the commander switch; `claim` is set to the first of them so auto-build does not hand it out again. A plan of a blueprint copy sends the builders to the whole copy (first order now, the others queued; blocked plans and plans the builder cannot build are skipped). Builders that cannot build it: message; no builder selected: the click is not used.
+- **Replacing:** a blueprint copy is queued as one step by `addPlan`.
+  - A building of it that would lie on a real building or on bad ground (`TestBuildOrder` 0) is left out (counted, "n left out"), the others are placed.
+  - Open plans under a building of the new copy (`plansUnder`; footprints that only touch do not count) are replaced: they leave the queue, their builders drop the order, the new plans come on top; `batchReplaced[batch]` keeps them and Undo of that step removes the copy and puts the replaced plans back (also for a row, whose steps are merged).
+  - Single buildings, rows, rectangles and strokes replace open plans below them the same way (`replaceBelow`).
+  - A plan whose building is already started counts as a real building and is never replaced.
+  - The same building at the same spot is skipped ("already present").
+- A plan with another building on its spot (`buildingOn`) is removed from the queue by `checkDone` ("n plans removed: a building stands there"); Undo does not bring back replaced plans that have a building on them now ("n dropped").
+  - A wreck, a tree or a mobile unit in the way do not block.
+- **Right click on a plan** with own builders selected (`assignToPlan`; no stamp or area attack armed): the plan under the pointer (footprint plus 8 Elmo) is given as a build order (`giveBuild`; with Shift behind their queue) to all selected builders that can build it, regardless of radius, auto-build and the commander switch;
+  - `claim` is set to the first of them so auto-build does not hand it out again.
+  - A plan of a blueprint copy sends the builders to the whole copy (first order now, the others queued; blocked plans and plans the builder cannot build are skipped).
+  - Builders that cannot build it: message; no builder selected: the click is not used.
 
 ## 7. Area attacks (experimental)
 
-Command menu buttons (custom commands of type ICON from `Rules.attackButtonDescs()` in `shared/bar_rules.lua`, ids 43021 to 43023): **Area Attack** (circle), **Split Attack**, **Focus Attack**. The BluePrinter adds them in `widget:CommandsChanged` with `area:addCommands(widgetHandler)` (a user widget gets `widgetHandler.customCommands`; the handler copies and checks them, the `action` must not be a privileged one), `widget:CommandNotify` passes the id to `area:notify(cmdID)` (true = used up, the units get no order); `area:registerTexts()` (in `widget:Initialize`) loads the texts for `commands.<action>` and `commands.<action>_tooltip` with `BAR.I18N.load` (`Spring.I18N` does not exist in a widget), because the order menu shows the translation of the action and draws no pictures for custom commands (`showIcons` is off). A widget of a game archive (the Level Editor) is given no `customCommands`: there the gadget `unit_level_editor.lua` gives the three commands to every unit (`Spring.InsertUnitCmdDesc`, refuses them in `AllowCommand`, which is registered for these three ids only: other orders do not reach it) and the widget uses them up in `CommandNotify`. Test: `zz_cmdbuttons.lua`.
-Buttons **XL**, **XR**, **XC** (`/bp_carpet [line|rect|circle]`, Ctrl+Alt+K = XL) spread the bombs and shots of all selected units evenly over an area; **XS** (`/bp_carpet split`) spreads the firepower evenly over the enemies in a circle, **XF** (`/bp_carpet focus`) kills them one after the other (below). The logic lives in `Shared.newAreaAttack` ([Shared code](shared-code.md)). Armed stamps and the area attack exclude each other.
+- Command menu buttons (custom commands of type ICON from `Rules.attackButtonDescs()` in `shared/bar_rules.lua`, ids 43021 to 43023): **Area Attack** (circle), **Split Attack**, **Focus Attack**.
+- The BluePrinter adds them in `widget:CommandsChanged` with `area:addCommands(widgetHandler)` (a user widget gets `widgetHandler.customCommands`; the handler copies and checks them, the `action` must not be a privileged one), `widget:CommandNotify` passes the id to `area:notify(cmdID)` (true = used up, the units get no order);
+  - `area:registerTexts()` (in `widget:Initialize`) loads the texts for `commands.<action>` and `commands.<action>_tooltip` with `BAR.I18N.load` (`Spring.I18N` does not exist in a widget), because the order menu shows the translation of the action and draws no pictures for custom commands (`showIcons` is off).
+- A widget of a game archive (the Level Editor) is given no `customCommands`: there the gadget `unit_level_editor.lua` gives the three commands to every unit (`Spring.InsertUnitCmdDesc`, refuses them in `AllowCommand`, which is registered for these three ids only: other orders do not reach it) and the widget uses them up in `CommandNotify`.
+- Test: `zz_cmdbuttons.lua`.
 
-- Two groups: (1) **bombers** (aircraft with a weapon of type `AircraftBomb`); (2) **ground shooters** (`isGroundShooter`: every other armed unit that has a weapon with `canAttackGround ~= false` that is not anti-air (damage against `vtol` above the default damage) and not a paralyzer: tanks, bots, ships, gunships, artillery, rocket launchers, nukes; units that only shoot at aircraft are left out). There is no restriction to area weapons.
-- **XL** (line): drag a line A→B; each group spreads evenly over it (sorted by position along the line, every unit gets an equally long piece). Bombers first form up: `MOVE` to a staging point 2000 Elmo (`STAGING_DISTANCE`) beside the line (perpendicular, on the side where the group stands, inside the map). Once all are in position (within 250 Elmo or their move is finished; at the latest after 60 s) they all get `ATTACK` on the center of their piece at the same moment (`waveStep`, every 15 frames), so they fly the run as a front. Ground shooters get only `ATTACK` on the center of their piece (mobile units walk into range). A click without dragging is a normal attack on a point.
-- **XR / XC:** a rectangle (two opposite corners) or a circle (press = center, distance = radius). `areaPlan` gives every unit its own target point inside the shape (rectangle: grid of about square cells; circle: sunflower spiral), pairs units and points by their position across the direction from the group to the area; bombers form up on one common line 2000 Elmo before the front edge of the area; a target further back gets a staging point further back by its depth, so the front targets are bombed first.
+- Buttons **XL**, **XR**, **XC** (`/bp_carpet [line|rect|circle]`, Ctrl+Alt+K = XL) spread the bombs and shots of all selected units evenly over an area; **XS** (`/bp_carpet split`) spreads the firepower evenly over the enemies in a circle, **XF** (`/bp_carpet focus`) kills them one after the other (below).
+- The logic lives in `Shared.newAreaAttack` ([Shared code](shared-code.md)).
+- Armed stamps and the area attack exclude each other.
+
+- Two groups: (1) **bombers** (aircraft with a weapon of type `AircraftBomb`);
+  - (2) **ground shooters** (`isGroundShooter`: every other armed unit that has a weapon with `canAttackGround ~= false` that is not anti-air (damage against `vtol` above the default damage) and not a paralyzer: tanks, bots, ships, gunships, artillery, rocket launchers, nukes; units that only shoot at aircraft are left out).
+  - There is no restriction to area weapons.
+- **XL** (line): drag a line A→B; each group spreads evenly over it (sorted by position along the line, every unit gets an equally long piece).
+  - Bombers first form up: `MOVE` to a staging point 2000 Elmo (`STAGING_DISTANCE`) beside the line (perpendicular, on the side where the group stands, inside the map).
+  - Once all are in position (within 250 Elmo or their move is finished; at the latest after 60 s) they all get `ATTACK` on the center of their piece at the same moment (`waveStep`, every 15 frames), so they fly the run as a front.
+  - Ground shooters get only `ATTACK` on the center of their piece (mobile units walk into range).
+  - A click without dragging is a normal attack on a point.
+- **XR / XC:** a rectangle (two opposite corners) or a circle (press = center, distance = radius).
+  - `areaPlan` gives every unit its own target point inside the shape (rectangle: grid of about square cells; circle: sunflower spiral), pairs units and points by their position across the direction from the group to the area;
+    - bombers form up on one common line 2000 Elmo before the front edge of the area;
+    - a target further back gets a staging point further back by its depth, so the front targets are bombed first.
 - The preview draws the shape, a frame per target and the approach lines. After the order the mode switches off; right click cancels.
 
-**Split attack (XS) and focus attack (XF)**, `areaMode = "split"` / `"focus"` of `Shared.newAreaAttack` (`SPLIT_MODES`; circle: press = center, distance = radius). The selected armed units attack the visible enemies in the circle. A snapshot: the targets are those in the circle at the moment of release (`enemiesIn`: `Spring.GetUnitsInCylinder`, so everything the player sees, also what only other units of the player see; never a unit of a team of the selected units or of a team allied to one of them (`ownSide`: `Spring.AreTeamsAllied`, because in the Level Editor the alliances are set with `Spring.SetAlly` and `Spring.ENEMY_UNITS` does not know them), not Gaia; at most `SPLIT_MAX_TARGETS` = 150, the ones nearest to the center; at most `SPLIT_MAX_UNITS` = 300 units). The preview draws the circle and a frame around every target. Both modes share the firepower, the orders and the check; they differ in the plan.
+- **Split attack (XS) and focus attack (XF)**, `areaMode = "split"` / `"focus"` of `Shared.newAreaAttack` (`SPLIT_MODES`; circle: press = center, distance = radius).
+- The selected armed units attack the visible enemies in the circle.
+- A snapshot: the targets are those in the circle at the moment of release (`enemiesIn`: `Spring.GetUnitsInCylinder`, so everything the player sees, also what only other units of the player see; never a unit of a team of the selected units or of a team allied to one of them (`ownSide`: `Spring.AreTeamsAllied`, because in the Level Editor the alliances are set with `Spring.SetAlly` and `Spring.ENEMY_UNITS` does not know them), not Gaia; at most `SPLIT_MAX_TARGETS` = 150, the ones nearest to the center; at most `SPLIT_MAX_UNITS` = 300 units).
+- The preview draws the circle and a frame around every target.
+- Both modes share the firepower, the orders and the check; they differ in the plan.
 
-- **Goal:** XS spreads the damage per second of the units evenly over the enemies (health is not looked at): every enemy gets the same share. XF kills as fast as possible: one target after the other, the most dangerous first, with all the units it needs.
-- **Firepower** (`weaponsAgainst`, cached per pair of unit defs): per weapon damage against the armor class of the target (`damages[ud.armorType]`) × projectiles × salvo size = damage of one volley, divided by `reload` = DPS. Beam lasers count like the others. Not counted: paralyzer weapons, stockpile weapons (nukes), the D-Gun (`type == "DGun"`), area damage (it is not added up, it only helps in the game). Anti-air weapons (damage against `vtol` above the default damage) only count against aircraft, all others only against ground targets (`canAttackGround`). A unit that cannot move (speed 0) only counts the weapons that reach the target (`splitDps`); a mobile unit walks into range.
+- **Goal:** XS spreads the damage per second of the units evenly over the enemies (health is not looked at): every enemy gets the same share.
+  - XF kills as fast as possible: one target after the other, the most dangerous first, with all the units it needs.
+- **Firepower** (`weaponsAgainst`, cached per pair of unit defs): per weapon damage against the armor class of the target (`damages[ud.armorType]`) × projectiles × salvo size = damage of one volley, divided by `reload` = DPS.
+  - Beam lasers count like the others.
+  - Not counted: paralyzer weapons, stockpile weapons (nukes), the D-Gun (`type == "DGun"`), area damage (it is not added up, it only helps in the game).
+  - Anti-air weapons (damage against `vtol` above the default damage) only count against aircraft, all others only against ground targets (`canAttackGround`).
+  - A unit that cannot move (speed 0) only counts the weapons that reach the target (`splitDps`); a mobile unit walks into range.
 - **Need of a target (XF only):** `hp * SPLIT_BUFFER + 1` (buffer 1.15 = 15 %); a unit takes whole volleys, so a weak target costs a unit one volley.
 - **Order of the targets (XS):** mobile enemies first, buildings after them, each group nearest to the center of the attacking group first.
-- **Plan XS** (`splitPlan`): share = total DPS of the units (for every unit the mean over the targets it can hit) / number of targets. Target by target (mobile first, nearest to the group first) the nearest free units are taken while the DPS so far plus half of the DPS of the next unit stays within the share (the first unit is always taken); a unit that fits no share goes to the target with the least DPS so far. Every unit gets one more target behind its own (the nearest other one it can hit), so nothing stands idle while an enemy lives. With 20 light units against 10 enemies every enemy gets two, whatever its health. Without a unit for every target (10 units, 13 enemies) the nearest targets get one unit each; the others come with the next plan.
-- **Plan XF** (`focusPlan`): the targets are sorted by danger, `prio = threat / (travel + need / dps)`: `threat` = damage per second of the enemy against the types of the selected units (`weaponsAgainst(its def, my def)`, mean over my units), `need` = health + `SPLIT_BUFFER` as above, `dps` = damage per second of all selected units against it (`splitDps`), `travel` = `max(0, distance of the center of the group - mean weapon range of the units that can hit it) / mean speed of the mobile units`. An enemy that does no damage (or that nobody can hit) has `prio` 0 and comes last, nearest first; ties go to the nearer one. A nearly dead enemy with a big gun has a high `prio`, the same one at full health a lower one; a far away enemy has a lower one than a near one. This ratio rule minimizes the total damage taken while the enemies are killed one after the other (if each keeps its damage per second until it dies). Then, target by target, the nearest free units are taken until their damage within `SPLIT_KILL_TIME` = 3 seconds (at least one volley each) covers the need: a weak target takes one unit, a strong one many, and the units start on it. A target for which no free unit is left is uncovered; every unit goes on to the uncovered targets after its own, in the same order, so the whole group concentrates on one target after the other. Free units that nobody needed start on the nearest target. At the end every unit gets one more target it can hit. With 20 light units against 10 heavy ones that need five units each, four targets get five units each and the other six come next.
+- **Plan XS** (`splitPlan`): share = total DPS of the units (for every unit the mean over the targets it can hit) / number of targets.
+  - Target by target (mobile first, nearest to the group first) the nearest free units are taken while the DPS so far plus half of the DPS of the next unit stays within the share (the first unit is always taken); a unit that fits no share goes to the target with the least DPS so far.
+  - Every unit gets one more target behind its own (the nearest other one it can hit), so nothing stands idle while an enemy lives.
+  - With 20 light units against 10 enemies every enemy gets two, whatever its health.
+  - Without a unit for every target (10 units, 13 enemies) the nearest targets get one unit each; the others come with the next plan.
+- **Plan XF** (`focusPlan`): the targets are sorted by danger, `prio = threat / (travel + need / dps)`: `threat` = damage per second of the enemy against the types of the selected units (`weaponsAgainst(its def, my def)`, mean over my units), `need` = health + `SPLIT_BUFFER` as above, `dps` = damage per second of all selected units against it (`splitDps`), `travel` = `max(0, distance of the center of the group - mean weapon range of the units that can hit it) / mean speed of the mobile units`.
+  - An enemy that does no damage (or that nobody can hit) has `prio` 0 and comes last, nearest first; ties go to the nearer one.
+  - A nearly dead enemy with a big gun has a high `prio`, the same one at full health a lower one; a far away enemy has a lower one than a near one.
+  - This ratio rule minimizes the total damage taken while the enemies are killed one after the other (if each keeps its damage per second until it dies).
+  - Then, target by target, the nearest free units are taken until their damage within `SPLIT_KILL_TIME` = 3 seconds (at least one volley each) covers the need: a weak target takes one unit, a strong one many, and the units start on it.
+  - A target for which no free unit is left is uncovered; every unit goes on to the uncovered targets after its own, in the same order, so the whole group concentrates on one target after the other.
+  - Free units that nobody needed start on the nearest target.
+  - At the end every unit gets one more target it can hit.
+  - With 20 light units against 10 heavy ones that need five units each, four targets get five units each and the other six come next.
 - **Orders:** `CMD.ATTACK` on the unit ID of the first target, the rest with the option `shift` (a queue). A unit that has nothing to hit is dropped.
-- **Check** (`splitStep`, every `SPLIT_EVERY` = 30 frames, called from `A:step`): dead and no longer visible targets are forgotten; the attack ends when none is left ("Split attack finished" / "Focus attack finished") or after 10 minutes. A new plan for all units that are left (`splitApply`, current health and positions) is made when a unit has finished its queue while enemies live (both modes) and, with XF, when a target has died (a weak target must not get the whole group). A unit that got another order from the player (first command is not `ATTACK`) or was stopped while one of its targets lives is dropped from the attack.
+- **Check** (`splitStep`, every `SPLIT_EVERY` = 30 frames, called from `A:step`): dead and no longer visible targets are forgotten; the attack ends when none is left ("Split attack finished" / "Focus attack finished") or after 10 minutes.
+  - A new plan for all units that are left (`splitApply`, current health and positions) is made when a unit has finished its queue while enemies live (both modes) and, with XF, when a target has died (a weak target must not get the whole group).
+  - A unit that got another order from the player (first command is not `ATTACK`) or was stopped while one of its targets lives is dropped from the attack.
 - Not covered: shields, repair, targets that run away or are hidden, the spread and flight time of shots (the 15 % buffer absorbs part of it; some overkill remains).
 
 ## 8. Chat commands and keys
 
-`/bp_menu` (menu on / off), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_mode bp|units`, `/bp_create`, `/bp_scan` (re-read the list), `/bp_carpet [line|rect|circle|split|focus]`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]`. Keys: Ctrl+Alt+P (blueprint from selection), Ctrl+Alt+K (XL), `[` / `]`, Alt+Z / Alt+X, Del, Page up / down, Home / End.
+- `/bp_menu` (menu on / off), `/bp_rotate`, `/bp_undo`, `/bp_clear`, `/bp_com`, `/bp_side left|right`, `/bp_mode bp|units`, `/bp_create`, `/bp_scan` (re-read the list), `/bp_carpet [line|rect|circle|split|focus]`, `/bp_spacing <n|+|->`, `/bp_ghost [gl|wg|auto]`.
+- Keys: Ctrl+Alt+P (blueprint from selection), Ctrl+Alt+K (XL), `[` / `]`, Alt+Z / Alt+X, Del, Page up / down, Home / End.
 
 ## 9. Test hooks and quality
 
-Widget functions for test widgets, without effect in normal use: `widget:DebugLayout()` (buttons, rectangles, status), `DebugGrids()`, `DebugPlan(i, x, z)` (queues blueprint i at a position), `DebugState()`, `DebugAdd`, `DebugAddBlueprint`, `DebugSetQueue`, `DebugSetAuto` (used by `LevelEditor\test-data\tools\zz_bpt.lua`). The README pictures were made with them ([Testing](testing.md)). Not checked automatically: typing a number into the radius field, the right click with several builders, `start_blueprinter_test.bat` with a map name.
+- Widget functions for test widgets, without effect in normal use: `widget:DebugLayout()` (buttons, rectangles, status), `DebugGrids()`, `DebugPlan(i, x, z)` (queues blueprint i at a position), `DebugState()`, `DebugAdd`, `DebugAddBlueprint`, `DebugSetQueue`, `DebugSetAuto` (used by `LevelEditor\test-data\tools\zz_bpt.lua`).
+- The README pictures were made with them ([Testing](testing.md)).
+- Not checked automatically: typing a number into the radius field, the right click with several builders, `start_blueprinter_test.bat` with a map name.
 
 ## 10. Known limitations and open points
 
