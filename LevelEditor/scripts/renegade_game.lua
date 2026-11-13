@@ -58,10 +58,10 @@ local ENERGY_START, ENERGY_STORE, ENERGY_INCOME = 200000, 200000, 5000 -- energy
 local energyInit = {}
 local MO = Spring.GetModOptions() or {}
 local DEBUG = MO.lanrenedebug == "1"
--- the game option lanrenesingle: "1" or missing = the single unit mode (every human is one unit for the whole game, a lost unit comes back); "0" = the take-over mode (the players play the
+-- the game option lanrenesingle: "1" or missing = the single unit mode (every human is one unit for the whole game, a lost unit comes back); "0" = the takeover mode (the players play the
 -- normal game and take over a unit with the key left of the 1 (widget) and leave it again)
 local SINGLE = MO.lanrenesingle ~= "0"
--- with Evolution (game option lanevolution) the unit of a player is replaced when it evolves and when it comes back after a death: in the take-over mode the player takes over the next
+-- with Evolution (game option lanevolution) the unit of a player is replaced when it evolves and when it comes back after a death: in the takeover mode the player takes over the next
 -- one by itself (follow: team -> the frame until which the next unit is waited for; the unit is the team rules parameter evoUnit of evo_game.lua)
 local EVO = MO.lanevolution == "1"
 local follow = {}
@@ -71,7 +71,7 @@ local RESPAWN = 150 -- frames until a player's unit comes back (5 s; the widget 
 local lastPos = {} -- team -> where its unit was lost (when no place is found, e.g. for a ship on land)
 local BOT_RESPAWN = 150
 local turnInto -- (defined below: the debug message of RecvLuaMsg needs it)
-local possess, release -- (the take-over mode: defined below)
+local possess, release -- (the takeover mode: defined below)
 local units = {} -- team -> unit id
 local kind = {} -- team -> unit definition name of the player's unit (a lost unit comes back as the same one)
 local due = {} -- team -> frame at which the unit comes back
@@ -918,7 +918,7 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return
 	end
-	-- the take-over mode: the player takes over the unit under the cursor (the widget sends its id) or out of its unit
+	-- the takeover mode: the player takes over the unit under the cursor (the widget sends its id) or out of its unit
 	local takeId = msg:match("^ren|possess|(%d+)$")
 	if takeId or msg == "ren|release" then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
@@ -1011,8 +1011,8 @@ end
 
 local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
-local sightBase = {} -- unit id -> its own sight radii (the take-over mode gives them back when the player leaves the unit)
--- the unit is the player's: bookkeeping, hold fire, the data for the widget (the unit of the start, of a respawn, a debug turn and, in the take-over mode, a unit the player took over)
+local sightBase = {} -- unit id -> its own sight radii (the takeover mode gives them back when the player leaves the unit)
+-- the unit is the player's: bookkeeping, hold fire, the data for the widget (the unit of the start, of a respawn, a debug turn and, in the takeover mode, a unit the player took over)
 local function adopt(team, id, defName)
 	units[team] = id
 	kind[team] = defName
@@ -1080,7 +1080,7 @@ local function giveUnit(team, defName, x, y, z, face)
 	return adopt(team, id, defName)
 end
 
--- Take-over mode: the player's own unit (any unit with a weapon or that moves) becomes the steered one: hold fire, the weapons and the displays as for the unit of the single mode,
+-- Takeover mode: the player's own unit (any unit with a weapon or that moves) becomes the steered one: hold fire, the weapons and the displays as for the unit of the single mode,
 -- three times the sight; released: it is an ordinary unit again (fire at will, no held reloads, no target, its own sight)
 possess = function(team, id)
 	if SINGLE or units[team] ~= nil or not Spring.ValidUnitID(id) or Spring.GetUnitTeam(id) ~= team then return end
@@ -1363,7 +1363,7 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 			Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
 			local x, y, z = Spring.GetUnitPosition(u)
 			if x then lastPos[team] = { x, y, z } end
-		end -- (the take-over mode: the player is back in the normal game, the widget sees renUnit = 0)
+		end -- (the takeover mode: the player is back in the normal game, the widget sees renUnit = 0)
 	elseif bots[u] then
 		bots[u] = nil
 		botDue[#botDue + 1] = Spring.GetGameFrame() + BOT_RESPAWN

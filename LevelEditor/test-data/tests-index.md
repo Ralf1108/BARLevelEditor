@@ -118,8 +118,8 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_ren77.lua` | Laser Tiger fires at the ground out of range | `pve_test.ps1 -Ren -RenTest -Widget zz_ren77.lua` |
 | `zz_ren78.lua` | Renegade reverse gear | `pve_test.ps1 -Ren -RenTest -Widget zz_ren78.lua` |
 | `zz_ren79.lua` | how smooth is the reverse gear | `pve_test.ps1 -Ren -RenTest -Widget zz_ren79.lua (game speed 1)` |
-| `zz_ren80.lua` | Renegade take-over mode (the mode key takes over a unit and leaves it) | `pve_test.ps1 -Ren -RenTake -Widget zz_ren80.lua` |
-| `zz_ren81.lua` | Renegade take-over mode with Evolution: the player takes over the evolved unit | `pve_test.ps1 -Ren -RenTake -Evo -EvoTest -Widget zz_ren81.lua` |
+| `zz_ren80.lua` | Renegade takeover mode (the mode key takes over a unit and leaves it) | `pve_test.ps1 -Ren -RenTakeover -Widget zz_ren80.lua` |
+| `zz_ren81.lua` | Renegade takeover mode with Evolution: the player takes over the evolved unit | `pve_test.ps1 -Ren -RenTakeover -Evo -EvoTest -Widget zz_ren81.lua` |
 | `zz_ren82.lua` | the game's unit bars are off in Renegade | `pve_test.ps1 -Ren` |
 | `zz_ren83.lua` | layout of the panels, the unit bars widget comes back | `pve_test.ps1 -Ren` |
 | `zz_ren84.lua` | a Renegade aircraft with no health left crashes | `pve_test.ps1 -Ren -RenTest -Widget zz_ren84.lua (variants` |

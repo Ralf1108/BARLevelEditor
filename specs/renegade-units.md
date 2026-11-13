@@ -57,25 +57,25 @@ How a player gets a unit and how it drives: the synchronized part of the game mo
     - a body that keeps its heading while it walks backwards would need the unit to be moved by hand (`MoveCtrl`, free of the path finding and of the collisions with other units) or a script that turns the legs: both left out.
   - The test code was removed again.
 
-## Take-over mode and single unit mode
+## Takeover mode and single unit mode
 
-- **Take-over mode and single unit mode (`SINGLE`, `lanrenesingle`, `possess`, `release`, `adopt`, `takeKey`):** game option `lanrenegade=1` switches the mode on;
-  - `lanrenesingle` (missing or "1" = the **single unit mode** as before: `take` replaces the commander at the start, a lost unit comes back after 5 s, the key next to Shift switches between Renegade and the normal game) or "0" = the **take-over mode** (named so that "jump" means the jump of a unit): nothing is replaced, no respawn;
-  - the player plays the normal game and presses **the mode key** over one of the own units (`takeKey`: `TraceScreenRay` at the cursor, the unit must be the own team's) to send `ren|possess|<id>`: the gadget (`possess`: not being built, a unit that moves or has a weapon, no other unit steered) makes it the steered one with `adopt` (the part of `giveUnit` after the creation: hold fire, rules parameters for the panel, three times the sight, whose own values `sightBase` keeps) and sets `renUnit`;
+- **Takeover mode and single unit mode (`SINGLE`, `lanrenesingle`, `possess`, `release`, `adopt`, `takeoverKey`):** game option `lanrenegade=1` switches the mode on;
+  - `lanrenesingle` (missing or "1" = the **single unit mode** as before: `take` replaces the commander at the start, a lost unit comes back after 5 s, the key next to Shift switches between Renegade and the normal game) or "0" = the **takeover mode** (named so that "jump" means the jump of a unit): nothing is replaced, no respawn;
+  - the player plays the normal game and presses **the mode key** over one of the own units (`takeoverKey`: `TraceScreenRay` at the cursor, the unit must be the own team's) to send `ren|possess|<id>`: the gadget (`possess`: not being built, a unit that moves or has a weapon, no other unit steered) makes it the steered one with `adopt` (the part of `giveUnit` after the creation: hold fire, rules parameters for the panel, three times the sight, whose own values `sightBase` keeps) and sets `renUnit`;
   - the widget sees it and `enable`s the first person view (the camera flies into the unit).
   - **the mode key again** (`ren|release`; also when the unit dies or is turned into another by Evolution: `UnitDestroyed` sets `renUnit` 0 without a respawn) gives the unit back (`release`: stop, no target, fire state 2, the held reloads released, its own sight) and the widget `disable`s and flies the camera back over the unit (`overviewCam`; the saved camera when the unit is gone). the mode key is taken in `KeyPress` (returns true) and polled (`GetKeyState(113)`, a press within 0.3 s counts once);
     - not with Ctrl / Alt / Shift.
-  - `pve_test.ps1 -Ren -RenTake` starts it.
+  - `pve_test.ps1 -Ren -RenTakeover` starts it.
   - Measured with `zz_ren80.lua` (the message that the mode key sends over a unit): normal game (camera `spring`, no unit) -> take over (R.on, `renUnit` = the commander, camera `fps`, fire state 0) -> out (R.on false, `renUnit` 0, camera `spring`) -> in again -> out;
     - **not measured: the real key over a unit** and Evolution + Renegade together (an evolved unit is a new one: the player is thrown out and takes over the new one).
   - **The mode key** (changed from Q, which BAR uses): the key left of the 1 (scan code 53, SDL "grave"; the circumflex "^" on a German keyboard, key code 94): `KeyPress(key, mods, isRepeat, label, utf32, scanCode)` accepts `scanCode == 53` or `key == 94`, and `Update` polls `GetKeyState(94)`;
-    - in the single unit mode it calls `toggleMode` (both ways, like the key next to Shift and Insert), in the take-over mode `takeKey`.
+    - in the single unit mode it calls `toggleMode` (both ways, like the key next to Shift and Insert), in the takeover mode `takeoverKey`.
   - **Not measured with the real key.**
-- **Take-over mode with Evolution (`EVO`, `follow`, `renFollow`, `R.waiting`):** with the game option `lanevolution` and the take-over mode the player's unit is replaced when it evolves and comes back after a death.
+- **Takeover mode with Evolution (`EVO`, `follow`, `renFollow`, `R.waiting`):** with the game option `lanevolution` and the takeover mode the player's unit is replaced when it evolves and comes back after a death.
   - `UnitDestroyed` of the steered unit then sets `follow[team]` (15 s) and the team rules parameter `renFollow` = 1; every frame the gadget looks at `evoUnit` (the parameter of `evo_game.lua`) and as soon as it is a living unit of the team `possess`es it (`renFollow` 0; after 15 s it gives up).
   - The widget keeps the view while `renFollow` is 1 and the unit is gone (`R.waiting`: no drawing for the old unit, no input), and when `renUnit` shows the new unit the `u ~= R.unit` branch of `Update` starts a camera flight from the last camera (`R.camNow`, 0.9 s) to the new unit; `R.third` is kept, so the new unit is entered in the same view (first or third person).
   - A manual Q out of the unit does not follow.
-  - Measured with `zz_ren81.lua` (`pve_test.ps1 -Ren -RenTake -Evo -EvoTest`): the player in the third person view; `evo|test|4` (level 10): `renUnit` 31090 (`corak`) -> 31886 (`corkorg`) within 2 frames, `R.on` true, third person kept; the flight and the waiting after a death are not seen in a picture.
+  - Measured with `zz_ren81.lua` (`pve_test.ps1 -Ren -RenTakeover -Evo -EvoTest`): the player in the third person view; `evo|test|4` (level 10): `renUnit` 31090 (`corak`) -> 31886 (`corkorg`) within 2 frames, `R.on` true, third person kept; the flight and the waiting after a death are not seen in a picture.
 
 ## Healing: wrecks and the heal effect
 

@@ -1,5 +1,5 @@
-function widget:GetInfo() return { name = "zz ren81", desc = "test only: Renegade take-over mode with Evolution: the player takes over the evolved unit", layer = 1, enabled = true } end
--- Test widget of pve_test.ps1 -Ren -RenTake -Evo -EvoTest -Widget zz_ren81.lua: the player takes over its Evolution unit (the message of the mode key), switches to the third person view
+function widget:GetInfo() return { name = "zz ren81", desc = "test only: Renegade takeover mode with Evolution: the player takes over the evolved unit", layer = 1, enabled = true } end
+-- Test widget of pve_test.ps1 -Ren -RenTakeover -Evo -EvoTest -Widget zz_ren81.lua: the player takes over its Evolution unit (the message of the mode key), switches to the third person view
 -- (R.third), then "evo|test|4" gives it level 10 at once (the unit evolves: a new unit). Lines "[zzren81]": the unit, the view and the camera before and after.
 local function log(...) Spring.Echo("[zzren81] " .. table.concat({ ... }, " ")) end
 local R

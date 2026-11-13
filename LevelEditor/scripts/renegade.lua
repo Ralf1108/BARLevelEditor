@@ -55,7 +55,7 @@ function widget:Initialize()
 	end
 	WG.renegade = R
 	R.debug = mo.lanrenedebug == "1"
-	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the take-over mode, the key left of the 1 takes over the unit under the cursor and leaves it)
+	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the takeover mode, the key left of the 1 takes over the unit under the cursor and leaves it)
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 end
 
@@ -185,7 +185,7 @@ end
 -- mouse are taken) and the normal game (the camera of the game, the keys and the mouse as always, the unit is an ordinary unit that can be given orders). The gadget is told
 -- ("ren|mode|0" / "ren|mode|1").
 local function toggleMode()
-	if not R.single then return end -- (the take-over mode uses the key left of the 1 instead)
+	if not R.single then return end -- (the takeover mode uses the key left of the 1 instead)
 	local now = os.clock()
 	if R.modeAt and now - R.modeAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
 	R.modeAt = now
@@ -534,9 +534,9 @@ local function keysNow()
 	return k
 end
 
--- The take-over mode: the key left of the 1 takes over the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, leaves it again (back in the normal game, the camera
+-- The takeover mode: the key left of the 1 takes over the own unit under the cursor (the gadget makes it the steered one: renUnit) and, in the unit, leaves it again (back in the normal game, the camera
 -- flies back over the unit)
-local function takeKey()
+local function takeoverKey()
 	local now = os.clock()
 	if R.qAt and now - R.qAt < 0.3 then return end -- (a press comes both from KeyPress and from the poll)
 	R.qAt = now
@@ -558,7 +558,7 @@ function widget:Update()
 		-- the mode key (the key left of the 1, the circumflex "^" on a German keyboard, scan code 53), polled as well: the game may take the press before the widget sees it
 		local k = Spring.GetKeyState(94) or (Spring.GetScanKeyState and Spring.GetScanKeyState(53))
 		if k and not R.qWas and not (R.picker and R.picker.focus) then
-			if R.single then toggleMode() else takeKey() end
+			if R.single then toggleMode() else takeoverKey() end
 		end
 		R.qWas = k
 	end
@@ -901,10 +901,10 @@ function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
 		R.away = true
 		R.metaWas = true
 	end
-	-- the mode key: left of the 1 (scan code 53; "^" on a German keyboard): the single unit mode switches between Renegade and the normal game, the take-over mode takes over the unit under the
+	-- the mode key: left of the 1 (scan code 53; "^" on a German keyboard): the single unit mode switches between Renegade and the normal game, the takeover mode takes over the unit under the
 	-- cursor and leaves it
 	if (scanCode == 53 or key == 94) and not isRepeat and not (R.picker and R.picker.focus) and not (mods and (mods.ctrl or mods.alt or mods.shift or mods.meta)) then
-		if R.single then toggleMode() else takeKey() end
+		if R.single then toggleMode() else takeoverKey() end
 		return true
 	end
 	if key == 277 or key == 60 or key == 62 then -- Insert, "<" and ">" (the key next to Shift; a scan code 100 key reports one of them)
