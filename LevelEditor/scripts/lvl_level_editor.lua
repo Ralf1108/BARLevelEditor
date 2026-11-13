@@ -1546,14 +1546,20 @@ local function mazeBuild(lay, circ)
 	say(string.format("Maze: %d x %d cells, %d x %s (entrance top left, exit bottom right)", lay.cols, lay.rows, #walls, name))
 end
 
--- Ends every editor mode (stamp, delete, maze, generate, area attack, picking of the Tower Defense and Capture the Flag points) and every drag;
--- called when a Tower Defense or Capture the Flag test starts, so that no mode swallows the clicks of the game
-function gen.disarmAll()
+-- Ends the stamp, delete, maze and generate modes and what is armed to place (the base of the disarm functions below)
+local function disarmBase()
 	mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
 	gen.armed, gen.drag = false, nil
 	armedUnit, armedFeature = false, false
-	stampDrag, moveDrag = nil, nil
+	stampDrag = nil
 	bpGrid:setArmed(false)
+end
+
+-- Ends every editor mode (stamp, delete, maze, generate, area attack, picking of the Tower Defense and Capture the Flag points) and every drag;
+-- called when a Tower Defense or Capture the Flag test starts, so that no mode swallows the clicks of the game
+function gen.disarmAll()
+	disarmBase()
+	moveDrag = nil
 	area:disarm()
 	td.endPick()
 	ctf.endPick()
@@ -1590,11 +1596,7 @@ ctf = VFS.Include("luaui/Include/led_ctf.lua", nil, VFS.ZIP_FIRST)({
 	team = function() return team end,
 	serialize = function(v) return td.lua(v, "\t") end,
 	disarm = function()
-		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
-		gen.armed, gen.drag = false, nil
-		armedUnit, armedFeature = false, false
-		stampDrag = nil
-		bpGrid:setArmed(false)
+		disarmBase()
 		area:disarm()
 		td.endPick()
 		ar.endPick()
@@ -1675,11 +1677,7 @@ ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	team = function() return team end,
 	serialize = function(v) return td.lua(v, "\t") end,
 	disarm = function()
-		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
-		gen.armed, gen.drag = false, nil
-		armedUnit, armedFeature = false, false
-		stampDrag = nil
-		bpGrid:setArmed(false)
+		disarmBase()
 		area:disarm()
 		td.endPick()
 		ctf.endPick()
@@ -1778,11 +1776,7 @@ VFS.Include("luaui/Include/led_td.lua", nil, VFS.ZIP_FIRST)(td, {
 		armedFeature = false
 	end,
 	disarmModes = function()
-		mazeKind, mazeDrag, delMode, delDrag = nil, nil, false, nil
-		gen.armed, gen.drag = false, nil
-		armedUnit, armedFeature = false, false
-		stampDrag = nil
-		bpGrid:setArmed(false)
+		disarmBase()
 		area:disarm()
 	end,
 	restoreBeforePlay = function()
