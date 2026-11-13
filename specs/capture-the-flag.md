@@ -73,7 +73,7 @@ Page, top to bottom: checkbox `ctfon` (the switch of the mode); Places: `ctfhome
   - Air units and hovercraft are not checked.
 - **Minimap:** the pods get `Spring.SetUnitNoMinimap`; the unsynced part draws a square per flag in the color of its owner (light grey: neutral) and a ring of the capture radius around every collection point over the minimap (`drawMiniMap`, from `DrawScreenPost` with `Spring.GetMiniMapGeometry`: BAR's minimap does not call `DrawInMiniMap` of gadgets).
   - The flag ids come in `ctfFlagIds` ("id:owner,..."); with the option `visible` off a flag is only drawn when `GetUnitLosState` says los or radar (spectators see all).
-- **Display:** game rules parameters `ctfState` ("", "running", "won by alliance N"), `ctfScore<ally>`, `ctfTarget`, `ctfTeams` (the alliances), `ctfOut` (lost alliances), `ctfVisible`, `ctfRadius`, `ctfHomes`, `ctfSpots`.
+- **Display:** game rules parameters `ctfState` ("", "running", "won by alliance N" or "won by group N" (`G.wonBy`)), `ctfScore<ally>`, `ctfTarget`, `ctfTeams` (the alliances), `ctfOut` (lost alliances), `ctfVisible`, `ctfRadius`, `ctfHomes`, `ctfSpots`.
   - The unsynced part draws the rings (`DrawWorldPreUnit`) and the score line (`DrawScreen`), so a finished scenario needs no widget.
 
 ## 5. Undo of the points

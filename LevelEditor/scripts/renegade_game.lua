@@ -2424,12 +2424,6 @@ end
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
 	if not EVO and f % 30 == 0 then autoReclaim() end
-	if TEST and f == 200 then
-		for _, tm in ipairs(Spring.GetTeamList()) do
-			local e, es, _, inc = Spring.GetTeamResources(tm, "energy")
-			Spring.Echo(string.format("[Renegade] team %d energy %s storage %s income %s", tm, tostring(e), tostring(es), tostring(inc)))
-		end
-	end
 	for team, untilFrame in pairs(follow) do
 		local id = Spring.GetTeamRulesParam(team, "evoUnit")
 		if units[team] then

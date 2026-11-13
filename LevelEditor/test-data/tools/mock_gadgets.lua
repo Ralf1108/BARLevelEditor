@@ -87,6 +87,7 @@ do
 	local f = G.fields("a;b;;c")
 	check(#f == 4 and f[3] == "" and f[4] == "c", "fields: empty fields stay (" .. #f .. ")")
 	check(G.allianceName(103) == "group 3" and G.allianceName(2) == "2" and G.allianceName("102") == "group 2", "allianceName: a group of the editor or the ally team")
+	check(G.wonBy(1) == "won by alliance 1" and G.wonBy(103) == "won by group 3", "wonBy: an alliance or a group of the editor")
 	ok("text helpers")
 end
 

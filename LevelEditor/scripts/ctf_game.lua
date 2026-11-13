@@ -326,7 +326,7 @@ local function finish(ally, lastStanding)
 	if g.state ~= "running" then
 		return -- already decided (a delivery can end the level twice: the last alliance standing and the number of flags)
 	end
-	g.state = "won by alliance " .. ally
+	g.state = G.wonBy(ally)
 	local gaiaAlly = allyOf(Spring.GetGaiaTeamID())
 	for _, a in ipairs(G.allianceList()) do
 		if a ~= ally and a ~= gaiaAlly and not g.out[a] then

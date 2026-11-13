@@ -38,6 +38,6 @@ $script = @"
 "@
 $file = Join-Path $repo 'LevelEditor\renegade_script_installed.txt'
 [IO.File]::WriteAllText($file, $script, (New-Object Text.UTF8Encoding $false))
-Write-Host "Renegade on $Map against $($spec.Short) with $Bots Peewees: mouse = look, W A S D = walk, left / right / middle button = short range / long range / missiles, Insert = normal camera and back$(if ($DebugMode) { ", Tab = free mouse for the debug menu" }) ..." -ForegroundColor Cyan
+Write-Host "Renegade on $Map against $($spec.Short) with $Bots Peewees: mouse = look, W A S D = walk, left / right / middle button = short range / long range / missiles, Insert (or the key left of the 1) = normal camera and back$(if ($DebugMode) { ", Tab = free mouse for the debug menu" }) ..." -ForegroundColor Cyan
 $proc = Start-Process -FilePath $exe -ArgumentList @('--write-dir', "`"$Data`"", "`"$file`"") -Wait -PassThru
 if ($proc.ExitCode -ne 0) { Write-Host "The game ended with an error, see $Data\infolog.txt" -ForegroundColor Yellow; exit 1 }

@@ -215,7 +215,10 @@ local blowUp = G.blowUp
 
 -- The level is won: every ally team that is not the winner loses (its units blow up)
 local function finish(ally)
-	g.state = "won by alliance " .. ally
+	if g.state ~= "running" then
+		return -- already decided (the points of two alliances can reach the limit in the same second)
+	end
+	g.state = G.wonBy(ally)
 	for _, a in ipairs(g.teams) do
 		if a ~= ally and not g.out[a] then
 			g.out[a] = true

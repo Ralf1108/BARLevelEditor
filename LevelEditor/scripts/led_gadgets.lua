@@ -55,6 +55,12 @@ function G.allianceName(alliance)
 	return alliance >= 100 and ("group " .. (alliance - 100)) or tostring(alliance)
 end
 
+-- The state text of a won game: "won by alliance 1" or, for a group of the editor, "won by group 3"
+function G.wonBy(alliance)
+	alliance = tonumber(alliance) or 0
+	return alliance >= 100 and ("won by group " .. (alliance - 100)) or ("won by alliance " .. alliance)
+end
+
 -- The teams of an alliance (the value of G.allyOf)
 function G.teamsOfAlliance(alliance)
 	local out = {}
