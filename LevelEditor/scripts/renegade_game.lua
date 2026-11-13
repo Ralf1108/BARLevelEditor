@@ -886,77 +886,12 @@ local function shoot(team, f, force)
 	end
 end
 
+-- the test hooks "ren|test|n" (renegade_test.lua, loaded only with lanrenotest=1)
+local testHooks = TEST and VFS.Include("luaui/Include/renegade_test.lua", nil, VFS.ZIP_FIRST)({ units = units, input = input, startUnit = START_UNIT,
+	engineBombs = function() TESTENGINE = true end }) or nil
+
 function gadget:RecvLuaMsg(msg, playerID)
-	if TEST and msg == "ren|test|1" then
-		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
-		local u = units[team]
-		if u and not spec then
-			local x, y, z = Spring.GetUnitPosition(u)
-			local inp = input[team]
-			local yaw = math.rad(inp.yaw)
-			local ex, ez = x + math.sin(yaw) * 150, z + math.cos(yaw) * 150
-			for _, t in ipairs(Spring.GetTeamList()) do
-				if not Spring.AreTeamsAllied(t, team) and t ~= Spring.GetGaiaTeamID() then
-					local e = Spring.CreateUnit(START_UNIT, ex, Spring.GetGroundHeight(ex, ez), ez, 0, t)
-					if e then
-						Spring.GiveOrderToUnit(e, CMD.FIRE_STATE, { 0 }, 0)
-						Spring.Echo("[Renegade] test enemy " .. e .. " at " .. math.floor(ex) .. " " .. math.floor(ez))
-					end
-					break
-				end
-			end
-		end
-		return
-	end
-	if TEST and msg == "ren|test|3" then -- an enemy gunship (hold fire) 250 Elmo ahead of the unit, 100 Elmo up
-		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
-		local u = units[team]
-		if u and not spec then
-			local x, y, z = Spring.GetUnitPosition(u)
-			local yaw = math.rad(input[team].yaw)
-			local ex, ez = x + math.sin(yaw) * 250, z + math.cos(yaw) * 250
-			for _, tm in ipairs(Spring.GetTeamList()) do
-				if not Spring.AreTeamsAllied(tm, team) and tm ~= Spring.GetGaiaTeamID() then
-					local e = Spring.CreateUnit("armbrawl", ex, Spring.GetGroundHeight(ex, ez) + 100, ez, 0, tm)
-					if e then
-						Spring.GiveOrderToUnit(e, CMD.FIRE_STATE, { 0 }, 0)
-						Spring.Echo("[Renegade] test gunship " .. e)
-					end
-					break
-				end
-			end
-		end
-		return
-	end
-	if TEST and msg == "ren|test|4" then TESTENGINE = true return end
-	if TEST and msg == "ren|test|2" then
-		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
-		if units[team] and not spec then Spring.DestroyUnit(units[team], true, false) end
-		return
-	end
-	if TEST and msg == "ren|test|6" then -- the unit is hurt (30 % health) and three wrecks lie 100 Elmo ahead of it (the automatic reclaim must heal it)
-		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
-		local u = units[team]
-		if u and not spec then
-			local x, y, z = Spring.GetUnitPosition(u)
-			local _, mhp = Spring.GetUnitHealth(u)
-			Spring.SetUnitHealth(u, mhp * 0.3)
-			for k = -1, 1 do
-				local fid = Spring.CreateFeature("armbull_dead", x + 100, Spring.GetGroundHeight(x + 100, z + k * 60), z + k * 60, 0, team)
-				Spring.Echo("[Renegade] test wreck " .. tostring(fid) .. " metal " .. tostring(fid and (Spring.GetFeatureResources(fid))))
-			end
-		end
-		return
-	end
-	if TEST and msg == "ren|test|5" then -- the unit takes more damage than it has health (a shot-down aircraft must crash)
-		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
-		local u = units[team]
-		if u and not spec and Spring.ValidUnitID(u) then
-			local hp = Spring.GetUnitHealth(u)
-			Spring.AddUnitDamage(u, (hp or 0) + 100000)
-		end
-		return
-	end
+	if testHooks and testHooks(msg, playerID) then return end
 	local spawn = msg:match("^ren|spawn|([%w_]+)$")
 	if spawn then
 		-- debug: an enemy unit 1000 Elmo ahead of the player's view, a ground unit on the ground, an aircraft 200 Elmo up; it fights toward the player

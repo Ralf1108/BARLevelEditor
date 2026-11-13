@@ -62,7 +62,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 ## 5. Tests (sandbox, `pve_test.ps1 -Ren ...`, lines in the infolog)
 
 - `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`.
-- Hooks of `lanrenotest`: `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
+- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
 
 | Widget | Checks |
 |---|---|

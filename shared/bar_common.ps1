@@ -202,6 +202,7 @@ $ScenarioGameFiles = @(
     @('area_attack.lua', 'luaui/Include/area_attack.lua'),   # loaded by editor_common.lua
     @('led_gadgets.lua', 'luaui/Include/led_gadgets.lua'),   # what the gadgets share (editor mode, messages, game options)
     @('renegade_data.lua', 'luaui/Include/renegade_data.lua'),   # Renegade: the weapon tables (made from the tables in game-modes by renegade_weapons.py)
+    @('renegade_test.lua', 'luaui/Include/renegade_test.lua'),   # Renegade: the test hooks ren|test|n (loaded only with the game option lanrenotest)
     @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the window of the gift of stage 10
     @('renegade.lua', 'luaui/widgets/renegade.lua'),   # Renegade (LAN Play): the first person view and the steering of the own unit
     @('scenario_briefing.lua', 'luaui/widgets/scenario_briefing.lua'),   # the briefing window (a game widget: no "Allow user widgets" needed)
