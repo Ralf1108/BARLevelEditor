@@ -19,9 +19,11 @@ Thank you for helping. This page tells you how to report a problem and how to ch
    - no names of persons in code, texts or file names
    - shared code goes into `shared/`
    - update the specification and the manual of what you changed in the same commit
-3. Check it without the game:
-   - `python LevelEditor\test-data\tools\lua_check.py` compiles every Lua file with Lua 5.1 (needs the Python package `lupa`)
-   - `python LevelEditor\test-data\tools\mock_test.py` runs the tests of the shared modules
+3. Check it without the game: `powershell -File LevelEditor\test-data\tools\run_checks.ps1` (needs Python with the package `lupa`; GitHub runs the same on every pull request):
+   - every Lua file compiles with Lua 5.1
+   - the mock tests of the shared Lua code pass
+   - every link in the documents works
+   - the PowerShell code passes its tests
 4. Check it in the game: [specs/testing.md](specs/testing.md) and [LevelEditor/test-data/README.md](LevelEditor/test-data/README.md) describe the sandbox tests.
 5. Send a pull request with one topic. Say what you tested and how.
 

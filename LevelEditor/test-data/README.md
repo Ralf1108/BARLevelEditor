@@ -35,6 +35,11 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 
 What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
+## Checks without the game (`tools\run_checks.ps1`)
+
+- `powershell -File tools\run_checks.ps1` runs `lua_check.py`, `mock_test.py`, `doc_check.py` (the links of the documents) and `ps_test.ps1` (the PowerShell code against a dummy data folder, the quick start scripts with `-DryRun`, the parse of every `.ps1`, no control characters in a text file) and prints a table.
+- The GitHub Action `.github/workflows/checks.yml` runs it on every push and pull request.
+
 ## Mock tests (`tools\mock_test.py`)
 
 - `python tools\mock_test.py [name]` runs the mock tests `tools\mock_*.lua` with Lua 5.1 (Python package lupa, like `lua_check.py`) without the game: each fakes the part of the Spring API that a shared module needs and checks what it does.

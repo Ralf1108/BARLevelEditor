@@ -18,6 +18,8 @@ How changes are checked. The details of the test tools and what got in the way a
 - Before every hand-over: run both installers (`install_editor`, `install_blueprinter`), start the editor, check the log for errors.
 - PowerShell files are parsed after every patch (`[System.Management.Automation.Language.Parser]::ParseFile`); patched text is checked for control characters.
 
+- **All checks without the game in one call:** `LevelEditor\test-data\tools\run_checks.ps1` runs `lua_check.py`, `mock_test.py`, `doc_check.py` and `ps_test.ps1` and ends with a table; exit code 1 when one failed. The GitHub Action `.github/workflows/checks.yml` runs it on every push to `main` and on every pull request (Windows runner, Python with `lupa`).
+
 ## 2. Tools
 
 | Tool | What it checks |
@@ -29,6 +31,7 @@ How changes are checked. The details of the test tools and what got in the way a
 | `tools\arena_test.ps1` (with `-Widget zz_*.lua`, `-Shots`) | one sandbox game of the editor (ten teams, flat map) with a test widget from `tools\` (`zz_arena.lua`, `zz_split.lua` (split attack XS), `zz_save.lua` (Save page S), `zz_scenario.lua` (Scenario info page I), `zz_cycle.lua` (Ctrl + wheel: choose the blueprint), `zz_export.lua` (the export buttons of the settings page: units.json, comparison.json), `zz_cmdbuttons.lua` (the buttons Area / Split / Focus Attack in the command menu), `zz_teams.lua`, `zz_menu.lua`, `zz_shots_all.lua`, ...; the method for each is in `TESTING.md`) |
 | `tools\bp_test.ps1` | a sandbox game of the official BAR with the BluePrinter, next to a running game (`-Widget zz_bpfaction.lua`; `zz_bpt.lua`, `zz_bpo.lua`, `zz_bpg.lua` test the plans through its test hooks) |
 | `tools\lan_test.ps1 -Mode ctf\|rtf\|td\|cp\|scav\|page\|boss\|pve\|preset\|rejoin\|latejoin\|mix\|brood` (`-Solo` with `evo`: one instance; `-Play`: a game to play, no test widgets) (also `-Sync`, `-Lobby`, `-NoMap`, `-AlongsideGame` = next to a game you play; it must not host on port 8453 at the same time) | LAN Play: two real lobbies, join, scenario, transfer, versions |
+| `tools\doc_check.py` | every relative link, picture and #anchor of the tracked `.md` files points to something that exists |
 | `tools\ps_test.ps1` | the PowerShell code without the game: `Get-Engine`, `Get-VersionsText`, `Get-GameVersion`, `Get-AiSpec`, `Resolve-ExtraGame` against a dummy data folder, both quick start scripts with `-DryRun`, every tracked `.ps1` parses, no control character in a tracked text file |
 | `tools\console_test.ps1 -Mode ctf\|rtf\|td` | the console lobby of the scenario packages |
 | `scenario_builder.ps1 -Level <name> -LevelDir <folder> -Auto -BundleDir <folder>` | builds a bundle from a test level without touching the user's levels |

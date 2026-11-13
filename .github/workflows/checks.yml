@@ -1,0 +1,19 @@
+name: checks
+
+# The checks that need no game: Lua 5.1 compile of every Lua file, the mock tests of the shared code, the links of the documents, the PowerShell tests.
+# The tests in the game (sandbox games) are run by hand, see specs/testing.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install lupa
+      - run: powershell -NoProfile -ExecutionPolicy Bypass -File LevelEditor/test-data/tools/run_checks.ps1
