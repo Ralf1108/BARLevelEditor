@@ -120,30 +120,15 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.PopMatrix()
 	end
 
+	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the minimap and the line of the score board (G.drawScreenPost, G.drawScoreLine)
 	function gadget:DrawScreenPost()
-		local state = Spring.GetGameRulesParam("rtfState")
-		if not state or state == "" then
-			return
-		end
-		local mx, my, msx, msy = Spring.GetMiniMapGeometry()
-		if mx and msx and msx > 0 then
-			drawMiniMap(mx, my, msx, msy)
-		end
+		G.drawScreenPost("rtfState", drawMiniMap)
 	end
-
-	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the line of the score board (G.scoreLine)
 	local function rate(a)
 		return string.format(" (+%.1f/s)", Spring.GetGameRulesParam("rtfRate" .. a) or 0)
 	end
 	function gadget:DrawScreen()
-		local text = G.scoreLine("rtf", "Reclaim the Fame", rate)
-		if not text then
-			return
-		end
-		local vsx, vsy = Spring.GetViewGeometry()
-		gl.Color(1, 0.85, 0.3, 1)
-		gl.Text(text, vsx * 0.5, vsy - 175, 20, "co") -- lower than the line of Capture the Flag: the chat lines at the top would cover it
-		gl.Color(1, 1, 1, 1)
+		G.drawScoreLine("rtf", "Reclaim the Fame", { 1, 0.85, 0.3 }, 175, rate) -- (lower than the line of Capture the Flag: the chat lines at the top would cover it)
 	end
 	return
 end
@@ -203,13 +188,7 @@ local function clear()
 	Spring.SetGameRulesParam("rtfNodes", "")
 end
 
-local function stop()
-	if g then
-		clear()
-		publish()
-		say("Stopped.")
-	end
-end
+local stop = G.stopper(function() return g end, clear, publish, say)
 
 local blowUp = G.blowUp
 

@@ -131,28 +131,12 @@ if not gadgetHandler:IsSyncedCode() then
 		gl.PopMatrix()
 	end
 
-	-- (after the minimap: the engine draws it after DrawScreen)
+	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the minimap and the line of the score board (G.drawScreenPost, G.drawScoreLine)
 	function gadget:DrawScreenPost()
-		local state = Spring.GetGameRulesParam("ctfState")
-		if not state or state == "" then
-			return
-		end
-		local mx, my, msx, msy = Spring.GetMiniMapGeometry()
-		if mx and msx and msx > 0 then
-			drawMiniMap(mx, my, msx, msy)
-		end
+		G.drawScreenPost("ctfState", drawMiniMap)
 	end
-
-	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the line of the score board (G.scoreLine)
 	function gadget:DrawScreen()
-		local text = G.scoreLine("ctf", "Capture the Flag")
-		if not text then
-			return
-		end
-		local vsx, vsy = Spring.GetViewGeometry()
-		gl.Color(1, 0.9, 0.5, 1)
-		gl.Text(text, vsx * 0.5, vsy - 130, 20, "co")
-		gl.Color(1, 1, 1, 1)
+		G.drawScoreLine("ctf", "Capture the Flag", { 1, 0.9, 0.5 }, 130)
 	end
 	return
 end
@@ -308,13 +292,7 @@ local function clear()
 	g, carrying = nil, {}
 end
 
-local function stop()
-	if g then
-		clear()
-		publish()
-		say("Stopped.")
-	end
-end
+local stop = G.stopper(function() return g end, clear, publish, say)
 
 -- The units of an alliance blow up (flags and collection points stay)
 local function blowUp(ally)

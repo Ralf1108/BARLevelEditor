@@ -253,6 +253,43 @@ function G.scoreLine(p, title, extra)
 	return text
 end
 
+-- The drawing that ctf_game and rtf_game do the same way (unsynced part). drawScreenPost(stateName, drawMiniMap): call it from gadget:DrawScreenPost; when the game
+-- rules parameter stateName is set it calls drawMiniMap(px, py, sx, sy) with the lower left corner and the size of the minimap on the screen (BAR's minimap does not call
+-- DrawInMiniMap of gadgets, and the engine draws it after DrawScreen). drawScoreLine(prefix, title, color, y, extra): the line of G.scoreLine in the color { r, g, b },
+-- y pixels below the top of the screen (the chat lines at the top would cover a line that is too high).
+function G.drawScreenPost(stateName, drawMiniMap)
+	local state = Spring.GetGameRulesParam(stateName)
+	if not state or state == "" then
+		return
+	end
+	local mx, my, msx, msy = Spring.GetMiniMapGeometry()
+	if mx and msx and msx > 0 then
+		drawMiniMap(mx, my, msx, msy)
+	end
+end
+
+function G.drawScoreLine(prefix, title, color, y, extra)
+	local text = G.scoreLine(prefix, title, extra)
+	if not text then
+		return
+	end
+	local vsx, vsy = Spring.GetViewGeometry()
+	gl.Color(color[1], color[2], color[3], 1)
+	gl.Text(text, vsx * 0.5, vsy - y, 20, "co")
+	gl.Color(1, 1, 1, 1)
+end
+
+-- The stop of a game mode (synced): stop = G.stopper(function() return g end, clear, publish, say); nothing happens when no game runs
+function G.stopper(get, clear, publish, say)
+	return function()
+		if get() then
+			clear()
+			publish()
+			say("Stopped.")
+		end
+	end
+end
+
 -- The text of a game option of a finished scenario (written as base64url by the scenario builder); nil when it is not set
 function G.option(name)
 	local v = Spring.GetModOptions()[name]
