@@ -86,6 +86,23 @@ function R.shotDown(id)
 	return ok and type(md) == "table" and md.aircraftState == "crashing"
 end
 
+-- What kind of mover a unit is, from its movement class (the names of BAR): "air", "building" (no speed or no movement class), "ship" (boat*, uboat*, epicship, epicsubmarine),
+-- "hover", "spider" (more than two legs: tbot3, epicallterrain, htbot6, abotbomb2 = the crawling bombs, sbot2 = the flea and the critters), "bot" (two legs: bot2, bot3, abot3, hbot4,
+-- hbot7, habot5, vbot6, epicbot, commanderbot ...), "tank" (tank*, htank*, mtank*, atank*, epicveh) or "other". Only a "bot" can jump (Renegade); a ship cannot reverse.
+function R.moveKind(ud)
+	if not ud then return "building" end
+	if ud.canFly then return "air" end
+	local md = ud.moveDef
+	if (ud.speed or 0) <= 0 or type(md) ~= "table" then return "building" end
+	local fam, name = tostring(md.family or ""), tostring(md.name or "")
+	if fam == "ship" or name:find("^boat") or name:find("^uboat") or name:find("^epicship") or name:find("^epicsub") then return "ship" end
+	if fam == "hover" or name:find("hover") then return "hover" end
+	if name:find("^tbot") or name:find("^epicallterrain") or name:find("^htbot") or name:find("^abotbomb") or name:find("^sbot") then return "spider" end
+	if fam == "kbot" or name:find("bot") then return "bot" end
+	if fam == "tank" or name:find("tank") or name:find("^epicveh") then return "tank" end
+	return "other"
+end
+
 -- Text from base64url (the form the scenario builder puts into game options: "-" and "_" instead of "+" and "/", no "=")
 local ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local B64 = {}

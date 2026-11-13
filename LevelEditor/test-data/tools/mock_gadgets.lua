@@ -125,7 +125,20 @@ do
 	check(R.shotDown(1), "shotDown: no health left")
 	hp, dead = 50, true
 	check(R.shotDown(1), "shotDown: a dead unit")
-	ok("bar_rules")
+		local function mk(class, extra) local ud = { speed = 50, moveDef = { name = class } }; for k, v in pairs(extra or {}) do ud[k] = v end; return ud end
+		local kinds = { bot2 = "bot", bot3 = "bot", abot3 = "bot", hbot4 = "bot", hbot7 = "bot", habot5 = "bot", vbot6 = "bot", epicbot = "bot", commanderbot = "bot", scavcommanderbot = "bot",
+			tbot3 = "spider", epicallterrain = "spider", htbot6 = "spider", abotbomb2 = "spider", sbot2 = "spider",
+			tank2 = "tank", tank3 = "tank", htank4 = "tank", mtank3 = "tank", atank3 = "tank", epicveh = "tank",
+			hover2 = "hover", hover3 = "hover", hhover4 = "hover", ahover2 = "hover",
+			boat3 = "ship", boat9 = "ship", uboat4 = "ship", epicship = "ship", epicsubmarine = "ship", scavmist = "other" }
+		for class, kind in pairs(kinds) do
+			check(R.moveKind(mk(class)) == kind, "moveKind: " .. class .. " is " .. kind .. " (" .. R.moveKind(mk(class)) .. ")")
+		end
+		check(R.moveKind(mk("bot2", { canFly = true })) == "air", "moveKind: a flying unit is air")
+		check(R.moveKind(mk("bot2", { speed = 0 })) == "building", "moveKind: no speed is a building")
+		check(R.moveKind({ speed = 50 }) == "building" and R.moveKind(nil) == "building", "moveKind: no movement class is a building")
+		check(R.moveKind({ speed = 50, moveDef = { family = "ship", name = "x" } }) == "ship", "moveKind: the family ship")
+		ok("bar_rules")
 end
 
 -- ---------------------------------------------------------------- G.fits and G.randomPlace

@@ -314,13 +314,8 @@ end
 -- terrain allows (TestMoveOrder) and no other unit is in the way, and its heading turns toward the view at its turn rate. Not for ships, aircraft and buildings (gunships have their own).
 local REVERSE_SPEED = 0.6
 local function canReverse(ud)
-	if not ud or ud.canFly or (ud.speed or 0) <= 0 then return false end
-	local md = ud.moveDef
-	if not md then return false end
-	local fam = tostring(md.family or "")
-	local name = tostring(md.name or "")
-	if fam == "ship" or name:find("^boat") or name:find("^uboat") then return false end
-	return true
+	local k = G.Rules.moveKind(ud)
+	return k ~= "air" and k ~= "building" and k ~= "ship"
 end
 local PRIME_FRAMES = 5 -- (a unit that stands first drives forward for this many frames: the script of the model starts its walk animation then, which the hand-moved reverse never does)
 local function stopReverse(u, inp)
