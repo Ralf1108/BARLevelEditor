@@ -1,264 +1,200 @@
 # Level Editor
 
-- Place units, buildings, trees, rocks and wrecks on a BAR map with the mouse, generate armies and mazes, build tower defense, capture the flag or reclaim the fame levels, save everything and turn it into a scenario for the official game.
-- The result of a level is a `unitloadout` list (the format of BAR scenarios).
+[Start page](../README.md) · [Short version](../docs/level-editor-usage.md) · [Specification](../specs/level-editor.md)
 
-This manual describes the editor part by part. The short version for newcomers is in the [main README](../README.md); every button also has a tooltip and the **?** button shows all keys on the screen.
+Build a level on any BAR map with the mouse, test it and turn it into a scenario for the official game.
 
-## Setup (once per computer, BAR must be installed)
-1. Download or clone the repository and keep the folders `LevelEditor` and `shared` next to each other.
-2. Run `install_editor.bat`.
-   - It searches BAR on all fixed drives (e.g. C:\Games, D:\Games, Program Files) and finds BAR and the engine, determines the installed game version, builds the extra game `data\games\LevelEditorMod.sdz` ("Level Editor", builds on the official BAR), creates the junctions `data\LevelEditor` -> `levels` and `data\LevelEditorBlueprints` -> `blueprints`, writes `start_level_editor.bat` and creates the desktop shortcut "BAR Level Editor".
-   - The setup also installs **LAN Play** (see the section at the end): a widget for the lobby of the game, the extra game of the scenarios `data\games\LevelEditorScenarios_<version>.sdz` ("Level Editor Scenarios <version>", the version is made of its files) and the junction `data\LevelEditorScenarios` -> `scenario\scenarios`, and it saves the official list of map checksums (md5, about 60 KB, `data\games\LevelEditorMapHashes.txt`; fetched online, only when it changed; offline the old list stays) with which LAN Play checks a map that a host sends.
-   - Close the game and the launcher before the setup (the lobby writes its settings when it ends).
-3. After a BAR update or changes to the widget or gadget you do not have to run `install_editor.bat` again: `start_level_editor.bat` (and the desktop icon) compares a fingerprint of the files and the game version with the one of the last setup before every start and runs the setup by itself when they differ (not while a game is running).
-4. Removing it again: run `uninstall_editor.bat` (it asks first).
-   - It removes the two extra games (`LevelEditorMod.sdz` and the own version of `LevelEditorScenarios_<version>.sdz`), the three junctions in the game folder, the LAN Play widget and its game widget `shared_start.lua`, switches the setting `loadLocalWidgets` of the lobby off again, and removes the desktop icon, `start_level_editor.bat`, the start script and the remembered files in `%LOCALAPPDATA%\BAR-Level-Editor` (`Last Map.txt`, `Online Maps Cache.json`, `Scav Units.txt`).
-   - Saved levels and blueprints stay in the folders `levels` and `blueprints`, the scenarios and maps received from other players stay in `%LOCALAPPDATA%\BAR-Scenario` (key 8 of the start menu cleans them), the official game is not touched.
-   - The game must not run.
-   - With `uninstall_editor.bat -WithSettings` the settings files of the editor in the game folder are deleted too, with `-Yes` the confirmation is skipped.
+- Place units, buildings, trees, rocks and wrecks; generate armies and mazes.
+- Make it a Tower Defense, Capture the Flag or Reclaim the Fame level.
+- Every button has a tooltip; the **?** button shows all keys on the screen.
 
-## Starting
-Desktop shortcut "BAR Level Editor" (or `start_level_editor.bat`). The start menu is always shown (arrow up/down and Enter, or a digit key):
-- **0** continue the last saved map (the state the editor saves every 2 minutes and when leaving as `_last`),
-- **1** new level: choose a map (search while typing; the list contains all BAR maps from the internet, missing ones are only downloaded after the selection, offline only installed ones; the picture of the highlighted map with its size, players and terrain is shown next to the list, and with **Tab** and **Left/Right** you filter by size, number of players and terrain),
-- **2** load an existing level (list from `levels`, with search),
-- **3** build a scenario package (ZIP) from a level,
-- **4** start one of the scenarios you built (always with the current scripts of the editor, so an old scenario is never out of date; choose it from the list, then how to play it: **Single player**, **Host** a game for others in the same network (a lobby with a box per team: everybody who joins lands in a team and you move the players between the boxes with Tab, Enter and the arrow keys, then "Start game" or F5), **Join** one (you only enter the address) or **Split screen** (host and the other players all on this computer, one window each: you enter the number of players, 2 to 8, the windows share the screen in 2 x 2, 3 x 2 or 4 x 2 cells and the players are distributed in the same lobby); the starter of that folder runs, also for Tower Defense scenarios).
-- **5** upgrade a scenario package: choose one of the built scenarios and it is built again from the level it came from (found by the ID in the saved scenario info of the level, otherwise by the name of the level), with the info saved in that level and without any question: the package gets the current starter, lobby and gadgets and the current units of the level (the same as key 3, without choosing a level).
-  - Handy after an update of the editor or a change of the level when you want to pass the ZIP on again.
-- **6** play a level at once (single player, host, join or split screen): no package is built and nothing is saved into the level.
-  - The level is turned into a small temporary scenario (a "bundle": the start script and the gadgets it needs, data only) in the cache `%LOCALAPPDATA%\BAR-Scenario\Cache\<hash>`.
-  - The host offers it in the lobby; **a joiner chooses "Join" and the address and gets the scenario from the host through the lobby** (or from their own cache if they had it already, the same level gives the same hash), so only the editor has to be installed on every computer.
-  - Programs that run on the computer itself are never taken from another computer: the bundle holds `scenario.txt` and Lua scripts that run only inside the game engine (gadgets, game widgets), anything else in it is refused.
-- **7** (after an empty line) switch the Scavenger and Raptor units of the Place menu on or off (on at the start, so every unit of the game is there; switched off the game start is about 10 seconds faster; a level that holds such units switches them on by itself).
-- **8** clean up: a list of your levels and built scenarios and of what came from other players (scenarios and maps in `%LOCALAPPDATA%\BAR-Scenario`, other versions of the extra game "Level Editor Scenarios"), with size and date; Space marks, A marks all of a kind, Enter removes after a question.
-  - Your own levels and scenarios go into a `_trash` folder next to them (nothing is deleted for good), what came from others is deleted (it is fetched again when needed).
-  - The maps of BAR itself are never offered.
-  - Old things of other players also go by themselves when the menu starts (scenarios not used for 30 days, maps not used for 60 days or beyond 3 GB, half-finished downloads).
-- If a joiner has not got the map nothing is asked: in the same network as the host they get it from the host over the network, otherwise they download it from the internet (a map is 30 to 200 MB; it is kept in the cache `%LOCALAPPDATA%\BAR-Scenario\Cache\Maps`, not in the data folder of the game).
-- A map that comes from the host is checked against the hash and the size of the official map service first (so a changed file of a host is refused); a map of your own, which the service does not know, is only checked against the host's hash.
-- Everybody plays the host's game: the scenario and its Lua files (gadgets and game widgets, which run only inside the game) come from the host, so the gadgets of a joiner may be older or newer.
-- Only the lobby version has to be the same everywhere (the start menu shows it in its first line); a joiner with another one is refused with the note to update the Level Editor by hand (nothing that runs on the computer itself is ever taken from another computer).
+## Setup
 
-When loading, the editor starts on the saved map and sets up the units automatically (via `levels\_autoload.txt`).
+| Step | What to do |
+|---|---|
+| Install | keep the folders `LevelEditor` and `shared` next to each other, close the game and its launcher, run `install_editor.bat` |
+| Start | desktop shortcut **BAR Level Editor** (or `start_level_editor.bat`) |
+| Update | nothing: the start checks the files and the BAR version and runs the setup by itself when they changed |
+| Remove | `uninstall_editor.bat` (asks first; the game must not run) |
+
+- The setup finds BAR by itself, builds an extra game next to the official one and installs **LAN Play**. The official game is not changed.
+- Removing keeps your levels and blueprints. `-WithSettings` also deletes the settings of the editor, `-Yes` skips the question.
+- What the setup creates in detail: [setup specification](../specs/level-editor-setup.md).
+
+## Start menu
+
+Arrow keys and Enter, or a digit key.
+
+| Key | Action |
+|---|---|
+| **0** | continue the last map (saved every 2 minutes and when leaving) |
+| **1** | new level: choose a map |
+| **2** | load a level |
+| **3** | build a scenario package (ZIP) from a level |
+| **4** | start a scenario you built: single player, host, join or split screen |
+| **5** | rebuild a scenario package from its level, without questions (after an update or a change of the level) |
+| **6** | play a level at once: single player, host, join or split screen; no package is built |
+| **7** | Scavenger and Raptor units in the Place menu on / off |
+| **8** | clean up levels, scenarios and what came from other players |
+
+- **Map list (key 1):** all BAR maps; a missing one is downloaded after you chose it. Type to search. A picture with size, players and terrain is shown; **Tab** and **Left / Right** filter.
+- **Host / join (keys 4 and 6):** a lobby with a box per team. Move players with Tab, Enter and the arrow keys, then "Start game" or F5. A joiner only enters the address.
+- **Split screen:** 2 to 8 players on this computer, one window each.
+- **Joiners get what they need from the host:** the scenario and, in the same network, a missing map (otherwise it is downloaded).
+  - A map from the host is checked against the official map list first.
+  - Only game scripts are taken from the host, never programs that run on your computer.
+  - The lobby version must be the same everywhere (first line of the start menu).
+- **Key 7:** switched off, the game starts about 10 seconds faster. A level that holds such units switches them on by itself.
+- **Key 8:** Space marks, A marks all of a kind, Enter removes after a question. Your own things go into a `_trash` folder; what came from others is deleted. Old things of other players also go by themselves (scenarios after 30 days, maps after 60 days or beyond 3 GB).
 
 ## The screen
 
-- In editor mode (game option `leveleditor=1`) no /cheat and no /globallos are needed.
-- Everything is free and finished instantly.
-- Legion, the extra pack and release candidates are on.
-- At the start only the commander stands there; the builders of all factions are created with **Ctrl+D** at the mouse pointer (they are tools and are not saved in the level).
-- The unit limit is raised to 32000 (`maxunits`).
-- The menu follows the UI size slider of the BAR settings.
+In the editor everything is free and built instantly, and no cheat command is needed. Legion and the extra units are on.
 
-- **Moving the menu:** drag the title row ("Level Editor") with the left mouse button, the whole menu moves with the strip at the left and the button column. A right click on the title puts it back. The position is remembered.
-- **Button column at the right edge** (top to bottom): **V** collapse the menu, **O** settings, **S** the saved levels (save and load), **I** scenario info, **T** teams (human or AI, alliance, start resources), **?** help;
-  - **P** Place, **G** Generate, **TD** Tower Defense, **CF** Capture the Flag, **RF** Reclaim the Fame;
-  - **XL / XR / XC** area attacks and **XS** split attack and **XF** focus attack (experimental, see [Experimental Attacks](../docs/experimental-attacks.md));
-  - **FX / FD** make buildings in a rectangle indestructible / destructible again.
-- **Strip left of the menu** (top to bottom): **W** (write/overwrite, see Placing), **DL / DR / DC** (delete along a line, in a rectangle, in a circle), **L / R / S** (rotate left / right, mirror; only with a selection), **N** (neutral), one button per team with its current unit count, **G** (Gaia: no owner, enemy to everyone).
-- **Teams:** the game has ten teams (0 to 9), you choose the team with the team buttons; selected units get the team with a click on a team button.
-  - A **right click** on a team button chooses its **alliance** (ten colors; the button gets a frame in that color, teams of one color are allies, all others enemies); human or AI and the start resources are on the page **T**.
-  - Only teams 0 and 1 start with a commander, a team can hold 3150 units.
-  - **G** (Gaia) has at most 500 units, a limit the engine fixes (the tooltip of the button says so); for many neutral units use **N** instead.
-- **Cheat and god mode:** at the start the editor switches on the cheat mode and the god mode for all teams (the game shows "Cheating is enabled!"), so units of every team can be selected and commanded (see Selecting).
-- **Right click** anywhere (also over the menu and the buttons) ends every mode: placing, delete, maze, generate, area attack.
-  - Without a mode it is the order of the game for the selected units (move, attack, ...); a left click on the ground clears the selection.
-  - Starting a Tower Defense or Capture the Flag test ends every editor mode.
-  - The markers of Tower Defense (spawn point, goal, waypoints) and Capture the Flag (collection and flag points) stay visible in the world with their pages closed.
-- **Help:** the **?** button shows the keys and short explanations as a board on the screen; a click closes it.
-  - Chat commands are only left for diagnosis: `/led_help` shows the short version and the topics (`/led_help <topic>` explains details: `start`, `keys`, `place`, `units`, `blueprint`, `save`, `team`, `edit`, `features`, `search`, `scenario`, `delete`, `build`), `/led_clear` clears the map, `/led_ghost` shows the state of the 3D preview.
+- **At the start** only the commander stands there. **Ctrl+D** creates the builders of all factions at the mouse (tools, not saved in the level).
+- **Menu:** drag the title row to move it, right click on the title puts it back. It follows the UI size of the BAR settings.
+- **Right click** anywhere ends every mode (placing, delete, maze, generate, attack). Without a mode it is the normal order for the selected units.
+- **Left click** on the ground clears the selection.
+
+**Button column at the right edge**
+
+| Button | Page or action |
+|---|---|
+| **V** | collapse the menu |
+| **O** | settings |
+| **S** | saved levels (save and load) |
+| **I** | scenario info |
+| **T** | teams: human or AI, alliance, start resources |
+| **?** | help board |
+| **P** / **G** | Place / Generate |
+| **TD** / **CF** / **RF** | Tower Defense / Capture the Flag / Reclaim the Fame |
+| **A** | [Arena](sandbox/arena.md) |
+| **XL XR XC XS XF** | [experimental attacks](../docs/experimental-attacks.md) |
+| **FX** / **FD** | make buildings in a rectangle indestructible / destructible again |
+
+**Strip left of the menu**
+
+| Button | Action |
+|---|---|
+| **W** | write: overwrite occupied spots (green) or leave them free |
+| **DL** / **DR** / **DC** | delete along a line, in a rectangle, in a circle |
+| **L** / **R** / **S** | rotate left / right, mirror (with a selection) |
+| **N** | neutral |
+| one per team | choose the team; shows its unit count |
+| **G** | Gaia: no owner, enemy to everyone (at most 500 units; for many neutral units use **N**) |
+
+**Teams**
+
+- Ten teams (0 to 9), 3150 units each, 32,000 in all. Only teams 0 and 1 start with a commander.
+- A click on a team button gives the selected units that team.
+- A **right click** on a team button chooses its **alliance** (ten colors, shown as a frame): the same color = allies.
+- Human or AI and the start resources: page **T**.
 
 ## Placing (button P)
-The Place menu has the sub-tabs **Recent** (recently chosen blueprints, placed units and placed features), **Units**, **Features** and **Blueprints**.
-- **Units tab:** choose faction (Armada, Cortex, Legion, **Scavengers**, **Raptors**), group (buildings, turrets, air, vehicles, bots, hover, ships) and tech (T1 to T3).
-  - The units appear with their pictures;
-    - hovering shows a rotating 3D view with the information **under it**: name (code), the description, metal, energy and the **Eco time** (how long your current income needs to produce this cost; worst case, the stock is not counted; `-` without income), the health, for a unit that shoots a line like `DPS 41 = 0.26 shots/s x 157 dmg` (with lines for metal and energy per shot if the weapon needs them), then one line each for range, LoS (line of sight), speed, radar, radar jammer, sonar and sonar jammer (only what the unit has) and the damage to the surroundings when it is destroyed and when it self-destructs.
-  - For a blueprint the costs are the sums (marked "Sum"), the speed is that of the slowest unit (marked "Min") and the other values the largest of its units.
-  - A faction, group or tech button with nothing behind it is slightly red, so you see at once which tabs are empty.
-  - Click one, then left click on the map places it (blue outline), right click ends, **[** and **]** rotate.
-  - The list comes straight from the game, so it also includes Legion, the extra pack and custom units.
-- **Scavengers and Raptors:** the Scavengers are the `_scav` copies of all units, the Raptors the `raptor_*` units.
-  - The Scavengers list holds the units of all three factions: first all of Armada, then Cortex, then Legion, then their own units, each in the usual order (economy, factories, turrets, utility, water); the walking Raptors are under Bots.
-  - Nobody steers them: a level has no Scavenger or Raptor AI, so they stand where you put them until a player gives them orders.
-  - They exist in the game only with the game option `forceallunits`, which makes the start about 10 s longer: it is **off** by default.
-  - Switch it on in the start menu (**key 7**, remembered); a level that holds such a unit carries the option (`requiredmodoptions`), so loading it, scenarios, tests and LAN games switch it on by themselves.
-  - Test level: `test-data\levels\scav_test.lua`.
-- **Restrictions (red X):** one list for the whole level of what the player may **not build** in the game (Start, finished scenario; the editor itself can always place everything).
-  - A small **X** in the upper right corner of every unit picture restricts that unit (it is dimmed with a big red X; click the X again to allow it).
-  - The X in the faction, group and tech buttons restricts all units in it right now: faction = all of its units, group = all units of that group of the chosen faction, tech button = all units of that tech level in all factions and groups (as the editor counts it: half levels count down, Epic units are T3).
-  - Every X is only the shortcut for a list of single units: it is on exactly when all of them are restricted, so it goes off by itself when you allow one of them, and it comes on by itself when you restrict the last one.
-  - The Tower Defense page shows the same list (only the towers, economy structures and radars that matter there): restricting or allowing there changes the Place menu and the other way round.
-  - The list is saved in the section `restrictions` of the level file and works in every mode (Tower Defense, Capture the Flag, plain levels): the gadget `unit_restrictions.lua` refuses the build orders and tells the build blocking of BAR, so the restricted units are greyed out in the build menu of the player.
-  - The list holds for every team, also for the computer players (they do not know it and may get stuck trying); only human teams get the message "Not allowed".
-- **Search:** one field at the top of the Place menu searches recent items, units, features and blueprints at once (words of the description or the code; all words must match; for blueprints also the units inside).
-  - The tabs show the number of matches.
-  - The field turns reddish while it contains a text.
-  - Enter = done, Esc or X = clear; a click on a faction/group/tech/feature-kind button ends the search.
-  - All lists have a scrollbar at the right edge (drag the thumb or click the track; the mouse wheel works as before).
-- **Painting:** hold the left mouse button and move: with an armed unit or feature (also the structures of the Tower Defense list and the single wall pieces) one is placed after every footprint of mouse movement (plus the spacing); Ctrl+Z takes the whole stroke back.
-  - Blueprints are not painted.
-- **Rows and rectangles:** **Shift + drag** places a row of the armed unit, feature or blueprint, **Shift + Alt + drag** a rectangle (all are placed on release); **Shift + mouse wheel** (or Alt+Z / Alt+X) changes the spacing.
-- **W (write):** green = on (default) decides what happens when something is placed where something already stands (units, features, single pieces, rows, blueprints, pasted copies, corridor wall pieces): **on** overwrites, i.e. what is in the way is deleted (units and features under the footprint, in the same undo step: Ctrl+Z brings it back);
-  - **off** places nothing on an occupied spot (a blueprint is placed only partly).
-  - Generate always looks for another free spot of the area instead (so you may get fewer units in a crowded area).
-- **Features** (trees, rocks, crystals, wrecks) are placed like units; Del deletes the one under the mouse. The tab **Crystals** holds the crystals of Reclaim the Fame (small, medium, large, in many colors).
-- Air units appear in the air when placed and loaded (when loading with the saved height, otherwise cruise height) and stay in flight mode. Air units that stood on the ground when saving are loaded landed.
-- Nuclear silos and other units that stockpile missiles start **loaded** (10 missiles) when you place or generate them. The missiles are not saved in the level: a scenario built from it starts with empty silos.
-- Resurrected units are set to hold position.
+
+Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
+
+- **Units:** choose faction (Armada, Cortex, Legion, Scavengers, Raptors), group and tech (T1 to T3), click a picture, left click on the map. Right click ends. **[** and **]** rotate.
+  - Hovering shows a 3D view and the values: cost, **Eco time** (how long your income needs to pay for it), health, damage per second, range, sight, speed, radar.
+  - A faction, group or tech button with nothing behind it is slightly red.
+- **Features:** trees, rocks, wrecks and the crystals of Reclaim the Fame, placed like units.
+- **Search:** one field for recent items, units, features and blueprints. All words must match. Enter = done, Esc or X = clear.
+- **Crosshair button** (left of the search): click it, then a unit on the map: the list jumps to that unit.
+- **Painting:** hold the left button and move.
+- **Rows and rectangles:** **Shift + drag** = row, **Shift + Alt + drag** = rectangle. **Shift + wheel** changes the spacing.
+- **W (write):** on = what is in the way is deleted (Ctrl+Z brings it back); off = nothing is placed on an occupied spot.
+- **Range circles** before placing: red = weapon range, blue = line of sight.
+
+Good to know:
+
+- Air units appear in the air and keep flying.
+- Nuclear silos start loaded (10 missiles) in the editor; a scenario built from the level starts with empty silos.
+- **Scavengers and Raptors:** nobody steers them in a level; they stand until a player gives them orders. They need start menu **key 7** (about 10 s more loading).
+
+**Restrictions (red X): what the player may not build**
+
+- A small **X** on a unit picture restricts that unit (click again to allow it). The editor itself can always place everything.
+- The X on a faction, group or tech button restricts all units behind it.
+- The **R** button next to the search lists the restricted units; it is red when there is at least one.
+- The list is saved with the level and works in every game mode and for every team.
+- The Tower Defense page shows the same list.
 
 ## Blueprints
-- Select units and press **Create** (P → Blueprints): the layout is saved in the folder `blueprints`.
-  - The **Blueprints** tab shows tiles with preview pictures (unit positions in team colors, air units with a white border), the name, the number of units and the total cost (`M` metal, `E` energy).
-  - Click a tile, then left click on the map places it centered at the mouse pointer (outline preview; with the saved teams, or for the team chosen on the left), right click ends, the mouse wheel scrolls.
-  - The list comes from the folder `blueprints` (and from `_index.txt` as a fallback).
-- **Sorting:** drag a tile with the mouse and drop it elsewhere (order in `blueprints\_order.txt`; off while a search is active).
-- **Deleting:** small x at the top right of the tile, click twice. The file moves to `blueprints\_trash` and can be restored by hand.
-- **Renaming:** double click on the name, type, Enter. Esc cancels.
-- The blueprint menu is available right at the start of the editor. You save the whole level with Ctrl+S (blueprints only contain the units you selected).
+
+| Action | How |
+|---|---|
+| Create | select units, **P** > Blueprints > **Create** |
+| Place | click a tile, left click on the map; right click ends |
+| Choose with the wheel | **Ctrl + mouse wheel** on the map: next / previous blueprint |
+| Sort | drag a tile and drop it elsewhere |
+| Rename | double click on the name, type, Enter |
+| Delete | small x on the tile, click twice (the file goes to `blueprints\_trash`) |
+
+- A tile shows a preview, the name, the number of units and the total cost.
+- Blueprints are files in the folder `blueprints`.
 
 ## Generate (button G)
-The Generate page has the sub-tabs **Units** and **Maze**. For the team chosen on the left (N = neutral):
-- **Units:** choose faction, type (units, buildings, turrets, air, ships; several possible), tech T1-T3 and the count (input field, 1 to 2000), press **Rectangle** or **Circle** (circle: drag from the center outwards) and drag the area on the map;
-  - random units appear in it (there is no separate Generate button: the shape button starts it, the same button again or a right click ends it).
-  - Ctrl+Z undoes it.
-- **Maze:** choose faction, material (dragon teeth or walls) and the **corridor width** (32, 64, 128, 160 or 192 Elmo; the same widths as for Tower Defense corridors), then press **Rectangle** or **Circle** and drag: a random maze appears in it, with the entrance top left and the exit bottom right.
-  - The key **M** cycles the maze mode (dragon teeth, walls, off).
 
-## Selecting, editing and deleting
-- **Selecting:** the editor switches on the cheat mode and the god mode for all teams at the start (`/godmode 3`), so you select units of every team like your own: click or drag a rectangle, enemies too.
-  - The command menu of the game appears for them and their orders work (move, attack, patrol, stop, build ...; the orders of units of other teams are forwarded to the gadget).
-  - Delete, blow up, assign to a team, copy and blueprints use the selection.
-- **Del** deletes the selection, without a selection the unit, wreck or feature under the mouse pointer.
-  - **Ctrl+B** blows up (wreck stays).
-  - The buttons **DL**, **DR** and **DC** delete everything along a dragged line (a corridor 80 Elmo wide), in a dragged rectangle (key **D**) or in a dragged circle: units, wrecks, features.
-- **Copy and paste:** **Ctrl+C** copies the selected units/buildings (without a selection the unit at the mouse pointer), **Ctrl+X** cuts, **Ctrl+V** pastes them centered at the mouse pointer, with team, rotation and height, any number of times; the clipboard lasts until you quit the editor.
-- **Moving:** **Alt + drag** on a selected unit moves the selection, **Alt + drag** on a feature (tree, rock, wreck) moves that feature; the **arrow keys** move it by one grid step (up = north).
-  - **[** and **]** rotate a stamp; **L / R / S** rotate and mirror a selection.
-- **Choose a blueprint with the wheel:** with the Blueprints tab open hold **Ctrl** and turn the mouse wheel on the map: the next / previous blueprint is armed (round at the ends; a search text limits the list).
-  - Alt + wheel is not used for this.
-- **Undo / redo:** **Ctrl+Z** / **Ctrl+Y** for placing, deleting, moving, rotating, generating, team changes, features and Tower Defense route changes.
-- **Indestructible buildings:** **FX / FD** (drag a rectangle) mark buildings as indestructible or destructible again (only buildings; in every scenario, whatever the game mode); the flag is saved in levels, blueprints and the clipboard.
-- **Range circles:** a unit or blueprint at the mouse pointer (before placing) shows a red circle for the weapon range and a blue one for the line of sight; for a blueprint the circles of all its units.
-- **Crosshair button** left of the search field (Place menu): click it, a crosshair hangs at the mouse pointer; a left click on a unit (or on its wreck) on the map makes the Units list jump to the faction, group and tech of that unit, scroll to it and let its frame flash green.
-  - Right click or Esc ends it.
-- **R button** right of the X at the search field: opens a list of the units that are restricted for the player (restrictions) next to the menu.
-  - A click on a unit in it jumps to it in the Units list, like the crosshair button.
-  - The button is red as soon as at least one unit is restricted.
-- The shortcuts only work in the Level Editor; in the chat input and in the search fields of the menu they do not apply.
+For the team chosen on the left.
+
+- **Units:** choose faction, type (units, buildings, turrets, air, ships), tech and count (1 to 2000), press **Rectangle** or **Circle** and drag the area. Random units appear in it.
+- **Maze:** choose faction, material (dragon teeth or walls) and corridor width, press **Rectangle** or **Circle** and drag. Entrance top left, exit bottom right. Key **M** cycles the maze mode.
+- The same button again or a right click ends it. Ctrl+Z undoes it.
+
+## Selecting, editing, deleting
+
+The editor switches on cheat and god mode, so you select and command units of **every** team like your own.
+
+| Action | Keys |
+|---|---|
+| Select | click or drag a rectangle |
+| Delete | **Del** (selection, or what is under the mouse); **DL / DR / DC** along a line, in a rectangle (key **D**), in a circle |
+| Blow up (a wreck stays) | **Ctrl+B** |
+| Copy / cut / paste | **Ctrl+C** / **Ctrl+X** / **Ctrl+V** (at the mouse, any number of times) |
+| Move | **Alt + drag**, or the arrow keys (one grid step) |
+| Rotate, mirror | **[** / **]** for a stamp, **L / R / S** for a selection |
+| Undo / redo | **Ctrl+Z** / **Ctrl+Y**, for everything |
+| Indestructible buildings | **FX** / **FD**, drag a rectangle |
+
+- The shortcuts do not apply while you type in the chat or in a search field.
 
 ## Levels and settings
-- **Ctrl+S** writes `levels\<name>.lua` (units and features, so also wrecks and trees) under the current name, otherwise as a new `level_001` ...
-  - Besides the units the file has the sections of the pages: `towerdefense`, `capture` (Capture the Flag), `reclaim` (Reclaim the Fame), `restrictions` (what the player may not build) and the scenario info.
-  - Loading takes over only the fields the editor knows; nothing old is kept and saved again (there is no backward compatibility).
-- The button **O** opens the settings (with more than 3 columns the pictures of the menu get smaller; the menu itself keeps the width it has with 3 columns): the **grid** size (1 = free, 4, 8, 16, 32, 64 Elmo), the **unit limit** (500 to 32000; saved in the level file as `unitlimit` and used as `maxunits` by the scenario package; the editor itself always runs with 32000), columns and rows for the blueprint view and for the units view (default 3 columns and 4 rows each).
-  - The values are stored in `LuaUI\Config\LevelEditorUI.lua` in the game folder.
-  - Two buttons at the bottom of the page write data for a website that compares the units of the factions (a separate project, not part of this repository): **Export Units Info** writes `units-<game version>.json` (all units of the Place menu with their values; the version of the game is in the file name and in the file, so you can export every game version and compare them on the website) and **Export Comparison** writes `comparison.json` (the comparison id of every unit: the units with the same id are shown side by side; a first proposal that you correct by hand, a later export only adds new units and keeps your ids).
-  - Both files go to the folder `LevelEditor\Other` in the data folder of the game.
-  - The levels have a page of their own (button **S**, see below).
-  - `/led_clear` only clears up.
 
-## Files
-- `scripts\lvl_level_editor.lua` - widget (controls, menu)
-- `scripts\led_place.lua`, `scripts\led_level.lua` - parts of the widget: placing (room for what is placed, blueprints, copy / paste) and the level file (saving, loading)
-- `scripts\unit_level_editor.lua` - gadget (places, deletes, blows up, build mode)
-- `scripts\td_waves.lua` - gadget of the Tower Defense waves and the restriction to towers (also used by Tower Defense scenarios)
-- `scripts\unit_restrictions.lua`, `scripts\led_restrictions.lua` - gadget and list of the restrictions of the level (what the player may not build)
-- `scripts\ctf_game.lua` - gadget of Capture the Flag (flags, collection points, income; also used by scenarios)
-- `scripts\led_td.lua` - the Tower Defense page of the widget (loaded by the widget)
-- `scripts\led_ctf.lua` - the Capture the Flag page of the widget (loaded by the widget)
-- `scripts\rtf_game.lua` - gadget of Reclaim the Fame (crystals, points, score limit; also used by scenarios)
-- `scripts\led_rtf.lua` - the Reclaim the Fame page of the widget (loaded by the widget)
-- `scripts\evo_game.lua` - gadget of Evolution, a game mode of LAN Play on any map (one unit per team that evolves with its kills; [manual](game-modes/evolution.md))
-- `scripts\led_teams.lua` - the Teams page of the widget (button T: human or AI, alliance, start resources; loaded by the widget)
-- `scripts\unit_indestructible.lua` - gadget of the buildings marked with FX (also used by scenarios)
-- `scripts\lan_latejoin.lua`, `scripts\lan_pve_hold.lua` - gadgets of LAN Play (late join; Scavengers / Raptors played by humans)
-- `lan_lobby\raptor_brood_defs.lua` - the Raptor Brood Chamber of LAN Play (game option tweakdefs: the Raptor healers can build a chamber that grows raptors)
-- `scripts\led_arena.lua` - the Arena page of the widget (loaded by the widget); manual: `sandbox\arena.md`
-- `scripts\led_save.lua` - the Save page of the widget (button S: the list of the saved levels; loaded by the widget)
-- `scripts\led_gen.lua` - the Generate page of the widget (button G: state and layout; loaded by the widget)
-- `scripts\led_export.lua` - the two export buttons of the settings page (O): units-<game version>.json and comparison.json for a website that compares units (loaded by the widget)
-- `scripts\led_scenario.lua` - the Scenario info page of the widget (button I: title, briefing, win condition ...; loaded by the widget)
-- `scripts\led_gadgets.lua` - what the gadgets share (editor mode, rules, messages to a team, the messages of the widget, the game options of a scenario)
-- `scripts\pve_supply_drops_stub.lua` - replaces the lootbox gadget of the game inside the extra game (otherwise enemies next to the flags and collection points would capture them)
-- `scripts\help_texts.lua` - texts of the help board (?) and of `/led_help`
-- `scripts\choose_map.ps1` - start menu and map selection (all maps, download after the selection), writes `editor_script_installed.txt`;
-  - the last chosen map (`Last Map.txt`) and the cached map list (`Online Maps Cache.json`) are kept in `%LOCALAPPDATA%\BAR-Level-Editor`;
-  - `scripts\map_preview.ps1` draws the picture of the highlighted map next to the list with its size, number of players and terrain below it (and gives the data to the filters) (thumbnails of the game's lobby package, read directly, nothing is stored)
-- `install_editor.bat` / `scripts\install_editor.ps1` - setup (`-Quick`: only the extra game, used by the start script)
-- `scripts\editor_manifest.ps1` - the one list of the files the setup installs and where they go; `scripts\ensure_installed.ps1` - called by `start_level_editor.bat`: fingerprint of these files and the game version, runs the setup when it changed
-- `uninstall_editor.bat` / `scripts\uninstall_editor.ps1` - removal (levels and blueprints stay)
-- `start_level_editor.bat` - start (created by the setup)
-- `scripts\check_links.ps1` - called by `start_level_editor.bat` before every start: points the three junctions to the `levels`, `blueprints` and `scenario\scenarios` folders again if the project folder was moved
-- `scripts\` - all PowerShell and Lua files of the editor (the main folder only has `install_editor.bat`, `uninstall_editor.bat`, this manual and what the setup creates: `start_level_editor.bat` and `editor_script_installed.txt`)
-- `scenario\` - scenario builder (start menu key 3, see `scenario\README.md`)
-- `levels\` - saved levels; `blueprints\` - saved layouts
-- `..\shared\` - shared code of the Level Editor and the BluePrinter (blueprint view, units menu, settings, 3D preview, rules); the folder must lie next to `LevelEditor`, `install_editor.bat` packs the files into the extra game.
+- **Ctrl+S** saves the level to `levels\<name>.lua`: units, features, the page of the game mode, restrictions, teams and the scenario info.
+- **S** opens the list of saved levels (save, load, sort).
+- **O** opens the settings:
+  - **Grid:** 1 (free), 4, 8, 16, 32 or 64 Elmo.
+  - **Unit limit** of the level: 500 to 32,000 (used by the scenario).
+  - Columns and rows of the unit and blueprint views.
+  - **Export Units Info** and **Export Comparison:** data files for a website that compares units (a separate project).
+- **Help:** the **?** board. Chat commands for diagnosis: `/led_help`, `/led_clear` (clears the map).
 
 ## Game modes
 
-- A level can be one of three game modes; they exclude each other (ticking one switches the others off).
-- Each has a page of the editor (buttons **TD**, **CF**, **RF** in the button column at the right), a test run (**Start** / **Stop**), and becomes a scenario with everything on its page.
-- All the settings are on the page of the mode:
-- **Tower Defense** (button **TD**): waves of enemies walk a route to a goal, the player builds towers next to it. [Read more](game-modes/tower-defense.md)
-- **Capture the Flag** (button **CF**): flags are carried to the collection point of a team and earn metal; for human against human. [Read more](game-modes/capture-the-flag.md)
-- **Reclaim the Fame** (button **RF**): crystals pay points to the construction units that reclaim them; the first team at the score limit wins; for human against human. [Read more](game-modes/reclaim-the-fame.md)
+A level can be one of three modes (ticking one switches the others off). Each has a page, a test run (**Start** / **Stop**) and becomes a scenario.
 
-## Making a scenario from it
+| Button | Mode | Idea |
+|---|---|---|
+| **TD** | [Tower Defense](game-modes/tower-defense.md) | waves of enemies walk a route to a goal; the player builds towers next to it |
+| **CF** | [Capture the Flag](game-modes/capture-the-flag.md) | flags are carried to a team's collection point and earn metal |
+| **RF** | [Reclaim the Fame](game-modes/reclaim-the-fame.md) | crystals pay points when reclaimed; first team at the score limit wins |
 
-- In the game itself: the button **I** in the button column at the far right next to the menu opens the scenario info: title, author, summary, briefing (Shift+Enter = new line), win condition, grace period and ID.
-- Click text fields and type (Enter done, Esc cancel), the other fields change with every click.
-- The info is written when the level is saved; there is no save button on this page (Ctrl+S saves).
-- The scenario builder does the rest (see below).
-- A level with one of the three game modes (Tower Defense, Capture the Flag, Reclaim the Fame) becomes that kind of scenario; with restrictions it also carries them.
+## Making a scenario
 
-- The button **T** (between I and ?) is the table of the **teams** (the editor game has ten, 0 to 9): per team **Human** or **AI** (a click switches), the AI (a click opens the list: NullAI, BARb, CircuitAI, CircuitAI easy, SimpleAI, SimpleDefenderAI, SimpleConstructorAI, Scavengers, Raptors), the **alliance** (a click opens ten colors; teams with the same color are allies, all others are enemies) and the start metal and energy.
-- The alliance is also chosen with a **right click on a team button** at the left of the menu: the button gets a frame in the color of the alliance.
-- Everything is saved with the level (Save).
-- The AI takes effect in the scenario package (and the AI of team 1 at the next start of the editor); a running game cannot change an AI.
+1. **I** (scenario info): title, author, summary, briefing (Shift+Enter = new line), win condition, grace period, ID.
+2. **T** (teams): per team Human or AI, which AI, the alliance, start metal and energy.
+3. **Ctrl+S** saves everything with the level.
+4. Start menu **key 3**: choose the level; the builder asks only for title and name and writes folder and ZIP into `scenario\scenarios`.
+
 - Only teams with units are part of a scenario.
 - In Tower Defense every AI team is an enemy and the first AI team spawns the waves.
+- Details: [Scenario builder](scenario/README.md).
 
-- In the start menu **key 3** (create a scenario package from a level): choose a level;
-  - the script lists the values stored in the level and asks only for the title (Enter keeps it) and the name (ID) of the scenario, then builds a scenario that others can play with the official BAR (folder and zip in `scenario\scenarios`; an existing scenario of that name is only overwritten after a question).
-- The info (title, briefing, win condition, grace period, ID; human or AI, alliances and start resources come from the page T) is stored in the level and changed in the editor with the I button.
-- Details in `scenario\README.md`.
+## LAN Play
 
-## LAN Play (play in the same network, with the lobby of the game)
+Installed with the editor: an entry **LAN Play** in the main menu of the game for games in your network. See [LAN Play](../docs/lan-play.md).
 
-- **LAN Play** is an entry in the main menu of the game, right below Multiplayer.
-- It gives you the multiplayer battle room of the game (map, options, AIs, teams, chat) for a game with computers in the same network, without the lobby server.
-- The normal Multiplayer is not changed.
-- It is a widget for the lobby (`lan_lobby\lan_lobby.lua`, installed by `install_editor.bat`); it only needs TCP port 8453 (lobby) and 8452 (the game) between the computers (Windows may ask once for the firewall).
-- Only computers of the local network (or of a VPN such as Tailscale or Hamachi) can join.
-- **Name:** the page shows your name (the account name of the game; you need not be logged in); change it in the field if you like.
-- **Host:** open **LAN Play**, press **Host a LAN game**. You are in the battle room. Choose the map and the options as in the normal multiplayer room, then press Start. Others can join while you are in the room.
-- **Join:** open **LAN Play**: the page looks for games in the network by itself every few seconds (a /24 network, e.g. 192.168.1.x; a turning bar under **Find LAN games** shows the search, "No LAN game found (retry in 3 seconds)" when there is none); click a game to join it.
-  - Or type the address and press Join.
-  - Whoever hosts does not look for games (so you never find yourself).
-- **Leave:** leaving the battle room (or **Leave LAN play**, a button that only shows while you host or play a LAN game) takes you back to the LAN Play page.
-  - The lobby logs in to the normal server again only if you were logged in there before; otherwise no login window opens.
-  - **Back** only closes the page.
-  - After a game you come back to the LAN Play page.
-- **The button LAN Play:** in the title row of the room, left of "Leave Lobby", a green button **LAN Play** opens a small menu with the buttons of LAN Play: **Custom Scenario** (host), **Copilot** and **Evolution** (the game mode, see [Evolution](game-modes/evolution.md)); the room itself is the lobby's.
-- **Custom Scenario:** the host has a button **Custom Scenario** in the menu **LAN Play**.
-  - It lists the scenarios you built (`scenario\scenarios`) and the entry "Official map (no scenario)".
-  - A scenario sets its map and its teams (the teams cannot be changed while it is chosen), and every player who joins plays in the team of the scenario's player (cooperative against the AI of the scenario).
-  - Choosing an official map brings the free teams back.
-  - The Level Editor setup builds the game "Level Editor Scenarios" (the gadgets of the scenarios, with a version made of its files) on every computer; a joiner who has not got the host's version is asked and gets it from the host before the start, as a file of its own (their own version stays).
-- **Copilot:** the button **Copilot** in the menu **LAN Play** (a joiner sees the list too).
-  - Inside every team (ally team) each human has a number 1, 2, 3 ...
-  - (by default everybody their own).
-  - A click on a player gives them the next number of their team; **humans with the same number are Copilots and play one player together** (one team of the game: all give orders to its units, one pool of resources, e.g. one fights at the front, one builds the base).
-  - The room says it in the chat ("PlayerB is player 1 of their team now and is Copilot with PlayerA."), the window shows "+ Copilot with ..." and the start announces the Copilots.
-  - In such a game the start positions of the map are used (the game of a shared team is started by the little widget `shared_start.lua` as soon as everybody has loaded, so nobody could place a start position first).
-- **Scavengers / Raptors played by humans:** add a Scavengers or Raptors computer in the room and put a human player into its team: the computer stops commanding its units (the gadget `lan_pve_hold.lua` of the extra game drops its orders), the humans of the team command them; the host's chat shows a message when this starts and when it ends.
-  - A computer alone in its team plays as in the official game.
-- **Raptors against Scavengers:** a Raptors computer in one team and a Scavengers computer in the other, each with a human player in its team.
-  - The game itself switches both spawners off when both AIs are present; the extra game therefore carries changed copies of the spawner gadgets (made from the installed game when it is built).
-- **Rejoin and late join:** a player whose game ended comes back with the same name, presses Rejoin and catches up (same team).
-  - With `!latejoin on` in the room chat before the start, new players can join the running game (they get a team and play it together with its players, as in Copilot).
-- **Removing:** `uninstall_editor.bat` removes the widget, the extra game and the junction.
-- Not done yet: humans against humans only for Capture the Flag and Reclaim the Fame scenarios (the others are cooperative against the AI), the scenario's AI is not shown in the room (only in the game).
-  - Details in [specs/lan-play.md](../specs/lan-play.md).
+## For developers
+
+- Which file does what: [specification of the editor](../specs/level-editor.md), [shared code](../specs/shared-code.md).
+- All scripts are in `scripts\`; the list of what the setup installs is `scripts\editor_manifest.ps1`.

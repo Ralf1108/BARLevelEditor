@@ -1,134 +1,104 @@
 # Scenario builder
 
-- Builds a finished scenario from a saved level of the Level Editor that anyone can play with the **official Beyond All Reason**.
-- Nothing in the official game is changed: the starter builds a small extra game "Level Editor Scenarios" next to it (the gadgets of the game modes, the restrictions and the briefing, see below).
+[Start page](../../README.md) · [Level Editor](../README.md) · [Specification](../../specs/scenario-builder.md)
 
-## Using it
-1. Save the level in the Level Editor (Ctrl+S). It then lies in `..\levels`.
-2. In the start menu of the Level Editor press key 3 and choose the level (at the end it lists the values stored in the level, asks for the title (Enter keeps it) and then shows the target name = the ID of the scenario (a new title proposes a new name): Enter takes it, another name changes it and is stored in the level; an existing scenario of that name is only overwritten after a question; then it builds without more questions from the info in the level; or by hand `powershell -File scenario_builder.ps1`, which asks everything in the window, Enter takes the default):
-   - which level (list with numbers; `_last` is the automatically backed up state)
-   - title, author, summary, briefing (several lines, an empty line ends)
-   - (human or AI per team, alliances and start resources are not asked: they come from the page **T** of the editor, saved in the level: a team without AI is a human, teams of the same alliance are allies; only teams with units take part, and in Tower Defense the first AI team)
-   - win condition (commander / all units / no end), **grace period** (as minutes:seconds, e.g. 2:30, or minutes like 2.5; 0 = none), ID
-   - All answers are then stored **in the level itself** (block `scenario` at the start of the level file).
-   - On the next run with the same level they are the defaults, Enter takes them.
-   - The Level Editor leaves the block unchanged when saving (it reads it before overwriting and writes it back; with "save under" a new name it takes the block of the level loaded last).
-   - The ID belongs to the level and stays the same; a new run replaces `scenarios\<id>\`.
-3. The result is in `scenarios\<id>\` and as `scenarios\<id>.zip`. You pass the zip file on.
+Turns a saved level of the Level Editor into a scenario that anyone can play with the **official Beyond All Reason**.
 
-Change the info: in the Level Editor with the I button (it is stored in the level); then key 3 again (or key 5 for a package built before).
+- The result is a folder and a ZIP that you pass on.
+- Nothing in the official game is changed: the starter builds a small extra game "Level Editor Scenarios" next to it.
 
-Non-interactive (tests): `powershell -File scenario_builder.ps1 -Level name -Auto`.
+## Build a scenario
 
-## Playing (for the recipient)
+1. Save the level in the Level Editor (**Ctrl+S**).
+2. Start menu of the Level Editor, **key 3**: choose the level.
+3. The builder shows the values stored in the level and asks for the title and the name (ID). Enter keeps them.
+4. The result: `scenarios\<id>\` and `scenarios\<id>.zip`.
 
-- Unpack the zip, double-click `Start Scenario.bat`.
-- BAR must be installed and started once.
-- The script finds BAR (otherwise it asks for the folder), determines the installed game version, asks before downloading a missing map (y/n; with "n" it aborts) and then starts the game.
-- The folder may lie anywhere.
+Where the values come from:
+
+| Value | Set where |
+|---|---|
+| Title, author, summary, briefing, win condition, grace period, ID | button **I** in the editor |
+| Human or AI per team, which AI, alliances, start resources | button **T** in the editor |
+| Game mode and its settings | pages **TD**, **CF**, **RF** |
+| Restricted units | the X marks of the Place menu |
+
+- Everything is stored in the level file, so the next build needs no answers.
+- Only teams with units take part.
+- An existing scenario of the same name is overwritten only after a question.
+- **Change something later:** change it in the editor, save, then key 3 again, or **key 5** to rebuild a package without questions.
+- By hand: `powershell -File scenario_builder.ps1` (asks everything); for tests `-Level name -Auto`.
+
+## Play it (for the recipient)
+
+1. Install BAR and start it once.
+2. Unpack the ZIP anywhere.
+3. Double-click `Start Scenario.bat`.
+
+- The script finds BAR (or asks for the folder) and asks before it downloads a missing map.
+- Without internet the map must be installed already.
 
 ## Several players
 
-- Every package has `Host Game.bat`, `Join Game.bat` and, in the Level Editor, the start menu (key 4) offers **Single player**, **Host**, **Join** and **Split screen** (details: [specs/scenario-multiplayer.md](../../specs/scenario-multiplayer.md)).
-- Tested so far only on one computer.
-- **Lobby (Host / Join):** the host sees a box per team ("Team 0: Armada" ...).
-  - Everybody who joins lands in a team box at once (the team of the last time if it is free, otherwise the first team without a player) and the host moves the players: the selection starts on "Start game" (`Enter` or `F5` starts);
-    - `Tab` / `Shift+Tab` or `Left` / `Right` = next box (the last stop is "Start game"), `Up` / `Down` = player in the box, **`N` = the next player number**, `Enter` = pick the player up (then the arrow keys move them to the neighbouring box, `Enter` drops them, `Esc` puts them back), `F5` or `Enter` on "Start game" = start (at least two players), `Esc` twice = cancel.
-  - **Several humans, one player:** the boxes of one ally team are its players 1, 2, 3 ...
-  - ("player 1 of 2 in its team" is written after the team); everybody gets a player of their own if one is free, and `N` on a human gives them the next number of their ally team.
-  - **Humans with the same number are Copilots and play one player together**: all of them give orders to its units and share its resources; the lobby marks it in the line ("player 1   + Copilot with PlayerB").
-  - The game of such a team does not start by itself (the engine waits for a "ready" that never comes for the second human of a team): the little game widget `shared_start.lua` (part of the extra game "Level Editor Scenarios", like the briefing) sends the start from the host's game as soon as everybody has loaded.
-  - A joiner who goes away is removed, a repeated name is refused.
-  - The joiner only enters the address (the last 10 are offered, the number picks one) and a name (default: the Windows user name, then the last one used); the port is fixed.
-- **Start:** "Start game" makes everybody get ready: every computer builds the extra game and fetches the map if needed and tells the host "ready"; then the host's game starts, and five seconds later the joiners connect with their name.
-  - The game begins 15 seconds after the host has loaded.
-- **Split screen (start menu only):** host and the other players all on this computer, one window each (2 to 8 players, the windows share the screen in 2 x 2, 3 x 2 or 4 x 2 cells, the host top left).
-  - The local players are named by their window (TopLeft, TopRight, BottomLeft, BottomRight, or Top1, Top2, ... with three or four columns), join the same lobby by themselves, and you distribute the teams there.
-- **Remembered per user** (not in the scenario folder, `%LOCALAPPDATA%\BAR-Scenario\`): `Last Joined Addresses.txt` (the last 10 addresses), `Last Player Name.txt` (the name of a joiner), `Last Player Mapping.txt` (who played which team last time; a player who comes again lands in their old team).
-- **Needed:** the same BAR version and the same scenario folder on every computer, in the LAN TCP port 8453 (lobby) and UDP port 8452 (game) in the firewall of the host (Windows asks for `spring.exe` and `powershell`).
-  - Only the same network is meant: the lobby takes connections only from this computer and from the networks of its network cards (a VPN like Tailscale, ZeroTier, Hamachi or WireGuard counts as such a network); a connection from outside is closed at once.
+Every package has `Host Game.bat` and `Join Game.bat`. In the Level Editor, start menu key 4 offers **Single player**, **Host**, **Join** and **Split screen**.
 
-## Capture the Flag scenarios
+**Lobby of the host:** a box per team; everybody who joins lands in a box.
 
-- If Capture the Flag is switched on in the level (page **CF** of the editor, with at least one flag point and one collection point), the package contains its settings (game option `ctfconfig`) and the gadget `ctf_game.lua`;
-  - like every scenario `Start Scenario.bat` builds the small extra game **"Level Editor Scenarios"** (`data\games\LevelEditorScenarios_<version>.sdz`: the gadgets of the scenarios and the briefing, built on the installed BAR; no official file is changed) and starts with it.
-- The computer opponents get the AI set on the page **T** (none of them plays the mode).
-- The win condition is the one of the scenario info (button **I**); the gadget always decides about the flags (the first team that holds the wanted number of flags at the same time wins; 0 = never; income, steal and drop rules as in the editor).
-- The scenario starter starts one human player, so it is mainly for trying a level out; the real game is human against human on the editor's test run or in a game you host yourself (section "Several players").
-- Tower Defense and Capture the Flag exclude each other in the editor; a level file with both on is refused by the script.
+| Key | Action |
+|---|---|
+| `Tab` / `Shift+Tab`, `Left` / `Right` | next box (the last stop is "Start game") |
+| `Up` / `Down` | player in the box |
+| `Enter` on a player | pick the player up, move with the arrow keys, `Enter` drops, `Esc` puts back |
+| `N` | give the player the next player number of their team |
+| `F5`, or `Enter` on "Start game" | start (at least two players) |
+| `Esc` twice | cancel |
 
-## Reclaim the Fame scenarios
+- **Copilot:** humans with the same number in a team play **one** player together: all give orders to its units and share its resources.
+- **Joiner:** enters only the address (the last 10 are offered) and a name.
+- **Start:** every computer gets ready (extra game, map), then the host's game starts and the joiners connect. The game begins 15 seconds after the host has loaded.
+- **Split screen** (start menu only): 2 to 8 players on this computer, one window each; you distribute the teams in the same lobby.
+- **Remembered** per user: the last addresses, your name and who played which team.
+- **Needed:** the same BAR version and the same scenario on every computer; in the firewall of the host TCP port 8453 (lobby) and UDP port 8452 (game).
+- **Same network only:** a VPN like Tailscale, ZeroTier, Hamachi or WireGuard counts; a connection from outside is closed.
+- Tested so far only on one computer. Details: [multiplayer specification](../../specs/scenario-multiplayer.md).
 
-- If Reclaim the Fame is switched on in the level (page **RF** of the editor, with at least one crystal placed), the package contains its settings (game option `rtfconfig`: rate, score limit, factors of the three sizes, visible, which kinds of builder score) and the gadget `rtf_game.lua`; the crystals are normal features of the level and come with it.
-- Like every scenario `Start Scenario.bat` builds the small extra game **"Level Editor Scenarios"** (`data\games\LevelEditorScenarios_<version>.sdz`: the gadgets of the scenarios and the briefing, built on the installed BAR; no official file is changed) and starts with it.
-- The computer opponents get the AI set on the page **T** (none of them plays the mode).
-- The win condition is the one of the scenario info (button **I**); the gadget always decides about the points (the first team that reaches the score limit by reclaiming crystals wins; 0 = never).
-- The scenario starter starts one human player, so it is mainly for trying a level out; the real game is human against human on the editor's test run or in a game you host yourself (section "Several players").
-- Reclaim the Fame, Tower Defense and Capture the Flag exclude each other in the editor; a level file with two of them on is refused by the script.
-- A level with Reclaim the Fame on but without crystals is built without it (a note says so).
+## What a game mode brings into the scenario
 
-## Tower Defense scenarios
+| Mode | Needed in the level | In the package | Who wins |
+|---|---|---|---|
+| **Tower Defense** | spawn point, goal, at least one wave | everything of the page TD: waves, route, enemies allowed through, restriction to towers, fog of war, indestructible walls | all waves beaten = won; too many through = lost |
+| **Capture the Flag** | at least one flag point and one collection point | the settings of the page CF | the first team that holds the wanted number of flags (0 = never) |
+| **Reclaim the Fame** | at least one crystal | the settings of the page RF; the crystals are features of the level | the first team at the score limit (0 = never) |
 
-- If Tower Defense is switched on in the level (page **TD** of the editor, with spawn point, goal and at least one wave), the package contains **everything of that page**: the waves, the route (spawn point, waypoints, goal), the allowed number of enemies through, the restricted units (the restrictions of the level), the restriction to towers (and economy), fog of war and the indestructible walls.
-- The enemy waves come from a gadget, which the official game cannot load; therefore `Start Scenario.bat` builds the small extra game **"Level Editor Scenarios"** next to the official game (`data\games\LevelEditorScenarios_<version>.sdz`: the gadgets of the scenarios and the briefing, built on the installed BAR; no official file is changed) and starts with it.
-- Notes: the enemy team gets no AI of its own (NullAI) and the win condition "commanders" runs as "no end" (the start commander is removed, the waves decide: all beaten = won, too many through = lost);
-  - there is no grace period (the no-rush rules of the game keep every unit in its start area while it runs, so the enemy waves could not leave the spawn point; the saved value stays in the level);
-  - the start commander of the player is removed when the waves start, so the level needs builders;
-  - a level with only one team gets an extra enemy team for the waves.
+- The modes exclude each other: a level file with two of them on is refused.
+- **Capture the Flag and Reclaim the Fame** are made for human against human: the computer opponents get the AI of page T, but none of them plays the mode. The single player start is for trying the level out.
+- **Tower Defense notes:**
+  - the enemy team gets no AI; the waves come from the game mode
+  - the start commander of the player is removed when the waves start, so the level needs builders
+  - there is no grace period
+  - a level with only one team gets an extra enemy team for the waves
+- **Restrictions:** restricted units are greyed out in the build menu of the player and their build orders are refused.
 
-## Restrictions
+## Good to know
 
-- If the level restricts units (the small X marks of the Place menu and the Tower Defense page: single units, whole factions, groups or tech levels as a list of unit names), the package contains them in the game option `restrictions` (base64url of the names) and the gadget `unit_restrictions.lua`.
-- It refuses the build orders of builders and factories and tells the build blocking of BAR, so the player sees the restricted units greyed out in the build menu.
-- Like every scenario it starts with the small extra game "Level Editor Scenarios" (built by the starter when it is missing).
-
-## Which scripts run
-
-- The package holds a copy of everything it needs (starter, lobby, gadgets, briefing), so that you can pass it on to people without the Level Editor: they unpack it and double-click `Start Scenario.bat`.
-- **When you start a scenario from the start menu of the Level Editor (key 4) the copies in the package are not used:** the current starter, lobby and gadgets of the editor run, and only `scenario.txt` of the package is read (a scenario built long ago keeps working with the newest scripts; only the file name list of the gadgets decides which ones are needed).
-- The copies in the package are therefore only as old as the day it was built.
+- **Scripts in the package:** it holds a copy of everything it needs, so people without the Level Editor can play it. Started from the start menu of the editor (key 4), the current scripts of the editor run instead: an old scenario never goes out of date.
+- **Grace period:** until it ends no side can leave its start area and each is safe from damage there. The areas are made from where the units of each side stand.
+- **Nuclear silos** start empty in a scenario (the editor loads them only for testing).
+- **Wrecks** can be resurrected by resurrection bots; heaps cannot.
+- **Gaia units** (button G) are enemies to everyone and have no AI.
+- **Builders made with Ctrl+D** in the editor are tools and not part of the level.
+- **Unit limit:** taken from the level (editor settings, default 32,000).
+- **Briefing:** shown at the start and with the button "Mission" (`/briefing` opens it again).
 
 ## What is in the package
+
 | File | Content |
 |---|---|
 | `Start Scenario.bat` | double-click start |
-| `Host Game.bat`, `Join Game.bat` | the same starter for several players in the same network (host / join) |
-| `lobby.ps1` | the lobby of the host and of the joiners (TCP port 8453), READY / GO before the game |
-| `player_mapping.ps1` | the dialog "who plays which team" and its memory (used by the starter and by the Split screen entry of the editor) |
-| `bar_common.ps1` | the search of BAR, the engine and the game version (the same file as `shared\bar_common.ps1` of the editor) |
-| `start_scenario.ps1` | finds BAR and the engine, puts the game version and player name into the start script, downloads the map, starts `spring.exe` |
-| `scenario.txt` | start script: teams, allies and enemies, AIs, game options and `scenariooptions` |
-| `shared_start.lua` | game widget that starts a game in which several humans play one team (Copilot) |
-| `scenario_briefing.lua` | game widget with the briefing window (the starter packs it into the extra game "Level Editor Scenarios"; the mission display of the game otherwise only shows "No additional briefing data found") |
+| `Host Game.bat`, `Join Game.bat` | start for several players in the same network |
+| `scenario.txt` | the start script: teams, allies and enemies, AIs, game options, the units |
 | `README.txt` | briefing and instructions |
-| `ctf_game.lua`, `rtf_game.lua`, `evo_game.lua`, `td_waves.lua`, `unit_restrictions.lua`, `unit_indestructible.lua`, `lan_latejoin.lua`, `lan_pve_hold.lua`, `pve_supply_drops_stub.lua`, `bar_rules.lua`, `led_gadgets.lua` | the gadgets of the extra game "Level Editor Scenarios" (in every package; each switches itself on only by the game options of the scenario or of a LAN room): Capture the Flag, Reclaim the Fame, Evolution (LAN Play), the Tower Defense waves and the restriction to towers, the units and tech levels the player cannot build, the indestructible buildings, late join and Scavengers / Raptors played by humans in LAN Play, the stub that keeps the lootbox gadget of the game away, and the code they share |
+| `*.ps1` | starter, lobby and the search of BAR |
+| `*.lua` | the scripts of the extra game: game modes, restrictions, briefing |
 
-## How it works
-
-- The official game knows scenarios: the game option `scenariooptions` contains the unit list (`unitloadout`) and the feature list (`featureloadout`).
-- The game sets them up at the start and then places no start commanders.
-- The option is in the start script as `base64url(zlib(json))`.
-- The level files of the editor have exactly this format.
-- Wrecks (features `<unit>_dead`) get `resurrectas` in the scenario so that resurrection bots can resurrect them (reclaiming always worked).
-  - Heaps (`_heap`) cannot be resurrected.
-  - In the level file it appears as `resurrectas = 'unit'` at the wreck (the editor writes it too).
-  - In the editor itself the gadget sets the resurrection when it creates a wreck, too.
-- Nuclear silos start **empty** in a scenario (the editor loads them for testing, but the missiles are not stored in the level).
-- Resurrected units are set to hold position (by the briefing widget, for the player's own units).
-- Gaia units (button G in the editor) are in the level with `gaia = true`. In the scenario they get the Gaia number of the game (= number of real teams). Gaia is always an enemy to everyone and is not controlled by an AI.
-- The teams of the level are renumbered to 0 to n-1 (player = 0), because the engine needs gapless numbers.
-- Game options that the level needs (Legion, extra pack, release candidates) are taken from the level file into the game options of the scenario.
-- The unit limit (`maxunits`) is taken from the level (`unitlimit`, set in the editor settings, default 32000) so levels with very many units are set up completely.
-- The faction picker is switched off (`disablefactionpicker`), the side of a team follows its units.
-- Briefing and title are in `README.txt` and in `scenariooptions`.
-  - The mission display in the game only shows scenarios from the game archive; that is why `scenario_briefing.lua` shows the briefing at the start and through the "Mission" button (`/briefing` opens it again).
-  - It is a game widget of the extra game, so "Allow user widgets" is not needed.
-
-- **Grace period** (the game's no-rush): the script defines a start area for every side (frame around its units plus 300 units margin, as a fraction of the map; with 30 or more units the outer 3 % of each edge do not count; overlapping or too close areas are separated, the one of the player side stays whole and between the sides a strip of 500 units without area remains), sets `norushtimer` and the start mode "choose in the game" (`startpostype=2`; the start areas only work this way).
-  - Until it ends no side can leave its area and each is safe from damage there.
-  - The choice of the start position that the game then demands is done by the briefing widget itself (middle of the own area, then "ready"); the player does not have to click anything.
-  - The map size is stored in the level (`mapsize`); without it the script stops with a message (save the level again in the editor).
-
-## Limitations
-- The builders that the editor creates with Ctrl+D are not part of the level.
-- Without internet the map must already be installed at the recipient.
+How the package is built and what each script does: [scenario builder specification](../../specs/scenario-builder.md).
