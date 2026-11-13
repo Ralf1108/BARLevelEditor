@@ -127,3 +127,39 @@ do
 	check(R.shotDown(1), "shotDown: a dead unit")
 	ok("bar_rules")
 end
+
+-- ---------------------------------------------------------------- G.fits and G.randomPlace
+do
+	local realSpring = Spring
+	Game = { mapSizeX = 4000, mapSizeZ = 4000 }
+	UnitDefs = { [1] = { name = "tank" }, [2] = { name = "turret", isBuilding = true } }
+	local water = function(x) return x < 1000 end -- (the west quarter of the map is under water)
+	Spring = setmetatable({
+		GetGroundHeight = function(x, z) return water(x) and -20 or 50 end,
+		TestMoveOrder = function(def, x) return x > 1500 end, -- (the west third is too steep)
+		TestBuildOrder = function(def, x) return x > 3000 and 2 or 1 end,
+	}, { __index = realSpring })
+	check(G.fits(1, 2000, 100) and not G.fits(1, 1200, 100) and not G.fits(1, 500, 100), "fits: a unit needs land the move test accepts")
+	check(G.fits(2, 3500, 100) and not G.fits(2, 2000, 100), "fits: a building needs a free place (TestBuildOrder 2)")
+	check(G.fits(2, 2000, 100, false) and not G.fits(2, 500, 100, false), "fits: objects == false lets a place with a unit in the way count, not water")
+	check(G.fits(1, 2000, 100, nil, 100) == false, "fits: minY raises the lowest ground that counts as land")
+	math.randomseed(7)
+	local good = true
+	for _ = 1, 50 do
+		local x, y, z = G.randomPlace(1, { tries = 24, margin = 200 })
+		if not x or x <= 1500 or x < 200 or x > 3800 or z < 200 or z > 3800 or y ~= 50 then good = false end
+	end
+	check(good, "randomPlace: a place inside the margin where the unit fits")
+	local x = G.randomPlace(1, { tries = 24, score = function(px) return px end })
+	local best = 0
+	for _ = 1, 200 do local px = G.randomPlace(1, { tries = 24, score = function(q) return q end }) best = math.max(best, px) end
+	check(x and best > 3000, "randomPlace: the score picks the best of the tries (the farthest east: " .. string.format("%.0f", best) .. ")")
+	Spring.TestMoveOrder = function() return false end
+	check(G.randomPlace(1, { tries = 24 }) == nil, "randomPlace: nothing fits and no relax: nil")
+	local rx, ry = G.randomPlace(1, { tries = 24, relax = true, minY = 2 })
+	check(rx and ry == 50, "randomPlace: relax takes a dry place without the move test")
+	Spring.GetGroundHeight = function() return -20 end
+	check(G.randomPlace(1, { tries = 24, relax = true, minY = 2 }) == nil, "randomPlace: all water: nil")
+	Spring = realSpring
+	ok("fits and randomPlace")
+end

@@ -52,6 +52,19 @@
 - Functions: `techLevel(ud)` (1 to 3; every unit named "Epic ..." or with an epic movement class counts as 3, because BAR files a few of them under T1 / T2), `buildClass(ud)` ("economy", "tower", "radar" or nil, for the Tower Defense build restriction and its list), `decode64(text)` (base64url game options), `hitsGround(ud)` (a weapon that can attack the ground), `headingToFacing(h)`, `factionOf(name)` (arm / cor / leg, scv for the _scav copies, rap for raptors; also `M.factionOf`), `commandCount(id)` (length of the order queue, the engine function changed its name), `dist2(x1, z1, x2, z2)`, `shotDown(id)` (an aircraft that is dead, has no health or is crashing; Renegade widget and gadget).
 - `editor_common.lua` exposes `M.techLevel` and `M.buildClass`.
 
+### `led_gadgets.lua`
+
+- Installed as `luaui/Include/led_gadgets.lua`; every gadget of the extra games loads it (`local G = VFS.Include(...)`), and it loads `bar_rules.lua` as `G.Rules`.
+- Places for units (synced):
+
+| Function | Job | Used by |
+|---|---|---|
+| `G.fits(defID, x, z, objects, minY)` | can a unit of this kind stand and move there (a building: can it be built there); `objects == false`: units and features do not count; `minY` the lowest ground that counts as land (default -5) | Evolution (`fits`: land grid, spawns, beacons), `G.randomPlace` |
+| `G.randomPlace(defID, o)` | the best of `o.tries` random places (24) inside `o.margin` (200) where the unit fits, by `o.score(x, z)` (default: the first); `o.relax`: a second pass that only wants dry ground (a ship on land, a turret); returns `x, y, z` or nil | Renegade (`place`: start of the bots, respawn) |
+
+- Other functions: messages and texts (`G.sayer`, `G.split`, `G.fields`, `G.teamMessenger`, `G.handleMessage`), alliances (`G.allyOf`, `G.teamsOfAlliance`, `G.allianceList`, `G.allianceName`, `G.wonBy`), scores (`G.publishScores`, `G.scoreLine`, `G.drawScoreLine`, `G.drawScreenPost`, `G.stopper`), game options (`G.option`), the heal effect (`G.healAdd`, `G.healDraw`) and the wreck reclaim (`G.reclaimFeatures`).
+- Mock test: `LevelEditor/test-data/tools/mock_gadgets.lua` (`fits` and `randomPlace` against a fake map with water and steep ground).
+
 ## 3. Scaling and dimensions (`M.rescale`, `M.m`, `M.S`)
 
 - Base dimensions (at `ui_scale = 1` and 4K height 2160): `TILE = 190`, `LABEL = 138`, `PAD = 8`, `UCELL = 284`, `UICON = 270`, `UPAD = 7`, `HB = 58`, `XSIZE = 52`.

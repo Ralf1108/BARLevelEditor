@@ -299,6 +299,49 @@ function G.option(name)
 	return nil
 end
 
+-- Can a unit of this kind stand and move at x, z (land, not too steep)? A building: can it be built there (TestBuildOrder). Without TestMoveOrder: not under water.
+-- objects == false: features and units do not count; minY: the lowest ground height that counts as land (default -5)
+function G.fits(defID, x, z, objects, minY)
+	local y = Spring.GetGroundHeight(x, z)
+	local low = minY or -5
+	local ud = UnitDefs[defID]
+	if ud and ud.isBuilding then
+		-- 2 = free; with objects == false also places with a unit or feature in the way
+		local r = Spring.TestBuildOrder(defID, x, y, z, 0)
+		return y > low and (r == 2 or (objects == false and r ~= 0))
+	end
+	if Spring.TestMoveOrder then
+		local ok, res = pcall(Spring.TestMoveOrder, defID, x, y, z, 0, 0, 0, true, objects ~= false, true)
+		if ok then
+			return res and y > low
+		end
+	end
+	return y > 0
+end
+
+-- A random place for a unit of this kind on the map: of o.tries (default 24) random places at least o.margin (default 200) from the edge where G.fits says yes (o.minY: the
+-- lowest ground height), the one with the highest o.score(x, z) (default: the first one). o.relax: when none fits, a second pass of the same tries that only wants dry ground
+-- (a ship on land, a turret). Returns x, y, z or nil.
+function G.randomPlace(defID, o)
+	o = o or {}
+	local tries, margin, minY = o.tries or 24, o.margin or 200, o.minY or -5
+	local bestX, bestZ, bestScore
+	for pass = 1, (o.relax and 2 or 1) do
+		for _ = 1, tries do
+			local x = margin + math.random() * (Game.mapSizeX - 2 * margin)
+			local z = margin + math.random() * (Game.mapSizeZ - 2 * margin)
+			local y = Spring.GetGroundHeight(x, z)
+			if y > minY and (pass == 2 or G.fits(defID, x, z, false, minY)) then
+				local score = o.score and o.score(x, z) or 0
+				if not bestScore or score > bestScore then bestX, bestZ, bestScore = x, z, score end
+			end
+		end
+		if bestX then break end
+	end
+	if not bestX then return nil end
+	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
+end
+
 -- The heal effect (unsynced, for the gadgets that heal a unit): green plus signs rise round the unit and a green "+N" climbs over it. The synced part sends each heal with
 -- SendToUnsynced(<name>, unit, amount); the unsynced part calls G.healAdd(unit, amount) for it and G.healDraw(vsy) from gadget:DrawScreen.
 local HEAL_LIFE, HEAL_MAX, HEAL_JOIN = 1.6, 40, 1.3 -- (heals of the same unit within HEAL_JOIN seconds are one number)

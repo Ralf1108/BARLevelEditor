@@ -989,24 +989,13 @@ local function nearestDist(x, z, list)
 	return best
 end
 
+-- A place for a unit of this kind far from the units of the list (or, with wanted, at about that distance): of 24 random places where it can stand the best one (G.randomPlace;
+-- the second pass only wants dry ground: a ship on land, a turret)
 local function place(defName, list, wanted)
-	local defID = UnitDefNames[defName].id
-	local bestX, bestZ, bestScore
-	for pass = 1, 2 do -- the second pass without the test of the movement class (a ship on land, a turret)
-		for _ = 1, 24 do
-			local x = 200 + math.random() * (Game.mapSizeX - 400)
-			local z = 200 + math.random() * (Game.mapSizeZ - 400)
-			local y = Spring.GetGroundHeight(x, z)
-			if y > 2 and (pass == 2 or Spring.TestMoveOrder(defID, x, y, z, 0, 0, 0, true, false, true)) then
-				local d = nearestDist(x, z, list)
-				local score = wanted and -math.abs(d - wanted) or d
-				if not bestScore or score > bestScore then bestX, bestZ, bestScore = x, z, score end
-			end
-		end
-		if bestX then break end
-	end
-	if not bestX then return nil end
-	return bestX, Spring.GetGroundHeight(bestX, bestZ), bestZ
+	return G.randomPlace(UnitDefNames[defName].id, { tries = 24, margin = 200, minY = 2, relax = true, score = function(x, z)
+		local d = nearestDist(x, z, list)
+		return wanted and -math.abs(d - wanted) or d
+	end })
 end
 
 local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)

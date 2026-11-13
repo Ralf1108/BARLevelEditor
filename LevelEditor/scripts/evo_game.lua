@@ -334,23 +334,8 @@ local function publish()
 	end
 end
 
--- Can a unit of this kind stand and move at x, z (land, not too steep)? Without TestMoveOrder: not under water. objects = false: features and units do not count
-local function fits(defID, x, z, objects)
-	local y = Spring.GetGroundHeight(x, z)
-	local ud = UnitDefs[defID]
-	if ud and ud.isBuilding then
-		-- a building (tower, radar): where it can be built (2 = free; with objects == false also places with a unit or feature in the way)
-		local r = Spring.TestBuildOrder(defID, x, y, z, 0)
-		return y > -5 and (r == 2 or (objects == false and r ~= 0))
-	end
-	if Spring.TestMoveOrder then
-		local ok, res = pcall(Spring.TestMoveOrder, defID, x, y, z, 0, 0, 0, true, objects ~= false, true)
-		if ok then
-			return res and y > -5
-		end
-	end
-	return y > 0
-end
+-- Can a unit of this kind stand and move at x, z (land, not too steep)? objects = false: features and units do not count (G.fits of led_gadgets.lua)
+local fits = G.fits
 
 -- The land grid: every cell of CELL x CELL Elmo where a heavy tank can drive (the ladders' most demanding units on slopes), and of those the connected piece
 -- (8 neighbours) that holds the most commanders (on a tie the bigger one). Every unit of the game spawns there: nobody is cut off by water or cliffs.
