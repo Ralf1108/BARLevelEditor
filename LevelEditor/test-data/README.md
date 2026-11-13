@@ -35,6 +35,8 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 
 What went wrong in earlier runs and how to avoid it: [TESTING.md](TESTING.md).
 
+Every test widget (`tools/zz_*.lua`) with what it checks and the command that starts it: [tests-index.md](tests-index.md) (made by `generators/make_test_index.py`; `run_checks.ps1` fails when it is out of date).
+
 ## Generators (`generators`)
 
 - Scripts that **make** data and pictures from tables; they are not tests. Run them through the `update_*.bat` files in `game-modes` (the tables are the source, Excel opens the csv).
