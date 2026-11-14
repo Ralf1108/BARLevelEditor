@@ -53,4 +53,3 @@ Crystals stand on the map. Construction units earn **points** for their team by 
 - Gold rings show the reach of a builder, numbers show the factor ("x4")
 - The score of every team and its points per second are shown at the top
 - Scenario package (start menu key `3`): settings are packed (at least one crystal needed)
-- The game runs in the gadget `rtf_game.lua`

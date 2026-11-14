@@ -28,7 +28,26 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 
 ## LAN Play test (`tools`)
 
-- `tools\lan_test.ps1 -Mode ctf|rtf|td|cp|teams|page|boss` (`boss` = the host chooses "Make Boss" and then "Disable Boss" for the joiner, the log shows `isBoss` true and false; `-AlongsideGame` = run next to a game you play, but not while that game hosts a LAN room (same port 8453); `page` = one instance with the LAN Play page opened and left alone, for pictures of the page with `-Shots`; `teams` = the host presses the room's buttons "3 teams" and "2 per team", a joiner comes in: log of the teams, game options and the middle column in `lan_status.txt`; `-Shots 20,50` = pictures of the host's window `shot_<s>.png` in the work folder, taken with PrintWindow, so the window may stay behind others; more: `-Sync same|missing|other` = the joiner has the host's extra game, none, or an own other version; `-Lobby same|other` = the joiner's lobby widget is the host's or has one more line; `-NoMap` = the joiner has an empty maps folder and no online download (`-KeepOnline`: the lobby may download), the map comes from the host; `-MapList none|official|wrong` = the list of official map md5 of the joiners (none, fetched online, or with a wrong md5); `-Clients 1|2`; each joiner is another instance and about 4-9 GB of RAM) starts two instances of the game (host "PlayerA", joiner "PlayerB") with the real lobby on this computer, in two small framed windows, plays the test level as a LAN scenario (`cp` = Copilot on an official map) and quits by itself.
+- `tools\lan_test.ps1 -Mode <mode>` starts two instances of the game (host "PlayerA", joiner "PlayerB") with the real lobby on this computer, in two small framed windows, plays the test and quits by itself.
+- Each joiner is another instance and about 4-9 GB of RAM.
+
+| Mode | What it plays |
+| --- | --- |
+| `ctf`, `rtf`, `td` | the test level as a LAN scenario |
+| `cp` | Copilot on an official map |
+| `teams` | the host presses "3 teams" and "2 per team", a joiner comes in: teams, game options and the middle column go to `lan_status.txt` |
+| `boss` | the host chooses "Make Boss" and then "Disable Boss" for the joiner; the log shows `isBoss` true and false |
+| `page` | one instance with the LAN Play page opened and left alone (for pictures with `-Shots`) |
+
+| Switch | Effect |
+| --- | --- |
+| `-AlongsideGame` | run next to a game you play (not while that game hosts a LAN room: same port 8453) |
+| `-Shots 20,50` | pictures of the host's window `shot_<s>.png` in the work folder (PrintWindow, so the window may stay behind others) |
+| `-Sync same\|missing\|other` | the joiner has the host's extra game, none, or an own other version |
+| `-Lobby same\|other` | the joiner's lobby widget is the host's, or has one more line |
+| `-NoMap` | the joiner has an empty maps folder and no online download: the map comes from the host (`-KeepOnline`: the lobby may download) |
+| `-MapList none\|official\|wrong` | the joiner's list of official map md5: none, fetched online, or with a wrong md5 |
+| `-Clients 1\|2` | number of joiners |
 - Everything is built in a work folder (default `%TEMP%\lan_test`, own write dir per instance, junctions to the installed engine and game): the installed game is not changed, but it must not be running.
 - The widget `zz_lantest.lua` logs `[zzlan]` lines (teams, units, scores, commander positions) into `infolog.txt` of both instances (`<work>\sbx_H\data`, `<work>\sbx_J\data`); both logs must show the same state.
 - Results of 2026-10-27: CTF (PlayerA and PlayerB as opponents, flags taken and held, score equal on both), Reclaim the Fame (both teams earn points, equal on both), Tower Defense (both humans in one team, waves, state "won"), Copilot (both humans in team 0, one commander, orders of both arrive).

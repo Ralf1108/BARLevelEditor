@@ -11,21 +11,18 @@
 ## How it works for all of them
 
 1. Select your **armed units** (any kind: tanks, bots, ships, aircraft, artillery, rocket launchers, ...).
-2. Press the button in the column at the right edge of the menu: **XL**, **XR**, **XC** (area attacks), below them with a gap **XS** (split attack) and **XF** (focus attack).
-   - The button is lit while the mode is on.
-   - The command menu of the game (bottom, next to Hold pos and Repeat Off) has three more buttons for units: **Area Attack** (a circle, like XC), **Split Attack** (XS) and **Focus Attack** (XF).
-   - Press one, then drag the circle on the map.
-   - It works like the keys; the buttons only show while units are selected.
+2. Press the button in the column at the right edge of the menu: **XL**, **XR**, **XC**, **XS** or **XF**. It is lit while the mode is on.
 3. Drag the shape on the map with the left mouse button (a line, a rectangle, or a circle from its center outwards). A preview shows the shape and where the units will go.
 4. Let go of the mouse button: the orders are given and the mode is over. **Right click** cancels at any time.
 
-Units that cannot shoot at all (builders) or only shoot at aircraft are left out. A unit that gets another order from you afterwards leaves the attack and does what you told it.
+- **Also in the command menu of the game** (bottom, next to Hold pos and Repeat Off): **Area Attack** (a circle, like XC), **Split Attack** (XS) and **Focus Attack** (XF). Press one, then drag the circle.
+- Units that cannot shoot at all (builders) or only shoot at aircraft are left out.
+- A unit that gets another order from you afterwards leaves the attack.
 
 ## Area attacks (XL, XR, XC)
 
 - Spread your units evenly over an area: **XL** a line, **XR** a rectangle, **XC** a circle.
 - Every unit gets **its own target point** inside the shape, so a group of tanks covers a whole field, a line of artillery shells a long strip, and bombers lay a carpet.
-
 - **Tanks, bots, ships, gunships, artillery, rocket launchers, nukes:** walk into range of their point and fire at it.
 - **Bombers:** first fly to a starting point beside the shape (for a line: beside it, facing it) and form up. When all are in position they attack **at the same moment as a front**. The front targets are bombed first.
 - Units are paired with points by their position, so the paths cross as little as possible.
@@ -33,9 +30,7 @@ Units that cannot shoot at all (builders) or only shoot at aircraft are left out
 
 ![Area attack](area-attack.jpg)
 
-- *An area attack with a rectangle (XR): 16 artillery tanks and long range rocket launchers, every unit gets its own target point (red squares) inside the rectangle.
-- The shells have hit, more rockets are on their way.
-- (The orange rectangle, the red squares and the thin lines were drawn for the picture.)*
+*An area attack with a rectangle (XR): 16 artillery tanks and long range rocket launchers, every unit gets its own target point (red squares). The rectangle, the squares and the thin lines were drawn for the picture.*
 
 ## Split attack (XS)
 
@@ -48,8 +43,7 @@ Use the **damage per second** of your units against the enemies you see in a cir
 
 ![Split attack](split-attack.jpg)
 
-- *20 light units against 10 heavier ones, just after the order: every enemy has a color, the units aimed at it carry the same color, two on each.
-- (The colors were drawn for the picture; in the game the selected units show their orders as thin lines.)*
+*20 light units against 10 heavier ones, just after the order: every enemy has a color, the units aimed at it carry the same color, two on each. The colors were drawn for the picture.*
 
 ## Focus attack (XF)
 

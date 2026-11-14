@@ -4,116 +4,173 @@
 
 ![Evolution in the game: the overview of seven players at the right, your own panel with the abilities at the bottom](../../docs/evolution-game.jpg)
 
-Every player starts with **one weak unit** instead of the commander. Kills give **points**, and enough points **evolve** the unit into a stronger one: 10 levels, from a Pawn up to a tier 3 giant. A lost unit comes back somewhere else, one level lower. The first unit on level 10 brings **Armageddon**: no more fog of war, no more coming back, the last one standing wins. A mode of **LAN Play** on any map: no level, no editor needed.
+- Every player starts with **one weak unit** instead of the commander.
+- Kills give **points**; enough points **evolve** the unit into a stronger one: 10 levels, from a Pawn up to a tier 3 giant.
+- A lost unit comes back somewhere else, one level lower.
+- The first unit on level 10 brings **Armageddon**: no fog of war, no coming back, the last one standing wins.
+- A mode of **LAN Play** on any map: no level and no editor needed.
 
-## In short
+## Start it
 
-- **LAN Play** room: the host presses the green button **LAN Play** in the title row of the room (next to "Leave Lobby"), then **Evolution** in its menu (a submenu with the green / red button On / Off opens); everybody in the room sees it
-- When the host switches it on, the rules appear in the chat of the room for everybody (with the tip: a map of size **M or smaller**, up to 16 x 16); the buttons of the menu explain themselves when you hold the mouse over them
-- Start the game as usual: humans and computer players all play
-- The start positions of the map are used (nobody has to place one)
-- **Evolution** in the menu opens a small menu of its own with the settings (hold the mouse over a button for its explanation):
-  - **On / Off**: a green button when on, red when off; off is the default
-  - **Unit multiplier**: 1x to 10x, click to step through: so many times the normal number of wild units and towers, a denser map
-  - **Unit health**: the health the wild units start with, click to step through: **Auto** (the default) is 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7 and 50 % from level 8 (a stronger level starts with more); or one value from 10 % to 100 % for all levels (the health bar of a wild unit shows it)
-  - **Regeneration**: On (default) or Off: whether the units of the players heal by themselves (1 % of the health every 5 seconds, starting 5 seconds after the last damage; the tooltip tells the rate)
-  - **Long range**: On or Off (off is the default): when on, nine units with a long range (lasers, plasma and rail guns of 850 Elmo or more, no missiles) can appear on their levels too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon (the column Long range of the [unit table](evolution-units.md))
-  - **All Be Gods**: On or Off (off is the default): off = only the **first** player on level 10 brings Armageddon and chooses a gift; the others who reach level 10 get nothing special (the chat says they are too late); on = every player who reaches level 10 chooses a gift
-  - **Debug mode**: extra buttons above your panel in the game for testing: Armageddon, Level Up (green, arrow up), Level Down (red, arrow down), XP Up / XP Down, one small button per power-up that gives it at once (or, when you have it, makes it ready again without cooldown), a star that gives every player random values (for a picture) and Hide
+1. In the **LAN Play** room the host presses the green button **LAN Play** (title row, next to "Leave Lobby"), then **Evolution**, then **On**.
+2. Start the game as usual. Humans and computer players all play; the start positions of the map are used.
+
+- Everybody in the room sees the setting, and the rules appear in the chat of the room.
+- Best on a small map: size **M or smaller** (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata).
+- Legion and the Extra Units Pack are switched on by themselves.
+- A joiner without the extra game "Level Editor Scenarios" gets it from the host.
+- **Quick test without the lobby:** `LevelEditor\start_evolution.bat` (you against one SimpleAI on Hooked 1.1, debug mode on). Other map or computer player: `start_evolution.bat "Comet Catcher Remake 1.8" SimpleDefenderAI`.
+
+**Settings** (the submenu **Evolution**; every button has a tooltip)
+
+| Setting | Values | Effect |
+|---|---|---|
+| **On / Off** | Off by default | green = on, red = off |
+| **Unit multiplier** | 1x to 10x | so many times the normal number of wild units and towers |
+| **Unit health** | **Auto** (default), or 10 % to 100 % | the health wild units start with; Auto = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8 |
+| **Regeneration** | On (default) / Off | the units of the players heal by themselves |
+| **Long range** | On / Off (default) | nine units with a range of 850 Elmo or more can appear too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon |
+| **All Be Gods** | On / Off (default) | Off = only the **first** player on level 10 chooses a gift; On = every player who reaches level 10 |
+| **Debug mode** | On / Off (default) | test buttons above your panel: Armageddon, Level Up / Down, XP Up / Down, one per power-up, a star (random values for every player) and Hide |
 
 ![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods and Debug mode](../../docs/evolution-room.jpg)
 
 ![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
-## Rules
+## Your unit
 
-**Your unit**
-- Every team starts with one level 1 unit where its commander would stand; all other units are gone
-- Every new unit is of a **random faction** (Armada, Cortex or Legion) and a random unit of it for the level: a Pawn can become a Brute and then a Karkinos; every level has a number of units (77 in all, see the [unit table](evolution-units.md))
-- The new unit replaces the old one where it stands; it has the health fraction of the old unit plus 20 % (not a full heal); it keeps its orders and is selected again by itself
+- Every team starts with one level 1 unit where its commander would stand.
+- Every new unit is of a **random faction** (Armada, Cortex or Legion) and a random unit of its level: a Pawn can become a Brute and then a Karkinos.
+- When it evolves, the new unit:
+  - stands where the old one stood
+  - has the health share of the old unit plus 20 % (not a full heal)
+  - keeps its orders and is selected again
 
-**Points**
-- A wild unit or tower: a third of what its level costs (1 for level 1, 2 for level 2, 3, 4, 7, 10, 17, 27, 43, 69): about three of your own level bring you up
-- **Catching up**: who is behind gets more for every kill: half the points more for every level below the best player (on level 1 next to a player on level 5: three times the points)
-- An enemy player of level *v*: the points that level costs (3 for level 1, 5, 8, 12, 20, 31, 50, 81, 129 up to level 9, 206 for level 10)
-- An enemy **above** your level is worth more: times (1 + the levels it is above you). A level 1 unit that kills a level 3 unit gets 8 x 3 = 24 points and jumps to level 4
-- Points to the next level: 3, 5, 8, 12, 20, 31, 50, 81, 129 (every level 1.6 times the one before)
+## Points
 
-**Experience**
-- Every kill of another player gives your unit 0.1 experience (the game's own bonus: a little more health, damage and faster reloading); you keep it when you level up
-- Every death costs 0.1 again
+| Level | Points to the next level | Kill of a wild unit or tower | Kill of an enemy player |
+|---|---|---|---|
+| 1 | 3 | 1 | 3 |
+| 2 | 5 | 2 | 5 |
+| 3 | 8 | 3 | 8 |
+| 4 | 12 | 4 | 12 |
+| 5 | 20 | 7 | 20 |
+| 6 | 31 | 10 | 31 |
+| 7 | 50 | 17 | 50 |
+| 8 | 81 | 27 | 81 |
+| 9 | 129 | 43 | 129 |
+| 10 | | 69 | 206 |
 
-**Death**
-- Before Armageddon: the unit comes back after **5 seconds** at a random place far from the others, **one level lower** (never below 1); the points of the level are lost
-- Every unit spawns on the land the commanders stand on: on a map with water or islands all of them are on the same piece of land and can reach each other
+- The level in the kill columns is the level of the unit you killed.
+- About three wild units of your own level bring you up.
+- **Catching up:** half the points more for every level you are below the best player (level 1 next to a player on level 5: three times the points).
+- **An enemy player above your level** is worth more: times (1 + the levels it is above you). A level 1 unit that kills a level 3 unit gets 8 x 3 = 24 points and jumps to level 4.
+- **Experience:** every kill of another player gives your unit 0.1 experience (the game's own bonus: a little more health and damage, faster reloading). You keep it when you level up; every death costs 0.1.
 
-**Level 10: Armageddon**
-- The first player on level 10 brings Armageddon: a message to everybody, big letters on the screen
-- The **fog of war is gone**: everybody sees everybody
-- From now on a lost unit **does not come back**: that player is out
-- **Everybody else allies against level 10**: as long as a player on level 10 is in, all the others are allied with each other and hunt that player together
-- When nobody on level 10 is left, the alliance is over and everybody fights on their own again (a new player on level 10 brings it back)
-- The **last one standing wins** (allies of the start together); others may still reach level 10 in the meantime
+## Death
+
+- Your unit comes back after **5 seconds** at a random place far from the others, **one level lower** (never below 1). The points of the level are lost.
+- All units appear on the land the commanders stand on, so on a map with water or islands everybody can reach everybody.
+
+## Level 10: Armageddon
+
+- The first player on level 10 brings Armageddon: a message to everybody, big letters on the screen.
+- The **fog of war is gone**: everybody sees everybody.
+- A lost unit **does not come back**: that player is out.
+- **Everybody else allies against level 10** and hunts that player together.
+  - When nobody on level 10 is left, everybody fights alone again; a new player on level 10 brings the alliance back.
+- The **last one standing wins** (allies of the start together).
+
+**Before that: levels 8 and 9**
+
+- A player on level 8 or 9 shows on the **radar and the minimap of everybody**, also in the fog of war, so the others can team up. The chat says so.
+- Not while that player is cloaked or has the Jammer on.
 
 ![Armageddon: the banner and the window of the gift](../../docs/evolution-armageddon.jpg)
 
 **The gift of level 10**
-- The first player on level 10 chooses a gift in a window (with the option **All Be Gods** every player who reaches level 10 does) (click, or the keys 1, 2, 3; a random one after 30 seconds; a computer player chooses at once):
-  - **Hell on Earth**: 8 tier 3 units rise all over the map; when one of them is lost a new one rises somewhere, and one more every 30 seconds; they are yours
-  - **Heaven on Earth**: 8 Dragons (heavy gunships) come down on a hexagon around your unit, a little way off; when one is lost a new one comes down near you, and one more at a random place every 30 seconds; they are yours
-  - **Gates of Hell**: first a barrage of nuclear missiles all at once at random places of the map (10 per player, at least 20); the red rings warn everybody 5 seconds before where each one comes down. Then the missiles never stop and get worse: every human enemy has missiles of his own that follow him (one at first, two after two minutes, then one more every two minutes), the volleys come every 10 seconds at first and every 3 seconds after four minutes. They start 2000 Elmo from the enemy and come closer and closer, until there is no way out; computer players are not followed. Your own unit and your allies are never hit
-- **Hell on Earth** and **Heaven on Earth** also give you **+1000 energy per second** for good: the heavy lasers of their units need it to fire without a pause
-- When a gift is chosen, the chat gets "<name> chose ..." and one of three sayings of that gift, picked at random (for example "Look up. Every missile you see has your name on it.")
-- What the gift kills counts for you; when you are out, the units of your gift blow up
 
+The first player on level 10 chooses one of three gifts (with **All Be Gods**: every player on level 10).
+
+| Gift | What happens |
+|---|---|
+| **Hell on Earth** | 8 tier 3 units rise all over the map and are yours. A lost one is replaced, and one more rises every 30 seconds. |
+| **Heaven on Earth** | 8 Dragons (heavy gunships) come down around your unit and are yours. A lost one is replaced near you, and one more comes down at a random place every 30 seconds. |
+| **Gates of Hell** | Nuclear missiles, see below. |
+
+- Choose with a click or the keys 1, 2, 3. After 30 seconds a random one is taken; a computer player chooses at once.
+- Hell on Earth and Heaven on Earth also give **+1000 energy per second** for good (the heavy lasers need it).
+- What the gift kills counts for you. When you are out, the units of your gift blow up.
+- The chat says who chose what, with a saying.
+- **Gates of Hell** in detail:
+  - First a barrage all at once at random places (10 missiles per player, at least 20). Red rings warn everybody 5 seconds before.
+  - Then missiles follow every human enemy: one at first, two after two minutes, one more every two minutes.
+  - The volleys come every 10 seconds, after four minutes every 3 seconds.
+  - They start 2000 Elmo from the enemy and come closer and closer.
+  - Computer players are not followed. Your own unit and your allies are never hit.
+
+## The map
 
 **Wild units and towers**
-- Units of nobody (Gaia) with only 10 % of their health on level 1 (30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8; the health bar shows it) stand around the map; about one in seven is a **tower** (a tower does half of its normal damage)
-- Most of them **walk around** the map, about one in five stands still (and the towers), and they **only shoot back**
-- They **grow with the weakest player**: a new one has the level of the weakest player who is still in; one above it is replaced by one of its level (so the weakest player always has a chance), one two or more levels below it too, one every 3 seconds; **a unit that a player sees, or that is within 900 Elmo of a player's unit, is never changed** (no change of level in the middle of a fight)
-- One per 1024 x 1024 Elmo of the land (a 16 x 16 map without water has 64), at least 12, at most 100; a killed one comes back 10 seconds later somewhere else, and the number is topped up every 10 seconds
 
-**Regeneration**
-- Your unit regenerates **1 % of its health every 5 seconds**, but only when it has not been hit for 5 seconds
+- Units of nobody stand around the map with reduced health (setting **Unit health**; the health bar shows it). About one in seven is a **tower** (it does half of its normal damage).
+- Most of them walk around, about one in five stands still. They **only shoot back**.
+- **They grow with the weakest player:** a new one has the level of the weakest player who is still in.
+  - A wild unit above that level, or two or more levels below it, is replaced (one every 3 seconds).
+  - Never one that a player sees or that is within 900 Elmo of a player's unit.
+- **How many:** one per 1024 x 1024 Elmo of land, at least 12, at most 100; the **Unit multiplier** raises the number. A killed one comes back 10 seconds later somewhere else.
 
 **Energy**
-- Every player gets **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000** (**2000** on level 10 as a bonus, and with the option Long range: the big beam weapons cost up to 1500 per shot): units with laser weapons need it to shoot, the abilities cost it; the rest has to come from the solar collectors and wind turbines below
-- **More energy**: solar collectors and wind turbines of nobody stand around the map; they cannot be destroyed. Stand next to one for 5 seconds ("Taking 3/5") and its energy is yours (a solar collector about 20 per second, a wind turbine as much as the wind gives); an enemy takes it the same way
 
-**Reclaim by itself**
-- Your unit reclaims by itself the **trees and wrecks** within 100 Elmo, as long as no enemy player's unit is within 700 Elmo (at most 60 energy per second)
-- Trees give **energy** 1 to 1, but only while your energy storage is not full
-- The **metal** of a wreck does not go into the metal storage: it **heals** your unit 1 to 1, but only while it is hurt: 1 % of your maximum health per second (at least 1, at most 150), so big units heal faster (a green "+number" shows it)
+- You get **5 energy per second plus 3 for every level** (level 1: 8, level 8: 29) and can store **1000** (2000 on level 10).
+- Laser weapons and the abilities need it.
+- **More energy:** solar collectors and wind turbines of nobody stand around the map. Stand next to one for 5 seconds ("Taking 3/5") and it is yours (a solar collector about 20 per second, a wind turbine as much as the wind gives).
 
 **Radars**
-- Radars of nobody stand all over the map, until it is covered; they **cannot be destroyed**
-- Stand next to one with your unit for **5 seconds** ("Taking 3/5" above it) and it is **yours**: you see more of where the others go; an enemy takes it the same way
-- As soon as the first player reaches **level 6**, the radars, solar collectors and wind turbines become their **T2 versions** one by one (a much larger range, more energy); when no player is on level 6 or higher any more, they go back. A building is only changed when no player sees it (in the fog of war), like the wild units
-- When a player is out, their radars belong to nobody again
 
-**Beacons and abilities**
-- Glowing beacons in five colors lie around the map (you see them where your unit sees); drive over one to get its **ability** until your unit dies (evolving keeps it)
-- Your abilities are the five colored buttons in your panel at the bottom of the screen, always in the same place with a symbol (a double arrow, a plus, radar waves, a crossed out eye, a zigzag wave): grey until you have one, then in its color; click to use it; it costs energy and then needs a while before it can be used again (while an ability works, a fill in its color runs down the button and the number at the top left counts the seconds it lasts; when it is over, the cooldown starts: a grey fill runs down and the number counts the seconds down); hold the mouse over a button to read what it does
-- The overview at the right shows which abilities every player has (the symbols only, no cooldowns). The button at its top right hides and shows the list; with many players it stops above the music player and scrolls with the mouse wheel (the highest level is always on top)
+- Radars of nobody stand all over the map. Stand next to one for **5 seconds** and it is **yours**: you see where the others go.
+- Radars, solar collectors and wind turbines cannot be destroyed. An enemy takes yours the same way.
+- When the first player reaches **level 6** they become their **T2 versions** one by one (larger range, more energy), and go back when nobody is on level 6 or higher. Only buildings that no player sees are changed.
+- When a player is out, their radars belong to nobody again.
+
+**Healing**
+
+- **Regeneration:** 1 % of the health every 5 seconds, when your unit has not been hit for 5 seconds.
+- **Reclaim by itself:** your unit reclaims the trees and wrecks within 100 Elmo, as long as no enemy player's unit is within 700 Elmo.
+  - Trees give **energy** 1 to 1 (at most 60 per second), while your storage is not full.
+  - The metal of a wreck **heals** your unit 1 to 1 while it is hurt: 1 % of its maximum health per second (at least 1, at most 150). A green "+number" shows it.
+
+## Beacons and abilities
+
+- Glowing beacons in five colors lie around the map (you see them where your unit sees).
+- Drive over one to get its **ability** until your unit dies. Evolving keeps it.
 
 | Color | Ability | What it does | Energy | Cooldown |
 |---|---|---|---|---|
 | Blue | Sprint | 50 % faster for 8 s | 200 | 30 s |
-| Green | Repair | heals 20 % of the health at once (at full health the button says "not needed" and a click does nothing) | 500 | 60 s |
+| Green | Repair | heals 20 % of the health at once (at full health: "not needed") | 500 | 60 s |
 | Orange | Radar Pulse | your unit sees everything within 2500 Elmo for 5 s | 250 | 45 s |
-| Yellow | Cloak | your unit is invisible to the enemy for 15 s (even right next to it); when it fires it is seen and the cloak ends; during the cloak your unit is on Hold Fire and goes back to Fire at Will afterwards | 400 | 60 s |
-| Violet | Jammer | your unit is hidden from the enemy radar and sonar and jams radar for 20 s | 300 | 60 s |
+| Yellow | Cloak | invisible to the enemy for 15 s, even right next to it; firing ends it; your unit is on Hold Fire meanwhile and on Fire at Will afterwards | 400 | 60 s |
+| Violet | Jammer | hidden from enemy radar and sonar, and jams radar, for 20 s | 300 | 60 s |
 
-- Repair (and the health that wrecks give) shows green plus signs round your unit and a rising green "+number" with the health gained
-- At the start there are 2 to 6 beacons of every color, more on a bigger map and with more players; a taken beacon comes back 45 seconds later somewhere else, in the same color; a beacon of an ability you already have stays for the others, but **while that ability cools down** driving over it uses the beacon up and the cooldown is gone at once (it comes back somewhere else 45 seconds later)
+- **The buttons:** five colored buttons in your panel at the bottom, grey until you have the ability. Click one to use it.
+  - While it works, a fill in its color runs down and the number counts the seconds.
+  - Then the cooldown: a grey fill runs down and the number counts down.
+  - Hold the mouse over a button to read what it does.
+- **The beacons:** 2 to 6 of every color at the start, more on a bigger map and with more players. A taken beacon comes back 45 seconds later somewhere else.
+  - A beacon of an ability you already have stays for the others.
+  - Exception: while that ability cools down, driving over the beacon uses it up and the cooldown is gone at once.
+- **Together with the game mode [Renegade](renegade.md)** (you steer the unit from the inside):
+  - The keys **1 to 5** use the abilities in the order of the table (the bar shows the numbers).
+  - After a Cloak the unit stays on Hold Fire (you fire yourself).
+  - After a Radar Pulse the unit keeps the larger sight of Renegade.
 
-- **Together with the game mode Renegade** (you steer the unit from the inside): the keys **1 to 5** use the abilities in the order of the table (the bar shows the numbers); a Cloak does not set the unit to Fire at Will afterwards (it stays on Hold Fire, you fire yourself), and a Radar Pulse keeps the larger sight of Renegade afterwards
+## Computer players
 
-**Computer players**
-- Every team without a human is steered by the game (its own AI is switched off for this unit)
-- It picks up the beacons it drives over and uses its abilities by itself
-- It also takes radars, solar collectors and wind turbines: it goes to the nearest one that is not its own and stands next to it until it is taken (unless an enemy is close), but it does not hold more than its share
-- It attacks only enemies of its **own level or higher** and wild units of its level or lower (in Armageddon every enemy) and otherwise only shoots back; with nothing to attack it walks around
+- Every team without a human is steered by the game mode.
+- It picks up the beacons it drives over and uses its abilities.
+- It takes radars, solar collectors and wind turbines, but not more than its share.
+- It attacks only enemies of its **own level or higher** and wild units of its level or lower (in Armageddon every enemy). Otherwise it only shoots back and walks around.
 
 ## The units of the levels
 
@@ -130,31 +187,26 @@ Every player starts with **one weak unit** instead of the commander. Kills give 
 | 9 | Thor | Demon | Praetorian |
 | 10 | Titan | Juggernaut | Sol Invictus |
 
-The table shows one unit of each faction per level as an example (the help window of the game does the same). **All** the units that can appear on a level (77 in all: bots, vehicles and hovercraft; nine more with the option Long range) are in the [unit table](evolution-units.md), sorted by their damage per second times health; artillery, rocket launchers, aircraft, water units, constructors, scouts and units without a ground weapon are left out. Evolution always plays with the Legion faction and the Extra Units Pack (the host switches both on by itself).
+- The table shows one example per faction and level. Every level has more units: 77 in all (bots, vehicles, hovercraft), nine more with **Long range**.
+- Left out: artillery, rocket launchers, aircraft, water units, constructors, scouts and units without a ground weapon.
+- All of them: [unit table](evolution-units.md).
 
 ## On the screen
 
-- At the right edge, below the bars of the game: one compact row per team, the highest level on top: at the left level badge, name, the points now and needed for the next level ("4/12") and the experience ("XP 0.3"), a column with kills above deaths, at the right the abilities as large squares (like your own panel) (your own row lighter; "out" in Armageddon)
-- At the bottom, left of the music player: your own unit, big: level, unit, points bar, a violet **XP bar** (the experience bonus you keep: +0.1 per kill of a player, -0.1 per death), kills, deaths and the buttons of your abilities
-- Everything scales with the size of the window
-- After a respawn the camera jumps to your new unit
-- At the start of the game (for 40 seconds) a **help window** explains the power-ups, shows every level with example units of the three factions (picture and name; every level has more units, see the [unit table](evolution-units.md)) and what Armageddon brings; the button **?** at the title of the overview opens and closes it; a click anywhere outside the window closes it too
-- The button with the arrow at the top right of the overview folds the list away to the right; with many players it scrolls with the mouse wheel
-
-## Quick start for testing
-
-`start_evolution.bat` in the folder LevelEditor starts at once a game of you against one SimpleAI on Hooked 1.1 with the debug mode on. Another map or computer player: `start_evolution.bat "Comet Catcher Remake 1.8" SimpleDefenderAI`.
-
-**Players on levels 8 and 9**
-- A player on level 8 or 9 shows on the **radar and the minimap of everybody** (also in the fog of war), so the others can team up against it; the chat says so with one of several sayings when it begins
-- Not while that player is cloaked or has the Jammer on (the power-ups Cloak and Jammer hide it for a while), and from Armageddon on there is no fog of war anyway
+- **Overview** (right edge): one row per team, the highest level on top.
+  - Level badge, name, points now and needed ("4/12"), experience ("XP 0.3"), kills above deaths, the abilities. Your own row is lighter; "out" in Armageddon.
+  - The arrow button at its top right folds the list away. With many players it scrolls with the mouse wheel.
+  - The button **?** opens the help window.
+- **Your panel** (bottom, left of the music player): level, unit, points bar, a violet **XP bar**, kills, deaths and the buttons of your abilities.
+- **Help window:** shown for 40 seconds at the start: the power-ups, example units of every level, Armageddon. A click outside closes it.
+- After a respawn the camera jumps to your new unit.
+- Everything scales with the size of the window.
 
 ## Tips
 
-- Hunt the wild units first, then pick fights with enemies of your level or above
-- Take the radars near you early: you see the others coming
-- A small map keeps the fights coming: size M or smaller (up to 16 x 16, e.g. Comet Catcher Remake, Trefoil Remake, Argent Strata)
-- The game runs in the gadget `evo_game.lua` and the window of the gift in `evo_gift.lua` of the extra game "Level Editor Scenarios" (installed with the Level Editor; a joiner without it gets it from the host)
+- Hunt the wild units first, then pick fights with enemies of your level or above.
+- Take the radars near you early: you see the others coming.
+- A small map keeps the fights coming.
 
 ## Unit candidates
 

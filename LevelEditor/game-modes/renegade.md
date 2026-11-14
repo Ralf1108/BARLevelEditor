@@ -19,16 +19,21 @@
 | Faster start | add `quick` as the fourth parameter: `start_renegade.bat "Hooked 1.1" NullAI 3 quick` (without Legion, extra, Scavenger and Raptor units) |
 | LAN Play | green button **LAN Play** in the room > **Renegade** > On |
 
-Two ways to play in LAN Play (settings of the button **Renegade**):
+**Settings in LAN Play** (the submenu of the button **Renegade**)
 
-- **Always in unit On** (the default): every player is one unit for the whole game.
-- **Always in unit Off** (takeover mode): you play the normal game with all your units. Hold the mouse over one of your units and press **the key left of the 1** to take it over, the same key to leave it. If the unit is lost you are out of it.
+| Setting | Effect |
+|---|---|
+| **On / Off** | Renegade for this room |
+| **Always in unit** On (default) | every player is one unit for the whole game |
+| **Always in unit** Off (takeover mode) | you play the normal game with all your units and take one over when you like |
+| **Power-ups** On (Off by default) | beacons on the map give Sprint, Repair, Radar Pulse, Cloak and Jammer |
 
-Third setting of the button **Renegade**: **Power-ups** (Off by default):
-- **On:** five colors of beacons lie on the map (Sprint blue, Repair green, Radar Pulse orange, Cloak yellow, Jammer violet).
-  - Drive your unit over a beacon: you have that power-up until your unit is lost.
-  - Keys **1 to 5** use them (the bar at the bottom shows the numbers, the cooldown and the time left); a taken beacon comes back somewhere else after 45 s.
-  - With the game mode **Evolution** on, its own power-ups are used instead (the same five, the same keys).
+- **Takeover:** hold the mouse over one of your units and press **the key left of the 1**; the same key leaves it. If the unit is lost you are out of it.
+- **Power-ups:** drive over a beacon and you have its power-up until your unit is lost.
+  - Colors: Sprint blue, Repair green, Radar Pulse orange, Cloak yellow, Jammer violet.
+  - The keys **1 to 5** use them. The bar at the bottom shows the numbers, the cooldown and the time left.
+  - A taken beacon comes back somewhere else after 45 s.
+  - With the game mode [Evolution](evolution.md) on, its own power-ups are used (the same five, the same keys).
 
 ## Controls
 
@@ -39,9 +44,9 @@ Third setting of the button **Renegade**: **Power-ups** (Off by default):
 | Left / right / middle mouse button | fire the **short range weapons** (red) / **long range weapons** (yellow) / **missiles** (green) |
 | Shift | third person view (camera behind your unit) and back |
 | Alt | **FULL FIRE** on / off: the left button fires every weapon at once |
+| Space | two-legged bots (Pawn, Grunt, commander, Titan ...): **jump** |
 | Space / Ctrl | aircraft: higher / lower; Ctrl held at the bottom for 2 s lands a gunship |
-| 1 to 5 | with Evolution: Sprint, Repair, Radar Pulse, Cloak, Jammer (the numbers stand on the buttons of the bar at the bottom; the beacons that give them lie on the map, see the Evolution manual) |
-| Space | a unit with two legs (Pawn, Grunt, commander, Titan ...): jump; the walking speed is kept in the air, a big unit jumps lower, one second of pause before the next jump; spiders, tanks, hovercraft and ships do not jump |
+| 1 to 5 | power-ups: Sprint, Repair, Radar Pulse, Cloak, Jammer (with Power-ups or Evolution on) |
 | Mouse wheel, B | binoculars (units with a range of 600 or more): wheel forward zooms in, back zooms out |
 | Key left of the 1 ("^" on a German keyboard) | switch between Renegade and the normal game; in takeover mode: take over the unit under the mouse and leave it |
 | Insert, or the key next to the left Shift | switch between Renegade and the normal game |
@@ -50,6 +55,7 @@ Third setting of the button **Renegade**: **Power-ups** (Off by default):
 
 Good to know about driving:
 
+- **Jump:** the walking speed is kept in the air, a big unit jumps lower, and there is one second of pause before the next jump. Spiders, tanks, hovercraft and ships do not jump.
 - The mouse only aims: you can drive one way and shoot another.
 - Driving straight ahead and looking within 20 degrees of the hull: the vehicle drives exactly where you look.
 - Ships have no reverse.
