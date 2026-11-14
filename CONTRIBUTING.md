@@ -11,6 +11,10 @@ Thank you for helping. This page tells you how to report a problem and how to ch
 - Attach `infolog.txt` from the `data` folder of your BAR installation (it is written new at every start of the game).
 - A screenshot helps (F12 in the game; the pictures are in `data\screenshots`).
 
+## Ideas
+
+- What could be built next (features for Evolution and Renegade, new game modes): [docs/ideas.md](docs/ideas.md).
+
 ## Change something
 
 1. Read [README.md](README.md) for what the parts do and [specs/README.md](specs/README.md) for how the code works.
