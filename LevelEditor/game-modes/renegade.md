@@ -111,6 +111,7 @@ Good to know about driving:
 - **Green arrow on the ground:** the way the unit faces (for a turret: where its gun points).
 - **Damage numbers:** every hit on a unit you can see rises as a red number (blue = paralyzing damage). Hits in quick succession are added up.
 - **Hit marker:** a short white cross at the crosshair when your shot hits, a red one for a kill.
+- **Tips:** in your first three games short tips at the top explain the keys, the goal, the beacons and the power-ups when they matter.
 - **Sounds:** hits, kills, jump and landing, power-ups, low health, the anti-air lock, death and respawn, victory and defeat (the interface volume of the game settings).
 - **Respawn:** when your unit is lost, a countdown (5 to 1) shows and you come back as the same unit far from the enemies.
   - **Spawn shield:** 4 seconds without damage (a blue ring, "SPAWN SHIELD" on the screen); it ends at once when you fire.

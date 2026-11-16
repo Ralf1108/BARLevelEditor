@@ -42,11 +42,44 @@ return function(gadget, S)
 		evs = cur
 	end
 
+	-- hints for beginners (mode_ui.lua: each once per game, in the first 3 games of the computer)
+	local hintStart
+	local function hints(team)
+		local now = os.clock()
+		hintStart = hintStart or now
+		local t = now - hintStart
+		local id = Spring.GetTeamRulesParam(team, "evoUnit") or 0
+		local x, _, z = Spring.GetUnitPosition(id > 0 and id or -1)
+		if not x then return end
+		if t > 3 then M.hint("evo_start", "Kill the wild units (they only shoot back): points evolve your unit into a stronger one.") end
+		local d = M.nearestBeacon("evoBeacons", x, z)
+		if d and d < 700 then M.hint("evo_beacon", "Drive over the glowing beacon: it gives your unit an ability.") end
+		if tostring(Spring.GetTeamRulesParam(team, "evoAbilities") or "") ~= "" then
+			M.hint("evo_use", withRenegade and "You have an ability: its key (1 to 5) uses it." or "You have an ability: click its colored button at the bottom to use it.")
+		end
+		if (Spring.GetTeamRulesParam(team, "evoStage") or 1) >= 2 then M.hint("evo_level", "You evolved! Every level brings a new, stronger unit of a random faction.") end
+		if (Spring.GetTeamRulesParam(team, "evoDeaths") or 0) >= 1 then M.hint("evo_death", "A lost unit comes back 5 seconds later somewhere else, one level lower.") end
+		if t > 60 then M.hint("evo_radar", "Stand next to a radar for 5 seconds to take it: you see where the others go.") end
+		-- an enemy player above the own level near the own unit
+		local mine = Spring.GetTeamRulesParam(team, "evoStage") or 1
+		for _, other in ipairs(Spring.GetTeamList()) do
+			local oid = other ~= team and not Spring.AreTeamsAllied(other, team) and Spring.GetTeamRulesParam(other, "evoUnit") or 0
+			local st = Spring.GetTeamRulesParam(other, "evoStage") or 0
+			if oid > 0 and st > mine and Spring.ValidUnitID(oid) then
+				local ox, _, oz = Spring.GetUnitPosition(oid)
+				if ox and (ox - x) ^ 2 + (oz - z) ^ 2 < 1200 * 1200 then
+					M.hint("evo_stronger", string.format("Careful: %s is level %d, stronger than you. Hunt the weaker ones first.", teamName(other), st))
+				end
+			end
+		end
+	end
+
 	function gadget:Update()
 		if (Spring.GetGameRulesParam("evoState") or "") == "" or Spring.GetSpectatingState() then
 			return
 		end
 		sounds(Spring.GetMyTeamID())
+		hints(Spring.GetMyTeamID())
 		if not overviewDone and Spring.GetGameFrame() >= 1 then
 			overviewDone = true
 			overview()
@@ -659,6 +692,7 @@ return function(gadget, S)
 			M.drawNote(vsx, vsy)
 			M.drawOwnShield(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoUnit"), vsx, vsy)
 		end
+		M.drawHint(vsx, vsy, withRenegade and vsy * 0.80 or nil) -- (with Renegade below its hints)
 		gl.Color(1, 1, 1, 1)
 	end
 

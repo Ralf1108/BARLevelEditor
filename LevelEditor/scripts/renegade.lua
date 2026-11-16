@@ -570,6 +570,7 @@ function widget:Update()
 	R.H.sounds(R) -- (death, respawn, jump, low health, lock, end of the round)
 	if R.powerups then R.M.watchAbilities("renAbilities") end -- (the power-ups: pick-up, use)
 	R.M.watchNote()
+	R.H.hints(R) -- (hints for beginners)
 	do
 		-- the mode key (the key left of the 1, the circumflex "^" on a German keyboard, scan code 53), polled as well: the game may take the press before the widget sees it
 		local k = Spring.GetKeyState(94) or (Spring.GetScanKeyState and Spring.GetScanKeyState(53))
@@ -1936,6 +1937,7 @@ function widget:DrawScreen()
 	R.H.drawFeed(vsx0, vsy0)
 	R.H.drawEnd(vsx0, vsy0)
 	R.M.drawNote(vsx0, vsy0)
+	R.M.drawHint(vsx0, vsy0)
 	if R.unit then R.M.drawOwnShield(R.unit, vsx0, vsy0) end
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()

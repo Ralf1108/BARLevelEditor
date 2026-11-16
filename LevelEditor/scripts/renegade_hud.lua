@@ -87,6 +87,36 @@ function H.sounds(R)
 	ev.over = over
 end
 
+-- Hints for beginners (every Update while the view is on; mode_ui.lua shows each once per game, in the first 3 games of the computer)
+local Rules = VFS.Include("luaui/Include/bar_rules.lua", nil, VFS.ZIP_FIRST)
+local hintStart
+function H.hints(R)
+	local M = H.M
+	if not M or not R.on or not R.unit or not Spring.ValidUnitID(R.unit) then return end
+	local now = os.clock()
+	hintStart = hintStart or now
+	local t = now - hintStart
+	local goal = Spring.GetGameRulesParam("renGoal") or 0
+	local mode = (Spring.GetModOptions() or {}).lanrenemode
+	if mode and H.modeHints then H.modeHints(M, t, mode) end
+	if t > 2 then M.hint("ren_move", "W A S D drive, the mouse aims, the left mouse button fires.") end
+	if t > 4 and goal > 0 then M.hint("ren_goal", string.format("The first player with %d kills wins the round.", goal)) end
+	if t > 20 then M.hint("ren_buttons", "Right mouse button: long range weapons, middle button: missiles. Shift: the view from behind.") end
+	local ud = UnitDefs[Spring.GetUnitDefID(R.unit) or -1]
+	if t > 30 and ud and Rules.moveKind(ud) == "bot" then M.hint("ren_jump", "Space: jump (a unit with two legs).") end
+	local x, _, z = Spring.GetUnitPosition(R.unit)
+	if R.powerups and x then
+		local d = M.nearestBeacon("renBeacons", x, z)
+		if d and d < 700 then M.hint("ren_beacon", "Drive over the glowing beacon: it gives you a power-up.") end
+		if tostring(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renAbilities") or "") ~= "" then
+			M.hint("ren_use", "You have a power-up: its key (1 to 5) uses it. The bar at the bottom shows the numbers.")
+		end
+	end
+	local hp, mhp = Spring.GetUnitHealth(R.unit)
+	if hp and mhp and hp < mhp * 0.5 then M.hint("ren_hurt", "Hurt? Stay near wrecks out of the fight: they repair your unit.") end
+	if t > 90 and R.single then M.hint("ren_normal", "The key left of the 1 (or Insert) switches to the normal game and back.") end
+end
+
 function H.kill(killerTeam, victimTeam, victimDef, killerDef)
 	local me = Spring.GetMyTeamID()
 	if killerTeam == me and victimTeam ~= me then

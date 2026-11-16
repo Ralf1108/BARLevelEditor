@@ -6,6 +6,7 @@
 --   M.play(name)                    a sound of SOUNDS (files of the game; the "ui" channel, so the volume of the interface sounds counts); the same sound at most every gap seconds
 --   M.watchAbilities(rule)          Update: the sounds of the own power-ups from the team rule (renAbilities / evoAbilities): "pickup" for a new one, "use1" to "use5" when one starts
 --   M.watchNote()                   Update: "bonus" when a new note of the own team comes
+--   M.hint(id, text), M.drawHint    hints for beginners (each once per game, in the first 3 games of the computer)
 local M = {}
 local NOTE_LIFE = 6 * 30
 
@@ -69,6 +70,55 @@ function M.watchAbilities(rule)
 		end
 	end
 	abil[rule] = now
+end
+
+-- Hints for beginners: a short text at the right moment, each at most once per game and only in the first HINT_GAMES games of this computer (Spring config LedHint_<id>
+-- counts them). M.hint(id, text) asks for one, M.drawHint(vsx, vsy, y) draws the current one (a box with TIP at the top middle) for HINT_LIFE seconds, then the next one.
+local HINT_GAMES, HINT_LIFE = 3, 7
+local hints = { shown = {}, queue = {} }
+M.hintLog = {} -- the ids shown, in order (the tests)
+function M.hint(id, text)
+	if hints.shown[id] then return end
+	hints.shown[id] = true
+	local key = "LedHint_" .. id
+	local n = Spring.GetConfigInt(key, 0) or 0
+	if n >= HINT_GAMES then return end
+	Spring.SetConfigInt(key, n + 1)
+	hints.queue[#hints.queue + 1] = text
+	M.hintLog[#M.hintLog + 1] = id
+end
+function M.drawHint(vsx, vsy, y)
+	local now = os.clock()
+	if hints.cur and now - hints.at > HINT_LIFE then hints.cur = nil end
+	if not hints.cur and #hints.queue > 0 then
+		hints.cur, hints.at = table.remove(hints.queue, 1), now
+	end
+	if not hints.cur then return end
+	local s = math.max(0.7, vsy / 1080)
+	local a = math.min(1, (now - hints.at) / 0.3, (HINT_LIFE - (now - hints.at)) / 0.6)
+	local fs = 20 * s
+	local tw = gl.GetTextWidth(hints.cur) * fs
+	local w = tw + 110 * s
+	local cy = y or vsy * 0.86
+	local x1 = vsx / 2 - w / 2
+	gl.Color(0.04, 0.06, 0.1, 0.8 * a)
+	gl.Rect(x1, cy - 14 * s, x1 + w, cy + 30 * s)
+	gl.Color(1, 0.8, 0.25, a)
+	gl.Rect(x1, cy - 14 * s, x1 + 4 * s, cy + 30 * s)
+	gl.Text("TIP", x1 + 16 * s, cy, fs, "o")
+	gl.Color(1, 1, 1, a)
+	gl.Text(hints.cur, x1 + 70 * s, cy, fs, "o")
+	gl.Color(1, 1, 1, 1)
+end
+
+-- the nearest beacon of the power-ups to x, z (game rule rule: "x,z,kind/..."): distance or nil
+function M.nearestBeacon(rule, x, z)
+	local best
+	for bx, bz in tostring(Spring.GetGameRulesParam(rule) or ""):gmatch("(%d+),(%d+),%d+") do
+		local d = math.sqrt((tonumber(bx) - x) ^ 2 + (tonumber(bz) - z) ^ 2)
+		if not best or d < best then best = d end
+	end
+	return best
 end
 
 local lastNote
