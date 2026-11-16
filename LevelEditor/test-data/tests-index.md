@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-145 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+146 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -133,6 +133,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_ren91.lua` | Renegade with Evolution: the keys 1 to 5 use the power-ups (Sprint, Radar Pulse, Cloak) | `pve_test.ps1 -Ren -RenTakeover -RenTest -Evo -EvoTest -Debug -Quick -Widget zz_ren91.lua` |
 | `zz_ren92.lua` | Renegade power-ups without Evolution (beacons, keys 1 to 5, the bar) | `pve_test.ps1 -Ren -RenTest -RenPowerups -Quick -Widget zz_ren92.lua` |
 | `zz_ren93.lua` | Renegade kill goal, kill feed, banner of the end | `pve_test.ps1 -Ren -RenTest -RenBots 2 -RenGoal 3 -Widget zz_ren93.lua` |
+| `zz_ren94.lua` | spawn shield and comeback bonus (Renegade and Evolution) | `pve_test.ps1 -Ren -RenTest -RenPowerups -Widget zz_ren94.lua (Renegade) or pve_test.ps1 -Evo -EvoTest -Widget zz_ren94.lua (Evolution)` |
 | `zz_ren.lua` | Renegade proof of concept 1 and 2 | `pve_test.ps1 -Ren -Widget zz_ren.lua. Steers renegade.lua through WG.renegade (no real mouse or keys) and logs "[zzren]" lines` |
 | `zz_reveal.lua` | a player on level 8 shows on the radar of the others | `pve_test.ps1 -Evo -EvoTest -Debug -Widget zz_reveal.lua (one instance, speed 10)` |
 | `zz_save.lua` | works the Save page (button S) | `arena_test.ps1 -Widget zz_save.lua` |

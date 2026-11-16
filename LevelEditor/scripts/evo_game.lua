@@ -477,9 +477,32 @@ local function spawn(p, x, z, facing)
 		p.spawns = p.spawns + 1 -- (the camera of the player goes to the new place)
 	end
 	local id = Spring.CreateUnit(name, x, Spring.GetGroundHeight(x, z), z, facing or 0, p.team)
+	local back = p.respawnAt ~= nil -- (it comes back after a loss: the spawn shield, maybe the comeback bonus)
 	p.unit, p.unitName, p.respawnAt = id, name, nil
 	if id then
 		owner[id] = p
+		if back then
+			G.shield(id) -- (no damage for 4 s or until it fires)
+			if TESTING then Spring.Echo("[Evolution] test: " .. p.name .. " is back, deaths in a row " .. tostring(p.dstreak)) end
+			if (p.dstreak or 0) >= G.COMEBACK then
+				-- the comeback bonus: a random ability the player does not have, otherwise 25 % more health
+				p.dstreak = 0
+				p.abilities = p.abilities or {}
+				local free = {}
+				for i = 1, #ABILITIES do
+					if not p.abilities[i] then free[#free + 1] = i end
+				end
+				if #free > 0 then
+					local i = free[math.random(1, #free)]
+					p.abilities[i] = true
+					A.publish()
+					G.note(p.team, "Comeback bonus: " .. ABILITIES[i].name)
+				else
+					G.moreHealth(id, 0.25)
+					G.note(p.team, "Comeback bonus: 25 % more health")
+				end
+			end
+		end
 		if (p.exp or 0) > 0 then
 			Spring.SetUnitExperience(id, p.exp)
 		end
@@ -1552,6 +1575,9 @@ function gadget:GameFrame(n)
 	if n % FPS == 0 then
 		giveEnergy()
 	end
+	if n % 5 == 0 then
+		G.shieldTick(n) -- (the spawn shields end after 4 s or when the unit fires)
+	end
 	if n % R.CHECK == 0 then
 		topUpWild()
 	end
@@ -1652,6 +1678,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 	end
 	local killer = attackerTeam and byTeam[attackerTeam]
 	if killer and killer ~= victim and (wasWild or enemies(killer, victim)) then
+		killer.dstreak = 0 -- (a kill ends the deaths in a row: no comeback bonus)
 		if not wasWild then
 			killer.kills = killer.kills + 1
 			killer.exp = (killer.exp or 0) + EXP_STEP -- (the experience of the unit: kept when the unit evolves)
@@ -1675,6 +1702,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 	end
 	victim.unit, victim.xp = nil, 0
 	victim.deaths = victim.deaths + 1
+	victim.dstreak = (victim.dstreak or 0) + 1
 	victim.exp = math.max(0, (victim.exp or 0) - EXP_STEP) -- (a death costs the same experience)
 	A.lose(victim) -- the abilities are gone with the unit
 	A.publish()
@@ -1737,6 +1765,8 @@ function gadget:RecvLuaMsg(msg, playerID)
 			A.publish()
 		elseif p and n == "5" then
 			randomize()
+		elseif p and p.unit and n == "8" then
+			Spring.DestroyUnit(p.unit, false, true) -- (the unit is lost without an explosion, which could kill a wild unit: respawn, spawn shield, comeback bonus)
 		elseif p and p.unit and n == "4" then
 			gain(p, 1000000) -- (level 10 at once: Armageddon, for the pictures of the manual)
 		elseif p and p.unit and n == "6" then
@@ -1857,6 +1887,9 @@ end
 
 -- the radars cannot be destroyed (also not by the missiles of Gates of Hell); a wild tower does only R.TOWER_DAMAGE of its damage
 function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID)
+	if G.shielded(unitID) then
+		return 0, 0 -- (the spawn shield)
+	end
 	local hurt = owner[unitID]
 	if hurt and damage > 0 then
 		hurt.hurtAt = Spring.GetGameFrame() -- (the regeneration waits REGEN_WAIT after the last hit)

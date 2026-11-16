@@ -45,6 +45,9 @@ return function(gadget, S)
 	local H = {}
 	-- the shapes and the bar of buttons are shared with Renegade (powerups_ui.lua)
 	local U = VFS.Include("luaui/Include/powerups_ui.lua", nil, VFS.ZIP_FIRST)
+	-- the spawn shield and the note of the team are shared with Renegade (mode_ui.lua); with Renegade on, its widget draws them
+	local M = VFS.Include("luaui/Include/mode_ui.lua", nil, VFS.ZIP_FIRST)
+	local withRenegade = (Spring.GetModOptions() or {}).lanrenegade == "1"
 	H.outline, H.box, H.disc, H.ring, H.icon = U.outline, U.box, U.disc, U.ring, U.icon
 
 
@@ -627,6 +630,11 @@ return function(gadget, S)
 			gl.Text(tostring(Spring.GetGameRulesParam("evoHero") or "") .. " reached level 10. The fog of war is gone: everybody sees everybody.", vsx * 0.5, vsy * 0.76 - 42 * s, 18 * s, "co")
 			gl.Text("A lost unit does not come back any more. The last one standing wins.", vsx * 0.5, vsy * 0.76 - 68 * s, 18 * s, "co")
 		end
+		if not withRenegade then
+			-- (last: above the help window)
+			M.drawNote(vsx, vsy)
+			M.drawOwnShield(Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoUnit"), vsx, vsy)
+		end
 		gl.Color(1, 1, 1, 1)
 	end
 
@@ -634,6 +642,7 @@ return function(gadget, S)
 	-- the beacons of the abilities: a column of light and a pulsing ring (powerups_ui.lua)
 	function gadget:DrawWorld()
 		U.drawBeacons("evoBeacons")
+		if not withRenegade then M.drawShieldRings("evoUnit") end
 	end
 
 	-- red rings where the next nuclear missiles come down (Gates of Hell)

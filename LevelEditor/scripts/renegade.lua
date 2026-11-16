@@ -66,6 +66,7 @@ function widget:Initialize()
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 	-- the round: the kill feed, the goal and the banner at the end (renegade_hud.lua; the gadget sends every lost unit of a player or a bot: global renKill)
 	R.H = VFS.Include("luaui/Include/renegade_hud.lua", nil, VFS.ZIP_FIRST)
+	R.M = VFS.Include("luaui/Include/mode_ui.lua", nil, VFS.ZIP_FIRST) -- (shared with Evolution: the spawn shield, the note of the team)
 	widgetHandler:RegisterGlobal("renKill", function(...) R.H.kill(...) end)
 end
 
@@ -1050,6 +1051,7 @@ end
 
 function widget:DrawWorld()
 	if R.U then R.U.drawBeacons("renBeacons") end -- (the beacons of the power-ups also in the normal game)
+	R.M.drawShieldRings("renUnit")
 	if not R.on or R.waiting or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
 	if not x then return end
@@ -1928,6 +1930,8 @@ function widget:DrawScreen()
 	drawDamageNumbers(vsy0)
 	R.H.drawFeed(vsx0, vsy0)
 	R.H.drawEnd(vsx0, vsy0)
+	R.M.drawNote(vsx0, vsy0)
+	if R.unit then R.M.drawOwnShield(R.unit, vsx0, vsy0) end
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()
 	if R.U then

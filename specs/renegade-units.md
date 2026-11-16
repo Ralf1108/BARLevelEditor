@@ -11,6 +11,9 @@ How a player gets a unit and how it drives: the synchronized part of the game mo
 - **Start inside the map (`giveUnit`):** a ground unit that is made is put at least max(48, 1.4 x radius + 24) inside the map edge (the sandbox start is 10 Elmo from the edge; a Juggernaut, radius 74, stood half outside there).
   - Measured with `zz_ren76.lua`: the Juggernaut starts at 128, 1920 and walks.
 - **Respawn:** a lost unit of a player comes back after 150 frames (`RESPAWN`) as the same kind, at a place far from the enemy units (`place`: of 24 random places where the unit can stand, the farthest; a second pass without the movement test for ships on land and turrets; none: the place where it was lost; creating fails: again after a second).
+  - **Spawn shield:** `G.shield` (led_gadgets.lua): no damage for 4 s or until the unit fires (`gadget:UnitPreDamaged`); the widget draws the ring and "SPAWN SHIELD 3" (`mode_ui.lua`).
+  - **Comeback bonus** (not with Evolution, it has its own): `streak[team]` counts the deaths since the last kill; at 3 the unit that comes back gets `comeback(team)`: with the power-ups a random one the team does not have, otherwise 25 % more health (`G.moreHealth`), and a note on the screen (`G.note`).
+  - Test: `zz_ren94.lua` (`-Ren -RenTest -RenPowerups`: three losses, the lethal hit `ren|test|5` during the shield is blocked, the free power-up).
   - No score, no teams yet.
 - **Energy:** each player team starts with 200000 energy, has a storage of 200000 and gets 5000 energy a second (`ENERGY_START`, `ENERGY_STORE`, `ENERGY_INCOME`; `SetTeamResource`, `AddTeamResource` every 30 frames).
   - Shots cost energy; the Calamity needs 18000 a shot, so it can fire continuously (5000 a second refill about one shot in 3.6 s once the storage is used up; the 200000 last for 11 shots).

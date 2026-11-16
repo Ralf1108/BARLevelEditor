@@ -45,6 +45,11 @@ end
 
 local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the wreck reclaim (G.reclaimFeatures)
 
+-- the spawn shield of a unit that came back (G.shield of led_gadgets.lua): no damage
+function gadget:UnitPreDamaged(unitID)
+	if G.shielded(unitID) then return 0, 0 end
+end
+
 function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer)
 	if damage and damage >= 1 then SendToUnsynced("renDmg", unitID, damage, paralyzer and true or false) end
 end
@@ -79,6 +84,7 @@ local BOT_RESPAWN = 150
 local turnInto -- (defined below: the debug message of RecvLuaMsg needs it)
 local possess, release -- (the takeover mode: defined below)
 local units = {} -- team -> unit id
+local streak = {} -- team -> deaths in a row without a kill (the comeback bonus, G.COMEBACK)
 local kind = {} -- team -> unit definition name of the player's unit (a lost unit comes back as the same one)
 local due = {} -- team -> frame at which the unit comes back
 local bots, botDue, botTeam = {}, {}, nil -- bots: unit id -> true; botDue: frames at which a lost one comes back
@@ -1167,6 +1173,30 @@ local function place(defName, list, wanted)
 end
 
 local SIGHT_FACTOR = 3 -- (the sight of a player's unit is this many times the sight of its type)
+-- The comeback bonus (G.COMEBACK deaths in a row without a kill): with the power-ups a random one the team does not have, otherwise 25 % more health; a note on the player's screen
+local function comeback(team)
+	streak[team] = 0
+	local u = units[team]
+	if not u then return end
+	if pu.A then
+		local r = puRecord(team)
+		r.abilities = r.abilities or {}
+		local free = {}
+		for i = 1, #P.ABILITIES do
+			if not r.abilities[i] then free[#free + 1] = i end
+		end
+		if #free > 0 then
+			local i = free[math.random(1, #free)]
+			r.abilities[i] = true
+			pu.A.publish()
+			G.note(team, string.format("Comeback bonus: %s (key %d)", P.ABILITIES[i].name, i))
+			return
+		end
+	end
+	G.moreHealth(u, 0.25)
+	G.note(team, "Comeback bonus: 25 % more health")
+end
+
 -- the unit of a player: new, or after a loss, or turned into another one (debug)
 -- the unit is the player's: bookkeeping, hold fire, the data for the widget (the unit of the start, of a respawn, a debug turn and, in the takeover mode, a unit the player took over)
 local function adopt(team, id, defName)
@@ -1427,6 +1457,7 @@ end
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
 	rounds.frame(f)
+	if f % 5 == 0 then G.shieldTick(f) end
 	if not EVO and f % 30 == 0 then autoReclaim() end
 	puFrame(f)
 	for team, untilFrame in pairs(follow) do
@@ -1476,6 +1507,8 @@ function gadget:GameFrame(f)
 			if x and giveUnit(team, kind[team], x, y, z, 0) then
 				due[team] = nil
 				Spring.SetTeamRulesParam(team, "renRespawn", 0, { public = true })
+				G.shield(units[team]) -- (no damage for 4 s or until it fires)
+				if not EVO and (streak[team] or 0) >= G.COMEBACK then comeback(team) end
 			else
 				due[team] = f + 30 -- (it did not work: again in a second)
 			end
@@ -1500,7 +1533,9 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 	local counted = attackerTeam and attackerTeam ~= team and not Spring.AreTeamsAllied(attackerTeam, team)
 	if counted then
 		Spring.SetTeamRulesParam(attackerTeam, "renKills", (Spring.GetTeamRulesParam(attackerTeam, "renKills") or 0) + 1, { public = true })
+		streak[attackerTeam] = 0
 	end
+	if units[team] == u then streak[team] = (streak[team] or 0) + 1 end
 	-- the kill feed (lost units of the players and the bots, and every kill of a player's unit) and the kill goal
 	rounds.killed(defID, team, attackerDefID, counted and attackerTeam or nil, units[team] == u or bots[u] == true or (attackerID ~= nil and attackerTeam ~= nil and units[attackerTeam] == attackerID))
 	if units[team] == u then

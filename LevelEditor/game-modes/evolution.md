@@ -70,6 +70,8 @@
 ## Death
 
 - Your unit comes back after **5 seconds** at a random place far from the others, **one level lower** (never below 1). The points of the level are lost.
+- **Spawn shield:** for 4 seconds after it comes back your unit takes no damage (a blue ring). It ends at once when you fire.
+- **Comeback bonus:** three deaths in a row without a kill: the next unit gets a free ability (or 25 % more health when it has all five).
 - All units appear on the land the commanders stand on, so on a map with water or islands everybody can reach everybody.
 
 ## Level 10: Armageddon

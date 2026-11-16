@@ -370,6 +370,64 @@ function G.setSight(id, reason, o)
 	if next(s.why) == nil then sights[id] = nil end
 end
 
+-- The spawn shield (Evolution and Renegade): a unit that just came back takes no damage for SHIELD_FRAMES (or the frames given), or until it fires (a weapon that starts to reload;
+-- the reload Renegade holds far in the future, >= 500000, does not count). Kept in GG.ledShields like the sights (every gadget has its own copy of this file): unit id -> { untilF,
+-- base = { weapon -> reload frame at the start } }. Unit rules ledShield = the frame it ends (0: none) for the screens (a ring, the seconds left).
+-- G.shield(id) when the unit comes back; G.shielded(id) in gadget:UnitPreDamaged (return 0 damage); G.shieldTick(f) every few frames ends the shields.
+G.SHIELD_FRAMES = 4 * 30
+local ownShields = {}
+local function shields()
+	if GG then
+		GG.ledShields = GG.ledShields or {}
+		return GG.ledShields
+	end
+	return ownShields
+end
+function G.shield(id, frames)
+	if not Spring.ValidUnitID(id) then return end
+	local ud = UnitDefs[Spring.GetUnitDefID(id) or -1]
+	local base = {}
+	for w = 1, #(ud and ud.weapons or {}) do base[w] = Spring.GetUnitWeaponState(id, w, "reloadFrame") or 0 end
+	local untilF = Spring.GetGameFrame() + (frames or G.SHIELD_FRAMES)
+	shields()[id] = { untilF = untilF, base = base }
+	Spring.SetUnitRulesParam(id, "ledShield", untilF, { public = true })
+end
+function G.shielded(id)
+	local s = shields()[id]
+	return s ~= nil and Spring.GetGameFrame() < s.untilF
+end
+function G.shieldTick(f)
+	local list = shields()
+	for id, s in pairs(list) do
+		local done = f >= s.untilF or not Spring.ValidUnitID(id)
+		if not done then
+			for w, r0 in pairs(s.base) do
+				local r = Spring.GetUnitWeaponState(id, w, "reloadFrame")
+				if r and r < 500000 and r > f and r ~= r0 then done = true break end -- (it fired: the weapon reloads, and not since before the shield)
+			end
+		end
+		if done then
+			list[id] = nil
+			if Spring.ValidUnitID(id) then Spring.SetUnitRulesParam(id, "ledShield", 0, { public = true }) end
+		end
+	end
+end
+
+-- A note for the players of one team (the screens of Evolution and Renegade show it a few seconds in big letters, mode_ui.lua): team rules ledNote = "<frame>|<text>"
+function G.note(team, text)
+	Spring.SetTeamRulesParam(team, "ledNote", Spring.GetGameFrame() .. "|" .. text, { public = true })
+end
+
+-- The comeback bonus (Evolution and Renegade): COMEBACK deaths in a row without a kill give the next unit a bonus (the mode chooses it: a free power-up, or more health)
+G.COMEBACK = 3
+-- more health for the unit: its maximum health and its health times (1 + part)
+function G.moreHealth(id, part)
+	local hp, maxHp = Spring.GetUnitHealth(id)
+	if not maxHp then return end
+	Spring.SetUnitMaxHealth(id, maxHp * (1 + part))
+	Spring.SetUnitHealth(id, hp * (1 + part))
+end
+
 -- The heal effect (unsynced, for the gadgets that heal a unit): green plus signs rise round the unit and a green "+N" climbs over it. The synced part sends each heal with
 -- SendToUnsynced(<name>, unit, amount); the unsynced part calls G.healAdd(unit, amount) for it and G.healDraw(vsy) from gadget:DrawScreen.
 local HEAL_LIFE, HEAL_MAX, HEAL_JOIN = 1.6, 40, 1.3 -- (heals of the same unit within HEAL_JOIN seconds are one number)

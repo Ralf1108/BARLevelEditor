@@ -111,6 +111,8 @@ Good to know about driving:
 - **Green arrow on the ground:** the way the unit faces (for a turret: where its gun points).
 - **Damage numbers:** every hit on a unit you can see rises as a red number (blue = paralyzing damage). Hits in quick succession are added up.
 - **Respawn:** when your unit is lost, a countdown (5 to 1) shows and you come back as the same unit far from the enemies.
+  - **Spawn shield:** 4 seconds without damage (a blue ring, "SPAWN SHIELD" on the screen); it ends at once when you fire.
+  - **Comeback bonus:** three deaths in a row without a kill: a free power-up (with Power-ups on), otherwise 25 % more health.
 
 ## More rules
 
