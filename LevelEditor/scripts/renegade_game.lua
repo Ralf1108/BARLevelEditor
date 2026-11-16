@@ -33,6 +33,9 @@ if not gadgetHandler:IsSyncedCode() then
 			if Script.LuaUI("renDamage") then Script.LuaUI.renDamage(unitID, damage, paralyzer) end
 		end)
 		gadgetHandler:AddSyncAction("renHeal", function(_, unitID, amount) G.healAdd(unitID, amount) end)
+		gadgetHandler:AddSyncAction("renKill", function(_, killerTeam, victimTeam, victimDef, killerDef)
+			if Script.LuaUI("renKill") then Script.LuaUI.renKill(killerTeam, victimTeam, victimDef, killerDef) end
+		end)
 	end
 	function gadget:DrawScreen()
 		G.healDraw((select(2, Spring.GetViewGeometry())))
@@ -68,6 +71,8 @@ local POWERUPS = MO.lanrenepowerups == "1" and not EVO -- the power-ups without 
 local follow = {}
 local FOLLOW_FRAMES = 450 -- (15 s: a respawn takes its time)
 local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
+-- the round: the kill goal (game option lanrenegoal), the kill feed and the end of the round (renegade_rounds.lua)
+local rounds = VFS.Include("luaui/Include/renegade_rounds.lua", nil, VFS.ZIP_FIRST)({ single = SINGLE, evo = EVO, say = G.sayer("Renegade") })
 local RESPAWN = 150 -- frames until a player's unit comes back (5 s; the widget counts down, team rules parameter renRespawn = the frame)
 local lastPos = {} -- team -> where its unit was lost (when no place is found, e.g. for a ship on land)
 local BOT_RESPAWN = 150
@@ -1421,6 +1426,7 @@ end
 
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
+	rounds.frame(f)
 	if not EVO and f % 30 == 0 then autoReclaim() end
 	puFrame(f)
 	for team, untilFrame in pairs(follow) do
@@ -1491,9 +1497,12 @@ end
 
 function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attackerTeam)
 	-- the score (for the list of the players): every unit destroyed by a team counts as a kill of it (not its own or an allied one), a lost unit of the player as a death
-	if attackerTeam and attackerTeam ~= team and not Spring.AreTeamsAllied(attackerTeam, team) then
+	local counted = attackerTeam and attackerTeam ~= team and not Spring.AreTeamsAllied(attackerTeam, team)
+	if counted then
 		Spring.SetTeamRulesParam(attackerTeam, "renKills", (Spring.GetTeamRulesParam(attackerTeam, "renKills") or 0) + 1, { public = true })
 	end
+	-- the kill feed (lost units of the players and the bots, and every kill of a player's unit) and the kill goal
+	rounds.killed(defID, team, attackerDefID, counted and attackerTeam or nil, units[team] == u or bots[u] == true or (attackerID ~= nil and attackerTeam ~= nil and units[attackerTeam] == attackerID))
 	if units[team] == u then
 		if pu.A and pu.recs[team] then
 			pu.A.lose(pu.recs[team]) -- (the power-ups are gone with the unit)

@@ -30,7 +30,8 @@ The host chooses them with the green button **LAN Play** in the title row of the
 
 - **Custom Scenario:** the other players get the scenario's game file automatically.
 - **Evolution:** any map, best a small one (size M or smaller). Its settings: Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode.
-- **Renegade** has two more settings:
+- **Renegade** has more settings:
+  - **Goal:** the first player with 10, 20 (default) or 30 kills wins the round.
   - **Always in unit Off:** you play the normal game and take over any of your units with the key left of the 1.
   - **Power-ups On:** beacons of five colors lie on the map; a unit that drives over one gets Sprint, Repair, Radar Pulse, Cloak or Jammer, used with the keys 1 to 5.
 

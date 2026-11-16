@@ -64,6 +64,9 @@ function widget:Initialize()
 	end
 	R.single = mo.lanrenesingle ~= "0" -- (single unit mode, the default: always in the unit; "0": the takeover mode, the key left of the 1 takes over the unit under the cursor and leaves it)
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
+	-- the round: the kill feed, the goal and the banner at the end (renegade_hud.lua; the gadget sends every lost unit of a player or a bot: global renKill)
+	R.H = VFS.Include("luaui/Include/renegade_hud.lua", nil, VFS.ZIP_FIRST)
+	widgetHandler:RegisterGlobal("renKill", function(...) R.H.kill(...) end)
 end
 
 -- Unlimited view in the first / third person view: no fog, units never turn into icons in the distance (the gadget gives the humans global line of sight)
@@ -84,6 +87,7 @@ end
 
 function widget:Shutdown()
 	pcall(widgetHandler.DeregisterGlobal, widgetHandler, "renDamage")
+	pcall(widgetHandler.DeregisterGlobal, widgetHandler, "renKill")
 	farView(false)
 	if R.unit and R.hidden then Spring.SetUnitNoDraw(R.unit, false); Spring.SetUnitNoSelect(R.unit, false) end
 	WG.renegade = nil
@@ -1612,15 +1616,7 @@ end
 -- The players at the right (like the overview of Evolution): the colour of the team, the name, the unit and the kills (K) and deaths (D); the one with the most kills on top, a player
 -- without a unit (waiting for the respawn) is dimmed. As many rows as fit above the altimeter, the rest is counted ("+N more"). Kills and deaths: team rules parameters renKills, renDeaths.
 local function teamName(team)
-	local _, leader, _, isAI = Spring.GetTeamInfo(team, false)
-	if isAI then
-		local _, n = Spring.GetAIInfo(team)
-		if n and n ~= "" then return n end
-	elseif leader then
-		local n = Spring.GetPlayerInfo(leader, false)
-		if n and n ~= "" then return n end
-	end
-	return "Team " .. team
+	return R.H.teamName(team)
 end
 local function scoreboard(vsx, vsy)
 	local rows = {}
@@ -1650,7 +1646,7 @@ local function scoreboard(vsx, vsy)
 	local y1 = top - head - shown * rowH - 6 * s - (more > 0 and 16 * s or 0)
 	card(x1, y1, x2, top, { 0.05, 0.06, 0.08, 0.75 }, { 0.02, 0.02, 0.03, 0.75 }, { 0.5, 0.55, 0.65, 0.5 }, 1.5)
 	gl.Color(0.7, 0.78, 0.9, 1)
-	gl.Text("PLAYERS", x1 + 10 * s, top - 20 * s, 14 * s, "o")
+	gl.Text(R.H.goalTitle(), x1 + 10 * s, top - 20 * s, 14 * s, "o") -- (with a kill goal: "FIRST TO 20 KILLS")
 	crosshair(x2 - 62 * s, top - 14 * s, 8 * s)
 	skull(x2 - 22 * s, top - 14 * s, 8 * s)
 	local me = Spring.GetMyTeamID()
@@ -1665,7 +1661,7 @@ local function scoreboard(vsx, vsy)
 		gl.Rect(x1 + 8 * s, ry1 + 3 * s, x1 + 15 * s, ry2 - 5 * s)
 		local name = r.name
 		while #name > 3 and gl.GetTextWidth(name) * 15 * s > 150 * s do name = name:sub(1, -2) end
-		gl.Color(1, 1, 1, a)
+		if i == 1 and r.kills > 0 and #rows > 1 and r.kills > rows[2].kills then gl.Color(1, 0.85, 0.3, a) else gl.Color(1, 1, 1, a) end -- (the leader in gold)
 		gl.Text(name, x1 + 22 * s, ry2 - 18 * s, 15 * s, "o")
 		gl.Color(0.65, 0.7, 0.8, a)
 		local unit = r.alive and r.unit or "respawning"
@@ -1930,6 +1926,8 @@ function widget:DrawScreen()
 	local vsx0, vsy0 = Spring.GetViewGeometry()
 	if not Spring.GetSpectatingState() then countdown(vsx0, vsy0) end
 	drawDamageNumbers(vsy0)
+	R.H.drawFeed(vsx0, vsy0)
+	R.H.drawEnd(vsx0, vsy0)
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()
 	if R.U then

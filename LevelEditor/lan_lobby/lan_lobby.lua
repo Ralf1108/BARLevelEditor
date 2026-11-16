@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 31, stamp = "2026-11-13 22:30" }
+local LAN_VERSION = { number = 32, stamp = "2026-11-16 12:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -478,10 +478,10 @@ selectScenario = function(name)
 	S.battle.scenario = { name = name, text = text, map = map, team = tonumber(team), ally = tonumber(ally) }
 	if S.battle.modoptions.lanevolution then S.battle.modoptions.lanevolution = nil; toBattle("SETSCRIPTTAGS game/modoptions/lanevolution=") end -- a scenario has its own rules
 	if S.battle.modoptions.lanrenegade then
-		S.battle.modoptions.lanrenegade, S.battle.modoptions.lanrenesingle, S.battle.modoptions.lanrenepowerups = nil, nil, nil
-		toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=")
-		toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=")
-		toBattle("SETSCRIPTTAGS game/modoptions/lanrenepowerups=")
+		for _, k in ipairs({ "lanrenegade", "lanrenesingle", "lanrenepowerups", "lanrenegoal" }) do
+			S.battle.modoptions[k] = nil
+			toBattle("SETSCRIPTTAGS game/modoptions/" .. k .. "=")
+		end
 	end
 	for _, c in ipairs(S.conns) do c.versusSet = nil end
 	-- Capture the Flag and Reclaim the Fame are played human against human (a computer opponent does not play them): the opponent team of the scenario
@@ -1158,12 +1158,15 @@ buildScript = function(myName)
 	t[#t + 1] = "\t[MODOPTIONS]\n\t{\n"
 	-- Evolution replaces the commanders: the game must not end when a commander is gone (the mode itself never ends)
 	local evo = evolutionOn() and extra
+	local ren = renegadeOn() and extra -- (Renegade replaces the commanders too: the round ends by its own goal)
 	local brood = broodOption()
 	-- Evolution: the game never ends by a lost commander, and the Legion faction and the Extra Units Pack are always on (more units for the ladders and gifts)
 	local EVO_FORCED = { deathmode = "neverend", experimentallegionfaction = "1", experimentalextraunits = "1" }
-	for k, v in pairs(S.battle.modoptions) do if not (evo and EVO_FORCED[k]) and not (brood and k == brood.key) then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
+	for k, v in pairs(S.battle.modoptions) do if not (evo and EVO_FORCED[k]) and not (ren and k == "deathmode") and not (brood and k == brood.key) then t[#t + 1] = "\t\t" .. k .. "=" .. tostring(v) .. ";\n" end end
 	if evo then
 		for _, k in ipairs({ "deathmode", "experimentallegionfaction", "experimentalextraunits" }) do t[#t + 1] = "\t\t" .. k .. "=" .. EVO_FORCED[k] .. ";\n" end
+	elseif ren then
+		t[#t + 1] = "\t\tdeathmode=neverend;\n"
 	end
 	if brood then t[#t + 1] = "\t\t" .. brood.key .. "=" .. brood.value .. ";\n" end
 	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
@@ -2212,22 +2215,27 @@ local REN_TIP = "Renegade: you steer a unit from the inside (first or third pers
 local function renSingle() return not (S and S.renSingleOff) end
 -- Power-ups (Sprint, Repair, Radar Pulse, Cloak, Jammer with beacons on the map, keys 1 to 5) are off by default (the choice is kept in S.renPowerups; with Evolution its own power-ups are used)
 local function renPowerups() return S and S.renPowerups or false end
+-- The goal of a round (Always in unit only): the first player with that many kills wins (game option lanrenegoal; "0" = no goal); default 20, kept in S.renGoal
+local REN_GOALS = { "10", "20", "30", "0" }
+local function renGoal() return (S and S.renGoal) or "20" end
 local function renShown()
 	if S then return renegadeOn() end
 	local l = lobby()
 	return l and l.modoptions and l.modoptions.lanrenegade == "1" or false
 end
--- on: the game options lanrenegade=1 and lanrenesingle=0 (the takeover mode) for everybody in the room; off: both removed. lanrenesingle is always written when it is on (a missing one means the single unit mode)
-local function setRenOptions(on, single, powerups)
+-- on: the game options of Renegade for everybody in the room (lanrenegade=1, lanrenesingle 1 / 0, lanrenepowerups, lanrenegoal), from the choices kept in S; off: all removed.
+-- lanrenesingle is always written when it is on (a missing one means the single unit mode)
+local function setRenOptions(on)
 	if not S or S.battle.scenario then return end
-	S.battle.modoptions.lanrenegade = on and "1" or nil
-	S.battle.modoptions.lanrenesingle = on and (single and "1" or "0") or nil
-	S.battle.modoptions.lanrenepowerups = (on and powerups) and "1" or nil
-	toBattle("SETSCRIPTTAGS game/modoptions/lanrenegade=" .. (on and "1" or ""))
-	toBattle("SETSCRIPTTAGS game/modoptions/lanrenesingle=" .. (on and (single and "1" or "0") or ""))
-	toBattle("SETSCRIPTTAGS game/modoptions/lanrenepowerups=" .. ((on and powerups) and "1" or ""))
+	local single, powerups, goal = renSingle(), renPowerups(), renGoal()
+	local values = { lanrenegade = on and "1" or nil, lanrenesingle = on and (single and "1" or "0") or nil, lanrenepowerups = (on and powerups) and "1" or nil,
+		lanrenegoal = (on and single and goal ~= "0") and goal or nil }
+	for _, k in ipairs({ "lanrenegade", "lanrenesingle", "lanrenepowerups", "lanrenegoal" }) do
+		S.battle.modoptions[k] = values[k]
+		toBattle("SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. (values[k] or ""))
+	end
 	syncPveGame()
-	log("Renegade", on and ((single and "on, always in unit" or "on, takeover mode") .. (powerups and ", power-ups" or "")) or "off")
+	log("Renegade", on and ((single and "on, always in unit" or "on, takeover mode") .. (powerups and ", power-ups" or "") .. ", goal " .. goal) or "off")
 	say(on and (single and "The game mode Renegade is on: every player steers one unit for the whole game (instead of the commander)." or "The game mode Renegade is on: in the game press the key left of the 1 over one of your units to take it over, the same key again to leave it.") or "The game mode Renegade is off.")
 end
 
@@ -2240,19 +2248,28 @@ local function openRenMenu()
 	local on, single, power = renegadeOn(), renSingle(), renPowerups()
 	local items = {
 		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Renegade is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch it for everybody in the room: in the game the key left of the 1 takes over the unit under the cursor and leaves it again.",
-			fn = function() setRenOptions(not renegadeOn(), renSingle(), renPowerups()); openRenMenu() end },
+			fn = function() setRenOptions(not renegadeOn()); openRenMenu() end },
 		{ caption = "Always in unit: " .. (single and "On" or "Off"), class = single and "action_button" or "negative_button",
 			tip = "Always in unit " .. (single and "on" or "off") .. " (the default is on): on = every player is one unit for the whole game (it replaces the commander; the key left of the 1 does not leave the unit; a lost unit comes back after 5 s); off = the normal game, the key left of the 1 takes over a unit and leaves it again. Default: on. Click to change.",
 			fn = function()
 				S.renSingleOff = renSingle() or nil -- (on -> off, off -> on)
-				if renegadeOn() then setRenOptions(true, renSingle(), renPowerups()) end
+				if renegadeOn() then setRenOptions(true) end
 				openRenMenu()
 			end },
 		{ caption = "Power-ups: " .. (power and "On" or "Off"), class = power and "action_button" or "negative_button",
 			tip = "Power-ups " .. (power and "on" or "off") .. " (the default is off): on = beacons of five colors lie on the map, a unit that drives over one gets the power-up until it is lost (Sprint, Repair, Radar Pulse, Cloak, Jammer); in the game the keys 1 to 5 use them. With the game mode Evolution on, its own power-ups are used instead. Click to change.",
 			fn = function()
 				S.renPowerups = (not renPowerups()) or nil
-				if renegadeOn() then setRenOptions(true, renSingle(), renPowerups()) end
+				if renegadeOn() then setRenOptions(true) end
+				openRenMenu()
+			end },
+		{ caption = "Goal: " .. (renGoal() == "0" and "None" or (renGoal() .. " kills")),
+			tip = "The goal of a round (Always in unit only): the first player with this many kills wins the round and the game ends; None = the game does not end by itself. Default: 20 kills. Click to step through 10, 20, 30, None.",
+			fn = function()
+				local cur, nxt = renGoal(), REN_GOALS[1]
+				for i, v in ipairs(REN_GOALS) do if v == cur then nxt = REN_GOALS[i % #REN_GOALS + 1] end end
+				S.renGoal = nxt
+				if renegadeOn() then setRenOptions(true) end
 				openRenMenu()
 			end },
 	}
@@ -2348,7 +2365,7 @@ local function openLanMenu()
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
 		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then closeRenMenu(); if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
-		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit, Power-ups, Goal). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
 			fn = function() if S then closeEvoMenu(); if ui.renMenu then closeRenMenu() else openRenMenu() end end end }
 	end
 	local w = 230
@@ -2672,7 +2689,7 @@ function widget:Update()
 		cfg.renegadeSet = true
 		log("test: Renegade on")
 		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the takeover mode unless renegadeSingle=1)
-		setRenOptions(true, renSingle())
+		setRenOptions(true)
 	end
 	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then
 		cfg.renMenu = nil -- test: the submenu of Renegade (On / Off, Always in unit) is opened (a picture of it)

@@ -27,6 +27,7 @@
 | **Always in unit** On (default) | every player is one unit for the whole game |
 | **Always in unit** Off (takeover mode) | you play the normal game with all your units and take one over when you like |
 | **Power-ups** On (Off by default) | beacons on the map give Sprint, Repair, Radar Pulse, Cloak and Jammer |
+| **Goal** 10, 20 (default), 30 kills, None | the first player with this many kills wins the round (Always in unit only) |
 
 - **Takeover:** hold the mouse over one of your units and press **the key left of the 1**; the same key leaves it. If the unit is lost you are out of it.
 - **Power-ups:** drive over a beacon and you have its power-up until your unit is lost.
@@ -103,7 +104,9 @@ Good to know about driving:
 - **Compass** (bottom middle): up = where you look, green arrow = where the vehicle drives, coloured arrowheads = where each group of weapons points.
 - **Speedometer** (right of the compass): 0 to 150 Elmo per second, the yellow mark is your highest speed.
 - **Health bar** under compass and speedometer.
-- **List of the players** (top right): unit, kills and deaths.
+- **List of the players** (top right): unit, kills and deaths. With a goal the title says "FIRST TO 20 KILLS"; the leader is gold.
+- **Kill feed** (left of the list): who destroyed whom, for a few seconds.
+- **End of the round:** VICTORY or DEFEAT in big letters; the game ends a few seconds later.
 - **Lines on the ground:** where each group of weapons points. The range rings are off; `/renegade rings` or the debug button **Range** switches them on.
 - **Green arrow on the ground:** the way the unit faces (for a turret: where its gun points).
 - **Damage numbers:** every hit on a unit you can see rises as a red number (blue = paralyzing damage). Hits in quick succession are added up.
@@ -144,6 +147,6 @@ With `start_renegade.bat` three buttons sit above the panel. Press **Tab** to fr
 
 ## Not yet there
 
-- Games with several humans (not tested), score, teams and a real game goal, sound.
+- Games with several humans (not tested), sound.
 - Aircraft and ships are steered less well than ground units.
 - The plan and what was measured in the game: [specification](../../specs/renegade.md).

@@ -17,13 +17,14 @@
 | Gadget | `LevelEditor/scripts/renegade_game.lua` (`luarules/gadgets`) | unit of every human, moving, jump, shooting (the buttons), respawn, energy, bots, power-ups (`lanrenepowerups`), debug messages |
 | Weapon data | `LevelEditor/scripts/renegade_data.lua` | the weapon tables, loaded by the gadget (made from the csv) |
 | Test hooks | `LevelEditor/scripts/renegade_test.lua` | `ren\|test\|n`, loaded by the gadget only with `lanrenotest=1` |
+| Round | `LevelEditor/scripts/renegade_rounds.lua` (synced, loaded by the gadget), `renegade_hud.lua` (loaded by the widget) | the kill goal, the kill feed, the end of the round and its banner (see 7) |
 | Power-ups | `LevelEditor/scripts/powerups.lua` (synced logic and the list), `powerups_ui.lua` (drawing), shared with [Evolution](evolution.md) | Sprint, Repair, Radar Pulse, Cloak, Jammer: beacons, use, effect; the bar and the beacons on the map (see [shared-code.md](shared-code.md)) |
 | Weapon table | `LevelEditor/game-modes/renegade_weapons.csv` (source), `renegade-weapons.md` (made from it) | which weapon of which unit is fired with which button |
 | Table tools | `test-data/generators/renegade_weapons.py`, `zz_weapondump.lua`, `game-modes/update_renegade_weapons.bat` | table <-> `renegade_data.lua` (the weapon tables, loaded by the gadget) |
 | Start | `LevelEditor/start_renegade.bat`, `scripts/start_renegade.ps1` | a game at once (see 2) |
-| Lobby | `lan_lobby.lua` | the button Renegade of the room with a submenu: On / Off, Always in unit, Power-ups (game options `lanrenegade`, `lanrenesingle`, `lanrenepowerups`; `LAN_VERSION` 31) |
+| Lobby | `lan_lobby.lua` | the button Renegade of the room with a submenu: On / Off, Always in unit, Power-ups, Goal (game options `lanrenegade`, `lanrenesingle`, `lanrenepowerups`, `lanrenegoal`; `LAN_VERSION` 32) |
 
-- Widget, gadget, `renegade_data.lua`, `renegade_test.lua`, `powerups.lua` and `powerups_ui.lua` are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
+- Widget, gadget, `renegade_data.lua`, `renegade_test.lua`, `renegade_rounds.lua`, `renegade_hud.lua`, `powerups.lua` and `powerups_ui.lua` are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
 - Tests: sandbox `test-data/tools/pve_test.ps1 -Ren [-RenTest] [-RenBots n] -Widget zz_ren*.lua` (see Tests below).
 
 ## 2. Game options and start
@@ -31,6 +32,8 @@
 - `lanrenegade=1`: the mode (gadget and widget load only with it).
   - `lanrenebots=<n>` (0 to 30): computer Peewees that hunt the players.
   - `lanrenepowerups=1`: the power-ups without Evolution (see [renegade-units.md](renegade-units.md), Power-ups); with `lanevolution` Evolution's own are used.
+  - `lanrenegoal=<n>`: the first team with n kills wins the round (see 7); the lobby writes 20 by default.
+  - The LAN lobby writes `deathmode=neverend` for a Renegade room (the commanders are replaced: the game must not end by a lost commander).
   - `lanrenedebug=1`: the debug menu (turn into a unit, spawn an enemy).
   - `lanrenotest=1`: test hooks (see Tests below).
 - **Start scripts:** both quick start scripts (`start_renegade.ps1`, `start_evolution.ps1`) use `Resolve-ExtraGame` and `Start-ExtraGame` of `shared/bar_common.ps1` (data folder, extra game, engine, writing and starting the start script); `-DryRun` only writes the start script (tests: `ps_test.ps1`).
@@ -51,9 +54,9 @@ Widget -> gadget (`SendLuaRulesMsg`; the sender's team must own a unit):
 
 - `ren|<yaw>|<pitch>|<keys>|<fire>|<x>|<y>|<z>|<unit>`: the view in whole degrees (yaw 0 looks along +z, 90 along +x), keys W 1, A 2, S 4, D 8, `fire` bits left 1, right 2, middle 4; always (also without a button: the turret follows the view) the point under the crosshair, or a far point in the sky, and the unit there (an aircraft in the anti-air circle: the lock) or -1.
   - Sent at once when keys or buttons change, otherwise at most every 3 frames and only when the text changed.
-- `ren|unit|<name>`: debug, turn into that unit. `ren|spawn|<name>`: debug, an enemy of that kind. `ren|test|1` to `ren|test|8`: `lanrenotest` only; `ren|use|<n>`: a power-up (only with `lanrenepowerups`, see renegade-units.md).
+- `ren|unit|<name>`: debug, turn into that unit. `ren|spawn|<name>`: debug, an enemy of that kind. `ren|test|1` to `ren|test|9`: `lanrenotest` only; `ren|use|<n>`: a power-up (only with `lanrenepowerups`, see renegade-units.md).
 
-Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRespawn` (frame of the return after a loss, 0 = alive); unit rules `renSlots` ("left;right;middle", each a comma list of weapon numbers), `renAA` and `renHY` (comma lists, see Anti-air in [renegade-shooting.md](renegade-shooting.md)).
+Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRespawn` (frame of the return after a loss, 0 = alive), `renKills`, `renDeaths`; game rules `renGoal`, `renWinner`, `renResult`, `renOver` (see 7); the message `renKill` (SendToUnsynced, then the global `renKill` of the widget: killer team, victim team, victim and killer unit definitions); unit rules `renSlots` ("left;right;middle", each a comma list of weapon numbers), `renAA` and `renHY` (comma lists, see Anti-air in [renegade-shooting.md](renegade-shooting.md)).
 
 ## 4. Documents
 
@@ -66,8 +69,8 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 
 ## 5. Tests (sandbox, `pve_test.ps1 -Ren ...`, lines in the infolog)
 
-- `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`, `-RenPowerups` = `lanrenepowerups=1`, `-RenTakeover` = `lanrenesingle=0`.
-- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents, `|7` and `|8` give all power-ups and put the unit onto a beacon): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
+- `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`, `-RenPowerups` = `lanrenepowerups=1`, `-RenTakeover` = `lanrenesingle=0`, `-RenGoal n` = `lanrenegoal=n`.
+- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents, `|7` and `|8` give all power-ups and put the unit onto a beacon, `|9` destroys the nearest enemy unit with the player's unit as the attacker: a kill that counts): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
 
 | Widget | Checks |
 |---|---|
@@ -87,17 +90,29 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | `zz_ren90.lua` | the jump (Space) of a two-legged bot; tank and spider do not jump |
 | `zz_ren91.lua` | Renegade with Evolution: the keys 1 to 5 use the power-ups (`-Ren -RenTakeover -RenTest -Evo -EvoTest -Debug`) |
 | `zz_ren92.lua` | Renegade power-ups without Evolution: beacon, the five keys, the bar (`-Ren -RenTest -RenPowerups`) |
+| `zz_ren93.lua` | the kill goal (`-RenGoal 3`): three kills by `ren\|test\|9`, the feed, the winner, the banner, GameOver 8 s later |
 | `zz_sight.lua` | the sight of the unit: Renegade 3 times, Radar Pulse, back (`G.setSight`) |
 | `zz_weapondump.lua` | one `[zzwep]` line per weapon (for the table) |
 
 ## 6. Not done and open
 
 - **Several humans, not tested:** two players in the LAN (host + one joiner): each steers one unit, they fight, no desync.
-  - The lobby button and the game options exist; still missing: teams, scoring and a goal of the game.
+  - The lobby button, the game options and the kill goal exist; teams are the ally teams of the room.
 - **Both modes together:** the speedometer of Renegade overlaps the level badge of the character panel of Evolution at the bottom of the screen (the keys 1 to 5 and the bar of Evolution work).
 - **Jump:** done for two-legged bots, see [renegade-units.md](renegade-units.md); not seen in a real window: the walk animation in the air, the feel of the height and of the pause.
 - Not checked by a human or not seen: the barrel lines on a picture, the Tab key as a commander, flying units as the player's unit (steering by move orders), whether the Titan starburst can hit an aircraft at all, how the lock feels against fast aircraft.
 - Open questions: a feel for the move orders (lag, the unit's heading against the view), traffic and determinism of the messages with many players, what the lobby and team setup need.
-- Not planned for the first steps: hundreds of players, an own lobby/matchmaking/dedicated server, new weapons, projectiles or damage model, full HUD, sound, animations, progression.
+- Not planned for the first steps: hundreds of players, an own lobby/matchmaking/dedicated server, new weapons, projectiles or damage model, animations, progression.
 - **Unit bars of the game:** the bars over the units (widget "Health Bars GL4") stay on.
   - The bar over the own unit that hangs at the crosshair after the switch back into the unit is **not solved**: restarting the widget with `luaui disablewidget` is refused by the game ("User widgets cannot control other widgets"), so that attempt was removed.
+
+## 7. The round
+
+- **Goal** (`renegade_rounds.lua`, game option `lanrenegoal`): the first team with that many kills (`renKills`) wins.
+  - Only with Always in unit, without Evolution (it has its own end).
+  - `M.finish(team, text)`: game rules `renWinner`, `renResult`, `renOver` (frame); `Spring.GameOver({ ally team })` 8 s later (`END_WAIT`).
+- **Kills:** every enemy unit a team destroys counts (also the bots and the test units); a lost unit of a player counts as a death.
+- **Kill feed:** a line for every lost unit of a player or a bot and for every kill of a player's unit (`renKill` -> `R.H.kill`).
+  - At the top, left of the list of the players: the last 6 lines, 8 s each, killer and victim in the color of their team; a line of the own team has a warmer background.
+- **List of the players:** the title is "FIRST TO n KILLS" with a goal (`R.H.goalTitle`), the leader's name is gold.
+- **Banner** (`R.H.drawEnd`, also in the normal game): VICTORY (green) for the own alliance, DEFEAT (red) for the others, ROUND OVER for a spectator; the text of the gadget below.

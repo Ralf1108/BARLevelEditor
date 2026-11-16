@@ -225,6 +225,8 @@ $ScenarioGameFiles = @(
     @('powerups.lua', 'luaui/Include/powerups.lua'),   # the power-ups (Sprint, Repair, Radar Pulse, Cloak, Jammer): data and synced logic, used by Evolution and Renegade
     @('powerups_ui.lua', 'luaui/Include/powerups_ui.lua'),   # the drawing of the power-ups (shapes, button bar, beacons): evo_ui.lua and the Renegade widget
     @('renegade_test.lua', 'luaui/Include/renegade_test.lua'),   # Renegade: the test hooks ren|test|n (loaded only with the game option lanrenotest)
+    @('renegade_rounds.lua', 'luaui/Include/renegade_rounds.lua'),   # Renegade: the round (kill goal, kill feed, end), loaded by renegade_game.lua
+    @('renegade_hud.lua', 'luaui/Include/renegade_hud.lua'),   # Renegade: the kill feed, the goal and the banner of the end on the screen, loaded by the widget renegade.lua
     @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the window of the gift of stage 10
     @('renegade.lua', 'luaui/widgets/renegade.lua'),   # Renegade (LAN Play): the first person view and the steering of the own unit
     @('scenario_briefing.lua', 'luaui/widgets/scenario_briefing.lua'),   # the briefing window (a game widget: no "Allow user widgets" needed)
