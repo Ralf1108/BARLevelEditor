@@ -29,8 +29,8 @@ if not gadgetHandler:IsSyncedCode() then
 	-- everything is synchronized; the view is the job of the widget renegade.lua. Only the hits come here (SendToUnsynced) and go on to the widget, which shows the damage numbers
 	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the heal effect (G.healAdd, G.healDraw)
 	function gadget:Initialize()
-		gadgetHandler:AddSyncAction("renDmg", function(_, unitID, damage, paralyzer)
-			if Script.LuaUI("renDamage") then Script.LuaUI.renDamage(unitID, damage, paralyzer) end
+		gadgetHandler:AddSyncAction("renDmg", function(_, unitID, damage, paralyzer, attackerTeam)
+			if Script.LuaUI("renDamage") then Script.LuaUI.renDamage(unitID, damage, paralyzer, attackerTeam) end
 		end)
 		gadgetHandler:AddSyncAction("renHeal", function(_, unitID, amount) G.healAdd(unitID, amount) end)
 		gadgetHandler:AddSyncAction("renKill", function(_, killerTeam, victimTeam, victimDef, killerDef)
@@ -50,8 +50,8 @@ function gadget:UnitPreDamaged(unitID)
 	if G.shielded(unitID) then return 0, 0 end
 end
 
-function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer)
-	if damage and damage >= 1 then SendToUnsynced("renDmg", unitID, damage, paralyzer and true or false) end
+function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
+	if damage and damage >= 1 then SendToUnsynced("renDmg", unitID, damage, paralyzer and true or false, attackerTeam or -1) end -- (the attacker: the hit marker of the widget)
 end
 
 local START_UNIT = "armpw"
@@ -429,6 +429,7 @@ local function endJump(u, inp)
 		local j = inp.jump
 		inp.jump = nil
 		if Spring.ValidUnitID(j.u) then
+			Spring.SetUnitRulesParam(j.u, "renJump", 0, { public = true })
 			pcall(Spring.MoveCtrl.SetVelocity, j.u, 0, 0, 0)
 			pcall(Spring.MoveCtrl.Disable, j.u)
 			Spring.GiveOrderToUnit(j.u, CMD.STOP, {}, 0)
@@ -457,6 +458,7 @@ local function startJump(u, inp, ud, f)
 	pcall(mc.SetGravity, u, 0)
 	mc.SetVelocity(u, vx, vy, vz)
 	inp.jump = { u = u, vx = vx, vy = vy, vz = vz, y0 = y, top = y, frame = f }
+	Spring.SetUnitRulesParam(u, "renJump", f, { public = true }) -- (the frame of the jump, 0 after the landing: the sounds of the widget)
 	inp.moving = false
 	if TEST then Spring.Echo(string.format("[Renegade] jump: %s speed %.1f up %.2f (height %.0f) at frame %d", ud.name, 30 * math.sqrt(vx * vx + vz * vz), vy, height, f)) end
 	return true

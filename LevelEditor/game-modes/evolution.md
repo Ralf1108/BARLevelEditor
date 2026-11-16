@@ -202,6 +202,7 @@ The first player on level 10 chooses one of three gifts (with **All Be Gods**: e
 - **Your panel** (bottom, left of the music player): level, unit, points bar, a violet **XP bar**, kills, deaths and the buttons of your abilities.
 - **Help window:** shown for 40 seconds at the start: the power-ups, example units of every level, Armageddon. A click outside closes it.
 - After a respawn the camera jumps to your new unit.
+- **Sounds:** level up, kills, death and respawn, power-ups, Armageddon, victory and defeat (the interface volume of the game settings).
 - Everything scales with the size of the window.
 
 ## Tips

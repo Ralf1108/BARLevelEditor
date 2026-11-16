@@ -66,7 +66,8 @@ function widget:Initialize()
 	widgetHandler:RegisterGlobal("renDamage", function(...) if R.damaged then R.damaged(...) end end) -- (the gadget renegade_game.lua sends every hit)
 	-- the round: the kill feed, the goal and the banner at the end (renegade_hud.lua; the gadget sends every lost unit of a player or a bot: global renKill)
 	R.H = VFS.Include("luaui/Include/renegade_hud.lua", nil, VFS.ZIP_FIRST)
-	R.M = VFS.Include("luaui/Include/mode_ui.lua", nil, VFS.ZIP_FIRST) -- (shared with Evolution: the spawn shield, the note of the team)
+	R.M = VFS.Include("luaui/Include/mode_ui.lua", nil, VFS.ZIP_FIRST) -- (shared with Evolution: the spawn shield, the note of the team, the sounds)
+	R.H.M = R.M
 	widgetHandler:RegisterGlobal("renKill", function(...) R.H.kill(...) end)
 end
 
@@ -566,6 +567,9 @@ end
 
 function widget:Update()
 	if Spring.GetSpectatingState() then return end
+	R.H.sounds(R) -- (death, respawn, jump, low health, lock, end of the round)
+	if R.powerups then R.M.watchAbilities("renAbilities") end -- (the power-ups: pick-up, use)
+	R.M.watchNote()
 	do
 		-- the mode key (the key left of the 1, the circumflex "^" on a German keyboard, scan code 53), polled as well: the game may take the press before the widget sees it
 		local k = Spring.GetKeyState(94) or (Spring.GetScanKeyState and Spring.GetScanKeyState(53))
@@ -1874,8 +1878,9 @@ end
 -- unit within DMG_JOIN seconds are added up, so the number counts up while a weapon keeps hitting. Not for the own unit (its health bar shows that).
 local DMG_JOIN, DMG_LIFE, DMG_MAX = 0.7, 1.6, 80
 local dmgNums = {} -- unit id -> { dmg, t0 (first hit of the number), t1 (last hit), para }
-function R.damaged(unitID, damage, paralyzer)
+function R.damaged(unitID, damage, paralyzer, attackerTeam)
 	if not damage or damage < 1 or unitID == R.unit then return end
+	if attackerTeam == Spring.GetMyTeamID() and not Spring.IsUnitAllied(unitID) then R.H.hit() end -- (the hit marker and its sound: a hit of the own team)
 	if not Spring.GetSpectatingState() then
 		local los = Spring.GetUnitLosState(unitID, Spring.GetMyAllyTeamID(), false) -- (only what can be seen)
 		if not (los and los.los) then return end
@@ -2019,6 +2024,7 @@ function widget:DrawScreen()
 		gl.Vertex(cx, cy + s / 3); gl.Vertex(cx, cy + s)
 	end)
 	gl.LineWidth(1)
+	R.H.drawHitMarker(cx, cy, s)
 	-- the information: one line each, below and to the right of the crosshair with some distance, so that the crosshair stays free and a long text runs away from it
 	do
 		local fs = math.max(12, vsy / 70)

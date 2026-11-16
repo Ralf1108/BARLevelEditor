@@ -33,8 +33,66 @@ local function teamColor(team)
 	return { r or 1, g or 1, b or 1 }
 end
 
+-- The hit marker: a short white cross at the crosshair when a shot of the own team hits an enemy (H.hit, from the global renDamage), a bigger red one for a kill (H.kill)
+function H.hit()
+	H.hitAt = os.clock()
+	if H.M then H.M.play("hit") end
+end
+function H.drawHitMarker(cx, cy, s)
+	local now = os.clock()
+	local kill = H.killAt and now - H.killAt < 0.35
+	if not kill and not (H.hitAt and now - H.hitAt < 0.15) then return end
+	local a, b = s * (kill and 1.4 or 0.9), s * (kill and 2.6 or 1.7)
+	if kill then gl.Color(1, 0.25, 0.2, 1) else gl.Color(1, 1, 1, 0.95) end
+	gl.LineWidth(kill and 3.5 or 2.5)
+	gl.BeginEnd(GL.LINES, function()
+		for _, d in ipairs({ { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } }) do
+			gl.Vertex(cx + d[1] * a, cy + d[2] * a); gl.Vertex(cx + d[1] * b, cy + d[2] * b)
+		end
+	end)
+	gl.LineWidth(1)
+	gl.Color(1, 1, 1, 1)
+end
+
+-- The sounds of the own unit and of the round (every Update of the widget; R = the state of the widget, H.M = mode_ui.lua): death and respawn, low health (below 30 %, once per
+-- unit), jump and landing (unit rules renJump of the gadget), the anti-air lock, the end of the round (win / lose)
+local ev = { unit = 0, dead = false, jump = 0 }
+function H.sounds(R)
+	local M = H.M
+	if not M or Spring.GetSpectatingState() then return end
+	local team = Spring.GetMyTeamID()
+	local u = Spring.GetTeamRulesParam(team, "renUnit") or 0
+	if u > 0 then
+		if ev.dead then M.play("respawn") end
+		ev.dead = false
+		if Spring.ValidUnitID(u) then
+			local hp, mhp = Spring.GetUnitHealth(u)
+			if hp and mhp and hp < mhp * 0.3 and ev.low ~= u then ev.low = u; M.play("lowhp") end
+			local j = Spring.GetUnitRulesParam(u, "renJump") or 0
+			if j > 0 and ev.jump == 0 then M.play("jump") elseif j == 0 and ev.jump > 0 then M.play("land") end
+			ev.jump = j
+		end
+	elseif ev.unit > 0 and (Spring.GetTeamRulesParam(team, "renRespawn") or 0) > Spring.GetGameFrame() then
+		ev.dead = true
+		M.play("death")
+	end
+	ev.unit = u
+	if R.aaTarget and not ev.lock then M.play("lock") end
+	ev.lock = R.aaTarget
+	local over = (Spring.GetGameRulesParam("renOver") or 0) > 0
+	if over and not ev.over then
+		local w = Spring.GetGameRulesParam("renWinner") or -1
+		M.play((w >= 0 and Spring.AreTeamsAllied(w, team)) and "win" or "lose")
+	end
+	ev.over = over
+end
+
 function H.kill(killerTeam, victimTeam, victimDef, killerDef)
 	local me = Spring.GetMyTeamID()
+	if killerTeam == me and victimTeam ~= me then
+		H.killAt = os.clock()
+		if H.M then H.M.play("kill") end
+	end
 	local e = { t = os.clock(), victim = H.teamName(victimTeam) .. " (" .. unitName(victimDef) .. ")", vc = teamColor(victimTeam),
 		mine = killerTeam == me or victimTeam == me }
 	if killerTeam and killerTeam >= 0 then

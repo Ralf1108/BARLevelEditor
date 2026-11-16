@@ -7,6 +7,9 @@ return function(gadget, S)
 	local lastUnit, lastSpawn = nil, nil
 	local overviewDone = false
 	local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the heal effect (G.healAdd, G.healDraw)
+	-- the spawn shield, the note of the team and the sounds are shared with Renegade (mode_ui.lua); with Renegade on, its widget draws the shield and the note
+	local M = VFS.Include("luaui/Include/mode_ui.lua", nil, VFS.ZIP_FIRST)
+	local withRenegade = (Spring.GetModOptions() or {}).lanrenegade == "1"
 
 	-- The camera at the start: the game's own camera type (spring) from above over the middle of the map, so that the whole map is seen. (A camera left in another type - the first person
 	-- view of a game before, which the game keeps in its settings - made Evolution start in a view from inside of the unit.)
@@ -16,10 +19,34 @@ return function(gadget, S)
 			rx = 2.75, ry = 0, rz = 0, dist = math.max(mx, mz) * 1.15 }, 0)
 	end
 
+	-- the sounds of the own player (mode_ui.lua): level up, the power-ups, Armageddon, the end; with Renegade on, its widget plays kill, death, respawn and the note
+	local evs = {}
+	local function sounds(team)
+		M.watchAbilities("evoAbilities")
+		if not withRenegade then M.watchNote() end
+		local cur = { stage = Spring.GetTeamRulesParam(team, "evoStage") or 0, kills = Spring.GetTeamRulesParam(team, "evoKills") or 0,
+			deaths = Spring.GetTeamRulesParam(team, "evoDeaths") or 0, spawn = Spring.GetTeamRulesParam(team, "evoSpawn") or 0,
+			out = Spring.GetTeamRulesParam(team, "evoOut") or 0, arma = Spring.GetGameRulesParam("evoArmageddon") or 0,
+			won = tostring(Spring.GetGameRulesParam("evoState") or ""):find("^won") ~= nil }
+		if evs.stage then
+			if cur.stage > evs.stage then M.play("levelup") end
+			if cur.arma > 0 and evs.arma == 0 then M.play("armageddon") end
+			if cur.out == 1 and evs.out == 0 then M.play("lose") end
+			if cur.won and not evs.won and cur.out == 0 then M.play("win") end
+			if not withRenegade then
+				if cur.kills > evs.kills then M.play("kill") end
+				if cur.deaths > evs.deaths then M.play("death") end
+				if cur.spawn > evs.spawn and cur.deaths > 0 then M.play("respawn") end
+			end
+		end
+		evs = cur
+	end
+
 	function gadget:Update()
 		if (Spring.GetGameRulesParam("evoState") or "") == "" or Spring.GetSpectatingState() then
 			return
 		end
+		sounds(Spring.GetMyTeamID())
 		if not overviewDone and Spring.GetGameFrame() >= 1 then
 			overviewDone = true
 			overview()
@@ -45,9 +72,6 @@ return function(gadget, S)
 	local H = {}
 	-- the shapes and the bar of buttons are shared with Renegade (powerups_ui.lua)
 	local U = VFS.Include("luaui/Include/powerups_ui.lua", nil, VFS.ZIP_FIRST)
-	-- the spawn shield and the note of the team are shared with Renegade (mode_ui.lua); with Renegade on, its widget draws them
-	local M = VFS.Include("luaui/Include/mode_ui.lua", nil, VFS.ZIP_FIRST)
-	local withRenegade = (Spring.GetModOptions() or {}).lanrenegade == "1"
 	H.outline, H.box, H.disc, H.ring, H.icon = U.outline, U.box, U.disc, U.ring, U.icon
 
 

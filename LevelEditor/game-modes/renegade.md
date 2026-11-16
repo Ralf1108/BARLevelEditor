@@ -110,6 +110,8 @@ Good to know about driving:
 - **Lines on the ground:** where each group of weapons points. The range rings are off; `/renegade rings` or the debug button **Range** switches them on.
 - **Green arrow on the ground:** the way the unit faces (for a turret: where its gun points).
 - **Damage numbers:** every hit on a unit you can see rises as a red number (blue = paralyzing damage). Hits in quick succession are added up.
+- **Hit marker:** a short white cross at the crosshair when your shot hits, a red one for a kill.
+- **Sounds:** hits, kills, jump and landing, power-ups, low health, the anti-air lock, death and respawn, victory and defeat (the interface volume of the game settings).
 - **Respawn:** when your unit is lost, a countdown (5 to 1) shows and you come back as the same unit far from the enemies.
   - **Spawn shield:** 4 seconds without damage (a blue ring, "SPAWN SHIELD" on the screen); it ends at once when you fire.
   - **Comeback bonus:** three deaths in a row without a kill: a free power-up (with Power-ups on), otherwise 25 % more health.
@@ -149,6 +151,6 @@ With `start_renegade.bat` three buttons sit above the panel. Press **Tab** to fr
 
 ## Not yet there
 
-- Games with several humans (not tested), sound.
+- Games with several humans (not tested).
 - Aircraft and ships are steered less well than ground units.
 - The plan and what was measured in the game: [specification](../../specs/renegade.md).
