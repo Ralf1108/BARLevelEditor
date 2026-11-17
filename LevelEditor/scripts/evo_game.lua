@@ -1011,7 +1011,7 @@ end
 -- The number of wild units: one per 1024 x 1024 Elmo of the land (a map of 16 x 16 without water has 64), at least 12, at most 100
 local function wildCount()
 	local area = land and (#land.cells * CELL * CELL) or (Game.mapSizeX * Game.mapSizeZ)
-	local mult = math.max(1, math.min(10, tonumber((Spring.GetModOptions() or {}).lanevomult) or 1)) -- the unit multiplier of the room (1 - 10)
+	local mult = math.max(1, math.min(10, tonumber((Spring.GetModOptions() or {}).lanevomult) or 1)) -- the enemy multiplier of the room (1 - 10)
 	return math.floor(math.max(12, math.min(100, math.floor(area / (1024 * 1024) + 0.5))) * mult)
 end
 

@@ -2177,7 +2177,7 @@ end
 
 ---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
 -- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
--- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode; a joiner sees the state). They open their windows
+-- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Debug mode; a joiner sees the state). They open their windows
 -- (the lists of scenarios and Copilot) as before. The button lies on the top level of the screen at the place of "Leave Lobby" minus its width: inside the
 -- title row the title of the room (a field that renames the room) took its clicks although the button was drawn over it. "Leave Lobby" is looked for
 -- about once a second among the visible controls (the lobby builds the room again at times); without it (the room not shown) the button is hidden.
@@ -2308,11 +2308,11 @@ local function openRenMenu()
 	log("Renegade menu opened:", #items, "buttons")
 end
 
--- The settings of Evolution (the submenu of the button Evolution; the host only): On (green) / Off (red), Unit multiplier (1x to 10x: the wild units and towers on the map
+-- The settings of Evolution (the submenu of the button Evolution; the host only): On (green) / Off (red), Enemy multiplier (1x to 10x: the wild units and towers on the map
 -- times that number, game option lanevomult)
 local EVO_MULTS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }
 local function evoMult() return (S and S.battle.modoptions.lanevomult) or "1" end
--- Unit health (Auto = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8, or one value from 10 % to 100 % for all levels: the health the wild units start with, game option lanevohp) and Regeneration (On / Off, default on; lanevoregen=0 for off)
+-- Enemy health (Auto = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8, or one value from 10 % to 100 % for all levels: the health the wild units start with, game option lanevohp) and Regeneration (On / Off, default on; lanevoregen=0 for off)
 local EVO_HPS = { "auto", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" }
 local function evoHp() return (S and S.battle.modoptions.lanevohp) or "auto" end
 local function evoRegen() return not (S and S.battle.modoptions.lanevoregen == "0") end
@@ -2337,7 +2337,7 @@ local function openEvoMenu()
 	local items = {
 		{ caption = on and "On" or "Off", class = on and "action_button" or "negative_button", tip = "Evolution is " .. (on and "on" or "off") .. " (green: on, red: off; off is the default). Click to switch the game mode for everybody in the room: every player starts with one weak unit that evolves through 10 levels by kills.",
 			fn = function() setEvolution(not evolutionOn()); openEvoMenu() end },
-		{ caption = "Unit multiplier: " .. evoMult() .. "x", tip = "How many wild units and towers stand on the map: 1x is the normal number, 2x twice as many (a denser map), up to 10x. Click to step through the values.",
+		{ caption = "Enemy multiplier: " .. evoMult() .. "x", tip = "How many enemies (wild units and towers) stand on the map: 1x is the normal number, 2x twice as many (a denser map), up to 10x. Click to step through the values.",
 			fn = function()
 				local cur = evoMult()
 				local nxt = EVO_MULTS[1]
@@ -2345,7 +2345,7 @@ local function openEvoMenu()
 				setEvoOption("lanevomult", nxt ~= "1" and nxt or nil)
 				openEvoMenu()
 			end },
-		{ caption = "Unit health: " .. (evoHp() == "auto" and "Auto" or (evoHp() .. " %")), tip = "The health the wild units (Gaia) start with, as a part of their normal health (the health bar shows it): Auto (the default) = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8; or one value for all levels from 10 % to 100 %. Click to step through the values.",
+		{ caption = "Enemy health: " .. (evoHp() == "auto" and "Auto" or (evoHp() .. " %")), tip = "The health the enemies (the wild units of Gaia) start with, as a part of their normal health (the health bar shows it): Auto (the default) = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8; or one value for all levels from 10 % to 100 %. Click to step through the values.",
 			fn = function()
 				local cur = evoHp()
 				local nxt = EVO_HPS[1]
@@ -2395,7 +2395,7 @@ local function openLanMenu()
 	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
-		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then closeRenMenu(); if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit, Power-ups, Goal, Survival, Race). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
 			fn = function() if S then closeEvoMenu(); if ui.renMenu then closeRenMenu() else openRenMenu() end end end }
@@ -2730,7 +2730,7 @@ function widget:Update()
 		openLanMenu()
 	end
 	if tonumber(cfg.evoMenu) and ui.evoMenuBtn and not ui.evoMenu and clock() > tonumber(cfg.evoMenu) then
-		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Debug mode) is opened, with 2x set (a picture of it)
+		cfg.evoMenu = nil -- test: the submenu of Evolution (On / Off, Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Debug mode) is opened, with 2x set (a picture of it)
 		setEvoOption("lanevomult", "2")
 		openEvoMenu()
 	end

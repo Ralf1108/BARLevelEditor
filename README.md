@@ -130,7 +130,7 @@ Both run on any map, in LAN Play (button **LAN Play** of the room) or alone with
 | | Evolution | Renegade |
 |---|---|---|
 | Highlights | choose your unit of three cards, power-ups, regeneration, a gift and **Armageddon** at level 10 | W A S D drives, the mouse aims, three mouse buttons fire the weapons; Space jumps (two-legged bots); a kill goal and a kill feed |
-| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods, choose unit, Team Evolution | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups, Goal, Survival, Race |
+| Settings in the room | enemy multiplier, enemy health, regeneration, long range, all be gods, choose unit, Team Evolution | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups, Goal, Survival, Race |
 | Both | sounds, tips for beginners in the first three games, a spawn shield and a comeback bonus | |
 | Try it alone | `LevelEditor\start_evolution.bat` | `LevelEditor\start_renegade.bat`, Race: `LevelEditor\start_race.bat` |
 | Status | playable; Team Evolution tested over LAN with two players | experimental; Race tested over LAN with two players, the rest with one player |

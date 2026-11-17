@@ -29,7 +29,7 @@ The host chooses them with the green button **LAN Play** in the title row of the
 | **[Renegade](../LevelEditor/game-modes/renegade.md)** | **LAN Play** > **Renegade** > On | every player steers one unit from the inside, like a shooter; with the modes Survival and Race (experimental; the Race is tested with two players) |
 
 - **Custom Scenario:** the other players get the scenario's game file automatically.
-- **Evolution:** any map, best a small one (size M or smaller). Its settings: Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution (friends in one team evolve together, at most one level apart), Debug mode.
+- **Evolution:** any map, best a small one (size M or smaller). Its settings: Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution (friends in one team evolve together, at most one level apart), Debug mode.
 - **Renegade** has more settings:
   - **Goal:** the first player with 10, 20 (default) or 30 kills wins the round.
   - **Survival On:** all players together against 10 waves of computer units.

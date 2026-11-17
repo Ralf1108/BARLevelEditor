@@ -26,8 +26,8 @@
 | Setting | Values | Effect |
 |---|---|---|
 | **On / Off** | Off by default | green = on, red = off |
-| **Unit multiplier** | 1x to 10x | so many times the normal number of wild units and towers |
-| **Unit health** | **Auto** (default), or 10 % to 100 % | the health wild units start with; Auto = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8 |
+| **Enemy multiplier** | 1x to 10x | so many times the normal number of wild units and towers |
+| **Enemy health** | **Auto** (default), or 10 % to 100 % | the health wild units start with; Auto = 10 % on level 1, 30 % on levels 2 to 4, 40 % on levels 5 to 7, 50 % from level 8 |
 | **Regeneration** | On (default) / Off | the units of the players heal by themselves |
 | **Long range** | On / Off (default) | nine units with a range of 850 Elmo or more can appear too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon |
 | **All Be Gods** | On / Off (default) | Off = only the **first** player on level 10 chooses a gift; On = every player who reaches level 10 |
@@ -35,7 +35,7 @@
 | **Choose unit** | On (default) / Off | On = you choose the unit of the next level of three cards; Off = a random unit at once |
 | **Debug mode** | On / Off (default) | test buttons above your panel: Armageddon, Level Up / Down, XP Up / Down, one per power-up, a star (random values for every player) and Hide |
 
-![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods and Debug mode](../../docs/evolution-room.jpg)
+![The menu LAN Play of the room: the submenu Evolution with On / Off, Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution and Debug mode](../../docs/evolution-room.jpg)
 
 ![The help window at the start of the game: power-ups, the units of every level, Armageddon](../../docs/evolution-help.jpg)
 
@@ -131,12 +131,12 @@ The first player on level 10 chooses one of three gifts (with **All Be Gods**: e
 
 **Wild units and towers**
 
-- Units of nobody stand around the map with reduced health (setting **Unit health**; the health bar shows it). About one in seven is a **tower** (it does half of its normal damage).
+- Units of nobody stand around the map with reduced health (setting **Enemy health**; the health bar shows it). About one in seven is a **tower** (it does half of its normal damage).
 - Most of them walk around, about one in five stands still. They **only shoot back**.
 - **They grow with the weakest player:** a new one has the level of the weakest player who is still in.
   - A wild unit above that level, or two or more levels below it, is replaced (one every 3 seconds).
   - Never one that a player sees or that is within 900 Elmo of a player's unit.
-- **How many:** one per 1024 x 1024 Elmo of land, at least 12, at most 100; the **Unit multiplier** raises the number. A killed one comes back 10 seconds later somewhere else.
+- **How many:** one per 1024 x 1024 Elmo of land, at least 12, at most 100; the **Enemy multiplier** raises the number. A killed one comes back 10 seconds later somewhere else.
 
 **Energy**
 
