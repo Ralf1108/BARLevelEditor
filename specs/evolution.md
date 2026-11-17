@@ -58,6 +58,7 @@
   - A death costs a stage as in the normal game; `reachTop` gives no message for a mate of the team that brought Armageddon; `setCoalition` does nothing (alliance against alliance to the end).
   - Test hook `evo|test|9`: every mate of the player's alliance gets the points of its level.
   - Test: `zz_evo98.lua` (`-Evo -EvoTest -Debug -EvoTeam -Bots 2`: team 1 in the ally team of the player): level 2, the second level up waits for team 1, the mate's level up lets the player follow to level 3, a loss costs a level.
+  - Over LAN Play: `lan_test.ps1 -Mode evoteam` (PlayerA and PlayerB in one room team, a BARb computer in the other; `zz_lanevo.lua`): the same wait and follow, the same levels on both instances.
 - **Choose your evolution** (`CHOOSE`, game option `lanevochoose`, default on; `0` = off): `gain` calls `offer(p)` instead of `evolve` for a human: three different units of the new stage (`stageUnit`, up to 30 tries), `p.choice = { names, at, stage }`, team rules `evoChoice` ("a,b,c") and `evoChoiceAt`.
   - `evo|pick|<n>` -> `choose(p, n)` -> `evolve(p, name)` (`spawn(p, x, z, facing, chosen)`); after `CHOICE_WAIT` (10 s) a random one of the three; a stage that changed meanwhile: a random unit of the stage now; a death drops the choice.
   - The widget `evo_gift.lua` draws the three cards (unit picture `#<id>`, name, faction by the prefix, health, damage per second of the weapons, range, speed; a click or 1, 2, 3); it comes before the gift window; `WG.evoWindowOpen` makes the Renegade widget leave the keys 1 to 3 to it.

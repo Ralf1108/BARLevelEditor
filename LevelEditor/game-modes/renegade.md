@@ -1,6 +1,8 @@
 # Renegade
 
-[Start page](../../README.md) · [Specification](../../specs/renegade.md)
+[LAN Play](../../docs/lan-play.md) · [Specification](../../specs/renegade.md) · [Start page](../../README.md)
+
+![Renegade Survival: a Blitz tank fights the first wave, the wave panel at the top](../../docs/renegade-survival.jpg)
 
 **You are one unit of Beyond All Reason, seen from the inside.**
 
@@ -8,7 +10,15 @@
 - Every unit is the original: model, speed, weapons, range, armor and damage stay as they are in the game.
 - Named after Command & Conquer Renegade, where the units of a strategy game were played as a shooter.
 
-**Status: experimental.** Tested with one human against computer units. The LAN Play room has the button, but games with several humans are not tested yet.
+**Status: experimental.** Tested with one human against computer units; the Race also over LAN Play with two players. Other games with several humans are not tested yet.
+
+## In short
+
+| Mode | What you do | How it ends |
+|---|---|---|
+| Renegade (normal) | fight the other players and the computer units with your one unit | the first to reach the kill goal wins |
+| [Survival](#survival) | all players together against 10 waves | all waves beaten, or everybody lost at once |
+| [Race](#race) | pick a scout, drive 2 laps through 8 rings | the first through the finish wins; then New race or Leave |
 
 ## Start it
 
@@ -17,7 +27,7 @@
 | Quick start | double-click `LevelEditor\start_renegade.bat`: you as a Peewee on **Hooked 1.1** against 3 computer Peewees that hunt you |
 | Other map, computer player, number of enemies | `start_renegade.bat "Comet Catcher Remake 1.8" SimpleAI 5` (0 = no enemies) |
 | Faster start | add `quick` as the fourth parameter: `start_renegade.bat "Hooked 1.1" NullAI 3 quick` (without Legion, extra, Scavenger and Raptor units) |
-| Race alone | double-click `LevelEditor\start_race.bat`: a Race on **Comet Catcher Remake 1.8**; other map: `start_race.bat "Full Metal Plate 1.7"`; faster start: `start_race.bat "Comet Catcher Remake 1.8" quick` (then without the Wheelie of Legion) |
+| Race alone | double-click `LevelEditor\start_race.bat`: a Race on **Comet Catcher Remake 1.8**; other map: `start_race.bat "Full Metal Plate 1.7"`; faster start: `start_race.bat "Comet Catcher Remake 1.8" quick` (then without the Wheelie of Legion; in LAN Play Legion is always on for a Race) |
 | LAN Play | green button **LAN Play** in the room > **Renegade** > On |
 
 **Settings in LAN Play** (the submenu of the button **Renegade**)
@@ -52,6 +62,8 @@
 
 ## Race
 
+![Race: choose your racer, four cards with the keys 1 to 4](../../docs/renegade-race-pick.jpg)
+
 - Every player drives a scout through **8 glowing rings** round the middle of the map, **2 laps**.
 - **Choose your racer** before the start (20 seconds; keys 1 to 4 or a click on its card):
 
@@ -64,6 +76,7 @@
 
   - All racers have the **same speed, acceleration and turning**; nobody picks a faster one by accident.
   - No choice: a random one.
+  - In LAN Play the room switches Legion on by itself for a Race (for the Wheelie).
 - The rings lie where every racer can drive: no ring in water or behind a cliff, and the way from ring to ring has no big detour.
 - Before the start a countdown runs (5 to 1, GO); at GO everybody stands on the start grid.
 - The next ring is bright green with a column of light and an arrow to the ring after it; the arrow at the top shows the way and the distance.
@@ -73,6 +86,9 @@
 - **Results:** a list of the places and times, with two buttons (the mouse is free; or the keys):
   - **New race [N]:** a new track for everybody, the choice of the racer again (15 seconds), then the start.
   - **Leave [L]:** the game ends for everybody.
+
+![Race: the results with the buttons New race and Leave](../../docs/renegade-race-results.jpg)
+
 - Switching Race on switches Renegade on, Evolution and Survival off.
 
 ## Controls
@@ -191,6 +207,6 @@ With `start_renegade.bat` three buttons sit above the panel. Press **Tab** to fr
 
 ## Not yet there
 
-- Games with several humans (not tested).
+- Games with several humans: tested only for the Race (two players over LAN Play).
 - Aircraft and ships are steered less well than ground units.
 - The plan and what was measured in the game: [specification](../../specs/renegade.md).

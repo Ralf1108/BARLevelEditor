@@ -137,7 +137,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 ## 9. Race
 
 - `renegade_race.lua` (`modeRun`: `frame`, `destroyed`, `noDamage`, `toNext`, `msg`), game option `lanrenemode=race`; phases `wait`, `pick`, `race`, `results`, `leaving`.
-- **Racers** (`RACERS`, those the game has): `armflea` (Tick), `armfav` (Rover), `corfav` (Rascal), `legscout` (Wheelie); game rules `renRaceUnits`.
+- **Racers** (`RACERS`, those the game has): `armflea` (Tick), `armfav` (Rover), `corfav` (Rascal), `legscout` (Wheelie); game rules `renRaceUnits`. The LAN room always switches Legion on for a Race (`buildScript`), `start_race.bat` unless `quick`.
   - Every racer gets the same movement (`equalize`: `SetGroundMoveTypeData` maxSpeed / maxWantedSpeed `SPEED` 150, accRate, decRate and turnRate the means of the racers' `maxAcc`, `maxDec`, `turnRate`); unit rules `ledBaseSpeed` = `SPEED`, which Sprint (`powerups.lua`) uses instead of the speed of the definition.
   - `racers()` (every 15 frames) turns the unit of every human into its pick (`turnInto`), also a respawned Pawn; only the Tick jumps (two legs).
 - **Pick:** from frame 60 to the start (`FIRST_GO` = frame 600; `AGAIN_PICK` = 15 s for a new race) `ren|race|pick|<n>` (the gadget's `RecvLuaMsg` gives `ren|race|...` to `modeRun.msg`); no pick = a random one. Team rules `renRacePick`.
@@ -155,4 +155,5 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
   - Before the start the cards of the racers (`drawPick`: picture, name, faction, key; the own pick green); after the race the results (`drawResults`: place, name, racer, time; buttons New race [N] and Leave [L]).
   - Nothing of a mode is drawn before the game starts (`H.drawMode`, frame 0): the panel and a frozen "GO!" over the screen of the start positions looked like a hung game. The LAN room starts a mode with the start positions of the map (`StartPosType=0`).
   - `H.raceFree()` (cards or results on screen): the widget frees the mouse (no view, no driving, no hints), a click goes to `H.raceClick`, keys to `H.raceKey` (1 to 9, N, L).
-- **Not checked:** a race of several humans; a map where the drivable land is split (the track uses the biggest piece only).
+- **Checked over LAN Play** (`lan_test.ps1 -Mode race`, host and joiner): the picks, 2 laps, the same results, New race and Leave on both instances; the room starts it without the screen of the start positions.
+- **Not checked:** a race of humans who really drive (the test moves the units by `ren|test|11`); a map where the drivable land is split (the track uses the biggest piece only).

@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-154 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+155 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -143,6 +143,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_ren97.lua` | Renegade, the mode Survival | `pve_test.ps1 -Ren -RenTest -RenMode survival -Widget zz_ren97.lua` |
 | `zz_ren98.lua` | Renegade, the mode Race | `pve_test.ps1 -Ren -RenTest -RenMode race -Widget zz_ren98.lua` |
 | `zz_ren.lua` | Renegade proof of concept 1 and 2 | `pve_test.ps1 -Ren -Widget zz_ren.lua. Steers renegade.lua through WG.renegade (no real mouse or keys) and logs "[zzren]" lines` |
+| `zz_rendoc.lua` | pictures of Renegade for the manual | `pve_test.ps1 -Ren -RenTest [-RenMode race\|survival] [-RenBots 3] -Widget zz_rendoc.lua (one instance)` |
 | `zz_reveal.lua` | a player on level 8 shows on the radar of the others | `pve_test.ps1 -Evo -EvoTest -Debug -Widget zz_reveal.lua (one instance, speed 10)` |
 | `zz_save.lua` | works the Save page (button S) | `arena_test.ps1 -Widget zz_save.lua` |
 | `zz_scenario.lua` | works the Scenario info page (button I) | `arena_test.ps1 -Widget zz_scenario.lua` |

@@ -15,8 +15,8 @@ Tools for [Beyond All Reason](https://www.beyondallreason.info/) (BAR), a free r
 | [Level Editor](#level-editor) | build levels on any map, test them, export them as scenarios | level builders | stable |
 | [Game modes](#game-modes-of-a-level) | Tower Defense, Capture the Flag, Reclaim the Fame for your levels | level builders and their players | stable |
 | [LAN Play](#lan-play) | a battle room for computers in the same network | friends in one network | tested with two game instances on one computer |
-| [Evolution](#lan-game-modes) | LAN game mode: one unit each, kills evolve it | LAN players | playable |
-| [Renegade](#lan-game-modes) | LAN game mode: steer one unit from the inside, like a shooter | LAN players | experimental |
+| [Evolution](#lan-game-modes) | LAN game mode: one unit each, kills evolve it; also as **Team Evolution** | LAN players | playable |
+| [Renegade](#lan-game-modes) | LAN game mode: steer one unit from the inside, like a shooter; with the modes **Survival** and **Race** | LAN players | experimental |
 | [BluePrinter](#blueprinter) | blueprints for buildings in normal matches | every BAR player | stable |
 | [Experimental Attacks](#experimental-attacks) | one order for many units over an area | every BAR player | experimental |
 
@@ -38,7 +38,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 | play with friends in my network | start BAR, main menu > **LAN Play** |
 | try Evolution alone | `LevelEditor\start_evolution.bat` |
 | try Renegade alone | `LevelEditor\start_renegade.bat` |
-| try a Race alone | `LevelEditor\start_race.bat` |
+| try a Race of Renegade alone | `LevelEditor\start_race.bat` |
 | remove everything | `LevelEditor\uninstall_editor.bat`, `BluePrinter\uninstall_blueprinter.bat` |
 
 ## Level Editor
@@ -110,20 +110,30 @@ More: [LAN Play](docs/lan-play.md)
 
 ### LAN game modes
 
-Both run on any map, in LAN Play or alone with a start file.
+Both run on any map, in LAN Play (button **LAN Play** of the room) or alone with a start file.
 
-| | [Evolution](LevelEditor/game-modes/evolution.md) | [Renegade](LevelEditor/game-modes/renegade.md) |
-|---|---|---|
-| Idea | every player has **one unit**; kills evolve it through 10 levels up to a tier 3 giant | you **are one unit**, seen from the inside: first or third person, like a shooter |
-| Highlights | choose your unit of three cards, power-ups, regeneration, a gift and **Armageddon** at level 10; **Team Evolution** for friends | W A S D drives, the mouse aims, three mouse buttons fire the weapons; Space jumps (two-legged bots); a kill goal and a kill feed; the modes **Survival** (together against waves) and **Race** (checkpoints, laps) |
-| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods, choose unit, team evolution | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups, Goal, Survival, Race |
-| Both | sounds, tips for beginners in the first three games, a spawn shield and a comeback bonus | |
-| Try it alone | `LevelEditor\start_evolution.bat` | `LevelEditor\start_renegade.bat` |
-| Status | playable | experimental, not tested with several humans |
-
-| Evolution in the game | Armageddon: the gift of level 10 |
+| [Evolution](LevelEditor/game-modes/evolution.md) | [Renegade](LevelEditor/game-modes/renegade.md) |
 |---|---|
-| [![Evolution in the game](docs/evolution-game.jpg)](LevelEditor/game-modes/evolution.md) | ![Armageddon: the gift of level 10](docs/evolution-armageddon.jpg) |
+| [![Evolution in the game](docs/evolution-game.jpg)](LevelEditor/game-modes/evolution.md) | [![Renegade Survival: a tank fights wave 1](docs/renegade-survival.jpg)](LevelEditor/game-modes/renegade.md) |
+| Every player has **one unit**; kills evolve it through 10 levels up to a tier 3 giant | You **are one unit**, seen from the inside: first or third person, like a shooter |
+| ![Armageddon: the gift of level 10](docs/evolution-armageddon.jpg) | [![Race: choose your racer](docs/renegade-race-pick.jpg)](LevelEditor/game-modes/renegade.md#race) |
+| Armageddon: the gift of level 10 | Race: choose your racer |
+
+**Modes inside the modes** (a switch in the submenu of the room)
+
+| Mode | Part of | What it is |
+|---|---|---|
+| [Team Evolution](LevelEditor/game-modes/evolution.md#team-evolution) | Evolution | play with friends in one team: everybody collects points, but nobody gets more than one level above the lowest mate; at level 10 team against team |
+| [Survival](LevelEditor/game-modes/renegade.md#survival) | Renegade | all players together against 10 waves of computer units; every wave makes your unit stronger |
+| [Race](LevelEditor/game-modes/renegade.md#race) | Renegade | everybody picks a scout (all equally fast) and drives 2 laps through 8 rings; then New race or Leave |
+
+| | Evolution | Renegade |
+|---|---|---|
+| Highlights | choose your unit of three cards, power-ups, regeneration, a gift and **Armageddon** at level 10 | W A S D drives, the mouse aims, three mouse buttons fire the weapons; Space jumps (two-legged bots); a kill goal and a kill feed |
+| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods, choose unit, Team Evolution | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups, Goal, Survival, Race |
+| Both | sounds, tips for beginners in the first three games, a spawn shield and a comeback bonus | |
+| Try it alone | `LevelEditor\start_evolution.bat` | `LevelEditor\start_renegade.bat`, Race: `LevelEditor\start_race.bat` |
+| Status | playable; Team Evolution tested over LAN with two players | experimental; Race tested over LAN with two players, the rest with one player |
 
 Renegade tables you can change in Excel: [weapons and buttons](LevelEditor/game-modes/renegade-weapons.md) · [weapon categories and pictures](LevelEditor/game-modes/renegade-weapon-categories.md) · [cruise altitudes](LevelEditor/game-modes/renegade-cruise.md)
 
@@ -179,7 +189,7 @@ More: [Experimental Attacks](docs/experimental-attacks.md)
 |---|---|---|
 | Level Editor | [usage](docs/level-editor-usage.md) | [manual](LevelEditor/README.md), [scenario builder](LevelEditor/scenario/README.md) |
 | Game modes | | [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md), [Arena](LevelEditor/sandbox/arena.md) |
-| LAN Play | [LAN Play](docs/lan-play.md) | [Evolution](LevelEditor/game-modes/evolution.md), [Renegade](LevelEditor/game-modes/renegade.md) |
+| LAN Play | [LAN Play](docs/lan-play.md) | [Evolution](LevelEditor/game-modes/evolution.md) (with Team Evolution), [Renegade](LevelEditor/game-modes/renegade.md) (with Survival and Race) |
 | BluePrinter | [usage](docs/blueprinter-usage.md) | [manual](BluePrinter/README.md), [experimental attacks](docs/experimental-attacks.md) |
 | Development | [contributing](CONTRIBUTING.md) | [specifications](specs/README.md), [testing](specs/testing.md) |
 

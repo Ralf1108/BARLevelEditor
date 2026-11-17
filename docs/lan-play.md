@@ -26,7 +26,7 @@ The host chooses them with the green button **LAN Play** in the title row of the
 | **Official maps** | nothing to set | just play, like any room |
 | **Custom Scenario** | **LAN Play** > **Custom Scenario** | a scenario built with the Level Editor: map and teams are set, all humans play the scenario's team together |
 | **[Evolution](../LevelEditor/game-modes/evolution.md)** | **LAN Play** > **Evolution** > On | every player starts with one weak unit; kills evolve it through 10 levels; level 10 brings Armageddon |
-| **[Renegade](../LevelEditor/game-modes/renegade.md)** | **LAN Play** > **Renegade** > On | every player steers one unit from the inside, like a shooter (experimental, not tested with several humans) |
+| **[Renegade](../LevelEditor/game-modes/renegade.md)** | **LAN Play** > **Renegade** > On | every player steers one unit from the inside, like a shooter; with the modes Survival and Race (experimental; the Race is tested with two players) |
 
 - **Custom Scenario:** the other players get the scenario's game file automatically.
 - **Evolution:** any map, best a small one (size M or smaller). Its settings: Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution (friends in one team evolve together, at most one level apart), Debug mode.

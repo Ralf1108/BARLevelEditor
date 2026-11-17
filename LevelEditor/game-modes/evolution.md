@@ -81,6 +81,7 @@
   - So the whole team must collect points: one strong player alone cannot carry the team to level 10.
 - A death costs a level, as in the normal game.
 - Armageddon is team against team: the first team on level 10 brings it, and the last team standing wins (no alliance of the others).
+- Tested over LAN Play with two players in one team against a computer player.
 
 ## Death
 
