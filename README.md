@@ -114,8 +114,9 @@ Both run on any map, in LAN Play or alone with a start file.
 | | [Evolution](LevelEditor/game-modes/evolution.md) | [Renegade](LevelEditor/game-modes/renegade.md) |
 |---|---|---|
 | Idea | every player has **one unit**; kills evolve it through 10 levels up to a tier 3 giant | you **are one unit**, seen from the inside: first or third person, like a shooter |
-| Highlights | power-ups, regeneration, a gift and **Armageddon** at level 10 | W A S D drives, the mouse aims, three mouse buttons fire the weapons; Space jumps (two-legged bots); aircraft, bombs, binoculars; power-ups |
-| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups |
+| Highlights | choose your unit of three cards, power-ups, regeneration, a gift and **Armageddon** at level 10; **Team Evolution** for friends | W A S D drives, the mouse aims, three mouse buttons fire the weapons; Space jumps (two-legged bots); a kill goal and a kill feed; the modes **Survival** (together against waves) and **Race** (checkpoints, laps) |
+| Settings in the room | unit multiplier, unit health, regeneration, long range, all be gods, choose unit, team evolution | On / Off, Always in unit (or take over any of your units with the key left of the 1), Power-ups, Goal, Survival, Race |
+| Both | sounds, tips for beginners in the first three games, a spawn shield and a comeback bonus | |
 | Try it alone | `LevelEditor\start_evolution.bat` | `LevelEditor\start_renegade.bat` |
 | Status | playable | experimental, not tested with several humans |
 

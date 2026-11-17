@@ -2,7 +2,7 @@
 
 [Start page](../README.md) · [Evolution](../LevelEditor/game-modes/evolution.md) · [Renegade](../LevelEditor/game-modes/renegade.md) · [LAN Play](lan-play.md)
 
-A collection of ideas: what could be added to Evolution and Renegade, and which new game modes could follow. Nothing here is built or promised.
+A collection of ideas: what could be added to Evolution and Renegade, and which new game modes could follow. Nothing here is promised; what is built is marked **Done**.
 
 - **Focus:** fun for beginners and casual players who play by feel and do not read a manual.
 - **Effort:** S = an evening, M = a few days, L = a bigger project.
@@ -10,30 +10,30 @@ A collection of ideas: what could be added to Evolution and Renegade, and which 
 
 ## My top ten
 
-| # | Idea | Where | Effort | Why first |
-|---|---|---|---|---|
-| 1 | Score board, kill feed and a round goal | Renegade | M | without a goal a round has no end and no winner |
-| 2 | Sound for jump, power-ups, level up, hits | both | S | the cheapest way to make everything feel better |
-| 3 | First-minute hints on the screen | both | S | a new player learns the keys by playing |
-| 4 | King of the Hill | new mode | M | one rule, understood in five seconds |
-| 5 | Comeback and spawn protection | both | S | beginners stop being farmed |
-| 6 | Team Evolution | Evolution | M | friends play together instead of against each other |
-| 7 | Survival waves in Renegade | new mode | M | co-op against the computer, nobody loses to a friend |
-| 8 | Choose your evolution (one of three cards) | Evolution | M | a decision every few minutes, easy to grasp |
-| 9 | Race with checkpoints | new mode | M | no shooting skill needed, fun with any unit |
-| 10 | Preset buttons in the room (Quick, Chaos, Relaxed) | LAN Play | S | no settings to understand before the first game |
+| # | Idea | Where | Effort | Why first | State |
+|---|---|---|---|---|---|
+| 1 | Score board, kill feed and a round goal | Renegade | M | without a goal a round has no end and no winner | **Done** (button Goal) |
+| 2 | Sound for jump, power-ups, level up, hits | both | S | the cheapest way to make everything feel better | **Done**, with a hit marker |
+| 3 | First-minute hints on the screen | both | S | a new player learns the keys by playing | **Done** (first three games) |
+| 4 | King of the Hill | new mode | M | one rule, understood in five seconds | |
+| 5 | Comeback and spawn protection | both | S | beginners stop being farmed | **Done** |
+| 6 | Team Evolution | Evolution | M | friends play together instead of against each other | **Done** (button Team Evolution) |
+| 7 | Survival waves in Renegade | new mode | M | co-op against the computer, nobody loses to a friend | **Done** (button Survival) |
+| 8 | Choose your evolution (one of three cards) | Evolution | M | a decision every few minutes, easy to grasp | **Done** (button Choose unit) |
+| 9 | Race with checkpoints | new mode | M | no shooting skill needed, fun with any unit | **Done** (button Race) |
+| 10 | Preset buttons in the room (Quick, Chaos, Relaxed) | LAN Play | S | no settings to understand before the first game | |
 
 ## For beginners: ideas for every mode
 
 | Idea | What it does | Effort | Beginner value |
 |---|---|---|---|
-| First-minute hints | short texts at the right moment: "Drive over the beacon", "Press 1 to sprint", "Hold the right button for long range"; each shown once | S | +++ |
+| First-minute hints (**done**) | short texts at the right moment: "Drive over the beacon", "Press 1 to sprint", "Hold the right button for long range"; each shown once | S | +++ |
 | Key card | hold **F1** (or **H**): a picture of the keyboard and mouse with what each key does right now | S | +++ |
 | Arrow to the next goal | an arrow at the screen edge to the nearest beacon, wreck, weak enemy or objective | S | +++ |
 | Presets in the room | one click sets several options: **Quick** (small numbers, 10 minutes), **Chaos** (multiplier 5x, all power-ups), **Relaxed** (no Armageddon pressure, more health) | S | +++ |
 | Round timer | the host sets 10 / 15 / 20 minutes; at the end the best player wins | S | ++ |
-| Spawn protection | 3 to 5 seconds without damage after a respawn, ends when you fire | S | +++ |
-| Comeback bonus | after three deaths in a row: a little more health or a free power-up | S | +++ |
+| Spawn protection (**done**) | 3 to 5 seconds without damage after a respawn, ends when you fire | S | +++ |
+| Comeback bonus (**done**) | after three deaths in a row: a little more health or a free power-up | S | +++ |
 | Handicap per player | the host gives a strong player less health or a weak player more (a slider per name) | M | ++ |
 | End screen | after the game: winner, kills, deaths, best streak, distance driven, favourite weapon | M | ++ |
 | "Who killed me" | a short line after death: the enemy, its weapon, its health left | S | ++ |
@@ -58,8 +58,8 @@ A collection of ideas: what could be added to Evolution and Renegade, and which 
 
 | Idea | What it does | Effort | Beginner value |
 |---|---|---|---|
-| Choose your evolution | on level up three cards: pick one of three units (random after 10 seconds) | M | ++ |
-| Team Evolution | two or more teams share points or level together; Armageddon is team against team | M | +++ |
+| Choose your evolution (**done**) | on level up three cards: pick one of three units (random after 10 seconds) | M | ++ |
+| Team Evolution (**done**) | two or more teams share points or level together; Armageddon is team against team | M | +++ |
 | Co-op against a boss | all humans together against one very strong computer unit that grows over time | M | +++ |
 | Perks instead of only units | every second level a small bonus to pick: +15 % speed, +15 % range, faster reload, more health | M | ++ |
 | Air and sea variants | an option "Air Evolution" (aircraft ladder) or "Naval Evolution" on water maps | M | + |
@@ -78,11 +78,11 @@ A collection of ideas: what could be added to Evolution and Renegade, and which 
 
 | Idea | What it does | Effort | Beginner value |
 |---|---|---|---|
-| Score board and round goal | first to N kills, or the most kills after the round timer; a winner screen | M | +++ |
-| Kill feed | who destroyed whom, with the weapon picture | S | ++ |
+| Score board and round goal (**done**) | first to N kills, or the most kills after the round timer; a winner screen | M | +++ |
+| Kill feed (**done**) | who destroyed whom, with the weapon picture | S | ++ |
 | Teams | two or more sides with colored marks above allies; no friendly fire as an option | M | +++ |
-| Sound | hits, jump, landing, reload ready, lock-on, low health | S | +++ |
-| Hit marker | a short cross and a tick sound when your shot hits; another one for a kill | S | +++ |
+| Sound (**done**) | hits, jump, landing, reload ready, lock-on, low health | S | +++ |
+| Hit marker (**done**) | a short cross and a tick sound when your shot hits; another one for a kill | S | +++ |
 | Fix the overlap | speedometer and the level badge of Evolution at the bottom centre | S | + |
 | Unit choice at respawn | pick the next unit from a small list (or by class: scout, assault, artillery, anti-air) | M | ++ |
 
@@ -116,8 +116,8 @@ A collection of ideas: what could be added to Evolution and Renegade, and which 
 | Mode | The idea in one line | Fits | Effort | Beginner value |
 |---|---|---|---|---|
 | **King of the Hill** | stand in the circle in the middle to earn points; first to the limit wins | Renegade, Evolution, normal units | M | +++ |
-| **Survival** | all humans together against waves that get stronger; how long do you last | Renegade (co-op) | M | +++ |
-| **Race** | drive through checkpoints, three laps; power-ups on the track | Renegade | M | +++ |
+| **Survival** (**done**) | all humans together against waves that get stronger; how long do you last | Renegade (co-op) | M | +++ |
+| **Race** (**done**) | drive through checkpoints, three laps; power-ups on the track | Renegade | M | +++ |
 | **Juggernaut** | one player is a huge unit, all others hunt it; who kills it becomes the next one | Renegade | M | ++ |
 | **Hide and Seek** | hiders are small cloaked units, seekers are slow and strong; time limit | Renegade | M | ++ |
 | **Escort** | one team protects a slow convoy on a route, the other attacks it | Renegade, editor level | M | ++ |
