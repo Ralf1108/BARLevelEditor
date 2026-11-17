@@ -936,7 +936,7 @@ function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
 		return true
 	end
 	-- the keys 1 to 5 (also the number pad): the power-ups of Evolution (Sprint, Repair, Radar Pulse, Cloak, Jammer), the game message of the buttons of its bar
-	if R.on and (R.evo or R.powerups) and not (mods and (mods.ctrl or mods.alt or mods.meta)) and not (R.picker and R.picker.focus) then
+	if R.on and (R.evo or R.powerups) and not (mods and (mods.ctrl or mods.alt or mods.meta)) and not (R.picker and R.picker.focus) and not WG.evoWindowOpen then -- (a window of Evolution takes 1 to 3)
 		local n = (key >= 49 and key <= 53) and key - 48 or ((key >= 257 and key <= 261) and key - 256 or nil)
 		if n then
 			if not isRepeat then Spring.SendLuaRulesMsg((R.evo and "evo|use|" or "ren|use|") .. n) end

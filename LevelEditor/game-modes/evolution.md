@@ -31,6 +31,7 @@
 | **Regeneration** | On (default) / Off | the units of the players heal by themselves |
 | **Long range** | On / Off (default) | nine units with a range of 850 Elmo or more can appear too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon |
 | **All Be Gods** | On / Off (default) | Off = only the **first** player on level 10 chooses a gift; On = every player who reaches level 10 |
+| **Choose unit** | On (default) / Off | On = you choose the unit of the next level of three cards; Off = a random unit at once |
 | **Debug mode** | On / Off (default) | test buttons above your panel: Armageddon, Level Up / Down, XP Up / Down, one per power-up, a star (random values for every player) and Hide |
 
 ![The menu LAN Play of the room: the submenu Evolution with On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods and Debug mode](../../docs/evolution-room.jpg)
@@ -41,6 +42,9 @@
 
 - Every team starts with one level 1 unit where its commander would stand.
 - Every new unit is of a **random faction** (Armada, Cortex or Legion) and a random unit of its level: a Pawn can become a Brute and then a Karkinos.
+- **Choose your unit:** on a level up three cards show units of the new level (picture, faction, health, damage per second, range, speed).
+  - Click one or press 1, 2 or 3; after 10 seconds a random one of them is taken. Your old unit fights on until then.
+  - Computer players take a random unit. With the setting **Choose unit** Off everybody gets a random unit at once.
 - When it evolves, the new unit:
   - stands where the old one stood
   - has the health share of the old unit plus 20 % (not a full heal)

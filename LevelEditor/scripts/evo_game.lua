@@ -150,6 +150,7 @@ end
 local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
 local TESTING = (Spring.GetModOptions() or {}).lanevotest == "1" -- test only: some lines for the log
 local ALL_GODS = (Spring.GetModOptions() or {}).lanevogods == "1" -- the room's button All Be Gods: every player who reaches level 10 gets a gift (default: only the first one)
+local CHOOSE = (Spring.GetModOptions() or {}).lanevochoose ~= "0" -- the room's button Choose unit (default on): a human chooses the unit of the next level of three (game option lanevochoose=0: a random one at once)
 
 -- (used by both parts: the ladders and the help window)
 -- The ladders: stage 1 to 10 per faction, ordered by damage per second times health (the strength in a fight of one against one); the last stage is
@@ -207,6 +208,7 @@ local EXP_STEP = 0.1 -- the experience of the unit (the game's own: more health,
 local RETURN_FIRE, HOLD_POSITION = 1, 0
 local CELL = 128 -- size of a cell of the land grid in Elmo
 local GIFT_WAIT = 30 * FPS -- a human who does not choose a gift gets a random one after this time
+local CHOICE_WAIT = 10 * FPS -- a human who does not choose a unit of the next level gets a random one of the three after this time
 local HELL_UNITS, HEAVEN_UNITS, HELL_GAP, HEAVEN_GAP = 8, 8, 30 * FPS, 30 * FPS -- units of the gifts Hell on Earth and Heaven on Earth; one more of each every 30 s
 local NUKE_WARN, NUKE_SAFE = 5 * FPS, 900 -- Gates of Hell: warning ring before a missile, distance to the units of the player who chose it
 -- Further rules in one table (Lua 5.1 allows only so many locals):
@@ -317,6 +319,8 @@ local function publish()
 		Spring.SetTeamRulesParam(p.team, "evoName", p.unitName or "", pub)
 		Spring.SetTeamRulesParam(p.team, "evoExp", p.exp or 0, pub)
 		Spring.SetTeamRulesParam(p.team, "evoGift", p.giftAt and 1 or 0, pub)
+		Spring.SetTeamRulesParam(p.team, "evoChoice", p.choice and table.concat(p.choice.names, ",") or "", pub) -- (the three units of the choice, "" = none)
+		Spring.SetTeamRulesParam(p.team, "evoChoiceAt", p.choice and p.choice.at or 0, pub)
 	end
 	Spring.SetGameRulesParam("evoTeams", table.concat(teams, ","))
 	-- (set again with every publish: a value set only once at that moment did not reach the unsynced part and the widgets in the test)
@@ -470,8 +474,8 @@ local A = P.new({
 
 -- The unit of a player: at x, z (a random place when nil), a unit of its stage. A computer team's unit only shoots back (it attacks what the
 -- gadget chooses).
-local function spawn(p, x, z, facing)
-	local name = stageUnit(p.stage)
+local function spawn(p, x, z, facing, chosen)
+	local name = chosen or stageUnit(p.stage)
 	if not x then
 		x, z = spawnPoint(UnitDefNames[name].id, true)
 		p.spawns = p.spawns + 1 -- (the camera of the player goes to the new place)
@@ -873,7 +877,7 @@ local function reachTop(p)
 end
 
 -- The unit of the next stage replaces the unit where it stands (full health; the orders are kept)
-local function evolve(p)
+local function evolve(p, chosen)
 	local old = p.unit
 	local x, _, z = Spring.GetUnitPosition(old)
 	if not x then
@@ -884,7 +888,7 @@ local function evolve(p)
 	local ohp, omax = Spring.GetUnitHealth(old)
 	owner[old] = nil
 	remove(old)
-	spawn(p, x, z, facing)
+	spawn(p, x, z, facing, chosen)
 	if p.unit and ohp and omax and omax > 0 then
 		-- level up: 20 % of the new unit's health come back, not a full heal (the health fraction of the old unit plus 20 %)
 		local _, nmax = Spring.GetUnitHealth(p.unit)
@@ -898,6 +902,35 @@ local function evolve(p)
 		end
 	end
 	say(string.format("%s evolves to level %d: %s.", p.name, p.stage, unitTitle(p.unitName)))
+end
+
+-- Choose your evolution (option CHOOSE): a human who levels up gets three units of the new level (of different factions where the level has them); the window of the widget
+-- evo_gift.lua sends "evo|pick|<1..3>"; after CHOICE_WAIT a random one of them. A death in the meantime drops the choice (the unit comes back as a random unit).
+local function offer(p)
+	local names, seen = {}, {}
+	for _ = 1, 30 do
+		local name = stageUnit(p.stage)
+		if not seen[name] then
+			seen[name] = true
+			names[#names + 1] = name
+			if #names == 3 then break end
+		end
+	end
+	p.choice = { names = names, at = Spring.GetGameFrame(), stage = p.stage }
+	if TESTING then Spring.Echo("[Evolution] test: " .. p.name .. " chooses of " .. table.concat(names, ", ")) end
+end
+
+local function choose(p, n)
+	local c = p.choice
+	if not c or not p.unit then
+		p.choice = nil
+		return
+	end
+	p.choice = nil
+	local name = c.names[n] or c.names[math.random(1, #c.names)]
+	if c.stage ~= p.stage then name = nil end -- (the level changed meanwhile: a random unit of the level now)
+	evolve(p, name)
+	publish()
 end
 
 local function gain(p, points)
@@ -915,7 +948,11 @@ local function gain(p, points)
 		p.xp = 0 -- the top stage: nothing left to collect
 	end
 	if up and p.unit then
-		evolve(p)
+		if CHOOSE and not p.ai then
+			offer(p) -- (the player chooses of three; the unit stays until then)
+		else
+			evolve(p)
+		end
 	end
 	if p.stage >= STAGES then
 		reachTop(p)
@@ -1616,6 +1653,9 @@ function gadget:GameFrame(n)
 			if p.giftAt and n - p.giftAt >= GIFT_WAIT then
 				giveGift(p, 0) -- (no choice: a random gift)
 			end
+			if p.choice and n - p.choice.at >= CHOICE_WAIT then
+				choose(p, 0) -- (no choice: a random one of the three)
+			end
 		end
 		local due = {}
 		for _, f in ipairs(wildDue) do
@@ -1701,6 +1741,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 		return
 	end
 	victim.unit, victim.xp = nil, 0
+	victim.choice = nil -- (a choice of the next unit is dropped: the unit comes back as a random one)
 	victim.deaths = victim.deaths + 1
 	victim.dstreak = (victim.dstreak or 0) + 1
 	victim.exp = math.max(0, (victim.exp or 0) - EXP_STEP) -- (a death costs the same experience)
@@ -1832,12 +1873,14 @@ function gadget:RecvLuaMsg(msg, playerID)
 		end
 		return true
 	end
-	if kind ~= "gift" and kind ~= "use" then
+	if kind ~= "gift" and kind ~= "use" and kind ~= "pick" then
 		return false
 	end
 	local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
 	local p = team and not spec and byTeam[team]
-	if p and kind == "gift" then
+	if p and kind == "pick" then
+		choose(p, tonumber(n))
+	elseif p and kind == "gift" then
 		giveGift(p, tonumber(n))
 	elseif p then
 		A.use(p, tonumber(n)) -- a button of the bar of abilities (the unsynced part)

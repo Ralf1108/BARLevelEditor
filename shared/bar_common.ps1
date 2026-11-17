@@ -228,7 +228,7 @@ $ScenarioGameFiles = @(
     @('renegade_rounds.lua', 'luaui/Include/renegade_rounds.lua'),   # Renegade: the round (kill goal, kill feed, end), loaded by renegade_game.lua
     @('mode_ui.lua', 'luaui/Include/mode_ui.lua'),   # what the screens of Evolution and Renegade share: the spawn shield, the note of the team, sounds, hints
     @('renegade_hud.lua', 'luaui/Include/renegade_hud.lua'),   # Renegade: the kill feed, the goal and the banner of the end on the screen, loaded by the widget renegade.lua
-    @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the window of the gift of stage 10
+    @('evo_gift.lua', 'luaui/widgets/evo_gift.lua'),   # Evolution (LAN Play): the windows of the unit of the next level and of the gift of stage 10
     @('renegade.lua', 'luaui/widgets/renegade.lua'),   # Renegade (LAN Play): the first person view and the steering of the own unit
     @('scenario_briefing.lua', 'luaui/widgets/scenario_briefing.lua'),   # the briefing window (a game widget: no "Allow user widgets" needed)
     @('shared_start.lua', 'luaui/widgets/shared_start.lua'))             # starts a game in which several humans play one team (Copilot)

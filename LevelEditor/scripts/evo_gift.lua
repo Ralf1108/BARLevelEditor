@@ -1,10 +1,13 @@
--- Evolution (LAN Play): the window in which a player on stage 10 chooses a gift. A game widget of the extra game "Level Editor Scenarios" (no "Allow user
--- widgets" needed); active only in an Evolution game (game option lanevolution=1). The gadget evo_game.lua sets the team rules parameter evoGift = 1 while the
--- own team may choose; a click on a gift (or the key 1, 2, 3) sends "evo|gift|<n>". Without a choice the gadget gives a random gift after 30 s.
+-- Evolution (LAN Play): the windows in which a player chooses. A game widget of the extra game "Level Editor Scenarios" (no "Allow user widgets" needed); active only in an
+-- Evolution game (game option lanevolution=1).
+--   unit of the next level   team rules evoChoice = "name1,name2,name3" (evoChoiceAt = the frame): three cards (picture, name, faction, health, damage per second, range, speed);
+--                            a click or the key 1, 2, 3 sends "evo|pick|<n>"; without a choice the gadget takes a random one after 10 s. It comes before the gift.
+--   gift of level 10         team rules evoGift = 1 while the own team may choose; a click on a gift (or the key 1, 2, 3) sends "evo|gift|<n>"; a random gift after 30 s.
+-- WG.evoWindowOpen is true while one of them is open (the Renegade widget leaves the keys 1 to 3 to it then).
 function widget:GetInfo()
 	return {
-		name = "Evolution: gift of level 10",
-		desc = "Choose the gift of level 10 in an Evolution game of LAN Play",
+		name = "Evolution: choices",
+		desc = "Choose the unit of the next level and the gift of level 10 in an Evolution game of LAN Play",
 		author = "",
 		date = "2026",
 		license = "GNU GPL, v2 or later",
@@ -21,6 +24,37 @@ local GIFTS = {
 }
 
 local sent = nil -- the frame a choice was sent (the window waits for the gadget then)
+local pickSent = nil -- the frame of the unit choice (evoChoiceAt) that was answered
+
+-- the units of the choice of the next level (nil when none is open) and the frame it began
+local function choiceOpen()
+	if Spring.GetSpectatingState() then return nil end
+	local team = Spring.GetMyTeamID()
+	local raw = tostring(Spring.GetTeamRulesParam(team, "evoChoice") or "")
+	if raw == "" then pickSent = nil return nil end
+	local at = Spring.GetTeamRulesParam(team, "evoChoiceAt") or 0
+	if pickSent == at then return nil end
+	local names = {}
+	for n in raw:gmatch("[^,]+") do names[#names + 1] = n end
+	return names, at
+end
+
+-- the values of a card: faction (by the prefix of the name), health, damage per second of all weapons (default damage x salvo x projectiles / reload), longest range, speed
+local FACTIONS = { arm = { "Armada", { 0.35, 0.6, 1 } }, cor = { "Cortex", { 1, 0.4, 0.3 } }, leg = { "Legion", { 0.45, 0.95, 0.45 } } }
+local function cardValues(ud)
+	local dps, range = 0, 0
+	for _, w in ipairs(ud.weapons or {}) do
+		local wd = WeaponDefs[w.weaponDef]
+		if wd and (tonumber(wd.range) or 0) > 0 then
+			local dmg = wd.damages and (wd.damages[0] or wd.damages.default) or 0
+			local reload = math.max(0.03, tonumber(wd.reload) or 1)
+			dps = dps + dmg * (tonumber(wd.salvoSize) or 1) * (tonumber(wd.projectiles) or 1) / reload
+			range = math.max(range, tonumber(wd.range) or 0)
+		end
+	end
+	local f = FACTIONS[ud.name:sub(1, 3)] or { "", { 0.8, 0.8, 0.8 } }
+	return f[1], f[2], math.floor(ud.health or 0), math.floor(dps + 0.5), math.floor(range), math.floor(ud.speed or 0)
+end
 
 function widget:Initialize()
 	local mo = Spring.GetModOptions() or {}
@@ -30,8 +64,8 @@ function widget:Initialize()
 end
 
 local function open()
-	if Spring.GetSpectatingState() then
-		return false
+	if Spring.GetSpectatingState() or choiceOpen() then
+		return false -- (the choice of the unit comes first)
 	end
 	local on = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoGift") == 1
 	if not on then
@@ -132,7 +166,60 @@ local function symbol(kind, cx, cy, r, color)
 	end
 end
 
+-- the three cards of the units of the next level (the same layout as the gifts)
+local function drawChoice(names, at)
+	local x1, y1, x2, y2, buttons, s = layout()
+	local mx, my = Spring.GetMouseState()
+	local level = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "evoStage") or 0
+	gl.Color(0.03, 0.03, 0.05, 0.9)
+	gl.Rect(x1, y1, x2, y2)
+	gl.Color(0.45, 0.85, 1, 1)
+	gl.Text(string.format("Level %d! Choose your unit", level), (x1 + x2) / 2, y2 - 36 * s, 34 * s, "co")
+	for i, b in ipairs(buttons) do
+		local ud = names[i] and UnitDefNames[names[i]]
+		if ud then
+			local fname, fc, hp, dps, range, speed = cardValues(ud)
+			local over = mx >= b.x1 and mx <= b.x2 and my >= b.y1 and my <= b.y2
+			panel(b.x1, b.y1, b.x2, b.y2, { fc[1] * 0.12, fc[2] * 0.12, fc[3] * 0.12 }, { fc[1] * 0.4, fc[2] * 0.4, fc[3] * 0.4 }, fc, over and 5 or 2, over and 1.25 or 1)
+			local cx, pic = (b.x1 + b.x2) / 2, 92 * s
+			gl.Color(1, 1, 1, 1)
+			gl.Texture("#" .. ud.id)
+			gl.TexRect(cx - pic / 2, b.y2 - 16 * s - pic, cx + pic / 2, b.y2 - 16 * s)
+			gl.Texture(false)
+			gl.Color(1, 1, 1, 1)
+			gl.Text(i .. "  " .. (ud.translatedHumanName or ud.name), cx, b.y2 - 140 * s, 24 * s, "co")
+			gl.Color(fc[1], fc[2], fc[3], 1)
+			gl.Text(fname, cx, b.y2 - 166 * s, 17 * s, "co")
+			gl.Color(0.9, 0.9, 0.9, 1)
+			gl.Text(string.format("Health %d    DPS %d", hp, dps), cx, b.y2 - 200 * s, 17 * s, "co")
+			gl.Text(string.format("Range %d    Speed %d", range, speed), cx, b.y2 - 224 * s, 17 * s, "co")
+		end
+	end
+	local left = math.max(0, math.ceil((at + 10 * 30 - Spring.GetGameFrame()) / 30))
+	gl.Color(0.8, 0.8, 0.8, 1)
+	gl.Text(string.format("Click a unit or press 1, 2 or 3 (a random one in %d seconds)", left), (x1 + x2) / 2, y1 + 10 * s, 18 * s, "co")
+	gl.Color(1, 1, 1, 1)
+end
+
+local function pick(i, at)
+	Spring.SendLuaRulesMsg("evo|pick|" .. i)
+	pickSent = at
+end
+
+function widget:Update()
+	WG.evoWindowOpen = (choiceOpen() ~= nil) or open()
+end
+
+function widget:Shutdown()
+	WG.evoWindowOpen = nil
+end
+
 function widget:DrawScreen()
+	local names, at = choiceOpen()
+	if names then
+		drawChoice(names, at)
+		return
+	end
 	if not open() then
 		return
 	end
@@ -159,7 +246,7 @@ function widget:DrawScreen()
 end
 
 function widget:IsAbove(x, y)
-	if not open() then
+	if not open() and not choiceOpen() then
 		return false
 	end
 	local x1, y1, x2, y2 = layout()
@@ -167,7 +254,8 @@ function widget:IsAbove(x, y)
 end
 
 function widget:MousePress(x, y, button)
-	if not open() then
+	local names, at = choiceOpen()
+	if not names and not open() then
 		return false
 	end
 	local x1, y1, x2, y2, buttons = layout()
@@ -176,14 +264,20 @@ function widget:MousePress(x, y, button)
 	end
 	for i, b in ipairs(buttons) do
 		if button == 1 and x >= b.x1 and x <= b.x2 and y >= b.y1 and y <= b.y2 then
-			choose(i)
+			if names then pick(i, at) else choose(i) end
 		end
 	end
 	return true
 end
 
 function widget:KeyPress(key)
-	if open() and key >= 49 and key <= 51 then -- the keys 1, 2, 3
+	if key < 49 or key > 51 then return false end -- the keys 1, 2, 3
+	local names, at = choiceOpen()
+	if names then
+		pick(key - 48, at)
+		return true
+	end
+	if open() then
 		choose(key - 48)
 		return true
 	end
