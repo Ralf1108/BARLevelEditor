@@ -426,7 +426,7 @@ function H.drawModeWorld()
 end
 
 function H.drawMode(vsx, vsy)
-	if not MODE then return end
+	if not MODE or Spring.GetGameFrame() < 1 then return end -- (not on the screen before the start: there the panel and a frozen "GO!" looked like a hung game)
 	local s = math.max(0.7, vsy / 1080)
 	if MODE == "survival" then drawSurvival(vsx, vsy, s) elseif MODE == "race" then drawRace(vsx, vsy, s) end
 end

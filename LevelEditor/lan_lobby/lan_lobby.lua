@@ -17,12 +17,14 @@ end
 -- as chat: !map, !bSet, !nbTeams, !set teamSize, !balance, !cv start (and !start). Everything goes over TCP on port 8453 (the lobby may listen and connect, but may not send UDP).
 -- The game itself: when the autohost says "in game", every lobby connects to the battle (as for a game on a normal server); the host's lobby starts the
 -- engine as the host (HostIP 0.0.0.0, port 8452) with a start script built here from the state of the room.
--- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room), evolution=1 (the host switches Evolution on, like a click on Evo), evolutionStage=<n> (test: every player starts on stage n), evolutionClose=<s> (closes the window with its rules then), lanMenu=<s> (opens the menu of the button LAN Play then)
+-- Test automation: lanlobby_cfg.txt in the write dir (key=value lines): auto=host|join, startDelay= (seconds between the last player and the automatic Start, default 4), name=, map=, players=, ip=, noOnline=1 (a joiner cancels the lobby's online download of a missing map, as if there were no internet), showCopilot=1 (a joiner opens the list), copilot=<name> (gives that human the next number, like a click on the human in the Copilot list), teams=<n> and teamSize=<n> (the host presses the buttons "N teams" / "N per team" of the room), dump=<seconds> (logs the middle column of the room), evolution=1 (the host switches Evolution on, like a click on Evo), evolutionStage=<n> (test: every player starts on stage n), evolutionClose=<s> (closes the window with its rules then), lanMenu=<s> (opens the menu of the button LAN Play then),
+-- evoTeam=1 (Team Evolution on), renMode=race|survival (with renegade=1: the mode of Renegade), option=<key>=<value>,... (more game options, e.g. lanrenotest=1), forceTeam=<name> <n> (the host moves that player
+-- into room team n, like !force, as soon as the room has its players)
 
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 36, stamp = "2026-11-17 14:00" }
+local LAN_VERSION = { number = 37, stamp = "2026-11-17 18:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -1122,8 +1124,9 @@ buildScript = function(myName)
 	local eff = effectiveSlots(humanList())
 	-- the start positions are chosen in the game (2) unless humans play one player together: the game of such a team is started by the little widget
 	-- shared_start.lua as soon as everybody has loaded, nobody could place a start position before that, so the positions of the map are used (0);
-	-- Evolution uses them too (the first unit stands there, every later one at a random place: choosing a position would only hold up the start)
-	local startPos = (#sharedGroups(humanList(), eff) > 0 or evolutionOn()) and 0 or 2
+	-- Evolution uses them too (the first unit stands there, every later one at a random place: choosing a position would only hold up the start), and so do the modes of
+	-- Renegade (Race puts everybody on its start grid, Survival everybody together: the screen of the start positions only held the game up for minutes)
+	local startPos = (#sharedGroups(humanList(), eff) > 0 or evolutionOn() or S.battle.modoptions.lanrenemode) and 0 or 2
 	local groupTeam = {} -- "ally:number" -> the team of the start script (the humans with the same number play it together)
 	local function rgb(col) col = tonumber(col) or 0; return string.format("%.4f %.4f %.4f", (col % 256) / 255, (math.floor(col / 256) % 256) / 255, (math.floor(col / 65536) % 256) / 255) end
 	local function sideName(s) local sd = cf and cf:GetSideById(s); return (sd and sd.name) or "Armada" end
@@ -2284,7 +2287,7 @@ local function openRenMenu()
 				openRenMenu()
 			end },
 		{ caption = "Race: " .. (renMode() == "race" and "On" or "Off"), class = renMode() == "race" and "action_button" or "negative_button",
-			tip = "Race " .. (renMode() == "race" and "on" or "off") .. ": every player drives the same unit through 8 glowing rings round the middle of the map, 2 laps; the players cannot hurt each other; the first one through the finish wins. Switching it on switches Renegade on and Evolution off (and Survival off). Click to change.",
+			tip = "Race " .. (renMode() == "race" and "on" or "off") .. ": every player picks a scout (all equally fast) and drives through 8 glowing rings, 2 laps; the players cannot hurt each other; after the race: New race or Leave. Switching it on switches Renegade on and Evolution off (and Survival off). Click to change.",
 			fn = function()
 				S.renMode = renMode() ~= "race" and "race" or nil
 				if S.renMode and evolutionOn() then setEvolution(false) end
@@ -2640,6 +2643,10 @@ local function testAutomation()
 		end
 	end
 	if cfg.auto == "join" and autoStarted and not lan and not scan and #found > 0 then joinHost(found[1].ip) end
+	if cfg.auto == "join" and not cfg.startTest and lan and lan.step == "in" and not cfg.readyDone and clock() > 30 then
+		cfg.readyDone = true   -- test: the joiner presses Ready (the host starts only when everybody is ready)
+		log("test: the joiner presses Ready"); l:SetBattleStatus({ isReady = true })
+	end
 	if cfg.lateJoin and cfg.auto == "host" and lan and lan.step == "in" and S and not S.battle.lateJoin and not S.battle.running then
 		S.battle.lateJoin = true   -- test: !latejoin on
 		syncPveGame()
@@ -2653,6 +2660,18 @@ local function testAutomation()
 				l:StartBattle()
 			end
 		end
+	end
+	if cfg.forceTeam and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.forceDone and #battleUsers() >= (tonumber(cfg.players) or 2) then
+		cfg.forceAt = cfg.forceAt or (clock() + 4) -- (after the room has placed the new player)
+	end
+	if cfg.forceAt and not cfg.forceDone and clock() > cfg.forceAt then
+		cfg.forceDone = true   -- test: a player into another room team (Team Evolution: both humans in one team)
+		log("test: !force", cfg.forceTeam, "team")
+		forceCommand(cfg.forceTeam:gsub("^(%S+)%s+(%d+)$", "%1 team %2"))
+	end
+	if cfg.option and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.optionDone and clock() > 12 then
+		cfg.optionDone = true   -- test: one more game option for everybody in the room
+		for k, v in cfg.option:gmatch("([%w_]+)=([^,]*)") do S.battle.modoptions[k] = v; toBattle("SETSCRIPTTAGS game/modoptions/" .. k .. "=" .. v); log("test: game option", k, v) end
 	end
 	if cfg.bot and cfg.auto == "host" and lan and lan.step == "in" and S and not cfg.botDone and clock() > 14 then
 		cfg.botDone = true   -- test: a computer in the room (the Add AI button: lobby:AddAi)
@@ -2699,6 +2718,7 @@ function widget:Update()
 		log("test: Evolution on")
 		if tonumber(cfg.evolutionStage) then S.battle.modoptions.lanevolutionstage = cfg.evolutionStage end -- test: every player starts on that stage
 		setEvolution(true)
+		if cfg.evoTeam == "1" then setEvoOption("lanevoteam", "1") end -- test: Team Evolution
 	end
 	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and clock() > tonumber(cfg.lanMenu) then
 		cfg.lanMenu = nil -- test: the menu of the button LAN Play is opened (a picture of it)
@@ -2716,6 +2736,7 @@ function widget:Update()
 		cfg.renegadeSet = true
 		log("test: Renegade on")
 		S.renSingleOff = cfg.renegadeSingle ~= "1" or nil -- (the test room is the takeover mode unless renegadeSingle=1)
+		if cfg.renMode == "race" or cfg.renMode == "survival" then S.renMode = cfg.renMode end -- test: a mode of Renegade (it plays Always in unit)
 		setRenOptions(true)
 	end
 	if tonumber(cfg.renMenu) and ui.renMenuBtn and not ui.renMenu and clock() > tonumber(cfg.renMenu) then

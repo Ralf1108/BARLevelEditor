@@ -127,7 +127,7 @@ A button in the menu **LAN Play** of the room (section 5): numbers per human ins
 - Kept as `c.slot` of the connection on the server of the widget (not in the battle status: the lobby would fight it).
   - `effectiveSlots` (default = place in the team, a chosen number overrides it, so the one who takes the number of another joins them and the other keeps their), `nextSlot`, `sharedGroups` (pure functions between `-- SHARE-BEGIN` and `-- SHARE-END`, loaded by the test of the Level Editor), `cycleSlot` (chat line to the room).
   - The list sorts the humans like the default numbers, the chat line and the start script.
-- `buildScript` makes one team of the start script for every "ally:number" group of humans, puts the host first (player 0) and uses `StartPosType=0` when a shared team exists, 2 otherwise (a game widget starts such a game: `shared_start.lua`, [Scenarios with several players](scenario-multiplayer.md), "Player numbers and Copilot").
+- `buildScript` makes one team of the start script for every "ally:number" group of humans, puts the host first (player 0) and uses `StartPosType=0` when a shared team exists, with Evolution and with a mode of Renegade (`lanrenemode`: Race puts everybody on its start grid; with 2 the screen of the start positions held a Race up for minutes, `LAN_VERSION` 37), 2 otherwise (a game widget starts such a game: `shared_start.lua`, [Scenarios with several players](scenario-multiplayer.md), "Player numbers and Copilot").
 - Joiners see the Copilot list read only: they ask `COPILOT` every two seconds and get `name~ally~number|...`.
 - Test hook: `widget.DebugShare` lets the Level Editor test load the file in a stub environment.
 
@@ -209,7 +209,9 @@ A button for the host in the menu **LAN Play** of the room (section 5). Scenario
 
 - Two real lobbies in sandbox instances on one computer (pictures of the room: `lan_test.ps1 -Shots`, with `PrintWindow` flag 2; a copy of the screen or `gl.SaveImage` come out black);
   - the mode `teams` presses the buttons "N teams" / "N per team" of the room (`teams=`, `teamSize=` in `lanlobby_cfg.txt`) and logs what the lobby knows (`nbTeams`, game options, ally teams, the middle column with `dump=`);
-  - `lanlobby_cfg.txt` in the write dir drives them (`auto`, `name`, `map`, `players`, `ip`, `openTab`, `clickFirst`, `leaveAfter`, `scenario`, `startDelay`, `noOnline`);
+  - `lanlobby_cfg.txt` in the write dir drives them (`auto`, `name`, `map`, `players`, `ip`, `openTab`, `clickFirst`, `leaveAfter`, `scenario`, `startDelay`, `noOnline`; `renMode`, `evoTeam`, `option=<key>=<value>,...`, `forceTeam=<name> <n>`);
+  - a test joiner presses Ready 30 s after the lobby started (the host starts only when everybody is ready; not with `startTest`);
+  - the modes `race` (Race: picks, laps, results, New race, Leave on both instances, `zz_lanrace.lua`) and `evoteam` (Team Evolution, both humans in one room team: the wait for the mate, `zz_lanevo.lua`);
   - tools `test-data\tools\lan_test.ps1` (the widget) and `console_test.ps1` (the console lobby);
   - details and pitfalls: `test-data\TESTING.md`.
 - Each game instance needs 8-10 GB of RAM: tests run with the host plus one joiner.

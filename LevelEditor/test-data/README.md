@@ -38,6 +38,8 @@ The LAN Play test (two instances of the game, host and joiner, real lobby) takes
 | `teams` | the host presses "3 teams" and "2 per team", a joiner comes in: teams, game options and the middle column go to `lan_status.txt` |
 | `boss` | the host chooses "Make Boss" and then "Disable Boss" for the joiner; the log shows `isBoss` true and false |
 | `page` | one instance with the LAN Play page opened and left alone (for pictures with `-Shots`) |
+| `race` | Renegade Race through the room: the picks, 2 laps, the results, New race, Leave; both logs show the same (`zz_lanrace.lua`) |
+| `evoteam` | Team Evolution through the room: PlayerA and PlayerB in one team against BARb; PlayerA waits for PlayerB, then follows (`zz_lanevo.lua`) |
 
 | Switch | Effect |
 | --- | --- |

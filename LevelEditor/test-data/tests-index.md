@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-152 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+154 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -37,6 +37,8 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_gates.lua` | Gates of Hell and the debug buttons | `pve_test.ps1 -Evo -EvoTest -Debug -Widget zz_gates.lua (one instance, speed 10)` |
 | `zz_hell.lua` | Hell on Earth and Heaven on Earth | `pve_test.ps1 -Evo -EvoTest -Debug [-Gift 1\|2] -Widget zz_hell.lua (one instance, speed 10)` |
 | `zz_keep.lua` | settings changed while the Arena runs stay after Stop | `arena_test.ps1 -Widget zz_keep.lua` |
+| `zz_lanevo.lua` | Team Evolution over LAN Play | `lan_test.ps1 -Mode evoteam (host PlayerA and joiner PlayerB in one room team, a BARb computer in the other; Evolution and Team Evolution on, game option lanevodebug=1)` |
+| `zz_lanrace.lua` | Renegade Race over LAN Play | `lan_test.ps1 -Mode race (host PlayerA and joiner PlayerB, Race switched on in the room, game option lanrenotest=1)` |
 | `zz_lantest.lua` | test only |  |
 | `zz_live.lua` | runs the commands of live.ps1 (file LuaUI/Config/live_cmd.txt in the data folder) in the running test game | `pve_test.ps1 -Live. Once a second it reads LuaUI/Config/live_cmd.txt of the write folder. The first line is an id; a command is run once per id (the engine setting zzliveLast keeps it over a "luaui reload", which loads the widgets again and forgets WG). The other lines` |
 | `zz_long.lua` | Evolution option Long range | `pve_test.ps1 -Evo -Debug [-Long] -Widget zz_long.lua (one instance, speed 10)` |
