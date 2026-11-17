@@ -117,6 +117,59 @@ function H.hints(R)
 	if t > 90 and R.single then M.hint("ren_normal", "The key left of the 1 (or Insert) switches to the normal game and back.") end
 end
 
+-- The modes (game option lanrenemode): their panel at the top middle, their sounds and hints
+local MODE = (Spring.GetModOptions() or {}).lanrenemode
+H.MODE = MODE
+local modeEv = {}
+function H.modeHints(M, t, mode)
+	if mode == "survival" then
+		if t > 2 then M.hint("surv_goal", "Survival: beat the waves together with the other players.") end
+		if t > 10 then M.hint("surv_dead", "A lost unit comes back when the wave is over. Every wave makes your unit stronger.") end
+	end
+end
+-- the panel of Survival: WAVE 3 / 10 and the enemies left, or the seconds to the next wave; a dead player reads that it comes back after the wave
+local function drawSurvival(vsx, vsy, s)
+	local wave, waves = Spring.GetGameRulesParam("renSurvWave") or 0, Spring.GetGameRulesParam("renSurvWaves") or 0
+	local left, nextAt = Spring.GetGameRulesParam("renSurvLeft") or 0, Spring.GetGameRulesParam("renSurvNext") or 0
+	local f = Spring.GetGameFrame()
+	local secs = nextAt > 0 and math.max(0, math.ceil((nextAt - f) / 30)) or nil
+	-- sounds: a new wave, the last three seconds before it
+	if H.M then
+		if modeEv.wave and wave > modeEv.wave then H.M.play("wave") end
+		if secs and secs <= 3 and secs > 0 and secs ~= modeEv.secs then H.M.play("tick") end
+	end
+	modeEv.wave, modeEv.secs = wave, secs
+	local y = vsy - 120 * s
+	local w = 420 * s
+	gl.Color(0.05, 0.06, 0.08, 0.75)
+	gl.Rect(vsx / 2 - w / 2, y - 40 * s, vsx / 2 + w / 2, y + 34 * s)
+	gl.Color(1, 0.75, 0.3, 1)
+	if wave == 0 then
+		gl.Text(string.format("SURVIVAL: the first wave in %d", secs or 0), vsx / 2, y, 26 * s, "co")
+	elseif secs then
+		gl.Text(string.format("WAVE %d OF %d BEATEN", wave, waves), vsx / 2, y, 26 * s, "co")
+		gl.Color(1, 1, 1, 1)
+		gl.Text(string.format("the next wave in %d s", secs), vsx / 2, y - 28 * s, 18 * s, "co")
+	else
+		gl.Text(string.format("WAVE %d OF %d", wave, waves), vsx / 2, y, 26 * s, "co")
+		gl.Color(1, 1, 1, 1)
+		gl.Text(string.format("%d enemies left", left), vsx / 2, y - 28 * s, 18 * s, "co")
+	end
+	local team = Spring.GetMyTeamID()
+	if not Spring.GetSpectatingState() and wave > 0 and (Spring.GetTeamRulesParam(team, "renUnit") or 0) == 0 and (Spring.GetGameRulesParam("renOver") or 0) == 0 then
+		gl.Color(1, 0.25, 0.2, 1)
+		gl.Text("YOU DIED", vsx / 2, vsy * 0.62, vsy / 14, "co")
+		gl.Color(1, 1, 1, 1)
+		gl.Text("you come back when the others beat this wave", vsx / 2, vsy * 0.54, vsy / 30, "co")
+	end
+	gl.Color(1, 1, 1, 1)
+end
+function H.drawMode(vsx, vsy)
+	if not MODE then return end
+	local s = math.max(0.7, vsy / 1080)
+	if MODE == "survival" then drawSurvival(vsx, vsy, s) end
+end
+
 function H.kill(killerTeam, victimTeam, victimDef, killerDef)
 	local me = Spring.GetMyTeamID()
 	if killerTeam == me and victimTeam ~= me then

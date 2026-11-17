@@ -73,11 +73,15 @@ local SINGLE = MO.lanrenesingle ~= "0"
 -- one by itself (follow: team -> the frame until which the next unit is waited for; the unit is the team rules parameter evoUnit of evo_game.lua)
 local EVO = MO.lanevolution == "1"
 local POWERUPS = MO.lanrenepowerups == "1" and not EVO -- the power-ups without Evolution (game option lanrenepowerups; with Evolution its own are used)
+-- the modes of Renegade (game option lanrenemode, not with Evolution): "survival" (renegade_survival.lua). They always play Always in unit, without the bots.
+local MODE = (not EVO and (MO.lanrenemode == "survival")) and MO.lanrenemode or nil
+if MODE then SINGLE = true end
+local modeRun -- (the object of the mode: frame(f), destroyed(u, team, playerUnit), clear(); made below)
 local follow = {}
 local FOLLOW_FRAMES = 450 -- (15 s: a respawn takes its time)
-local BOTS = math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
+local BOTS = MODE and 0 or math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))
 -- the round: the kill goal (game option lanrenegoal), the kill feed and the end of the round (renegade_rounds.lua)
-local rounds = VFS.Include("luaui/Include/renegade_rounds.lua", nil, VFS.ZIP_FIRST)({ single = SINGLE, evo = EVO, say = G.sayer("Renegade") })
+local rounds = VFS.Include("luaui/Include/renegade_rounds.lua", nil, VFS.ZIP_FIRST)({ single = SINGLE, evo = EVO, mode = MODE, say = G.sayer("Renegade") })
 local RESPAWN = 150 -- frames until a player's unit comes back (5 s; the widget counts down, team rules parameter renRespawn = the frame)
 local lastPos = {} -- team -> where its unit was lost (when no place is found, e.g. for a ship on land)
 local BOT_RESPAWN = 150
@@ -1036,6 +1040,7 @@ end
 -- the test hooks "ren|test|n" (renegade_test.lua, loaded only with lanrenotest=1)
 local testHooks = TEST and VFS.Include("luaui/Include/renegade_test.lua", nil, VFS.ZIP_FIRST)({ units = units, input = input, startUnit = START_UNIT,
 	engineBombs = function() TESTENGINE = true end,
+	clearWave = function() if modeRun and modeRun.clear then modeRun.clear() end end, -- (Survival: the wave is destroyed)
 	-- the power-ups: all five at once for the team; the unit onto the nearest beacon
 	givePowerups = function(team)
 		if not pu.A then return end
@@ -1307,6 +1312,12 @@ turnInto = function(team, defName)
 	Spring.Echo("[Renegade] team " .. team .. " turned into " .. defName .. " (unit " .. id .. ")")
 end
 
+-- the mode (Survival): made here, it needs the functions above
+if MODE == "survival" then
+	modeRun = VFS.Include("luaui/Include/renegade_survival.lua", nil, VFS.ZIP_FIRST)({ units = units, kind = kind, say = G.sayer("Renegade"), rounds = rounds,
+		place = function(...) return place(...) end, others = others, giveUnit = giveUnit, turnInto = function(team, name) turnInto(team, name) end, testing = TEST })
+end
+
 -- a team with a human and a commander: the commander is replaced by the first unit
 local function take(team)
 	if units[team] ~= nil then return end
@@ -1459,6 +1470,7 @@ end
 function gadget:GameFrame(f)
 	if TEST and f == 40 then census() end
 	rounds.frame(f)
+	if modeRun then modeRun.frame(f) end
 	if f % 5 == 0 then G.shieldTick(f) end
 	if not EVO and f % 30 == 0 then autoReclaim() end
 	puFrame(f)
@@ -1531,6 +1543,7 @@ function gadget:GameFrame(f)
 end
 
 function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attackerTeam)
+	local playerUnit = units[team] == u
 	-- the score (for the list of the players): every unit destroyed by a team counts as a kill of it (not its own or an allied one), a lost unit of the player as a death
 	local counted = attackerTeam and attackerTeam ~= team and not Spring.AreTeamsAllied(attackerTeam, team)
 	if counted then
@@ -1553,7 +1566,7 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 			follow[team] = Spring.GetGameFrame() + FOLLOW_FRAMES
 			Spring.SetTeamRulesParam(team, "renFollow", 1, { public = true }) -- (the widget keeps the view and waits)
 		end
-		if SINGLE then
+		if SINGLE and not MODE then -- (Survival brings the dead back at the end of the wave)
 			due[team] = Spring.GetGameFrame() + RESPAWN
 			Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
 			local x, y, z = Spring.GetUnitPosition(u)
@@ -1563,4 +1576,5 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 		bots[u] = nil
 		botDue[#botDue + 1] = Spring.GetGameFrame() + BOT_RESPAWN
 	end
+	if modeRun then modeRun.destroyed(u, team, playerUnit) end -- (the mode: the wave, the players)
 end

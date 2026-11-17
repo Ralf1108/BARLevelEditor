@@ -1935,9 +1935,10 @@ function widget:DrawScreen()
 	if not Spring.GetSpectatingState() then countdown(vsx0, vsy0) end
 	drawDamageNumbers(vsy0)
 	R.H.drawFeed(vsx0, vsy0)
+	R.H.drawMode(vsx0, vsy0) -- (Survival: the wave)
 	R.H.drawEnd(vsx0, vsy0)
 	R.M.drawNote(vsx0, vsy0)
-	R.M.drawHint(vsx0, vsy0)
+	R.M.drawHint(vsx0, vsy0, R.H.MODE and vsy0 * 0.78 or nil) -- (with a mode below its panel)
 	if R.unit then R.M.drawOwnShield(R.unit, vsx0, vsy0) end
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()

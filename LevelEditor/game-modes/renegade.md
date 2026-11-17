@@ -28,6 +28,7 @@
 | **Always in unit** Off (takeover mode) | you play the normal game with all your units and take one over when you like |
 | **Power-ups** On (Off by default) | beacons on the map give Sprint, Repair, Radar Pulse, Cloak and Jammer |
 | **Goal** 10, 20 (default), 30 kills, None | the first player with this many kills wins the round (Always in unit only) |
+| **Survival** On (Off by default) | all players together against waves of computer units, see below |
 
 - **Takeover:** hold the mouse over one of your units and press **the key left of the 1**; the same key leaves it. If the unit is lost you are out of it.
 - **Power-ups:** drive over a beacon and you have its power-up until your unit is lost.
@@ -35,6 +36,17 @@
   - The keys **1 to 5** use them. The bar at the bottom shows the numbers, the cooldown and the time left.
   - A taken beacon comes back somewhere else after 45 s.
   - With the game mode [Evolution](evolution.md) on, its own power-ups are used (the same five, the same keys).
+
+## Survival
+
+- All players are on one side and fight **10 waves** of computer units together. Computer players of the room do not play.
+- The first wave comes after 15 seconds; a panel at the top shows the wave and the enemies left.
+- Every wave makes your unit stronger: at the start of wave 3 you drive a level 4 unit (the ladders of Evolution), at full health.
+- A lost unit does **not** come back during the wave: it comes back next to a mate when the others beat the wave.
+- Between two waves there is a break of 15 seconds.
+- **Win:** beat all 10 waves. **Lose:** all players are lost at the same time.
+- Waves 5 and 10 bring a boss. The units of a wave start with half of their health.
+- Switching Survival on switches Renegade on and Evolution off.
 
 ## Controls
 

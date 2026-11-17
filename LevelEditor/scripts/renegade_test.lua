@@ -9,6 +9,7 @@
 --   ren|test|7  the team gets all five power-ups (lanrenepowerups)
 --   ren|test|8  the unit is put onto the nearest beacon of the power-ups (it takes the power-up)
 --   ren|test|9  the nearest enemy unit (also of Gaia) is destroyed by the unit of the player (counts as its kill)
+--   ren|test|10 Survival: every unit of the wave is destroyed
 return function(env)
 	local units, input, startUnit = env.units, env.input, env.startUnit
 	local hooks = {}
@@ -81,6 +82,10 @@ return function(env)
 		end
 	end
 
+	-- Survival: every unit of the wave is destroyed
+	hooks["ren|test|10"] = function()
+		env.clearWave()
+	end
 	-- the nearest enemy unit (also of Gaia: the waves of Survival) is destroyed by the unit of the player (a kill that counts)
 	hooks["ren|test|9"] = function(playerID)
 		local u, team = own(playerID)

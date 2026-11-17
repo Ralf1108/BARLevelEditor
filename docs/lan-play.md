@@ -32,6 +32,7 @@ The host chooses them with the green button **LAN Play** in the title row of the
 - **Evolution:** any map, best a small one (size M or smaller). Its settings: Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution (friends in one team evolve together), Debug mode.
 - **Renegade** has more settings:
   - **Goal:** the first player with 10, 20 (default) or 30 kills wins the round.
+  - **Survival On:** all players together against 10 waves of computer units.
   - **Always in unit Off:** you play the normal game and take over any of your units with the key left of the 1.
   - **Power-ups On:** beacons of five colors lie on the map; a unit that drives over one gets Sprint, Repair, Radar Pulse, Cloak or Jammer, used with the keys 1 to 5.
 
