@@ -126,8 +126,11 @@ function H.modeHints(M, t, mode)
 		if t > 2 then M.hint("surv_goal", "Survival: beat the waves together with the other players.") end
 		if t > 10 then M.hint("surv_dead", "A lost unit comes back when the wave is over. Every wave makes your unit stronger.") end
 	elseif mode == "race" then
-		if t > 2 then M.hint("race_goal", "Race: drive through the glowing green ring, then the next one. The arrow at the top shows the way.") end
-		if t > 12 then M.hint("race_jump", "Space jumps over small obstacles. Sprint (key 1) helps when you found it.") end
+		local go = Spring.GetGameRulesParam("renRaceGo") or 0
+		if go > 0 and Spring.GetGameFrame() > go then
+			M.hint("race_goal", "Race: drive through the glowing green ring, then the next one. The arrows show the way.")
+			if Spring.GetGameFrame() > go + 300 then M.hint("race_jump", "The Tick (a bot) jumps over small obstacles with Space. Sprint (key 1) helps when you found it.") end
+		end
 	end
 end
 -- the panel of Survival: WAVE 3 / 10 and the enemies left, or the seconds to the next wave; a dead player reads that it comes back after the wave
@@ -177,9 +180,139 @@ local function clock(frames)
 	local secs = math.max(0, math.floor(frames / 30))
 	return string.format("%d:%02d", math.floor(secs / 60), secs % 60)
 end
+local FACTION = { arm = "Armada", cor = "Cortex", leg = "Legion" }
+local function racerList()
+	local list = {}
+	for n in tostring(Spring.GetGameRulesParam("renRaceUnits") or ""):gmatch("[%w_]+") do list[#list + 1] = n end
+	return list
+end
+local function outline(x1, y1, x2, y2)
+	gl.BeginEnd(GL.LINE_LOOP, function() gl.Vertex(x1, y1); gl.Vertex(x2, y1); gl.Vertex(x2, y2); gl.Vertex(x1, y2) end)
+end
+H.raceRects = {} -- (the cards and the buttons of the Race for the mouse: { x1, y1, x2, y2, cmd })
+
+-- before the start: a card per racer (picture, name, faction, its key); the own pick is green (team rules renRacePick)
+local function drawPick(vsx, vsy, s, go, f)
+	local list = racerList()
+	if #list == 0 then return end
+	local mine = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renRacePick") or 0
+	local cw, ch, gap = 190 * s, 230 * s, 18 * s
+	local total = #list * cw + (#list - 1) * gap
+	local x0, y0 = (vsx - total) / 2, vsy * 0.28
+	gl.Color(1, 1, 1, 1)
+	gl.Text(string.format("CHOOSE YOUR RACER (keys 1 to %d or a click): the start is in %d s", #list, math.max(0, math.ceil((go - f) / 30))), vsx / 2, y0 + ch + 24 * s, 22 * s, "co")
+	for i, n in ipairs(list) do
+		local ud = UnitDefNames[n]
+		local x1 = x0 + (i - 1) * (cw + gap)
+		local sel = i == mine
+		if sel then gl.Color(0.1, 0.3, 0.14, 0.88) else gl.Color(0.05, 0.06, 0.08, 0.85) end
+		gl.Rect(x1, y0, x1 + cw, y0 + ch)
+		if sel then gl.Color(0.4, 1, 0.45, 1) else gl.Color(0.5, 0.55, 0.65, 0.8) end
+		gl.LineWidth(sel and 3 or 1)
+		outline(x1, y0, x1 + cw, y0 + ch)
+		gl.LineWidth(1)
+		if ud then
+			gl.Color(1, 1, 1, 1)
+			gl.Texture("#" .. ud.id)
+			gl.TexRect(x1 + 20 * s, y0 + 60 * s, x1 + cw - 20 * s, y0 + ch - 20 * s)
+			gl.Texture(false)
+			gl.Text(ud.translatedHumanName or n, x1 + cw / 2, y0 + 36 * s, 18 * s, "co")
+			gl.Color(0.75, 0.8, 0.9, 1)
+			gl.Text(FACTION[n:sub(1, 3)] or "", x1 + cw / 2, y0 + 14 * s, 13 * s, "co")
+		end
+		gl.Color(1, 0.85, 0.3, 1)
+		gl.Text(tostring(i), x1 + 12 * s, y0 + ch - 28 * s, 22 * s, "o")
+		H.raceRects[#H.raceRects + 1] = { x1 = x1, y1 = y0, x2 = x1 + cw, y2 = y0 + ch, cmd = "pick|" .. i }
+	end
+	gl.Color(0.75, 0.8, 0.9, 1)
+	gl.Text("All racers have the same speed. Only the Tick (a bot) can jump.", vsx / 2, y0 - 24 * s, 15 * s, "co")
+	gl.Color(1, 1, 1, 1)
+end
+
+-- after the race: the places (game rules renRaceResult "team:time:unit;..."), the buttons New race and Leave
+local function drawResults(vsx, vsy, s)
+	local rows = {}
+	for team, time, unit in tostring(Spring.GetGameRulesParam("renRaceResult") or ""):gmatch("(%d+):(%d+):([%w_]*)") do
+		rows[#rows + 1] = { team = tonumber(team), time = tonumber(time), unit = unit }
+	end
+	local w, rh = 660 * s, 34 * s
+	local h = 200 * s + #rows * rh
+	local x1, y2 = (vsx - w) / 2, vsy * 0.84
+	local y1 = y2 - h
+	gl.Color(0.02, 0.03, 0.05, 0.88)
+	gl.Rect(x1, y1, x1 + w, y2)
+	gl.Color(1, 0.85, 0.3, 1)
+	gl.Text("RACE RESULTS", vsx / 2, y2 - 50 * s, 40 * s, "co")
+	for i, r in ipairs(rows) do
+		local y = y2 - 100 * s - (i - 1) * rh
+		local c = teamColor(r.team)
+		if r.team == Spring.GetMyTeamID() then
+			gl.Color(1, 1, 1, 0.08)
+			gl.Rect(x1 + 16 * s, y - 8 * s, x1 + w - 16 * s, y + rh - 10 * s)
+		end
+		gl.Color(1, 0.85, 0.3, 1)
+		gl.Text(i .. ".", x1 + 50 * s, y, 22 * s, "ro")
+		gl.Color(c[1], c[2], c[3], 1)
+		gl.Text(H.teamName(r.team), x1 + 70 * s, y, 22 * s, "o")
+		local ud = UnitDefNames[r.unit]
+		gl.Color(0.75, 0.8, 0.9, 1)
+		gl.Text(ud and (ud.translatedHumanName or r.unit) or "", x1 + 340 * s, y, 18 * s, "o")
+		gl.Color(1, 1, 1, 1)
+		gl.Text(r.time > 0 and clock(r.time) or "did not finish", x1 + w - 40 * s, y, 20 * s, "ro")
+	end
+	local bw, bh = 220 * s, 50 * s
+	local by = y1 + 46 * s
+	for i, b in ipairs({ { text = "New race  [N]", cmd = "again", col = { 0.15, 0.45, 0.2 } }, { text = "Leave  [L]", cmd = "leave", col = { 0.45, 0.15, 0.12 } } }) do
+		local bx = vsx / 2 + (i == 1 and -bw - 20 * s or 20 * s)
+		gl.Color(b.col[1], b.col[2], b.col[3], 0.95)
+		gl.Rect(bx, by, bx + bw, by + bh)
+		gl.Color(1, 1, 1, 0.8)
+		outline(bx, by, bx + bw, by + bh)
+		gl.Color(1, 1, 1, 1)
+		gl.Text(b.text, bx + bw / 2, by + bh / 2 - 9 * s, 22 * s, "co")
+		H.raceRects[#H.raceRects + 1] = { x1 = bx, y1 = by, x2 = bx + bw, y2 = by + bh, cmd = b.cmd }
+	end
+	gl.Color(0.7, 0.75, 0.85, 1)
+	gl.Text("New race: a new track for everybody.   Leave: the game ends for everybody.", vsx / 2, y1 + 16 * s, 15 * s, "co")
+	gl.Color(1, 1, 1, 1)
+end
+
+-- the mouse is free (no view, no driving) while the racers are picked and while the results are shown
+function H.raceFree()
+	if MODE ~= "race" or Spring.GetSpectatingState() or (Spring.GetGameRulesParam("renOver") or 0) > 0 then return false end
+	if (Spring.GetGameRulesParam("renRaceOver") or 0) > 0 then return true end
+	local go = Spring.GetGameRulesParam("renRaceGo") or 0
+	return go > 0 and Spring.GetGameFrame() < go and #racerList() > 0
+end
+
+-- the keys of the Race: 1 to 9 pick a racer before the start; N (new race) and L (leave) on the results
+function H.raceKey(key)
+	if not H.raceFree() then return false end
+	if (Spring.GetGameRulesParam("renRaceOver") or 0) > 0 then
+		if key == 110 then Spring.SendLuaRulesMsg("ren|race|again") return true end
+		if key == 108 then Spring.SendLuaRulesMsg("ren|race|leave") return true end
+		return false
+	end
+	local n = (key >= 49 and key <= 57) and key - 48 or ((key >= 257 and key <= 265) and key - 256 or nil)
+	if n and n <= #racerList() then Spring.SendLuaRulesMsg("ren|race|pick|" .. n) return true end
+	return false
+end
+
+function H.raceClick(x, y)
+	for _, r in ipairs(H.raceRects) do
+		if x >= r.x1 and x <= r.x2 and y >= r.y1 and y <= r.y2 then
+			Spring.SendLuaRulesMsg("ren|race|" .. r.cmd)
+			return true
+		end
+	end
+	return false
+end
+
 -- the panel: LAP 1/2, CHECKPOINT 3/8, the place and the time; the countdown before the start; an arrow to the next checkpoint (up = straight ahead of the view)
 local function drawRace(vsx, vsy, s)
 	local team, f = Spring.GetMyTeamID(), Spring.GetGameFrame()
+	H.raceRects = {}
+	if (Spring.GetGameRulesParam("renOver") or 0) > 0 then return end -- (left: the banner of the end)
 	local go = Spring.GetGameRulesParam("renRaceGo") or 0
 	local cps = raceCps()
 	local lap, cp = Spring.GetTeamRulesParam(team, "renRaceLap") or 1, Spring.GetTeamRulesParam(team, "renRaceCp") or 1
@@ -188,6 +321,8 @@ local function drawRace(vsx, vsy, s)
 	for _, t in ipairs(Spring.GetTeamList()) do if Spring.GetTeamRulesParam(t, "renRacePos") then players = players + 1 end end
 	-- sounds: the countdown, the start, every checkpoint, every lap
 	if H.M then
+		local no = Spring.GetGameRulesParam("renRaceNo") or 0
+		if no ~= modeEv.no then modeEv.lap, modeEv.cp, modeEv.time, modeEv.secs, modeEv.no = nil, nil, nil, nil, no end -- (a new race)
 		local secs = go > f and math.ceil((go - f) / 30) or nil
 		if secs and secs <= 3 and secs ~= modeEv.secs then H.M.play("tick") end
 		if not secs and modeEv.secs then H.M.play("wave") end
@@ -195,6 +330,10 @@ local function drawRace(vsx, vsy, s)
 		if modeEv.lap and (lap > modeEv.lap or (time > 0 and (modeEv.time or 0) == 0)) then H.M.play("lap")
 		elseif modeEv.cp and cp ~= modeEv.cp then H.M.play("checkpoint") end
 		modeEv.lap, modeEv.cp, modeEv.time = lap, cp, time
+	end
+	if (Spring.GetGameRulesParam("renRaceOver") or 0) > 0 then
+		drawResults(vsx, vsy, s)
+		return
 	end
 	local y = vsy - 120 * s
 	local w = 520 * s
@@ -206,9 +345,10 @@ local function drawRace(vsx, vsy, s)
 		local secs = math.ceil((go - f) / 30)
 		if secs <= 5 then
 			gl.Color(1, 1, 1, 1)
-			gl.Text(tostring(secs), vsx / 2, vsy * 0.6, 90 * s, "co")
+			gl.Text(tostring(secs), vsx / 2, vsy * 0.62, 90 * s, "co")
 		end
 		gl.Color(1, 1, 1, 1)
+		drawPick(vsx, vsy, s, go, f)
 		return
 	end
 	if f - go < 45 then
@@ -262,6 +402,23 @@ function H.drawModeWorld()
 			gl.LineWidth(2)
 			gl.Color(1, 0.85, 0.3, 0.45)
 			gl.DrawGroundCircle(c[1], y, c[2], 140, 32)
+		end
+	end
+	-- an arrow in the next ring: the way to the checkpoint after it
+	local c, nxt = cps[cp], cps[cp % math.max(1, #cps) + 1]
+	if c and nxt and nxt ~= c then
+		local dx, dz = nxt[1] - c[1], nxt[2] - c[2]
+		local l = math.sqrt(dx * dx + dz * dz)
+		if l > 0 then
+			dx, dz = dx / l, dz / l
+			local px, pz = -dz, dx
+			local y = Spring.GetGroundHeight(c[1], c[2]) + 8
+			gl.Color(0.3, 1, 0.4, 0.75 * pulse)
+			gl.BeginEnd(GL.TRIANGLES, function()
+				gl.Vertex(c[1] + dx * 110, y, c[2] + dz * 110)
+				gl.Vertex(c[1] - dx * 40 + px * 70, y, c[2] - dz * 40 + pz * 70)
+				gl.Vertex(c[1] - dx * 40 - px * 70, y, c[2] - dz * 40 - pz * 70)
+			end)
 		end
 	end
 	gl.LineWidth(1)

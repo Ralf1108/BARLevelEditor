@@ -1068,6 +1068,13 @@ local testHooks = TEST and VFS.Include("luaui/Include/renegade_test.lua", nil, V
 
 function gadget:RecvLuaMsg(msg, playerID)
 	if testHooks and testHooks(msg, playerID) then return end
+	local raceCmd, raceN = msg:match("^ren|race|(%a+)|?(%d*)$")
+	if raceCmd then
+		-- Race: the pick of the racer, a new race, leave (renegade_race.lua)
+		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
+		if not spec and modeRun and modeRun.msg then modeRun.msg(team, raceCmd, tonumber(raceN)) end
+		return
+	end
 	local useN = POWERUPS and msg:match("^ren|use|(%d+)$")
 	if useN then
 		local _, _, spec, team = Spring.GetPlayerInfo(playerID, false)
@@ -1316,7 +1323,8 @@ end
 
 -- the mode (Survival, Race): made here, it needs the functions above
 if MODE == "race" then
-	modeRun = VFS.Include("luaui/Include/renegade_race.lua", nil, VFS.ZIP_FIRST)({ units = units, startUnit = START_UNIT, say = G.sayer("Renegade"), rounds = rounds, testing = TEST })
+	modeRun = VFS.Include("luaui/Include/renegade_race.lua", nil, VFS.ZIP_FIRST)({ units = units, kind = kind, giveUnit = giveUnit, turnInto = function(team, name) turnInto(team, name) end,
+		say = G.sayer("Renegade"), rounds = rounds, testing = TEST })
 elseif MODE == "survival" then
 	modeRun = VFS.Include("luaui/Include/renegade_survival.lua", nil, VFS.ZIP_FIRST)({ units = units, kind = kind, say = G.sayer("Renegade"), rounds = rounds,
 		place = function(...) return place(...) end, others = others, giveUnit = giveUnit, turnInto = function(team, name) turnInto(team, name) end, testing = TEST })

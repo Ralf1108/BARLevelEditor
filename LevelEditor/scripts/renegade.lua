@@ -646,7 +646,8 @@ function widget:Update()
 		say("Windows key: the mouse is free until a click in the window")
 	end
 	R.metaWas = meta
-	if not R.fake and not R.menu then
+	local raceFree = R.H.raceFree() -- (Race: the cards of the racers and the results take the mouse)
+	if not R.fake and not R.menu and not raceFree then
 		-- mouse look: the cursor goes back to the middle every frame, the way it moved is the turn
 		local vsx, vsy = Spring.GetViewGeometry()
 		local cx, cy = math.floor(vsx / 2), math.floor(vsy / 2)
@@ -708,11 +709,11 @@ function widget:Update()
 			R.lookClock = os.clock()
 		end
 		R.keys = R.away and 0 or keysNow()
-	elseif R.menu then
+	elseif R.menu or raceFree then
 		R.keys, R.fire = 0, 0 -- the menu: the mouse is free, nothing is steered or fired
 		R.skipLook = true -- (the cursor is somewhere else when the menu closes: no turn from that)
 	end
-	if not R.menu and not R.away then Spring.SetMouseCursor("none") end
+	if not R.menu and not R.away and not raceFree then Spring.SetMouseCursor("none") end
 	setCamera(u)
 	aim(u)
 	correctShot(u)
@@ -864,6 +865,10 @@ end
 
 function widget:MousePress(x, y, button)
 	if not R.on then return end
+	if R.H.raceFree() then
+		if button == 1 then R.H.raceClick(x, y) end
+		return true
+	end
 	if R.menu then
 		if button == 1 then
 			if R.list and R.win and x >= R.win.x1 and x <= R.win.x2 and y >= R.win.y0 and y <= R.win.top then
@@ -935,6 +940,7 @@ function widget:KeyPress(key, mods, isRepeat, label, utf32, scanCode)
 	if R.on and (key == K.W or key == K.A or key == K.S or key == K.D or key == K.SPACE) then
 		return true
 	end
+	if R.on and not isRepeat and R.H.raceKey(key) then return true end -- (Race: the pick of the racer, New race, Leave)
 	-- the keys 1 to 5 (also the number pad): the power-ups of Evolution (Sprint, Repair, Radar Pulse, Cloak, Jammer), the game message of the buttons of its bar
 	if R.on and (R.evo or R.powerups) and not (mods and (mods.ctrl or mods.alt or mods.meta)) and not (R.picker and R.picker.focus) and not WG.evoWindowOpen then -- (a window of Evolution takes 1 to 3)
 		local n = (key >= 49 and key <= 53) and key - 48 or ((key >= 257 and key <= 261) and key - 256 or nil)
@@ -1939,7 +1945,7 @@ function widget:DrawScreen()
 	R.H.drawMode(vsx0, vsy0) -- (Survival: the wave)
 	R.H.drawEnd(vsx0, vsy0)
 	R.M.drawNote(vsx0, vsy0)
-	R.M.drawHint(vsx0, vsy0, R.H.MODE and vsy0 * 0.72 or nil) -- (with a mode below its panel)
+	if not R.H.raceFree() then R.M.drawHint(vsx0, vsy0, R.H.MODE and vsy0 * 0.72 or nil) end -- (with a mode below its panel; not over the cards and the results of the Race)
 	if R.unit then R.M.drawOwnShield(R.unit, vsx0, vsy0) end
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()

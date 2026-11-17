@@ -95,7 +95,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | `zz_ren92.lua` | Renegade power-ups without Evolution: beacon, the five keys, the bar (`-Ren -RenTest -RenPowerups`) |
 | `zz_ren93.lua` | the kill goal (`-RenGoal 3`): three kills by `ren\|test\|9`, the feed, the winner, the banner, GameOver 8 s later |
 | `zz_ren97.lua` | Survival: the computer team loses its units, wave 1 (level 2 unit), the wave cleared, the break, wave 2 (level 3), the loss of the only player: the waves win, GameOver |
-| `zz_ren98.lua` | Race: 8 checkpoints, the start grid at GO, 16 checkpoints by `ren\|test\|11` (2 laps), the sounds checkpoint and lap, the winner, GameOver |
+| `zz_ren98.lua` | Race: the track (8 checkpoints), the racers, the pick of another racer (the unit turns into it), the start grid at GO, 16 checkpoints by `ren\|test\|11` (2 laps), the sounds checkpoint and lap, the results, New race (a new track, race 2), Leave (GameOver); also with `-Map "Comet Catcher Remake 1.8"` (cliffs: 1032 of 7752 cells not drivable) |
 | `zz_sight.lua` | the sight of the unit: Renegade 3 times, Radar Pulse, back (`G.setSight`) |
 | `zz_weapondump.lua` | one `[zzwep]` line per weapon (for the table) |
 
@@ -135,11 +135,22 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 
 ## 9. Race
 
-- `renegade_race.lua` (`modeRun`: `frame`, `destroyed`, `noDamage`, `toNext`), game option `lanrenemode=race`.
-- **Track** (frame 60): `CHECKPOINTS` = 8 points on a ring round the middle (radius 0.3 of the smaller side of the map); a point where the start unit cannot stand (`G.fits`, dry ground) is moved to the nearest such place of 60 random ones within 400 Elmo. Game rules `renRaceCps`, `renRaceLaps` (2), `renRaceGo` (frame 600).
-- **Start:** the units of the computer teams are removed (frames 30 to 300); every human has the start unit (`START_UNIT`, a Pawn: it jumps); at `GO_AT` every unit is put on the start grid (rows of 4 behind the last checkpoint, facing the first one).
+- `renegade_race.lua` (`modeRun`: `frame`, `destroyed`, `noDamage`, `toNext`, `msg`), game option `lanrenemode=race`; phases `wait`, `pick`, `race`, `results`, `leaving`.
+- **Racers** (`RACERS`, those the game has): `armflea` (Tick), `armfav` (Rover), `corfav` (Rascal), `legscout` (Wheelie); game rules `renRaceUnits`.
+  - Every racer gets the same movement (`equalize`: `SetGroundMoveTypeData` maxSpeed / maxWantedSpeed `SPEED` 150, accRate, decRate and turnRate the means of the racers' `maxAcc`, `maxDec`, `turnRate`); unit rules `ledBaseSpeed` = `SPEED`, which Sprint (`powerups.lua`) uses instead of the speed of the definition.
+  - `racers()` (every 15 frames) turns the unit of every human into its pick (`turnInto`), also a respawned Pawn; only the Tick jumps (two legs).
+- **Pick:** from frame 60 to the start (`FIRST_GO` = frame 600; `AGAIN_PICK` = 15 s for a new race) `ren|race|pick|<n>` (the gadget's `RecvLuaMsg` gives `ren|race|...` to `modeRun.msg`); no pick = a random one. Team rules `renRacePick`.
+- **Track** (`makeTrack`, frame 60 and every new race):
+  - The grid (`buildGrid`, once): cells of max(80, the longer side / 120) Elmo where every kind of movement of the racers can drive (`G.fits` without objects, dry ground), a connection to the right and down where the middle between two cells is drivable too; the biggest connected piece.
+  - Up to `TRIES` (14) rings: a random turn, a radius of 0.22 to 0.36 of the smaller side; each of the 8 points goes to the nearest cell of the piece. The worst stretch = steps on the grid (breadth first) against the steps of a straight way; at once when it is below `DETOUR` (1.35), otherwise the best ring. A stretch shorter than 3 cells or without a way does not count.
+  - Game rules `renRaceCps`, `renRaceLaps` (2), `renRaceGo`, `renRaceNo` (the number of the race).
+- **Start:** the units of the computer teams are removed (frames 30 to 300); at the start every racer is put on the start grid (rows of 4 behind the last checkpoint, facing the first one; a place off the drivable piece goes to its nearest cell).
 - **Progress** (every 5 frames): a unit within `PASS` (140 Elmo) of its next checkpoint passes it; after the last one the next lap; after the last lap the time (frames since the start). Team rules `renRaceLap`, `renRaceCp`, `renRacePos` (place by lap, checkpoint, distance; finished ones by time), `renRaceTime`.
-- **End:** the first one through the finish is the winner; when all are through or after `FINISH_WAIT` (30 s): `rounds.finish(winner)`.
+- **End:** the first one through the finish is the winner; when all are through or after `FINISH_WAIT` (30 s) the results: game rules `renRaceOver` (frame), `renRaceResult` (`team:time:unit;...` by place, time 0 = not finished); the game goes on.
+  - `ren|race|again` (any player): `newRace` (a new track, the pick again, `renRaceOver` 0).
+  - `ren|race|leave` (any player; also during a race): `rounds.finish(winner or -1)`: the banner and GameOver 8 s later.
 - **No damage** between the units of players (`UnitPreDamaged` asks `modeRun.noDamage`).
-- **Screen** (`renegade_hud.lua`): the rings on the ground (`H.drawModeWorld`: the next one green, pulsing, with a column of light, the others faint), the panel (lap, checkpoint, place, time), the countdown 5 to 1 and GO, an arrow to the next checkpoint (relative to the view) with its distance; sounds tick, the start, checkpoint, lap; the hints of the mode.
-- **Not checked:** a race of several humans, tracks on maps with water or cliffs between two checkpoints (the track does not test a path).
+- **Screen** (`renegade_hud.lua`): the rings on the ground (`H.drawModeWorld`: the next one green, pulsing, with a column of light and a flat arrow to the checkpoint after it, the others faint), the panel (lap, checkpoint, place, time), the countdown 5 to 1 and GO, an arrow to the next checkpoint (relative to the view) with its distance; sounds tick, the start, checkpoint, lap (reset with `renRaceNo`); the hints of the mode after the start.
+  - Before the start the cards of the racers (`drawPick`: picture, name, faction, key; the own pick green); after the race the results (`drawResults`: place, name, racer, time; buttons New race [N] and Leave [L]).
+  - `H.raceFree()` (cards or results on screen): the widget frees the mouse (no view, no driving, no hints), a click goes to `H.raceClick`, keys to `H.raceKey` (1 to 9, N, L).
+- **Not checked:** a race of several humans; a map where the drivable land is split (the track uses the biggest piece only).

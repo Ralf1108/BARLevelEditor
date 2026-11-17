@@ -103,7 +103,8 @@ function P.new(ctx)
 				Spring.GiveOrderToUnit(id, CMD.STOP, {}, 0) -- (the weapons let go of the target they have already)
 			end
 		elseif a.key == "sprint" then
-			pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed * A.SPEED, maxWantedSpeed = ud.speed * A.SPEED })
+			local base = Spring.GetUnitRulesParam(id, "ledBaseSpeed") or ud.speed -- (a racer of the Race has its own speed)
+			pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = base * A.SPEED, maxWantedSpeed = base * A.SPEED })
 		elseif a.key == "repair" then
 			local hp, maxHp = Spring.GetUnitHealth(id)
 			local newHp = math.min(maxHp, hp + maxHp * A.HEAL)
@@ -150,7 +151,8 @@ function P.new(ctx)
 				p.holdFire = nil
 			end
 		elseif key == "sprint" then
-			pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = ud.speed, maxWantedSpeed = ud.speed })
+			local base = Spring.GetUnitRulesParam(id, "ledBaseSpeed") or ud.speed
+			pcall(Spring.MoveCtrl.SetGroundMoveTypeData, id, { maxSpeed = base, maxWantedSpeed = base })
 		elseif key == "pulse" then
 			G.setSight(id, "pulse", nil)
 		end

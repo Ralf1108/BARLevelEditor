@@ -51,12 +51,27 @@
 
 ## Race
 
-- Every player drives a Pawn through **8 glowing rings** round the middle of the map, **2 laps**.
+- Every player drives a scout through **8 glowing rings** round the middle of the map, **2 laps**.
+- **Choose your racer** before the start (20 seconds; keys 1 to 4 or a click on its card):
+
+  | Key | Racer | Faction |
+  |---|---|---|
+  | 1 | Tick (a bot: it can jump with Space) | Armada |
+  | 2 | Rover | Armada |
+  | 3 | Rascal | Cortex |
+  | 4 | Wheelie | Legion |
+
+  - All racers have the **same speed, acceleration and turning**; nobody picks a faster one by accident.
+  - No choice: a random one.
+- The rings lie where every racer can drive: no ring in water or behind a cliff, and the way from ring to ring has no big detour.
 - Before the start a countdown runs (5 to 1, GO); at GO everybody stands on the start grid.
-- The next ring is bright green with a column of light; the arrow at the top shows the way and the distance.
+- The next ring is bright green with a column of light and an arrow to the ring after it; the arrow at the top shows the way and the distance.
 - The panel shows lap, checkpoint, your place and the time.
-- The players cannot hurt each other. Space jumps; with Power-ups on, Sprint helps.
+- The players cannot hurt each other. With Power-ups on, Sprint helps.
 - The first one through the finish wins; the others have 30 seconds to finish.
+- **Results:** a list of the places and times, with two buttons (the mouse is free; or the keys):
+  - **New race [N]:** a new track for everybody, the choice of the racer again (15 seconds), then the start.
+  - **Leave [L]:** the game ends for everybody.
 - Switching Race on switches Renegade on, Evolution and Survival off.
 
 ## Controls
