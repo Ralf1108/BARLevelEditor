@@ -52,6 +52,9 @@
 - **Land:** at the start `buildLand` makes a grid of 128 x 128 Elmo cells where a heavy tank (Bull) can stand (`Spring.TestMoveOrder` without objects) and takes the connected piece (8 neighbours) with the most commanders (on a tie the bigger one; the list of its cells is sorted, so it is the same on every computer).
   - Every unit spawns on it (`randomLand`): nobody is cut off by water or cliffs.
   - A commander off that piece (another island) has its first unit put somewhere on it.
+- **Team Evolution** (`TEAM`, game option `lanevoteam=1`): `gain` gives every player of the alliance (not out) the same points, and a mate below the new stage gets it too (`levelUp`: the choice or `evolve`; `reachTop` at stage 10, without a message for a mate of the team that brought Armageddon).
+  - A death keeps the stage and sets the points of the whole alliance to 0; `setCoalition` does nothing (alliance against alliance to the end).
+  - Test: `zz_evo98.lua` (`-Evo -EvoTest -Debug -EvoTeam -Bots 2`: team 1 in the ally team of the player).
 - **Choose your evolution** (`CHOOSE`, game option `lanevochoose`, default on; `0` = off): `gain` calls `offer(p)` instead of `evolve` for a human: three different units of the new stage (`stageUnit`, up to 30 tries), `p.choice = { names, at, stage }`, team rules `evoChoice` ("a,b,c") and `evoChoiceAt`.
   - `evo|pick|<n>` -> `choose(p, n)` -> `evolve(p, name)` (`spawn(p, x, z, facing, chosen)`); after `CHOICE_WAIT` (10 s) a random one of the three; a stage that changed meanwhile: a random unit of the stage now; a death drops the choice.
   - The widget `evo_gift.lua` draws the three cards (unit picture `#<id>`, name, faction by the prefix, health, damage per second of the weapons, range, speed; a click or 1, 2, 3); it comes before the gift window; `WG.evoWindowOpen` makes the Renegade widget leave the keys 1 to 3 to it.

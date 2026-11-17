@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 33, stamp = "2026-11-16 14:00" }
+local LAN_VERSION = { number = 34, stamp = "2026-11-17 10:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -2294,7 +2294,8 @@ local function evoHp() return (S and S.battle.modoptions.lanevohp) or "auto" end
 local function evoRegen() return not (S and S.battle.modoptions.lanevoregen == "0") end
 local function evoGods() return S and S.battle.modoptions.lanevogods == "1" end -- All Be Gods: every player on level 10 gets a gift (default off: only the first one)
 local function evoLong() return S and S.battle.modoptions.lanevolong == "1" end -- Long range: units with a long range (lasers, plasma, rail guns) join the levels (default off)
-local function evoChoose() return not (S and S.battle.modoptions.lanevochoose == "0") end -- Choose unit: a human chooses the unit of the next level of three (default on; lanevochoose=0 for off)
+local function evoChoose() return not (S and S.battle.modoptions.lanevochoose == "0") end
+local function evoTeam() return S and S.battle.modoptions.lanevoteam == "1" end -- Team Evolution: the players of a team share points and level (default off) -- Choose unit: a human chooses the unit of the next level of three (default on; lanevochoose=0 for off)
 local function setEvoOption(key, value)
 	if not S then return end
 	S.battle.modoptions[key] = value
@@ -2340,6 +2341,9 @@ local function openEvoMenu()
 		{ caption = "Choose unit: " .. (evoChoose() and "On" or "Off"), class = evoChoose() and "action_button" or "negative_button",
 			tip = "Choose unit " .. (evoChoose() and "on" or "off") .. ": on (the default) = a player who levels up chooses the new unit of three cards (a click or the keys 1, 2, 3; a random one after 10 seconds); off = a random unit at once. Computer players always take a random one. Click to change.",
 			fn = function() setEvoOption("lanevochoose", evoChoose() and "0" or nil); openEvoMenu() end },
+		{ caption = "Team Evolution: " .. (evoTeam() and "On" or "Off"), class = evoTeam() and "action_button" or "negative_button",
+			tip = "Team Evolution " .. (evoTeam() and "on" or "off") .. ": on = the players of a team (the teams of the room) share the points and the level and evolve together; a death costs the points of the level, not the level; Armageddon is team against team. Off (the default) = everybody evolves alone. Click to change.",
+			fn = function() setEvoOption("lanevoteam", evoTeam() and nil or "1"); openEvoMenu() end },
 		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
 			tip = "Debug mode " .. (S.battle.modoptions.lanevodebug == "1" and "on" or "off") .. ": extra buttons above the own panel in the game for testing (Armageddon, Level Up / Down, XP Up / Down, power-ups, a star for random values, Hide). Click to change.",
 			fn = function() setEvoOption("lanevodebug", S.battle.modoptions.lanevodebug == "1" and nil or "1"); openEvoMenu() end },
@@ -2367,7 +2371,7 @@ local function openLanMenu()
 	items[#items + 1] = { caption = "Copilot", tip = COPILOT_TIP, fn = function() closeLanMenu(); toggleSlotWindow() end }
 	if not scenarioRoom() then
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
-		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then closeRenMenu(); if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit, Power-ups, Goal). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
 			fn = function() if S then closeEvoMenu(); if ui.renMenu then closeRenMenu() else openRenMenu() end end end }

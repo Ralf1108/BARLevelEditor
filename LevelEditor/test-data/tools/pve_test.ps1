@@ -15,11 +15,12 @@
 #   -Live                             the widget renegade.lua as a loose file and the watcher zz_live.lua: the game keeps running and live.ps1 -Reload loads a changed widget (start with a long -WaitSec)
 #   -RenBots n                        with -Ren: game option lanrenebots=n (computer Peewees that fight the player; with -Widget zz_ren5.lua)
 #   -RenGoal n                        with -Ren: game option lanrenegoal=n (the first with n kills wins the round; with -Widget zz_ren93.lua)
+#   -EvoTeam                          with -Evo: game option lanevoteam=1 (Team Evolution); team 1 (Null1) is in the ally team of the player, the further bots (-Bots n) in ally teams of their own
 #   -EvoChoose                        with -Evo: the choice of the unit of the next level stays on (without it the start script has lanevochoose=0: a random unit at once, as the older tests expect)
 #   -Evo [-EvoStage n]                an Evolution game instead (game option lanevolution=1, every player starts on level n): the human and a NullAI in its own
 #                                     ally team, a larger window (with -Widget zz_evoshot.lua: a picture of the panels in <Work>\data\screenshots)
 param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'pve_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7',
-      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [string]$Widget = 'zz_pve.lua', [switch]$Evo, [switch]$Ren, [switch]$Quick, [switch]$Live, [switch]$RenTest, [switch]$RenTakeover, [switch]$RenPowerups, [int]$RenBots = 0, [int]$RenGoal = 0, [int]$EvoStage = 1, [switch]$EvoTest, [switch]$EvoChoose, [int]$Bots = 1, [string]$Shot = '', [switch]$Debug, [int]$WildHp = 0, [switch]$NoRegen, [switch]$Long, [switch]$Gods, [int]$Gift = 1, [int]$Mult = 1)
+      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [string]$Widget = 'zz_pve.lua', [switch]$Evo, [switch]$Ren, [switch]$Quick, [switch]$Live, [switch]$RenTest, [switch]$RenTakeover, [switch]$RenPowerups, [int]$RenBots = 0, [int]$RenGoal = 0, [int]$EvoStage = 1, [switch]$EvoTest, [switch]$EvoChoose, [switch]$EvoTeam, [int]$Bots = 1, [string]$Shot = '', [switch]$Debug, [int]$WildHp = 0, [switch]$NoRegen, [switch]$Long, [switch]$Gods, [int]$Gift = 1, [int]$Mult = 1)
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
@@ -35,7 +36,7 @@ $game = Get-GameVersion $Data
 $sg = Write-ScenarioGame $d $game (Get-ScenarioGameDirs)
 $short = if ($Ai -eq 'Scavengers') { 'ScavengersAI' } else { 'RaptorsAI' }
 if ($Evo -or $Ren) { $Layout = 'separate' }
-$ally1 = if ($Layout -eq 'ally') { 0 } else { 1 }
+$ally1 = if ($Layout -eq 'ally' -or $EvoTeam) { 0 } else { 1 }
 # start boxes: the Scavenger spawner places its beacons outside the boxes of the players
 $box0 = "startrectleft=0; startrecttop=0; startrectright=0.2; startrectbottom=1;"
 $box1 = "startrectleft=0.8; startrecttop=0; startrectright=1; startrectbottom=1;"
@@ -47,8 +48,9 @@ if ($Enemy) {
 # Evolution: -Bots n = n computer players in all (team 1 and n - 1 more, each in an ally team of its own)
 $extra = if ($Evo) { [Math]::Max(0, $Bots - 1) } else { 0 }
 for ($k = 2; $k -lt 2 + $extra; $k++) {
-    $allies += "`n`t[allyteam$k] { numallies=0; }"
-    $enemyTeams += "`n`t[team$k] { allyteam=$k; teamleader=0; side=Armada; handicap=0; }`n`t[ai$($k - 1)] { shortname=NullAI; team=$k; host=0; name=Null$k; }"
+    $a = if ($EvoTeam) { $k - 1 } else { $k }   # (Team Evolution: team 1 is in ally team 0, so team 2 takes ally team 1)
+    if (-not ($EvoTeam -and $a -eq 1)) { $allies += "`n`t[allyteam$a] { numallies=0; }" }
+    $enemyTeams += "`n`t[team$k] { allyteam=$a; teamleader=0; side=Armada; handicap=0; }`n`t[ai$($k - 1)] { shortname=NullAI; team=$k; host=0; name=Null$k; }"
 }
 # the game option tweakdefs: the Lua text in base64url without padding (the game's string.base64Decode reads it; = would end the value in the start script)
 $tweak = if ($Brood) { ' tweakdefs9=' + ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $repo 'LevelEditor\lan_lobby\raptor_brood_defs.lua'))).TrimEnd('=').Replace('+', '-').Replace('/', '_')) + ';' } else { '' }
@@ -60,7 +62,7 @@ $allies
 	[team1] { allyteam=$ally1; teamleader=0; side=Armada; handicap=0; }
 $(if ($Evo -or $Ren) { "`t[ai0] { shortname=NullAI; team=1; host=0; name=Null1; }" } else { "`t[ai0] { shortname=$short; version=<not-versioned>; team=1; host=0; name=${short}1; }" })$enemyTeams
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; $(if (-not $Quick) { ' experimentallegionfaction=1;' }) lanpvehold=$(if ($Evo -or $Ren) { 0 } else { $Hold }); lanplay=1; $(if (-not $Quick) { ' forceallunits=1;' })$(if ($Ren) { " lanrenegade=1;$(if ($RenTakeover) { ' lanrenesingle=0;' })$(if ($RenPowerups) { ' lanrenepowerups=1;' })$(if ($RenTest) { ' lanrenotest=1; lanrenedebug=1;' })$(if ($RenBots) { " lanrenebots=$RenBots;" })$(if ($RenGoal) { " lanrenegoal=$RenGoal;" })" })$tweak$(if ($Evo) { " lanevolution=1; lanevolutionstage=$EvoStage;$(if (-not $EvoChoose) { ' lanevochoose=0;' })$(if ($EvoTest) { ' lanevotest=1;' })$(if ($Debug) { ' lanevodebug=1;' })$(if ($WildHp) { " lanevohp=$WildHp;" })$(if ($NoRegen) { ' lanevoregen=0;' })$(if ($Long) { ' lanevolong=1;' })$(if ($Gods) { ' lanevogods=1;' })$(if ($Shot) { " lanevoshot=$Shot;" })$(if ($Gift -ne 1) { " lanevogift=$Gift;" })$(if ($Mult -gt 1) { " lanevomult=$Mult;" })" }) }
+	[modoptions] { deathmode=neverend; $(if (-not $Quick) { ' experimentallegionfaction=1;' }) lanpvehold=$(if ($Evo -or $Ren) { 0 } else { $Hold }); lanplay=1; $(if (-not $Quick) { ' forceallunits=1;' })$(if ($Ren) { " lanrenegade=1;$(if ($RenTakeover) { ' lanrenesingle=0;' })$(if ($RenPowerups) { ' lanrenepowerups=1;' })$(if ($RenTest) { ' lanrenotest=1; lanrenedebug=1;' })$(if ($RenBots) { " lanrenebots=$RenBots;" })$(if ($RenGoal) { " lanrenegoal=$RenGoal;" })" })$tweak$(if ($Evo) { " lanevolution=1; lanevolutionstage=$EvoStage;$(if (-not $EvoChoose) { ' lanevochoose=0;' })$(if ($EvoTeam) { ' lanevoteam=1;' })$(if ($EvoTest) { ' lanevotest=1;' })$(if ($Debug) { ' lanevodebug=1;' })$(if ($WildHp) { " lanevohp=$WildHp;" })$(if ($NoRegen) { ' lanevoregen=0;' })$(if ($Long) { ' lanevolong=1;' })$(if ($Gods) { ' lanevogods=1;' })$(if ($Shot) { " lanevoshot=$Shot;" })$(if ($Gift -ne 1) { " lanevogift=$Gift;" })$(if ($Mult -gt 1) { " lanevomult=$Mult;" })" }) }
 	ishost=1;
 	hostip=127.0.0.1;
 	hostport=18456;

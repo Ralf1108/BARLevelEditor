@@ -31,6 +31,7 @@
 | **Regeneration** | On (default) / Off | the units of the players heal by themselves |
 | **Long range** | On / Off (default) | nine units with a range of 850 Elmo or more can appear too: Sharpshooter, Arquebus, Deadeye, Starlight, Siegebreaker, Daedalus, Thermite, Mukade, Apollyon |
 | **All Be Gods** | On / Off (default) | Off = only the **first** player on level 10 chooses a gift; On = every player who reaches level 10 |
+| **Team Evolution** | On / Off (default) | On = the players of a team share points and level, see below |
 | **Choose unit** | On (default) / Off | On = you choose the unit of the next level of three cards; Off = a random unit at once |
 | **Debug mode** | On / Off (default) | test buttons above your panel: Armageddon, Level Up / Down, XP Up / Down, one per power-up, a star (random values for every player) and Hide |
 
@@ -70,6 +71,13 @@
 - **Catching up:** half the points more for every level you are below the best player (level 1 next to a player on level 5: three times the points).
 - **An enemy player above your level** is worth more: times (1 + the levels it is above you). A level 1 unit that kills a level 3 unit gets 8 x 3 = 24 points and jumps to level 4.
 - **Experience:** every kill of another player gives your unit 0.1 experience (the game's own bonus: a little more health and damage, faster reloading). You keep it when you level up; every death costs 0.1.
+
+## Team Evolution
+
+- Play together with friends: put them into your team in the room (buttons "N teams" / "N per team") and switch **Team Evolution** on.
+- The players of a team share the points: every kill of a mate counts for all, and the whole team evolves together (everybody gets a new unit).
+- A death costs the team the points collected for the next level, **not** the level.
+- Armageddon is team against team: the first team on level 10 brings it, and the last team standing wins (no alliance of the others).
 
 ## Death
 

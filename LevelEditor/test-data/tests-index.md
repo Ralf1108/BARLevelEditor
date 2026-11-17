@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-149 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+150 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -28,6 +28,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_dpsdump.lua` | test only |  |
 | `zz_evo2.lua` | Evolution energy, wild units, towers, radars | `lan_test.ps1 -Mode evo -Solo (one instance` |
 | `zz_evo97.lua` | Evolution, choose the unit of the next level | `pve_test.ps1 -Evo -EvoTest -Debug -EvoChoose -Widget zz_evo97.lua` |
+| `zz_evo98.lua` | Team Evolution (shared points and level) | `pve_test.ps1 -Evo -EvoTest -Debug -EvoTeam -Bots 2 -Widget zz_evo98.lua` |
 | `zz_evo_all.lua` | several Evolution rules in one game | `pve_test.ps1 -Evo -EvoTest -Debug -Bots 1 -Widget zz_evo_all.lua (one instance, speed 10, ends at frame 4200). One game, several checks, lines "[zzall]"` |
 | `zz_evocam.lua` | the camera at the start of Evolution | `pve_test.ps1 -Evo -Widget zz_evocam.lua` |
 | `zz_evoshot.lua` | a picture of the Evolution panels | `pve_test.ps1 -Evo -Widget zz_evoshot.lua` |

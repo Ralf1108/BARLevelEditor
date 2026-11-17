@@ -150,6 +150,9 @@ end
 local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
 local TESTING = (Spring.GetModOptions() or {}).lanevotest == "1" -- test only: some lines for the log
 local ALL_GODS = (Spring.GetModOptions() or {}).lanevogods == "1" -- the room's button All Be Gods: every player who reaches level 10 gets a gift (default: only the first one)
+-- the room's button Team Evolution (game option lanevoteam=1): the players of an alliance share the points and the level; a death costs the points of the level, not the level;
+-- Armageddon is alliance against alliance (no coalition against level 10)
+local TEAM = (Spring.GetModOptions() or {}).lanevoteam == "1"
 local CHOOSE = (Spring.GetModOptions() or {}).lanevochoose ~= "0" -- the room's button Choose unit (default on): a human chooses the unit of the next level of three (game option lanevochoose=0: a random one at once)
 
 -- (used by both parts: the ladders and the help window)
@@ -565,6 +568,9 @@ end
 -- The game is still won by the last alliance of the start (checkWin): when the players on level 10 are gone, the others fight each other.
 local coalitionOn = false
 local function setCoalition()
+	if TEAM then
+		return -- (Team Evolution: the alliances of the start fight each other to the end)
+	end
 	local top, names = {}, {}
 	for _, p in ipairs(players) do
 		if not p.out and p.stage >= STAGES then
@@ -860,6 +866,8 @@ local function reachTop(p)
 	if not armageddon then
 		startArmageddon(p)
 		godPlayer = p
+	elseif TEAM and godPlayer and godPlayer.ally == p.ally then
+		-- (Team Evolution: a mate of the player who brought it; no extra message)
 	elseif ALL_GODS then
 		say(p.name .. " reached level 10 as well.")
 	else
@@ -933,6 +941,18 @@ local function choose(p, n)
 	publish()
 end
 
+-- the stage of the player went up: its unit follows (the choice of three for a human, otherwise at once)
+local function levelUp(p)
+	if not p.unit then
+		return
+	end
+	if CHOOSE and not p.ai then
+		offer(p) -- (the player chooses of three; the unit stays until then)
+	else
+		evolve(p)
+	end
+end
+
 local function gain(p, points)
 	if p.out then
 		return
@@ -947,15 +967,26 @@ local function gain(p, points)
 	if p.stage >= STAGES then
 		p.xp = 0 -- the top stage: nothing left to collect
 	end
-	if up and p.unit then
-		if CHOOSE and not p.ai then
-			offer(p) -- (the player chooses of three; the unit stays until then)
-		else
-			evolve(p)
-		end
+	if up then
+		levelUp(p)
 	end
 	if p.stage >= STAGES then
 		reachTop(p)
+	end
+	if TEAM then
+		-- Team Evolution: every player of the alliance has the same points and level
+		for _, q in ipairs(players) do
+			if q ~= p and q.ally == p.ally and not q.out then
+				q.xp = p.xp
+				if q.stage < p.stage then
+					q.stage = p.stage
+					levelUp(q)
+					if q.stage >= STAGES then
+						reachTop(q)
+					end
+				end
+			end
+		end
 	end
 	publish()
 end
@@ -1762,6 +1793,14 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 			end
 		end
 		say(victim.name .. " is out.")
+	elseif TEAM then
+		-- Team Evolution: the level stays, the points of the alliance for the next level are lost
+		for _, q in ipairs(players) do
+			if q.ally == victim.ally then
+				q.xp = 0
+			end
+		end
+		victim.respawnAt = Spring.GetGameFrame() + RESPAWN
 	else
 		victim.stage = math.max(1, victim.stage - 1)
 		victim.respawnAt = Spring.GetGameFrame() + RESPAWN
