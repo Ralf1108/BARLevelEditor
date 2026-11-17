@@ -28,7 +28,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_dpsdump.lua` | test only |  |
 | `zz_evo2.lua` | Evolution energy, wild units, towers, radars | `lan_test.ps1 -Mode evo -Solo (one instance` |
 | `zz_evo97.lua` | Evolution, choose the unit of the next level | `pve_test.ps1 -Evo -EvoTest -Debug -EvoChoose -Widget zz_evo97.lua` |
-| `zz_evo98.lua` | Team Evolution (shared points and level) | `pve_test.ps1 -Evo -EvoTest -Debug -EvoTeam -Bots 2 -Widget zz_evo98.lua` |
+| `zz_evo98.lua` | Team Evolution (at most one level above the lowest mate) | `pve_test.ps1 -Evo -EvoTest -Debug -EvoTeam -Bots 2 -Widget zz_evo98.lua` |
 | `zz_evo_all.lua` | several Evolution rules in one game | `pve_test.ps1 -Evo -EvoTest -Debug -Bots 1 -Widget zz_evo_all.lua (one instance, speed 10, ends at frame 4200). One game, several checks, lines "[zzall]"` |
 | `zz_evocam.lua` | the camera at the start of Evolution | `pve_test.ps1 -Evo -Widget zz_evocam.lua` |
 | `zz_evoshot.lua` | a picture of the Evolution panels | `pve_test.ps1 -Evo -Widget zz_evoshot.lua` |

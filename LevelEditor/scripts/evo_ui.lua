@@ -59,6 +59,10 @@ return function(gadget, S)
 		end
 		if (Spring.GetTeamRulesParam(team, "evoStage") or 1) >= 2 then M.hint("evo_level", "You evolved! Every level brings a new, stronger unit of a random faction.") end
 		if (Spring.GetTeamRulesParam(team, "evoDeaths") or 0) >= 1 then M.hint("evo_death", "A lost unit comes back 5 seconds later somewhere else, one level lower.") end
+		local waitFor = Spring.GetTeamRulesParam(team, "evoWait") or -1
+		if waitFor >= 0 then
+			M.hint("evo_wait", string.format("Team Evolution: you are one level ahead of %s. Your points are kept; you level up when your mate catches up.", teamName(waitFor)))
+		end
 		if t > 60 then M.hint("evo_radar", "Stand next to a radar for 5 seconds to take it: you see where the others go.") end
 		-- an enemy player above the own level near the own unit
 		local mine = Spring.GetTeamRulesParam(team, "evoStage") or 1
@@ -377,7 +381,15 @@ return function(gadget, S)
 			H.box(px1 + 1, py - 8 * s, px1 + 1 + math.max(16 * s, (px2 - px1 - 2) * frac), py + 8 * s, 8 * s, fill[1], fill[2])
 		end
 		gl.Color(1, 1, 1, 1)
-		gl.Text(out and "" or (need > 0 and string.format("%d / %d points", p("evoXp"), need) or "MAX"), (px1 + px2) / 2, py, 12 * s, "cvo")
+		local waitFor = Spring.GetTeamRulesParam(mine, "evoWait") or -1
+		if not out and need > 0 and waitFor >= 0 then
+			-- Team Evolution: the points are there, the level up waits for the lowest mate
+			gl.Color(1, 0.8, 0.3, 1)
+			gl.Text("waits for " .. teamName(waitFor), (px1 + px2) / 2, py, 12 * s, "cvo")
+			gl.Color(1, 1, 1, 1)
+		else
+			gl.Text(out and "" or (need > 0 and string.format("%d / %d points", p("evoXp"), need) or "MAX"), (px1 + px2) / 2, py, 12 * s, "cvo")
+		end
 		-- the experience bar under the points: the bonus of the unit (+0.1 for a kill of a player, -0.1 for a death), kept through the levels
 		local exp = p("evoExp")
 		local ey = y1 + 43 * s

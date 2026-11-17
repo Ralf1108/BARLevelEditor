@@ -52,9 +52,12 @@
 - **Land:** at the start `buildLand` makes a grid of 128 x 128 Elmo cells where a heavy tank (Bull) can stand (`Spring.TestMoveOrder` without objects) and takes the connected piece (8 neighbours) with the most commanders (on a tie the bigger one; the list of its cells is sorted, so it is the same on every computer).
   - Every unit spawns on it (`randomLand`): nobody is cut off by water or cliffs.
   - A commander off that piece (another island) has its first unit put somewhere on it.
-- **Team Evolution** (`TEAM`, game option `lanevoteam=1`): `gain` gives every player of the alliance (not out) the same points, and a mate below the new stage gets it too (`levelUp`: the choice or `evolve`; `reachTop` at stage 10, without a message for a mate of the team that brought Armageddon).
-  - A death keeps the stage and sets the points of the whole alliance to 0; `setCoalition` does nothing (alliance against alliance to the end).
-  - Test: `zz_evo98.lua` (`-Evo -EvoTest -Debug -EvoTeam -Bots 2`: team 1 in the ally team of the player).
+- **Team Evolution** (`TEAM`, game option `lanevoteam=1`): every player collects its own points; `teamCap(p)` = one stage above the lowest mate of the alliance that is not out (no mate: the top).
+  - `gain` levels only up to that cap; with enough points at the cap the points are kept and `p.waitFor` = the team of that mate (team rules `evoWait`, -1 = none; the widget writes "waits for <name>" into the points bar and shows the hint `evo_wait`).
+  - After a level up of a player, its waiting mates are checked again (`gain(q, 0)`); also when a mate is out in Armageddon.
+  - A death costs a stage as in the normal game; `reachTop` gives no message for a mate of the team that brought Armageddon; `setCoalition` does nothing (alliance against alliance to the end).
+  - Test hook `evo|test|9`: every mate of the player's alliance gets the points of its level.
+  - Test: `zz_evo98.lua` (`-Evo -EvoTest -Debug -EvoTeam -Bots 2`: team 1 in the ally team of the player): level 2, the second level up waits for team 1, the mate's level up lets the player follow to level 3, a loss costs a level.
 - **Choose your evolution** (`CHOOSE`, game option `lanevochoose`, default on; `0` = off): `gain` calls `offer(p)` instead of `evolve` for a human: three different units of the new stage (`stageUnit`, up to 30 tries), `p.choice = { names, at, stage }`, team rules `evoChoice` ("a,b,c") and `evoChoiceAt`.
   - `evo|pick|<n>` -> `choose(p, n)` -> `evolve(p, name)` (`spawn(p, x, z, facing, chosen)`); after `CHOICE_WAIT` (10 s) a random one of the three; a stage that changed meanwhile: a random unit of the stage now; a death drops the choice.
   - The widget `evo_gift.lua` draws the three cards (unit picture `#<id>`, name, faction by the prefix, health, damage per second of the weapons, range, speed; a click or 1, 2, 3); it comes before the gift window; `WG.evoWindowOpen` makes the Renegade widget leave the keys 1 to 3 to it.

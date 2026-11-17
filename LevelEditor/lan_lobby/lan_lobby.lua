@@ -2314,7 +2314,7 @@ local function evoRegen() return not (S and S.battle.modoptions.lanevoregen == "
 local function evoGods() return S and S.battle.modoptions.lanevogods == "1" end -- All Be Gods: every player on level 10 gets a gift (default off: only the first one)
 local function evoLong() return S and S.battle.modoptions.lanevolong == "1" end -- Long range: units with a long range (lasers, plasma, rail guns) join the levels (default off)
 local function evoChoose() return not (S and S.battle.modoptions.lanevochoose == "0") end
-local function evoTeam() return S and S.battle.modoptions.lanevoteam == "1" end -- Team Evolution: the players of a team share points and level (default off) -- Choose unit: a human chooses the unit of the next level of three (default on; lanevochoose=0 for off)
+local function evoTeam() return S and S.battle.modoptions.lanevoteam == "1" end -- Team Evolution: the players of a team are at most one level apart (default off) -- Choose unit: a human chooses the unit of the next level of three (default on; lanevochoose=0 for off)
 local function setEvoOption(key, value)
 	if not S then return end
 	S.battle.modoptions[key] = value
@@ -2361,7 +2361,7 @@ local function openEvoMenu()
 			tip = "Choose unit " .. (evoChoose() and "on" or "off") .. ": on (the default) = a player who levels up chooses the new unit of three cards (a click or the keys 1, 2, 3; a random one after 10 seconds); off = a random unit at once. Computer players always take a random one. Click to change.",
 			fn = function() setEvoOption("lanevochoose", evoChoose() and "0" or nil); openEvoMenu() end },
 		{ caption = "Team Evolution: " .. (evoTeam() and "On" or "Off"), class = evoTeam() and "action_button" or "negative_button",
-			tip = "Team Evolution " .. (evoTeam() and "on" or "off") .. ": on = the players of a team (the teams of the room) share the points and the level and evolve together; a death costs the points of the level, not the level; Armageddon is team against team. Off (the default) = everybody evolves alone. Click to change.",
+			tip = "Team Evolution " .. (evoTeam() and "on" or "off") .. ": on = the players of a team (the teams of the room) evolve together: nobody may be more than one level above the lowest mate (the points are kept, the level up waits); Armageddon is team against team. Off (the default) = everybody evolves alone. Click to change.",
 			fn = function() setEvoOption("lanevoteam", evoTeam() and nil or "1"); openEvoMenu() end },
 		{ caption = "Debug mode: " .. (S.battle.modoptions.lanevodebug == "1" and "On" or "Off"), class = S.battle.modoptions.lanevodebug == "1" and "action_button" or "negative_button",
 			tip = "Debug mode " .. (S.battle.modoptions.lanevodebug == "1" and "on" or "off") .. ": extra buttons above the own panel in the game for testing (Armageddon, Level Up / Down, XP Up / Down, power-ups, a star for random values, Hide). Click to change.",

@@ -150,8 +150,8 @@ end
 local LONG_RANGE = (Spring.GetModOptions() or {}).lanevolong == "1"
 local TESTING = (Spring.GetModOptions() or {}).lanevotest == "1" -- test only: some lines for the log
 local ALL_GODS = (Spring.GetModOptions() or {}).lanevogods == "1" -- the room's button All Be Gods: every player who reaches level 10 gets a gift (default: only the first one)
--- the room's button Team Evolution (game option lanevoteam=1): the players of an alliance share the points and the level; a death costs the points of the level, not the level;
--- Armageddon is alliance against alliance (no coalition against level 10)
+-- the room's button Team Evolution (game option lanevoteam=1): every player collects its own points, but may be at most one level above the lowest mate of its alliance
+-- (the points still count; the level up waits until the mate catches up: teamCap); a death costs a level as usual; Armageddon is alliance against alliance (no coalition against level 10)
 local TEAM = (Spring.GetModOptions() or {}).lanevoteam == "1"
 local CHOOSE = (Spring.GetModOptions() or {}).lanevochoose ~= "0" -- the room's button Choose unit (default on): a human chooses the unit of the next level of three (game option lanevochoose=0: a random one at once)
 
@@ -324,6 +324,7 @@ local function publish()
 		Spring.SetTeamRulesParam(p.team, "evoGift", p.giftAt and 1 or 0, pub)
 		Spring.SetTeamRulesParam(p.team, "evoChoice", p.choice and table.concat(p.choice.names, ",") or "", pub) -- (the three units of the choice, "" = none)
 		Spring.SetTeamRulesParam(p.team, "evoChoiceAt", p.choice and p.choice.at or 0, pub)
+		Spring.SetTeamRulesParam(p.team, "evoWait", p.waitFor or -1, pub) -- (Team Evolution: the team of the mate the level up waits for, -1 = none)
 	end
 	Spring.SetGameRulesParam("evoTeams", table.concat(teams, ","))
 	-- (set again with every publish: a value set only once at that moment did not reach the unsynced part and the widgets in the test)
@@ -953,13 +954,31 @@ local function levelUp(p)
 	end
 end
 
+-- Team Evolution: the highest level the player may have now (one above the lowest mate of its alliance that is still in) and that mate; without TEAM or mates: the top
+local function teamCap(p)
+	if not TEAM then
+		return STAGES, nil
+	end
+	local low
+	for _, q in ipairs(players) do
+		if q ~= p and q.ally == p.ally and not q.out and (not low or q.stage < low.stage) then
+			low = q
+		end
+	end
+	if not low then
+		return STAGES, nil
+	end
+	return math.min(STAGES, low.stage + 1), low
+end
+
 local function gain(p, points)
 	if p.out then
 		return
 	end
 	p.xp = p.xp + points
 	local up = false
-	while p.stage < STAGES and p.xp >= need(p.stage) do
+	local cap, low = teamCap(p)
+	while p.stage < cap and p.xp >= need(p.stage) do
 		p.xp = p.xp - need(p.stage)
 		p.stage = p.stage + 1
 		up = true
@@ -967,24 +986,21 @@ local function gain(p, points)
 	if p.stage >= STAGES then
 		p.xp = 0 -- the top stage: nothing left to collect
 	end
+	-- Team Evolution: enough points but one level above the lowest mate: the points are kept, the level up waits for that mate
+	local waiting = p.stage < STAGES and p.stage >= cap and p.xp >= need(p.stage)
+	if waiting and not p.waitFor and TESTING then Spring.Echo("[Evolution] test: " .. p.name .. " waits for " .. low.name .. " (level " .. low.stage .. ")") end
+	p.waitFor = waiting and low.team or nil
 	if up then
 		levelUp(p)
 	end
 	if p.stage >= STAGES then
 		reachTop(p)
 	end
-	if TEAM then
-		-- Team Evolution: every player of the alliance has the same points and level
+	if TEAM and up then
+		-- a mate that waited for this player may level up now
 		for _, q in ipairs(players) do
-			if q ~= p and q.ally == p.ally and not q.out then
-				q.xp = p.xp
-				if q.stage < p.stage then
-					q.stage = p.stage
-					levelUp(q)
-					if q.stage >= STAGES then
-						reachTop(q)
-					end
-				end
+			if q ~= p and q.ally == p.ally and not q.out and q.waitFor then
+				gain(q, 0)
 			end
 		end
 	end
@@ -1793,14 +1809,11 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
 			end
 		end
 		say(victim.name .. " is out.")
-	elseif TEAM then
-		-- Team Evolution: the level stays, the points of the alliance for the next level are lost
 		for _, q in ipairs(players) do
-			if q.ally == victim.ally then
-				q.xp = 0
+			if TEAM and q.ally == victim.ally and not q.out and q.waitFor then
+				gain(q, 0) -- (Team Evolution: a mate that waited for the player who is out now may level up)
 			end
 		end
-		victim.respawnAt = Spring.GetGameFrame() + RESPAWN
 	else
 		victim.stage = math.max(1, victim.stage - 1)
 		victim.respawnAt = Spring.GetGameFrame() + RESPAWN
@@ -1845,6 +1858,13 @@ function gadget:RecvLuaMsg(msg, playerID)
 			A.publish()
 		elseif p and n == "5" then
 			randomize()
+		elseif p and n == "9" then
+			-- every mate of the alliance gets the points of its level (Team Evolution: the player that waited for it may level up)
+			for _, q in ipairs(players) do
+				if q ~= p and q.ally == p.ally and not q.out and q.stage < STAGES then
+					gain(q, need(q.stage))
+				end
+			end
 		elseif p and p.unit and n == "8" then
 			Spring.DestroyUnit(p.unit, false, true) -- (the unit is lost without an explosion, which could kill a wild unit: respawn, spawn shield, comeback bonus)
 		elseif p and p.unit and n == "4" then
