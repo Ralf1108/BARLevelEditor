@@ -23,7 +23,7 @@
 | Power-ups | `LevelEditor/scripts/powerups.lua` (synced logic and the list), `powerups_ui.lua` (drawing), shared with [Evolution](evolution.md) | Sprint, Repair, Radar Pulse, Cloak, Jammer: beacons, use, effect; the bar and the beacons on the map (see [shared-code.md](shared-code.md)) |
 | Weapon table | `LevelEditor/game-modes/renegade_weapons.csv` (source), `renegade-weapons.md` (made from it) | which weapon of which unit is fired with which button |
 | Table tools | `test-data/generators/renegade_weapons.py`, `zz_weapondump.lua`, `game-modes/update_renegade_weapons.bat` | table <-> `renegade_data.lua` (the weapon tables, loaded by the gadget) |
-| Start | `LevelEditor/start_renegade.bat`, `scripts/start_renegade.ps1` | a game at once (see 2) |
+| Start | `LevelEditor/start_renegade.bat`, `LevelEditor/start_race.bat`, `scripts/start_renegade.ps1` | a game at once (see 2) |
 | Lobby | `lan_lobby.lua` | the button Renegade of the room with a submenu: On / Off, Always in unit, Power-ups, Goal, Survival, Race (game options `lanrenegade`, `lanrenesingle`, `lanrenepowerups`, `lanrenegoal`, `lanrenemode`; `LAN_VERSION` 36) |
 
 - Widget, gadget, `renegade_data.lua`, `renegade_test.lua`, `renegade_rounds.lua`, `renegade_survival.lua`, `renegade_race.lua`, `renegade_hud.lua`, `mode_ui.lua`, `powerups.lua` and `powerups_ui.lua` are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
@@ -41,6 +41,7 @@
   - `lanrenotest=1`: test hooks (see Tests below).
 - **Start scripts:** both quick start scripts (`start_renegade.ps1`, `start_evolution.ps1`) use `Resolve-ExtraGame` and `Start-ExtraGame` of `shared/bar_common.ps1` (data folder, extra game, engine, writing and starting the start script); `-DryRun` only writes the start script (tests: `ps_test.ps1`).
 - **Quick start:** `LevelEditor\start_renegade.bat [map] [AI] [bots]` (default `Hooked 1.1`, `NullAI`, 3 bots) runs `ensure_installed.ps1` and `scripts\start_renegade.ps1`, which writes `LevelEditor\renegade_script_installed.txt` (ignored by git) and starts the engine on it: you in team 0 (Armada), the computer player in team 1 (Cortex), options `lanrenegade=1; lanplay=1; deathmode=neverend; lanrenebots=<n>; lanrenedebug=1` (`-DebugMode 0` without the debug menu).
+- **Race quick start:** `LevelEditor\start_race.bat [map] [quick]` (default `Comet Catcher Remake 1.8`) runs `start_renegade.ps1 -Mode race -Bots 0 -DebugMode 0`: the option `lanrenemode=race` (`-Mode survival` works the same way); the race removes the units of the computer player.
   - Do not change the bat file while the game runs (cmd reads it by position).
 
 - **Quick test start (`-QuickTest`, `quick`):** `start_renegade.bat "Map" AI Count quick` (the fourth parameter) passes `-QuickTest` to `start_renegade.ps1`: then the game options below are **not** written (no Legion, no extra units, no release candidates, no Scavenger and Raptor units: the game loads faster).

@@ -38,6 +38,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 | play with friends in my network | start BAR, main menu > **LAN Play** |
 | try Evolution alone | `LevelEditor\start_evolution.bat` |
 | try Renegade alone | `LevelEditor\start_renegade.bat` |
+| try a Race alone | `LevelEditor\start_race.bat` |
 | remove everything | `LevelEditor\uninstall_editor.bat`, `BluePrinter\uninstall_blueprinter.bat` |
 
 ## Level Editor

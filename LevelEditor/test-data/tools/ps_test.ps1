@@ -74,6 +74,10 @@ try {
     Check ($s -match 'forceallunits=1;' -and $s -match 'releasecandidates=1;') 'without -QuickTest: all units'
     Check ($s -notmatch 'lanrenedebug') '-DebugMode 0: no debug menu'
     Check ($s -match 'mapname=Hooked 1\.1;' -and $s -match 'lanrenebots=3;' -and $s -match 'shortname=NullAI;') 'the defaults: Hooked 1.1, 3 bots, NullAI'
+    Check ($s -notmatch 'lanrenemode') 'without -Mode: no mode'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $ren -Data $data -DryRun -Mode race -DebugMode 0 -Map 'Comet Catcher Remake 1.8' | Out-Null
+    $s = Get-Content $renFile -Raw
+    Check ($s -match 'lanrenemode=race;' -and $s -match 'mapname=Comet Catcher Remake 1\.8;') '-Mode race (start_race.bat): the game option lanrenemode=race'
 
     Group 'start_evolution.ps1 -DryRun'
     $evo = Join-Path $repo 'LevelEditor\scripts\start_evolution.ps1'

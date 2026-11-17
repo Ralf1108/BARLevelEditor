@@ -17,6 +17,7 @@
 | Quick start | double-click `LevelEditor\start_renegade.bat`: you as a Peewee on **Hooked 1.1** against 3 computer Peewees that hunt you |
 | Other map, computer player, number of enemies | `start_renegade.bat "Comet Catcher Remake 1.8" SimpleAI 5` (0 = no enemies) |
 | Faster start | add `quick` as the fourth parameter: `start_renegade.bat "Hooked 1.1" NullAI 3 quick` (without Legion, extra, Scavenger and Raptor units) |
+| Race alone | double-click `LevelEditor\start_race.bat`: a Race on **Comet Catcher Remake 1.8**; other map: `start_race.bat "Full Metal Plate 1.7"`; faster start: `start_race.bat "Comet Catcher Remake 1.8" quick` (then without the Wheelie of Legion) |
 | LAN Play | green button **LAN Play** in the room > **Renegade** > On |
 
 **Settings in LAN Play** (the submenu of the button **Renegade**)

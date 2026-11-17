@@ -5,7 +5,8 @@
 #   -Bots 3             computer Peewees of that player that walk around and fight you (a lost one comes back; 0 = none)
 #   -DebugMode 0        without the debug menu (the button above the weapon: turn into another unit)
 #   -QuickTest          for quick tests: without the Legion units, the extra units of the release candidates and the Scavenger and Raptor units (they take time to load); without it all of them are loaded
-param([switch]$DryRun, [string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'NullAI', [int]$Bots = 3, [int]$DebugMode = 1, [switch]$QuickTest)
+#   -Mode race          a mode of Renegade (game option lanrenemode: race or survival; start_race.bat); the mode removes the units of the computer player itself
+param([switch]$DryRun, [string]$Data, [string]$Map = 'Hooked 1.1', [string]$Ai = 'NullAI', [int]$Bots = 3, [int]$DebugMode = 1, [switch]$QuickTest, [ValidateSet('', 'race', 'survival')][string]$Mode = '')
 $here = $PSScriptRoot
 $repo = Split-Path (Split-Path $here -Parent) -Parent
 . (Join-Path (Join-Path $repo 'shared') 'bar_common.ps1')
@@ -22,7 +23,7 @@ $script = @"
 	[team1] { allyteam=1; teamleader=0; side=Cortex; handicap=0; }
 	[ai0] { shortname=$($spec.Short); version=$($spec.Version); team=1; host=0; name=$($spec.Short)1; }
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend;$(if (-not $QuickTest) { ' experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1;' }) lanplay=1; lanrenegade=1; lanrenebots=$Bots;$(if ($DebugMode) { ' lanrenedebug=1;' }) }
+	[modoptions] { deathmode=neverend;$(if (-not $QuickTest) { ' experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1;' }) lanplay=1; lanrenegade=1; lanrenebots=$Bots;$(if ($DebugMode) { ' lanrenedebug=1;' })$(if ($Mode) { " lanrenemode=$Mode;" }) }
 	ishost=1;
 	hostip=127.0.0.1;
 	myplayername=Player;
@@ -35,5 +36,5 @@ $script = @"
 }
 "@
 $file = Join-Path $repo 'LevelEditor\renegade_script_installed.txt'
-$message = "Renegade on $Map against $($spec.Short) with $Bots Peewees: mouse = look, W A S D = walk, left / right / middle button = short range / long range / missiles, Insert (or the key left of the 1) = normal camera and back$(if ($DebugMode) { ", Tab = free mouse for the debug menu" }) ..."
+$message = if ($Mode -eq 'race') { "Race on $Map`: keys 1 to 4 or a click = your racer, W A S D = drive, mouse = look; after the race N = new race, L = leave ..." } else { "Renegade on $Map against $($spec.Short) with $Bots Peewees: mouse = look, W A S D = walk, left / right / middle button = short range / long range / missiles, Insert (or the key left of the 1) = normal camera and back$(if ($DebugMode) { ", Tab = free mouse for the debug menu" }) ..." }
 Start-ExtraGame $ctx $script $file $message -dryRun:$DryRun
