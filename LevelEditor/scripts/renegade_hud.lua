@@ -125,6 +125,9 @@ function H.modeHints(M, t, mode)
 	if mode == "survival" then
 		if t > 2 then M.hint("surv_goal", "Survival: beat the waves together with the other players.") end
 		if t > 10 then M.hint("surv_dead", "A lost unit comes back when the wave is over. Every wave makes your unit stronger.") end
+	elseif mode == "race" then
+		if t > 2 then M.hint("race_goal", "Race: drive through the glowing green ring, then the next one. The arrow at the top shows the way.") end
+		if t > 12 then M.hint("race_jump", "Space jumps over small obstacles. Sprint (key 1) helps when you found it.") end
 	end
 end
 -- the panel of Survival: WAVE 3 / 10 and the enemies left, or the seconds to the next wave; a dead player reads that it comes back after the wave
@@ -164,10 +167,111 @@ local function drawSurvival(vsx, vsy, s)
 	end
 	gl.Color(1, 1, 1, 1)
 end
+-- Race: the checkpoints (game rules renRaceCps), the own progress (team rules renRaceLap, renRaceCp, renRacePos, renRaceTime)
+local function raceCps()
+	local list = {}
+	for x, z in tostring(Spring.GetGameRulesParam("renRaceCps") or ""):gmatch("(%d+),(%d+)") do list[#list + 1] = { tonumber(x), tonumber(z) } end
+	return list
+end
+local function clock(frames)
+	local secs = math.max(0, math.floor(frames / 30))
+	return string.format("%d:%02d", math.floor(secs / 60), secs % 60)
+end
+-- the panel: LAP 1/2, CHECKPOINT 3/8, the place and the time; the countdown before the start; an arrow to the next checkpoint (up = straight ahead of the view)
+local function drawRace(vsx, vsy, s)
+	local team, f = Spring.GetMyTeamID(), Spring.GetGameFrame()
+	local go = Spring.GetGameRulesParam("renRaceGo") or 0
+	local cps = raceCps()
+	local lap, cp = Spring.GetTeamRulesParam(team, "renRaceLap") or 1, Spring.GetTeamRulesParam(team, "renRaceCp") or 1
+	local pos, time = Spring.GetTeamRulesParam(team, "renRacePos") or 1, Spring.GetTeamRulesParam(team, "renRaceTime") or 0
+	local players = 0
+	for _, t in ipairs(Spring.GetTeamList()) do if Spring.GetTeamRulesParam(t, "renRacePos") then players = players + 1 end end
+	-- sounds: the countdown, the start, every checkpoint, every lap
+	if H.M then
+		local secs = go > f and math.ceil((go - f) / 30) or nil
+		if secs and secs <= 3 and secs ~= modeEv.secs then H.M.play("tick") end
+		if not secs and modeEv.secs then H.M.play("wave") end
+		modeEv.secs = secs
+		if modeEv.lap and (lap > modeEv.lap or (time > 0 and (modeEv.time or 0) == 0)) then H.M.play("lap")
+		elseif modeEv.cp and cp ~= modeEv.cp then H.M.play("checkpoint") end
+		modeEv.lap, modeEv.cp, modeEv.time = lap, cp, time
+	end
+	local y = vsy - 120 * s
+	local w = 520 * s
+	gl.Color(0.05, 0.06, 0.08, 0.75)
+	gl.Rect(vsx / 2 - w / 2, y - 40 * s, vsx / 2 + w / 2, y + 34 * s)
+	if f < go then
+		gl.Color(1, 0.85, 0.3, 1)
+		gl.Text("RACE: through the rings in order", vsx / 2, y, 24 * s, "co")
+		local secs = math.ceil((go - f) / 30)
+		if secs <= 5 then
+			gl.Color(1, 1, 1, 1)
+			gl.Text(tostring(secs), vsx / 2, vsy * 0.6, 90 * s, "co")
+		end
+		gl.Color(1, 1, 1, 1)
+		return
+	end
+	if f - go < 45 then
+		gl.Color(0.4, 1, 0.45, 1)
+		gl.Text("GO!", vsx / 2, vsy * 0.6, 90 * s, "co")
+	end
+	gl.Color(1, 0.85, 0.3, 1)
+	if time > 0 then
+		gl.Text(string.format("FINISHED: place %d in %s", pos, clock(time)), vsx / 2, y, 24 * s, "co")
+	else
+		gl.Text(string.format("LAP %d/%d   CHECKPOINT %d/%d   PLACE %d/%d", lap, Spring.GetGameRulesParam("renRaceLaps") or 1, cp, #cps, pos, math.max(1, players)), vsx / 2, y, 22 * s, "co")
+		gl.Color(1, 1, 1, 1)
+		gl.Text(clock(f - go), vsx / 2, y - 28 * s, 18 * s, "co")
+		-- the arrow to the next checkpoint
+		local u = Spring.GetTeamRulesParam(team, "renUnit") or 0
+		local c = cps[cp]
+		local ux, _, uz = Spring.GetUnitPosition(u > 0 and u or -1)
+		local dx, _, dz = Spring.GetCameraDirection()
+		if c and ux and dx then
+			local tx, tz = c[1] - ux, c[2] - uz
+			local ang = math.atan2(dx * tz - dz * tx, dx * tx + dz * tz) -- (from the view to the checkpoint, positive = to the right)
+			local cx, cy, r = vsx / 2, y - 80 * s, 26 * s
+			local function pt(a, d) return cx + math.sin(ang + a) * d, cy + math.cos(ang + a) * d end
+			gl.Color(0.4, 1, 0.45, 0.95)
+			gl.BeginEnd(GL.TRIANGLES, function()
+				local x1, y1 = pt(0, r)
+				local x2, y2 = pt(2.5, r)
+				local x3, y3 = pt(-2.5, r)
+				gl.Vertex(x1, y1); gl.Vertex(x2, y2); gl.Vertex(x3, y3)
+			end)
+			gl.Text(string.format("%d m", math.floor(math.sqrt(tx * tx + tz * tz))), cx, cy - r - 18 * s, 15 * s, "co")
+		end
+	end
+	gl.Color(1, 1, 1, 1)
+end
+-- the rings of the checkpoints on the ground: the next one bright green and pulsing, with a column of light, the others faint with their number
+function H.drawModeWorld()
+	if MODE ~= "race" then return end
+	local cps = raceCps()
+	local cp = Spring.GetTeamRulesParam(Spring.GetMyTeamID(), "renRaceCp") or 1
+	local pulse = 0.6 + 0.4 * math.sin(os.clock() * 5)
+	gl.DepthTest(false)
+	for i, c in ipairs(cps) do
+		local y = Spring.GetGroundHeight(c[1], c[2])
+		if i == cp then
+			gl.LineWidth(5)
+			gl.Color(0.3, 1, 0.4, pulse)
+			gl.DrawGroundCircle(c[1], y, c[2], 140, 48)
+			gl.BeginEnd(GL.LINES, function() gl.Vertex(c[1], y, c[2]); gl.Vertex(c[1], y + 600, c[2]) end)
+		else
+			gl.LineWidth(2)
+			gl.Color(1, 0.85, 0.3, 0.45)
+			gl.DrawGroundCircle(c[1], y, c[2], 140, 32)
+		end
+	end
+	gl.LineWidth(1)
+	gl.Color(1, 1, 1, 1)
+end
+
 function H.drawMode(vsx, vsy)
 	if not MODE then return end
 	local s = math.max(0.7, vsy / 1080)
-	if MODE == "survival" then drawSurvival(vsx, vsy, s) end
+	if MODE == "survival" then drawSurvival(vsx, vsy, s) elseif MODE == "race" then drawRace(vsx, vsy, s) end
 end
 
 function H.kill(killerTeam, victimTeam, victimDef, killerDef)

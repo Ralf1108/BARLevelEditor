@@ -1057,6 +1057,7 @@ end
 function widget:DrawWorld()
 	if R.U then R.U.drawBeacons("renBeacons") end -- (the beacons of the power-ups also in the normal game)
 	R.M.drawShieldRings("renUnit")
+	R.H.drawModeWorld() -- (Race: the checkpoints)
 	if not R.on or R.waiting or not R.unit then return end
 	local x, y, z = Spring.GetUnitViewPosition(R.unit)
 	if not x then return end
@@ -1938,7 +1939,7 @@ function widget:DrawScreen()
 	R.H.drawMode(vsx0, vsy0) -- (Survival: the wave)
 	R.H.drawEnd(vsx0, vsy0)
 	R.M.drawNote(vsx0, vsy0)
-	R.M.drawHint(vsx0, vsy0, R.H.MODE and vsy0 * 0.78 or nil) -- (with a mode below its panel)
+	R.M.drawHint(vsx0, vsy0, R.H.MODE and vsy0 * 0.72 or nil) -- (with a mode below its panel)
 	if R.unit then R.M.drawOwnShield(R.unit, vsx0, vsy0) end
 	if not R.on or R.waiting then return end
 	local vsx, vsy = Spring.GetViewGeometry()

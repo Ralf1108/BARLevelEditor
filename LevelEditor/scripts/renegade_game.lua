@@ -48,6 +48,7 @@ local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- th
 -- the spawn shield of a unit that came back (G.shield of led_gadgets.lua): no damage
 function gadget:UnitPreDamaged(unitID)
 	if G.shielded(unitID) then return 0, 0 end
+	if modeRun and modeRun.noDamage and modeRun.noDamage(unitID) then return 0, 0 end -- (Race: the players do not hurt each other)
 end
 
 function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
@@ -73,8 +74,8 @@ local SINGLE = MO.lanrenesingle ~= "0"
 -- one by itself (follow: team -> the frame until which the next unit is waited for; the unit is the team rules parameter evoUnit of evo_game.lua)
 local EVO = MO.lanevolution == "1"
 local POWERUPS = MO.lanrenepowerups == "1" and not EVO -- the power-ups without Evolution (game option lanrenepowerups; with Evolution its own are used)
--- the modes of Renegade (game option lanrenemode, not with Evolution): "survival" (renegade_survival.lua). They always play Always in unit, without the bots.
-local MODE = (not EVO and (MO.lanrenemode == "survival")) and MO.lanrenemode or nil
+-- the modes of Renegade (game option lanrenemode, not with Evolution): "survival" (renegade_survival.lua), "race" (renegade_race.lua). They always play Always in unit, without the bots.
+local MODE = (not EVO and (MO.lanrenemode == "survival" or MO.lanrenemode == "race")) and MO.lanrenemode or nil
 if MODE then SINGLE = true end
 local modeRun -- (the object of the mode: frame(f), destroyed(u, team, playerUnit), clear(); made below)
 local follow = {}
@@ -1041,6 +1042,7 @@ end
 local testHooks = TEST and VFS.Include("luaui/Include/renegade_test.lua", nil, VFS.ZIP_FIRST)({ units = units, input = input, startUnit = START_UNIT,
 	engineBombs = function() TESTENGINE = true end,
 	clearWave = function() if modeRun and modeRun.clear then modeRun.clear() end end, -- (Survival: the wave is destroyed)
+	toCheckpoint = function(team) if modeRun and modeRun.toNext then modeRun.toNext(team) end end, -- (Race: onto the next checkpoint)
 	-- the power-ups: all five at once for the team; the unit onto the nearest beacon
 	givePowerups = function(team)
 		if not pu.A then return end
@@ -1312,8 +1314,10 @@ turnInto = function(team, defName)
 	Spring.Echo("[Renegade] team " .. team .. " turned into " .. defName .. " (unit " .. id .. ")")
 end
 
--- the mode (Survival): made here, it needs the functions above
-if MODE == "survival" then
+-- the mode (Survival, Race): made here, it needs the functions above
+if MODE == "race" then
+	modeRun = VFS.Include("luaui/Include/renegade_race.lua", nil, VFS.ZIP_FIRST)({ units = units, startUnit = START_UNIT, say = G.sayer("Renegade"), rounds = rounds, testing = TEST })
+elseif MODE == "survival" then
 	modeRun = VFS.Include("luaui/Include/renegade_survival.lua", nil, VFS.ZIP_FIRST)({ units = units, kind = kind, say = G.sayer("Renegade"), rounds = rounds,
 		place = function(...) return place(...) end, others = others, giveUnit = giveUnit, turnInto = function(team, name) turnInto(team, name) end, testing = TEST })
 end
@@ -1566,7 +1570,7 @@ function gadget:UnitDestroyed(u, defID, team, attackerID, attackerDefID, attacke
 			follow[team] = Spring.GetGameFrame() + FOLLOW_FRAMES
 			Spring.SetTeamRulesParam(team, "renFollow", 1, { public = true }) -- (the widget keeps the view and waits)
 		end
-		if SINGLE and not MODE then -- (Survival brings the dead back at the end of the wave)
+		if SINGLE and MODE ~= "survival" then -- (Survival brings the dead back at the end of the wave)
 			due[team] = Spring.GetGameFrame() + RESPAWN
 			Spring.SetTeamRulesParam(team, "renRespawn", due[team], { public = true })
 			local x, y, z = Spring.GetUnitPosition(u)

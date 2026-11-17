@@ -29,6 +29,7 @@
 | **Power-ups** On (Off by default) | beacons on the map give Sprint, Repair, Radar Pulse, Cloak and Jammer |
 | **Goal** 10, 20 (default), 30 kills, None | the first player with this many kills wins the round (Always in unit only) |
 | **Survival** On (Off by default) | all players together against waves of computer units, see below |
+| **Race** On (Off by default) | a race through checkpoints, see below |
 
 - **Takeover:** hold the mouse over one of your units and press **the key left of the 1**; the same key leaves it. If the unit is lost you are out of it.
 - **Power-ups:** drive over a beacon and you have its power-up until your unit is lost.
@@ -47,6 +48,16 @@
 - **Win:** beat all 10 waves. **Lose:** all players are lost at the same time.
 - Waves 5 and 10 bring a boss. The units of a wave start with half of their health.
 - Switching Survival on switches Renegade on and Evolution off.
+
+## Race
+
+- Every player drives a Pawn through **8 glowing rings** round the middle of the map, **2 laps**.
+- Before the start a countdown runs (5 to 1, GO); at GO everybody stands on the start grid.
+- The next ring is bright green with a column of light; the arrow at the top shows the way and the distance.
+- The panel shows lap, checkpoint, your place and the time.
+- The players cannot hurt each other. Space jumps; with Power-ups on, Sprint helps.
+- The first one through the finish wins; the others have 30 seconds to finish.
+- Switching Race on switches Renegade on, Evolution and Survival off.
 
 ## Controls
 

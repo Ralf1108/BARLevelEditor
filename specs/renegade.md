@@ -17,15 +17,16 @@
 | Gadget | `LevelEditor/scripts/renegade_game.lua` (`luarules/gadgets`) | unit of every human, moving, jump, shooting (the buttons), respawn, energy, bots, power-ups (`lanrenepowerups`), debug messages |
 | Weapon data | `LevelEditor/scripts/renegade_data.lua` | the weapon tables, loaded by the gadget (made from the csv) |
 | Test hooks | `LevelEditor/scripts/renegade_test.lua` | `ren\|test\|n`, loaded by the gadget only with `lanrenotest=1` |
+| Race | `LevelEditor/scripts/renegade_race.lua` (synced, loaded by the gadget with `lanrenemode=race`) | the checkpoints, the laps, the places, the end (see 9) |
 | Survival | `LevelEditor/scripts/renegade_survival.lua` (synced, loaded by the gadget with `lanrenemode=survival`) | the waves, the players of a wave, the end (see 8) |
 | Round | `LevelEditor/scripts/renegade_rounds.lua` (synced, loaded by the gadget), `renegade_hud.lua` (loaded by the widget) | the kill goal, the kill feed, the end of the round and its banner (see 7) |
 | Power-ups | `LevelEditor/scripts/powerups.lua` (synced logic and the list), `powerups_ui.lua` (drawing), shared with [Evolution](evolution.md) | Sprint, Repair, Radar Pulse, Cloak, Jammer: beacons, use, effect; the bar and the beacons on the map (see [shared-code.md](shared-code.md)) |
 | Weapon table | `LevelEditor/game-modes/renegade_weapons.csv` (source), `renegade-weapons.md` (made from it) | which weapon of which unit is fired with which button |
 | Table tools | `test-data/generators/renegade_weapons.py`, `zz_weapondump.lua`, `game-modes/update_renegade_weapons.bat` | table <-> `renegade_data.lua` (the weapon tables, loaded by the gadget) |
 | Start | `LevelEditor/start_renegade.bat`, `scripts/start_renegade.ps1` | a game at once (see 2) |
-| Lobby | `lan_lobby.lua` | the button Renegade of the room with a submenu: On / Off, Always in unit, Power-ups, Goal, Survival (game options `lanrenegade`, `lanrenesingle`, `lanrenepowerups`, `lanrenegoal`, `lanrenemode`; `LAN_VERSION` 35) |
+| Lobby | `lan_lobby.lua` | the button Renegade of the room with a submenu: On / Off, Always in unit, Power-ups, Goal, Survival, Race (game options `lanrenegade`, `lanrenesingle`, `lanrenepowerups`, `lanrenegoal`, `lanrenemode`; `LAN_VERSION` 36) |
 
-- Widget, gadget, `renegade_data.lua`, `renegade_test.lua`, `renegade_rounds.lua`, `renegade_survival.lua`, `renegade_hud.lua`, `mode_ui.lua`, `powerups.lua` and `powerups_ui.lua` are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
+- Widget, gadget, `renegade_data.lua`, `renegade_test.lua`, `renegade_rounds.lua`, `renegade_survival.lua`, `renegade_race.lua`, `renegade_hud.lua`, `mode_ui.lua`, `powerups.lua` and `powerups_ui.lua` are in `$ScenarioGameFiles` (`shared/bar_common.ps1`) together with `editor_common.lua` and `area_attack.lua` (the unit menu of the debug mode; `Get-EditorGameEntries` in `editor_manifest.ps1` skips what the extra game "Level Editor" has already).
 - Tests: sandbox `test-data/tools/pve_test.ps1 -Ren [-RenTest] [-RenBots n] -Widget zz_ren*.lua` (see Tests below).
 
 ## 2. Game options and start
@@ -34,7 +35,7 @@
   - `lanrenebots=<n>` (0 to 30): computer Peewees that hunt the players.
   - `lanrenepowerups=1`: the power-ups without Evolution (see [renegade-units.md](renegade-units.md), Power-ups); with `lanevolution` Evolution's own are used.
   - `lanrenegoal=<n>`: the first team with n kills wins the round (see 7); the lobby writes 20 by default.
-  - `lanrenemode=survival`: the mode Survival (see 8); not with Evolution; always Always in unit, no bots, no goal.
+  - `lanrenemode=survival` / `race`: the modes Survival (see 8) and Race (see 9); not with Evolution; always Always in unit, no bots, no goal.
   - The LAN lobby writes `deathmode=neverend` for a Renegade room (the commanders are replaced: the game must not end by a lost commander).
   - `lanrenedebug=1`: the debug menu (turn into a unit, spawn an enemy).
   - `lanrenotest=1`: test hooks (see Tests below).
@@ -71,8 +72,8 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 
 ## 5. Tests (sandbox, `pve_test.ps1 -Ren ...`, lines in the infolog)
 
-- `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`, `-RenPowerups` = `lanrenepowerups=1`, `-RenTakeover` = `lanrenesingle=0`, `-RenGoal n` = `lanrenegoal=n`, `-RenMode survival` = `lanrenemode=survival`.
-- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents, `|7` and `|8` give all power-ups and put the unit onto a beacon, `|9` destroys the nearest enemy unit with the player's unit as the attacker: a kill that counts, `|10` destroys the wave of Survival): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
+- `-RenTest` = `lanrenotest=1` and `lanrenedebug=1`, `-RenBots n` = `lanrenebots=n`, `-RenPowerups` = `lanrenepowerups=1`, `-RenTakeover` = `lanrenesingle=0`, `-RenGoal n` = `lanrenegoal=n`, `-RenMode survival|race` = `lanrenemode`.
+- Hooks of `lanrenotest` (all in `scripts/renegade_test.lua`, loaded by the gadget only in test mode; `|4`, `|5`, `|6` are described in the aircraft and units documents, `|7` and `|8` give all power-ups and put the unit onto a beacon, `|9` destroys the nearest enemy unit with the player's unit as the attacker: a kill that counts, `|10` destroys the wave of Survival, `|11` puts the unit onto its next checkpoint of the Race): `ren|test|1` an enemy Peewee (hold fire) 150 Elmo ahead, `|2` kills the own unit, `|3` an enemy Brawler (hold fire) 250 Elmo ahead and 100 up; the gadget logs the census at frame 40, bots and spawns.
 
 | Widget | Checks |
 |---|---|
@@ -94,6 +95,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | `zz_ren92.lua` | Renegade power-ups without Evolution: beacon, the five keys, the bar (`-Ren -RenTest -RenPowerups`) |
 | `zz_ren93.lua` | the kill goal (`-RenGoal 3`): three kills by `ren\|test\|9`, the feed, the winner, the banner, GameOver 8 s later |
 | `zz_ren97.lua` | Survival: the computer team loses its units, wave 1 (level 2 unit), the wave cleared, the break, wave 2 (level 3), the loss of the only player: the waves win, GameOver |
+| `zz_ren98.lua` | Race: 8 checkpoints, the start grid at GO, 16 checkpoints by `ren\|test\|11` (2 laps), the sounds checkpoint and lap, the winner, GameOver |
 | `zz_sight.lua` | the sight of the unit: Renegade 3 times, Radar Pulse, back (`G.setSight`) |
 | `zz_weapondump.lua` | one `[zzwep]` line per weapon (for the table) |
 
@@ -130,3 +132,14 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 - **State:** game rules `renSurvWave`, `renSurvWaves`, `renSurvLeft`, `renSurvNext` (frame of the next wave, 0 during one).
 - **Screen** (`renegade_hud.lua`, `H.drawMode`): a panel at the top middle (WAVE 3 OF 10, the enemies left / the seconds to the next wave), "YOU DIED ... when the others beat this wave", the sounds "wave" and "tick" (the last 3 s), the hints of the mode; the hints of `mode_ui.lua` move below the panel.
 - **Not checked:** the balance (number, levels and health of the waves) with real players.
+
+## 9. Race
+
+- `renegade_race.lua` (`modeRun`: `frame`, `destroyed`, `noDamage`, `toNext`), game option `lanrenemode=race`.
+- **Track** (frame 60): `CHECKPOINTS` = 8 points on a ring round the middle (radius 0.3 of the smaller side of the map); a point where the start unit cannot stand (`G.fits`, dry ground) is moved to the nearest such place of 60 random ones within 400 Elmo. Game rules `renRaceCps`, `renRaceLaps` (2), `renRaceGo` (frame 600).
+- **Start:** the units of the computer teams are removed (frames 30 to 300); every human has the start unit (`START_UNIT`, a Pawn: it jumps); at `GO_AT` every unit is put on the start grid (rows of 4 behind the last checkpoint, facing the first one).
+- **Progress** (every 5 frames): a unit within `PASS` (140 Elmo) of its next checkpoint passes it; after the last one the next lap; after the last lap the time (frames since the start). Team rules `renRaceLap`, `renRaceCp`, `renRacePos` (place by lap, checkpoint, distance; finished ones by time), `renRaceTime`.
+- **End:** the first one through the finish is the winner; when all are through or after `FINISH_WAIT` (30 s): `rounds.finish(winner)`.
+- **No damage** between the units of players (`UnitPreDamaged` asks `modeRun.noDamage`).
+- **Screen** (`renegade_hud.lua`): the rings on the ground (`H.drawModeWorld`: the next one green, pulsing, with a column of light, the others faint), the panel (lap, checkpoint, place, time), the countdown 5 to 1 and GO, an arrow to the next checkpoint (relative to the view) with its distance; sounds tick, the start, checkpoint, lap; the hints of the mode.
+- **Not checked:** a race of several humans, tracks on maps with water or cliffs between two checkpoints (the track does not test a path).

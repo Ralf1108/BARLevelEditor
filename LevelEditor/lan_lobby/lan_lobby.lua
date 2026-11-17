@@ -22,7 +22,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 35, stamp = "2026-11-17 12:00" }
+local LAN_VERSION = { number = 36, stamp = "2026-11-17 14:00" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -2218,7 +2218,7 @@ local function renPowerups() return S and S.renPowerups or false end
 -- The goal of a round (Always in unit only): the first player with that many kills wins (game option lanrenegoal; "0" = no goal); default 20, kept in S.renGoal
 local REN_GOALS = { "10", "20", "30", "0" }
 local function renGoal() return (S and S.renGoal) or "20" end
--- The mode of Renegade (game option lanrenemode): nil = the normal game, "survival" = all humans together against waves; kept in S.renMode
+-- The mode of Renegade (game option lanrenemode): nil = the normal game, "survival" = all humans together against waves, "race" = checkpoints and laps; kept in S.renMode
 local function renMode() return S and S.renMode or nil end
 local function renShown()
 	if S then return renegadeOn() end
@@ -2279,6 +2279,14 @@ local function openRenMenu()
 			tip = "Survival " .. (renMode() == "survival" and "on" or "off") .. ": all players together against 10 waves of computer units that get stronger; every wave makes your unit stronger; a lost unit comes back when the wave is over; when everybody is lost at once, the waves win. Switching it on switches Renegade on and Evolution off. Click to change.",
 			fn = function()
 				S.renMode = renMode() ~= "survival" and "survival" or nil
+				if S.renMode and evolutionOn() then setEvolution(false) end
+				setRenOptions(S.renMode ~= nil or renegadeOn())
+				openRenMenu()
+			end },
+		{ caption = "Race: " .. (renMode() == "race" and "On" or "Off"), class = renMode() == "race" and "action_button" or "negative_button",
+			tip = "Race " .. (renMode() == "race" and "on" or "off") .. ": every player drives the same unit through 8 glowing rings round the middle of the map, 2 laps; the players cannot hurt each other; the first one through the finish wins. Switching it on switches Renegade on and Evolution off (and Survival off). Click to change.",
+			fn = function()
+				S.renMode = renMode() ~= "race" and "race" or nil
 				if S.renMode and evolutionOn() then setEvolution(false) end
 				setRenOptions(S.renMode ~= nil or renegadeOn())
 				openRenMenu()
@@ -2384,7 +2392,7 @@ local function openLanMenu()
 		-- on: green like the others, off: the grey button style of the lobby (the menu is made again after a click, so the look follows)
 		items[#items + 1] = { caption = evoCaption(), tip = "Evolution (host: opens its settings: On / Off, Unit multiplier, Unit health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution, Debug mode). " .. EVO_TIP, evo = true, class = evolutionShown() and "action_button" or "option_button",
 			fn = function() if S then closeRenMenu(); if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
-		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit, Power-ups, Goal, Survival). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
+		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit, Power-ups, Goal, Survival, Race). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
 			fn = function() if S then closeEvoMenu(); if ui.renMenu then closeRenMenu() else openRenMenu() end end end }
 	end
 	local w = 230

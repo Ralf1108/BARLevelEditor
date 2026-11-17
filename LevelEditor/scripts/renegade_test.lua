@@ -10,6 +10,7 @@
 --   ren|test|8  the unit is put onto the nearest beacon of the power-ups (it takes the power-up)
 --   ren|test|9  the nearest enemy unit (also of Gaia) is destroyed by the unit of the player (counts as its kill)
 --   ren|test|10 Survival: every unit of the wave is destroyed
+--   ren|test|11 Race: the unit of the player is put onto its next checkpoint
 return function(env)
 	local units, input, startUnit = env.units, env.input, env.startUnit
 	local hooks = {}
@@ -82,6 +83,11 @@ return function(env)
 		end
 	end
 
+	-- Race: the unit of the player is put onto its next checkpoint
+	hooks["ren|test|11"] = function(playerID)
+		local _, team = own(playerID)
+		if team then env.toCheckpoint(team) end
+	end
 	-- Survival: every unit of the wave is destroyed
 	hooks["ren|test|10"] = function()
 		env.clearWave()
