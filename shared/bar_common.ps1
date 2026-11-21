@@ -318,6 +318,14 @@ function Get-GameFileText([string]$data, [string]$game, [string]$path) {
     return $null
 }
 
+# The models of the extra games (LevelEditor\models\*.s3o, made by the scripts next to them, e.g. make_lava_truck.py): objects3d/Units/<file> in both
+# extra games. $leDir = the folder LevelEditor (the parent of the scripts folder); none when it has no models folder.
+function Get-ModelFiles([string]$leDir) {
+    $md = if ($leDir) { Join-Path $leDir 'models' } else { $null }
+    if (-not ($md -and (Test-Path $md))) { return @() }
+    return @(Get-ChildItem $md -Filter '*.s3o' | Sort-Object Name)
+}
+
 function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
     $entries = @()
     $bytes = New-Object System.Collections.Generic.List[byte]
@@ -329,6 +337,19 @@ function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
         $text = [IO.File]::ReadAllText($src).Replace("`r", '')
         $entries += , @($f[1], $text)
         $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($f[1] + "`n" + $text + "`n"))
+    }
+    # the models (LevelEditor\models\*.s3o, found next to the scripts folder): objects3d/Units/<file>
+    foreach ($d in $dirs) {
+        $models = if ($d) { Get-ModelFiles (Split-Path $d -Parent) } else { @() }
+        if ($models.Count -gt 0) {
+            foreach ($mf in $models) {
+                [byte[]]$data1 = [IO.File]::ReadAllBytes($mf.FullName)
+                $entries += , @(('objects3d/Units/' + $mf.Name), $data1)
+                $bytes.AddRange([Text.Encoding]::UTF8.GetBytes('objects3d/Units/' + $mf.Name + "`n"))
+                $bytes.AddRange($data1)
+            }
+            break
+        }
     }
     # the pictures of the weapon panel of Renegade (LevelEditor\game-modes\weapon-images\*.png, found next to the scripts folder): luaui/Images/renegade/weapons/<file>
     foreach ($d in $dirs) {

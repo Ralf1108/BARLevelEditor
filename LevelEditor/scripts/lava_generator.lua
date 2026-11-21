@@ -22,12 +22,12 @@ end
 local LAVA_ENERGY = 200 -- energy per second of a Lava Generator on a Volcano (a geothermal plant of tech 1 makes 300)
 local LAVA_METAL = 2 -- metal per second into the stock of a Lava Generator on a Volcano (a metal extractor of tech 1 on a spot of 2.0 makes about 2)
 local STOCK_MAX = 200 -- metal a Lava Generator keeps at most (more is lost)
-local LOAD = 20 -- metal a Carrier takes in one trip
+local LOAD = 20 -- metal a Carrier takes in one trip (a unit with customparams.lavaload takes that much: the Cargo Truck 60)
 local ON_RADIUS = 40 -- the middle of the generator at most so far from the middle of a Volcano (Elmo)
 local REACH = 70 -- a Carrier is at a building when it is this far from its edge (Elmo)
 local CMD_HAUL = 39761 -- the order Haul of the Carriers (its own id)
 
-local volcanoDef, genDef, carrierDef = {}, {}, {} -- defID -> true
+local volcanoDef, genDef, carrierDef = {}, {}, {} -- defID -> true (carrierDef: -> its load per trip)
 for id, fd in pairs(FeatureDefs) do
 	if fd.customParams and fd.customParams.lavavolcano then
 		volcanoDef[id] = true
@@ -38,7 +38,7 @@ for id, ud in pairs(UnitDefs) do
 	if cp.lavagenerator then
 		genDef[id] = true
 	elseif cp.lavacarrier then
-		carrierDef[id] = true
+		carrierDef[id] = tonumber(cp.lavaload) or LOAD
 	end
 end
 local volcanoes = {} -- featureID -> { x, y, z }
@@ -62,7 +62,7 @@ end
 
 if gadgetHandler:IsSyncedCode() then
 	local gens = {} -- unitID -> { on = true/false/nil, stock = metal }
-	local carriers = {} -- unitID -> { src = generator, dst = chosen factory or nil, load = metal, goal = unit it walks to }
+	local carriers = {} -- unitID -> { src = generator, dst = chosen factory or nil, load = metal, cap = metal per trip, goal = unit it walks to }
 	local HAUL_STOP = { [CMD.MOVE] = true, [CMD.STOP] = true, [CMD.PATROL] = true, [CMD.FIGHT] = true, [CMD.GUARD] = true, [CMD.ATTACK] = true,
 		[CMD.RECLAIM] = true, [CMD.REPAIR] = true, [CMD.WAIT] = true }
 	local HAUL_DESC = {
@@ -167,10 +167,10 @@ if gadgetHandler:IsSyncedCode() then
 			return
 		end
 		if near(c, h.src) then
-			if g.stock >= LOAD then
-				g.stock = g.stock - LOAD
+			if g.stock >= h.cap then
+				g.stock = g.stock - h.cap
 				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
-				setLoad(c, h, LOAD)
+				setLoad(c, h, h.cap)
 				h.goal = nil
 			end
 		else
@@ -202,7 +202,7 @@ if gadgetHandler:IsSyncedCode() then
 		if genDef[defID] then
 			gens[u] = { stock = 0 }
 		elseif carrierDef[defID] then
-			carriers[u] = { load = 0 }
+			carriers[u] = { load = 0, cap = carrierDef[defID] }
 			Spring.InsertUnitCmdDesc(u, HAUL_DESC)
 		end
 	end

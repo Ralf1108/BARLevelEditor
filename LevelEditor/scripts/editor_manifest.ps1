@@ -68,6 +68,9 @@ function Write-EditorGame([string]$zipPath, [string]$game) {
         if ($e[0] -eq 'luaui/widgets/lvl_level_editor.lua') { $text = ([regex]'enabled = false,').Replace($text, 'enabled = true,', 1) }
         $entries += , @($e[0], $text)
     }
+    foreach ($mf in (Get-ModelFiles (Split-Path (Get-EditorFolder 'scripts') -Parent))) {   # the models (LevelEditor\models\*.s3o) as they are
+        $entries += , @(('objects3d/Units/' + $mf.Name), [IO.File]::ReadAllBytes($mf.FullName))
+    }
     Write-GameZip $zipPath $entries
 }
 
@@ -78,6 +81,7 @@ function Get-EditorSourceFiles {
         foreach ($d in (Get-ScenarioGameDirs)) { if (Test-Path (Join-Path $d $f[0])) { $paths += (Join-Path $d $f[0]); break } }
     }
     foreach ($f in $StampExtraFiles) { $paths += (Join-Path (Get-EditorFolder $f[0]) $f[1]) }
+    foreach ($mf in (Get-ModelFiles (Split-Path (Get-EditorFolder 'scripts') -Parent))) { $paths += $mf.FullName }
     return @($paths | Select-Object -Unique)
 }
 

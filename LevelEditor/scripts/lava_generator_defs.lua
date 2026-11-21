@@ -6,6 +6,8 @@
 --     makes energy and fills its metal stock (the gadget lava_generator.lua).
 --   Carrier (armlavacarrier, corlavacarrier, leglavacarrier): a copy of the light bot of the bot lab without weapons; it carries the metal of a Lava
 --     Generator to a factory (the gadget).
+--   Cargo Truck (armlavatruck): a copy of the missile truck armsam with a model of its own (objects3d/Units/armlavatruck.s3o, made by
+--     LevelEditor/models/make_lava_truck.py: the launcher replaced by a container), without weapons; it carries more (customparams.lavaload).
 local defs = UnitDefs
 if not defs or getmetatable(defs) then
 	return
@@ -62,9 +64,27 @@ local function carrier(bot)
 	return d
 end
 
+local function truck(sam)
+	local d = named(copy(sam), "Cargo Truck", "Carries 60 metal: right-click a Lava Generator to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
+	d.objectname = "Units/armlavatruck.s3o"
+	d.weapondefs, d.weapons = {}, {}
+	d.airsightdistance = nil
+	d.metalcost = 90
+	d.energycost = 900
+	d.buildtime = 2500
+	d.health = 900
+	local cp = d.customparams
+	cp.maxrange = nil
+	cp.unitgroup = "util"
+	cp.lavacarrier = 1
+	cp.lavaload = 60
+	return d
+end
+
 local COPIES = {
 	armmex = { "armlavagen", generator }, cormex = { "corlavagen", generator }, legmex = { "leglavagen", generator },
 	armpw = { "armlavacarrier", carrier }, corak = { "corlavacarrier", carrier }, leggob = { "leglavacarrier", carrier },
+	armsam = { "armlavatruck", truck },
 }
 
 setmetatable(defs, {

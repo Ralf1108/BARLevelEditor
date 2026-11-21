@@ -155,6 +155,7 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
 | `zz_arena_shots.lua` | `arena_test.ps1 -Shots` | the two pictures of the Arena (three armies) |
 | `zz_copy.lua` | `arena_test.ps1 -Widget` | copy and paste (Ctrl+C / Ctrl+V through the KeyPress of the editor, the pointer moved with `Spring.WarpMouse`), a second paste on the same spot (W on: replaced, not doubled), save, clear and load of a level (`led_place.lua`, `led_level.lua`) |
 | `zz_features.lua` | `arena_test.ps1 -Widget` | moving a feature (`led\|movefeatures`, what Alt + drag sends), undo and redo |
+| `zz_lavatruck.lua` | `arena_test.ps1 -Widget` | the Cargo Truck: definition, its own model, the build list of the vehicle plant, two pictures close up, one trip with 60 metal |
 | `zz_lava.lua` | `arena_test.ps1 -Widget` | Volcano, Lava Generator and Carrier: the definitions, the build lists, energy and metal stock on a Volcano and nothing beside it, the build rule, a picture; a Carrier hauls to the near lab, then to the lab chosen with Haul |
 | `zz_keep.lua` | `arena_test.ps1 -Widget` | changes of the pages made while the Arena runs stay after Stop |
 | `zz_cycle.lua` | `arena_test.ps1 -Widget` | Ctrl + mouse wheel chooses the next / previous blueprint (`grid:cycle`), also with a search filter |

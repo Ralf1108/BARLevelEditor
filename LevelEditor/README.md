@@ -105,7 +105,7 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **W (write):** on = what is in the way is deleted (Ctrl+Z brings it back); off = nothing is placed on an occupied spot.
 - **Range circles** before placing: red = weapon range, blue = line of sight.
 
-### Volcano, Lava Generator and Carrier (proof of concept)
+### Volcano, Lava Generator and Carriers (proof of concept)
 
 - **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
 - **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1 (it looks like a metal extractor for now).
@@ -116,6 +116,10 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
   - **Right-click a Lava Generator** (order **Haul**): the Carrier goes back and forth by itself, to the nearest factory.
   - **Right-click a factory**: it delivers there instead.
   - Any other order stops it.
+- **Cargo Truck** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Carries **60** metal per trip, orders as for the Carrier.
+
+![The Cargo Truck (top, with the container) next to the missile truck it is made from](../docs/lava-cargo-truck.jpg)
+
 - A normal geothermal plant on a Volcano makes its normal energy.
 - The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
 
