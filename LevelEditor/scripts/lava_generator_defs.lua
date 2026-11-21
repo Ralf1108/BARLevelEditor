@@ -1,5 +1,5 @@
 -- The Lava Generator (armlavagen, corlavagen, leglavagen), a proof of concept: a copy of the metal extractor of its faction that stands only on a
--- Volcano (feature lava_volcano) and makes energy there (the gadget lava_generator.lua). In the extra games as gamedata/unitdefs_pre.lua: BAR's
+-- Volcano (feature lava_volcano) and makes energy and metal there (the gadget lava_generator.lua). In the extra games as gamedata/unitdefs_pre.lua: BAR's
 -- gamedata/unitdefs.lua runs it before it loads the unit files, with the still empty table of the unit definitions as UnitDefs (BAR has no file of
 -- this name; one of BAR would hide this one, see specs/lava.md). It hooks the table: when a metal extractor is stored, its copy is stored next to it,
 -- and every builder that can build the extractor can build the copy too.
@@ -8,7 +8,7 @@ if not defs or getmetatable(defs) then
 	return
 end
 local LAVA = { armmex = "armlavagen", cormex = "corlavagen", legmex = "leglavagen" }
-local NAME, TIP = "Lava Generator", "Makes energy from the lava of a Volcano (build it on a Volcano)"
+local NAME, TIP = "Lava Generator", "Makes energy and metal from the lava of a Volcano (build it on a Volcano)"
 
 local function copy(t)
 	local out = {}
@@ -24,7 +24,7 @@ local function lavaCopy(mex)
 	d.description = TIP
 	d.extractsmetal = 0
 	d.energyupkeep = 0
-	d.energymake = 0 -- (the gadget gives the energy, only on a Volcano)
+	d.energymake = 0 -- (the gadget gives the energy and the metal, only on a Volcano)
 	d.metalcost = 250
 	d.energycost = 2000
 	d.buildtime = 6000

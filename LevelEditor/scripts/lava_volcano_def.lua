@@ -1,4 +1,5 @@
--- The Volcano (feature "lava_volcano"), a proof of concept: the Lava Generator is built on it and makes energy from the lava.
+-- The Volcano (feature "lava_volcano"), a proof of concept: the Lava Generator is built on it and makes energy and metal from the lava; a geothermal
+-- plant on it makes its normal energy.
 -- In the extra games as features/lava_volcano.lua: BAR's gamedata/featuredefs.lua loads every features/*.lua of the game archives.
 -- geothermal = true: the engine lets only buildings with a "g" in the yardmap stand on it (the Lava Generator, also the geothermal plants)
 -- and puts the geothermal smoke on it. The looks are a stand-in (a rock of BAR and the crack of BAR's geothermal vent of the map editor);
@@ -6,7 +7,7 @@
 return {
 	lava_volcano = {
 		name = "lava_volcano",
-		description = "Volcano: build a Lava Generator on it",
+		description = "Volcano: a Lava Generator on it makes energy and metal, a geothermal plant energy",
 		object = "rocks30/rocks30_def_01.s3o",
 		blocking = false,
 		burnable = false,

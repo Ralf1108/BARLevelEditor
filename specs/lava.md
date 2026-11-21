@@ -1,6 +1,8 @@
 # Volcano and Lava Generator
 
-- A proof of concept: a **Volcano** placed in the Level Editor; a **Lava Generator** built on it makes energy from the lava.
+- A proof of concept: a **Volcano** placed in the Level Editor gives both resources:
+  - a **Lava Generator** built on it makes energy and metal from the lava;
+  - a normal geothermal plant built on it makes its normal energy (the engine: the Volcano is a geothermal feature).
 - The looks are stand-ins (a rock of BAR, the crack of BAR's geothermal vent, glowing rings); models of their own come later.
 - User view: [Level Editor manual](../LevelEditor/README.md), "Volcano and Lava Generator".
 
@@ -10,7 +12,7 @@
 |---|---|---|
 | `LevelEditor/scripts/lava_volcano_def.lua` | `features/lava_volcano.lua` | the feature `lava_volcano` ("Volcano") |
 | `LevelEditor/scripts/lava_generator_defs.lua` | `gamedata/unitdefs_pre.lua` | the units `armlavagen`, `corlavagen`, `leglavagen` ("Lava Generator") and their place in the build lists |
-| `LevelEditor/scripts/lava_generator.lua` | `luarules/gadgets/lava_generator.lua` | the energy on a Volcano; the glow of the lava |
+| `LevelEditor/scripts/lava_generator.lua` | `luarules/gadgets/lava_generator.lua` | the energy and metal on a Volcano; the glow of the lava |
 
 - All three are in `$ScenarioGameFiles` (`shared/bar_common.ps1`), so they are in both extra games: "Level Editor" (`Get-EditorGameEntries` also takes the entries under `gamedata/` and `features/`) and "Level Editor Scenarios" (scenarios, LAN Play with the extra game).
 - In the official game alone (without an extra game) neither exists.
@@ -41,9 +43,9 @@
 ## 4. The gadget `lava_generator.lua`
 
 - Synced: every second (`GameFrame`, `f % 30 == 7`) every Lava Generator is checked:
-  - finished and its middle at most `ON_RADIUS` = 40 Elmo from the middle of a Volcano → `Spring.SetUnitResourcing(u, "ume", LAVA_ENERGY)` (200 energy per second; a geothermal plant of tech 1 makes 300);
-  - otherwise 0.
-  - Unit rules parameter `lavaEnergy` (public): the energy it makes now.
+  - finished and its middle at most `ON_RADIUS` = 40 Elmo from the middle of a Volcano → `Spring.SetUnitResourcing(u, "ume", LAVA_ENERGY)` and `(u, "umm", LAVA_METAL)` (200 energy and 2 metal per second; a geothermal plant of tech 1 makes 300 energy, a metal extractor of tech 1 on a spot of 2.0 about 2 metal);
+  - otherwise 0 of both.
+  - Unit rules parameters `lavaEnergy` and `lavaMetal` (public): what it makes now.
   - A Volcano placed or deleted later (editor, undo) counts within a second (`FeatureCreated` / `FeatureDestroyed` keep the list `volcanoes`).
 - Unsynced: `DrawWorldPreUnit` draws six rings in red and orange around every Volcano in view, slowly pulsing (radius 25 to 80).
 - Without a Lava Generator in the game (no extra game definitions) the gadget removes itself.
@@ -52,8 +54,8 @@
 
 - `test-data/tools/zz_lava.lua` (`arena_test.ps1 -Widget zz_lava.lua`, one instance):
   - the definitions (feature geothermal, `needGeo`, `extractsMetal` 0) and the build lists of `armck`, `armcv`, `armcom`, `corck`, `legck`;
-  - two Volcanoes and two generators placed through the editor messages: 200 energy on the Volcano, 0 beside it;
-  - `TestBuildOrder`: allowed on the free Volcano, refused on plain ground; a picture.
+  - two Volcanoes and two generators placed through the editor messages: 200 energy and 2 metal on the Volcano, 0 beside it;
+  - `TestBuildOrder`: allowed on the free Volcano, refused on plain ground; the geothermal plant `armgeo` allowed on the Volcano; a picture.
 - Checked 2026-11-21: all of it as expected.
 - **Not checked:** a constructor of a player really building one; a scenario or LAN game with it; the BAR build menu (where the button appears).
 
@@ -61,4 +63,4 @@
 
 - Models of their own (Volcano, Lava Generator); the name in BAR's language files (the log says "not translated").
 - Balance (cost, energy).
-- A normal geothermal plant may also stand on a Volcano (the engine knows only "geothermal").
+- A Lava Generator may also be placed on a geothermal vent of the map: there it makes nothing (the engine knows only "geothermal").

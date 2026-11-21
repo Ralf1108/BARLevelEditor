@@ -109,8 +109,10 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 - **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
 - **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1 (it looks like a metal extractor for now).
-- A Lava Generator **on** a Volcano makes **200 energy per second**; anywhere else nothing.
-- In the game the constructors and the commander can build it, but only on a Volcano.
+- A Volcano gives **both** resources:
+  - a Lava Generator **on** it makes **200 energy and 2 metal per second** (anywhere else nothing);
+  - a normal geothermal plant on it makes its normal energy.
+- In the game the constructors and the commander can build the Lava Generator, but only on a Volcano.
 - The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
 
 Good to know:

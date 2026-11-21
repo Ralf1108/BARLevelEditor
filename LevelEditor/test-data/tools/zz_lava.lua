@@ -1,7 +1,7 @@
 function widget:GetInfo() return { name = "zz lava", desc = "test only: Volcano and Lava Generator", layer = 1000000, enabled = true } end
 -- Test widget of arena_test.ps1 -Widget zz_lava.lua: the definitions (feature lava_volcano, units armlavagen / corlavagen, in the build lists of the
--- constructors), two Volcanoes and two Lava Generators placed through the editor (one on a Volcano, one beside it), the energy of both, the build rule
--- (TestBuildOrder on a Volcano and beside it) and a picture. Logs "[zzlava]" lines, ends with quitforce.
+-- constructors), two Volcanoes and two Lava Generators placed through the editor (one on a Volcano, one beside it), the energy and metal of both, the
+-- build rule (TestBuildOrder on a Volcano and beside it; the geothermal plant armgeo on the Volcano) and a picture. Logs "[zzlava]" lines, ends with quitforce.
 local function log(...)
 	local t = {}
 	for i, v in ipairs({ ... }) do t[i] = tostring(v) end
@@ -47,18 +47,21 @@ local e0
 steps[120] = function() e0 = select(1, Spring.GetTeamResources(0, "energy")) end
 steps[240] = function()
 	local ua, uc = unitAt(A), unitAt(C)
-	log("generator on the Volcano", tostring(ua), "energy", ua and Spring.GetUnitRulesParam(ua, "lavaEnergy") or "-", ok(ua and Spring.GetUnitRulesParam(ua, "lavaEnergy") == 200))
-	log("generator without a Volcano", tostring(uc), "energy", uc and Spring.GetUnitRulesParam(uc, "lavaEnergy") or "-", ok(uc and Spring.GetUnitRulesParam(uc, "lavaEnergy") == 0))
+	local function rp(u, k) return u and Spring.GetUnitRulesParam(u, k) end
+	log("generator on the Volcano", tostring(ua), "energy", rp(ua, "lavaEnergy"), "metal", rp(ua, "lavaMetal"), ok(rp(ua, "lavaEnergy") == 200 and rp(ua, "lavaMetal") == 2))
+	log("generator without a Volcano", tostring(uc), "energy", rp(uc, "lavaEnergy"), "metal", rp(uc, "lavaMetal"), ok(rp(uc, "lavaEnergy") == 0 and rp(uc, "lavaMetal") == 0))
 	if ua then
-		local _, _, _, eMake = Spring.GetUnitResources(ua)
-		log("GetUnitResources energyMake", eMake)
+		log("GetUnitResources (metal make, metal use, energy make, energy use)", Spring.GetUnitResources(ua))
 	end
 	local _, _, _, inc = Spring.GetTeamResources(0, "energy")
-	log("team energy income", inc)
+	local _, _, _, minc = Spring.GetTeamResources(0, "metal")
+	log("team income: energy", inc, "metal", minc)
 	local ud = UnitDefNames.armlavagen.id
 	local tb = Spring.TestBuildOrder(ud, B[1], Spring.GetGroundHeight(B[1], B[2]), B[2], 0)
 	local tn = Spring.TestBuildOrder(ud, B[1], Spring.GetGroundHeight(B[1], B[2] + 400), B[2] + 400, 0)
 	log("build rule: on the free Volcano", tb, ok(tb and tb > 0), "on plain ground", tn, ok(tn == 0))
+	local tg = Spring.TestBuildOrder(UnitDefNames.armgeo.id, B[1], Spring.GetGroundHeight(B[1], B[2]), B[2], 0)
+	log("geothermal plant armgeo on the free Volcano", tg, ok(tg and tg > 0))
 	Spring.SendCommands("screenshot png")
 end
 steps[300] = function() log("done"); Spring.SendCommands("quitforce") end

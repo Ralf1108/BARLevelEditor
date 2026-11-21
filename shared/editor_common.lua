@@ -2801,7 +2801,7 @@ function M.newFeatures(o)
 		local t = top - (hb + 3)
 		local tips = {
 			tree = "Trees and plants", rock = "Rocks", crystal = "Crystals (reclaim nodes of Reclaim the Fame): pilha_crystal1 = small, 2 = medium, 3 = large, in many colors", wreck = "Wrecks and scrap heaps of destroyed units",
-			volcano = "Volcano: a Lava Generator (Units, Buildings) built on it makes energy",
+			volcano = "Volcano: a Lava Generator (Units, Buildings) built on it makes energy and metal; a geothermal plant on it makes energy",
 			other = "Everything else (geysers, eggs ...)",
 		}
 		for i, k in ipairs(M.FEATURE_KINDS) do

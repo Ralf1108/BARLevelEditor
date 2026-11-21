@@ -1,11 +1,12 @@
 -- Volcano and Lava Generator (proof of concept): a Lava Generator (unit with customparams.lavagenerator, lava_generator_defs.lua) that stands on a
--- Volcano (feature with customparams.lavavolcano, lava_volcano_def.lua) makes LAVA_ENERGY energy per second; anywhere else nothing (the Level Editor
+-- Volcano (feature with customparams.lavavolcano, lava_volcano_def.lua) makes LAVA_ENERGY energy and LAVA_METAL metal per second (the Volcano gives
+-- both; a normal geothermal plant on it makes only its own energy, by the engine); anywhere else nothing (the Level Editor
 -- places units anywhere). Checked every second, so a Volcano placed or deleted later counts at once. The unsynced part draws the glow of the lava
 -- around every Volcano (stand-in for a model of its own).
 function gadget:GetInfo()
 	return {
 		name = "Lava Generator",
-		desc = "Lava Generators on a Volcano make energy",
+		desc = "Lava Generators on a Volcano make energy and metal",
 		author = "",
 		date = "2026",
 		license = "GNU GPL, v2 or later",
@@ -15,6 +16,7 @@ function gadget:GetInfo()
 end
 
 local LAVA_ENERGY = 200 -- energy per second of a Lava Generator on a Volcano (a geothermal plant of tech 1 makes 300)
+local LAVA_METAL = 2 -- metal per second of a Lava Generator on a Volcano (a metal extractor of tech 1 on a spot of 2.0 makes about 2)
 local ON_RADIUS = 40 -- the middle of the generator at most so far from the middle of a Volcano (Elmo)
 
 local volcanoDef = {} -- featureDefID -> true
@@ -49,7 +51,7 @@ if gadgetHandler:IsSyncedCode() then
 			genDef[id] = true
 		end
 	end
-	local gens = {} -- unitID -> energy it makes now (0 or LAVA_ENERGY)
+	local gens = {} -- unitID -> true while it makes energy and metal (on a Volcano), false while not, -1 = not checked yet
 
 	local function onVolcano(u)
 		local x, _, z = Spring.GetUnitPosition(u)
@@ -66,11 +68,13 @@ if gadgetHandler:IsSyncedCode() then
 
 	local function check(u)
 		local _, _, _, _, built = Spring.GetUnitHealth(u)
-		local e = (built or 0) >= 1 and onVolcano(u) and LAVA_ENERGY or 0
-		if gens[u] ~= e then
-			gens[u] = e
-			Spring.SetUnitResourcing(u, "ume", e) -- (unconditional make energy)
-			Spring.SetUnitRulesParam(u, "lavaEnergy", e, { public = true })
+		local on = (built or 0) >= 1 and onVolcano(u)
+		if gens[u] ~= on then
+			gens[u] = on
+			Spring.SetUnitResourcing(u, "ume", on and LAVA_ENERGY or 0) -- (unconditional make energy)
+			Spring.SetUnitResourcing(u, "umm", on and LAVA_METAL or 0) -- (unconditional make metal)
+			Spring.SetUnitRulesParam(u, "lavaEnergy", on and LAVA_ENERGY or 0, { public = true })
+			Spring.SetUnitRulesParam(u, "lavaMetal", on and LAVA_METAL or 0, { public = true })
 		end
 	end
 
