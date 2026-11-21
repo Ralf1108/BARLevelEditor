@@ -267,7 +267,7 @@ Options: `cfg`, `groups` (offer only these groups; default all), `factions` (off
 
 ## 9. Features, recent items, scrollbar
 
-- `M.newFeatures(o)` / `M.buildFeatureCache()`: selection grid for features (kinds trees, rocks, crystals (`pilha_crystal*`), wrecks, rest, by name); `query` searches `M.featureSearchText`; pictures only, cell height `0.4 · UCELL` (small pictures rendered once per feature into a texture, a few per frame); `override` replaces the list (Recent).
+- `M.newFeatures(o)` / `M.buildFeatureCache()`: selection grid for features (kinds trees, rocks, crystals (`pilha_crystal*`), volcano (`customParams.lavavolcano`), wrecks, rest, by name); `query` searches `M.featureSearchText`; pictures only, cell height `0.4 · UCELL` (small pictures rendered once per feature into a texture, a few per frame); `override` replaces the list (Recent).
 - `M.newRecent(file, maxN)`: the most recently used names per kind (`bp`, `unit`, `feature`) in a Lua file.
   - `M.newFav(o)`: the Recent view (blueprint rows, unit symbols and feature tiles); its `query` filters all parts, `matchCount()` returns the number of entries shown.
 - Scrollbar (`M.scrollbarDraw(grid, rect)`, `scrollbarPress`, `scrollbarMove`, `scrollbarRelease`): 24·S wide at the right edge of `rect`, drawn only if `grid:maxScroll(rect) > 0`.

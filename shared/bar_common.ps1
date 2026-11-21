@@ -215,7 +215,10 @@ $ScenarioGameFiles = @(
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
     @('lan_latejoin.lua', 'luarules/gadgets/lan_latejoin.lua'),   # LAN Play: a player who joins a running game is moved into a team
     @('lan_pve_hold.lua', 'luarules/gadgets/lan_pve_hold.lua'),   # LAN Play: drops the orders of a Scavengers / Raptors AI of the room
-    @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
+    @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),
+    @('lava_generator.lua', 'luarules/gadgets/lava_generator.lua'),   # Volcano and Lava Generator: the energy on a Volcano, the glow of the lava
+    @('lava_generator_defs.lua', 'gamedata/unitdefs_pre.lua'),   # the Lava Generator: copies of the metal extractors, in the build lists of their builders (BAR has no unitdefs_pre.lua)
+    @('lava_volcano_def.lua', 'features/lava_volcano.lua'),   # the Volcano: a geothermal feature (BAR loads every features/*.lua)   # replaces the lootbox gadget of the game (it let enemies capture the flags)
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
     @('editor_common.lua', 'luaui/Include/editor_common.lua'),   # Renegade: the unit menu of the debug mode is the one of the Level Editor (also in the extra game "Level Editor", see Get-EditorGameEntries)
     @('area_attack.lua', 'luaui/Include/area_attack.lua'),   # loaded by editor_common.lua

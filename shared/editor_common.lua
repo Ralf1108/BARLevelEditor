@@ -2367,10 +2367,13 @@ function M.newUnits(o)
 end
 
 ---------------------------------------------------------------- Features (trees, rocks, wrecks)
-M.FEATURE_KINDS = { { "tree", "Trees" }, { "rock", "Rocks" }, { "crystal", "Crystals" }, { "wreck", "Wrecks" }, { "other", "Rest" } }
+M.FEATURE_KINDS = { { "tree", "Trees" }, { "rock", "Rocks" }, { "crystal", "Crystals" }, { "volcano", "Volcano" }, { "wreck", "Wrecks" }, { "other", "Rest" } }
 
 local function featureKind(name, fd)
 	local n = name:lower()
+	if fd and fd.customParams and fd.customParams.lavavolcano then
+		return "volcano" -- the Volcano of the extra games (lava_volcano_def.lua): the Lava Generator stands on it
+	end
 	if n:find("^pilha_crystal") then
 		return "crystal" -- the reclaim nodes of Reclaim the Fame (pilha_crystal1/2/3 = small, medium, large)
 	end
@@ -2392,7 +2395,7 @@ end
 
 -- [kind] = { { name, id } ... }, built once from FeatureDefs
 function M.buildFeatureCache()
-	local cache = { tree = {}, rock = {}, crystal = {}, wreck = {}, other = {} }
+	local cache = { tree = {}, rock = {}, crystal = {}, volcano = {}, wreck = {}, other = {} }
 	for id, fd in pairs(FeatureDefs) do
 		local name = fd.name
 		if name and name ~= "" then
@@ -2798,6 +2801,7 @@ function M.newFeatures(o)
 		local t = top - (hb + 3)
 		local tips = {
 			tree = "Trees and plants", rock = "Rocks", crystal = "Crystals (reclaim nodes of Reclaim the Fame): pilha_crystal1 = small, 2 = medium, 3 = large, in many colors", wreck = "Wrecks and scrap heaps of destroyed units",
+			volcano = "Volcano: a Lava Generator (Units, Buildings) built on it makes energy",
 			other = "Everything else (geysers, eggs ...)",
 		}
 		for i, k in ipairs(M.FEATURE_KINDS) do

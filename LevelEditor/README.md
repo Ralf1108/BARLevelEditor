@@ -97,13 +97,21 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **Units:** choose faction (Armada, Cortex, Legion, Scavengers, Raptors), group and tech (T1 to T3), click a picture, left click on the map. Right click ends. **[** and **]** rotate.
   - Hovering shows a 3D view and the values: cost, **Eco time** (how long your income needs to pay for it), health, damage per second, range, sight, speed, radar.
   - A faction, group or tech button with nothing behind it is slightly red.
-- **Features:** trees, rocks, wrecks and the crystals of Reclaim the Fame, placed like units.
+- **Features:** trees, rocks, wrecks, the crystals of Reclaim the Fame and the **Volcano**, placed like units.
 - **Search:** one field for recent items, units, features and blueprints. All words must match. Enter = done, Esc or X = clear.
 - **Crosshair button** (left of the search): click it, then a unit on the map: the list jumps to that unit.
 - **Painting:** hold the left button and move.
 - **Rows and rectangles:** **Shift + drag** = row, **Shift + Alt + drag** = rectangle. **Shift + wheel** changes the spacing.
 - **W (write):** on = what is in the way is deleted (Ctrl+Z brings it back); off = nothing is placed on an occupied spot.
 - **Range circles** before placing: red = weapon range, blue = line of sight.
+
+### Volcano and Lava Generator (proof of concept)
+
+- **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
+- **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1 (it looks like a metal extractor for now).
+- A Lava Generator **on** a Volcano makes **200 energy per second**; anywhere else nothing.
+- In the game the constructors and the commander can build it, but only on a Volcano.
+- The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
 
 Good to know:
 
