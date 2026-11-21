@@ -105,14 +105,18 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **W (write):** on = what is in the way is deleted (Ctrl+Z brings it back); off = nothing is placed on an occupied spot.
 - **Range circles** before placing: red = weapon range, blue = line of sight.
 
-### Volcano and Lava Generator (proof of concept)
+### Volcano, Lava Generator and Carrier (proof of concept)
 
 - **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
 - **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1 (it looks like a metal extractor for now).
-- A Volcano gives **both** resources:
-  - a Lava Generator **on** it makes **200 energy and 2 metal per second** (anywhere else nothing);
-  - a normal geothermal plant on it makes its normal energy.
-- In the game the constructors and the commander can build the Lava Generator, but only on a Volcano.
+  - On a Volcano it gives **200 energy per second** at once and fills its **metal stock** with 2 metal per second (up to 200, shown above it); anywhere else nothing.
+  - In the game the constructors and the commander can build it, but only on a Volcano.
+- **Carrier:** Units tab, **Bots**, T1 (a light bot without weapons); in the game built in the bot lab.
+  - The metal of the stock reaches you only when a Carrier brings it to a factory: 20 per trip.
+  - **Right-click a Lava Generator** (order **Haul**): the Carrier goes back and forth by itself, to the nearest factory.
+  - **Right-click a factory**: it delivers there instead.
+  - Any other order stops it.
+- A normal geothermal plant on a Volcano makes its normal energy.
 - The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
 
 Good to know:

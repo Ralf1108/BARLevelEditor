@@ -7,7 +7,7 @@
 return {
 	lava_volcano = {
 		name = "lava_volcano",
-		description = "Volcano: a Lava Generator on it makes energy and metal, a geothermal plant energy",
+		description = "Volcano: a Lava Generator on it makes energy and metal (Carriers fetch the metal), a geothermal plant energy",
 		object = "rocks30/rocks30_def_01.s3o",
 		blocking = false,
 		burnable = false,

@@ -30,7 +30,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [renegade-aircraft.md](renegade-aircraft.md) | Renegade, aircraft: steering, height, bombs |
 | [renegade-shooting.md](renegade-shooting.md) | Renegade, weapons: the three buttons, anti-air, arc weapons, beams, the weapon table and its pictures |
 | [arena.md](arena.md) | the Arena tool (button A) |
-| [lava.md](lava.md) | Volcano and Lava Generator (proof of concept): the feature, the units, the energy |
+| [lava.md](lava.md) | Volcano, Lava Generator and Carrier (proof of concept): the feature, the units, energy, the metal stock and its hauling |
 | [scenario-builder.md](scenario-builder.md) | scenario info, the builder, `scenario.txt`, the extra game of the scenarios |
 | [scenario-multiplayer.md](scenario-multiplayer.md) | console lobby, split screen, bundle and map transfer |
 | [lan-play.md](lan-play.md) | the lobby widget for LAN Play |
