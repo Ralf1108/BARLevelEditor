@@ -23,11 +23,13 @@ local LAVA_ENERGY = 200 -- energy per second of a Lava Generator on a Volcano (a
 local LAVA_METAL = 2 -- metal per second into the stock of a Lava Generator on a Volcano (a metal extractor of tech 1 on a spot of 2.0 makes about 2)
 local STOCK_MAX = 200 -- metal a Lava Generator keeps at most (more is lost)
 local LOAD = 20 -- metal a Carrier takes in one trip (a unit with customparams.lavaload takes that much: the Cargo Truck 60)
+-- A unit with customparams.lavabox (the Forklift) loads boxes of that much metal, one every half second while the stock has one, and leaves when
+-- it is full (lavaload) or the stock has no box more; it unloads them one by one; its unit script shows the boxes (SetBoxes).
 local ON_RADIUS = 40 -- the middle of the generator at most so far from the middle of a Volcano (Elmo)
 local REACH = 70 -- a Carrier is at a building when it is this far from its edge (Elmo)
 local CMD_HAUL = 39761 -- the order Haul of the Carriers (its own id)
 
-local volcanoDef, genDef, carrierDef = {}, {}, {} -- defID -> true (carrierDef: -> its load per trip)
+local volcanoDef, genDef, carrierDef = {}, {}, {} -- defID -> true (carrierDef: -> { cap = load per trip, box = metal per box or nil })
 for id, fd in pairs(FeatureDefs) do
 	if fd.customParams and fd.customParams.lavavolcano then
 		volcanoDef[id] = true
@@ -38,7 +40,7 @@ for id, ud in pairs(UnitDefs) do
 	if cp.lavagenerator then
 		genDef[id] = true
 	elseif cp.lavacarrier then
-		carrierDef[id] = tonumber(cp.lavaload) or LOAD
+		carrierDef[id] = { cap = tonumber(cp.lavaload) or LOAD, box = tonumber(cp.lavabox) }
 	end
 end
 local volcanoes = {} -- featureID -> { x, y, z }
@@ -62,7 +64,8 @@ end
 
 if gadgetHandler:IsSyncedCode() then
 	local gens = {} -- unitID -> { on = true/false/nil, stock = metal }
-	local carriers = {} -- unitID -> { src = generator, dst = chosen factory or nil, load = metal, cap = metal per trip, goal = unit it walks to }
+	local carriers = {} -- unitID -> { src = generator, dst = chosen factory or nil, load = metal, cap = metal per trip, box = metal per box (Forklift),
+	-- go = a Forklift on its way to the factory, goal = unit it walks to }
 	local HAUL_STOP = { [CMD.MOVE] = true, [CMD.STOP] = true, [CMD.PATROL] = true, [CMD.FIGHT] = true, [CMD.GUARD] = true, [CMD.ATTACK] = true,
 		[CMD.RECLAIM] = true, [CMD.REPAIR] = true, [CMD.WAIT] = true }
 	local HAUL_DESC = {
@@ -140,21 +143,30 @@ if gadgetHandler:IsSyncedCode() then
 	local function setLoad(c, h, load)
 		h.load = load
 		Spring.SetUnitRulesParam(c, "lavaLoad", load, { public = true })
+		if h.box then -- the boxes on the fork (the unit script of the Forklift)
+			local env = Spring.UnitScript and Spring.UnitScript.GetScriptEnv and Spring.UnitScript.GetScriptEnv(c)
+			if env and env.SetBoxes then
+				Spring.UnitScript.CallAsUnit(c, env.SetBoxes, math.ceil(load / h.box))
+			end
+		end
 	end
 
 	-- one step of a hauling Carrier (every half second)
 	local function haul(c, h)
 		local team = Spring.GetUnitTeam(c)
-		if h.load > 0 then
+		if h.load > 0 and (h.go or not h.box) then
 			local dst = h.dst and Spring.ValidUnitID(h.dst) and isFactory(h.dst, team) and h.dst or nearestFactory(c, team)
 			if not dst then
 				return -- (no factory: it waits with its load)
 			end
 			if near(c, dst) then
-				Spring.AddTeamResource(team, "metal", h.load)
-				Spring.SetTeamRulesParam(team, "lavaDelivered", (Spring.GetTeamRulesParam(team, "lavaDelivered") or 0) + h.load, { public = true })
-				setLoad(c, h, 0)
-				h.goal = nil
+				local n = h.box and math.min(h.box, h.load) or h.load -- (a Forklift: one box per step)
+				Spring.AddTeamResource(team, "metal", n)
+				Spring.SetTeamRulesParam(team, "lavaDelivered", (Spring.GetTeamRulesParam(team, "lavaDelivered") or 0) + n, { public = true })
+				setLoad(c, h, h.load - n)
+				if h.load == 0 then
+					h.goal, h.go = nil, nil
+				end
 			else
 				walkTo(c, h, dst)
 			end
@@ -162,11 +174,23 @@ if gadgetHandler:IsSyncedCode() then
 		end
 		local g = h.src and gens[h.src]
 		if not g then
+			if h.load > 0 then
+				h.go = true -- (a Forklift with boxes: it brings them first)
+				return
+			end
 			h.src = nil -- (the generator is gone: it stops)
 			Spring.SetUnitRulesParam(c, "lavaHauling", 0, { public = true })
 			return
 		end
-		if near(c, h.src) then
+		if near(c, h.src) and h.box then
+			if g.stock >= h.box and h.load + h.box <= h.cap then
+				g.stock = g.stock - h.box
+				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
+				setLoad(c, h, h.load + h.box)
+			elseif h.load > 0 then
+				h.go, h.goal = true, nil -- (full, or the stock has no box more)
+			end
+		elseif near(c, h.src) then
 			if g.stock >= h.cap then
 				g.stock = g.stock - h.cap
 				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
@@ -202,7 +226,7 @@ if gadgetHandler:IsSyncedCode() then
 		if genDef[defID] then
 			gens[u] = { stock = 0 }
 		elseif carrierDef[defID] then
-			carriers[u] = { load = 0, cap = carrierDef[defID] }
+			carriers[u] = { load = 0, cap = carrierDef[defID].cap, box = carrierDef[defID].box }
 			Spring.InsertUnitCmdDesc(u, HAUL_DESC)
 		end
 	end

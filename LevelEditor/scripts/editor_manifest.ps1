@@ -15,7 +15,7 @@ function Get-EditorFolder([string]$key) {
 }
 
 # The extra game "Level Editor" (data\games\LevelEditorMod.sdz): folder key, file, path in the archive. Besides these it holds the gadgets of the
-# scenarios from $ScenarioGameFiles (the entries under luarules/, luaui/Include/, gamedata/ and features/; the game widgets of the scenarios are not needed in the editor).
+# scenarios from $ScenarioGameFiles (the entries under luarules/, luaui/Include/, gamedata/, features/ and scripts/; the game widgets of the scenarios are not needed in the editor).
 $EditorGameFiles = @(
     @('scripts', 'unit_level_editor.lua', 'luarules/gadgets/unit_level_editor.lua'),
     @('scripts', 'lvl_level_editor.lua', 'luaui/widgets/lvl_level_editor.lua'),   # switched on in the archive (enabled = true)
@@ -48,7 +48,7 @@ function Get-EditorGameEntries {
     $list = @()
     foreach ($f in $EditorGameFiles) { $list += , @($f[2], (Join-Path (Get-EditorFolder $f[0]) $f[1])) }
     foreach ($f in $ScenarioGameFiles) {
-        if (($f[1] -like 'luarules/*' -or $f[1] -like 'luaui/Include/*' -or $f[1] -like 'gamedata/*' -or $f[1] -like 'features/*') -and -not ($list | Where-Object { $_[0] -eq $f[1] })) {   # (not twice: editor_common.lua is in both lists)
+        if (($f[1] -like 'luarules/*' -or $f[1] -like 'luaui/Include/*' -or $f[1] -like 'gamedata/*' -or $f[1] -like 'features/*' -or $f[1] -like 'scripts/*') -and -not ($list | Where-Object { $_[0] -eq $f[1] })) {   # (not twice: editor_common.lua is in both lists)
             $src = $null
             foreach ($d in (Get-ScenarioGameDirs)) { if (Test-Path (Join-Path $d $f[0])) { $src = Join-Path $d $f[0]; break } }
             $list += , @($f[1], $(if ($src) { $src } else { Join-Path (Get-EditorFolder 'scripts') $f[0] }))

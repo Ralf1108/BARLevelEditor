@@ -8,6 +8,9 @@
 --     Generator to a factory (the gadget).
 --   Cargo Truck (armlavatruck): a copy of the missile truck armsam with a model of its own (objects3d/Units/armlavatruck.s3o, made by
 --     LevelEditor/models/make_lava_truck.py: the launcher replaced by a container), without weapons; it carries more (customparams.lavaload).
+--   Forklift (armlavafork): a copy of the scout car armfav with a model of its own (objects3d/Units/armlavafork.s3o, made by
+--     LevelEditor/models/make_lava_forklift.py: a mast with a fork and three boxes) and a Lua unit script (scripts/Units/armlavafork.lua: it shows
+--     the boxes it carries), without weapons; it loads boxes of 30 metal (customparams.lavabox), at most three.
 local defs = UnitDefs
 if not defs or getmetatable(defs) then
 	return
@@ -81,10 +84,34 @@ local function truck(sam)
 	return d
 end
 
+local function forklift(fav)
+	local d = named(copy(fav), "Forklift", "Carries up to 3 boxes of 30 metal: right-click a Lava Generator to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
+	d.objectname = "Units/armlavafork.s3o"
+	d.script = "Units/armlavafork.lua"
+	d.weapondefs, d.weapons = {}, {}
+	d.speed = 45
+	d.turninplacespeedlimit = 1.0
+	d.turnrate = 400
+	d.metalcost = 120
+	d.energycost = 1200
+	d.buildtime = 3000
+	d.health = 1000
+	d.sightdistance = 300
+	d.collisionvolumeoffsets = "0 5 3"
+	d.collisionvolumescales = "16 22 32"
+	local cp = d.customparams
+	cp.unitgroup = "util"
+	cp.lavacarrier = 1
+	cp.lavaload = 90
+	cp.lavabox = 30
+	return d
+end
+
 local COPIES = {
 	armmex = { "armlavagen", generator }, cormex = { "corlavagen", generator }, legmex = { "leglavagen", generator },
 	armpw = { "armlavacarrier", carrier }, corak = { "corlavacarrier", carrier }, leggob = { "leglavacarrier", carrier },
 	armsam = { "armlavatruck", truck },
+	armfav = { "armlavafork", forklift },
 }
 
 setmetatable(defs, {

@@ -120,6 +120,12 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 ![The Cargo Truck (top, with the container) next to the missile truck it is made from](../docs/lava-cargo-truck.jpg)
 
+- **Forklift** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Slow; carries up to **3 boxes of 30 metal**, shown on its fork.
+  - At the generator it loads a box every half second while the stock has one; it leaves when it has 3 boxes or the stock is empty.
+  - Orders as for the Carrier.
+
+![The Forklift empty next to the Rover it is made from (left) and with three boxes on its fork (right)](../docs/lava-forklift.jpg)
+
 - A normal geothermal plant on a Volcano makes its normal energy.
 - The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
 

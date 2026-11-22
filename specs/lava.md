@@ -1,10 +1,10 @@
-# Volcano, Lava Generator, Carrier and Cargo Truck
+# Volcano, Lava Generator, Carrier, Cargo Truck and Forklift
 
 - A proof of concept: a **Volcano** placed in the Level Editor gives both resources:
   - a **Lava Generator** built on it makes energy at once and fills its own **metal stock**;
-  - **Carriers** (bots) and **Cargo Trucks** bring that metal to a factory; only there does the team get it;
+  - **Carriers** (bots), **Cargo Trucks** and **Forklifts** bring that metal to a factory; only there does the team get it;
   - a normal geothermal plant built on a Volcano makes its normal energy (the engine: the Volcano is a geothermal feature).
-- The looks are stand-ins (a rock of BAR, the crack of BAR's geothermal vent, glowing rings; the generator looks like the metal extractor, the Carrier like the light bot); the Cargo Truck has a model of its own, made from BAR's missile truck.
+- The looks are stand-ins (a rock of BAR, the crack of BAR's geothermal vent, glowing rings; the generator looks like the metal extractor, the Carrier like the light bot); the Cargo Truck and the Forklift have models of their own, made from BAR's missile truck and scout car.
 - User view: [Level Editor manual](../LevelEditor/README.md), "Volcano, Lava Generator and Carriers".
 
 ## 1. Parts
@@ -15,8 +15,10 @@
 | `LevelEditor/scripts/lava_generator_defs.lua` | `gamedata/unitdefs_pre.lua` | the units Lava Generator and Carrier and their place in the build lists |
 | `LevelEditor/scripts/lava_generator.lua` | `luarules/gadgets/lava_generator.lua` | energy and metal stock on a Volcano, the hauling of the Carriers, the order Haul, the glow and the numbers |
 | `LevelEditor/models/armlavatruck.s3o` (made by `make_lava_truck.py`) | `objects3d/Units/armlavatruck.s3o` | the model of the Cargo Truck |
+| `LevelEditor/models/armlavafork.s3o` (made by `make_lava_forklift.py`) | `objects3d/Units/armlavafork.s3o` | the model of the Forklift |
+| `LevelEditor/scripts/lava_forklift_script.lua` | `scripts/Units/armlavafork.lua` | the unit script of the Forklift (wheels, the boxes) |
 
-- The three Lua files are in `$ScenarioGameFiles` (`shared/bar_common.ps1`), so they are in both extra games: "Level Editor" (`Get-EditorGameEntries` also takes the entries under `gamedata/` and `features/`) and "Level Editor Scenarios" (scenarios, LAN Play with the extra game).
+- The four Lua files are in `$ScenarioGameFiles` (`shared/bar_common.ps1`), so they are in both extra games: "Level Editor" (`Get-EditorGameEntries` also takes the entries under `gamedata/`, `features/` and `scripts/`) and "Level Editor Scenarios" (scenarios, LAN Play with the extra game).
 - Models: every `LevelEditor/models/*.s3o` goes as it is (bytes) into both extra games as `objects3d/Units/<file>` (`Get-ModelFiles` in `bar_common.ps1`, used by `Write-ScenarioGame` and `Write-EditorGame`; part of the version of the scenario game and of the stamp of the setup).
 - In the official game alone (without an extra game) none of them exists.
 
@@ -42,6 +44,7 @@
 | `armlavagen`, `corlavagen`, `leglavagen` | `armmex`, `cormex`, `legmex` | every builder of the extractor (constructors, commanders ...) | Lava Generator |
 | `armlavacarrier`, `corlavacarrier`, `leglavacarrier` | `armpw` (Pawn), `corak` (Grunt), `leggob` | the bot labs (`armlab`, `corlab`, `leglab`) | Carrier |
 | `armlavatruck` | `armsam` (Samson, missile truck) | the vehicle plant `armvp` | Cargo Truck |
+| `armlavafork` | `armfav` (Rover, scout car) | the vehicle plant `armvp` | Forklift |
 
 - **Lava Generator** (`generator`): the model, script and corpse of the extractor; `extractsmetal = 0`, `energyupkeep = 0`, `energymake = 0`, `onoffable = false`, no metal storage.
   - Values of the proof of concept: metal 250, energy 2000, build time 6000, health 1200.
@@ -49,8 +52,9 @@
   - `customparams.lavagenerator = 1`, `unitgroup = "energy"`; `metal_extractor` and `standardextractor` removed (BAR's metal spot tools leave it alone).
 - **Carrier** (`carrier`): the light bot without weapons (`weapondefs`, `weapons` empty); metal 40, energy 600, build time 1500; `customparams.lavacarrier = 1`, `unitgroup = "util"`; 20 metal per trip.
 - **Cargo Truck** (`truck`): armsam without weapons (also `airsightdistance` and `maxrange` removed), `objectname = "Units/armlavatruck.s3o"`; the script of armsam (`ARMSAM.cob`: the wheels turn; it names the emptied launcher pieces, which stay); metal 90, energy 900, build time 2500, health 900; `customparams.lavacarrier = 1`, `lavaload = 60` (60 metal per trip), `unitgroup = "util"`.
+- **Forklift** (`forklift`): armfav without weapons, `objectname = "Units/armlavafork.s3o"`, `script = "Units/armlavafork.lua"` (a Lua unit script, see 3.3); slow (speed 45, armsam 55, armfav 168), turn rate 400, sight 300; metal 120, energy 1200, build time 3000, health 1000; collision box 16 x 22 x 32; `customparams.lavacarrier = 1`, `lavaload = 90`, `lavabox = 30` (up to 3 boxes of 30 metal), `unitgroup = "util"`.
 - Names: `name`, `description` and `i18n_en/de_humanname` / `_tooltip`.
-- In the editor's unit list: the generator under its faction, **Buildings**, T1; the Carrier under **Bots**, T1; the Cargo Truck under Armada, **Vehicles**, T1 (the editor places units anywhere, also beside a Volcano).
+- In the editor's unit list: the generator under its faction, **Buildings**, T1; the Carrier under **Bots**, T1; the Cargo Truck and the Forklift under Armada, **Vehicles**, T1 (the editor places units anywhere, also beside a Volcano).
 
 ### 3.1 The model of the Cargo Truck (`LevelEditor/models/make_lava_truck.py`)
 
@@ -61,6 +65,31 @@
   - Texture areas of `Arm_color.dds` (u, v from the top; s3o t = 1 - v): walls and ends `PLATE` (the large grey plate with panels), roof `GRATE` (the grate with the yellow frame), stripe `TEAM` (a bar of the team color mask: the stripe shows the team color).
 - Header: height 22, radius 25, middle (0, 9, -2).
 - The model of armsam is a work of the BAR team (author in its definition: Beherith); the copy is under the same licence.
+
+### 3.2 The model of the Forklift (`LevelEditor/models/make_lava_forklift.py`)
+
+- Reads `objects3d/units/armfav.s3o` the same way (it imports the reader, writer and `box` of `make_lava_truck.py`), writes `armlavafork.s3o`.
+- The piece `gun` (with `flare`) is removed (the unit script of the Forklift is its own, nothing names them).
+- New pieces, children of `base` (the front is +z; the front wheels end at z 12.5):
+
+| Piece | Where | Looks |
+|---|---|---|
+| `guard` | four posts and a roof over the seat, y 10 to 19.8, z -7 to 5 | dark plate, roof the grate |
+| `weight` | a counterweight at the back, z -12.5 to -8.5 | `PLATE`, a stripe in team color |
+| `mast` (offset z 12.6) | two rails y 2 to 25, a bar on top in team color | dark plate |
+| `fork` (child of `mast`, offset y 2.6) | the carriage and two tines 11 long | dark plate |
+| `box1`, `box2`, `box3` (children of `fork`) | 8 x 4.6 x 9.4 each, one above the other (offsets y 0.8, 5.6, 10.4) | sides `CRATE` (the yellow panel with a dark frame), top the grate |
+
+- Texture areas: `CRATE = (0.7552, 0.6671, 0.8016, 0.6960)`, `DARK = (0.255, 0.695, 0.278, 0.745)` of `Arm_color.dds`.
+- Header: height 25, radius 22, middle (0, 10, 1).
+- The model of armfav is a work of the BAR team (author in its definition: Flaka); the copy is under the same licence.
+
+### 3.3 The unit script of the Forklift (`lava_forklift_script.lua`)
+
+- A Lua unit script: BAR's gadget `unit_script.lua` loads every `scripts/**/*.lua` of the game archives and runs the one whose name the unit definition gives (`script`).
+- `Create`: no box. `StartMoving` / `StopMoving`: the three wheels turn. `Killed`: the mast flies off; the wreck of armfav, when hit hard its heap.
+- `SetBoxes(n)` (a global of the script): shows `box1` .. `boxn`, hides the others; the fork goes up 2.5 while it carries, down when empty.
+- The gadget calls it: `Spring.UnitScript.GetScriptEnv(u).SetBoxes` with `Spring.UnitScript.CallAsUnit` (both of `unit_script.lua`).
 
 ## 4. The gadget `lava_generator.lua`
 
@@ -86,6 +115,11 @@
   - loaded: walk to the chosen factory, otherwise the nearest finished factory of its team; at it the team gets the metal (`AddTeamResource`; team rules `lavaDelivered` counts all), then back;
   - no factory: it waits with its load; the generator gone: it stops.
   - Unit rules `lavaLoad`: the metal it carries.
+- A unit with `lavabox` (the Forklift) works in boxes:
+  - at the generator: one box (`lavabox` metal) every half second while the stock has one and it has room (`lavaload`); it leaves when it is full or the stock has no box more and it has at least one (`go`); with no box it waits;
+  - at the factory: one box every half second;
+  - after every change of its load the gadget calls `SetBoxes(ceil(load / box))` of its unit script;
+  - its generator gone while it has boxes: it brings them first, then it stops.
 - A Carrier given to another team forgets its generator and factory (`UnitGiven`).
 
 ### 4.3 Drawing (unsynced)
@@ -102,14 +136,16 @@
   - `TestBuildOrder`: allowed on the free Volcano, refused on plain ground; the geothermal plant `armgeo` allowed on the Volcano; a picture;
   - a Carrier has the button Haul; Haul on the generator: three loads of 20 to the near bot lab; Haul on the far lab: the next loads go there; `lavaDelivered` 100.
 - `test-data/tools/zz_lavatruck.lua` (`arena_test.ps1 -Widget zz_lavatruck.lua`, one instance): the Cargo Truck (no weapons, its model, `lavaload` 60, in the build list of `armvp`), two pictures close up (next to an armsam), then one trip: 60 metal from a Lava Generator to the vehicle plant.
+- `test-data/tools/zz_lavafork.lua` (`arena_test.ps1 -Widget zz_lavafork.lua`, one instance, about 2 minutes of game time): the Forklift (no weapons, its model and script, `lavaload` 90, `lavabox` 30, in the build list of `armvp`), two pictures of it empty (next to an armfav); the generator fills for 50 seconds, then Haul: 3 boxes loaded (picture), unloaded one by one at the vehicle plant, a second trip with what the stock has (picture).
 - Checked 2026-11-21: all of it as expected; the picture shows "Metal 12 / 200" over the generator; the truck shows its container (picture `docs/lava-cargo-truck.jpg`).
-- **Not checked:** a real right click (the test gives the order with `GiveOrderToUnit`); a constructor of a player really building a generator; several Carriers at one generator; a scenario or LAN game with it; the BAR build menu (where the buttons appear).
+- Checked 2026-11-22 (`zz_lavafork.lua`): stock 102 when Haul was given, 3 boxes loaded in 1.5 seconds, unloaded 30 / 30 / 30 at the plant; the second trip again 3 boxes (the stock had refilled); 180 delivered; the boxes and the raised fork show (picture `docs/lava-forklift.jpg`).
+- **Not checked:** a real right click (the test gives the order with `GiveOrderToUnit`); a constructor of a player really building a generator; several Carriers at one generator; a Forklift leaving with 1 or 2 boxes (the code path exists, the test had full stocks both times); a scenario or LAN game with it; the BAR build menu (where the buttons appear).
 
 ## 6. Open
 
 - Models of their own (Volcano, Lava Generator, Carrier); the names in BAR's language files (the log says "not translated").
 - The Cargo Truck: its roof looks very bright (the grate area is shiny in the second texture); its wreck and build picture are still those of armsam; trucks for Cortex and Legion.
-- Next unit planned: a forklift that carries more and shows 1 to 3 boxes on its fork while loaded.
+- The Forklift: its wreck and build picture are still those of armfav; forklifts for Cortex and Legion.
 - Balance (costs, energy, metal, stock, load).
 - A Lava Generator may also be placed on a geothermal vent of the map: there it makes nothing (the engine knows only "geothermal").
 
