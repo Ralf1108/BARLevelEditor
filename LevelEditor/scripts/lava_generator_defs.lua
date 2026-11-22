@@ -11,8 +11,14 @@
 --   Forklift (armlavafork): a copy of the scout car armfav with a model of its own (objects3d/Units/armlavafork.s3o, made by
 --     LevelEditor/models/make_lava_forklift.py: a mast with a fork and three boxes) and a Lua unit script (scripts/Units/armlavafork.lua: it shows
 --     the boxes it carries), without weapons; it loads boxes of 30 metal (customparams.lavabox), at most three.
+-- The game option lanexpunits=0 (LAN Play, the button Experimental Units off) leaves all of them out; without the option (Level Editor, scenarios)
+-- or with lanexpunits=1 they are in.
 local defs = UnitDefs
 if not defs or getmetatable(defs) then
+	return
+end
+local modOptions = Spring and Spring.GetModOptions and Spring.GetModOptions() or {}
+if modOptions.lanexpunits == "0" then
 	return
 end
 

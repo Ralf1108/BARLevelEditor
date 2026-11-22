@@ -21,6 +21,7 @@
 - The four Lua files are in `$ScenarioGameFiles` (`shared/bar_common.ps1`), so they are in both extra games: "Level Editor" (`Get-EditorGameEntries` also takes the entries under `gamedata/`, `features/` and `scripts/`) and "Level Editor Scenarios" (scenarios, LAN Play with the extra game).
 - Models: every `LevelEditor/models/*.s3o` goes as it is (bytes) into both extra games as `objects3d/Units/<file>` (`Get-ModelFiles` in `bar_common.ps1`, used by `Write-ScenarioGame` and `Write-EditorGame`; part of the version of the scenario game and of the stamp of the setup).
 - In the official game alone (without an extra game) none of them exists.
+- The game option `lanexpunits=0` (LAN Play, the button **Experimental Units** off while the game uses the extra game) leaves all units out: `unitdefs_pre.lua` returns before it hooks the table. `lanexpunits=1` or no option: they are in ([LAN Play](lan-play.md), "Experimental Units").
 
 ## 2. The Volcano (`lava_volcano`)
 

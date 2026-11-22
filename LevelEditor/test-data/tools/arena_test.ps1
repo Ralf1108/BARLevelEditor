@@ -1,7 +1,8 @@
 # Arena test: one sandbox game of the Level Editor (built from the files of this repository: nothing of the installed game is changed) with four
 # teams on a flat map and the test widget zz_arena.lua, which works the Arena page (settings, Generate, move, undo, Start, Stop, Clear) and logs
 # "[zzar]" lines into infolog.txt of the sandbox (<Work>\data\infolog.txt). The game ends itself (quitforce) when the test is through.
-param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame, [string]$Widget = '')
+# -ModOptions 'key=value; ...': more game options (e.g. 'lanexpunits=0;' with -Widget zz_expunits.lua: the Experimental Units left out).
+param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame, [string]$Widget = '', [string]$ModOptions = '')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
@@ -26,7 +27,7 @@ $script = @"
 $allies
 $teams
 	[player0] { name=Player; spectator=0; team=0; }
-	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1; }
+	[modoptions] { deathmode=neverend; maxunits=32000; leveleditor=1; experimentallegionfaction=1; experimentalextraunits=1; releasecandidates=1; forceallunits=1; $ModOptions }
 	ishost=1;
 	hostip=127.0.0.1;
 	hostport=18453;

@@ -24,7 +24,7 @@ end
 local PORT, GAMEPORT = 8453, 8452
 -- Version of LAN Play (this widget and shared_start.lua): raise the number and set the date and time with every change of one of them (see CLAUDE.md);
 -- the hashes below still tell a changed file whose number was not raised
-local LAN_VERSION = { number = 38, stamp = "2026-11-17 20:00" }
+local LAN_VERSION = { number = 39, stamp = "2026-11-22 10:30" }
 -- Seconds since the widget was loaded, by the wall clock (the processor time of os.clock runs much slower than the real time in a quiet lobby:
 -- waits, timeouts and the test automation took minutes instead of seconds)
 local clock = (function()
@@ -715,7 +715,7 @@ local function evolutionOn() return S.battle.modoptions.lanevolution == "1" end
 -- and the game mode Renegade (the button Renegade of the room: lanrenegade=1 and lanrenesingle=0 / 1, gadget renegade_game.lua and widget renegade.lua)
 local function renegadeOn() return S.battle.modoptions.lanrenegade == "1" end
 local function needsExtraGame()
-	return hasPveBot() or S.battle.lateJoin or evolutionOn() or renegadeOn()
+	return hasPveBot() or S.battle.lateJoin or evolutionOn() or renegadeOn() or S.battle.modoptions.lanexpunits == "1"
 end
 
 function syncPveGame() -- (the local declared above autohostCommand)
@@ -1176,6 +1176,7 @@ buildScript = function(myName)
 	if brood then t[#t + 1] = "\t\t" .. brood.key .. "=" .. brood.value .. ";\n" end
 	if pve then t[#t + 1] = "\t\tlanpvehold=1;\n" end
 	if late then t[#t + 1] = "\t\tlanlatejoin=1;\n" end
+	if extra and S.battle.modoptions.lanexpunits ~= "1" then t[#t + 1] = "\t\tlanexpunits=0;\n" end -- (the extra game without the Experimental Units)
 	t[#t + 1] = "\t\tlanplay=1;\n" -- the game widget shared_start.lua acts only in LAN Play games and scenarios
 	t[#t + 1] = string.format("\t\tdate_year=%s;\n\t\tdate_month=%s;\n\t\tdate_day=%s;\n\t\tdate_hour=%s;\n\t}\n", os.date("%Y"), os.date("%m"), os.date("%d"), os.date("%H"))
 	for _, p in ipairs(players) do
@@ -2175,6 +2176,27 @@ local function evolutionShown()
 	return l and l.modoptions and l.modoptions.lanevolution == "1" or false
 end
 
+-- Experimental Units (host: On / Off): the game option lanexpunits=1; the game then runs with the extra game, which has the units of the Volcano
+-- (lava_generator_defs.lua); off (the extra game used for something else): lanexpunits=0 leaves them out
+local EXP = {
+	TIP = "Experimental Units (host: On / Off). On: the units of the Level Editor's Volcano are in the game: the Lava Generator (Armada, Cortex, Legion; " ..
+		"energy and a metal stock, only on a Volcano), the Carrier (bot labs), the Cargo Truck and the Forklift (Armada, vehicle plant): " ..
+		"they bring the metal of a Lava Generator to a factory. A Volcano comes only with a scenario of the Level Editor. Off: none of them.",
+}
+function EXP.shown()
+	if S then return S.battle.modoptions.lanexpunits == "1" end
+	local l = lobby()
+	return l and l.modoptions and l.modoptions.lanexpunits == "1" or false
+end
+function EXP.set(on)
+	if not S or S.battle.scenario then return end
+	S.battle.modoptions.lanexpunits = on and "1" or nil
+	toBattle("SETSCRIPTTAGS game/modoptions/lanexpunits=" .. (on and "1" or ""))
+	syncPveGame()
+	log("Experimental Units", on and "on" or "off")
+	say(on and "Experimental Units are on: Lava Generator, Carrier, Cargo Truck and Forklift." or "Experimental Units are off.")
+end
+
 ---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu
 -- The room stays as the lobby has it. A green button "LAN Play" stands left of the lobby's "Leave Lobby"; a click opens a small menu below it with the
 -- buttons of LAN Play, one under the other: Custom Scenario (host), Copilot, Evolution (host: a submenu with On / Off, Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Debug mode; a joiner sees the state). They open their windows
@@ -2399,6 +2421,8 @@ local function openLanMenu()
 			fn = function() if S then closeRenMenu(); if ui.evoMenu then closeEvoMenu() else openEvoMenu() end end end }
 		items[#items + 1] = { caption = "Renegade", tip = "Renegade (host: opens its settings: On / Off, Always in unit, Power-ups, Goal, Survival, Race). " .. REN_TIP, ren = true, class = renShown() and "action_button" or "option_button",
 			fn = function() if S then closeEvoMenu(); if ui.renMenu then closeRenMenu() else openRenMenu() end end end }
+		items[#items + 1] = { caption = "Experimental Units: " .. (EXP.shown() and "On" or "Off"), tip = EXP.TIP, class = EXP.shown() and "action_button" or "option_button",
+			fn = function() if S then EXP.set(not EXP.shown()); openLanMenu() end end }
 	end
 	local w = 230
 	ui.lanMenu = Window:New { parent = screen0, x = math.max(0, math.min(sx, screen0.width - w)), y = sy, width = w, height = #items * 44 + 26,
@@ -2721,6 +2745,11 @@ function widget:Update()
 		if tonumber(cfg.evolutionStage) then S.battle.modoptions.lanevolutionstage = cfg.evolutionStage end -- test: every player starts on that stage
 		setEvolution(true)
 		if cfg.evoTeam == "1" then setEvoOption("lanevoteam", "1") end -- test: Team Evolution
+	end
+	if cfg.expUnits == "1" and S and lan and lan.step == "in" and not cfg.expUnitsSet and clock() > 10 then
+		cfg.expUnitsSet = true -- test: Experimental Units on
+		log("test: Experimental Units on")
+		EXP.set(true)
 	end
 	if tonumber(cfg.lanMenu) and ui.lanButton and not ui.lanMenu and clock() > tonumber(cfg.lanMenu) then
 		cfg.lanMenu = nil -- test: the menu of the button LAN Play is opened (a picture of it)

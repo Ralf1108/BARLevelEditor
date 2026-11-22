@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-158 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+159 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -33,6 +33,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_evocam.lua` | the camera at the start of Evolution | `pve_test.ps1 -Evo -Widget zz_evocam.lua` |
 | `zz_evoshot.lua` | a picture of the Evolution panels | `pve_test.ps1 -Evo -Widget zz_evoshot.lua` |
 | `zz_export.lua` | the export buttons of the settings page (O) | `arena_test.ps1 -Widget zz_export.lua` |
+| `zz_expunits.lua` | which Experimental Units the game has | `arena_test.ps1 -Widget zz_expunits.lua [-ModOptions 'lanexpunits=0;']` |
 | `zz_features.lua` | moves a feature (tree) and undoes it | `arena_test.ps1 -Widget zz_features.lua` |
 | `zz_gates.lua` | Gates of Hell and the debug buttons | `pve_test.ps1 -Evo -EvoTest -Debug -Widget zz_gates.lua (one instance, speed 10)` |
 | `zz_hell.lua` | Hell on Earth and Heaven on Earth | `pve_test.ps1 -Evo -EvoTest -Debug [-Gift 1\|2] -Widget zz_hell.lua (one instance, speed 10)` |

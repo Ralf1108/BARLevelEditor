@@ -127,6 +127,7 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 ![The Forklift empty next to the Rover it is made from (left) and with three boxes on its fork (right)](../docs/lava-forklift.jpg)
 
 - A normal geothermal plant on a Volcano makes its normal energy.
+- **LAN Play:** the units are in a LAN game on an official map only with **LAN Play** > **Experimental Units: On**; scenarios always have them.
 - The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
 
 Good to know:
