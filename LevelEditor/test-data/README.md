@@ -157,9 +157,9 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
 | `zz_features.lua` | `arena_test.ps1 -Widget` | moving a feature (`led\|movefeatures`, what Alt + drag sends), undo and redo |
 | `zz_expunits.lua` | `arena_test.ps1 -Widget ... -ModOptions 'lanexpunits=0;'` | the Experimental Units left out by the game option of LAN Play: none of the 8 units, none in the build lists |
 | `zz_expdemo.lua` | `arena_test.ps1 -Widget ... -ModOptions 'lanexpdemo=1;'` | the test start of `start_experimental.bat`: the Volcano, the extractor, the three vehicles and the vehicle plant placed; all three haul (at least 100 delivered) |
-| `zz_lavaroad.lua` | `arena_test.ps1 -Widget` | the way of the Carriers at a Volcano: into the yard through the pass, around the Volcano, never over the wall or the lava (two extractors, turned differently) |
+| `zz_lavaroad.lua` | `arena_test.ps1 -Widget` | the vehicles load at the storage pads outside a Volcano: Carrier, Cargo Truck and Forklift together (each at its own spot, in turn), a Carrier that must go around; never in the crater or the lava |
 | `zz_volcano.lua` | `arena_test.ps1 -Widget` | the Volcano: its own model, the lava drawn by the gadget (two pictures one second apart), one with a Lava Extractor (200 energy) |
-| `zz_lavagen.lua` | `arena_test.ps1 -Widget` | the Lava Extractor: its own model and unit script, footprint 6 x 6, pictures close up of the yard filling and emptying (a Forklift takes 3 boxes) |
+| `zz_lavagen.lua` | `arena_test.ps1 -Widget` | the Lava Extractor: its own model and unit script, footprint 4 x 4, pictures close up of the storage pads filling and emptying (a Forklift takes 3 boxes) |
 | `zz_lavafork.lua` | `arena_test.ps1 -Widget` | the Forklift: definition, its own model and unit script, the build list of the vehicle plant, pictures empty and with boxes, two trips in boxes of 30 |
 | `zz_lavatruck.lua` | `arena_test.ps1 -Widget` | the Cargo Truck: definition, its own model, the build list of the vehicle plant, two pictures close up, one trip with 60 metal |
 | `zz_lava.lua` | `arena_test.ps1 -Widget` | Volcano, Lava Extractor and Carrier: the definitions, the build lists, energy and metal stock on a Volcano and nothing beside it, the build rule, a picture; a Carrier hauls to the near lab, then to the lab chosen with Haul |

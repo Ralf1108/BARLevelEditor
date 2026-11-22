@@ -1,13 +1,16 @@
-"""Builds the model of the Lava Extractor (lavagen.s3o): a mine in the style of a steam engine on a Volcano, with a storage yard for its metal.
+"""Builds the model of the Lava Extractor (lavagen.s3o): a mine in the style of a steam engine in the lava of a Volcano, with conveyor belts out
+to four storage pads outside the crater.
 
-The generator of the Volcano and Lava Extractor proof of concept (specs/lava.md), for all three factions (texture of Armada, the team color shows
-on a band of the furnace and on the fence). Made from scratch out of boxes and prisms with areas of BAR's texture Arm_color.dds:
-  - a furnace (an eight-sided tower with copper bands, a cone on top) in the middle, a copper chimney behind it;
-  - lava runs down the front of the furnace from a spout into a glowing pool (the texture area is a glowing one); drops ("drop1".."drop3") fall
-    along it while it works;
-  - a copper gear wheel ("wheel") on the left side turns, two pistons ("piston1", "piston2") behind the furnace go up and down;
-  - a storage yard on the right (a floor, posts and rails) with 15 metal blocks ("block1".."block15"): as many show as its stock holds.
+The extractor of the Volcano and Lava Extractor proof of concept (specs/lava.md), for all three factions (texture of Armada, the team color shows
+on a band of the furnace, on the belts and on the fences). Made from scratch out of boxes and prisms with areas of BAR's texture Arm_color.dds:
+  - a small platform (60 x 60) with a furnace (an eight-sided tower with copper bands, a cone on top) in the middle; in the corners a copper
+    chimney, a glowing pool, a gear wheel ("wheel", it turns) and two pistons ("piston1", "piston2", up and down);
+  - lava runs down the furnace and from a spout into the pool; drops ("drop1".."drop3") fall while it works;
+  - four conveyor belts (east, south, west, north, through the four passes of the Volcano) with crates on them ("item1".."item8", two per belt,
+    they ride outwards), each to a storage pad outside the crater (radius 106 to 134) with up to 6 metal blocks ("block1".."block24": pad k has
+    6k-5 to 6k). All four pads show the same stock: Carriers load at whichever is nearest.
 The unit script LevelEditor/scripts/lava_generator_script.lua moves the parts and shows the blocks (the gadget lava_generator.lua calls it).
+All four sides are alike: the way the extractor was built does not matter.
 
 Usage: python make_lava_generator.py   (no BAR files are read; the texture names are BAR's)
 Writes lavagen.s3o next to this script; the setup packs it into the extra games as objects3d/Units/lavagen.s3o.
@@ -26,9 +29,14 @@ COPPER = (0.630, 0.262, 0.645, 0.280)  # dark copper
 SILVER = (0.690, 0.078, 0.740, 0.108)  # a light metal plate (the metal blocks)
 MATTE = (0.665, 0.471, 0.925, 0.489)  # a dark belt with segments, not shiny (green channel of Arm_other.dds 0): the floors
 
-BLOCKS = 15  # metal blocks in the yard (the unit script shows ceil(stock / stock max * 15))
-FURNACE = (-12.0, 0.0)  # x, z of the middle of the furnace (the middle of the model stands on the Volcano)
+BLOCKS = 6  # metal blocks on each storage pad (the unit script shows ceil(stock / stock max * 6) on each)
+FURNACE = (0.0, 0.0)  # x, z of the middle of the furnace (the middle of the model stands on the Volcano)
 FLOOR = 2.5  # top of the platform
+HALF = 28.0  # half the width of the platform
+BELT_IN, BELT_OUT = 28.0, 107.0  # the belts: from the edge of the platform to the inner edge of a pad
+BELT_Y = 4.5  # the top of a belt
+PAD_IN, PAD_OUT, PAD_HALF = 106.0, 134.0, 16.0  # a storage pad: from the middle outwards, and half its width
+DIRS = [(1, 0), (0, 1), (-1, 0), (0, -1)]  # the four belts and pads: east (+x), south (+z), west, north
 
 
 def sub(a, b):
@@ -107,39 +115,62 @@ def piece(name, off, v, i, children=()):
 # ---------------------------------------------------------------- the parts
 
 
+def along(d, r, s):
+    """the point r out along the direction d and s to its side (x, z)"""
+    return (d[0] * r - d[1] * s, d[1] * r + d[0] * s)
+
+
+def dbox(v, i, d, r0, r1, s0, s1, y0, y1, side, top, bottom=True):
+    """a box from r0 to r1 out along the direction d (one of DIRS) and from s0 to s1 to its side"""
+    (ax, az), (bx, bz) = along(d, r0, s0), along(d, r1, s1)
+    box(v, i, min(ax, bx), max(ax, bx), y0, y1, min(az, bz), max(az, bz), side, top, bottom)
+
+
 def base_piece():
     v, i = [], []
     fx, fz = FURNACE
-    box(v, i, -44, 44, 0, FLOOR, -40, 40, PLATE, MATTE)  # the platform
+    box(v, i, -HALF, HALF, 0, FLOOR, -HALF, HALF, PLATE, MATTE)  # the platform
     # the furnace: eight sides, copper bands, a band in team color, a cone and a short stack on top
-    prism_y(v, i, fx, fz, FLOOR, 30, 14, 14, 8, PLATE, DARK)
-    for y in (9.0, 21.0):
-        prism_y(v, i, fx, fz, y, y + 1.8, 14.8, 14.8, 8, COPPER, COPPER)
-    prism_y(v, i, fx, fz, 30, 32.5, 15.2, 15.2, 8, TEAM, DARK)
-    prism_y(v, i, fx, fz, 32.5, 39, 15.2, 6, 8, DARK, DARK)
-    prism_y(v, i, fx, fz, 39, 43, 4, 4, 8, COPPER, LAVA)  # (the glow of the lava inside, seen from above)
-    # the chimney behind it
-    prism_y(v, i, fx - 7, fz - 13, FLOOR, 60, 3.6, 3.6, 8, COPPER, DARK)
-    prism_y(v, i, fx - 7, fz - 13, 56, 58, 4.6, 4.6, 8, DARK, DARK)
-    # the spout over the lava and the basin of the pool in front
-    box(v, i, fx - 6, fx + 6, 26, 29, fz + 12, fz + 19, COPPER, DARK)
-    for x0, x1, z0, z1 in ((fx - 14, fx + 14, fz + 14, fz + 16), (fx - 14, fx + 14, fz + 30, fz + 32), (fx - 14, fx - 12, fz + 14, fz + 32), (fx + 12, fx + 14, fz + 14, fz + 32)):
-        box(v, i, x0, x1, FLOOR, FLOOR + 3.5, z0, z1, DARK, COPPER, False)
-    # the axle of the wheel
-    prism_x(v, i, fx - 27.5, fx - 13, 17, fz, 1.6, 8, DARK, DARK)
-    # the cylinders of the pistons
-    for x in (fx - 6, fx + 6):
-        prism_y(v, i, x, fz - 19, FLOOR, 14, 2.8, 2.8, 8, DARK, DARK)
-    # a copper pipe from the furnace to the yard
-    prism_x(v, i, fx + 13, 10, 12, fz - 6, 1.5, 8, COPPER, COPPER)
-    # the yard: a floor, posts and two rails on three sides; open to the right (+x), where the Carriers drive in (its cells are free in the yardmap)
-    box(v, i, 10, 44, FLOOR, FLOOR + 0.6, -38, 38, DARK, MATTE, False)
-    for x, z in ((10, -38), (10, -12.5), (10, 12.5), (10, 36), (26, -38), (42, -38), (26, 36), (42, 36)):
-        box(v, i, x, x + 2, FLOOR, 12, z, z + 2, DARK, TEAM, False)
-    for y in (6.0, 10.0):
-        box(v, i, 10, 44, y, y + 0.8, -38, -37, TEAM, TEAM)  # back
-        box(v, i, 10, 44, y, y + 0.8, 37, 38, TEAM, TEAM)  # front
-        box(v, i, 10, 11, y, y + 0.8, -38, 38, TEAM, TEAM)  # left (to the furnace)
+    prism_y(v, i, fx, fz, FLOOR, 24, 11, 11, 8, PLATE, DARK)
+    for y in (8.0, 17.0):
+        prism_y(v, i, fx, fz, y, y + 1.6, 11.6, 11.6, 8, COPPER, COPPER)
+    prism_y(v, i, fx, fz, 24, 26, 12, 12, 8, TEAM, DARK)
+    prism_y(v, i, fx, fz, 26, 32, 12, 5, 8, DARK, DARK)
+    prism_y(v, i, fx, fz, 32, 35, 3.4, 3.4, 8, COPPER, LAVA)  # (the glow of the lava inside, seen from above)
+    # the chimney (corner north-west)
+    prism_y(v, i, -18, -18, FLOOR, 48, 3.0, 3.0, 8, COPPER, DARK)
+    prism_y(v, i, -18, -18, 45, 46.6, 3.8, 3.8, 8, DARK, DARK)
+    # the spout over the pool and the basin of the pool (corner south-east)
+    box(v, i, 6, 12, 19, 21.5, 6, 12, COPPER, DARK)
+    for x0, x1, z0, z1 in ((12, 27, 12, 13.5), (12, 27, 25.5, 27), (12, 13.5, 12, 27), (25.5, 27, 12, 27)):
+        box(v, i, x0, x1, FLOOR, FLOOR + 3, z0, z1, DARK, COPPER, False)
+    # the stand and the axle of the wheel (corner south-west)
+    box(v, i, -22, -20, FLOOR, 12, 18, 21, DARK, DARK, False)
+    box(v, i, -12, -10, FLOOR, 12, 18, 21, DARK, DARK, False)
+    prism_x(v, i, -22, -9.5, 12, 19.5, 1.4, 8, DARK, DARK)
+    # the cylinders of the pistons (corner north-east)
+    for x in (14.0, 22.0):
+        prism_y(v, i, x, -19, FLOOR, 11, 2.6, 2.6, 8, DARK, DARK)
+    # the conveyor belts: a frame on legs, the belt on top, rails in team color, out to the pads
+    for d in DIRS:
+        dbox(v, i, d, BELT_IN, BELT_OUT, -4.5, 4.5, BELT_Y - 1.6, BELT_Y, DARK, MATTE)
+        for s in (-4.9, 4.5):
+            dbox(v, i, d, BELT_IN, BELT_OUT, s, s + 0.4, BELT_Y, BELT_Y + 0.8, TEAM, TEAM)
+        r = BELT_IN + 10
+        while r < BELT_OUT:
+            for s in (-4.2, 3.0):
+                dbox(v, i, d, r, r + 1.2, s, s + 1.2, 0, BELT_Y - 1.6, DARK, DARK, False)
+            r += 18
+    # the storage pads outside the crater: a floor, posts in team color, rails on three sides (open to the outside: the Carriers load there)
+    for d in DIRS:
+        dbox(v, i, d, PAD_IN, PAD_OUT, -PAD_HALF, PAD_HALF, 0, 0.8, DARK, MATTE)
+        for r, s in ((PAD_IN, -PAD_HALF), (PAD_IN, PAD_HALF - 1.6), (PAD_OUT - 1.6, -PAD_HALF), (PAD_OUT - 1.6, PAD_HALF - 1.6)):
+            dbox(v, i, d, r, r + 1.6, s, s + 1.6, 0, 9, DARK, TEAM, False)
+        for y in (4.5, 7.5):
+            dbox(v, i, d, PAD_IN, PAD_OUT, -PAD_HALF, -PAD_HALF + 0.6, y, y + 0.7, TEAM, TEAM)
+            dbox(v, i, d, PAD_IN, PAD_OUT, PAD_HALF - 0.6, PAD_HALF, y, y + 0.7, TEAM, TEAM)
+            for s0, s1 in ((-PAD_HALF, -5.5), (5.5, PAD_HALF)):  # (the inner side: open where the belt comes in)
+                dbox(v, i, d, PAD_IN, PAD_IN + 0.6, s0, s1, y, y + 0.7, TEAM, TEAM)
     return v, i
 
 
@@ -159,82 +190,90 @@ def streak(v, i, y0, y1, r0, r1, k, s0, s1, out=0.3):
 
 
 def lava_piece():
-    """the lava: streams from the crater on top down the cone and the furnace, the fall at the front into the pool (glows)"""
+    """the lava: streams from the crater on top down the cone and the furnace, the fall from the spout into the pool (glows)"""
     v, i = [], []
-    fx, fz = FURNACE
-    # the streams: down the cone (sides 0 to 3: front right, front, front left, left), over the band, down the furnace (not the front: the spout)
-    for k, s0, s1 in ((0, 0.55, 0.7), (1, 0.42, 0.58), (2, 0.3, 0.45), (3, 0.5, 0.62), (6, 0.4, 0.52)):
-        streak(v, i, 32.5, 39, 15.2, 6, k, s0, s1)
-        streak(v, i, 30, 32.5, 15.2, 15.2, k, s0, s1)
-        if k != 1:
-            streak(v, i, FLOOR + 0.2, 30, 14, 14, k, s0 + 0.03, s1 - 0.03)
-    a = 14 * math.cos(math.pi / 8)  # the front face of the furnace (eight sides, one flat to the front)
-    face(v, i, [(fx - 4.5, 4.0, fz + a + 0.3), (fx + 4.5, 4.0, fz + a + 0.3), (fx + 4.5, 27, fz + a + 0.3), (fx - 4.5, 27, fz + a + 0.3)], LAVA, (0, 0, 1))
-    face(v, i, [(fx - 4.5, FLOOR + 1.5, fz + a + 0.3), (fx + 4.5, FLOOR + 1.5, fz + a + 0.3), (fx + 4.5, 4.0, fz + a + 0.3), (fx - 4.5, 4.0, fz + a + 0.3)], LAVA, (0, 0, 1))
-    face(v, i, [(fx - 12, FLOOR + 2.8, fz + 16), (fx + 12, FLOOR + 2.8, fz + 16), (fx + 12, FLOOR + 2.8, fz + 30), (fx - 12, FLOOR + 2.8, fz + 30)], LAVA, (0, 1, 0))
+    for k, s0, s1 in ((0, 0.42, 0.58), (1, 0.5, 0.64), (3, 0.36, 0.5), (5, 0.45, 0.6), (7, 0.3, 0.44)):
+        streak(v, i, 26, 32, 12, 5, k, s0, s1)
+        streak(v, i, 24, 26, 12, 12, k, s0, s1)
+        if k != 0:
+            streak(v, i, FLOOR + 0.2, 24, 11, 11, k, s0 + 0.03, s1 - 0.03)
+    # the fall: from the spout (south-east) straight down, then the pool
+    face(v, i, [(9.5, FLOOR + 3, 13.2), (12.5, FLOOR + 3, 10.2), (12.5, 19, 10.2), (9.5, 19, 13.2)], LAVA, (1, 0, 1))
+    face(v, i, [(13.5, FLOOR + 2.6, 13.5), (25.5, FLOOR + 2.6, 13.5), (25.5, FLOOR + 2.6, 25.5), (13.5, FLOOR + 2.6, 25.5)], LAVA, (0, 1, 0))
     return piece(b'lava', (0.0, 0.0, 0.0), v, i)
 
 
 def drop_piece(n):
     v, i = [], []
-    box(v, i, -1.6, 1.6, 0, 2.6, 0, 1.4, LAVA, LAVA)
-    fx, fz = FURNACE
-    a = 14 * math.cos(math.pi / 8)
-    return piece(b'drop%d' % n, (fx - 3 + 3 * (n - 1), 26.0, fz + a + 0.4), v, i)
+    box(v, i, -1.2, 1.2, 0, 2.2, -1.2, 1.2, LAVA, LAVA)
+    return piece(b'drop%d' % n, (10.0 + n * 0.7, 18.5, 11.5 - n * 0.7), v, i)
 
 
 def wheel_piece():
     """the gear wheel (it turns around x): a disc, a hub, spokes and teeth"""
     v, i = [], []
-    prism_x(v, i, -1.2, 1.2, 0, 0, 11, 16, COPPER, COPPER)
-    prism_x(v, i, -2.0, 2.0, 0, 0, 3, 8, DARK, DARK)
-    for k in range(16):
-        a = 2 * math.pi * k / 16
+    R = 8.0
+    prism_x(v, i, -1.0, 1.0, 0, 0, R, 16, COPPER, COPPER)
+    prism_x(v, i, -1.6, 1.6, 0, 0, 2.4, 8, DARK, DARK)
+    for k in range(14):
+        a = 2 * math.pi * k / 14
         c, s = math.cos(a), math.sin(a)
-        # a tooth: a small box on the rim, turned with the angle (made from its 8 corners)
         pts = []
-        for dy, dz in ((-1.2, 0), (1.2, 0), (1.2, 2.2), (-1.2, 2.2)):
-            r = 11 + dz
+        for dy, dz in ((-1.0, 0), (1.0, 0), (1.0, 1.8), (-1.0, 1.8)):
+            r = R + dz
             pts.append((r * c - dy * s, r * s + dy * c))
-        for x0, x1 in ((-1.2, 1.2),):
-            face(v, i, [(x1, pts[0][0], pts[0][1]), (x1, pts[1][0], pts[1][1]), (x1, pts[2][0], pts[2][1]), (x1, pts[3][0], pts[3][1])], DARK, (1, 0, 0))
-            face(v, i, [(x0, pts[0][0], pts[0][1]), (x0, pts[1][0], pts[1][1]), (x0, pts[2][0], pts[2][1]), (x0, pts[3][0], pts[3][1])], DARK, (-1, 0, 0))
-            for p, q in ((0, 1), (1, 2), (2, 3), (3, 0)):
-                mid = ((pts[p][0] + pts[q][0]) / 2, (pts[p][1] + pts[q][1]) / 2)
-                face(v, i, [(x0, pts[p][0], pts[p][1]), (x1, pts[p][0], pts[p][1]), (x1, pts[q][0], pts[q][1]), (x0, pts[q][0], pts[q][1])], DARK, (0, mid[0], mid[1]))
+        x0, x1 = -1.0, 1.0
+        face(v, i, [(x1, p[0], p[1]) for p in pts], DARK, (1, 0, 0))
+        face(v, i, [(x0, p[0], p[1]) for p in pts], DARK, (-1, 0, 0))
+        for p, q in ((0, 1), (1, 2), (2, 3), (3, 0)):
+            mid = ((pts[p][0] + pts[q][0]) / 2, (pts[p][1] + pts[q][1]) / 2)
+            face(v, i, [(x0, pts[p][0], pts[p][1]), (x1, pts[p][0], pts[p][1]), (x1, pts[q][0], pts[q][1]), (x0, pts[q][0], pts[q][1])], DARK, (0, mid[0], mid[1]))
     for k in range(4):  # spokes in a dark plate on both sides
         a = math.pi * k / 4
         c, s = math.cos(a), math.sin(a)
-        for x in (-1.3, 1.3):
-            pts = [(-10 * c - 0.9 * s, -10 * s + 0.9 * c), (10 * c - 0.9 * s, 10 * s + 0.9 * c), (10 * c + 0.9 * s, 10 * s - 0.9 * c), (-10 * c + 0.9 * s, -10 * s - 0.9 * c)]
+        for x in (-1.1, 1.1):
+            r = R - 1
+            pts = [(-r * c - 0.8 * s, -r * s + 0.8 * c), (r * c - 0.8 * s, r * s + 0.8 * c), (r * c + 0.8 * s, r * s - 0.8 * c), (-r * c + 0.8 * s, -r * s - 0.8 * c)]
             face(v, i, [(x, p[0], p[1]) for p in pts], DARK, (x, 0, 0))
-    fx, fz = FURNACE
-    return piece(b'wheel', (fx - 29.0, 17.0, fz), v, i)
+    return piece(b'wheel', (-16.0, 12.0, 19.5), v, i)
 
 
 def piston_piece(n, x):
     v, i = [], []
-    prism_y(v, i, 0, 0, -6, 7, 1.3, 1.3, 8, SILVER, DARK)
-    prism_y(v, i, 0, 0, 7, 8.5, 2.4, 2.4, 8, COPPER, COPPER)
-    return piece(b'piston%d' % n, (x, 14.0, FURNACE[1] - 19), v, i)
+    prism_y(v, i, 0, 0, -5, 6, 1.2, 1.2, 8, SILVER, DARK)
+    prism_y(v, i, 0, 0, 6, 7.4, 2.2, 2.2, 8, COPPER, COPPER)
+    return piece(b'piston%d' % n, (x, 11.0, -19.0), v, i)
+
+
+def item_piece(n):
+    """a crate on a belt: two per belt (belt k has the items 2k-1 and 2k); the unit script moves them outwards from the start of the belt"""
+    d = DIRS[(n - 1) // 2]
+    x, z = along(d, BELT_IN + 1, 0)
+    v, i = [], []
+    box(v, i, -2.2, 2.2, 0, 3.0, -2.2, 2.2, SILVER, SILVER, False)
+    return piece(b'item%d' % n, (x, BELT_Y, z), v, i)
 
 
 def block_piece(n):
-    """a metal block of the yard: 3 columns from the furnace side to the right, 5 rows from the back to the front"""
+    """a metal block of a pad: pad k has the blocks 6k-5 .. 6k: two rows out from the middle, three across"""
     k = n - 1
-    col, row = k // 5, k % 5
-    x, z = 17 + col * 10.5, -30 + row * 13.5
+    d = DIRS[k // BLOCKS]
+    q = k % BLOCKS
+    r = PAD_IN + 8 + (q // 3) * 11
+    s = -9 + (q % 3) * 9
+    x, z = along(d, r, s)
     v, i = [], []
-    box(v, i, -3.4, 3.4, 0, 4.2, -4.4, 4.4, SILVER, SILVER, False)
-    return piece(b'block%d' % n, (x, FLOOR + 0.6, z), v, i)
+    box(v, i, -3.2, 3.2, 0, 3.8, -3.2, 3.2, SILVER, SILVER, False)
+    return piece(b'block%d' % n, (x, 0.8, z), v, i)
 
 
 def main():
     v, i = base_piece()
     children = [lava_piece()] + [drop_piece(n) for n in (1, 2, 3)] + [wheel_piece()]
-    children += [piston_piece(1, FURNACE[0] - 6), piston_piece(2, FURNACE[0] + 6)]
-    children += [block_piece(n) for n in range(1, BLOCKS + 1)]
-    m = {'radius': 50.0, 'height': 60.0, 'mid': (0.0, 18.0, 0.0), 'tex1': b'Arm_color.dds', 'tex2': b'Arm_other.dds',
+    children += [piston_piece(1, 14.0), piston_piece(2, 22.0)]
+    children += [item_piece(n) for n in range(1, 2 * len(DIRS) + 1)]
+    children += [block_piece(n) for n in range(1, BLOCKS * len(DIRS) + 1)]
+    m = {'radius': 60.0, 'height': 48.0, 'mid': (0.0, 14.0, 0.0), 'tex1': b'Arm_color.dds', 'tex2': b'Arm_other.dds',
          'root': piece(b'base', (0.0, 0.0, 0.0), v, i, children)}
     out = os.path.join(HERE, 'lavagen.s3o')
     with open(out, 'wb') as f:

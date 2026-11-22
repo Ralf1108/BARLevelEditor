@@ -4,8 +4,8 @@
 -- base unit can build the copy too.
 --   Lava Extractor (armlavagen, corlavagen, leglavagen): a copy of the metal extractor that stands only on a Volcano (feature lava_volcano); there it
 --     makes energy and fills its metal stock (the gadget lava_generator.lua). A model of its own for all three (objects3d/Units/lavagen.s3o, made by
---     LevelEditor/models/make_lava_generator.py: a furnace with lava, a gear wheel, pistons, a yard with metal blocks) and a Lua unit script
---     (scripts/Units/lavagen.lua: it moves the parts and shows the blocks); footprint 6 x 6 (the yard).
+--     LevelEditor/models/make_lava_generator.py: a furnace with lava, a gear wheel, pistons, four conveyor belts to four storage pads with metal
+--     blocks) and a Lua unit script (scripts/Units/lavagen.lua: it moves the parts and shows the blocks); footprint 4 x 4 (the platform).
 --   Carrier (armlavacarrier, corlavacarrier, leglavacarrier): a copy of the light bot of the bot lab without weapons; it carries the metal of a Lava
 --     Generator to a factory (the gadget).
 --   Cargo Truck (armlavatruck): a copy of the missile truck armsam with a model of its own (objects3d/Units/armlavatruck.s3o, made by
@@ -56,15 +56,13 @@ local function generator(mex)
 	d.onoffable = false
 	d.objectname = "Units/lavagen.s3o"
 	d.script = "Units/lavagen.lua"
-	d.footprintx, d.footprintz = 6, 6
+	d.footprintx, d.footprintz = 4, 4 -- (the platform; the belts and the storage pads reach out over the crater and do not block)
 	d.collisionvolumetype = "Box"
-	d.collisionvolumescales = "88 40 80"
-	d.collisionvolumeoffsets = "0 18 0"
+	d.collisionvolumescales = "60 36 60"
+	d.collisionvolumeoffsets = "0 16 0"
 	d.usepiececollisionvolumes = nil
-	-- a "g" in the yardmap: the engine lets it stand only on a feature with geothermal = true (the Volcano); high resolution, 12 x 12 (footprint 6):
-	-- "o" blocked, "g" geothermal (blocked), "y" the yard (the five columns on the right, +x of the model: free while the yard is open, which the unit
-	-- script does at once: units drive in)
-	d.yardmap = "h oooooooooooo oooooooyyyyy oogogogyyyyy ooogogoyyyyy oogogogyyyyy ooogogoyyyyy oogogogyyyyy ooogogoyyyyy oogogogyyyyy ooogogoyyyyy oooooooyyyyy oooooooooooo"
+	-- a "g" in the yardmap: the engine lets it stand only on a feature with geothermal = true (the Volcano); high resolution, 8 x 8 (footprint 4)
+	d.yardmap = "h cbbbbbbc bgbggbgb bbgbbgbb bgbggbgb bgbggbgb bbgbbgbb bgbggbgb cbbbbbbc"
 	local cp = d.customparams
 	cp.metal_extractor, cp.standardextractor = nil, nil
 	cp.unitgroup = "energy"

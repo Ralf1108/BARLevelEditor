@@ -34,7 +34,7 @@ end
 local function stock() return gen and Spring.GetUnitRulesParam(gen, "lavaStock") or -1 end
 local function shot(what)
 	Spring.SendCommands("screenshot png")
-	log("picture:", what, "stock", stock(), "blocks", math.ceil(math.max(0, stock()) * 15 / 200))
+	log("picture:", what, "stock", stock(), "blocks", math.ceil(math.max(0, stock()) * 6 / 200))
 end
 local steps = {}
 steps[30] = function()

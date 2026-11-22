@@ -1,9 +1,8 @@
 """Builds the model of the Volcano (lavavolcano.s3o) and its textures, a feature of the Level Editor: a crater of rock around a lake of lava.
 
 The Volcano of the Volcano and Lava Extractor proof of concept (specs/lava.md). The model is only the rock: a floor of hot rock around the middle
-(the lake, small enough for the platform of a Lava Extractor to cover it), a ring wall close around that platform with two breaches where lava
-flows out and four passes of cooled rock (north, east, south, west: the yard of a Lava Extractor faces one of them, whichever way it was built;
-Carriers drive through it), and a few boulders on the outside. The lava itself (the lake and the three streams, moving) is drawn by the gadget lava_generator.lua
+(the lake; a Lava Extractor stands in it), a ring wall with two breaches where lava flows out and four passes of cooled rock (north, east, south,
+west: the conveyor belts of a Lava Extractor run through them to its storage pads outside), and a few boulders on the outside. The lava itself (the lake and the three streams, moving) is drawn by the gadget lava_generator.lua
 with BAR's lava texture; it needs the same numbers (LAKE, RIM_*, BREACHES, BREACH_H).
 The textures are made here too (no file of BAR is used): plates of dark rock with cracks (cells of a Voronoi pattern); in the upper half of the
 texture the cracks glow (inner wall of the crater, the red channel of the second texture makes them shine), in the lower half they are dark (outer
@@ -25,9 +24,9 @@ from make_lava_truck import write_s3o
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-LAKE = 40.0  # radius of the lake of lava (drawn by the gadget): the platform of a Lava Extractor (88 x 80) covers it
+LAKE = 56.0  # radius of the lake of lava (drawn by the gadget): around the platform of a Lava Extractor (60 x 60) lava shows
 FLOOR_Y = 0.6  # height of the floor of the crater (from the edge of the lake to the wall)
-RIM_IN = 62.0  # inner foot of the wall (height 0): just outside the corners of the platform of a Lava Extractor (radius 59.5)
+RIM_IN = 62.0  # inner foot of the wall (height 0)
 RIM_TOP = 72.0  # the crest
 RIM_OUT = 98.0  # outer foot (height 0)
 CREST = 20.0  # height of the crest (it varies by +-4)
