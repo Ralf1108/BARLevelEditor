@@ -41,10 +41,10 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_lanevo.lua` | Team Evolution over LAN Play | `lan_test.ps1 -Mode evoteam (host PlayerA and joiner PlayerB in one room team, a BARb computer in the other; Evolution and Team Evolution on, game option lanevodebug=1)` |
 | `zz_lanrace.lua` | Renegade Race over LAN Play | `lan_test.ps1 -Mode race (host PlayerA and joiner PlayerB, Race switched on in the room, game option lanrenotest=1)` |
 | `zz_lantest.lua` | test only |  |
-| `zz_lava.lua` | Volcano, Lava Generator and Carrier | `arena_test.ps1 -Widget zz_lava.lua` |
-| `zz_lavafork.lua` | the Forklift of the Lava Generator | `arena_test.ps1 -Widget zz_lavafork.lua` |
-| `zz_lavagen.lua` | the model of the Lava Generator and the blocks of its yard | `arena_test.ps1 -Widget zz_lavagen.lua` |
-| `zz_lavatruck.lua` | the Cargo Truck of the Lava Generator | `arena_test.ps1 -Widget zz_lavatruck.lua` |
+| `zz_lava.lua` | Volcano, Lava Extractor and Carrier | `arena_test.ps1 -Widget zz_lava.lua` |
+| `zz_lavafork.lua` | the Forklift of the Lava Extractor | `arena_test.ps1 -Widget zz_lavafork.lua` |
+| `zz_lavagen.lua` | the model of the Lava Extractor and the blocks of its yard | `arena_test.ps1 -Widget zz_lavagen.lua` |
+| `zz_lavatruck.lua` | the Cargo Truck of the Lava Extractor | `arena_test.ps1 -Widget zz_lavatruck.lua` |
 | `zz_live.lua` | runs the commands of live.ps1 (file LuaUI/Config/live_cmd.txt in the data folder) in the running test game | `pve_test.ps1 -Live. Once a second it reads LuaUI/Config/live_cmd.txt of the write folder. The first line is an id; a command is run once per id (the engine setting zzliveLast keeps it over a "luaui reload", which loads the widgets again and forgets WG). The other lines` |
 | `zz_long.lua` | Evolution option Long range | `pve_test.ps1 -Evo -Debug [-Long] -Widget zz_long.lua (one instance, speed 10)` |
 | `zz_mem.lua` | how much Lua memory per second the Level Editor allocates | `arena_test.ps1 -Widget zz_mem.lua` |

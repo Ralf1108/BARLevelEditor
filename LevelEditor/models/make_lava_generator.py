@@ -1,6 +1,6 @@
-"""Builds the model of the Lava Generator (lavagen.s3o): a mine in the style of a steam engine on a Volcano, with a storage yard for its metal.
+"""Builds the model of the Lava Extractor (lavagen.s3o): a mine in the style of a steam engine on a Volcano, with a storage yard for its metal.
 
-The generator of the Volcano and Lava Generator proof of concept (specs/lava.md), for all three factions (texture of Armada, the team color shows
+The generator of the Volcano and Lava Extractor proof of concept (specs/lava.md), for all three factions (texture of Armada, the team color shows
 on a band of the furnace and on the fence). Made from scratch out of boxes and prisms with areas of BAR's texture Arm_color.dds:
   - a furnace (an eight-sided tower with copper bands, a cone on top) in the middle, a copper chimney behind it;
   - lava runs down the front of the furnace from a spout into a glowing pool (the texture area is a glowing one); drops ("drop1".."drop3") fall

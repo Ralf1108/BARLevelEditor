@@ -1,6 +1,6 @@
-function widget:GetInfo() return { name = "zz lava", desc = "test only: Volcano, Lava Generator and Carrier", layer = 1000000, enabled = true } end
+function widget:GetInfo() return { name = "zz lava", desc = "test only: Volcano, Lava Extractor and Carrier", layer = 1000000, enabled = true } end
 -- Test widget of arena_test.ps1 -Widget zz_lava.lua: the definitions (feature lava_volcano, units armlavagen / corlavagen, in the build lists of the
--- constructors; the Carrier armlavacarrier in the bot lab), two Volcanoes and two Lava Generators placed through the editor (one on a Volcano, one beside
+-- constructors; the Carrier armlavacarrier in the bot lab), two Volcanoes and two Lava Extractors placed through the editor (one on a Volcano, one beside
 -- it), the energy and the metal stock of both, the build rule (TestBuildOrder on a Volcano and beside it; the geothermal plant armgeo on the Volcano),
 -- a picture; then a Carrier hauls (the order Haul, 39761, on the generator): its first loads go to the nearest bot lab (L1), after the order Haul on
 -- the other lab (L2) to that one; the team rules parameter lavaDelivered counts. Logs "[zzlava]" lines, ends with quitforce.

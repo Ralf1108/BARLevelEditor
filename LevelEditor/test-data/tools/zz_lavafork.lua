@@ -1,4 +1,4 @@
-function widget:GetInfo() return { name = "zz lavafork", desc = "test only: the Forklift of the Lava Generator", layer = 1000000, enabled = true } end
+function widget:GetInfo() return { name = "zz lavafork", desc = "test only: the Forklift of the Lava Extractor", layer = 1000000, enabled = true } end
 -- Test widget of arena_test.ps1 -Widget zz_lavafork.lua: the Forklift armlavafork (its own model objects3d/Units/armlavafork.s3o, its Lua unit
 -- script scripts/Units/armlavafork.lua, no weapons, load 90 in boxes of 30, in the build list of the vehicle plant armvp). A picture of it empty
 -- next to armfav; the generator fills its stock for 50 seconds, then Haul: the Forklift loads 3 boxes (picture), unloads them one by one at the

@@ -2372,7 +2372,7 @@ M.FEATURE_KINDS = { { "tree", "Trees" }, { "rock", "Rocks" }, { "crystal", "Crys
 local function featureKind(name, fd)
 	local n = name:lower()
 	if fd and fd.customParams and fd.customParams.lavavolcano then
-		return "volcano" -- the Volcano of the extra games (lava_volcano_def.lua): the Lava Generator stands on it
+		return "volcano" -- the Volcano of the extra games (lava_volcano_def.lua): the Lava Extractor stands on it
 	end
 	if n:find("^pilha_crystal") then
 		return "crystal" -- the reclaim nodes of Reclaim the Fame (pilha_crystal1/2/3 = small, medium, large)
@@ -2801,7 +2801,7 @@ function M.newFeatures(o)
 		local t = top - (hb + 3)
 		local tips = {
 			tree = "Trees and plants", rock = "Rocks", crystal = "Crystals (reclaim nodes of Reclaim the Fame): pilha_crystal1 = small, 2 = medium, 3 = large, in many colors", wreck = "Wrecks and scrap heaps of destroyed units",
-			volcano = "Volcano: a Lava Generator (Units, Buildings) built on it makes energy and keeps metal for the Carriers (Units, Bots); a geothermal plant on it makes energy",
+			volcano = "Volcano: a Lava Extractor (Units, Buildings) built on it makes energy and keeps metal for the Carriers (Units, Bots); a geothermal plant on it makes energy",
 			other = "Everything else (geysers, eggs ...)",
 		}
 		for i, k in ipairs(M.FEATURE_KINDS) do

@@ -1,7 +1,7 @@
-function widget:GetInfo() return { name = "zz lavatruck", desc = "test only: the Cargo Truck of the Lava Generator", layer = 1000000, enabled = true } end
+function widget:GetInfo() return { name = "zz lavatruck", desc = "test only: the Cargo Truck of the Lava Extractor", layer = 1000000, enabled = true } end
 -- Test widget of arena_test.ps1 -Widget zz_lavatruck.lua: the Cargo Truck armlavatruck (its own model objects3d/Units/armlavatruck.s3o, no weapons,
 -- load 60, in the build list of the vehicle plant armvp), two pictures of it close up (from the side and from behind), then it hauls once: Haul on
--- a Lava Generator on a Volcano, 60 metal to the vehicle plant (team rules lavaDelivered). Logs "[zztruck]" lines, ends with quitforce.
+-- a Lava Extractor on a Volcano, 60 metal to the vehicle plant (team rules lavaDelivered). Logs "[zztruck]" lines, ends with quitforce.
 local function log(...)
 	local t = {}
 	for i = 1, select("#", ...) do t[i] = tostring((select(i, ...))) end

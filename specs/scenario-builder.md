@@ -84,7 +84,7 @@ The official game cannot load the gadgets of the modes, so `start_scenario.ps1` 
 - File `data\games\LevelEditorScenarios_<version>.sdz` (`Write-ScenarioGame` in `shared\bar_common.ps1`): `modinfo.lua` with `depend = { "<installed game>" }`;
   - the gadgets `td_waves.lua`, `ctf_game.lua`, `rtf_game.lua`, `unit_restrictions.lua`, `unit_indestructible.lua`, `lan_pve_hold.lua` (LAN Play: drops the orders of a Scavengers / Raptors AI of the room; off unless the game option `lanpvehold=1`);
   - the lootbox stub as `pve_supply_drops.lua`;
-  - Volcano, Lava Generator and Carrier: the gadget `lava_generator.lua`, `features/lava_volcano.lua`, `gamedata/unitdefs_pre.lua`, the unit scripts `scripts/Units/armlavafork.lua` and `scripts/Units/lavagen.lua` ([Volcano, Lava Generator and Carrier](lava.md));
+  - Volcano, Lava Extractor and Carrier: the gadget `lava_generator.lua`, `features/lava_volcano.lua`, `gamedata/unitdefs_pre.lua`, the unit scripts `scripts/Units/armlavafork.lua` and `scripts/Units/lavagen.lua` ([Volcano, Lava Extractor and Carrier](lava.md));
   - the models `LevelEditor/models/*.s3o` as `objects3d/Units/<file>` (`Get-ModelFiles`);
   - `luaui/Include/bar_rules.lua` and `luaui/Include/led_gadgets.lua`;
   - the game widgets `scenario_briefing.lua` and `shared_start.lua`.

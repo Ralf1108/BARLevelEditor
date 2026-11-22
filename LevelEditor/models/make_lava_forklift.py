@@ -1,6 +1,6 @@
 """Builds the model of the Forklift (armlavafork.s3o) from the model of BAR's scout car armfav (Rover).
 
-The forklift of the Volcano and Lava Generator proof of concept (specs/lava.md): the gun of armfav is removed; new pieces: a roof on four posts
+The forklift of the Volcano and Lava Extractor proof of concept (specs/lava.md): the gun of armfav is removed; new pieces: a roof on four posts
 over the seat ("guard"), a counterweight at the back ("weight"), a mast at the front ("mast") with the fork ("fork", it moves up and down) and
 three boxes on the fork ("box1", "box2", "box3", one above the other). The unit script LevelEditor/scripts/lava_forklift_script.lua hides the boxes and shows as many as the
 forklift carries. Body and wheels are armfav as it is. The model of armfav is a work of the BAR team (its licence applies to this copy too).

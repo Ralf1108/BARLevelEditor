@@ -30,8 +30,8 @@ The host chooses them with the green button **LAN Play** in the title row of the
 
 - **Custom Scenario:** the other players get the scenario's game file automatically.
 - **Experimental Units** (**LAN Play** > **Experimental Units: On / Off**, official maps; off by default): the units of the Level Editor's Volcano join the game.
-  - Lava Generator (Armada, Cortex, Legion), Carrier (bot labs), Cargo Truck and Forklift (Armada, vehicle plant); the tooltip of the button lists them.
-  - A Lava Generator works only on a Volcano, and Volcanoes come only with a scenario of the Level Editor ([the units](../LevelEditor/README.md#volcano-lava-generator-and-carriers-proof-of-concept)).
+  - Lava Extractor (Armada, Cortex, Legion), Carrier (bot labs), Cargo Truck and Forklift (Armada, vehicle plant); the tooltip of the button lists them.
+  - A Lava Extractor works only on a Volcano, and Volcanoes come only with a scenario of the Level Editor ([the units](../LevelEditor/README.md#volcano-lava-extractor-and-carriers-proof-of-concept)).
   - Scenarios always have them.
 - **Evolution:** any map, best a small one (size M or smaller). Its settings: Enemy multiplier, Enemy health, Regeneration, Long range, All Be Gods, Choose unit, Team Evolution (friends in one team evolve together, at most one level apart), Debug mode.
 - **Renegade** has more settings:

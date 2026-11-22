@@ -1,6 +1,6 @@
 """Builds the model of the Cargo Truck (armlavatruck.s3o) from the model of BAR's missile truck armsam (Samson).
 
-The truck of the Volcano and Lava Generator proof of concept (specs/lava.md): the rocket launcher of armsam is emptied (its pieces stay, the
+The truck of the Volcano and Lava Extractor proof of concept (specs/lava.md): the rocket launcher of armsam is emptied (its pieces stay, the
 animation script of armsam names them) and a new piece "cargo" carries a container on the bed (plates of the texture Arm_color.dds of Armada, a
 stripe in team color on both sides). Everything else (body, cab, wheels, tracks) is armsam as it is. The model of armsam is a work of the BAR
 team (its licence applies to this copy too).

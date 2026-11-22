@@ -105,17 +105,17 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **W (write):** on = what is in the way is deleted (Ctrl+Z brings it back); off = nothing is placed on an occupied spot.
 - **Range circles** before placing: red = weapon range, blue = line of sight.
 
-### Volcano, Lava Generator and Carriers (proof of concept)
+### Volcano, Lava Extractor and Carriers (proof of concept)
 
 - **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
-- **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1.
+- **Lava Extractor:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1.
   - It looks like a steam engine mine: lava runs down its furnace into a glowing pool, a gear wheel turns, pistons move.
   - Its **storage yard** on the right shows the metal stock: up to 15 metal blocks; when a Carrier takes metal, blocks go away.
   - On a Volcano it gives **200 energy per second** at once and fills its **metal stock** with 2 metal per second (up to 200, shown above it); anywhere else nothing.
   - In the game the constructors and the commander can build it, but only on a Volcano.
 - **Carrier:** Units tab, **Bots**, T1 (a light bot without weapons); in the game built in the bot lab.
   - The metal of the stock reaches you only when a Carrier brings it to a factory: 20 per trip.
-  - **Right-click a Lava Generator** (order **Haul**): the Carrier goes back and forth by itself, to the nearest factory.
+  - **Right-click a Lava Extractor** (order **Haul**): the Carrier goes back and forth by itself, to the nearest factory.
   - **Right-click a factory**: it delivers there instead.
   - Any other order stops it.
 - **Cargo Truck** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Carries **60** metal per trip, orders as for the Carrier.
@@ -130,7 +130,7 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 - A normal geothermal plant on a Volcano makes its normal energy.
 - **LAN Play:** the units are in a LAN game on an official map only with **LAN Play** > **Experimental Units: On**; scenarios always have them.
-![The Lava Generator at the start (left) and after a minute with 10 metal blocks in its yard (right)](../docs/lava-generator.jpg)
+![The Lava Extractor at the start (left) and after a minute with 10 metal blocks in its yard (right)](../docs/lava-generator.jpg)
 
 - The Volcano and the Carrier still have stand-in looks. Details: [specification](../specs/lava.md).
 

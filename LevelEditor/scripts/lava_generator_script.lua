@@ -1,4 +1,4 @@
--- The unit script of the Lava Generator (armlavagen, corlavagen, leglavagen; a Lua unit script, in the extra games as scripts/Units/lavagen.lua; BAR's
+-- The unit script of the Lava Extractor (armlavagen, corlavagen, leglavagen; a Lua unit script, in the extra games as scripts/Units/lavagen.lua; BAR's
 -- gadget unit_script.lua runs it). The model (LevelEditor/models/lavagen.s3o, make_lava_generator.py): a furnace with a lava fall, a gear wheel,
 -- two pistons and a storage yard with 15 metal blocks. Called by the gadget lava_generator.lua with Spring.UnitScript.CallAsUnit:
 --   SetActive(on): on a Volcano the wheel turns, the pistons go up and down and drops of lava fall; off: all stands still;

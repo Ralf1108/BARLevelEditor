@@ -2179,9 +2179,9 @@ end
 -- Experimental Units (host: On / Off): the game option lanexpunits=1; the game then runs with the extra game, which has the units of the Volcano
 -- (lava_generator_defs.lua); off (the extra game used for something else): lanexpunits=0 leaves them out
 local EXP = {
-	TIP = "Experimental Units (host: On / Off). On: the units of the Level Editor's Volcano are in the game: the Lava Generator (Armada, Cortex, Legion; " ..
+	TIP = "Experimental Units (host: On / Off). On: the units of the Level Editor's Volcano are in the game: the Lava Extractor (Armada, Cortex, Legion; " ..
 		"energy and a metal stock, only on a Volcano), the Carrier (bot labs), the Cargo Truck and the Forklift (Armada, vehicle plant): " ..
-		"they bring the metal of a Lava Generator to a factory. A Volcano comes only with a scenario of the Level Editor. Off: none of them.",
+		"they bring the metal of a Lava Extractor to a factory. A Volcano comes only with a scenario of the Level Editor. Off: none of them.",
 }
 function EXP.shown()
 	if S then return S.battle.modoptions.lanexpunits == "1" end
@@ -2194,7 +2194,7 @@ function EXP.set(on)
 	toBattle("SETSCRIPTTAGS game/modoptions/lanexpunits=" .. (on and "1" or ""))
 	syncPveGame()
 	log("Experimental Units", on and "on" or "off")
-	say(on and "Experimental Units are on: Lava Generator, Carrier, Cargo Truck and Forklift." or "Experimental Units are off.")
+	say(on and "Experimental Units are on: Lava Extractor, Carrier, Cargo Truck and Forklift." or "Experimental Units are off.")
 end
 
 ---------------------------------------------------------------- The button "LAN Play" in the title row of the room and its menu

@@ -1,8 +1,8 @@
--- Volcano and Lava Generator (proof of concept), the units: in the extra games as gamedata/unitdefs_pre.lua. BAR's gamedata/unitdefs.lua runs it
+-- Volcano and Lava Extractor (proof of concept), the units: in the extra games as gamedata/unitdefs_pre.lua. BAR's gamedata/unitdefs.lua runs it
 -- before it loads the unit files, with the still empty table of the unit definitions as UnitDefs (BAR has no file of this name; one of BAR would hide
 -- this one, see specs/lava.md). It hooks the table: when a base unit is stored, its copy is stored next to it, and every builder that can build the
 -- base unit can build the copy too.
---   Lava Generator (armlavagen, corlavagen, leglavagen): a copy of the metal extractor that stands only on a Volcano (feature lava_volcano); there it
+--   Lava Extractor (armlavagen, corlavagen, leglavagen): a copy of the metal extractor that stands only on a Volcano (feature lava_volcano); there it
 --     makes energy and fills its metal stock (the gadget lava_generator.lua). A model of its own for all three (objects3d/Units/lavagen.s3o, made by
 --     LevelEditor/models/make_lava_generator.py: a furnace with lava, a gear wheel, pistons, a yard with metal blocks) and a Lua unit script
 --     (scripts/Units/lavagen.lua: it moves the parts and shows the blocks); footprint 6 x 6 (the yard).
@@ -44,7 +44,7 @@ local function named(d, name, tip)
 end
 
 local function generator(mex)
-	local d = named(copy(mex), "Lava Generator", "Makes energy from the lava of a Volcano and keeps its metal for the Carriers (build it on a Volcano)")
+	local d = named(copy(mex), "Lava Extractor", "Makes energy from the lava of a Volcano and keeps its metal for the Carriers (build it on a Volcano)")
 	d.extractsmetal = 0
 	d.energyupkeep = 0
 	d.energymake = 0 -- (the gadget gives the energy and fills the metal stock, only on a Volcano)
@@ -71,7 +71,7 @@ local function generator(mex)
 end
 
 local function carrier(bot)
-	local d = named(copy(bot), "Carrier", "Carries metal: right-click a Lava Generator to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
+	local d = named(copy(bot), "Carrier", "Carries metal: right-click a Lava Extractor to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
 	d.weapondefs, d.weapons = {}, {}
 	d.metalcost = 40
 	d.energycost = 600
@@ -83,7 +83,7 @@ local function carrier(bot)
 end
 
 local function truck(sam)
-	local d = named(copy(sam), "Cargo Truck", "Carries 60 metal: right-click a Lava Generator to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
+	local d = named(copy(sam), "Cargo Truck", "Carries 60 metal: right-click a Lava Extractor to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
 	d.objectname = "Units/armlavatruck.s3o"
 	d.weapondefs, d.weapons = {}, {}
 	d.airsightdistance = nil
@@ -100,7 +100,7 @@ local function truck(sam)
 end
 
 local function forklift(fav)
-	local d = named(copy(fav), "Forklift", "Carries up to 3 boxes of 30 metal: right-click a Lava Generator to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
+	local d = named(copy(fav), "Forklift", "Carries up to 3 boxes of 30 metal: right-click a Lava Extractor to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
 	d.objectname = "Units/armlavafork.s3o"
 	d.script = "Units/armlavafork.lua"
 	d.weapondefs, d.weapons = {}, {}

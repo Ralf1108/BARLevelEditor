@@ -144,7 +144,7 @@ local topics = {
 	{
 		names = { "features", "feature", "trees", "rocks", "wrecks" },
 		lines = {
-			"FEATURES: Place menu, tab 'Features'. Trees, rocks, crystals, the Volcano (a Lava Generator on it makes energy and keeps metal for the Carriers, a geothermal plant makes energy), wrecks and the rest. The list shows only preview pictures; when you hover over one, a large rotating 3D view appears, and below the menu the code name, metal, energy and (if any) the description.",
+			"FEATURES: Place menu, tab 'Features'. Trees, rocks, crystals, the Volcano (a Lava Extractor on it makes energy and keeps metal for the Carriers, a geothermal plant makes energy), wrecks and the rest. The list shows only preview pictures; when you hover over one, a large rotating 3D view appears, and below the menu the code name, metal, energy and (if any) the description.",
 			"Click a feature, left click places it, right click ends, Del deletes the feature under the cursor.",
 			"The rotation follows the facing ([ and ] rotate). Features are saved in the level with Ctrl+S.",
 		},

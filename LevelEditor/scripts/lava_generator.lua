@@ -1,18 +1,18 @@
--- Volcano and Lava Generator (proof of concept). A Lava Generator (unit with customparams.lavagenerator, lava_generator_defs.lua) that stands on a
+-- Volcano and Lava Extractor (proof of concept). A Lava Extractor (unit with customparams.lavagenerator, lava_generator_defs.lua) that stands on a
 -- Volcano (feature with customparams.lavavolcano, lava_volcano_def.lua) makes LAVA_ENERGY energy per second at once and puts LAVA_METAL metal per
 -- second into its own stock (at most STOCK_MAX); anywhere else nothing (the Level Editor places units anywhere). A normal geothermal plant on a
 -- Volcano makes its own energy (the engine).
 -- The metal reaches the team only by Carriers (customparams.lavacarrier). A Carrier has the order Haul (CMD_HAUL, a button, and the command of a
--- right click on a Lava Generator or a factory of its team, DefaultCommand): Haul on a Lava Generator makes it haul: to the generator, take LOAD metal
+-- right click on a Lava Extractor or a factory of its team, DefaultCommand): Haul on a Lava Extractor makes it haul: to the generator, take LOAD metal
 -- when the stock has it, to the factory, deliver (the team gets the metal), back again, until it gets another order. Haul on a factory chooses where
 -- it delivers (before or while hauling); otherwise it is the nearest factory of its team.
--- The unit scripts show it: a Lava Generator (lava_generator_script.lua) turns its wheel, moves its pistons and lets lava drops fall while it works on
+-- The unit scripts show it: a Lava Extractor (lava_generator_script.lua) turns its wheel, moves its pistons and lets lava drops fall while it works on
 -- a Volcano (SetActive) and shows its stock as up to BLOCKS metal blocks in its yard (SetBlocks); a Forklift shows its boxes (SetBoxes).
 -- The unsynced part draws the glow of the lava around every Volcano and the numbers: the stock over a generator, the load over a Carrier.
 function gadget:GetInfo()
 	return {
-		name = "Lava Generator",
-		desc = "Lava Generators on a Volcano make energy and metal; Carriers bring the metal to a factory",
+		name = "Lava Extractor",
+		desc = "Lava Extractors on a Volcano make energy and metal; Carriers bring the metal to a factory",
 		author = "",
 		date = "2026",
 		license = "GNU GPL, v2 or later",
@@ -21,14 +21,14 @@ function gadget:GetInfo()
 	}
 end
 
-local LAVA_ENERGY = 200 -- energy per second of a Lava Generator on a Volcano (a geothermal plant of tech 1 makes 300)
-local LAVA_METAL = 2 -- metal per second into the stock of a Lava Generator on a Volcano (a metal extractor of tech 1 on a spot of 2.0 makes about 2)
-local STOCK_MAX = 200 -- metal a Lava Generator keeps at most (more is lost)
+local LAVA_ENERGY = 200 -- energy per second of a Lava Extractor on a Volcano (a geothermal plant of tech 1 makes 300)
+local LAVA_METAL = 2 -- metal per second into the stock of a Lava Extractor on a Volcano (a metal extractor of tech 1 on a spot of 2.0 makes about 2)
+local STOCK_MAX = 200 -- metal a Lava Extractor keeps at most (more is lost)
 local LOAD = 20 -- metal a Carrier takes in one trip (a unit with customparams.lavaload takes that much: the Cargo Truck 60)
 -- A unit with customparams.lavabox (the Forklift) loads boxes of that much metal, one every half second while the stock has one, and leaves when
 -- it is full (lavaload) or the stock has no box more; it unloads them one by one; its unit script shows the boxes (SetBoxes).
 local ON_RADIUS = 44 -- the middle of the generator at most so far from the middle of a Volcano (Elmo; the engine lets it stand there: footprint 6, 6 * 8 - 4)
-local BLOCKS = 15 -- metal blocks in the yard of a Lava Generator (its model): a full stock shows all
+local BLOCKS = 15 -- metal blocks in the yard of a Lava Extractor (its model): a full stock shows all
 local REACH = 70 -- a Carrier is at a building when it is this far from its edge (Elmo)
 local CMD_HAUL = 39761 -- the order Haul of the Carriers (its own id)
 
@@ -73,7 +73,7 @@ if gadgetHandler:IsSyncedCode() then
 		[CMD.RECLAIM] = true, [CMD.REPAIR] = true, [CMD.WAIT] = true }
 	local HAUL_DESC = {
 		id = CMD_HAUL, type = CMDTYPE.ICON_UNIT, name = "Haul", action = "lavahaul", cursor = "Guard",
-		tooltip = "Haul: click a Lava Generator: the Carrier brings its metal to a factory, again and again.\nClick a factory: it delivers there.",
+		tooltip = "Haul: click a Lava Extractor: the Carrier brings its metal to a factory, again and again.\nClick a factory: it delivers there.",
 	}
 
 	local function onVolcano(u)
@@ -228,7 +228,7 @@ if gadgetHandler:IsSyncedCode() then
 
 	function gadget:Initialize()
 		if not next(genDef) then
-			gadgetHandler:RemoveGadget(self) -- (a game without the Lava Generator)
+			gadgetHandler:RemoveGadget(self) -- (a game without the Lava Extractor)
 			return
 		end
 		if gadgetHandler.RegisterAllowCommand then
@@ -266,7 +266,7 @@ if gadgetHandler:IsSyncedCode() then
 		end
 	end
 
-	-- A Carrier: Haul on a Lava Generator of its team starts the hauling, on a factory of its team chooses where it delivers (the order itself is
+	-- A Carrier: Haul on a Lava Extractor of its team starts the hauling, on a factory of its team chooses where it delivers (the order itself is
 	-- used up here, it never stands in the queue); every other order of a player ends the hauling (the load stays).
 	function gadget:AllowCommand(u, defID, team, cmdID, params, opts, tag, playerID, fromSynced)
 		local h = carriers[u]
@@ -333,7 +333,7 @@ else
 		gens[u], carriers[u] = nil, nil
 	end
 
-	-- the right click of selected Carriers on a Lava Generator or a factory of the own team is the order Haul
+	-- the right click of selected Carriers on a Lava Extractor or a factory of the own team is the order Haul
 	function gadget:DefaultCommand(kind, id)
 		if kind ~= "unit" or Spring.GetUnitTeam(id) ~= Spring.GetMyTeamID() then
 			return

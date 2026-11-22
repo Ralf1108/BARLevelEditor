@@ -141,7 +141,7 @@ A button for the host in the menu **LAN Play** of the room (section 5). Scenario
 - The start script is the scenario's own with `__GAMETYPE__` = "Level Editor Scenarios <version>" ([Scenario builder](scenario-builder.md)), `__PLAYERNAME__` = the host, every other human as a further player in the team of player 0 (`Password` from the lobby, spectators as spectators), `hostip=0.0.0.0`, `hostport=8452`, `numplayers` / `numusers` corrected.
 - **Experimental Units:** the button **Experimental Units: On / Off** of the menu LAN Play (not in a scenario room; host; a joiner sees the state in the colour; tooltip `EXP.TIP` with the units).
   - On = the game option `lanexpunits=1` (`EXP.set`: `SETSCRIPTTAGS`, `syncPveGame`, a line in the chat of the room); the menu is made again to show the state.
-  - `needsExtraGame` is true with it: the units are in the extra game (`gamedata/unitdefs_pre.lua`, [Volcano, Lava Generator ...](lava.md)).
+  - `needsExtraGame` is true with it: the units are in the extra game (`gamedata/unitdefs_pre.lua`, [Volcano, Lava Extractor ...](lava.md)).
   - Off and the extra game used anyway (Evolution, Renegade, a PvE computer, late join): `buildScript` writes `lanexpunits=0`, and `unitdefs_pre.lua` leaves all of them out. Without the option (Level Editor, scenarios) they are in.
   - Test: `lan_test.ps1 -Mode evoroom -ExpUnits` (on at 10 s, the menu LAN Play shows it; checked 2026-11-22); `arena_test.ps1 -Widget zz_expunits.lua -ModOptions 'lanexpunits=0;'` (0 of the 8 units, none in the build lists; checked 2026-11-22).
   - `LAN_VERSION` 39.
