@@ -24,7 +24,7 @@ return {
 		upright = false,
 		hitdensity = 0,
 		collisionvolumetype = "CylY",
-		collisionvolumescales = "232 26 232",
+		collisionvolumescales = "196 22 196",
 		collisionvolumeoffsets = "0 6 0",
 		customparams = {
 			category = "geo",

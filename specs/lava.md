@@ -30,23 +30,23 @@
 
 - BAR's `gamedata/featuredefs.lua` loads every `features/*.lua` of all game archives, also of the extra game.
 - `geothermal = true`: the engine lets only buildings with a `g` in their yardmap stand on it and puts the geothermal smoke on it.
-- `indestructible`, not reclaimable, not blocking (units walk through the rock); footprint 6 x 6 (the Lava Extractor); collision cylinder 232 x 26; no ground decal.
+- `indestructible`, not reclaimable, not blocking (units walk through the rock); footprint 6 x 6 (the Lava Extractor); collision cylinder 196 x 22; no ground decal.
 - Model `Units/lavavolcano.s3o` (2.1); the lava in it is drawn by the gadget (4.3).
 - `customparams.lavavolcano = 1`: the mark the gadget and the editor look for.
 - Editor: its own kind **Volcano** in the Features tab (`M.FEATURE_KINDS`, `featureKind` in `editor_common.lua`: a feature with `customParams.lavavolcano`); saved in the level file like every feature.
 
 ### 2.1 The model of the Volcano (`LevelEditor/models/make_lava_volcano.py`)
 
-- Made from scratch, no file of BAR: a ring wall of rock around the middle, 48 parts around, rings across: inner foot (radius 70, height 0), crest (radius 84, height 24 +- 5), outer foot (radius 116); every part a little shifted (fixed random numbers: the same model every time).
+- Made from scratch, no file of BAR: a floor of hot rock (height 0.6, from radius 37 under the edge of the lake to under the wall) and a ring wall of rock around it, 48 parts around, rings across: inner foot (radius 62, height 0), crest (radius 72, height 20 +- 4), outer foot (radius 98); every part a little shifted (2 inwards to 4 outwards; fixed random numbers: the same model every time).
   - Three breaches (40, 160 and 280 degrees from +x towards +z, 16 degrees to each side): the crest goes down to 2.5 in their middle; the streams of lava run through them.
   - Nine boulders on the outer slope (five-sided, 3.5 to 7 wide), not in the breaches.
-  - A Lava Extractor (footprint 6 x 6, corners at radius 68) stands inside, on the lake.
+  - The lake (radius 40) is small enough for the platform of a Lava Extractor (88 x 80, corners at radius 59.5) to cover it; the wall stands just outside those corners (it does not look as if the extractor swam in the lava).
 - Textures of its own (512 x 512, made by the script with numpy and Pillow): plates of dark rock with cracks between them (a Voronoi pattern that tiles).
   - Upper half: the cracks glow orange (also the red channel of `lavavolcano_other.png`: they shine); the inner wall of the crater uses it.
   - Lower half: the cracks are darker than the rock; the outer slopes and the boulders use it.
   - Green channel of the second texture 0: the rock does not reflect the sky; color alpha 0 (no team color).
   - The engine reads a PNG texture of a model upside down compared with BAR's DDS textures: the script saves the images flipped, the texture areas count v from the top like those of the units.
-- Header: radius 110, height 29, middle (0, 9, 0).
+- Header: radius 95, height 24, middle (0, 8, 0).
 
 ## 3. The units (`gamedata/unitdefs_pre.lua`)
 
@@ -169,7 +169,7 @@
 ### 4.3 Drawing (unsynced)
 
 - `DrawWorldPreUnit`: the lava of every Volcano in view (`LAVA`; its numbers must match the model, 2.1):
-  - a lake (radius 76, 1.2 above the Volcano: its edge is under the inner wall) and a stream out of each breach (from radius 58 to 180, 20 to 10 wide, winding outside the crater, on the rock of the breach or on the ground, fading out at the end; made once per Volcano: `streams`);
+  - a lake (radius 40, 1.2 above the Volcano, on the floor of the crater; under the platform of an extractor) and a stream out of each breach (from radius 34 over the floor and through the breach to 160, 18 to 10 wide, winding outside the crater, on the rock of the breach or on the ground, fading out at the end; made once per Volcano: `streams`);
   - three layers: a dark red ground (the dark parts of BAR's lava texture `luaui/images/lava/lava7_diffuseemit.dds` are see-through), the lava texture, the same texture again moving the other way and adding light (`GL.ONE`);
   - the lake drifts slowly, the streams flow outwards (texture coordinates moved with the time), all of it pulses (0.82 to 1);
   - real time (`Spring.GetTimer`): the lava moves also while the game is paused (the editor).

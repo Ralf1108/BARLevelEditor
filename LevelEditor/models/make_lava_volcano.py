@@ -1,9 +1,9 @@
 """Builds the model of the Volcano (lavavolcano.s3o) and its textures, a feature of the Level Editor: a crater of rock around a lake of lava.
 
-The Volcano of the Volcano and Lava Extractor proof of concept (specs/lava.md). The model is only the rock: a ring wall around the middle (the lake,
-where a Lava Extractor stands, 6 x 6 squares) with three breaches where lava flows out, and a few boulders on the outside. The lava itself (the lake
-and the three streams, moving) is drawn by the gadget lava_generator.lua with BAR's lava texture; it needs the same numbers (RIM_*, BREACHES,
-BREACH_H).
+The Volcano of the Volcano and Lava Extractor proof of concept (specs/lava.md). The model is only the rock: a floor of hot rock around the middle
+(the lake, small enough for the platform of a Lava Extractor to cover it), a ring wall close around that platform with three breaches where lava
+flows out, and a few boulders on the outside. The lava itself (the lake and the three streams, moving) is drawn by the gadget lava_generator.lua
+with BAR's lava texture; it needs the same numbers (LAKE, RIM_*, BREACHES, BREACH_H).
 The textures are made here too (no file of BAR is used): plates of dark rock with cracks (cells of a Voronoi pattern); in the upper half of the
 texture the cracks glow (inner wall of the crater, the red channel of the second texture makes them shine), in the lower half they are dark (outer
 slopes, boulders). Nothing reflects the sky (green channel 0).
@@ -24,10 +24,12 @@ from make_lava_truck import write_s3o
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-RIM_IN = 70.0  # inner foot of the wall (height 0): the lake reaches under it; an extractor (corners 68) stands inside
-RIM_TOP = 84.0  # the crest
-RIM_OUT = 116.0  # outer foot (height 0)
-CREST = 24.0  # height of the crest (it varies by +-5)
+LAKE = 40.0  # radius of the lake of lava (drawn by the gadget): the platform of a Lava Extractor (88 x 80) covers it
+FLOOR_Y = 0.6  # height of the floor of the crater (from the edge of the lake to the wall)
+RIM_IN = 62.0  # inner foot of the wall (height 0): just outside the corners of the platform of a Lava Extractor (radius 59.5)
+RIM_TOP = 72.0  # the crest
+RIM_OUT = 98.0  # outer foot (height 0)
+CREST = 20.0  # height of the crest (it varies by +-4)
 BREACHES = (40.0, 160.0, 280.0)  # angles (degrees, from +x towards +z) of the breaches the streams flow out of
 BREACH_W = 16.0  # half width of a breach (degrees)
 BREACH_H = 2.5  # height of the crest in the middle of a breach
@@ -59,8 +61,8 @@ def area(k, j, rows, half):
 
 def wall_piece():
     rnd = random.Random(7)
-    crest = [CREST + rnd.uniform(-5, 5) for _ in range(SEG)]
-    shift = [rnd.uniform(-4, 4) for _ in range(SEG)]
+    crest = [CREST + rnd.uniform(-4, 4) for _ in range(SEG)]
+    shift = [rnd.uniform(-2, 4) for _ in range(SEG)]  # (never more than 2 inwards: the platform of an extractor)
     rings = []  # rings[j][k] = (x, y, z)
     for frac, hf in PROFILE:
         ring = []
@@ -90,6 +92,16 @@ def wall_piece():
     return v, i
 
 
+def floor(v, i):
+    """the floor of the crater: a ring of hot rock from under the edge of the lake to under the wall"""
+    r0, r1 = LAKE - 3, RIM_IN + 2
+    for k in range(SEG):
+        a0, a1 = 2 * math.pi * k / SEG, 2 * math.pi * (k + 1) / SEG
+        pts = [(r0 * math.cos(a0), FLOOR_Y, r0 * math.sin(a0)), (r0 * math.cos(a1), FLOOR_Y, r0 * math.sin(a1)),
+               (r1 * math.cos(a1), FLOOR_Y, r1 * math.sin(a1)), (r1 * math.cos(a0), FLOOR_Y, r1 * math.sin(a0))]
+        face(v, i, pts, area(k, 0, 1, HOT), (0, 1, 0))
+
+
 def boulders(v, i):
     """a few rocks on the outer slope, away from the breaches"""
     rnd = random.Random(11)
@@ -99,7 +111,7 @@ def boulders(v, i):
         if breach_factor(deg) < 1:
             continue
         a = math.radians(deg)
-        r = rnd.uniform(RIM_TOP + 10, RIM_OUT + 6)
+        r = rnd.uniform(RIM_TOP + 8, RIM_OUT + 4)
         cx, cz, s = r * math.cos(a), r * math.sin(a), rnd.uniform(3.5, 7)
         top = (cx + rnd.uniform(-1, 1), s * 1.3, cz + rnd.uniform(-1, 1))
         n = 5
@@ -163,8 +175,9 @@ def textures():
 
 def main():
     v, i = wall_piece()
+    floor(v, i)
     boulders(v, i)
-    m = {'radius': 110.0, 'height': 29.0, 'mid': (0.0, 9.0, 0.0), 'tex1': b'lavavolcano_color.png', 'tex2': b'lavavolcano_other.png',
+    m = {'radius': 95.0, 'height': 24.0, 'mid': (0.0, 8.0, 0.0), 'tex1': b'lavavolcano_color.png', 'tex2': b'lavavolcano_other.png',
          'root': piece(b'base', (0.0, 0.0, 0.0), v, i)}
     out = os.path.join(HERE, 'lavavolcano.s3o')
     with open(out, 'wb') as f:

@@ -107,7 +107,8 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 ### Volcano, Lava Extractor and Carriers (proof of concept)
 
-- **Volcano:** Features tab, kind **Volcano**. A crater of dark rock with a lake of lava in it; lava flows out through three breaches; smoke rises while nothing stands on it.
+- **Volcano:** Features tab, kind **Volcano**. A crater of dark rock with a small lake of lava in the middle; lava flows out through three breaches; smoke rises while nothing stands on it.
+  - A Lava Extractor fits into the crater: its platform covers the lake.
 
 ![The Volcano alone (left) and with a Lava Extractor on it (right)](../docs/lava-volcano.jpg)
 

@@ -354,8 +354,8 @@ else
 	-- layers: a dark red ground (the dark parts of BAR's lava texture are see-through), BAR's lava texture, the same texture once more moving the other
 	-- way and adding light; the streams flow outwards; all of it pulses slowly.
 	-- The numbers of the crater must match the model (RIM_*, BREACHES, BREACH_H in make_lava_volcano.py).
-	local LAVA = { TEX = "luaui/images/lava/lava7_diffuseemit.dds", RIM_IN = 70, RIM_TOP = 84, RIM_OUT = 116, BREACHES = { 40, 160, 280 }, BREACH_H = 2.5,
-		LAKE = 76, STREAM_END = 180, rivers = {} }
+	local LAVA = { TEX = "luaui/images/lava/lava7_diffuseemit.dds", RIM_IN = 62, RIM_TOP = 72, RIM_OUT = 98, BREACHES = { 40, 160, 280 }, BREACH_H = 2.5,
+		LAKE = 40, STREAM_END = 160, rivers = {} }
 	local timer0 = Spring.GetTimer()
 
 	-- the height of the crest of the model in the middle of a breach at the distance r from the middle (0 at both feet)
@@ -375,11 +375,11 @@ else
 			local a = math.rad(deg)
 			local dx, dz = math.cos(a), math.sin(a)
 			local rows = {}
-			for r = LAVA.RIM_IN - 12, LAVA.STREAM_END, 6 do
+			for r = LAVA.LAKE - 6, LAVA.STREAM_END, 6 do -- (from the lake over the floor of the crater, through the breach, onto the ground)
 				local bend = math.max(0, math.min(1, (r - LAVA.RIM_OUT) / 30)) * 7 * math.sin(r / 17 + j * 2) -- (it winds only outside the crater)
-				local w = 10 - 5 * (r - LAVA.RIM_IN) / (LAVA.STREAM_END - LAVA.RIM_IN)
+				local w = 9 - 4 * (r - LAVA.LAKE) / (LAVA.STREAM_END - LAVA.LAKE)
 				local cx, cz = p[1] + dx * r - dz * bend, p[3] + dz * r + dx * bend
-				local h = p[2] + breachHeight(r) * 1.3 + 1.0
+				local h = p[2] + breachHeight(r) * 1.3 + 1.0 -- (the floor of the crater is 0.6 high)
 				local row = { r = r, a = math.min(1, (LAVA.STREAM_END - r) / 45) }
 				for s, side in ipairs({ -1, 1 }) do
 					local x, z = cx - dz * w * side, cz + dx * w * side
