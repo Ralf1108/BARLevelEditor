@@ -8,7 +8,7 @@ kept up to date with every change. They are not the manuals: the READMEs and `do
 - Documents (README, manuals, specifications) are written for a fast reader: short bullets, one fact per bullet, details as sub-bullets, tables for
   lists of things with the same fields; no long paragraphs. The README is for beginners: what it is, how to start, then the details behind links.
   A specification over about 40 KB is split by topic (Renegade: `renegade.md` is the overview, `renegade-widget.md`, `renegade-units.md`,
-  `renegade-aircraft.md`, `renegade-shooting.md`). Specifications describe only the current state; what was tried and did not work goes under a
+  `renegade-aircraft.md`, `renegade-shooting.md`; also `level-editor-placing.md`, `evolution-world.md`, `lan-play-room.md`). Specifications describe only the current state; what was tried and did not work goes under a
   heading "Tried and rejected".
 - Everything visible and written is English: texts in the game, console menus, comments, documents, file names. No umlauts in texts drawn in the game.
 - No names or private matters of persons in code, texts or file names (example players are PlayerA, PlayerB, PlayerC).

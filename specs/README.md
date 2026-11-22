@@ -12,18 +12,20 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 - Short bullets: one fact per bullet, the details as sub-bullets. No long paragraphs.
 - The name of the function, table or file in backticks at the start of a bullet, so it can be searched.
 - Only the current state. What was tried and did not work goes under a heading **Tried and rejected** (it saves the next attempt), not into the description.
-- A document that grows over about 40 KB is split by topic (as Renegade is).
+- A document that grows over about 40 KB is split by topic (as Renegade is): whole sections move into a new document `<name>-<topic>.md`, the old place keeps a pointer.
 
 ## Documents
 
 | Document | Content |
 |---|---|
-| [level-editor.md](level-editor.md) | the editor core: structure, keys, menus, strip and button column, editing, undo, placing, Generate, levels, gadget, files |
+| [level-editor.md](level-editor.md) | the editor core: structure, keys, menus, strip and button column, editing, undo, levels, gadget, files |
+| [level-editor-placing.md](level-editor-placing.md) | the editor: the Place menu and its preview, placing, Generate, maze, delete tools, blueprints |
 | [level-editor-setup.md](level-editor-setup.md) | setup and removal, the extra game, the start menu (keys 0–8), game start |
 | [teams.md](teams.md) | ten teams, alliances, human / AI, start resources (button T) |
 | [restrictions.md](restrictions.md) | what the player may not build, the R window |
 | [tower-defense.md](tower-defense.md), [capture-the-flag.md](capture-the-flag.md), [reclaim-the-fame.md](reclaim-the-fame.md) | the three game modes of a level |
-| [evolution.md](evolution.md) | the game mode Evolution of LAN Play (any map) |
+| [evolution.md](evolution.md) | the game mode Evolution of LAN Play (any map): the room, players and units, points, evolving, Team Evolution, death, Armageddon, gifts, display, tests |
+| [evolution-world.md](evolution-world.md) | Evolution, the world of a game: energy, wild units, generators, radars, regeneration, abilities and beacons, All Be Gods |
 | [renegade.md](renegade.md) | the game mode Renegade of LAN Play (steer one unit from the inside): parts, game options, messages, tests, open points |
 | [renegade-widget.md](renegade-widget.md) | Renegade, the widget: camera, mouse and keys, crosshair, panel, dials, binoculars, damage numbers |
 | [renegade-units.md](renegade-units.md) | Renegade, the gadget: units, moving, hull controls, reverse, jump, power-ups, takeover mode, healing |
@@ -33,7 +35,8 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [lava.md](lava.md) | Volcano, Lava Extractor, Carrier, Cargo Truck and Forklift (proof of concept): the feature, the units, the models and the unit script, energy, the metal stock and its hauling |
 | [scenario-builder.md](scenario-builder.md) | scenario info, the builder, `scenario.txt`, the extra game of the scenarios |
 | [scenario-multiplayer.md](scenario-multiplayer.md) | console lobby, split screen, bundle and map transfer |
-| [lan-play.md](lan-play.md) | the lobby widget for LAN Play |
+| [lan-play.md](lan-play.md) | the lobby widget for LAN Play: server, page, start of the game, menu, Copilot, Custom Scenario, versions, map, tests |
+| [lan-play-room.md](lan-play-room.md) | LAN Play: bosses, teams and start boxes of the room |
 | [blueprinter.md](blueprinter.md) | the BluePrinter widget |
 | [shared-code.md](shared-code.md) | `editor_common.lua`, `area_attack.lua`, `bar_rules.lua`, `led_gadgets.lua`, `powerups.lua`, `powerups_ui.lua`, `bar_common.ps1` |
 | [testing.md](testing.md) | how changes are checked |

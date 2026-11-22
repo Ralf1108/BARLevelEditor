@@ -25,7 +25,7 @@ Tools for [Beyond All Reason](https://www.beyondallreason.info/) (BAR), a free r
 You need Windows and Beyond All Reason, started once through its launcher.
 
 1. **Get the files** (one of the two):
-   - `git clone https://github.com/Ralf1108/BARLevelEditor.git` (update later with `git pull`)
+   - `git clone https://github.com/Ralf1108/BARLevelEditor.git` (update later with `git pull`, or a double click on `pullSources.bat`)
    - or download [main.zip](https://github.com/Ralf1108/BARLevelEditor/archive/refs/heads/main.zip) and unpack it (update: download again)
 2. **Install:** run `LevelEditor\install_editor.bat`.
 3. **Start:** the desktop shortcut **BAR Level Editor**.
@@ -39,7 +39,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 | try Evolution alone | `LevelEditor\start_evolution.bat` |
 | try Renegade alone | `LevelEditor\start_renegade.bat` |
 | try a Race of Renegade alone | `LevelEditor\start_race.bat` |
-| try the Experimental Units (Volcano, Lava Extractor, Carrier, Cargo Truck, Forklift) | `LevelEditor\start_experimental.bat` |
+| try the [Experimental Units](docs/experimental-units.md) (Volcano, Lava Extractor, Carrier, Cargo Truck, Forklift) | `LevelEditor\start_experimental.bat` |
 | remove everything | `LevelEditor\uninstall_editor.bat`, `BluePrinter\uninstall_blueprinter.bat` |
 
 ## Level Editor
@@ -188,7 +188,7 @@ More: [Experimental Attacks](docs/experimental-attacks.md)
 
 | Topic | Short | Full |
 |---|---|---|
-| Level Editor | [usage](docs/level-editor-usage.md) | [manual](LevelEditor/README.md), [scenario builder](LevelEditor/scenario/README.md) |
+| Level Editor | [usage](docs/level-editor-usage.md) | [manual](LevelEditor/README.md), [scenario builder](LevelEditor/scenario/README.md), [experimental units](docs/experimental-units.md) |
 | Game modes | | [Tower Defense](LevelEditor/game-modes/tower-defense.md), [Capture the Flag](LevelEditor/game-modes/capture-the-flag.md), [Reclaim the Fame](LevelEditor/game-modes/reclaim-the-fame.md), [Arena](LevelEditor/sandbox/arena.md) |
 | LAN Play | [LAN Play](docs/lan-play.md) | [Evolution](LevelEditor/game-modes/evolution.md) (with Team Evolution), [Renegade](LevelEditor/game-modes/renegade.md) (with Survival and Race) |
 | BluePrinter | [usage](docs/blueprinter-usage.md) | [manual](BluePrinter/README.md), [experimental attacks](docs/experimental-attacks.md) |

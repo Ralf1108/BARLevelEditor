@@ -5,7 +5,7 @@
   - **Carriers** (bots), **Cargo Trucks** and **Forklifts** bring that metal to a factory; only there does the team get it;
   - a normal geothermal plant built on a Volcano makes its normal energy (the engine: the Volcano is a geothermal feature).
 - The looks: the Volcano has a model of its own (a crater of dark rock; the gadget draws a moving lake and three streams of lava in it), the Carrier looks like the light bot; the Lava Extractor has a model of its own (a furnace in the lava, conveyor belts out to four storage pads), the Cargo Truck and the Forklift have models of their own, made from BAR's missile truck and scout car.
-- User view: [Level Editor manual](../LevelEditor/README.md), "Volcano, Lava Extractor and Carriers".
+- User view: [Experimental Units](../docs/experimental-units.md).
 
 ## 1. Parts
 

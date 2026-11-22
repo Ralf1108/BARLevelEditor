@@ -105,46 +105,14 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **W (write):** on = what is in the way is deleted (Ctrl+Z brings it back); off = nothing is placed on an occupied spot.
 - **Range circles** before placing: red = weapon range, blue = line of sight.
 
-### Volcano, Lava Extractor and Carriers (proof of concept)
+### Experimental Units (Volcano, Lava Extractor, Carriers)
 
-- **Volcano:** Features tab, kind **Volcano**. A crater of dark rock with a small lake of lava in the middle; lava flows out through two breaches; four passes of cooled rock (north, east, south, west) carry the belts of a Lava Extractor; smoke rises while nothing stands on it.
-  - A Lava Extractor stands in the middle of the lake.
-
-![The Volcano alone (left) and with a Lava Extractor on it (right)](../docs/lava-volcano.jpg)
-
-- **Lava Extractor:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1.
-  - It looks like a steam engine mine: lava runs down its furnace into a glowing pool, a gear wheel turns, pistons move.
-  - **Conveyor belts** carry crates out through the four passes of the Volcano to four **storage pads** outside it. They show the metal stock: up to 6 metal blocks on each pad (all pads show the same stock); when a Carrier takes metal, blocks go away.
-  - On a Volcano it gives **200 energy per second** at once and fills its **metal stock** with 2 metal per second (up to 200, shown above it); anywhere else nothing.
-  - In the game the constructors and the commander can build it, but only on a Volcano.
-- **Carrier:** Units tab, **Bots**, T1 (a light bot without weapons); in the game built in the bot lab.
-  - The metal of the stock reaches you only when a Carrier brings it to a factory: 20 per trip.
-  - **Right-click a Lava Extractor** (order **Haul**): the Carrier goes back and forth by itself, to the nearest factory.
-  - It loads at the nearest storage pad, outside the Volcano: it never drives into the crater or over the lava. Each pad has three loading spots side by side; whoever came first is served first.
+- A proof of concept: a **Volcano** (Features tab), a **Lava Extractor** that makes energy and metal on it (Units tab, Buildings, T1), and a Carrier, a Cargo Truck and a Forklift that haul the metal to a factory.
+- Right-click a Lava Extractor with a vehicle: it hauls by itself.
+- Try it at once: `LevelEditor\start_experimental.bat`.
+- All of it: [Experimental Units](../docs/experimental-units.md).
 
 ![Vehicles waiting at the storage pads of a Lava Extractor](../docs/lava-storage-pads.jpg)
-
-  - **Right-click a factory**: it delivers there instead.
-  - Any other order stops it.
-  - **On its own** (move state **Maneuver** or **Roam**, the default): an idle Carrier hauls again from its last Lava Extractor after a Move or another order; a new one from the factory takes the nearest Lava Extractor (up to 1200 away).
-  - On **Hold Position**, or after **Stop**, it waits for your order Haul.
-- **Cargo Truck** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Carries **60** metal per trip in 6 crates, orders as for the Carrier.
-  - At the storage pad it turns, backs up to the pad, opens its tailgate and the crates slide in one by one; at the factory it unloads them one by one.
-
-![The Cargo Truck with its open bed next to the missile truck it is made from (left), backed up to a storage pad loading crates (right)](../docs/lava-cargo-truck.jpg)
-
-- **Forklift** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Slow; carries up to **3 boxes of 30 metal**, shown on its fork.
-  - At the generator it loads a box every half second while the stock has one; it leaves when it has 3 boxes or the stock is empty.
-  - Orders as for the Carrier.
-
-![The Forklift empty next to the Rover it is made from (left) and with three boxes on its fork (right)](../docs/lava-forklift.jpg)
-
-- A normal geothermal plant on a Volcano makes its normal energy.
-- **LAN Play:** the units are in a LAN game on an official map only with **LAN Play** > **Experimental Units: On**; scenarios always have them.
-- **Try it at once:** `LevelEditor\start_experimental.bat` starts a game on Full Metal Plate: next to your start a Volcano with a Lava Extractor, a Carrier, a Cargo Truck and a Forklift side by side and a vehicle plant behind them. Select a vehicle and right-click the Lava Extractor. Other map: `start_experimental.bat "Map name"`.
-![The Lava Extractor at the start (left) and after a minute with 4 metal blocks on each storage pad (right)](../docs/lava-generator.jpg)
-
-- The Carrier still has a stand-in look. Details: [specification](../specs/lava.md).
 
 Good to know:
 
