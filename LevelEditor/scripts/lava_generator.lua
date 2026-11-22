@@ -6,6 +6,8 @@
 -- right click on a Lava Extractor or a factory of its team, DefaultCommand): Haul on a Lava Extractor makes it haul: to the generator, take LOAD metal
 -- when the stock has it, to the factory, deliver (the team gets the metal), back again, until it gets another order. Haul on a factory chooses where
 -- it delivers (before or while hauling); otherwise it is the nearest factory of its team.
+-- A Carrier loads in the yard of the extractor (its cells are free; the place of the middle block of the model). On a Volcano it comes and goes
+-- through the pass of the crater the yard faces, and around the Volcano outside its lava (never over the wall or a stream): ROUTE.
 -- The unit scripts show it: a Lava Extractor (lava_generator_script.lua) turns its wheel, moves its pistons and lets lava drops fall while it works on
 -- a Volcano (SetActive) and shows its stock as up to BLOCKS metal blocks in its yard (SetBlocks); a Forklift shows its boxes (SetBoxes).
 -- The unsynced part draws the lava of every Volcano (a lake in its crater and three streams, moving, with BAR's lava texture) and the numbers: the
@@ -32,6 +34,18 @@ local ON_RADIUS = 44 -- the middle of the generator at most so far from the midd
 local BLOCKS = 15 -- metal blocks in the yard of a Lava Extractor (its model): a full stock shows all
 local REACH = 70 -- a Carrier is at a building when it is this far from its edge (Elmo)
 local CMD_HAUL = 39761 -- the order Haul of the Carriers (its own id)
+local ROUTE = {
+	YARD_PIECE = "block8", -- a block in the middle of the yard: where a Carrier loads (its place in the world also when the extractor is turned)
+	AT_YARD = 30, -- a Carrier at most so far from that place loads
+	DETOUR = 185, -- the way around a Volcano (its streams end at 160) and the gate outside a pass
+	CLEAR = 168, -- a straight way that comes nearer to the middle of a Volcano goes around it
+	GRID = math.pi / 6, -- the fixed points of the way around a Volcano: every 30 degrees (the middle of a step stays 179 from the middle)
+	PAST = 0.17, -- a point at most so far (radians, 10 degrees) ahead of a Carrier counts as passed: the next one is taken
+	ROAD = 16, -- half width of the road through a pass (a Carrier on it drives straight)
+	ENTRY = 46, -- the entrance of the yard: so far from the middle of the extractor, on the middle line of the pass
+	PASS_ANGLE = 0.24, -- a Carrier at most so far (radians, about 14 degrees) from the direction of the pass, seen from the middle, is in the pass
+	OUT_ANGLE = 0.52, -- a loaded Carrier nearer than CLEAR and at most so far (about 30 degrees) from that direction first goes out to the gate
+}
 
 local volcanoDef, genDef, carrierDef = {}, {}, {} -- defID -> true (carrierDef: -> { cap = load per trip, box = metal per box or nil })
 for id, fd in pairs(FeatureDefs) do
@@ -77,17 +91,18 @@ if gadgetHandler:IsSyncedCode() then
 		tooltip = "Haul: click a Lava Extractor: the Carrier brings its metal to a factory, again and again.\nClick a factory: it delivers there.",
 	}
 
+	-- the Volcano the unit stands on ({ x, y, z }), or nil
 	local function onVolcano(u)
 		local x, _, z = Spring.GetUnitPosition(u)
 		if not x then
-			return false
+			return nil
 		end
 		for _, p in pairs(volcanoes) do
 			if (p[1] - x) ^ 2 + (p[3] - z) ^ 2 <= ON_RADIUS * ON_RADIUS then
-				return true
+				return p
 			end
 		end
-		return false
+		return nil
 	end
 
 	-- calls a function of the Lua unit script of u (BAR's unit_script.lua), if it has one
@@ -113,7 +128,8 @@ if gadgetHandler:IsSyncedCode() then
 
 	local function checkGen(u, g)
 		local _, _, _, _, built = Spring.GetUnitHealth(u)
-		local on = (built or 0) >= 1 and onVolcano(u)
+		g.vol = onVolcano(u)
+		local on = (built or 0) >= 1 and g.vol ~= nil
 		if g.on ~= on then
 			g.on = on
 			Spring.SetUnitResourcing(u, "ume", on and LAVA_ENERGY or 0) -- (unconditional make energy)
@@ -157,13 +173,111 @@ if gadgetHandler:IsSyncedCode() then
 		return (cx - ux) ^ 2 + (cz - uz) ^ 2 <= r * r
 	end
 
+	local function orders(c)
+		return (Spring.GetUnitCommandCount and Spring.GetUnitCommandCount(c) or Spring.GetUnitCommands(c, 0)) or 0
+	end
+
 	local function walkTo(c, h, u)
-		local count = Spring.GetUnitCommandCount and Spring.GetUnitCommandCount(c) or Spring.GetUnitCommands(c, 0)
-		if h.goal ~= u or (count or 0) == 0 then
-			h.goal = u
+		if h.goal ~= u or orders(c) == 0 then
+			h.goal, h.gx = u, nil
 			local x, y, z = Spring.GetUnitPosition(u)
 			Spring.GiveOrderToUnit(c, CMD.MOVE, { x, y, z }, 0)
 		end
+	end
+
+	local function walkPoint(c, h, x, z)
+		if h.goal or not h.gx or (h.gx - x) ^ 2 + (h.gz - z) ^ 2 > 256 or orders(c) == 0 then
+			h.goal, h.gx, h.gz = nil, x, z
+			Spring.GiveOrderToUnit(c, CMD.MOVE, { x, Spring.GetGroundHeight(x, z), z }, 0)
+		end
+	end
+
+	-- where a Carrier loads (the middle of the yard), the middle of the extractor and the direction from it to the yard (to the pass)
+	local function yard(u)
+		local ux, _, uz = Spring.GetUnitPosition(u)
+		local yx, yz = ux, uz
+		local map = Spring.GetUnitPieceMap and Spring.GetUnitPieceMap(u)
+		local idx = map and map[ROUTE.YARD_PIECE]
+		if idx then
+			local px, _, pz = Spring.GetUnitPiecePosDir(u, idx)
+			if px then
+				yx, yz = px, pz
+			end
+		end
+		local dx, dz = yx - ux, yz - uz -- (the direction of the pass: one of the four, the side of the yard)
+		if math.abs(dx) >= math.abs(dz) then
+			dx, dz = dx >= 0 and 1 or -1, 0
+		else
+			dx, dz = 0, dz >= 0 and 1 or -1
+		end
+		return yx, yz, ux, uz, dx, dz
+	end
+
+	-- the next point on the way from (cx, cz) to (tx, tz) past a Volcano at (vx, vz): the target when the straight way does not come near the
+	-- Volcano, otherwise the next of fixed points on the circle DETOUR (every 30 degrees) towards the side of the target (fixed: a point that moved
+	-- with the Carrier would draw it inwards, in a spiral)
+	local function around(cx, cz, vx, vz, tx, tz)
+		local sx, sz = tx - cx, tz - cz
+		local l2 = sx * sx + sz * sz
+		local t = l2 > 0 and math.max(0, math.min(1, ((vx - cx) * sx + (vz - cz) * sz) / l2)) or 0
+		local px, pz = cx + sx * t - vx, cz + sz * t - vz
+		if px * px + pz * pz >= ROUTE.CLEAR * ROUTE.CLEAR then
+			return tx, tz
+		end
+		local ac = math.atan2(cz - vz, cx - vx)
+		local d = (math.atan2(tz - vz, tx - vx) - ac + math.pi) % (2 * math.pi) - math.pi
+		local a
+		if d > 0 then
+			a = math.min(ac + d, math.ceil((ac + ROUTE.PAST) / ROUTE.GRID) * ROUTE.GRID)
+		else
+			a = math.max(ac + d, math.floor((ac - ROUTE.PAST) / ROUTE.GRID) * ROUTE.GRID)
+		end
+		return vx + ROUTE.DETOUR * math.cos(a), vz + ROUTE.DETOUR * math.sin(a)
+	end
+
+	-- on the road of the pass of an extractor (straight out from its middle towards its yard, or at most maxAngle away from that direction)?
+	local function onRoad(cx, cz, ux, uz, dx, dz, maxAngle)
+		local rx, rz = cx - ux, cz - uz
+		local along, side = rx * dx + rz * dz, math.abs(rx * dz - rz * dx)
+		return along > -10 and (side < ROUTE.ROAD or math.atan2(side, along) < maxAngle)
+	end
+
+	-- an empty Carrier: to the yard of its extractor (true when it is there)
+	local function toYard(c, h, g)
+		local yx, yz, ux, uz, dx, dz = yard(h.src)
+		local cx, _, cz = Spring.GetUnitPosition(c)
+		if (cx - yx) ^ 2 + (cz - yz) ^ 2 <= ROUTE.AT_YARD * ROUTE.AT_YARD then
+			return true
+		end
+		local tx, tz = yx, yz
+		if g.vol and not onRoad(cx, cz, ux, uz, dx, dz, ROUTE.PASS_ANGLE) then -- (first to the gate outside the pass, around the Volcano)
+			tx, tz = around(cx, cz, g.vol[1], g.vol[3], ux + dx * ROUTE.DETOUR, uz + dz * ROUTE.DETOUR)
+		elseif g.vol and (cx - ux) * dx + (cz - uz) * dz > ROUTE.ENTRY + 8 then -- (in the pass: along its middle to the entrance of the yard)
+			tx, tz = ux + dx * ROUTE.ENTRY, uz + dz * ROUTE.ENTRY
+		end
+		walkPoint(c, h, tx, tz)
+		return false
+	end
+
+	-- a loaded Carrier: to the factory dst; from the yard out through the pass first, then around the Volcano if it is in the way
+	local function toFactory(c, h, dst)
+		local g = h.src and gens[h.src]
+		local v = g and g.vol
+		if v then
+			local cx, _, cz = Spring.GetUnitPosition(c)
+			local _, _, ux, uz, dx, dz = yard(h.src)
+			if (cx - v[1]) ^ 2 + (cz - v[3]) ^ 2 < ROUTE.CLEAR * ROUTE.CLEAR and onRoad(cx, cz, ux, uz, dx, dz, ROUTE.OUT_ANGLE) then
+				walkPoint(c, h, ux + dx * ROUTE.DETOUR, uz + dz * ROUTE.DETOUR)
+				return
+			end
+			local fx, _, fz = Spring.GetUnitPosition(dst)
+			local tx, tz = around(cx, cz, v[1], v[3], fx, fz)
+			if tx ~= fx or tz ~= fz then
+				walkPoint(c, h, tx, tz)
+				return
+			end
+		end
+		walkTo(c, h, dst)
 	end
 
 	local function setLoad(c, h, load)
@@ -191,7 +305,7 @@ if gadgetHandler:IsSyncedCode() then
 					h.goal, h.go = nil, nil
 				end
 			else
-				walkTo(c, h, dst)
+				toFactory(c, h, dst)
 			end
 			return
 		end
@@ -205,25 +319,24 @@ if gadgetHandler:IsSyncedCode() then
 			Spring.SetUnitRulesParam(c, "lavaHauling", 0, { public = true })
 			return
 		end
-		if near(c, h.src) and h.box then
+		local at = toYard(c, h, g)
+		if at and h.box then
 			if g.stock >= h.box and h.load + h.box <= h.cap then
 				g.stock = g.stock - h.box
 				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
 				showGen(h.src, g)
 				setLoad(c, h, h.load + h.box)
 			elseif h.load > 0 then
-				h.go, h.goal = true, nil -- (full, or the stock has no box more)
+				h.go, h.goal, h.gx = true, nil, nil -- (full, or the stock has no box more)
 			end
-		elseif near(c, h.src) then
+		elseif at then
 			if g.stock >= h.cap then
 				g.stock = g.stock - h.cap
 				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
 				showGen(h.src, g)
 				setLoad(c, h, h.cap)
-				h.goal = nil
+				h.goal, h.gx = nil, nil
 			end
-		else
-			walkTo(c, h, h.src)
 		end
 	end
 
@@ -354,7 +467,7 @@ else
 	-- layers: a dark red ground (the dark parts of BAR's lava texture are see-through), BAR's lava texture, the same texture once more moving the other
 	-- way and adding light; the streams flow outwards; all of it pulses slowly.
 	-- The numbers of the crater must match the model (RIM_*, BREACHES, BREACH_H in make_lava_volcano.py).
-	local LAVA = { TEX = "luaui/images/lava/lava7_diffuseemit.dds", RIM_IN = 62, RIM_TOP = 72, RIM_OUT = 98, BREACHES = { 40, 160, 280 }, BREACH_H = 2.5,
+	local LAVA = { TEX = "luaui/images/lava/lava7_diffuseemit.dds", RIM_IN = 62, RIM_TOP = 72, RIM_OUT = 98, BREACHES = { 45, 225 }, BREACH_H = 2.5,
 		LAKE = 40, STREAM_END = 160, rivers = {} }
 	local timer0 = Spring.GetTimer()
 

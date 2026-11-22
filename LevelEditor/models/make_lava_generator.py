@@ -132,15 +132,14 @@ def base_piece():
         prism_y(v, i, x, fz - 19, FLOOR, 14, 2.8, 2.8, 8, DARK, DARK)
     # a copper pipe from the furnace to the yard
     prism_x(v, i, fx + 13, 10, 12, fz - 6, 1.5, 8, COPPER, COPPER)
-    # the yard: a floor, posts and two rails around it (open towards the front)
+    # the yard: a floor, posts and two rails on three sides; open to the right (+x), where the Carriers drive in (its cells are free in the yardmap)
     box(v, i, 10, 44, FLOOR, FLOOR + 0.6, -38, 38, DARK, MATTE, False)
-    for x in (10, 42):
-        for z in (-38, -12.5, 12.5, 36):
-            box(v, i, x, x + 2, FLOOR, 12, z, z + 2, DARK, TEAM, False)
+    for x, z in ((10, -38), (10, -12.5), (10, 12.5), (10, 36), (26, -38), (42, -38), (26, 36), (42, 36)):
+        box(v, i, x, x + 2, FLOOR, 12, z, z + 2, DARK, TEAM, False)
     for y in (6.0, 10.0):
         box(v, i, 10, 44, y, y + 0.8, -38, -37, TEAM, TEAM)  # back
-        box(v, i, 10, 11, y, y + 0.8, -38, 38, TEAM, TEAM)  # left
-        box(v, i, 43, 44, y, y + 0.8, -38, 38, TEAM, TEAM)  # right
+        box(v, i, 10, 44, y, y + 0.8, 37, 38, TEAM, TEAM)  # front
+        box(v, i, 10, 11, y, y + 0.8, -38, 38, TEAM, TEAM)  # left (to the furnace)
     return v, i
 
 

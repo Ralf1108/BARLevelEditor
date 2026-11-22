@@ -156,6 +156,7 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
 | `zz_copy.lua` | `arena_test.ps1 -Widget` | copy and paste (Ctrl+C / Ctrl+V through the KeyPress of the editor, the pointer moved with `Spring.WarpMouse`), a second paste on the same spot (W on: replaced, not doubled), save, clear and load of a level (`led_place.lua`, `led_level.lua`) |
 | `zz_features.lua` | `arena_test.ps1 -Widget` | moving a feature (`led\|movefeatures`, what Alt + drag sends), undo and redo |
 | `zz_expunits.lua` | `arena_test.ps1 -Widget ... -ModOptions 'lanexpunits=0;'` | the Experimental Units left out by the game option of LAN Play: none of the 8 units, none in the build lists |
+| `zz_lavaroad.lua` | `arena_test.ps1 -Widget` | the way of the Carriers at a Volcano: into the yard through the pass, around the Volcano, never over the wall or the lava (two extractors, turned differently) |
 | `zz_volcano.lua` | `arena_test.ps1 -Widget` | the Volcano: its own model, the lava drawn by the gadget (two pictures one second apart), one with a Lava Extractor (200 energy) |
 | `zz_lavagen.lua` | `arena_test.ps1 -Widget` | the Lava Extractor: its own model and unit script, footprint 6 x 6, pictures close up of the yard filling and emptying (a Forklift takes 3 boxes) |
 | `zz_lavafork.lua` | `arena_test.ps1 -Widget` | the Forklift: definition, its own model and unit script, the build list of the vehicle plant, pictures empty and with boxes, two trips in boxes of 30 |

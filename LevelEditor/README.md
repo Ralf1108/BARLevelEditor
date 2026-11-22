@@ -107,7 +107,7 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 ### Volcano, Lava Extractor and Carriers (proof of concept)
 
-- **Volcano:** Features tab, kind **Volcano**. A crater of dark rock with a small lake of lava in the middle; lava flows out through three breaches; smoke rises while nothing stands on it.
+- **Volcano:** Features tab, kind **Volcano**. A crater of dark rock with a small lake of lava in the middle; lava flows out through two breaches; four passes of cooled rock lead in (north, east, south, west); smoke rises while nothing stands on it.
   - A Lava Extractor fits into the crater: its platform covers the lake.
 
 ![The Volcano alone (left) and with a Lava Extractor on it (right)](../docs/lava-volcano.jpg)
@@ -120,6 +120,10 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **Carrier:** Units tab, **Bots**, T1 (a light bot without weapons); in the game built in the bot lab.
   - The metal of the stock reaches you only when a Carrier brings it to a factory: 20 per trip.
   - **Right-click a Lava Extractor** (order **Haul**): the Carrier goes back and forth by itself, to the nearest factory.
+  - It loads in the yard: it drives around the Volcano to the pass the yard faces and through it, never over the lava.
+
+![A Carrier loading in the yard of a Lava Extractor; behind it the pass of cooled rock](../docs/lava-carrier-yard.jpg)
+
   - **Right-click a factory**: it delivers there instead.
   - Any other order stops it.
 - **Cargo Truck** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Carries **60** metal per trip, orders as for the Carrier.

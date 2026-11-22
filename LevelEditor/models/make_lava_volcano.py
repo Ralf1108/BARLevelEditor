@@ -1,8 +1,9 @@
 """Builds the model of the Volcano (lavavolcano.s3o) and its textures, a feature of the Level Editor: a crater of rock around a lake of lava.
 
 The Volcano of the Volcano and Lava Extractor proof of concept (specs/lava.md). The model is only the rock: a floor of hot rock around the middle
-(the lake, small enough for the platform of a Lava Extractor to cover it), a ring wall close around that platform with three breaches where lava
-flows out, and a few boulders on the outside. The lava itself (the lake and the three streams, moving) is drawn by the gadget lava_generator.lua
+(the lake, small enough for the platform of a Lava Extractor to cover it), a ring wall close around that platform with two breaches where lava
+flows out and four passes of cooled rock (north, east, south, west: the yard of a Lava Extractor faces one of them, whichever way it was built;
+Carriers drive through it), and a few boulders on the outside. The lava itself (the lake and the three streams, moving) is drawn by the gadget lava_generator.lua
 with BAR's lava texture; it needs the same numbers (LAKE, RIM_*, BREACHES, BREACH_H).
 The textures are made here too (no file of BAR is used): plates of dark rock with cracks (cells of a Voronoi pattern); in the upper half of the
 texture the cracks glow (inner wall of the crater, the red channel of the second texture makes them shine), in the lower half they are dark (outer
@@ -30,10 +31,14 @@ RIM_IN = 62.0  # inner foot of the wall (height 0): just outside the corners of 
 RIM_TOP = 72.0  # the crest
 RIM_OUT = 98.0  # outer foot (height 0)
 CREST = 20.0  # height of the crest (it varies by +-4)
-BREACHES = (40.0, 160.0, 280.0)  # angles (degrees, from +x towards +z) of the breaches the streams flow out of
-BREACH_W = 16.0  # half width of a breach (degrees)
+BREACHES = (45.0, 225.0)  # angles (degrees, from +x towards +z) of the breaches the streams flow out of (between the passes)
+BREACH_W = 14.0  # half width of a breach (degrees)
 BREACH_H = 2.5  # height of the crest in the middle of a breach
-SEG = 48  # parts around
+PASSES = (0.0, 90.0, 180.0, 270.0)  # angles of the passes (the four directions a building can face)
+PASS_FLAT = 11.0  # half width of the flat part of a pass (degrees; parts of 5 degrees: 20 degrees flat, at the inner foot 21 Elmo wide)
+PASS_W = 21.0  # half width of a pass with its slopes (degrees)
+PASS_H = 0.6  # height of the road of a pass (the floor of the crater)
+SEG = 72  # parts around
 # rings across the wall: (fraction from the inner foot to the crest (0..1) or from the crest to the outer foot (1..2), height factor)
 PROFILE = [(0.0, 0.0), (0.35, 0.55), (0.75, 0.93), (1.0, 1.0), (1.3, 0.85), (1.6, 0.45), (2.0, 0.0)]
 TEX = 512  # size of the textures
@@ -41,15 +46,29 @@ HOT, COLD = (0.0, 0.5), (0.5, 1.0)  # v ranges (from the top, as in the game) of
 REPEAT = 8  # parts around that share one width of the texture
 
 
+def angle_to(deg, list_):
+    return min(abs((deg - b + 180) % 360 - 180) for b in list_)
+
+
 def breach_factor(deg):
-    """1 away from the breaches, down to the breach height in their middle"""
+    """1 away from the breaches and passes, down to the breach height in the middle of a breach, flat (the road) in a pass"""
     f = 1.0
-    for b in BREACHES:
-        d = abs((deg - b + 180) % 360 - 180)
-        if d < BREACH_W:
-            s = d / BREACH_W
-            f = min(f, BREACH_H / CREST + (1 - BREACH_H / CREST) * s * s)
+    d = angle_to(deg, BREACHES)
+    if d < BREACH_W:
+        s = d / BREACH_W
+        f = min(f, BREACH_H / CREST + (1 - BREACH_H / CREST) * s * s)
+    d = angle_to(deg, PASSES)
+    if d <= PASS_FLAT:
+        f = min(f, PASS_H / CREST)
+    elif d < PASS_W:
+        s = (d - PASS_FLAT) / (PASS_W - PASS_FLAT)
+        f = min(f, PASS_H / CREST + (1 - PASS_H / CREST) * s * s)
     return f
+
+
+def in_pass(k):
+    """part k (around) lies in the flat road of a pass"""
+    return angle_to(360.0 * (k + 0.5) / SEG, PASSES) < PASS_FLAT
 
 
 def area(k, j, rows, half):
@@ -85,7 +104,7 @@ def wall_piece():
             mx = sum(p[0] for p in pts) / 4
             mz = sum(p[2] for p in pts) / 4
             out = (-mx, 1.0, -mz) if inner else (mx, 1.0, mz)  # the inner side faces the middle, the outer side away from it
-            tex = area(k, j, inner_bands, HOT) if inner else area(k, j - inner_bands, outer_bands, COLD)
+            tex = area(k, j, inner_bands, HOT) if inner and not in_pass(k) else area(k, j - inner_bands if not inner else j, outer_bands if not inner else inner_bands, COLD)
             u0, v0, u1, v1 = tex
             # (face stretches the rectangle from the first to the third point; bands run from the foot to the crest and on)
             face(v, i, pts, (u0, v0, u1, v1), out)
@@ -99,11 +118,11 @@ def floor(v, i):
         a0, a1 = 2 * math.pi * k / SEG, 2 * math.pi * (k + 1) / SEG
         pts = [(r0 * math.cos(a0), FLOOR_Y, r0 * math.sin(a0)), (r0 * math.cos(a1), FLOOR_Y, r0 * math.sin(a1)),
                (r1 * math.cos(a1), FLOOR_Y, r1 * math.sin(a1)), (r1 * math.cos(a0), FLOOR_Y, r1 * math.sin(a0))]
-        face(v, i, pts, area(k, 0, 1, HOT), (0, 1, 0))
+        face(v, i, pts, area(k, 0, 1, COLD if in_pass(k) else HOT), (0, 1, 0))  # (cooled rock: the road through a pass)
 
 
 def boulders(v, i):
-    """a few rocks on the outer slope, away from the breaches"""
+    """a few rocks on the outer slope, away from the breaches and the passes"""
     rnd = random.Random(11)
     placed = 0
     while placed < 9:

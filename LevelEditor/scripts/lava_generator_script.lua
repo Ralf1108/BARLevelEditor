@@ -74,6 +74,7 @@ function SetBlocks(n)
 end
 
 function script.Create()
+	SetUnitValue(COB.YARD_OPEN, 1) -- (the yard of the yardmap, "y": Carriers drive in)
 	SetBlocks(0)
 	for _, p in ipairs(drops) do
 		Hide(p)

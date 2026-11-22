@@ -61,8 +61,10 @@ local function generator(mex)
 	d.collisionvolumescales = "88 40 80"
 	d.collisionvolumeoffsets = "0 18 0"
 	d.usepiececollisionvolumes = nil
-	-- a "g" in the yardmap: the engine lets it stand only on a feature with geothermal = true (the Volcano); high resolution, 12 x 12 (footprint 6)
-	d.yardmap = "h oooooooooooo oooooooooooo oocbbbbbbcoo oobgbggbgboo oobbgbbgbboo oobgbggbgboo oobgbggbgboo oobbgbbgbboo oobgbggbgboo oocbbbbbbcoo oooooooooooo oooooooooooo"
+	-- a "g" in the yardmap: the engine lets it stand only on a feature with geothermal = true (the Volcano); high resolution, 12 x 12 (footprint 6):
+	-- "o" blocked, "g" geothermal (blocked), "y" the yard (the five columns on the right, +x of the model: free while the yard is open, which the unit
+	-- script does at once: units drive in)
+	d.yardmap = "h oooooooooooo oooooooyyyyy oogogogyyyyy ooogogoyyyyy oogogogyyyyy ooogogoyyyyy oogogogyyyyy ooogogoyyyyy oogogogyyyyy ooogogoyyyyy oooooooyyyyy oooooooooooo"
 	local cp = d.customparams
 	cp.metal_extractor, cp.standardextractor = nil, nil
 	cp.unitgroup = "energy"
