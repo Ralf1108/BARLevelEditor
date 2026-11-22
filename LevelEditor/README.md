@@ -108,7 +108,9 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 ### Volcano, Lava Generator and Carriers (proof of concept)
 
 - **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
-- **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1 (it looks like a metal extractor for now).
+- **Lava Generator:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1.
+  - It looks like a steam engine mine: lava runs down its furnace into a glowing pool, a gear wheel turns, pistons move.
+  - Its **storage yard** on the right shows the metal stock: up to 15 metal blocks; when a Carrier takes metal, blocks go away.
   - On a Volcano it gives **200 energy per second** at once and fills its **metal stock** with 2 metal per second (up to 200, shown above it); anywhere else nothing.
   - In the game the constructors and the commander can build it, but only on a Volcano.
 - **Carrier:** Units tab, **Bots**, T1 (a light bot without weapons); in the game built in the bot lab.
@@ -128,7 +130,9 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 - A normal geothermal plant on a Volcano makes its normal energy.
 - **LAN Play:** the units are in a LAN game on an official map only with **LAN Play** > **Experimental Units: On**; scenarios always have them.
-- The looks are stand-ins; models of their own come later. Details: [specification](../specs/lava.md).
+![The Lava Generator at the start (left) and after a minute with 10 metal blocks in its yard (right)](../docs/lava-generator.jpg)
+
+- The Volcano and the Carrier still have stand-in looks. Details: [specification](../specs/lava.md).
 
 Good to know:
 

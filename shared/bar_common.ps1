@@ -220,6 +220,7 @@ $ScenarioGameFiles = @(
     @('lava_generator_defs.lua', 'gamedata/unitdefs_pre.lua'),   # the Lava Generator: copies of the metal extractors, in the build lists of their builders (BAR has no unitdefs_pre.lua)
     @('lava_volcano_def.lua', 'features/lava_volcano.lua'),   # the Volcano: a geothermal feature (BAR loads every features/*.lua)
     @('lava_forklift_script.lua', 'scripts/Units/armlavafork.lua'),   # the Forklift: its Lua unit script (BAR's unit_script.lua runs it), shows the boxes
+    @('lava_generator_script.lua', 'scripts/Units/lavagen.lua'),   # the Lava Generator: its Lua unit script (wheel, pistons, lava drops, the metal blocks of its yard)
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
     @('editor_common.lua', 'luaui/Include/editor_common.lua'),   # Renegade: the unit menu of the debug mode is the one of the Level Editor (also in the extra game "Level Editor", see Get-EditorGameEntries)
     @('area_attack.lua', 'luaui/Include/area_attack.lua'),   # loaded by editor_common.lua

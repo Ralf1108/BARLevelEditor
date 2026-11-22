@@ -6,6 +6,8 @@
 -- right click on a Lava Generator or a factory of its team, DefaultCommand): Haul on a Lava Generator makes it haul: to the generator, take LOAD metal
 -- when the stock has it, to the factory, deliver (the team gets the metal), back again, until it gets another order. Haul on a factory chooses where
 -- it delivers (before or while hauling); otherwise it is the nearest factory of its team.
+-- The unit scripts show it: a Lava Generator (lava_generator_script.lua) turns its wheel, moves its pistons and lets lava drops fall while it works on
+-- a Volcano (SetActive) and shows its stock as up to BLOCKS metal blocks in its yard (SetBlocks); a Forklift shows its boxes (SetBoxes).
 -- The unsynced part draws the glow of the lava around every Volcano and the numbers: the stock over a generator, the load over a Carrier.
 function gadget:GetInfo()
 	return {
@@ -25,7 +27,8 @@ local STOCK_MAX = 200 -- metal a Lava Generator keeps at most (more is lost)
 local LOAD = 20 -- metal a Carrier takes in one trip (a unit with customparams.lavaload takes that much: the Cargo Truck 60)
 -- A unit with customparams.lavabox (the Forklift) loads boxes of that much metal, one every half second while the stock has one, and leaves when
 -- it is full (lavaload) or the stock has no box more; it unloads them one by one; its unit script shows the boxes (SetBoxes).
-local ON_RADIUS = 40 -- the middle of the generator at most so far from the middle of a Volcano (Elmo)
+local ON_RADIUS = 44 -- the middle of the generator at most so far from the middle of a Volcano (Elmo; the engine lets it stand there: footprint 6, 6 * 8 - 4)
+local BLOCKS = 15 -- metal blocks in the yard of a Lava Generator (its model): a full stock shows all
 local REACH = 70 -- a Carrier is at a building when it is this far from its edge (Elmo)
 local CMD_HAUL = 39761 -- the order Haul of the Carriers (its own id)
 
@@ -86,6 +89,27 @@ if gadgetHandler:IsSyncedCode() then
 		return false
 	end
 
+	-- calls a function of the Lua unit script of u (BAR's unit_script.lua), if it has one
+	local function callScript(u, name, ...)
+		local env = Spring.UnitScript and Spring.UnitScript.GetScriptEnv and Spring.UnitScript.GetScriptEnv(u)
+		if env and env[name] then
+			Spring.UnitScript.CallAsUnit(u, env[name], ...)
+		end
+	end
+
+	-- the looks of a generator: working or not, the blocks of its yard (called only when they change)
+	local function showGen(u, g)
+		if g.shownOn ~= g.on then
+			g.shownOn = g.on
+			callScript(u, "SetActive", g.on and true or false)
+		end
+		local n = math.ceil(g.stock * BLOCKS / STOCK_MAX)
+		if g.shownBlocks ~= n then
+			g.shownBlocks = n
+			callScript(u, "SetBlocks", n)
+		end
+	end
+
 	local function checkGen(u, g)
 		local _, _, _, _, built = Spring.GetUnitHealth(u)
 		local on = (built or 0) >= 1 and onVolcano(u)
@@ -99,6 +123,7 @@ if gadgetHandler:IsSyncedCode() then
 			g.stock = math.min(STOCK_MAX, g.stock + LAVA_METAL)
 		end
 		Spring.SetUnitRulesParam(u, "lavaStock", g.stock, { public = true })
+		showGen(u, g)
 	end
 
 	local function isFactory(u, team)
@@ -144,10 +169,7 @@ if gadgetHandler:IsSyncedCode() then
 		h.load = load
 		Spring.SetUnitRulesParam(c, "lavaLoad", load, { public = true })
 		if h.box then -- the boxes on the fork (the unit script of the Forklift)
-			local env = Spring.UnitScript and Spring.UnitScript.GetScriptEnv and Spring.UnitScript.GetScriptEnv(c)
-			if env and env.SetBoxes then
-				Spring.UnitScript.CallAsUnit(c, env.SetBoxes, math.ceil(load / h.box))
-			end
+			callScript(c, "SetBoxes", math.ceil(load / h.box))
 		end
 	end
 
@@ -186,6 +208,7 @@ if gadgetHandler:IsSyncedCode() then
 			if g.stock >= h.box and h.load + h.box <= h.cap then
 				g.stock = g.stock - h.box
 				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
+				showGen(h.src, g)
 				setLoad(c, h, h.load + h.box)
 			elseif h.load > 0 then
 				h.go, h.goal = true, nil -- (full, or the stock has no box more)
@@ -194,6 +217,7 @@ if gadgetHandler:IsSyncedCode() then
 			if g.stock >= h.cap then
 				g.stock = g.stock - h.cap
 				Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
+				showGen(h.src, g)
 				setLoad(c, h, h.cap)
 				h.goal = nil
 			end

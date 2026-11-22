@@ -3,7 +3,9 @@
 -- this one, see specs/lava.md). It hooks the table: when a base unit is stored, its copy is stored next to it, and every builder that can build the
 -- base unit can build the copy too.
 --   Lava Generator (armlavagen, corlavagen, leglavagen): a copy of the metal extractor that stands only on a Volcano (feature lava_volcano); there it
---     makes energy and fills its metal stock (the gadget lava_generator.lua).
+--     makes energy and fills its metal stock (the gadget lava_generator.lua). A model of its own for all three (objects3d/Units/lavagen.s3o, made by
+--     LevelEditor/models/make_lava_generator.py: a furnace with lava, a gear wheel, pistons, a yard with metal blocks) and a Lua unit script
+--     (scripts/Units/lavagen.lua: it moves the parts and shows the blocks); footprint 6 x 6 (the yard).
 --   Carrier (armlavacarrier, corlavacarrier, leglavacarrier): a copy of the light bot of the bot lab without weapons; it carries the metal of a Lava
 --     Generator to a factory (the gadget).
 --   Cargo Truck (armlavatruck): a copy of the missile truck armsam with a model of its own (objects3d/Units/armlavatruck.s3o, made by
@@ -52,8 +54,15 @@ local function generator(mex)
 	d.health = 1200
 	d.metalstorage = 0
 	d.onoffable = false
-	-- a "g" in the yardmap: the engine lets it stand only on a feature with geothermal = true (the Volcano)
-	d.yardmap = "h cbbbbbbc bgbggbgb bbgbbgbb bgbggbgb bgbggbgb bbgbbgbb bgbggbgb cbbbbbbc"
+	d.objectname = "Units/lavagen.s3o"
+	d.script = "Units/lavagen.lua"
+	d.footprintx, d.footprintz = 6, 6
+	d.collisionvolumetype = "Box"
+	d.collisionvolumescales = "88 40 80"
+	d.collisionvolumeoffsets = "0 18 0"
+	d.usepiececollisionvolumes = nil
+	-- a "g" in the yardmap: the engine lets it stand only on a feature with geothermal = true (the Volcano); high resolution, 12 x 12 (footprint 6)
+	d.yardmap = "h oooooooooooo oooooooooooo oocbbbbbbcoo oobgbggbgboo oobbgbbgbboo oobgbggbgboo oobgbggbgboo oobbgbbgbboo oobgbggbgboo oocbbbbbbcoo oooooooooooo oooooooooooo"
 	local cp = d.customparams
 	cp.metal_extractor, cp.standardextractor = nil, nil
 	cp.unitgroup = "energy"
