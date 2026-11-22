@@ -119,7 +119,7 @@ What the player sees and presses: camera, mouse, crosshair, panel, dials. All of
     - an aircraft's scale reaches up to the ground plus its highest height, any other unit's up to 600 (or the ground + 100);
     - the number on top is the height above the ground (aircraft) or the height of the ground (others);
     - `GROUND n m` in yellow below the bar.
-  - Measured with `zz_ren47.lua` (Behemoth with D-Gun and heavy lasers, Whirlwind bomber): screenshots look right, DPS of the two heavy lasers 500 (75 x 2 / 0.3 s).
+  - Measured with `zz_ren47.lua` (now part of `zz_ren48.lua`) (Behemoth with D-Gun and heavy lasers, Whirlwind bomber): screenshots look right, DPS of the two heavy lasers 500 (75 x 2 / 0.3 s).
 - **Panel, second round (the pointers and the arrow on the ground of this round were replaced by the compass below):** the panel is 502 wide with a picture (432 without; 35% more), a row is 80 high (the picture of 6 : 1 is no longer squeezed);
   - **the button (LMB, RMB, MMB, AUTO; `AIR ONLY` under it) is a coloured column at the right of the card**, outside of the picture;
   - the rows are **sorted by range** (shortest on top, `table.sort` with the order of the buttons as the tie breaker; AUTO rows last);

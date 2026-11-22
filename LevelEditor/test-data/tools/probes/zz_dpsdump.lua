@@ -1,5 +1,5 @@
-function widget:GetInfo() return { name = "zz dps dump", desc = "test only", layer = 0, enabled = true } end
--- Writes one line per armed mobile ground unit: faction, name, tech, dps against default armor, health, metal, speed, range, human name
+function widget:GetInfo() return { name = "zz dps dump", desc = "test only: damage per second and numbers of every armed mobile ground unit", layer = 0, enabled = true } end
+-- Test widget of arena_test.ps1 -Widget zz_dpsdump.lua: writes one line per armed mobile ground unit: faction, name, tech, dps against default armor, health, metal, speed, range, human name
 local done = false
 function widget:GameFrame(f)
 	if done or f < 30 then return end

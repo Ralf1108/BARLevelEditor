@@ -11,7 +11,7 @@ $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted
 $d = New-SandboxData $Work $Data @('LuaUI\Include', 'LuaUI\Config')
 Copy-Item "$repo\BluePrinter\bluePrinter.lua" "$d\LuaUI\Widgets\"
 Copy-Item "$repo\shared\editor_common.lua", "$repo\shared\bar_rules.lua", "$repo\shared\area_attack.lua" "$d\LuaUI\Include\"
-Copy-Item "$tools\$Widget" "$d\LuaUI\Widgets\"
+Copy-Item (Resolve-TestWidget $tools $Widget) "$d\LuaUI\Widgets\"
 $game = Get-GameVersion $Data
 $script = @"
 [game]
@@ -38,3 +38,4 @@ $script = @"
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
 Write-SandboxSettings "$Work\springsettings.cfg" @(40, 40, 1800, 1000) @('Sound = 0', 'MaxSounds = 0')
 Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzar\]|Failed to load|Error'
+Exit-SandboxTest   # (exit code 1 when the verdict is FAILED: test_common.ps1)

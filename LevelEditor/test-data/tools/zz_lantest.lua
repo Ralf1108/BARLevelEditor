@@ -1,4 +1,5 @@
-function widget:GetInfo() return { name = "zz LAN test", desc = "test only", layer = 0, enabled = true } end
+function widget:GetInfo() return { name = "zz LAN test", desc = "test only: the game started by a LAN or console lobby test", layer = 0, enabled = true } end
+-- Test widget of lan_test.ps1 (every mode) and console_test.ps1: in the game that a lobby started it logs the mode, the teams and the players and what the mode needs. Lines "[zzlan]" (see the file).
 local mo = Spring.GetModOptions() or {}
 local mode = mo.lanevolution == "1" and "evo" or (mo.rtfconfig and "rtf" or (mo.ctfconfig and "ctf" or (mo.tdconfig and "td" or "cp")))
 local function readFile(name)

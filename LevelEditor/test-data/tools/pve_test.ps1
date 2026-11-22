@@ -28,7 +28,7 @@ $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 $Data = Resolve-TestData $Data   # the data folder of the installation (-Data, otherwise Find-Bar of bar_common.ps1)
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = New-SandboxData $Work $Data @('LuaUI\Config')
-Copy-Item "$tools\$Widget" "$d\LuaUI\Widgets\"
+Copy-Item (Resolve-TestWidget $tools $Widget) "$d\LuaUI\Widgets\"
 if ($Live) {   # the widget of the repository as a loose file (it is loaded before the one in the game package) and the watcher zz_live.lua: live.ps1 changes it and reloads the widgets
     Copy-Item "$tools\zz_live.lua" "$d\LuaUI\Widgets\"
     Copy-Item (Join-Path $repo 'LevelEditor\scripts\renegade.lua') "$d\LuaUI\Widgets\renegade.lua" -Force
@@ -79,3 +79,4 @@ $(if ($Evo -or $Ren) { "`t[ai0] { shortname=NullAI; team=1; host=0; name=Null1; 
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
 Write-SandboxSettings "$Work\springsettings.cfg" $(if ($Evo -or $Ren) { , @(40, 40, 1600, 900) } else { , @(40, 40, 1200, 700) }) @('Sound = 0', 'MaxSounds = 0')
 Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzren\]|\[zzren3\]|\[Renegade\]|\[zzdoc\]|\[zzhell\]|\[zzgates\]|\[zzaim\]|\[zzaitake\]|\[zzcloak\]|\[zzpve\]|\[zzbrood\]|\[zzevoshot\]|\[Evolution\]|\[LAN\]|Failed to load|Error|tweakdef' 80 " ($Ai, hold $Hold, layout $Layout, game $($sg.Name))"
+Exit-SandboxTest   # (exit code 1 when the verdict is FAILED: test_common.ps1)

@@ -1,4 +1,5 @@
 function widget:GetInfo() return { name = "zz menu", desc = "test only: menu switching", layer = 1000000, enabled = true } end
+-- Test widget of arena_test.ps1 -Widget zz_menu.lua: every pair of side buttons of the Level Editor is switched, each time exactly the chosen page must be active. Lines "zz: ...".
 local function log(t) Spring.Echo("zz: " .. t) end
 local function W() return WG.LevelEditorWidget end
 local function allRects()

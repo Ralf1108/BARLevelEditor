@@ -28,7 +28,7 @@ Thank you for helping. This page tells you how to report a problem and how to ch
    - the mock tests of the shared Lua code pass
    - every link in the documents works
    - the PowerShell code passes its tests
-4. Check it in the game: [specs/testing.md](specs/testing.md) and [LevelEditor/test-data/README.md](LevelEditor/test-data/README.md) describe the sandbox tests.
+4. Check it in the game: `powershell -File LevelEditor\test-data\tools\run_game_tests.ps1 -Only <part>` runs the tests of a part in sandbox games and says passed or failed (`-List` shows them). [specs/testing.md](specs/testing.md) and [LevelEditor/test-data/README.md](LevelEditor/test-data/README.md) describe the tools.
 5. Send a pull request with one topic. Say what you tested and how.
 
 ## Where things are

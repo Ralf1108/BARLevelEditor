@@ -6,7 +6,7 @@
   python evolution_units.py <infolog.txt>   makes the csv new from the numbers of the game (see below); the Level and Long range of a unit that is in the csv already
                                             are kept (your changes); then the table and the lists.
 
-Input: the lines "[zzunit] ..." that tools/zz_unitdump.lua writes into the infolog of a sandbox run (pve_test.ps1 -Widget zz_unitdump.lua), and
+Input: the lines "[zzunit] ..." that tools/probes/zz_unitdump.lua writes into the infolog of a sandbox run (pve_test.ps1 -Widget zz_unitdump.lua), and
 shared/unit_categories/unit_categories.json (type of a unit: bots, vehicles, hover, air, sea). The level of a unit: the Evolution level whose
 reference units (the current LADDERS of evo_game.lua) have the closest score = damage per second x health (on a logarithmic scale).
 Usage: python evolution_units.py <infolog.txt>

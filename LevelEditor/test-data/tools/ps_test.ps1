@@ -79,6 +79,15 @@ try {
     $s = Get-Content $renFile -Raw
     Check ($s -match 'lanrenemode=race;' -and $s -match 'mapname=Comet Catcher Remake 1\.8;') '-Mode race (start_race.bat): the game option lanrenemode=race'
 
+    Group 'start_experimental.ps1 -DryRun'
+    $exp = Join-Path $repo 'LevelEditor\scripts\start_experimental.ps1'
+    $expFile = Join-Path $repo 'LevelEditor\experimental_script_installed.txt'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $exp -Data $data -DryRun -Map 'Third Map 2.0' | Out-Null
+    $s = Get-Content $expFile -Raw
+    Check ($LASTEXITCODE -eq 0) 'the script ends without an error'
+    Check ($s -match 'mapname=Third Map 2\.0;' -and $s -match 'gametype=Level Editor Scenarios abc12345;') 'the map and the extra game'
+    Check ($s -match 'lanexpunits=1;' -and $s -match 'lanexpdemo=1;') 'the game options of the Experimental Units and their test start'
+
     Group 'start_evolution.ps1 -DryRun'
     $evo = Join-Path $repo 'LevelEditor\scripts\start_evolution.ps1'
     $evoFile = Join-Path $repo 'LevelEditor\evolution_script_installed.txt'

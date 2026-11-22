@@ -1,5 +1,5 @@
 function widget:GetInfo() return { name = "zz ren40", desc = "test only: our own bomb release for every bomber", layer = 1, enabled = true } end
--- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren39.lua: the gadget uses the engine's own bomb release (ren|test|4: the target is the ground under the aircraft, no bombs of our own). For every
+-- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren40.lua: the gadget uses the engine's own bomb release (ren|test|4: the target is the ground under the aircraft, no bombs of our own). For every
 -- aircraft of Armada, Cortex and Legion with an AircraftBomb weapon, one after the other: the player becomes it, it takes off (W), then Ctrl and the left button are held: it sinks until the engine fires.
 -- The gadget logs "weapon 1 fired ... <unit> at <height> above the ground"; this widget logs the unit, its cruise altitude and the height every 20 frames. Lines "[zzren40]".
 local function log(...) Spring.Echo("[zzren40] " .. table.concat({ ... }, " ")) end

@@ -1,7 +1,7 @@
-function widget:GetInfo() return { name = "zz lavagen", desc = "test only: the model of the Lava Extractor and the blocks of its yard", layer = 1000000, enabled = true } end
+function widget:GetInfo() return { name = "zz lavagen", desc = "test only: the model of the Lava Extractor and the blocks on its storage pads", layer = 1000000, enabled = true } end
 -- Test widget of arena_test.ps1 -Widget zz_lavagen.lua: the Lava Extractor with its own model (objects3d/Units/lavagen.s3o) and Lua unit script
 -- (scripts/Units/lavagen.lua) on a Volcano, and one beside it (stands still). Pictures close up: at the start (stock nearly empty), after a minute
--- (the yard fills with blocks), after a Forklift took 3 boxes (fewer blocks). Logs "[zzgen]" lines (definition, stock), ends with quitforce.
+-- (the storage pads fill with blocks), after a Forklift took 3 boxes (fewer blocks). Logs "[zzgen]" lines (definition, stock), ends with quitforce.
 local function log(...)
 	local t = {}
 	for i = 1, select("#", ...) do t[i] = tostring((select(i, ...))) end

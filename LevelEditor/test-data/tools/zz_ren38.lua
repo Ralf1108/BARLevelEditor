@@ -1,5 +1,5 @@
 function widget:GetInfo() return { name = "zz ren38", desc = "test only: Renegade bomber, one short click at 400 above the ground (the gadget drops the bombs itself)", layer = 1, enabled = true } end
--- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren37.lua: the player becomes a Tsunami (armsb), takes off (W held), stays at its take-off height of about 400 (no Ctrl: the engine's own bomb weapon would not fire there), then the left
+-- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren38.lua: the player becomes a Tsunami (armsb), takes off (W held), stays at its take-off height of about 400 (no Ctrl: the engine's own bomb weapon would not fire there), then the left
 -- button is clicked for 3 frames (a short click), later once more for 3 frames. The gadget logs "press" and "fired" with the frames. Lines "[zzren38]".
 local function log(...) Spring.Echo("[zzren38] " .. table.concat({ ... }, " ")) end
 local R

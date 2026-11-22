@@ -1,4 +1,5 @@
 function widget:GetInfo() return { name = "zz mix", desc = "test only: Raptors vs Scavengers", layer = 1000000, enabled = true } end
+-- Test widget of lan_test.ps1 -Mode mix (copied to the host): Raptors against Scavengers in one game: logs the AI teams, their alliance and the kills between them. Lines "[zzmix]".
 local function log(...) local t = {} for i, v in ipairs({ ... }) do t[i] = tostring(v) end Spring.Echo("[zzmix] " .. table.concat(t, " ")) end
 local ai = {}   -- teamID -> name
 local kills = {}  -- "a>b" -> n

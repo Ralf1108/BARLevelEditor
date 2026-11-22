@@ -79,7 +79,8 @@ function Push-SandboxWindow($p, [IntPtr]$prev) {
 
 # One test game: starts it with the settings file $cfg, the data folder $d and the start script $script, keeps the window behind the others, waits until the game
 # ends itself (quitforce of the test widget) or $waitSec run out (then it is closed, and stopped if it does not close), and prints the lines of infolog.txt that
-# match $pattern (at most $maxLines). Only this process is ever stopped.
+# match $pattern or come from a test widget ("[zz...]") (at most $maxLines). Only this process is ever stopped.
+# Ends with one line "VERDICT: ..." (Get-SandboxVerdict) and sets $global:SandboxFailed; the test tools end with Exit-SandboxTest (exit code 1 when failed).
 function Invoke-SandboxGame([string]$exe, [string]$cfg, [string]$d, [string]$script, [int]$waitSec, [string]$pattern, [int]$maxLines = 120, [string]$note = '') {
     $prev = [SbxWin]::GetForegroundWindow()
     $p = Start-SandboxProcess $exe @('--config', $cfg, '--write-dir', $d, $script)
@@ -90,6 +91,42 @@ function Invoke-SandboxGame([string]$exe, [string]$cfg, [string]$d, [string]$scr
         if ($p.MainWindowHandle -ne [IntPtr]::Zero) { [void][SbxWin]::SetWindowPos($p.MainWindowHandle, [IntPtr]1, 0, 0, 0, 0, 0x0013); [void][SbxWin]::SetForegroundWindow($prev) }
         Start-Sleep 3
     }
+    $timedOut = -not $p.HasExited
     if (-not $p.HasExited) { 'timeout: ending the test game'; try { $p.CloseMainWindow() | Out-Null; Start-Sleep 5; if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force } } catch {} } else { 'the game ended itself' }
-    Select-String -Path "$d\infolog.txt" -Pattern $pattern -ErrorAction SilentlyContinue | ForEach-Object { $_.Line } | Select-Object -First $maxLines
+    # (first the other lines that match, without the noise every start of the game logs, at most 25; then the lines of the test widget)
+    $found = @(Select-String -Path "$d\infolog.txt" -Pattern ($pattern + '|\[zz\w*\]|\] zz: ') -ErrorAction SilentlyContinue | ForEach-Object { $_.Line })
+    $found | Where-Object { $_ -notmatch '\[zz\w*\]|\] zz: ' -and $_ -notmatch 'is deprecated|CIconHandler|\[weapondefs\.lua\]|__defs_write\.lua' } | Select-Object -First 25
+    $found | Where-Object { $_ -match '\[zz\w*\]|\] zz: ' } | Select-Object -First $maxLines
+    $v = Get-SandboxVerdict "$d\infolog.txt" $timedOut
+    $global:SandboxFailed = $v.Failed
+    $v.Text
 }
+
+# The verdict of a test game from its infolog.txt: failed when a line of a test widget ("[zz...]" or "zz: ...") holds the word WRONG, FAIL or FAILED, when a Lua
+# error shows ("attempt to ...", "stack traceback", "Error in <call-in>()", "RunCallIn: error", "Failed to load: <a file of ours>") or when the game
+# did not end itself; passed when there is at least one OK or PASS and none of these; otherwise "no verdict" (the widget only logs values: read the lines).
+# Returns { Failed; Text }.
+function Get-SandboxVerdict([string]$log, [bool]$timedOut = $false) {
+    $lines = @(Get-Content $log -ErrorAction SilentlyContinue)
+    $zz = @($lines | Where-Object { $_ -match '\[zz\w*\]|\] zz: ' })
+    $wrong = @($zz | Where-Object { $_ -cmatch '\b(WRONG|FAIL|FAILED)\b' }).Count
+    $ok = @($zz | Where-Object { $_ -cmatch '\b(OK|PASS)\b' }).Count
+    $lua = @($lines | Where-Object { $_ -match 'attempt to (index|call|compare|perform|concatenate|get length)|stack traceback|Error in \w+\(\)|RunCallIn: error|Failed to load: (zz_|lvl_|unit_level|led_|lan_|evo_|renegade|ctf_|rtf_|td_|lava_|bluePrinter|powerups|mode_ui|scenario_)' }).Count
+    $why = @()
+    if ($wrong) { $why += "$wrong WRONG / FAIL" }
+    if ($lua) { $why += "$lua Lua error line(s)" }
+    if ($timedOut) { $why += 'the game did not end itself' }
+    if (-not $lines.Count) { $why += 'no infolog.txt' }
+    if ($why.Count) { return [pscustomobject]@{ Failed = $true; Text = "VERDICT: FAILED ($($why -join ', '); $ok OK)" } }
+    if ($ok) { return [pscustomobject]@{ Failed = $false; Text = "VERDICT: passed ($ok OK)" } }
+    return [pscustomobject]@{ Failed = $false; Text = "VERDICT: no verdict (the widget logs no OK / WRONG: read its lines; no Lua error, $($zz.Count) lines)" }
+}
+
+# The path of the test widget $name: in the folder of the tools, otherwise in its folder probes (widgets that only measure or dump)
+function Resolve-TestWidget([string]$tools, [string]$name) {
+    foreach ($p in (Join-Path $tools $name), (Join-Path $tools "probes\$name")) { if (Test-Path $p) { return $p } }
+    throw "Test widget not found: $name (in $tools and $tools\probes)"
+}
+
+# The end of a test tool: exit code 1 when the last test game failed
+function Exit-SandboxTest { if ($global:SandboxFailed) { exit 1 } else { exit 0 } }

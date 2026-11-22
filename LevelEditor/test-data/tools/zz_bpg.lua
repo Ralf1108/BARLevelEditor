@@ -1,4 +1,5 @@
 function widget:GetInfo() return { name = "zz bpg", desc = "test only: ghosts after undo", layer = 1000001, enabled = true } end
+-- Test widget of bp_test.ps1 -Widget zz_bpg.lua: queues plans through the test hooks of the BluePrinter, undoes them and logs the ghosts that are left. Lines "zz: ...".
 local function log(t) Spring.Echo("zz: " .. t) end
 local function W() return WG.BluePrinterWidget end
 local cid, cx, cy, cz

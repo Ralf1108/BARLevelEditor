@@ -1,6 +1,6 @@
 function widget:GetInfo() return { name = "zz ren48", desc = "test only: the wider panel, the pointers and the list of the players", layer = 1, enabled = true } end
--- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren47.lua: the player becomes a Juggernaut, an Ambassador and a Tsunami one after the other, a picture is taken of each.
-local list = { "armpw", "corjugg", "armmav" }
+-- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren48.lua: the player becomes these units one after the other (a bot, the Juggernaut with its weapon rows, a bot with pointers, the Rattlesnake and a bomber: what zz_ren47.lua showed is part of it), a picture is taken of each.
+local list = { "armpw", "corjugg", "armmav", "armamb", "corshad" }
 function widget:GameFrame(f)
 	local R = WG.renegade
 	if not R then return end

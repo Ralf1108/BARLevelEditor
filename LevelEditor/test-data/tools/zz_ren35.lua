@@ -1,5 +1,5 @@
 function widget:GetInfo() return { name = "zz ren35", desc = "test only: Renegade bomber with Space held never gets over its highest height", layer = 1, enabled = true } end
--- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren34.lua: the player becomes a bomber (armthund), takes off (W), then W and Space are held (it flies straight and tries to climb on); it must not get over its highest height (495 above the ground). Logs every 15 frames the ground height, the height above the ground and the vertical speed. Lines "[zzren35]".
+-- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren35.lua: the player becomes a bomber (armthund), takes off (W), then W and Space are held (it flies straight and tries to climb on); it must not get over its highest height (495 above the ground). Logs every 15 frames the ground height, the height above the ground and the vertical speed. Lines "[zzren35]".
 local function log(...) Spring.Echo("[zzren35] " .. table.concat({ ... }, " ")) end
 local R, bestYaw
 local function pick(x, z)

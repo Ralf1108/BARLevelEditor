@@ -1,4 +1,5 @@
 function widget:GetInfo() return { name = "zz bpt", desc = "test only: BluePrinter plan tests", layer = 1000001, enabled = true } end
+-- Test widget of bp_test.ps1 -Widget zz_bpt.lua: select, order, rotate, remove and undo of plans through the test hooks of the BluePrinter. Lines "zz: PASS ..." / "zz: FAIL ...".
 local function log(t) Spring.Echo("zz: " .. t) end
 local function chk(ok, msg) log((ok and "PASS " or "FAIL ") .. msg) end
 local function W() return WG.BluePrinterWidget end

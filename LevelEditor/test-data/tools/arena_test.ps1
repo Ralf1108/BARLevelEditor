@@ -11,7 +11,7 @@ $Data = Resolve-TestData $Data   # the data folder of the installation (-Data, o
 if (-not $AlongsideGame -and (Get-Process spring -ErrorAction SilentlyContinue)) { 'A game is running: aborted'; return }
 $exe = (Get-Engine $Data).FullName + '\spring.exe'   # the newest engine (sorted by version, Get-Engine of bar_common.ps1)
 $d = New-SandboxData $Work $Data @('LevelEditor')
-Copy-Item ("$tools\" + $(if ($Widget) { $Widget } elseif ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
+Copy-Item (Resolve-TestWidget $tools $(if ($Widget) { $Widget } elseif ($Shots) { 'zz_arena_shots.lua' } else { 'zz_arena.lua' })) "$d\LuaUI\Widgets\"
 Copy-Item "$tools\..\levels\*.lua" "$d\LevelEditor\"   # the test levels (td_test, ctf_test, rtf_test) for the widgets that load them
 Copy-Item "$repo\LevelEditor\levels\demo_*.lua" "$d\LevelEditor\"   # the demo levels (the memory test, the pictures)
 if (Test-Path "$repo\LevelEditor\blueprints") { New-Item -ItemType Directory "$d\LevelEditorBlueprints" -Force | Out-Null; Copy-Item "$repo\LevelEditor\blueprints\*" "$d\LevelEditorBlueprints\" -Recurse }   # the sample blueprints (the pictures)
@@ -44,3 +44,4 @@ $teams
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
 Write-SandboxSettings "$Work\springsettings.cfg" @(60, 60, 2400, 1300) (@('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0') + @($Settings -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ }))
 Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzar\]|Failed to load|Error'
+Exit-SandboxTest   # (exit code 1 when the verdict is FAILED: test_common.ps1)

@@ -67,9 +67,29 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
 - `make_demo_levels.py`: the three demo levels.
 - A generator writes only between its `BEGIN` and `END` marks; a second run changes nothing (checked for the weapon tables, the pool and the demo levels).
 
+## Tests in the game (`tools\run_game_tests.ps1`)
+
+- `powershell -File tools\run_game_tests.ps1` runs the **regression set**: every test widget that gives a verdict, one sandbox game after the other, then a table (exit code 1 when one failed). About an hour.
+  - `-List` prints the set, `-Only lava` (or `-Only zz_teams,zz_save`) runs a part, `-Group editor|modes|lava|blueprinter` one group.
+- Every test game ends with `VERDICT: passed (n OK)`, `VERDICT: FAILED (...)` or `VERDICT: no verdict` (the widget only logs values: read its lines).
+  - Failed: a line of the widget with WRONG or FAIL, a Lua error in `infolog.txt`, or the game did not end itself.
+  - `arena_test.ps1`, `pve_test.ps1` and `bp_test.ps1` return exit code 1 then.
+- [tests-index.md](tests-index.md) lists every widget with its kind:
+
+| Kind | What it is |
+|---|---|
+| set | a test of the regression set |
+| test | gives a verdict, but is started by another tool (`lan_test.ps1`) |
+| check | logs the values of a behaviour; the log is read |
+| pictures | takes the pictures of a manual |
+| probe | measured or dumped something once (`tools\probes`); not a test |
+
+- A new test: log `OK` / `WRONG` lines, end with `quitforce`, add it to `$set` in `run_game_tests.ps1`. Put several checks into one game: a game start costs a minute.
+- The tools find a widget in `tools` or `tools\probes` (`-Widget zz_tech.lua` works for both).
+
 ## Checks without the game (`tools\run_checks.ps1`)
 
-- `powershell -File tools\run_checks.ps1` runs `lua_check.py`, `mock_test.py`, `doc_check.py` (the links of the documents) and `ps_test.ps1` (the PowerShell code against a dummy data folder, the quick start scripts with `-DryRun`, the parse of every `.ps1`, no control characters in a text file) and prints a table.
+- `powershell -File tools\run_checks.ps1` runs `lua_check.py` (compile with Lua 5.1; a local used above its declaration; an unknown global), `mock_test.py`, `doc_check.py` (the links of the documents), the test index (every widget has a description and its own start command) and `ps_test.ps1` (the PowerShell code against a dummy data folder, the quick start scripts with `-DryRun`, the parse of every `.ps1`, no control characters in a text file) and prints a table.
 - The GitHub Action `.github/workflows/checks.yml` runs it on every push and pull request.
 
 ## Mock tests (`tools\mock_test.py`)
@@ -78,6 +98,7 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
 - `mock_area_attack.lua` drags the attacks of `shared\area_attack.lua` on a flat fake map: XS spreads the tanks over the enemies and never targets own, allied or Gaia units, a turret only takes targets in its range, XF takes the dangerous targets first, plans again when a target died, leaves a unit alone that the player stopped and ends when the enemies are dead;
   - XL, XR and XC give every unit its own ground target in the shape, bombers form up first and anti-air units stay out.
 - `mock_gadgets.lua` loads `scripts\led_gadgets.lua` and `shared\bar_rules.lua` with a fake feature list and checks the wreck reclaim of Renegade and Evolution (`G.reclaimFeatures`: the budget per second, the room, a unit at full health still takes energy, a small wreck is used up), `G.split`, `G.fields`, `G.allianceName`, `decode64`, `headingToFacing` and `techLevel`.
+- `mock_powerups.lua` loads `scripts/powerups.lua` (the power-ups of Evolution and Renegade) with a fake player: who may use one, the energy, Repair (20 % of the health, nothing at full health), Sprint (1.5 times the speed, back at the end), the cooldowns, the Radar Pulse, the rules for the unsynced part, the loss.
 - `mock_editor_common.lua` loads `shared\editor_common.lua` with dummies for the game and checks the rows and rectangles dragged with Shift / Shift+Alt (`dragStamp`, `unitFootprint`: the key states cannot be given in a test game) and the undo history of the points of a page (`newPointHistory`).
 
 ## Shared parts of the test tools (`tools\test_common.ps1`)

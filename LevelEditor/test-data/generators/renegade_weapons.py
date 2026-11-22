@@ -3,7 +3,7 @@
   python renegade_weapons.py update                makes the table game-modes/renegade-weapons.md (for reading) and the block WEAPON_BUTTONS (between -- BEGIN WEAPONS and
                                                    -- END WEAPONS) of scripts/renegade_data.lua (the weapon tables of renegade_game.lua) from game-modes/renegade_weapons.csv, which is the source: change the columns
                                                    Fire button there (Excel) and run update_renegade_weapons.bat in game-modes.
-  python renegade_weapons.py table <infolog.txt>   makes the csv (and the md and the block) new from the lines "[zzwep] ..." that tools/zz_weapondump.lua writes into the
+  python renegade_weapons.py table <infolog.txt>   makes the csv (and the md and the block) new from the lines "[zzwep] ..." that tools/probes/zz_weapondump.lua writes into the
                                                    infolog of a sandbox run (pve_test.ps1 -Ren -Widget zz_weapondump.lua). Fire button and Weapon image of a row that is in the csv
                                                    already are kept (your changes); new rows get the proposal.
 

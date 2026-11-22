@@ -6,7 +6,7 @@
 
 Heat rays (description with "heat ray") are one category (yellow), the lasers of the heaviest kind (tachyon, ion accelerator, "ultra" word or the ultra limit of the damage) another (laser-ultra, blue and very thick).
 A weapon gets a family (laser, plasma cannon, missile launcher ...) from its Type and its description. The families laser, plasma, cannon, missile and machine-gun have four sizes (light, medium, heavy, ultra):
-the size comes from the tech level of the unit (T1 light, T2 medium, T3 and above heavy; renegade_unit_tech.csv, read from the game by test-data/tools/zz_tech.lua), moved one step down by a weak shot
+the size comes from the tech level of the unit (T1 light, T2 medium, T3 and above heavy; renegade_unit_tech.csv, read from the game by test-data/tools/probes/zz_tech.lua), moved one step down by a weak shot
 and one step up by a strong shot (damage per second against the limits of the family in renegade_weapon_limits.csv); a shot at the ultra limit is ultra whatever the unit is.
 Weapons without a button (footsteps, dummies) are left out.
 """
