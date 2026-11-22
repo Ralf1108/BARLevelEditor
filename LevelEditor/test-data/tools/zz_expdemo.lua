@@ -36,11 +36,34 @@ steps[700] = function()
 	end
 	log("Haul for all three, stock", Spring.GetUnitRulesParam(found.armlavagen, "lavaStock"))
 end
+steps[3000] = function()
+	local gx, _, gz = Spring.GetUnitPosition(found.armlavagen)
+	Spring.SetCameraState({ name = "ta", mode = 1, px = gx + 200, py = 0, pz = gz + 60, height = 700, angle = 0.9, flipped = -1 }, 0)
+end
+steps[3030] = function() Spring.SendCommands("screenshot png"); log("picture: after 100 seconds") end
 steps[4200] = function()
 	local d = Spring.GetTeamRulesParam(0, "lavaDelivered") or 0
 	log("delivered", d, ok(d >= 100))
+	local gx, _, gz = Spring.GetUnitPosition(found.armlavagen)
+	for _, n in ipairs({ "armlavacarrier", "armlavatruck", "armlavafork" }) do
+		local u = found[n]
+		local x, _, z = Spring.GetUnitPosition(u)
+		local q = Spring.GetUnitCommands(u, 3) or {}
+		log("at the end", n, "hauling", Spring.GetUnitRulesParam(u, "lavaHauling"), "load", Spring.GetUnitRulesParam(u, "lavaLoad"), "at", math.floor(x - gx), math.floor(z - gz), "from the extractor, orders", #q, q[1] and q[1].id or "")
+	end
 	log("done"); Spring.SendCommands("quitforce")
 end
+local last = {}
 function widget:GameFrame(f)
 	if steps[f] then steps[f]() end
+	if f > 60 and f % 15 == 4 then -- (every load and every delivery of the three, with the stock)
+		for _, n in ipairs({ "armlavacarrier", "armlavatruck", "armlavafork" }) do
+			local u = found[n]
+			local load = u and Spring.GetUnitRulesParam(u, "lavaLoad") or 0
+			if (load == 0) ~= ((last[n] or 0) == 0) then
+				log("frame", f, n, load > 0 and "loaded" or "delivered", "stock", Spring.GetUnitRulesParam(found.armlavagen, "lavaStock"))
+			end
+			last[n] = load
+		end
+	end
 end

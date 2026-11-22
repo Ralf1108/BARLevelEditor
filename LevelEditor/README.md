@@ -126,9 +126,12 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
   - **Right-click a factory**: it delivers there instead.
   - Any other order stops it.
-- **Cargo Truck** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Carries **60** metal per trip, orders as for the Carrier.
+  - **On its own** (move state **Maneuver** or **Roam**, the default): an idle Carrier hauls again from its last Lava Extractor after a Move or another order; a new one from the factory takes the nearest Lava Extractor (up to 1200 away).
+  - On **Hold Position**, or after **Stop**, it waits for your order Haul.
+- **Cargo Truck** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Carries **60** metal per trip in 6 crates, orders as for the Carrier.
+  - At the storage pad it turns, backs up to the pad, opens its tailgate and the crates slide in one by one; at the factory it unloads them one by one.
 
-![The Cargo Truck (top, with the container) next to the missile truck it is made from](../docs/lava-cargo-truck.jpg)
+![The Cargo Truck with its open bed next to the missile truck it is made from (left), backed up to a storage pad loading crates (right)](../docs/lava-cargo-truck.jpg)
 
 - **Forklift** (Armada): Units tab, **Vehicles**, T1; in the game built in the vehicle plant. Slow; carries up to **3 boxes of 30 metal**, shown on its fork.
   - At the generator it loads a box every half second while the stock has one; it leaves when it has 3 boxes or the stock is empty.

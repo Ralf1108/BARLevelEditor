@@ -9,7 +9,9 @@
 --   Carrier (armlavacarrier, corlavacarrier, leglavacarrier): a copy of the light bot of the bot lab without weapons; it carries the metal of a Lava
 --     Generator to a factory (the gadget).
 --   Cargo Truck (armlavatruck): a copy of the missile truck armsam with a model of its own (objects3d/Units/armlavatruck.s3o, made by
---     LevelEditor/models/make_lava_truck.py: the launcher replaced by a container), without weapons; it carries more (customparams.lavaload).
+--     LevelEditor/models/make_lava_truck.py: the launcher replaced by an open bed with a tailgate and six crates) and a Lua unit script
+--     (scripts/Units/armlavatruck.lua: wheels, tailgate, crates), without weapons; it carries more (customparams.lavaload) in crates of 10
+--     (lavacrate) and backs up to a storage pad to load (lavadock).
 --   Forklift (armlavafork): a copy of the scout car armfav with a model of its own (objects3d/Units/armlavafork.s3o, made by
 --     LevelEditor/models/make_lava_forklift.py: a mast with a fork and three boxes) and a Lua unit script (scripts/Units/armlavafork.lua: it shows
 --     the boxes it carries), without weapons; it loads boxes of 30 metal (customparams.lavabox), at most three.
@@ -85,6 +87,7 @@ end
 local function truck(sam)
 	local d = named(copy(sam), "Cargo Truck", "Carries 60 metal: right-click a Lava Extractor to haul its metal to the nearest factory, right-click a factory to deliver there (order Haul)")
 	d.objectname = "Units/armlavatruck.s3o"
+	d.script = "Units/armlavatruck.lua"
 	d.weapondefs, d.weapons = {}, {}
 	d.airsightdistance = nil
 	d.metalcost = 90
@@ -96,6 +99,8 @@ local function truck(sam)
 	cp.unitgroup = "util"
 	cp.lavacarrier = 1
 	cp.lavaload = 60
+	cp.lavacrate = 10 -- it loads and unloads crates of 10 metal (its unit script shows them)
+	cp.lavadock = 1 -- it backs up to a storage pad to load (the gadget)
 	return d
 end
 

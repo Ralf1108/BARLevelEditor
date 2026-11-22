@@ -1,8 +1,9 @@
 """Builds the model of the Cargo Truck (armlavatruck.s3o) from the model of BAR's missile truck armsam (Samson).
 
 The truck of the Volcano and Lava Extractor proof of concept (specs/lava.md): the rocket launcher of armsam is emptied (its pieces stay, the
-animation script of armsam names them) and a new piece "cargo" carries a container on the bed (plates of the texture Arm_color.dds of Armada, a
-stripe in team color on both sides). Everything else (body, cab, wheels, tracks) is armsam as it is. The model of armsam is a work of the BAR
+animation script of armsam names them) and a new piece "cargo" is an open bed (a floor, low side walls with a stripe in team color, a headboard
+behind the cab; plates of the texture Arm_color.dds of Armada) with a tailgate (piece "gate", it folds down) and six crates (crate1 .. crate6: two
+across, three along; the unit script armlavatruck.lua shows them and lets them slide in from behind while it loads). Everything else (body, cab, wheels, tracks) is armsam as it is. The model of armsam is a work of the BAR
 team (its licence applies to this copy too).
 
 Usage: python make_lava_truck.py [BAR data folder]   (default C:\\Games\\Beyond-All-Reason\\data)
@@ -100,6 +101,12 @@ def find(p, name):
 PLATE = (0.752, 0.255, 0.935, 0.43)  # the large grey plate with panels
 GRATE = (0.285, 0.700, 0.370, 0.735)  # the grate with the yellow frame (roof)
 TEAM = (0.627, 0.316, 0.670, 0.322)  # a solid bar of the team color mask (alpha)
+DARK = (0.255, 0.695, 0.278, 0.745)  # a dark grey metal (the floor of the bed)
+CRATE = (0.7552, 0.6671, 0.8016, 0.6960)  # a light panel with a frame (the crates)
+CRATE_X = (4.6, -4.6)  # the crates: two across (x), three along (z: the middle of each row, front to back); crate n: x CRATE_X[(n-1) % 2],
+CRATE_Z = (1.0, -7.5, -16.0)  # z CRATE_Z[(n-1) // 2]
+GATE_Z = -21.0  # the back of the bed: the hinge of the tailgate (at the floor)
+BED_Y = 13.0  # the top of the floor of the bed
 
 
 def quad(verts, idx, corners, normal, area):
@@ -120,13 +127,33 @@ def box(verts, idx, x0, x1, y0, y1, z0, z1, side, top, end):
     quad(verts, idx, [(x1, y0, z0), (x0, y0, z0), (x0, y1, z0), (x1, y1, z0)], (0, 0, -1), end)    # back (-z)
 
 
+def piece(name, off, verts, idx):
+    return {'name': name, 'vtype': 0, 'ptype': 0, 'coll': 0, 'off': off, 'verts': verts, 'idx': idx, 'children': []}
+
+
 def cargo_piece():
+    """the open bed behind the cab (the cab ends at z 8, the frame is at y 12)"""
     verts, idx = [], []
-    # the container on the bed (behind the cab: the cab ends at z 8, the bed is at y 12)
-    box(verts, idx, -10.5, 10.5, 12.0, 22.0, -21.0, 6.5, PLATE, GRATE, PLATE)
-    # a stripe in team color along both sides, a little outside the walls
-    box(verts, idx, -10.8, 10.8, 18.0, 19.6, -20.0, 5.5, TEAM, TEAM, TEAM)
-    return {'name': b'cargo', 'vtype': 0, 'ptype': 0, 'coll': 0, 'off': (0.0, 0.0, 0.0), 'verts': verts, 'idx': idx, 'children': []}
+    box(verts, idx, -10.5, 10.5, 12.0, BED_Y, GATE_Z, 6.5, PLATE, DARK, PLATE)  # the floor
+    for x0, x1 in ((-10.5, -9.5), (9.5, 10.5)):  # the side walls
+        box(verts, idx, x0, x1, BED_Y, 17.0, GATE_Z, 5.0, PLATE, PLATE, PLATE)
+    box(verts, idx, -10.5, 10.5, BED_Y, 21.0, 5.0, 6.5, PLATE, GRATE, PLATE)  # the headboard behind the cab
+    for x0, x1 in ((-10.8, -10.5), (10.5, 10.8)):  # a stripe in team color along both sides, on the walls (one box over the bed would cover it)
+        box(verts, idx, x0, x1, 15.0, 16.4, GATE_Z + 1.0, 4.0, TEAM, TEAM, TEAM)
+    return piece(b'cargo', (0.0, 0.0, 0.0), verts, idx)
+
+
+def gate_piece():
+    """the tailgate: turns around x at its foot (the back edge of the floor)"""
+    verts, idx = [], []
+    box(verts, idx, -9.5, 9.5, 0.0, 4.0, -1.0, 0.0, PLATE, PLATE, PLATE)
+    return piece(b'gate', (0.0, BED_Y, GATE_Z + 1.0), verts, idx)
+
+
+def crate_piece(n):
+    verts, idx = [], []
+    box(verts, idx, -4.0, 4.0, 0.0, 5.5, -3.8, 3.8, CRATE, CRATE, CRATE)
+    return piece(b'crate%d' % n, (CRATE_X[(n - 1) % 2], BED_Y, CRATE_Z[(n - 1) // 2]), verts, idx)
 
 
 def main():
@@ -135,7 +162,7 @@ def main():
     for name in (b'turret', b'mlauncher'):  # the rocket launcher: empty, the pieces stay for the script
         p = find(m['root'], name)
         p['verts'], p['idx'] = [], []
-    m['root']['children'].append(cargo_piece())
+    m['root']['children'] += [cargo_piece(), gate_piece()] + [crate_piece(n) for n in range(1, 7)]
     m['height'] = 22.0
     m['mid'] = (0.0, 9.0, -2.0)
     m['radius'] = 25.0

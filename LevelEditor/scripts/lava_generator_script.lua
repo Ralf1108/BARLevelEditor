@@ -20,11 +20,10 @@ end
 local PER_PAD = 6
 local SIG_WORK = 2
 local DROP_FALL = 15 -- how far a drop falls (Elmo, from the spout to the pool)
-local BELT = 74 -- how far a crate rides (Elmo, from the start of a belt to its pad)
+local BELT = 78 -- how far a crate rides (Elmo, from the start of a belt onto its pad: 29 to 107)
 local BELT_SPEED = 14
--- the belts in the order of the model: east (+x), south (+z), west (-x), north (-z): the axis and the sign of a Move outwards (the x axis of a
--- unit script is the other way round than the x of the model)
-local BELTS = { { x_axis, -1 }, { z_axis, 1 }, { x_axis, 1 }, { z_axis, -1 } }
+-- the belts in the order of the model: east (+x), south (+z), west (-x), north (-z): the axis and the sign of a Move outwards (as in the model)
+local BELTS = { { x_axis, 1 }, { z_axis, 1 }, { x_axis, -1 }, { z_axis, -1 } }
 local active = false
 
 local function piston(p, delay)

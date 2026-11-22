@@ -9,6 +9,10 @@
 -- A Carrier loads at a storage pad of the extractor: four, at the ends of its conveyor belts (east, south, west, north, outside the crater of a
 -- Volcano); it takes the nearest free loading spot (three outside each pad) and stops there; it never drives into the crater, and around the
 -- Volcano outside its lava: ROUTE. The vehicles at their spots are served in the order they came (none takes the metal another waits for).
+-- A Cargo Truck (customparams.lavadock) takes only the middle spot of a pad: there the gadget turns it, backs it up to the pad and loads it crate by
+-- crate (DOCK, Spring.MoveCtrl); it also unloads crate by crate (lavacrate).
+-- On its own (AUTO): a vehicle on Maneuver or Roam that stands idle hauls again from its last Lava Extractor (after a Move or another order), or
+-- from the nearest one of its team on a Volcano (a new one from the factory); on Hold Position or after Stop it waits for the order Haul.
 -- The unit scripts show it: a Lava Extractor (lava_generator_script.lua) turns its wheel, moves its pistons and lets lava drops fall while it works on
 -- a Volcano (SetActive; then crates ride out on its belts) and shows its stock as up to BLOCKS metal blocks on each pad (SetBlocks); a Forklift shows
 -- its boxes (SetBoxes).
@@ -36,15 +40,28 @@ local ON_RADIUS = 44 -- the middle of the generator at most so far from the midd
 local BLOCKS = 6 -- metal blocks on each storage pad of a Lava Extractor (its model): a full stock shows all
 local REACH = 70 -- a Carrier is at a building when it is this far from its edge (Elmo)
 local CMD_HAUL = 39761 -- the order Haul of the Carriers (its own id)
+local AUTO_RANGE = 1200 -- an idle vehicle on Maneuver or Roam without a last Lava Extractor takes the nearest one of its team so far away
+-- the Cargo Truck at a storage pad (frames of the game; r: out from the middle of the extractor on the line of the pad)
+local DOCK = {
+	TURN = 30, -- it turns its back to the pad and pulls out to r = OUT
+	OUT = 184,
+	BACK = 30, -- it backs up to r = AT (its back at the edge of the pad, 134)
+	AT = 160,
+	GATE = 12, -- the tailgate opens (and closes at the end)
+	CRATE = 15, -- one crate every so many frames
+}
 local ROUTE = {
 	DIRS = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } }, -- the storage pads of a Lava Extractor (its model): east, south, west, north (alike: turning does not matter)
 	STAND = 158, -- the loading spots: so far from the middle of the extractor on the line of a pad (the pads reach 106 to 134; just outside)
 	LANE = 26, -- three loading spots side by side at each pad, so far apart (12 in all: a vehicle takes the nearest free one)
-	AT_SPOT = 22, -- a vehicle at most so far from its spot is there
+	BUSY = 220, -- a spot at a pad where others wait counts so much farther away for each of them (the vehicles spread over the pads)
+	AT_SPOT = 28, -- a vehicle at most so far from its spot is there (the engine stops a little short when the others stand close)
 	DETOUR = 185, -- the way around a Volcano (its streams end at 160)
 	CLEAR = 152, -- a straight way that comes nearer to the middle of an extractor (the crater, the belts, the pads, the streams) goes around it
 	GRID = math.pi / 6, -- the fixed points of the way around: every 30 degrees (the middle of a step stays 179 from the middle)
 	PAST = 0.17, -- a point at most so far (radians, 10 degrees) ahead of a Carrier counts as passed: the next one is taken
+	DIRECT = 0.26, -- a target at most so far (radians, 15 degrees) from the direction of the vehicle (seen from the middle): straight there (a point of
+	-- the circle could lie behind a vehicle waiting at a pad: the engine drops a Move order it finds no way to)
 }
 
 local volcanoDef, genDef, carrierDef = {}, {}, {} -- defID -> true (carrierDef: -> { cap = load per trip, box = metal per box or nil })
@@ -58,7 +75,7 @@ for id, ud in pairs(UnitDefs) do
 	if cp.lavagenerator then
 		genDef[id] = true
 	elseif cp.lavacarrier then
-		carrierDef[id] = { cap = tonumber(cp.lavaload) or LOAD, box = tonumber(cp.lavabox) }
+		carrierDef[id] = { cap = tonumber(cp.lavaload) or LOAD, box = tonumber(cp.lavabox), crate = tonumber(cp.lavacrate), dock = cp.lavadock ~= nil }
 	end
 end
 local volcanoes = {} -- featureID -> { x, y, z }
@@ -83,7 +100,8 @@ end
 if gadgetHandler:IsSyncedCode() then
 	local gens = {} -- unitID -> { on = true/false/nil, stock = metal }
 	local carriers = {} -- unitID -> { src = generator, dst = chosen factory or nil, load = metal, cap = metal per trip, box = metal per box (Forklift),
-	-- go = a Forklift on its way to the factory, goal = unit it walks to }
+	-- go = a Forklift on its way to the factory, goal = unit it walks to, last = the extractor it hauled from (AUTO), stopped = the player said Stop,
+	-- crate = metal per crate and canDock (Cargo Truck), dock = its state at a pad while it backs up and loads }
 	local HAUL_STOP = { [CMD.MOVE] = true, [CMD.STOP] = true, [CMD.PATROL] = true, [CMD.FIGHT] = true, [CMD.GUARD] = true, [CMD.ATTACK] = true,
 		[CMD.RECLAIM] = true, [CMD.REPAIR] = true, [CMD.WAIT] = true }
 	local HAUL_DESC = {
@@ -177,18 +195,26 @@ if gadgetHandler:IsSyncedCode() then
 		return (Spring.GetUnitCommandCount and Spring.GetUnitCommandCount(c) or Spring.GetUnitCommands(c, 0)) or 0
 	end
 
+	-- an order of the gadget itself (AllowCommand lets it through; in the editor the orders of players come synced too, fromSynced cannot tell)
+	local own = false
+	local function order(c, cmd, params)
+		own = true
+		Spring.GiveOrderToUnit(c, cmd, params, 0)
+		own = false
+	end
+
 	local function walkTo(c, h, u)
 		if h.goal ~= u or orders(c) == 0 then
 			h.goal, h.gx = u, nil
 			local x, y, z = Spring.GetUnitPosition(u)
-			Spring.GiveOrderToUnit(c, CMD.MOVE, { x, y, z }, 0)
+			order(c, CMD.MOVE, { x, y, z })
 		end
 	end
 
 	local function walkPoint(c, h, x, z)
 		if h.goal or not h.gx or (h.gx - x) ^ 2 + (h.gz - z) ^ 2 > 256 or orders(c) == 0 then
 			h.goal, h.gx, h.gz = nil, x, z
-			Spring.GiveOrderToUnit(c, CMD.MOVE, { x, Spring.GetGroundHeight(x, z), z }, 0)
+			order(c, CMD.MOVE, { x, Spring.GetGroundHeight(x, z), z })
 		end
 	end
 
@@ -203,7 +229,7 @@ if gadgetHandler:IsSyncedCode() then
 	-- does the vehicle c still hold spot i of the extractor gen (hauling from it, not loaded and on its way)?
 	local function holds(gen, c, i)
 		local h = carriers[c]
-		return h and h.src == gen and h.spot == i and not (h.load > 0 and (h.go or not h.box)) or false
+		return h and h.src == gen and h.spot == i and (h.dock ~= nil or not (h.load > 0 and (h.go or not h.box))) or false
 	end
 
 	-- the spot of the vehicle c: its own, otherwise the nearest free one (nil when all 12 are taken)
@@ -212,12 +238,20 @@ if gadgetHandler:IsSyncedCode() then
 		if h.spot and g.spots[h.spot] == c then
 			return h.spot
 		end
+		local busy = {} -- pad -> vehicles holding a spot there
+		for i = 1, 3 * #ROUTE.DIRS do
+			local occ = g.spots[i]
+			if occ and occ ~= c and holds(h.src, occ, i) then
+				local pad = math.floor((i - 1) / 3)
+				busy[pad] = (busy[pad] or 0) + 1
+			end
+		end
 		local best, bi
 		for i = 1, 3 * #ROUTE.DIRS do
 			local occ = g.spots[i]
-			if not (occ and occ ~= c and holds(h.src, occ, i)) then
+			if not (occ and occ ~= c and holds(h.src, occ, i)) and not (h.canDock and (i - 1) % 3 ~= 1) then
 				local x, z = spotPos(h.src, i)
-				local dd = (x - cx) ^ 2 + (z - cz) ^ 2
+				local dd = math.sqrt((x - cx) ^ 2 + (z - cz) ^ 2) + ROUTE.BUSY * (busy[math.floor((i - 1) / 3)] or 0)
 				if not best or dd < best then
 					best, bi = dd, i
 				end
@@ -242,6 +276,9 @@ if gadgetHandler:IsSyncedCode() then
 		end
 		local ac = math.atan2(cz - vz, cx - vx)
 		local d = (math.atan2(tz - vz, tx - vx) - ac + math.pi) % (2 * math.pi) - math.pi
+		if math.abs(d) < ROUTE.DIRECT then
+			return tx, tz -- (the target lies in its own direction from the middle: straight there, not over a point of the circle)
+		end
 		local a
 		if d > 0 then
 			a = math.min(ac + d, math.ceil((ac + ROUTE.PAST) / ROUTE.GRID) * ROUTE.GRID)
@@ -261,6 +298,7 @@ if gadgetHandler:IsSyncedCode() then
 		end
 		local sx, sz, ux, uz = spotPos(h.src, i)
 		if (cx - sx) ^ 2 + (cz - sz) ^ 2 > ROUTE.AT_SPOT * ROUTE.AT_SPOT then
+			h.waitSince = nil -- (not there, or pushed away: its turn waits until it is there again; it never blocks the others from afar)
 			walkPoint(c, h, around(cx, cz, ux, uz, sx, sz))
 			return false
 		end
@@ -296,7 +334,106 @@ if gadgetHandler:IsSyncedCode() then
 		Spring.SetUnitRulesParam(c, "lavaLoad", load, { public = true })
 		if h.box then -- the boxes on the fork (the unit script of the Forklift)
 			callScript(c, "SetBoxes", math.ceil(load / h.box))
+		elseif h.crate and not h.dock then -- the crates on the bed (the unit script of the Cargo Truck; while it loads: LoadCrate)
+			callScript(c, "SetCrates", math.ceil(load / h.crate))
 		end
+	end
+
+	-- the heading of the unit c (radians; its front is (sin, cos))
+	local function heading(c)
+		local dx, _, dz = Spring.GetUnitDirection(c)
+		return math.atan2(dx, dz)
+	end
+
+	-- the Cargo Truck c at its spot: the gadget moves it (MoveCtrl) from now on, DOCK
+	local function startDock(c, h)
+		local d = ROUTE.DIRS[math.floor((h.spot - 1) / 3) + 1]
+		local ux, _, uz = Spring.GetUnitPosition(h.src)
+		local cx, _, cz = Spring.GetUnitPosition(c)
+		order(c, CMD.STOP, {})
+		Spring.MoveCtrl.Enable(c)
+		if not DOCK.sign then -- (which way MoveCtrl.SetRotation turns: once, by the direction it gives)
+			Spring.MoveCtrl.SetRotation(c, 0, 0, 0)
+			local a0 = heading(c)
+			Spring.MoveCtrl.SetRotation(c, 0, 0.5, 0)
+			local a1 = heading(c)
+			DOCK.sign = ((a1 - a0 + math.pi) % (2 * math.pi) - math.pi) > 0 and 1 or -1
+			DOCK.zero = a0
+		end
+		local a = heading(c)
+		h.dock = { f = 0, d = d, ux = ux, uz = uz, x0 = cx, z0 = cz, a0 = a, a1 = math.atan2(d[1], d[2]), crates = 0 }
+		h.goal, h.gx = nil, nil
+		Spring.MoveCtrl.SetRotation(c, 0, DOCK.sign * (a - DOCK.zero), 0)
+	end
+
+	local function endDock(c, h)
+		if h.dock then
+			h.dock = nil
+			if Spring.ValidUnitID(c) then
+				Spring.MoveCtrl.Disable(c)
+				callScript(c, "Gate", false)
+				callScript(c, "Wheels", 0)
+			end
+		end
+	end
+
+	-- one frame of a docking Cargo Truck: turn its back to the pad and pull out, back up, open the tailgate, load a crate every DOCK.CRATE frames
+	-- from the stock until it is full, close the tailgate, drive off
+	local function dockStep(c, h)
+		local k, g = h.dock, h.src and gens[h.src]
+		if not g then
+			endDock(c, h)
+			return
+		end
+		local f = k.f
+		local function put(x, z, a)
+			Spring.MoveCtrl.SetPosition(c, x, Spring.GetGroundHeight(x, z), z)
+			Spring.MoveCtrl.SetRotation(c, 0, DOCK.sign * (a - DOCK.zero), 0)
+		end
+		local ox, oz = k.ux + k.d[1] * DOCK.OUT, k.uz + k.d[2] * DOCK.OUT
+		if f <= DOCK.TURN then
+			local s = f / DOCK.TURN
+			s = s * s * (3 - 2 * s)
+			local da = (k.a1 - k.a0 + math.pi) % (2 * math.pi) - math.pi
+			put(k.x0 + (ox - k.x0) * s, k.z0 + (oz - k.z0) * s, k.a0 + da * s)
+			if f == 0 then
+				callScript(c, "Wheels", 1)
+			end
+		elseif f <= DOCK.TURN + DOCK.BACK then
+			local s = (f - DOCK.TURN) / DOCK.BACK
+			s = s * s * (3 - 2 * s)
+			local r = DOCK.OUT + (DOCK.AT - DOCK.OUT) * s
+			put(k.ux + k.d[1] * r, k.uz + k.d[2] * r, k.a1)
+			if f == DOCK.TURN + 1 then
+				callScript(c, "Wheels", -1)
+			elseif f == DOCK.TURN + DOCK.BACK then
+				callScript(c, "Wheels", 0)
+				callScript(c, "Gate", true)
+			end
+		else
+			local t = f - DOCK.TURN - DOCK.BACK - DOCK.GATE
+			local n = h.cap / h.crate
+			if t > 0 and t % DOCK.CRATE == 0 then
+				if k.crates < n then
+					if g.stock < h.crate then
+						return -- (no crate in the stock: it waits)
+					end
+					g.stock = g.stock - h.crate
+					Spring.SetUnitRulesParam(h.src, "lavaStock", g.stock, { public = true })
+					showGen(h.src, g)
+					k.crates = k.crates + 1
+					callScript(c, "LoadCrate", k.crates)
+					setLoad(c, h, h.load + h.crate)
+				elseif not k.closing then
+					k.closing = true
+					callScript(c, "Gate", false)
+				else
+					endDock(c, h) -- (loaded: the next step of haul drives it to the factory)
+					return
+				end
+			end
+		end
+		k.f = f + 1
 	end
 
 	-- one step of a hauling Carrier (every half second)
@@ -309,7 +446,11 @@ if gadgetHandler:IsSyncedCode() then
 				return -- (no factory: it waits with its load)
 			end
 			if near(c, dst) then
-				local n = h.box and math.min(h.box, h.load) or h.load -- (a Forklift: one box per step)
+				local per = h.box or h.crate
+				local n = per and math.min(per, h.load) or h.load -- (a Forklift: one box per step, a Cargo Truck one crate)
+				if h.crate then
+					callScript(c, "Gate", h.load - n > 0)
+				end
 				Spring.AddTeamResource(team, "metal", n)
 				Spring.SetTeamRulesParam(team, "lavaDelivered", (Spring.GetTeamRulesParam(team, "lavaDelivered") or 0) + n, { public = true })
 				setLoad(c, h, h.load - n)
@@ -327,7 +468,8 @@ if gadgetHandler:IsSyncedCode() then
 				h.go = true -- (a Forklift with boxes: it brings them first)
 				return
 			end
-			h.src = nil -- (the generator is gone: it stops)
+			h.src = nil -- (the generator is gone, or it had none: it stops)
+			h.last = h.last and gens[h.last] and h.last or nil
 			Spring.SetUnitRulesParam(c, "lavaHauling", 0, { public = true })
 			return
 		end
@@ -341,6 +483,10 @@ if gadgetHandler:IsSyncedCode() then
 			elseif h.load > 0 then
 				h.go, h.goal, h.gx = true, nil, nil -- (full, or the stock has no box more)
 			end
+		elseif at and h.canDock then
+			if g.stock >= h.cap then
+				startDock(c, h) -- (it backs up and loads crate by crate: dockStep)
+			end
 		elseif at then
 			if g.stock >= h.cap then
 				g.stock = g.stock - h.cap
@@ -349,6 +495,37 @@ if gadgetHandler:IsSyncedCode() then
 				setLoad(c, h, h.cap)
 				h.goal, h.gx = nil, nil
 			end
+		end
+	end
+
+	-- an idle vehicle on Maneuver or Roam (not after Stop) hauls on its own: from its last Lava Extractor, otherwise from the nearest working one of its
+	-- team within AUTO_RANGE
+	local function autoHaul(c, h)
+		if h.stopped or orders(c) > 0 or Spring.GetUnitIsBeingBuilt(c) then
+			return
+		end
+		local st = Spring.GetUnitStates(c)
+		if not st or st.movestate == 0 then
+			return -- (Hold Position)
+		end
+		local team = Spring.GetUnitTeam(c)
+		local src = h.last and gens[h.last] and Spring.GetUnitTeam(h.last) == team and h.last
+		if not src then
+			local x, _, z = Spring.GetUnitPosition(c)
+			local bd = AUTO_RANGE * AUTO_RANGE
+			for u, g in pairs(gens) do
+				if g.on and Spring.GetUnitTeam(u) == team then
+					local ux, _, uz = Spring.GetUnitPosition(u)
+					local dd = (ux - x) ^ 2 + (uz - z) ^ 2
+					if dd < bd then
+						src, bd = u, dd
+					end
+				end
+			end
+		end
+		if src then
+			h.src, h.last, h.goal, h.gx = src, src, nil, nil
+			Spring.SetUnitRulesParam(c, "lavaHauling", 1, { public = true })
 		end
 	end
 
@@ -376,7 +553,8 @@ if gadgetHandler:IsSyncedCode() then
 		if genDef[defID] then
 			gens[u] = { stock = 0 }
 		elseif carrierDef[defID] then
-			carriers[u] = { load = 0, cap = carrierDef[defID].cap, box = carrierDef[defID].box }
+			local cd = carrierDef[defID]
+			carriers[u] = { load = 0, cap = cd.cap, box = cd.box, crate = cd.crate, canDock = cd.dock }
 			Spring.InsertUnitCmdDesc(u, HAUL_DESC)
 		end
 	end
@@ -388,7 +566,8 @@ if gadgetHandler:IsSyncedCode() then
 	function gadget:UnitGiven(u)
 		local h = carriers[u]
 		if h then
-			h.src, h.dst, h.goal = nil, nil, nil -- (another team: the orders of the old one end)
+			endDock(u, h)
+			h.src, h.dst, h.goal, h.last = nil, nil, nil, nil -- (another team: the orders of the old one end)
 		end
 	end
 
@@ -398,21 +577,33 @@ if gadgetHandler:IsSyncedCode() then
 		local h = carriers[u]
 		if cmdID == CMD_HAUL then
 			local t = h and params[1]
+			if h then
+				h.stopped = nil
+			end
 			if t and gens[t] and Spring.GetUnitTeam(t) == team then
-				h.src, h.goal = t, nil
+				h.src, h.last, h.goal = t, t, nil
 				Spring.SetUnitRulesParam(u, "lavaHauling", 1, { public = true })
 			elseif t and isFactory(t, team) then
 				h.dst, h.goal = t, nil
 				Spring.SetUnitRulesParam(u, "lavaDst", t, { public = true })
+				if not h.src and h.load > 0 then
+					h.src = h.last or -1 -- (loaded, not hauling: it delivers there, then hauls again from its last extractor if it has one)
+				end
 			end
 			return false
 		end
-		if not h or fromSynced then
-			return true
+		if not h or own then
+			return true -- (its own orders)
 		end
-		if HAUL_STOP[cmdID] and h.src then
-			h.src, h.goal = nil, nil
-			Spring.SetUnitRulesParam(u, "lavaHauling", 0, { public = true })
+		if HAUL_STOP[cmdID] then
+			-- (after Stop it does not haul on its own; after Move and the others it does, AUTO; a Stop before it ever hauled does not count: the
+			-- editor stops every unit it places)
+			h.stopped = cmdID == CMD.STOP and (h.src or h.last) and true or nil
+			endDock(u, h)
+			if h.src then
+				h.src, h.goal = nil, nil
+				Spring.SetUnitRulesParam(u, "lavaHauling", 0, { public = true })
+			end
 		end
 		return true
 	end
@@ -461,10 +652,14 @@ if gadgetHandler:IsSyncedCode() then
 				checkGen(u, g)
 			end
 		end
-		if f % 15 == 3 then
-			for c, h in pairs(carriers) do
-				if h.src or (h.load > 0 and h.dst) then
+		for c, h in pairs(carriers) do
+			if h.dock then
+				dockStep(c, h)
+			elseif f % 15 == 3 then
+				if h.src then
 					haul(c, h)
+				else
+					autoHaul(c, h)
 				end
 			end
 		end

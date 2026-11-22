@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-163 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+165 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -43,6 +43,8 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_lanrace.lua` | Renegade Race over LAN Play | `lan_test.ps1 -Mode race (host PlayerA and joiner PlayerB, Race switched on in the room, game option lanrenotest=1)` |
 | `zz_lantest.lua` | test only |  |
 | `zz_lava.lua` | Volcano, Lava Extractor and Carrier | `arena_test.ps1 -Widget zz_lava.lua` |
+| `zz_lavaauto.lua` | vehicles haul on their own only on Maneuver or Roam | `arena_test.ps1 -Widget zz_lavaauto.lua` |
+| `zz_lavabelt.lua` | the crates on the four belts of a Lava Extractor ride alike to the pads | `arena_test.ps1 -Widget zz_lavabelt.lua` |
 | `zz_lavafork.lua` | the Forklift of the Lava Extractor | `arena_test.ps1 -Widget zz_lavafork.lua` |
 | `zz_lavagen.lua` | the model of the Lava Extractor and the blocks of its yard | `arena_test.ps1 -Widget zz_lavagen.lua` |
 | `zz_lavaroad.lua` | the Carriers load at the storage pads outside a Volcano | `arena_test.ps1 -Widget zz_lavaroad.lua` |

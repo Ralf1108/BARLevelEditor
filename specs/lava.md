@@ -15,6 +15,7 @@
 | `LevelEditor/scripts/lava_generator_defs.lua` | `gamedata/unitdefs_pre.lua` | the units Lava Extractor and Carrier and their place in the build lists |
 | `LevelEditor/scripts/lava_generator.lua` | `luarules/gadgets/lava_generator.lua` | energy and metal stock on a Volcano, the hauling of the Carriers, the order Haul, the glow and the numbers |
 | `LevelEditor/models/armlavatruck.s3o` (made by `make_lava_truck.py`) | `objects3d/Units/armlavatruck.s3o` | the model of the Cargo Truck |
+| `LevelEditor/scripts/lava_truck_script.lua` | `scripts/Units/armlavatruck.lua` | the unit script of the Cargo Truck (wheels, tailgate, crates) |
 | `LevelEditor/models/armlavafork.s3o` (made by `make_lava_forklift.py`) | `objects3d/Units/armlavafork.s3o` | the model of the Forklift |
 | `LevelEditor/scripts/lava_forklift_script.lua` | `scripts/Units/armlavafork.lua` | the unit script of the Forklift (wheels, the boxes) |
 | `LevelEditor/models/lavavolcano.s3o`, `lavavolcano_color.png`, `lavavolcano_other.png` (made by `make_lava_volcano.py`) | `objects3d/Units/lavavolcano.s3o`, `unittextures/lavavolcano_*.png` | the model of the Volcano and its textures |
@@ -71,7 +72,7 @@
   - Yardmap `h cbbbbbbc bgbggbgb ...` (high resolution, 8 x 8, with `g`): the engine requires a geothermal feature under it (`needGeo`; within 4 * 8 - 4 = 28 Elmo of its middle). A constructor can place it only on a Volcano (or on a geothermal vent of the map: there it makes nothing).
   - `customparams.lavagenerator = 1`, `unitgroup = "energy"`; `metal_extractor` and `standardextractor` removed (BAR's metal spot tools leave it alone).
 - **Carrier** (`carrier`): the light bot without weapons (`weapondefs`, `weapons` empty); metal 40, energy 600, build time 1500; `customparams.lavacarrier = 1`, `unitgroup = "util"`; 20 metal per trip.
-- **Cargo Truck** (`truck`): armsam without weapons (also `airsightdistance` and `maxrange` removed), `objectname = "Units/armlavatruck.s3o"`; the script of armsam (`ARMSAM.cob`: the wheels turn; it names the emptied launcher pieces, which stay); metal 90, energy 900, build time 2500, health 900; `customparams.lavacarrier = 1`, `lavaload = 60` (60 metal per trip), `unitgroup = "util"`.
+- **Cargo Truck** (`truck`): armsam without weapons (also `airsightdistance` and `maxrange` removed), `objectname = "Units/armlavatruck.s3o"`, `script = "Units/armlavatruck.lua"` (a Lua unit script, see 3.6); metal 90, energy 900, build time 2500, health 900; `customparams.lavacarrier = 1`, `lavaload = 60` (60 metal per trip), `lavacrate = 10` (it loads and unloads crates of 10), `lavadock = 1` (it backs up to a storage pad, 4.2), `unitgroup = "util"`.
 - **Forklift** (`forklift`): armfav without weapons, `objectname = "Units/armlavafork.s3o"`, `script = "Units/armlavafork.lua"` (a Lua unit script, see 3.3); slow (speed 45, armsam 55, armfav 168), turn rate 400, sight 300; metal 120, energy 1200, build time 3000, health 1000; collision box 16 x 22 x 32; `customparams.lavacarrier = 1`, `lavaload = 90`, `lavabox = 30` (up to 3 boxes of 30 metal), `unitgroup = "util"`.
 - Names: `name`, `description` and `i18n_en/de_humanname` / `_tooltip`.
 - The ids and file names keep "lavagen" / `lava_generator` (the unit was first called Lava Generator; the shown name is Lava Extractor, like BAR's Metal Extractor).
@@ -81,9 +82,16 @@
 
 - Reads `objects3d/units/armsam.s3o` from the newest BAR package of the installation (`packages/*.sdp`, `pool/`), writes `armlavatruck.s3o` next to itself (committed; run it again after a change of the script or of armsam).
 - S3O read and written by the script itself (header, pieces with vertices of 8 floats and triangle indices).
-- The pieces `turret` and `mlauncher` (the rocket launcher) lose their vertices; they stay as pieces because the script of armsam names them.
-- A new piece `cargo` (child of `base`): a box x -10.5 to 10.5, y 12 to 22, z -21 to 6.5 (the cab ends at z 8) and a stripe 1.6 high a little outside both walls.
-  - Texture areas of `Arm_color.dds` (u, v from the top; s3o t = 1 - v): walls and ends `PLATE` (the large grey plate with panels), roof `GRATE` (the grate with the yellow frame), stripe `TEAM` (a bar of the team color mask: the stripe shows the team color).
+- The pieces `turret` and `mlauncher` (the rocket launcher) lose their vertices; they stay as pieces (empty).
+- New pieces (children of `base`; the front is +z, the cab ends at z 8):
+
+| Piece | What | Where |
+|---|---|---|
+| `cargo` | an open bed: floor (top `BED_Y` = 13), side walls 4 high, a headboard behind the cab (to y 21), a stripe in team color along both sides | x -10.5 to 10.5, z -21 to 6.5 |
+| `gate` | the tailgate 19 x 4, turns around x at its foot | at (0, 13, -20) |
+| `crate1` .. `crate6` | crates 8 x 5.5 x 7.6: two across (x 4.6, -4.6), three along (z 1, -7.5, -16; 1 and 2 at the front) | on the floor |
+
+  - Texture areas of `Arm_color.dds` (u, v from the top; s3o t = 1 - v): bed walls and gate `PLATE` (the large grey plate with panels; its top has team color, so not on the floor), floor `DARK`, top of the headboard `GRATE`, stripe `TEAM` (a bar of the team color mask), crates `CRATE` (a light panel with a frame).
 - Header: height 22, radius 25, middle (0, 9, -2).
 - The model of armsam is a work of the BAR team (author in its definition: Beherith); the copy is under the same licence.
 
@@ -133,10 +141,20 @@
 ### 3.5 The unit script of the Lava Extractor (`lava_generator_script.lua`)
 
 - `Create`: no block, no drop, no crate.
-- `SetActive(on)` (called when the generator starts or stops working on a Volcano): on = the wheel turns (60 degrees per second), the pistons go up 4 and down (half a second apart), the drops fall 15 from the spout to the pool one after another, the crates ride 74 out on their belts (speed 14; the second of a belt half a ride later; then hidden, again from the start) (a thread per part, signal `SIG_WORK`); off = all stops, drops and crates hide.
-  - The x axis of a unit script points the other way than the x of the model: the crates of the east belt move by -74 on `x_axis`, those of the west belt by +74 (`BELTS`).
+- `SetActive(on)` (called when the generator starts or stops working on a Volcano): on = the wheel turns (60 degrees per second), the pistons go up 4 and down (half a second apart), the drops fall 15 from the spout to the pool one after another, the crates ride 78 out on their belts, from 29 onto the pad at 107 (speed 14; all belts at the same time, the second crate of a belt half a ride later; then hidden, again from the start) (a thread per part, signal `SIG_WORK`); off = all stops, drops and crates hide.
+  - The axes of `Move` are those of the model: east belt +78 on `x_axis`, west -78, south +78 on `z_axis`, north -78 (`BELTS`).
 - `SetBlocks(n)`: shows the first n of the 6 blocks on every pad.
 - `Killed`: the wheel flies off; the wreck of the extractor, when hit hard its heap.
+
+### 3.6 The unit script of the Cargo Truck (`lava_truck_script.lua`)
+
+- `Create`: no crate on the bed.
+- `StartMoving` / `StopMoving`: the front wheels `rwheel`, `lwheel` turn (540 degrees per second) / stop.
+- `SetCrates(n)`: the first n crates show in their places at once (after a change of the load, not while loading).
+- `LoadCrate(n)`: crate n starts behind the truck at the height of a pad (z -34, 9 lower) and slides to its place in 0.45 seconds.
+- `Gate(open)`: the tailgate turns -100 degrees around x (down, backwards) or back to 0 (240 degrees per second).
+- `Wheels(dir)`: the wheels turn forwards (1), backwards (-1) or stop (0): while the gadget moves the truck itself.
+- `Killed`: the tailgate flies off; the wreck of armsam, when hit hard its heap.
 
 ## 4. The gadget `lava_generator.lua`
 
@@ -157,15 +175,20 @@
   - Haul on a Lava Extractor of its team → hauling from it (`src`; unit rules `lavaHauling` = 1);
   - Haul on a factory of its team → it delivers there (`dst`; unit rules `lavaDst`), also before the hauling;
   - the order Haul is used up there (returns false), it never stands in the queue;
-  - Move, Stop, Patrol, Fight, Guard, Attack, Reclaim, Repair, Wait of a player (not `fromSynced`) end the hauling; the load stays.
+  - Move, Stop, Patrol, Fight, Guard, Attack, Reclaim, Repair, Wait of a player end the hauling (every order the gadget does not give itself: `order` marks its own; in the editor the orders of players come synced too, so `fromSynced` cannot tell them apart); the load stays; the extractor stays noted (`last`).
+  - Haul on a factory while loaded and not hauling: it delivers there (`src` = `last`, or -1: no extractor, it stops after delivering).
+- On its own (`autoHaul`, every half second for every vehicle that does not haul):
+  - only when its queue is empty, it is finished, its move state is Maneuver or Roam (`GetUnitStates(c).movestate` 1 or 2) and its last order of the list above was not Stop (`stopped`; a Stop counts only for a vehicle that hauled before: the editor stops every unit it places);
+  - it hauls from its last extractor (`last`), otherwise from the nearest working extractor of its team within `AUTO_RANGE` = 1200 (a new vehicle from the factory);
+  - on Hold Position it never starts by itself; the order Haul works on Hold Position too.
 - `haul` (every half second, `f % 15 == 3`):
   - empty: to a loading spot at a storage pad of the extractor (`toPad`); there, when its turn has come, take its load per trip (`cap`: `customparams.lavaload`, otherwise `LOAD` = 20) when the stock has that much, otherwise wait there;
   - loaded: to the chosen factory, otherwise the nearest finished factory of its team (`toFactory`; at the factory: its edge + `REACH` = 70); there the team gets the metal (`AddTeamResource`; team rules `lavaDelivered` counts all), then back;
   - the loading spots (`ROUTE`): 12, three side by side (`LANE` = 26 apart) outside each pad, `STAND` = 158 from the middle of the extractor (the pads reach 134); no vehicle drives into the crater:
-    - a vehicle takes the nearest free spot (`takeSpot`; free = nobody holds it: `holds`, the holder still hauls from this extractor and is not loaded and on its way) and keeps it until it leaves loaded (`h.spot`);
-    - at its spot (at most `AT_SPOT` = 22 away) it notes the frame it came (`h.waitSince`); only the one that waits longest takes metal (none takes what another waits for: a Forklift no longer drains the stock in front of a Cargo Truck that needs 60);
+    - a vehicle takes the nearest free spot (`takeSpot`; a spot at a pad where others already hold spots counts `BUSY` = 220 farther for each of them: the vehicles spread over the pads, three at one pad blocked each other; free = nobody holds it: `holds`, the holder still hauls from this extractor and is not loaded and on its way) and keeps it until it leaves loaded (`h.spot`);
+    - at its spot (at most `AT_SPOT` = 28 away) it notes the frame it came (`h.waitSince`); away from it (not yet there, or pushed away) it has no turn (`waitSince` nil: one that cannot reach its spot blocks nobody); only the one that waits longest takes metal (none takes what another waits for: a Forklift no longer drains the stock in front of a Cargo Truck that needs 60);
     - all spots taken: it waits where it is;
-  - the way (never over the wall or through a stream): `around`: a straight way that comes nearer than `CLEAR` = 152 to the middle of the extractor goes over fixed points on the circle `DETOUR` = 185 every 30 degrees (`GRID`) towards the side of the target (a point at most 10 degrees ahead counts as passed: `PAST`; the middle of a step stays 179 from the middle; the streams end at 160); to the spot and to the factory alike (`toFactory`);
+  - the way (never over the wall or through a stream): `around`: a straight way that comes nearer than `CLEAR` = 152 to the middle of the extractor goes over fixed points on the circle `DETOUR` = 185 every 30 degrees (`GRID`) towards the side of the target (a point at most 10 degrees ahead counts as passed: `PAST`; a target at most 15 degrees from the vehicle's own direction (seen from the middle) is taken straight: `DIRECT`, a point of the circle could lie right behind a Cargo Truck waiting at a pad and the engine drops a Move order it finds no way to; the middle of a step stays 179 from the middle; the streams end at 160); to the spot and to the factory alike (`toFactory`);
   - `walkPoint`: `CMD.MOVE` to a point, again when the point moves more than 16 or the queue is empty;
   - no factory: it waits with its load; the generator gone: it stops.
   - Unit rules `lavaLoad`: the metal it carries.
@@ -174,6 +197,16 @@
   - at the factory: one box every half second;
   - after every change of its load the gadget calls `SetBoxes(ceil(load / box))` of its unit script;
   - its generator gone while it has boxes: it brings them first, then it stops.
+- A Cargo Truck (`lavadock`) backs up to the pad (`DOCK`, in frames, `dockStep` every frame while `h.dock`):
+  - it takes only the middle spot of a pad (`takeSpot`); at its spot, when its turn has come and the stock has its 60: `startDock` (a Stop of its own, `Spring.MoveCtrl.Enable`);
+  - `TURN` = 30: it turns its back to the pad and pulls out to `OUT` = 184 (smooth step; wheels forwards);
+  - `BACK` = 30: it backs up to `AT` = 160 (its back at the edge of the pad, 134; wheels backwards), then the tailgate opens;
+  - after `GATE` = 12, every `CRATE` = 15 frames one crate: 10 metal from the stock (the blocks on the pads go down), `LoadCrate(k)`; no crate in the stock: it waits;
+  - six crates: the tailgate closes, then `MoveCtrl.Disable`; the next step of `haul` drives it to the factory;
+  - while it docks it holds its spot (`holds`) and `haul` does not run for it;
+  - which way `MoveCtrl.SetRotation` turns is measured once at the first dock (`DOCK.sign`, `DOCK.zero`: the heading at rotation 0 and 0.5);
+  - an order of a player, a new team or the extractor gone ends it (`endDock`: MoveCtrl off, tailgate up, the crates loaded so far stay);
+  - at the factory it unloads one crate (10) every half second, the tailgate open until the last one.
 - A Carrier given to another team forgets its generator and factory (`UnitGiven`).
 
 ### 4.3 Drawing (unsynced)
@@ -203,9 +236,15 @@
   - two Volcanoes and two generators placed through the editor messages: 200 energy and 2 metal on the Volcano, 0 beside it;
   - `TestBuildOrder`: allowed on the free Volcano, refused on plain ground; the geothermal plant `armgeo` allowed on the Volcano; a picture;
   - a Carrier has the button Haul; Haul on the generator: three loads of 20 to the near bot lab; Haul on the far lab: the next loads go there; `lavaDelivered` 100.
-- `test-data/tools/zz_lavatruck.lua` (`arena_test.ps1 -Widget zz_lavatruck.lua`, one instance): the Cargo Truck (no weapons, its model, `lavaload` 60, in the build list of `armvp`), two pictures close up (next to an armsam), then one trip: 60 metal from a Lava Extractor to the vehicle plant.
+- `test-data/tools/zz_lavatruck.lua` (`arena_test.ps1 -Widget zz_lavatruck.lua`, one instance): the Cargo Truck (no weapons, its model, `lavaload` 60, in the build list of `armvp`; on Hold Position so that it waits for the pictures), two pictures close up (next to an armsam), then one trip: 60 metal from a Lava Extractor to the vehicle plant; at its first crate its middle is 150 to 170 from the extractor and its front points outwards (back at the pad); loaded and unloaded in 6 steps each; two pictures while it loads.
+- `test-data/tools/zz_lavabelt.lua` (`arena_test.ps1 -Widget zz_lavabelt.lua`, one instance): every frame for 12 seconds the positions of `item1` .. `item8` (`GetUnitPiecePosDir`): on every belt from at most 34 out by at least 76, at most 4 off the middle line, the first ride starting at the same frame on all four.
+- `test-data/tools/zz_lavaauto.lua` (`arena_test.ps1 -Widget zz_lavaauto.lua`, one instance, about 75 seconds of game time): two Carriers without an order near a Lava Extractor, H on Hold Position, M on Maneuver: after 40 seconds H has not hauled, M has; M after a Move order: not hauling, after it got there: hauling again; 10 seconds after Stop: not hauling; H after the order Haul: hauling.
 - `test-data/tools/zz_lavafork.lua` (`arena_test.ps1 -Widget zz_lavafork.lua`, one instance, about 2 minutes of game time): the Forklift (no weapons, its model and script, `lavaload` 90, `lavabox` 30, in the build list of `armvp`), two pictures of it empty (next to an armfav); the generator fills for 50 seconds, then Haul: 3 boxes loaded (picture), unloaded one by one at the vehicle plant, a second trip with what the stock has (picture).
-- Checked 2026-11-21: all of it as expected; the picture shows "Metal 12 / 200" over the generator; the truck shows its container (picture `docs/lava-cargo-truck.jpg`).
+- Checked 2026-11-21: all of it as expected; the picture shows "Metal 12 / 200" over the generator.
+- Checked 2026-11-22 (`zz_lavatruck.lua`): at the first crate 160 out, front outwards (dot 1.00); loaded in 6 steps (frames 1009 to 1084), unloaded in 6 at the plant; the open bed, the tailgate down and the crates show (picture `docs/lava-cargo-truck.jpg`).
+- Checked 2026-11-22 (`zz_lavabelt.lua`): all four belts from about 29 to 107 (26 to 31 / 104 to 109: the unit's position is 2.5 off the middle of the model), first ride at frame 215 on all; before, the crates of the east and west belts rode inwards under the furnace (the axes of `Move` were taken as mirrored).
+- Checked 2026-11-22 (`zz_lavaauto.lua`): all six checks OK. Before, no order of a player ended the hauling (the gadget took them for its own: `fromSynced` true); now `order` marks its own.
+- Checked 2026-11-22 (`zz_expdemo.lua`): Carrier 4, Cargo Truck 2, Forklift 2 loads, 230 delivered; before `BUSY` and `DIRECT` all three waited at one pad: a Carrier pushed off its spot kept its turn and blocked the others, the Forklift's Move order to a point behind the waiting truck was dropped every time; `zz_lavaroad.lua` (480 delivered, 0 in the crater or the lava), `zz_lava.lua`, `zz_lavafork.lua`, `zz_lavagen.lua`, `zz_volcano.lua` again: all OK.
 - `test-data/tools/zz_lavagen.lua` (`arena_test.ps1 -Widget zz_lavagen.lua`, one instance, about 1.5 minutes of game time): the model and script of all three generators, footprint 4 x 4, `needGeo`; one on a Volcano (200 energy), one beside it (0); pictures close up at the start (from above and lower), after a minute (the pads fill), after a Forklift took 3 boxes (fewer blocks).
 - `test-data/tools/zz_lavaroad.lua` (`arena_test.ps1 -Widget zz_lavaroad.lua`, one instance, 2 minutes of game time): set 1 as the test start places it (Carrier, Cargo Truck, Forklift side by side, a vehicle plant behind them), set 2 a Carrier south of its Volcano and a bot lab north of it; every half second: a vehicle in the crater (nearer than 112) or in a stream (12 degrees around a breach, 98 to 165 out) = WRONG; at least one load each; two pictures.
 - Checked 2026-11-22 (`zz_lavaroad.lua`): set 1 Carrier 2, Cargo Truck 2, Forklift 1 loads (they share 2 metal per second), set 2 12 loads (after the first, always at the pad towards its lab); 0 times in the crater or the lava; 400 delivered (picture `docs/lava-storage-pads.jpg`); `zz_lava.lua` (6 deliveries), `zz_expdemo.lua` (270 delivered) again: all OK.
@@ -219,7 +258,7 @@
 ## 6. Open
 
 - A model of its own for the Carrier; the Lava Extractor: its build picture is still the extractor's, the lava drops and the wheel are not checked moving (pictures only), one model for all factions; the names in BAR's language files (the log says "not translated").
-- The Cargo Truck: its roof looks very bright (the grate area is shiny in the second texture); its wreck and build picture are still those of armsam; trucks for Cortex and Legion.
+- The Cargo Truck: its wreck and build picture are still those of armsam; trucks for Cortex and Legion; docking on a slope (MoveCtrl sets only the height, the truck stays level).
 - The Forklift: its wreck and build picture are still those of armfav; forklifts for Cortex and Legion.
 - Balance (costs, energy, metal, stock, load).
 - A Lava Extractor may also be placed on a geothermal vent of the map: there it makes nothing (the engine knows only "geothermal").

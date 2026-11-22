@@ -308,7 +308,7 @@ The Place / Generate menus are `kind = "top"` rectangles; `headerRowCount` knows
 | `scripts\evo_game.lua`, `evo_gift.lua` | gadget and game widget of Evolution, only in the extra game of the scenarios ([Evolution](evolution.md)) |
 | `scripts\lan_latejoin.lua`, `lan_pve_hold.lua` | gadgets of LAN Play in the extra game of the scenarios: late join, Scavengers / Raptors played by humans ([LAN Play](lan-play.md)) |
 | `models\` | models of units of their own (`armlavatruck.s3o`, `armlavafork.s3o`, `lavagen.s3o`, `lavavolcano.s3o` with its textures `lavavolcano_*.png`) and the scripts that make them (`make_lava_truck.py`, `make_lava_forklift.py`, `make_lava_generator.py`, `make_lava_volcano.py`); packed into both extra games ([Volcano, Lava Extractor and Carrier](lava.md)) |
-| `scripts\lava_volcano_def.lua`, `lava_generator_defs.lua`, `lava_generator.lua`, `lava_forklift_script.lua`, `lava_generator_script.lua` | Volcano, Lava Extractor and Carrier in both extra games ([Volcano, Lava Extractor and Carrier](lava.md)) |
+| `scripts\lava_volcano_def.lua`, `lava_generator_defs.lua`, `lava_generator.lua`, `lava_forklift_script.lua`, `lava_truck_script.lua`, `lava_generator_script.lua` | Volcano, Lava Extractor and Carrier in both extra games ([Volcano, Lava Extractor and Carrier](lava.md)) |
 | `scripts\pve_supply_drops_stub.lua` | replaces BAR's lootbox gadget inside the extra games ([Capture the Flag](capture-the-flag.md)) |
 | `scripts\help_texts.lua` | texts of the help board and the chat help (packed as `luaui/Include/led_help_texts.lua`) |
 | `scripts\choose_map.ps1`, `map_preview.ps1` | start menu, map picture |
