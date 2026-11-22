@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-160 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+161 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -163,6 +163,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_tech.lua` | tech level and metal cost of every armed unit, lines [zztech] | `pve_test.ps1 -Ren -Widget zz_tech.lua` |
 | `zz_unitdump.lua` | every mobile Armada, Cortex and Legion unit with its numbers | `pve_test.ps1 -Widget zz_unitdump.lua` |
 | `zz_unitinfo.lua` | facts of some unit definitions (movement, building flags) | `pve_test.ps1 -Widget zz_unitinfo.lua (without -Quick` |
+| `zz_volcano.lua` | the model of the Volcano and its lava | `arena_test.ps1 -Widget zz_volcano.lua` |
 | `zz_watch.lua` | wild units that a player sees keep their level | `pve_test.ps1 -Evo -EvoTest -Debug -Widget zz_watch.lua (one instance, speed 10)` |
 | `zz_weapondump.lua` | every weapon of every Armada, Cortex and Legion unit | `pve_test.ps1 -Ren -Widget zz_weapondump.lua` |
 | `zz_wildhp.lua` | health of the wild (Gaia) units of Evolution | `pve_test.ps1 -Evo -Widget zz_wildhp.lua (one instance, speed 10)` |

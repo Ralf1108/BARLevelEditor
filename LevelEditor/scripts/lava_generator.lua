@@ -8,7 +8,8 @@
 -- it delivers (before or while hauling); otherwise it is the nearest factory of its team.
 -- The unit scripts show it: a Lava Extractor (lava_generator_script.lua) turns its wheel, moves its pistons and lets lava drops fall while it works on
 -- a Volcano (SetActive) and shows its stock as up to BLOCKS metal blocks in its yard (SetBlocks); a Forklift shows its boxes (SetBoxes).
--- The unsynced part draws the glow of the lava around every Volcano and the numbers: the stock over a generator, the load over a Carrier.
+-- The unsynced part draws the lava of every Volcano (a lake in its crater and three streams, moving, with BAR's lava texture) and the numbers: the
+-- stock over a generator, the load over a Carrier.
 function gadget:GetInfo()
 	return {
 		name = "Lava Extractor",
@@ -349,26 +350,111 @@ else
 		end
 	end
 
-	-- the glow of the lava: rings in red and orange around every Volcano in sight, slowly pulsing
+	-- the lava of a Volcano (its model is only the rock, make_lava_volcano.py): a lake inside the crater and a stream out of each breach, in three
+	-- layers: a dark red ground (the dark parts of BAR's lava texture are see-through), BAR's lava texture, the same texture once more moving the other
+	-- way and adding light; the streams flow outwards; all of it pulses slowly.
+	-- The numbers of the crater must match the model (RIM_*, BREACHES, BREACH_H in make_lava_volcano.py).
+	local LAVA = { TEX = "luaui/images/lava/lava7_diffuseemit.dds", RIM_IN = 70, RIM_TOP = 84, RIM_OUT = 116, BREACHES = { 40, 160, 280 }, BREACH_H = 2.5,
+		LAKE = 76, STREAM_END = 180, rivers = {} }
+	local timer0 = Spring.GetTimer()
+
+	-- the height of the crest of the model in the middle of a breach at the distance r from the middle (0 at both feet)
+	local function breachHeight(r)
+		if r <= LAVA.RIM_IN or r >= LAVA.RIM_OUT then
+			return 0
+		elseif r <= LAVA.RIM_TOP then
+			return LAVA.BREACH_H * (r - LAVA.RIM_IN) / (LAVA.RIM_TOP - LAVA.RIM_IN)
+		end
+		return LAVA.BREACH_H * (LAVA.RIM_OUT - r) / (LAVA.RIM_OUT - LAVA.RIM_TOP)
+	end
+
+	-- the streams of one Volcano: per breach a list of rows { left point, right point, distance, alpha }, on the rock or the ground (made once)
+	local function streams(p)
+		local list = {}
+		for j, deg in ipairs(LAVA.BREACHES) do
+			local a = math.rad(deg)
+			local dx, dz = math.cos(a), math.sin(a)
+			local rows = {}
+			for r = LAVA.RIM_IN - 12, LAVA.STREAM_END, 6 do
+				local bend = math.max(0, math.min(1, (r - LAVA.RIM_OUT) / 30)) * 7 * math.sin(r / 17 + j * 2) -- (it winds only outside the crater)
+				local w = 10 - 5 * (r - LAVA.RIM_IN) / (LAVA.STREAM_END - LAVA.RIM_IN)
+				local cx, cz = p[1] + dx * r - dz * bend, p[3] + dz * r + dx * bend
+				local h = p[2] + breachHeight(r) * 1.3 + 1.0
+				local row = { r = r, a = math.min(1, (LAVA.STREAM_END - r) / 45) }
+				for s, side in ipairs({ -1, 1 }) do
+					local x, z = cx - dz * w * side, cz + dx * w * side
+					row[s] = { x, math.max(h, Spring.GetGroundHeight(x, z) + 0.8), z }
+				end
+				rows[#rows + 1] = row
+			end
+			list[j] = rows
+		end
+		return list
+	end
+
+	local function lake(p, du, dv, lift)
+		local y = p[2] + lift
+		gl.TexCoord(p[1] / 160 + du, p[3] / 160 + dv)
+		gl.Vertex(p[1], y, p[3])
+		for k = 0, 40 do
+			local a = 2 * math.pi * k / 40
+			local x, z = p[1] + LAVA.LAKE * math.cos(a), p[3] + LAVA.LAKE * math.sin(a)
+			gl.TexCoord(x / 160 + du, z / 160 + dv)
+			gl.Vertex(x, y, z)
+		end
+	end
+
+	local function stream(rows, flow, r, g, b, alpha, lift)
+		for _, row in ipairs(rows) do
+			gl.Color(r, g, b, alpha * row.a)
+			gl.TexCoord(0, row.r / 90 - flow)
+			gl.Vertex(row[1][1], row[1][2] + lift, row[1][3])
+			gl.TexCoord(0.22, row.r / 90 - flow)
+			gl.Vertex(row[2][1], row[2][2] + lift, row[2][3])
+		end
+	end
+
 	function gadget:DrawWorldPreUnit()
 		if not next(volcanoes) then
 			return
 		end
-		local t = Spring.GetGameSeconds() + Spring.GetFrameTimeOffset() / 30
-		gl.DepthTest(false)
-		for _, p in pairs(volcanoes) do
-			if Spring.IsSphereInView(p[1], p[2], p[3], 120) then
-				for i = 1, 6 do
-					local a = (0.25 + 0.2 * math.sin(t * 2 + i)) * (1 - i / 8)
-					gl.LineWidth(9 - i)
-					gl.Color(1, 0.15 + i * 0.1, 0, a)
-					gl.DrawGroundCircle(p[1], p[2], p[3], 14 + i * 11, 32)
+		for fid in pairs(LAVA.rivers) do
+			if not volcanoes[fid] then
+				LAVA.rivers[fid] = nil -- (the Volcano is gone)
+			end
+		end
+		local t = Spring.DiffTimers(Spring.GetTimer(), timer0) -- (real time: the lava moves also while the game is paused)
+		gl.DepthTest(true)
+		gl.Culling(false)
+		for fid, p in pairs(volcanoes) do
+			if Spring.IsSphereInView(p[1], p[2], p[3], LAVA.STREAM_END) then
+				LAVA.rivers[fid] = LAVA.rivers[fid] or streams(p)
+				local pulse = 0.82 + 0.18 * math.sin(t * 1.6 + p[1] * 0.01)
+				gl.Texture(0, false)
+				gl.Blending(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
+				gl.Color(0.32 * pulse, 0.07, 0.02, 1)
+				gl.BeginEnd(GL.TRIANGLE_FAN, lake, p, 0, 0, 1.1)
+				for _, rows in ipairs(LAVA.rivers[fid]) do
+					gl.BeginEnd(GL.QUAD_STRIP, stream, rows, 0, 0.32 * pulse, 0.07, 0.02, 1, -0.1)
+				end
+				gl.Texture(0, LAVA.TEX)
+				gl.Color(pulse, pulse, pulse, 1)
+				gl.BeginEnd(GL.TRIANGLE_FAN, lake, p, t * 0.010, t * 0.006, 1.2)
+				for _, rows in ipairs(LAVA.rivers[fid]) do
+					gl.BeginEnd(GL.QUAD_STRIP, stream, rows, t * 0.10, pulse, pulse, pulse, 1, 0)
+				end
+				gl.Blending(GL.SRC_ALPHA, GL.ONE) -- (the second layer adds light: the glowing veins move over each other)
+				gl.Color(0.55 * pulse, 0.25 * pulse, 0.06, 1)
+				gl.BeginEnd(GL.TRIANGLE_FAN, lake, p, -t * 0.008, t * 0.012, 1.3)
+				for _, rows in ipairs(LAVA.rivers[fid]) do
+					gl.BeginEnd(GL.QUAD_STRIP, stream, rows, t * 0.16 + 0.5, 0.55, 0.25, 0.06, pulse, 0.1)
 				end
 			end
 		end
-		gl.LineWidth(1)
+		gl.Texture(0, false)
+		gl.Blending(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
 		gl.Color(1, 1, 1, 1)
-		gl.DepthTest(true)
+		gl.Culling(GL.BACK)
 	end
 
 	-- the numbers over the units: "Metal 34 / 200" over a generator, the load over a loaded Carrier

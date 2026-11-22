@@ -107,7 +107,10 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 ### Volcano, Lava Extractor and Carriers (proof of concept)
 
-- **Volcano:** Features tab, kind **Volcano**. A rock with a crack, smoke and glowing red rings.
+- **Volcano:** Features tab, kind **Volcano**. A crater of dark rock with a lake of lava in it; lava flows out through three breaches; smoke rises while nothing stands on it.
+
+![The Volcano alone (left) and with a Lava Extractor on it (right)](../docs/lava-volcano.jpg)
+
 - **Lava Extractor:** Units tab, faction Armada, Cortex or Legion, **Buildings**, T1.
   - It looks like a steam engine mine: lava runs down its furnace into a glowing pool, a gear wheel turns, pistons move.
   - Its **storage yard** on the right shows the metal stock: up to 15 metal blocks; when a Carrier takes metal, blocks go away.
@@ -132,7 +135,7 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 - **LAN Play:** the units are in a LAN game on an official map only with **LAN Play** > **Experimental Units: On**; scenarios always have them.
 ![The Lava Extractor at the start (left) and after a minute with 10 metal blocks in its yard (right)](../docs/lava-generator.jpg)
 
-- The Volcano and the Carrier still have stand-in looks. Details: [specification](../specs/lava.md).
+- The Carrier still has a stand-in look. Details: [specification](../specs/lava.md).
 
 Good to know:
 

@@ -4,7 +4,7 @@
   - a **Lava Extractor** built on it makes energy at once and fills its own **metal stock**;
   - **Carriers** (bots), **Cargo Trucks** and **Forklifts** bring that metal to a factory; only there does the team get it;
   - a normal geothermal plant built on a Volcano makes its normal energy (the engine: the Volcano is a geothermal feature).
-- The looks: the Volcano is a stand-in (a rock of BAR, the crack of BAR's geothermal vent, glowing rings), the Carrier looks like the light bot; the Lava Extractor has a model of its own (a furnace with lava and a storage yard), the Cargo Truck and the Forklift have models of their own, made from BAR's missile truck and scout car.
+- The looks: the Volcano has a model of its own (a crater of dark rock; the gadget draws a moving lake and three streams of lava in it), the Carrier looks like the light bot; the Lava Extractor has a model of its own (a furnace with lava and a storage yard), the Cargo Truck and the Forklift have models of their own, made from BAR's missile truck and scout car.
 - User view: [Level Editor manual](../LevelEditor/README.md), "Volcano, Lava Extractor and Carriers".
 
 ## 1. Parts
@@ -17,11 +17,12 @@
 | `LevelEditor/models/armlavatruck.s3o` (made by `make_lava_truck.py`) | `objects3d/Units/armlavatruck.s3o` | the model of the Cargo Truck |
 | `LevelEditor/models/armlavafork.s3o` (made by `make_lava_forklift.py`) | `objects3d/Units/armlavafork.s3o` | the model of the Forklift |
 | `LevelEditor/scripts/lava_forklift_script.lua` | `scripts/Units/armlavafork.lua` | the unit script of the Forklift (wheels, the boxes) |
+| `LevelEditor/models/lavavolcano.s3o`, `lavavolcano_color.png`, `lavavolcano_other.png` (made by `make_lava_volcano.py`) | `objects3d/Units/lavavolcano.s3o`, `unittextures/lavavolcano_*.png` | the model of the Volcano and its textures |
 | `LevelEditor/models/lavagen.s3o` (made by `make_lava_generator.py`) | `objects3d/Units/lavagen.s3o` | the model of the Lava Extractor (all three factions) |
 | `LevelEditor/scripts/lava_generator_script.lua` | `scripts/Units/lavagen.lua` | the unit script of the Lava Extractor (wheel, pistons, lava drops, the blocks of the yard) |
 
 - The five Lua files are in `$ScenarioGameFiles` (`shared/bar_common.ps1`), so they are in both extra games: "Level Editor" (`Get-EditorGameEntries` also takes the entries under `gamedata/`, `features/` and `scripts/`) and "Level Editor Scenarios" (scenarios, LAN Play with the extra game).
-- Models: every `LevelEditor/models/*.s3o` goes as it is (bytes) into both extra games as `objects3d/Units/<file>` (`Get-ModelFiles` in `bar_common.ps1`, used by `Write-ScenarioGame` and `Write-EditorGame`; part of the version of the scenario game and of the stamp of the setup).
+- Models: every `LevelEditor/models/*.s3o` goes as it is (bytes) into both extra games as `objects3d/Units/<file>`, every `*.png` (a texture) as `unittextures/<file>` (`Get-ModelFiles` and `Get-ModelArchivePath` in `bar_common.ps1`, used by `Write-ScenarioGame` and `Write-EditorGame`; part of the version of the scenario game and of the stamp of the setup).
 - In the official game alone (without an extra game) none of them exists.
 - The game option `lanexpunits=0` (LAN Play, the button **Experimental Units** off while the game uses the extra game) leaves all units out: `unitdefs_pre.lua` returns before it hooks the table. `lanexpunits=1` or no option: they are in ([LAN Play](lan-play.md), "Experimental Units").
 
@@ -29,10 +30,23 @@
 
 - BAR's `gamedata/featuredefs.lua` loads every `features/*.lua` of all game archives, also of the extra game.
 - `geothermal = true`: the engine lets only buildings with a `g` in their yardmap stand on it and puts the geothermal smoke on it.
-- `indestructible`, not reclaimable, not blocking; footprint 4 x 4.
-- Model `rocks30/rocks30_def_01.s3o`, ground decal `editor_geovent_crack.dds` (6 x 6; both are files of BAR).
+- `indestructible`, not reclaimable, not blocking (units walk through the rock); footprint 6 x 6 (the Lava Extractor); collision cylinder 232 x 26; no ground decal.
+- Model `Units/lavavolcano.s3o` (2.1); the lava in it is drawn by the gadget (4.3).
 - `customparams.lavavolcano = 1`: the mark the gadget and the editor look for.
 - Editor: its own kind **Volcano** in the Features tab (`M.FEATURE_KINDS`, `featureKind` in `editor_common.lua`: a feature with `customParams.lavavolcano`); saved in the level file like every feature.
+
+### 2.1 The model of the Volcano (`LevelEditor/models/make_lava_volcano.py`)
+
+- Made from scratch, no file of BAR: a ring wall of rock around the middle, 48 parts around, rings across: inner foot (radius 70, height 0), crest (radius 84, height 24 +- 5), outer foot (radius 116); every part a little shifted (fixed random numbers: the same model every time).
+  - Three breaches (40, 160 and 280 degrees from +x towards +z, 16 degrees to each side): the crest goes down to 2.5 in their middle; the streams of lava run through them.
+  - Nine boulders on the outer slope (five-sided, 3.5 to 7 wide), not in the breaches.
+  - A Lava Extractor (footprint 6 x 6, corners at radius 68) stands inside, on the lake.
+- Textures of its own (512 x 512, made by the script with numpy and Pillow): plates of dark rock with cracks between them (a Voronoi pattern that tiles).
+  - Upper half: the cracks glow orange (also the red channel of `lavavolcano_other.png`: they shine); the inner wall of the crater uses it.
+  - Lower half: the cracks are darker than the rock; the outer slopes and the boulders use it.
+  - Green channel of the second texture 0: the rock does not reflect the sky; color alpha 0 (no team color).
+  - The engine reads a PNG texture of a model upside down compared with BAR's DDS textures: the script saves the images flipped, the texture areas count v from the top like those of the units.
+- Header: radius 110, height 29, middle (0, 9, 0).
 
 ## 3. The units (`gamedata/unitdefs_pre.lua`)
 
@@ -154,7 +168,12 @@
 
 ### 4.3 Drawing (unsynced)
 
-- `DrawWorldPreUnit`: six rings in red and orange around every Volcano in view, slowly pulsing (radius 25 to 80).
+- `DrawWorldPreUnit`: the lava of every Volcano in view (`LAVA`; its numbers must match the model, 2.1):
+  - a lake (radius 76, 1.2 above the Volcano: its edge is under the inner wall) and a stream out of each breach (from radius 58 to 180, 20 to 10 wide, winding outside the crater, on the rock of the breach or on the ground, fading out at the end; made once per Volcano: `streams`);
+  - three layers: a dark red ground (the dark parts of BAR's lava texture `luaui/images/lava/lava7_diffuseemit.dds` are see-through), the lava texture, the same texture again moving the other way and adding light (`GL.ONE`);
+  - the lake drifts slowly, the streams flow outwards (texture coordinates moved with the time), all of it pulses (0.82 to 1);
+  - real time (`Spring.GetTimer`): the lava moves also while the game is paused (the editor).
+- The geothermal smoke of the engine rises from the middle while nothing stands on it.
 - `DrawScreen`: "Metal 34 / 200" over every working Lava Extractor, the load ("20") over every loaded Carrier (light blue, `gl.Text`).
 - Without a Lava Extractor in the game (no extra game definitions) the gadget removes itself.
 
@@ -169,13 +188,15 @@
 - `test-data/tools/zz_lavafork.lua` (`arena_test.ps1 -Widget zz_lavafork.lua`, one instance, about 2 minutes of game time): the Forklift (no weapons, its model and script, `lavaload` 90, `lavabox` 30, in the build list of `armvp`), two pictures of it empty (next to an armfav); the generator fills for 50 seconds, then Haul: 3 boxes loaded (picture), unloaded one by one at the vehicle plant, a second trip with what the stock has (picture).
 - Checked 2026-11-21: all of it as expected; the picture shows "Metal 12 / 200" over the generator; the truck shows its container (picture `docs/lava-cargo-truck.jpg`).
 - `test-data/tools/zz_lavagen.lua` (`arena_test.ps1 -Widget zz_lavagen.lua`, one instance, about 1.5 minutes of game time): the model and script of all three generators, footprint 6 x 6, `needGeo`; one on a Volcano (200 energy), one beside it (0); pictures close up at the start (from above and lower), after a minute (the yard fills), after a Forklift took 3 boxes (fewer blocks).
+- `test-data/tools/zz_volcano.lua` (`arena_test.ps1 -Widget zz_volcano.lua`, one instance, about 10 seconds of game time): the definition (model, geothermal), one Volcano alone, one with a Lava Extractor (200 energy); pictures from the angle of the game, one second later (the lava moved) and lower.
+- Checked 2026-11-22 (`zz_volcano.lua`): the crater, the glowing inner wall, the lake and the streams show and move (picture `docs/lava-volcano.jpg`); `zz_lava.lua` again: all OK with the new Volcano.
 - Checked 2026-11-22 (`zz_lavagen.lua`): stock 128 = 10 blocks, after the Forklift 48 = 4 blocks; the wheel, the lava and the yard show (picture `docs/lava-generator.jpg`); `zz_lava.lua` again: all OK with the footprint 6 x 6 (build rule, energy, hauling).
 - Checked 2026-11-22 (`zz_lavafork.lua`): stock 102 when Haul was given, 3 boxes loaded in 1.5 seconds, unloaded 30 / 30 / 30 at the plant; the second trip again 3 boxes (the stock had refilled); 180 delivered; the boxes and the raised fork show (picture `docs/lava-forklift.jpg`).
 - **Not checked:** a real right click (the test gives the order with `GiveOrderToUnit`); a constructor of a player really building a generator; several Carriers at one generator; a Forklift leaving with 1 or 2 boxes (the code path exists, the test had full stocks both times); a scenario or LAN game with it; the BAR build menu (where the buttons appear).
 
 ## 6. Open
 
-- Models of their own (Volcano, Carrier); the Lava Extractor: its build picture is still the extractor's, the lava drops and the wheel are not checked moving (pictures only), one model for all factions; the names in BAR's language files (the log says "not translated").
+- A model of its own for the Carrier; the Lava Extractor: its build picture is still the extractor's, the lava drops and the wheel are not checked moving (pictures only), one model for all factions; the names in BAR's language files (the log says "not translated").
 - The Cargo Truck: its roof looks very bright (the grate area is shiny in the second texture); its wreck and build picture are still those of armsam; trucks for Cortex and Legion.
 - The Forklift: its wreck and build picture are still those of armfav; forklifts for Cortex and Legion.
 - Balance (costs, energy, metal, stock, load).

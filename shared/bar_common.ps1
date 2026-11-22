@@ -320,12 +320,20 @@ function Get-GameFileText([string]$data, [string]$game, [string]$path) {
     return $null
 }
 
-# The models of the extra games (LevelEditor\models\*.s3o, made by the scripts next to them, e.g. make_lava_truck.py): objects3d/Units/<file> in both
+# The models of the extra games and their textures (LevelEditor\models\*.s3o and *.png, made by the scripts next to them, e.g. make_lava_truck.py):
+# objects3d/Units/<file> (a model) or unittextures/<file> (a texture) in both
 # extra games. $leDir = the folder LevelEditor (the parent of the scripts folder); none when it has no models folder.
 function Get-ModelFiles([string]$leDir) {
     $md = if ($leDir) { Join-Path $leDir 'models' } else { $null }
     if (-not ($md -and (Test-Path $md))) { return @() }
-    return @(Get-ChildItem $md -Filter '*.s3o' | Sort-Object Name)
+    return @(Get-ChildItem $md -File | Where-Object { $_.Extension -in '.s3o', '.png' } | Sort-Object Name)
+}
+
+# The path of a file of Get-ModelFiles in the extra games: a model under objects3d/Units/, a texture under unittextures/ (where the engine looks for
+# the textures a model names)
+function Get-ModelArchivePath($file) {
+    if ($file.Extension -eq '.png') { return 'unittextures/' + $file.Name }
+    return 'objects3d/Units/' + $file.Name
 }
 
 function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
@@ -340,14 +348,14 @@ function Write-ScenarioGame([string]$data, [string]$game, [string[]]$dirs) {
         $entries += , @($f[1], $text)
         $bytes.AddRange([Text.Encoding]::UTF8.GetBytes($f[1] + "`n" + $text + "`n"))
     }
-    # the models (LevelEditor\models\*.s3o, found next to the scripts folder): objects3d/Units/<file>
+    # the models and their textures (LevelEditor\models\*.s3o, *.png, found next to the scripts folder): objects3d/Units/<file>, unittextures/<file>
     foreach ($d in $dirs) {
         $models = if ($d) { Get-ModelFiles (Split-Path $d -Parent) } else { @() }
         if ($models.Count -gt 0) {
             foreach ($mf in $models) {
                 [byte[]]$data1 = [IO.File]::ReadAllBytes($mf.FullName)
-                $entries += , @(('objects3d/Units/' + $mf.Name), $data1)
-                $bytes.AddRange([Text.Encoding]::UTF8.GetBytes('objects3d/Units/' + $mf.Name + "`n"))
+                $entries += , @((Get-ModelArchivePath $mf), $data1)
+                $bytes.AddRange([Text.Encoding]::UTF8.GetBytes((Get-ModelArchivePath $mf) + "`n"))
                 $bytes.AddRange($data1)
             }
             break
