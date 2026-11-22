@@ -32,6 +32,10 @@
 ## 2. Game options and start
 
 - `lanrenegade=1`: the mode (gadget and widget load only with it).
+- **The camera of the next game:** the engine starts with the camera of the last game (config `CamMode`, 0 = first person `fps`); after Renegade a game without it would start in the first person view.
+  - Without `lanrenegade` the unsynced part of `renegade_game.lua` stays loaded for one `Update`: CamMode 0 → 3, camera `fps` → `viewspring` (BAR's own first start sets CamMode 3 and the Spring camera, `luaui/include/options/upkeep.lua`), a line in the log, then `RemoveGadget`. It is in both extra games (Level Editor, scenarios), so the quick starts, the editor and LAN games are covered.
+  - The widget's `Shutdown` (the end of a Renegade game) sets the normal camera (`R.savedCam` or the Spring camera) and CamMode 3, so that a game of BAR without these files starts normally too.
+  - Checked 2026-11-22: `arena_test.ps1 -Widget zz_camreset.lua` (CamMode 0 and the camera `fps` set in the widget's `Initialize`: after one second `spring` and CamMode 3); `pve_test.ps1 -Ren -RenTest -Quick -Widget zz_ren63.lua` ends in `fps`: the sandbox config has CamMode 3 afterwards.
   - `lanrenebots=<n>` (0 to 30): computer Peewees that hunt the players.
   - `lanrenepowerups=1`: the power-ups without Evolution (see [renegade-units.md](renegade-units.md), Power-ups); with `lanevolution` Evolution's own are used.
   - `lanrenegoal=<n>`: the first team with n kills wins the round (see 7); the lobby writes 20 by default.

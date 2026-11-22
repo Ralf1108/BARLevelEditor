@@ -22,7 +22,24 @@ end
 
 local opt = (Spring.GetModOptions() or {}).lanrenegade
 if opt ~= "1" and opt ~= 1 then
-	return false -- not a Renegade game
+	if gadgetHandler:IsSyncedCode() then
+		return false -- not a Renegade game
+	end
+	-- Not a Renegade game: the engine starts with the camera of the last game (config CamMode). After Renegade it could be the first person view
+	-- (CamMode 0, the camera "fps"): then the normal camera of BAR is set (CamMode 3 and the Spring camera, as BAR's first start does), once at the
+	-- first Update, then the gadget is gone.
+	function gadget:Update()
+		if Spring.GetConfigInt("CamMode", 3) == 0 then
+			Spring.SetConfigInt("CamMode", 3)
+		end
+		local cs = Spring.GetCameraState()
+		if cs and cs.name == "fps" then
+			Spring.SendCommands("viewspring")
+			Spring.Echo("Renegade: the camera of the last game was the first person view: the normal camera is set")
+		end
+		gadgetHandler:RemoveGadget(self)
+	end
+	return
 end
 
 if not gadgetHandler:IsSyncedCode() then

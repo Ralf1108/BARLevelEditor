@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-165 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+166 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -20,6 +20,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_bpt.lua` | BluePrinter plan tests |  |
 | `zz_brood.lua` | a raptor healer builds a Raptor Brood Chamber, the chamber grows raptors | `pve_test.ps1 -Brood -Widget zz_brood.lua` |
 | `zz_cam.lua` | which camera states take a direction | `pve_test.ps1 -Ren -Widget zz_cam.lua` |
+| `zz_camreset.lua` | a game without Renegade starts with the normal camera | `arena_test.ps1 -Widget zz_camreset.lua` |
 | `zz_cloak.lua` | does the Cloak ability work on the own unit? | `pve_test.ps1 -Evo -EvoTest -Widget zz_cloak.lua (one instance)` |
 | `zz_cmdbuttons.lua` | the buttons Area / Split / Focus Attack in the command menu | `arena_test.ps1 -Widget zz_cmdbuttons.lua` |
 | `zz_copy.lua` | copy / paste (Ctrl+C / Ctrl+V), button W, save and load of a level | `arena_test.ps1 -Widget zz_copy.lua` |

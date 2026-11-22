@@ -181,6 +181,7 @@ Good to know about driving:
   - It stops at full health and when an armed enemy is near (a little more than the range of your weapons).
   - Evolution has its own version of this.
 - **Normal game:** switching to it puts the camera over your unit at the usual distance, so you see the battlefield.
+- **After Renegade:** the next game (Experimental, Evolution, Level Editor, a normal BAR game) starts with the normal camera from above at an angle, not in the first person view.
 
 ## Debug menu
 

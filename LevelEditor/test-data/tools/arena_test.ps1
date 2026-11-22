@@ -2,7 +2,8 @@
 # teams on a flat map and the test widget zz_arena.lua, which works the Arena page (settings, Generate, move, undo, Start, Stop, Clear) and logs
 # "[zzar]" lines into infolog.txt of the sandbox (<Work>\data\infolog.txt). The game ends itself (quitforce) when the test is through.
 # -ModOptions 'key=value; ...': more game options (e.g. 'lanexpunits=0;' with -Widget zz_expunits.lua: the Experimental Units left out).
-param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame, [string]$Widget = '', [string]$ModOptions = '')
+# -Settings 'Key = value; ...': more lines of the sandbox springsettings.cfg (e.g. 'CamMode = 0').
+param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'arena_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7', [switch]$Shots, [switch]$AlongsideGame, [string]$Widget = '', [string]$ModOptions = '', [string]$Settings = '')
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
@@ -41,5 +42,5 @@ $teams
 }
 "@
 [IO.File]::WriteAllText("$d\script.txt", $script, (New-Object Text.UTF8Encoding $false))
-Write-SandboxSettings "$Work\springsettings.cfg" @(60, 60, 2400, 1300) @('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0')
+Write-SandboxSettings "$Work\springsettings.cfg" @(60, 60, 2400, 1300) (@('LogFlushLevel = 0', 'VSync = 0', 'VSyncGame = 0', 'IdleFpsDivider = 0') + @($Settings -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ }))
 Invoke-SandboxGame $exe "$Work\springsettings.cfg" $d "$d\script.txt" $WaitSec '\[zzar\]|Failed to load|Error'

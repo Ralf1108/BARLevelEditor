@@ -88,6 +88,15 @@ local function farView(on)
 end
 
 function widget:Shutdown()
+	-- the end of the game: the normal camera again, so that the next game (also one of BAR without this widget) does not start in the first person
+	-- view (the engine keeps the camera of the last game: config CamMode, 0 = fps)
+	local cs = Spring.GetCameraState()
+	if cs and cs.name == "fps" then
+		Spring.SetCameraState(R.savedCam or { name = "spring", mode = 2, rx = 2.6, ry = 0, rz = 0 }, 0)
+	end
+	if Spring.GetConfigInt("CamMode", 3) == 0 then
+		Spring.SetConfigInt("CamMode", 3)
+	end
 	pcall(widgetHandler.DeregisterGlobal, widgetHandler, "renDamage")
 	pcall(widgetHandler.DeregisterGlobal, widgetHandler, "renKill")
 	farView(false)

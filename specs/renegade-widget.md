@@ -27,6 +27,7 @@ What the player sees and presses: camera, mouse, crosshair, panel, dials. All of
   - `setCamera` blends position, rx and ry from `from` to the wanted camera with a smoothstep (ry the short way round); the target follows the mouse during the flight, so aiming stays possible.
   - `R.noFly` = true switches the entry flight off (for tests).
   - **Not measured in the game** (written without a test run): look and speed of the flight, the first frame after a respawn.
+- **At the end (`Shutdown`):** camera `fps` → `R.savedCam` (or the Spring camera, rx 2.6), config CamMode 0 → 3 (the next game must not start in the first person view; see renegade.md, 2).
 - **Overview camera (`overviewCam`):** switching to the normal game (key next to Shift) and a new unit while the normal game is on set the game's camera (the saved one, `R.savedCam`, or the current one) over the unit with `dist` / `height` 2200 and fly there in 0.5 - 1 s, so that the battlefield is seen.
   - Measured: camera `spring` after the switch (`zz_ren63.lua`); **not measured: how far 2200 is on a real map.**
 - **Long sight (`SIGHT_FACTOR`, `farView`):** in the first / third person view enemies must not pop up at the edge of the line of sight.
