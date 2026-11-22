@@ -100,7 +100,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | `zz_ren92.lua` | Renegade power-ups without Evolution: beacon, the five keys, the bar (`-Ren -RenTest -RenPowerups`) |
 | `zz_ren93.lua` | the kill goal (`-RenGoal 3`): three kills by `ren\|test\|9`, the feed, the winner, the banner, GameOver 8 s later |
 | `zz_ren97.lua` | Survival: the computer team loses its units, wave 1 (level 2 unit), the wave cleared, the break, wave 2 (level 3), the loss of the only player: the waves win, GameOver |
-| `zz_ren98.lua` | Race: the track (8 checkpoints), the racers, the pick of another racer (the unit turns into it), the start grid at GO, 16 checkpoints by `ren\|test\|11` (2 laps), the sounds checkpoint and lap, the results, New race (a new track, race 2), Leave (GameOver); also with `-Map "Comet Catcher Remake 1.8"` (cliffs: 1032 of 7752 cells not drivable) |
+| `zz_ren98.lua` | Race: the track (8 checkpoints), the racers, the pick of another racer (the unit turns into it), the start grid at GO, a deadly hit that does nothing (no damage in a race, `ren\|test\|5`), 16 checkpoints by `ren\|test\|11` (2 laps), the sounds checkpoint and lap, the results, New race (a new track, race 2), Leave (GameOver); also with `-Map "Comet Catcher Remake 1.8"` (cliffs: 1032 of 7752 cells not drivable) |
 | `zz_sight.lua` | the sight of the unit: Renegade 3 times, Radar Pulse, back (`G.setSight`) |
 | `zz_weapondump.lua` | one `[zzwep]` line per weapon (for the table) |
 
@@ -155,6 +155,7 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
   - `ren|race|again` (any player): `newRace` (a new track, the pick again, `renRaceOver` 0).
   - `ren|race|leave` (any player; also during a race): `rounds.finish(winner or -1)`: the banner and GameOver 8 s later.
 - **No damage** between the units of players (`UnitPreDamaged` asks `modeRun.noDamage`).
+  - Checked 2026-11-23 (`zz_ren98.lua`): health 90 after a deadly hit: 90. Before, the rule never applied: `UnitPreDamaged` stood above the line `local modeRun` and read a global (nil); `lua_check.py` finds that now.
 - **Screen** (`renegade_hud.lua`): the rings on the ground (`H.drawModeWorld`: the next one green, pulsing, with a column of light and a flat arrow to the checkpoint after it, the others faint), the panel (lap, checkpoint, place, time), the countdown 5 to 1 and GO, an arrow to the next checkpoint (relative to the view) with its distance; sounds tick, the start, checkpoint, lap (reset with `renRaceNo`); the hints of the mode after the start.
   - Before the start the cards of the racers (`drawPick`: picture, name, faction, key; the own pick green); after the race the results (`drawResults`: place, name, racer, time; buttons New race [N] and Leave [L]).
   - Nothing of a mode is drawn before the game starts (`H.drawMode`, frame 0): the panel and a frozen "GO!" over the screen of the start positions looked like a hung game. The LAN room starts a mode with the start positions of the map (`StartPosType=0`).

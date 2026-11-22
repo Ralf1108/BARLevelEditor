@@ -782,7 +782,7 @@ return function(td, H)
 	function td.startSingle(x, z)
 		local name = H.mazeUnitName(H.MAZE_KINDS[td.wall])
 		if not name then
-			H.say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
+			H.say("This faction has no " .. H.MAZE_KINDS[td.wall].label .. " in this game")
 			return
 		end
 		H.ledStep()
@@ -945,13 +945,13 @@ return function(td, H)
 		end
 		local name = H.mazeUnitName(H.MAZE_KINDS[td.wall])
 		if not name then
-			H.say("This faction has no " .. MAZE_KINDS[td.wall].label .. " in this game")
+			H.say("This faction has no " .. H.MAZE_KINDS[td.wall].label .. " in this game")
 			return false
 		end
 		local c = td.cfg(true)
 		local spots = td.wallSpots(p, c.width)
 		if #spots > H.MAZE_MAX_WALLS then
-			H.say("The corridor is too long (more than " .. MAZE_MAX_WALLS .. " wall pieces)")
+			H.say("The corridor is too long (more than " .. H.MAZE_MAX_WALLS .. " wall pieces)")
 			return false
 		end
 		H.ledStep()

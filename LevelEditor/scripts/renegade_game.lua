@@ -62,6 +62,7 @@ end
 
 local G = VFS.Include("luaui/Include/led_gadgets.lua", nil, VFS.ZIP_FIRST) -- the wreck reclaim (G.reclaimFeatures)
 
+local modeRun -- (the object of the mode: frame(f), destroyed(u, team, playerUnit), noDamage(u), clear(); made below; declared above its first use)
 -- the spawn shield of a unit that came back (G.shield of led_gadgets.lua): no damage
 function gadget:UnitPreDamaged(unitID)
 	if G.shielded(unitID) then return 0, 0 end
@@ -94,7 +95,6 @@ local POWERUPS = MO.lanrenepowerups == "1" and not EVO -- the power-ups without 
 -- the modes of Renegade (game option lanrenemode, not with Evolution): "survival" (renegade_survival.lua), "race" (renegade_race.lua). They always play Always in unit, without the bots.
 local MODE = (not EVO and (MO.lanrenemode == "survival" or MO.lanrenemode == "race")) and MO.lanrenemode or nil
 if MODE then SINGLE = true end
-local modeRun -- (the object of the mode: frame(f), destroyed(u, team, playerUnit), clear(); made below)
 local follow = {}
 local FOLLOW_FRAMES = 450 -- (15 s: a respawn takes its time)
 local BOTS = MODE and 0 or math.max(0, math.min(30, tonumber(MO.lanrenebots) or 0))

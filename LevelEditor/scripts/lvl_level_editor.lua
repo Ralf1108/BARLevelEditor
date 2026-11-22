@@ -299,6 +299,7 @@ local scenarioPage = "info" -- what the scenario panel shows: "info" (title, bri
 local collapsed = false -- Menu collapsed: only the small button V stays visible
 local panelMover = Shared.newPanelMover() -- the title row moves the menu
 local mazeKind = nil -- Maze mode: nil = off, otherwise index into MAZE_KINDS
+local mazeDrag = nil -- { x, z }: start point of the rectangle (up here: onArm of the area attack below clears it)
 -- Generate page (button G): faction, type, tech, count; then drag an area, the units appear in it.
 -- All state lives in one table (a Lua function may only reference 60 outer variables).
 -- Generate page (LevelEditor/scripts/led_gen.lua): the state and the layout of the page (button G); the widget works the drag on the map
@@ -1413,7 +1414,6 @@ local MAZE_KINDS = {
 	{ suffix = "drag", label = "Dragon teeth" },
 	{ suffix = "fort", label = "Walls" },
 }
-local mazeDrag = nil -- { x, z }: start point of the rectangle
 
 local function mazeUnitName(kind)
 	local fac = gen.mazeFaction() -- same faction as on the Generate page (each faction has its own dragon teeth and walls)
