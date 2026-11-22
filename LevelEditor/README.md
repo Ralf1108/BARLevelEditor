@@ -138,6 +138,7 @@ Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
 
 - A normal geothermal plant on a Volcano makes its normal energy.
 - **LAN Play:** the units are in a LAN game on an official map only with **LAN Play** > **Experimental Units: On**; scenarios always have them.
+- **Try it at once:** `LevelEditor\start_experimental.bat` starts a game on Full Metal Plate: next to your start a Volcano with a Lava Extractor, a Carrier, a Cargo Truck and a Forklift side by side and a vehicle plant behind them. Select a vehicle and right-click the Lava Extractor. Other map: `start_experimental.bat "Map name"`.
 ![The Lava Extractor at the start (left) and after a minute with 10 metal blocks in its yard (right)](../docs/lava-generator.jpg)
 
 - The Carrier still has a stand-in look. Details: [specification](../specs/lava.md).

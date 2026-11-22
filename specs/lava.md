@@ -187,6 +187,15 @@
 - `DrawScreen`: "Metal 34 / 200" over every working Lava Extractor, the load ("20") over every loaded Carrier (light blue, `gl.Text`).
 - Without a Lava Extractor in the game (no extra game definitions) the gadget removes itself.
 
+### 4.4 The test start (`start_experimental.bat`)
+
+- `LevelEditor\start_experimental.bat [map]` (default `Full Metal Plate 1.7`) runs `ensure_installed.ps1`, then `scripts\start_experimental.ps1`: like `start_evolution.ps1` (`Resolve-ExtraGame`, `Start-ExtraGame`, the script in `LevelEditor\experimental_script_installed.txt`, ignored by git), you (Armada) against a NullAI (Cortex), `startpostype=0`, game options `deathmode=neverend`, `lanplay=1`, `lanexpunits=1`, `lanexpdemo=1`.
+- `lanexpdemo=1`: at frame 5 the gadget places for team 0 (`placeDemo`, `Spring.CreateFeature` / `Spring.CreateUnit`, finished):
+  - a Volcano with a Lava Extractor 380 from the start position towards the middle of the map;
+  - a Carrier, a Cargo Truck and a Forklift 270 to the right of it, 60 apart, looking at it; a vehicle plant 470 to the right;
+  - near the right edge of the map all of it to the left (the extractor turned: its yard faces the units);
+  - a line in the console: select a vehicle, right-click the Lava Extractor.
+
 ## 5. Tests
 
 - `test-data/tools/zz_lava.lua` (`arena_test.ps1 -Widget zz_lava.lua`, one instance, about 2 minutes of game time):
@@ -200,6 +209,7 @@
 - `test-data/tools/zz_lavagen.lua` (`arena_test.ps1 -Widget zz_lavagen.lua`, one instance, about 1.5 minutes of game time): the model and script of all three generators, footprint 6 x 6, `needGeo`; one on a Volcano (200 energy), one beside it (0); pictures close up at the start (from above and lower), after a minute (the yard fills), after a Forklift took 3 boxes (fewer blocks).
 - `test-data/tools/zz_lavaroad.lua` (`arena_test.ps1 -Widget zz_lavaroad.lua`, one instance, 2 minutes of game time): two Volcanoes with an extractor each (build facing 0 and 1), a bot lab and a Carrier on the far side of each; the yard can be driven on (`TestMoveOrder`), the furnace side not; every half second: a Carrier over the wall (nearer than 100, not in the pass) or in a stream (12 degrees around a breach, nearer than 165) = WRONG; a picture of a Carrier loading in the yard.
 - Checked 2026-11-22 (`zz_lavaroad.lua`): 8 and 11 loads, 0 times over the wall or the lava, 360 delivered (picture `docs/lava-carrier-yard.jpg`); `zz_lava.lua`, `zz_lavafork.lua` again: all OK.
+- `test-data/tools/zz_expdemo.lua` (`arena_test.ps1 -Widget zz_expdemo.lua -ModOptions 'lanexpdemo=1;'`, one instance, 2 minutes of game time): what the test start places (all five, the Volcano), a picture, then Haul for all three vehicles; checked 2026-11-22: all placed, 200 delivered (a first run ended at frame 1362 without a Lua error, as if the window had been closed; the second one ran through).
 - `test-data/tools/zz_volcano.lua` (`arena_test.ps1 -Widget zz_volcano.lua`, one instance, about 10 seconds of game time): the definition (model, geothermal), one Volcano alone, one with a Lava Extractor (200 energy); pictures from the angle of the game, one second later (the lava moved) and lower.
 - Checked 2026-11-22 (`zz_volcano.lua`): the crater, the glowing inner wall, the lake and the streams show and move (picture `docs/lava-volcano.jpg`); `zz_lava.lua` again: all OK with the new Volcano.
 - Checked 2026-11-22 (`zz_lavagen.lua`): stock 128 = 10 blocks, after the Forklift 48 = 4 blocks; the wheel, the lava and the yard show (picture `docs/lava-generator.jpg`); `zz_lava.lua` again: all OK with the footprint 6 x 6 (build rule, energy, hauling).

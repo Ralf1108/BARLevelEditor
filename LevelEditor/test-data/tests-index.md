@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-162 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+163 widgets. The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Widget | What it checks | Started with |
 |---|---|---|
@@ -32,6 +32,7 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_evo_all.lua` | several Evolution rules in one game | `pve_test.ps1 -Evo -EvoTest -Debug -Bots 1 -Widget zz_evo_all.lua (one instance, speed 10, ends at frame 4200). One game, several checks, lines "[zzall]"` |
 | `zz_evocam.lua` | the camera at the start of Evolution | `pve_test.ps1 -Evo -Widget zz_evocam.lua` |
 | `zz_evoshot.lua` | a picture of the Evolution panels | `pve_test.ps1 -Evo -Widget zz_evoshot.lua` |
+| `zz_expdemo.lua` | the test start of the Experimental Units (lanexpdemo=1) | `arena_test.ps1 -Widget zz_expdemo.lua -ModOptions 'lanexpdemo=1;' (what start_experimental.bat starts)` |
 | `zz_export.lua` | the export buttons of the settings page (O) | `arena_test.ps1 -Widget zz_export.lua` |
 | `zz_expunits.lua` | which Experimental Units the game has | `arena_test.ps1 -Widget zz_expunits.lua [-ModOptions 'lanexpunits=0;']` |
 | `zz_features.lua` | moves a feature (tree) and undoes it | `arena_test.ps1 -Widget zz_features.lua` |

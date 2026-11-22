@@ -39,7 +39,7 @@
   - The LAN lobby writes `deathmode=neverend` for a Renegade room (the commanders are replaced: the game must not end by a lost commander).
   - `lanrenedebug=1`: the debug menu (turn into a unit, spawn an enemy).
   - `lanrenotest=1`: test hooks (see Tests below).
-- **Start scripts:** both quick start scripts (`start_renegade.ps1`, `start_evolution.ps1`) use `Resolve-ExtraGame` and `Start-ExtraGame` of `shared/bar_common.ps1` (data folder, extra game, engine, writing and starting the start script); `-DryRun` only writes the start script (tests: `ps_test.ps1`).
+- **Start scripts:** the quick start scripts (`start_renegade.ps1`, `start_evolution.ps1`, `start_experimental.ps1`) use `Resolve-ExtraGame` and `Start-ExtraGame` of `shared/bar_common.ps1` (data folder, extra game, engine, writing and starting the start script); `-DryRun` only writes the start script (tests: `ps_test.ps1`).
 - **Quick start:** `LevelEditor\start_renegade.bat [map] [AI] [bots]` (default `Hooked 1.1`, `NullAI`, 3 bots) runs `ensure_installed.ps1` and `scripts\start_renegade.ps1`, which writes `LevelEditor\renegade_script_installed.txt` (ignored by git) and starts the engine on it: you in team 0 (Armada), the computer player in team 1 (Cortex), options `lanrenegade=1; lanplay=1; deathmode=neverend; lanrenebots=<n>; lanrenedebug=1` (`-DebugMode 0` without the debug menu).
 - **Race quick start:** `LevelEditor\start_race.bat [map] [quick]` (default `Comet Catcher Remake 1.8`) runs `start_renegade.ps1 -Mode race -Bots 0 -DebugMode 0`: the option `lanrenemode=race` (`-Mode survival` works the same way); the race removes the units of the computer player.
   - Do not change the bat file while the game runs (cmd reads it by position).

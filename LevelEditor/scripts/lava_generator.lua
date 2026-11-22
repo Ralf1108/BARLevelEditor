@@ -405,7 +405,45 @@ if gadgetHandler:IsSyncedCode() then
 		return true
 	end
 
+	-- the test start of start_experimental.bat (game option lanexpdemo=1): a Volcano with a Lava Extractor (its yard to the side of the units), then
+	-- a Carrier, a Cargo Truck and a Forklift side by side and a vehicle plant behind them, for team 0, between its start and the middle of the map
+	local function placeDemo()
+		local team = 0
+		local sx, _, sz = Spring.GetTeamStartPosition(team)
+		if not sx or sx < 0 then
+			sx, sz = Game.mapSizeX / 2, Game.mapSizeZ / 2
+		end
+		local dx, dz = Game.mapSizeX / 2 - sx, Game.mapSizeZ / 2 - sz
+		local l = math.sqrt(dx * dx + dz * dz)
+		if l > 1 then
+			dx, dz = dx / l, dz / l
+		else
+			dx, dz = 0, 1
+		end
+		local vx, vz = sx + dx * 380, sz + dz * 380
+		local side = vx + 620 < Game.mapSizeX and 1 or -1 -- (the units to the right of the Volcano, or to the left near the edge of the map)
+		local function at(x, z)
+			x = math.max(64, math.min(Game.mapSizeX - 64, x))
+			z = math.max(64, math.min(Game.mapSizeZ - 64, z))
+			return x, Spring.GetGroundHeight(x, z), z
+		end
+		local x, y, z = at(vx, vz)
+		Spring.CreateFeature("lava_volcano", x, y, z, 0)
+		Spring.CreateUnit("armlavagen", x, y, z, side == 1 and 0 or 2, team) -- (facing 0: the yard to the east; 2: to the west)
+		local facing = side == 1 and 3 or 1 -- (the units look at the Volcano)
+		for i, name in ipairs({ "armlavacarrier", "armlavatruck", "armlavafork" }) do
+			x, y, z = at(vx + side * 270, vz + (i - 2) * 60)
+			Spring.CreateUnit(name, x, y, z, facing, team)
+		end
+		x, y, z = at(vx + side * 470, vz)
+		Spring.CreateUnit("armvp", x, y, z, facing, team)
+		Spring.Echo("Experimental Units: select a Carrier, the Cargo Truck or the Forklift and right-click the Lava Extractor (order Haul): they fetch its metal for the vehicle plant.")
+	end
+
 	function gadget:GameFrame(f)
+		if f == 5 and (Spring.GetModOptions() or {}).lanexpdemo == "1" then
+			placeDemo()
+		end
 		if f % 30 == 7 then
 			for u, g in pairs(gens) do
 				checkGen(u, g)

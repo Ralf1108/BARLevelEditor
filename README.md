@@ -39,6 +39,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 | try Evolution alone | `LevelEditor\start_evolution.bat` |
 | try Renegade alone | `LevelEditor\start_renegade.bat` |
 | try a Race of Renegade alone | `LevelEditor\start_race.bat` |
+| try the Experimental Units (Volcano, Lava Extractor, Carrier, Cargo Truck, Forklift) | `LevelEditor\start_experimental.bat` |
 | remove everything | `LevelEditor\uninstall_editor.bat`, `BluePrinter\uninstall_blueprinter.bat` |
 
 ## Level Editor
