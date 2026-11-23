@@ -93,7 +93,12 @@ Parameters (gadget -> widget): team rules `renUnit` (the unit, 0 = none), `renRe
 | `zz_ren15.lua` | the turret follows the view without a button (barrel direction, reload held), the first shot 2 frames after the click, the facing arrow (picture); a screenshot stalls drawing for a few frames: a short press during that time is not seen by the widget |
 | `zz_ren14.lua` | one click = one shot (turret still turning), held = continuous fire |
 | `zz_ren9.lua` | respawn with the countdown, `GetUnitWeaponVectors` |
-| `zz_ren10.lua`, `zz_ren11.lua`, `zz_ren13.lua` | anti-air circle and lock (turret `armrl`), Titan starburst (point only), Titan laser (lock) |
+| `zz_ren10.lua` | anti-air circle and lock (turret `armrl`) |
+| `zz_ren11.lua` | the Titan and a gunship per button: the starburst (middle button) takes the point where the aircraft is, the laser (right button) locks it and shoots it down; no lock when the view turns away (OK / WRONG; regression set) |
+| `zz_ren34.lua` (`-Map "Hooked 1.1"`) | a bomber over a cliff: its height above the ground; with Space held it stays at its ceiling (0.95 x the attack altitude), the bomb sight green (OK / WRONG; regression set) |
+| `zz_ren64.lua` | the Exploiters fire at the ground and destroy a test enemy (OK / WRONG; regression set) |
+| `zz_ren78.lua` | the reverse gear of a bot and a tank (driving, steering), and a Pawn that reverses from standing (OK / WRONG; regression set) |
+| gone, merged 2026-11-23 | `zz_ren13.lua` -> `zz_ren11.lua`; `zz_ren35.lua`, `zz_ren74.lua` -> `zz_ren34.lua`; `zz_ren37.lua`, `zz_ren38.lua` -> `zz_ren41.lua` (they clicked at heights where nothing falls any more); `zz_ren47.lua` -> `zz_ren48.lua`; `zz_ren69.lua` -> `zz_ren64.lua`; `zz_ren86.lua` -> `zz_ren78.lua`. Older "Measured with" notes still name them. |
 | `zz_ren12.lua` | the menu in the mode "Spawn enemy", spawned units: distance 1001 Elmo, aircraft 200 up |
 | `zz_ren90.lua` | the jump (Space) of a two-legged bot; tank and spider do not jump |
 | `zz_ren91.lua` | Renegade with Evolution: the keys 1 to 5 use the power-ups (`-Ren -RenTakeover -RenTest -Evo -EvoTest -Debug`) |

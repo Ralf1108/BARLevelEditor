@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-165 widgets (29 set, 1 test, 98 check, 11 pictures, 26 probe). The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+158 widgets (33 set, 1 test, 84 check, 11 pictures, 29 probe). The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Kind | Meaning |
 |---|---|
@@ -77,9 +77,8 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_ren8.lua` | check | Renegade three buttons and weapon groups | `pve_test.ps1 -Ren -RenTest -Widget zz_ren8.lua` |
 | `zz_ren9.lua` | check | Renegade respawn with countdown, barrel lines | `pve_test.ps1 -Ren -RenTest -Widget zz_ren9.lua` |
 | `zz_ren10.lua` | check | Renegade anti-air circle and lock | `pve_test.ps1 -Ren -RenTest -Widget zz_ren10.lua` |
-| `zz_ren11.lua` | check | Renegade ground and air missile (Titan starburst, middle button): lock at aircraft, aim at the ground | `pve_test.ps1 -Ren -RenTest -Widget zz_ren11.lua` |
+| `zz_ren11.lua` | set | Renegade ground and air weapons of the Titan (starburst on the middle button, laser on the right one): lock at aircraft, aim at the ground | `pve_test.ps1 -Ren -RenTest -Widget zz_ren11.lua` |
 | `zz_ren12.lua` | check | Renegade spawn enemy button | `pve_test.ps1 -Ren -RenTest -Widget zz_ren12.lua` |
-| `zz_ren13.lua` | check | Renegade ground and air missile (Titan laser, right button): lock at aircraft, aim at the ground | `pve_test.ps1 -Ren -RenTest -Widget zz_ren13.lua` |
 | `zz_ren14.lua` | check | Renegade one click = one shot | `pve_test.ps1 -Ren -RenTest -Widget zz_ren14.lua` |
 | `zz_ren15.lua` | check | Renegade the turret follows the view without firing, facing arrow | `pve_test.ps1 -Ren -RenTest -Widget zz_ren15.lua` |
 | `zz_ren16.lua` | check | Renegade commander: laser left, Disintegrator (D-gun) right | `pve_test.ps1 -Ren -RenTest -Widget zz_ren16.lua` |
@@ -96,11 +95,8 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_ren30.lua` | probe | height of a gunship that flies in the normal game, with the height fields of its definition | `pve_test.ps1 -Ren -RenTest -Widget zz_ren30.lua` |
 | `zz_ren31.lua` | probe | height of fixed-wing aircraft in the normal game against their cruise altitude | `pve_test.ps1 -Ren -RenTest -Widget zz_ren31.lua` |
 | `zz_ren33.lua` | check | crosshair and weapon rows colour by range | `pve_test.ps1 -Ren -RenTest -Widget zz_ren33.lua` |
-| `zz_ren34.lua` | check | Renegade bomber keeps its height above the ground on slopes | `pve_test.ps1 -Ren -RenTest -Widget zz_ren34.lua` |
-| `zz_ren35.lua` | check | Renegade bomber with Space held never gets over its highest height | `pve_test.ps1 -Ren -RenTest -Widget zz_ren35.lua` |
+| `zz_ren34.lua` | set | Renegade bomber: its height above the ground on slopes, its ceiling with Space held, the bomb sight colour | `pve_test.ps1 -Ren -RenTest -Map "Hooked 1.1" -Widget zz_ren34.lua (a map with a cliff; on a flat map only the ceiling is checked)` |
 | `zz_ren36.lua` | probe | Renegade bomber drops bombs at which heights | `pve_test.ps1 -Ren -RenTest -Widget zz_ren36.lua` |
-| `zz_ren37.lua` | check | Renegade bomber, one short click | `pve_test.ps1 -Ren -RenTest -Widget zz_ren37.lua` |
-| `zz_ren38.lua` | check | Renegade bomber, one short click at 400 above the ground (the gadget drops the bombs itself) | `pve_test.ps1 -Ren -RenTest -Widget zz_ren38.lua` |
 | `zz_ren39.lua` | probe | at what height does the engine's own bomb release fire, for every bomber | `pve_test.ps1 -Ren -RenTest -Widget zz_ren39.lua` |
 | `zz_ren40.lua` | check | our own bomb release for every bomber | `pve_test.ps1 -Ren -RenTest -Widget zz_ren40.lua` |
 | `zz_ren41.lua` | check | a bomber drops only up to its attack altitude | `pve_test.ps1 -Ren -RenTest -Widget zz_ren41.lua` |
@@ -125,28 +121,25 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_ren61.lua` | check | all turrets follow the view (the D-gun too) | `pve_test.ps1 -Ren -RenTest -Widget zz_ren61.lua` |
 | `zz_ren62.lua` | check | a weapon fires only when it is loaded and the button is down | `pve_test.ps1 -Ren -RenTest -Widget zz_ren62.lua` |
 | `zz_ren63.lua` | check | switch between Renegade and the normal game | `pve_test.ps1 -Ren -RenTest -Widget zz_ren63.lua` |
-| `zz_ren64.lua` | check | the Exploiters (extractors with weapons) fire | `pve_test.ps1 -Ren -RenTest -Widget zz_ren64.lua` |
-| `zz_ren65.lua` | check | energy and metal cost of the shots of the Exploiters and the resources of the teams | `pve_test.ps1 -Ren -RenTest -Widget zz_ren65.lua` |
+| `zz_ren64.lua` | set | the Exploiters (extractors with weapons) fire at the ground and at an enemy unit | `pve_test.ps1 -Ren -RenTest -Widget zz_ren64.lua` |
+| `zz_ren65.lua` | probe | energy and metal cost of the shots of the Exploiters and the resources of the teams | `pve_test.ps1 -Ren -RenTest -Widget zz_ren65.lua` |
 | `zz_ren67.lua` | check | the Rattlesnake (armamb) and its trajectory state | `pve_test.ps1 -Ren -RenTest -Widget zz_ren67.lua` |
-| `zz_ren68.lua` | check | the firing cones of the Exploiters | `pve_test.ps1 -Ren -RenTest -Widget zz_ren68.lua` |
-| `zz_ren69.lua` | check | an Exploiter fires at an enemy unit | `pve_test.ps1 -Ren -RenTest -Widget zz_ren69.lua` |
+| `zz_ren68.lua` | probe | the firing cones of the Exploiters | `pve_test.ps1 -Ren -RenTest -Widget zz_ren68.lua` |
 | `zz_ren70.lua` | check | a spider walks backwards (S) without turning round | `pve_test.ps1 -Ren -RenTest -Widget zz_ren70.lua` |
 | `zz_ren71.lua` | check | the binoculars and the speedometer | `pve_test.ps1 -Ren -RenTest -Widget zz_ren71.lua` |
 | `zz_ren72.lua` | check | the information line of the unit menu | `pve_test.ps1 -Ren -RenTest -Widget zz_ren72.lua` |
 | `zz_ren73.lua` | check | Renegade Flying Black Hydra on slopes | `pve_test.ps1 -Ren -RenTest -Widget zz_ren73.lua` |
-| `zz_ren74.lua` | check | Renegade bomber ceiling and the bomb sight colour | `pve_test.ps1 -Ren -RenTest -Widget zz_ren74.lua` |
 | `zz_ren75.lua` | check | Renegade laser aimed through the enemy at the point behind it | `pve_test.ps1 -Ren -RenTest -Widget zz_ren75.lua` |
 | `zz_ren76.lua` | check | does the Juggernaut (corkorg) move from the start point? | `pve_test.ps1 -Ren -RenTest -Widget zz_ren76.lua` |
 | `zz_ren77.lua` | check | Laser Tiger fires at the ground out of range | `pve_test.ps1 -Ren -RenTest -Widget zz_ren77.lua` |
-| `zz_ren78.lua` | check | Renegade reverse gear | `pve_test.ps1 -Ren -RenTest -Widget zz_ren78.lua` |
-| `zz_ren79.lua` | check | how smooth is the reverse gear | `pve_test.ps1 -Ren -RenTest -Widget zz_ren79.lua (game speed 1)` |
+| `zz_ren78.lua` | set | Renegade reverse gear (driving, steering, reverse from standing) | `pve_test.ps1 -Ren -RenTest -Widget zz_ren78.lua` |
+| `zz_ren79.lua` | probe | how smooth is the reverse gear | `pve_test.ps1 -Ren -RenTest -Widget zz_ren79.lua (game speed 1)` |
 | `zz_ren80.lua` | check | Renegade takeover mode (the mode key takes over a unit and leaves it) | `pve_test.ps1 -Ren -RenTakeover -Widget zz_ren80.lua` |
 | `zz_ren81.lua` | check | Renegade takeover mode with Evolution: the player takes over the evolved unit | `pve_test.ps1 -Ren -RenTakeover -Evo -EvoTest -Widget zz_ren81.lua` |
 | `zz_ren82.lua` | check | the game's unit bars are off in Renegade | `pve_test.ps1 -Ren` |
 | `zz_ren83.lua` | check | layout of the panels, the unit bars widget comes back | `pve_test.ps1 -Ren` |
 | `zz_ren84.lua` | check | a Renegade aircraft with no health left crashes | `pve_test.ps1 -Ren -RenTest -Widget zz_ren84.lua (variants` |
 | `zz_ren85.lua` | check | the distance of the third person camera | `pve_test.ps1 -Ren -RenTest -Widget zz_ren85.lua` |
-| `zz_ren86.lua` | check | reverse from standing starts with a short forward drive | `pve_test.ps1 -Ren -RenTest -Widget zz_ren86.lua` |
 | `zz_ren87.lua` | check | walking within 10 degrees of the view points the body exactly along it | `pve_test.ps1 -Ren -RenTest -Widget zz_ren87.lua` |
 | `zz_ren88.lua` | check | fires at the nearest enemy to see the damage numbers | `pve_test.ps1 -Ren -RenTest -RenBots 3 -Widget zz_ren88.lua` |
 | `zz_ren89.lua` | check | a hurt unit reclaims wrecks and heals (green plus signs and +N) | `pve_test.ps1 -Ren -RenTest -Widget zz_ren89.lua` |

@@ -2,7 +2,7 @@
 # at once: a game needs 8 to 10 GB), and ends with a table; exit code 1 when one failed. A test takes 1 to 4 minutes, the whole set about an hour.
 #   -List            only prints the set
 #   -Only a,b        only the tests whose name holds one of these texts (e.g. -Only lava  or  -Only zz_teams,zz_save)
-#   -Group editor|lava|modes|blueprinter   only one group
+#   -Group editor|lava|modes|renegade|blueprinter   only one group
 #   -AlongsideGame   also when a game runs (passed on to arena_test.ps1; pve_test.ps1 and bp_test.ps1 always run next to a game)
 # A new test widget with OK / WRONG lines is added to $set below. The widgets that only log values or take pictures (tools\probes, see
 # ..\README.md) are not part of it. The log of each game: <temp>\arena_test, pve_test or bp_test \data\infolog.txt (the last game of each tool).
@@ -25,7 +25,11 @@ $set = @(
     @{ Group = 'modes'; Name = 'zz_modes'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_modes.lua' } }
     @{ Group = 'modes'; Name = 'zz_pve'; Tool = 'pve_test.ps1'; Args = @{} }
     @{ Group = 'modes'; Name = 'zz_brood'; Tool = 'pve_test.ps1'; Args = @{ Brood = $true; Widget = 'zz_brood.lua' } }
-    @{ Group = 'modes'; Name = 'zz_ren98'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; RenMode = 'race'; Quick = $true; Widget = 'zz_ren98.lua' } }
+    @{ Group = 'renegade'; Name = 'zz_ren98'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; RenMode = 'race'; Quick = $true; Widget = 'zz_ren98.lua' } }
+    @{ Group = 'renegade'; Name = 'zz_ren11'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; Widget = 'zz_ren11.lua' } }
+    @{ Group = 'renegade'; Name = 'zz_ren34'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; Map = 'Hooked 1.1'; Widget = 'zz_ren34.lua' } }
+    @{ Group = 'renegade'; Name = 'zz_ren64'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; Widget = 'zz_ren64.lua' } }
+    @{ Group = 'renegade'; Name = 'zz_ren78'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; Widget = 'zz_ren78.lua' } }
     @{ Group = 'lava'; Name = 'zz_volcano'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_volcano.lua' } }
     @{ Group = 'lava'; Name = 'zz_lavagen'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_lavagen.lua' } }
     @{ Group = 'lava'; Name = 'zz_lavabelt'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_lavabelt.lua' } }

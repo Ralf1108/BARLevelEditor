@@ -1,6 +1,6 @@
 function widget:GetInfo() return { name = "zz ren41", desc = "test only: a bomber drops only up to its attack altitude", layer = 1, enabled = true } end
 -- Test widget of pve_test.ps1 -Ren -RenTest -Widget zz_ren41.lua: the player becomes a Tsunami (armsb, attack altitude 210); after the take-off (about 400) the left button is clicked: nothing may fall
--- and the weapon row is red; then it sinks (Ctrl) to under 200 and the click must drop the bombs (row green). Logs the height, the colour of the row (R.states) and the gadget's "bombs:" lines. Lines "[zzren41]".
+-- and the weapon row is red; then it sinks (Ctrl) to under 200 and the click must drop the bombs (row green). Logs the height, the colour of the row (R.states) and the gadget's "bombs:" lines. Lines "[zzren41]". (zz_ren37.lua and zz_ren38.lua clicked at 250 and 400 before there was an attack altitude: this test took their place.)
 local function log(...) Spring.Echo("[zzren41] " .. table.concat({ ... }, " ")) end
 local R
 function widget:GameFrame(f)
