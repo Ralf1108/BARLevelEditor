@@ -68,11 +68,22 @@ at(45, function()
 	W():DebugAddBlueprint({ { name = "armsolar", dx = 0, dz = 0, rot = 0 } }, x2, z2)
 	sx2, sz2 = x2, z2
 	local c = Spring.GetTeamUnits(Spring.GetMyTeamID())[1]
-	local w = UnitDefNames.armwin.id
+	local w = UnitDefNames[UnitDefs[Spring.GetUnitDefID(c)].name:sub(1, 3) .. "win"].id -- (the windmill of the commander's faction: bp_test.ps1 starts Cortex)
 	Spring.GiveOrderToUnit(c, -w, { bx, Spring.GetGroundHeight(bx, bz), bz, 0 }, {})
 	Spring.GiveOrderToUnit(c, -w, { x2, Spring.GetGroundHeight(x2, z2), z2, 0 }, { "shift" })
 end)
 at(500, function()
+	for _, s in ipairs({ { bx, bz, "first" }, { sx2, sz2, "second" } }) do -- what stands on the two spots (the commander must have built the windmills)
+		local names = {}
+		for _, u in ipairs(Spring.GetUnitsInCylinder(s[1], s[2], 60)) do
+			local _, _, _, _, built = Spring.GetUnitHealth(u)
+			names[#names + 1] = UnitDefs[Spring.GetUnitDefID(u)].name .. string.format(" %.0f%%", (built or 0) * 100)
+		end
+		log("on the " .. s[3] .. " spot: " .. (names[1] and table.concat(names, ", ") or "nothing"))
+	end
+	local c = Spring.GetTeamUnits(Spring.GetMyTeamID())[1]
+	local x, _, z = Spring.GetUnitPosition(c)
+	log(string.format("the commander is %.0f from the first spot, orders %d, metal %.0f", math.sqrt((x - bx) ^ 2 + (z - bz) ^ 2), Spring.GetUnitCommandCount(c), (Spring.GetTeamResources(Spring.GetMyTeamID(), "metal"))))
 	chk(not oldPlanThere(), "a plan with a building built on top of it is removed from the queue")
 	Spring.SendCommands("bp_undo")
 end)
