@@ -84,6 +84,39 @@ local exc = ex and T.check("armpw", ex.armpw, pawn, WeaponDefs)
 check(ex and ex.armpw.health == 2000 and #exc.errors == 0 and #exc.ignored == 0, "the example is a correct tweakunits text for the Pawn")
 ok("the values of a unit as text")
 
+-- ---------------------------------------------------------------- the rows of the window of the values
+local function rowOf(rows, key, weapon)
+	for _, r in ipairs(rows) do
+		if r.key == key and r.weapon == weapon then return r end
+	end
+end
+local rows = T.rows("armpw", pawn, WeaponDefs, {})
+check(rowOf(rows, "health").normal == 370 and rowOf(rows, "health").value == 370 and rowOf(rows, "radardistance").normal == 0, "rows: every unit field with its normal value")
+check(rowOf(rows, "range", "emg").normal == 180 and rowOf(rows, "damage", "emg").normal == 9 and rowOf(rows, "accuracy", "emg") == nil and rowOf(rows, "range", "shield") == nil,
+	"rows: the weapon with range and damage, no row for a field the game does not tell, no shield")
+check(next(T.rowsTable(rows, {})) == nil, "rows without a change give an empty table")
+rowOf(rows, "health").value = 5000
+rowOf(rows, "damage", "emg").value = 20
+rowOf(rows, "stealth").value = true
+check(T.serialize(T.rowsTable(rows, {})) == "{ health = 5000, stealth = true, weapondefs = { emg = { damage = { default = 20 } } } }", "only the changed rows are in the table: " .. T.serialize(T.rowsTable(rows, {})))
+local rows2 = T.rows("armpw", pawn, WeaponDefs, t.armpw)
+check(rowOf(rows2, "health").value == 2000 and rowOf(rows2, "range", "emg").value == 500 and rowOf(rows2, "damage", "emg").value == 50, "rows of an entry show its values")
+check(T.serialize(T.rowsTable(rows2, t.armpw)) == T.serialize(t.armpw), "an entry that is not changed gives its table again (the other fields stay)")
+rowOf(rows2, "health").value = rowOf(rows2, "health").normal
+local reset = T.rowsTable(rows2, t.armpw)
+check(reset.health == nil and reset.speed == 90 and reset.footprintx == 4 and reset.weapondefs.emg.damage.vtol == 5, "a row set back to normal leaves the table")
+local alias2 = T.rowsTable(T.rows("armpw", pawn, WeaponDefs, { maxdamage = 900 }), { maxdamage = 900 })
+check(alias2.health == 900 and alias2.maxdamage == nil, "an older name becomes the new one")
+local inOrder = {}
+for _, k in ipairs(T.UNIT_ORDER) do inOrder[k] = true end
+for _, k in ipairs(T.WEAPON_ORDER) do inOrder["w_" .. k] = true end
+for key in pairs(T.UNIT) do check(inOrder[key], "the window has a row for " .. key) end
+for key in pairs(T.WEAPON) do check(inOrder["w_" .. key], "the window has a weapon row for " .. key) end
+local normal = T.normalOf("armpw", t.armpw, pawn, WeaponDefs, { [0] = "default", [1] = "vtol", [2] = "mines" })
+check(normal.health == 370 and normal.speed == 87 and normal.footprintx == nil and normal.weapondefs.emg.range == 180, "normalOf: the normal values of the fields a tweak changes")
+check(normal.weapondefs.emg.damage.default == 9 and normal.weapondefs.emg.damage.vtol == 3 and normal.weapondefs.emg.damage.mines == 9, "normalOf: the damage of every armor class")
+ok("the rows of the window of the values")
+
 -- ---------------------------------------------------------------- the gadget with a fake engine
 local calls, params, units, options, frame = {}, {}, {}, {}, 0
 local function note(name)
@@ -172,6 +205,14 @@ check(called("SetUnitMaxRange", 11, 500), "the range the unit attacks from is th
 check(not called("SetUnitWeaponState", 11, 2), "the second weapon is not touched")
 calls = {}
 check(GG.Tweaks.apply(12, "armpw_abc12") == false and #calls == 0, "a unit of another type gets no values")
+-- the entry was edited: the same id with other values
+calls = {}
+gadget:RecvLuaMsg("tweak|def|armpw_abc12|" .. T.encode64("Boss Pawn") .. "|armpw|" .. T.encode64("{ armpw = { speed = 50 } }"), 0)
+check(called("SetUnitMaxHealth", 11, 370) and called("SetUnitWeaponState", 11, 1, "range", 180), "an edited definition: the fields it had go back to normal")
+check(called("SetGroundMoveTypeData", 11, "maxSpeed", 50), "an edited definition: the new values are set")
+calls = {}
+gadget:RecvLuaMsg("tweak|def|armpw_abc12|" .. T.encode64("Boss Pawn 2") .. "|armpw|" .. T.encode64("{ armpw = { speed = 50 } }"), 0)
+check(#calls == 0 and params[11].ledtweakname == "Boss Pawn 2", "the same values again: only the name is renewed")
 check(gadget:RecvLuaMsg("tweak|def|bad id|x|armpw|" .. T.encode64(TEXT), 0) == true and GG.Tweaks.defs["bad id"] == nil, "an id with other characters is refused")
 check(gadget:RecvLuaMsg("led|place|armpw", 0) == false, "a message of another gadget is not taken")
 gadget:UnitDestroyed(11)

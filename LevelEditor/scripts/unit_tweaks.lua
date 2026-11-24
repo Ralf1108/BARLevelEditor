@@ -178,20 +178,19 @@ local function define(id, name, base, text)
 	if type(tw) ~= "table" then
 		return nil, "the table has no entry for " .. base
 	end
-	local known = defs[id] ~= nil
+	local old = defs[id]
 	defs[id] = { name = (name and name ~= "") and name or id, base = base, tw = tw }
-	if not known then
-		-- units that were waiting for this definition
-		for unitID, uid in pairs(unitTweak) do
-			if uid == id and Spring.ValidUnitID(unitID) then
-				Spring.SetUnitRulesParam(unitID, "ledtweakname", defs[id].name, { public = true })
-				applyValues(unitID, defs[id])
+	-- a definition that is known with other values (the entry was edited): its units first get the normal values of the old fields back
+	local back = old and T.serialize(old.tw) ~= T.serialize(tw)
+		and { base = base, tw = T.normalOf(base, old.tw, UnitDefNames[base], WeaponDefs, Game.armorTypes) } or nil
+	for unitID, uid in pairs(unitTweak) do
+		if uid == id and Spring.ValidUnitID(unitID) then
+			Spring.SetUnitRulesParam(unitID, "ledtweakname", defs[id].name, { public = true })
+			if back then
+				applyValues(unitID, back)
 			end
-		end
-	else
-		for unitID, uid in pairs(unitTweak) do
-			if uid == id and Spring.ValidUnitID(unitID) then
-				Spring.SetUnitRulesParam(unitID, "ledtweakname", defs[id].name, { public = true })
+			if back or not old then -- (not old: units that were waiting for this definition)
+				applyValues(unitID, defs[id])
 			end
 		end
 	end

@@ -15,6 +15,9 @@
 --   T.unitTable(base, ud, weaponDefs)   the tweak table of a unit with the values it has now (the fields a running game can change)
 --   T.pretty(t)                   a table as Lua text over several lines (made to be edited); T.defsText(base, t) the same values as tweakdefs program code
 --   T.EXAMPLE                     the example of the button "Copy an example": a tweaked Pawn
+--   T.rows(base, ud, weaponDefs, tw)    the rows of the window of the values: { key, weapon (name or nil), label, kind, normal, value } per field
+--   T.rowChanged(row), T.rowsTable(rows, tw0)   the tweak table of the rows (only the changed values; tw0 = the table before, its other fields stay)
+--   T.normalOf(base, tw, ud, weaponDefs, armorTypes)   the normal values of the fields a tweak changes (to take a tweak back)
 local T = {}
 
 -- ---------------------------------------------------------------- base64url
@@ -445,6 +448,176 @@ function T.defsText(base, t)
 	end
 	put("u", t)
 	return table.concat(out)
+end
+
+-- ---------------------------------------------------------------- the window of the values
+T.UNIT_ORDER = { "health", "speed", "maxacc", "maxdec", "turnrate", "metalcost", "energycost", "buildtime", "workertime", "metalmake", "energymake",
+	"sightdistance", "airsightdistance", "radardistance", "sonardistance", "radardistancejam", "seismicdistance", "mass", "stealth", "sonarstealth" }
+T.WEAPON_ORDER = { "range", "reloadtime", "areaofeffect", "edgeeffectiveness", "weaponvelocity", "burst", "burstrate", "projectiles", "accuracy", "sprayangle",
+	"impulsefactor" }
+
+-- One row per field: the unit fields, then per own weapon (no shield) its fields and the default damage. normal = the value of the unit (nil when the
+-- game does not tell it: such a field is a row only when the tweak sets it), value = the value of the tweak or the normal one
+function T.rows(base, ud, weaponDefs, tw)
+	tw = type(tw) == "table" and tw or {}
+	local rows = {}
+	for _, key in ipairs(T.UNIT_ORDER) do
+		local field = T.UNIT[key]
+		local normal = field.get(ud)
+		if field.kind == "boolean" then
+			normal = normal and true or false
+		else
+			normal = type(normal) == "number" and normal or 0
+		end
+		local cur = tw[key]
+		for old, new in pairs(T.ALIAS) do
+			if new == key and cur == nil then
+				cur = tw[old]
+			end
+		end
+		if type(cur) ~= field.kind then
+			cur = normal
+		end
+		rows[#rows + 1] = { key = key, label = field.label, kind = field.kind, normal = normal, value = cur }
+	end
+	local prefix, seen = tostring(base):lower() .. "_", {}
+	local wdefs = type(tw.weapondefs) == "table" and tw.weapondefs or {}
+	for _, w in ipairs(ud.weapons or {}) do
+		local wd = weaponDefs[w.weaponDef]
+		local name = wd and tostring(wd.name):lower()
+		local short = name and name:sub(1, #prefix) == prefix and name:sub(#prefix + 1) or ""
+		if short ~= "" and not wd.isShield and not seen[short] then
+			seen[short] = true
+			local wt = type(wdefs[short]) == "table" and wdefs[short] or {}
+			for _, key in ipairs(T.WEAPON_ORDER) do
+				local field = T.WEAPON[key]
+				local normal = field.get(wd)
+				normal = type(normal) == "number" and normal or nil
+				local cur = type(wt[key]) == "number" and wt[key] or nil
+				if normal ~= nil or cur ~= nil then
+					rows[#rows + 1] = { weapon = short, key = key, label = field.label, kind = "number", normal = normal, value = cur == nil and normal or cur }
+				end
+			end
+			local normal = type(wd.damages) == "table" and type(wd.damages[0]) == "number" and wd.damages[0] or nil
+			local cur = type(wt.damage) == "table" and type(wt.damage.default) == "number" and wt.damage.default or nil
+			if normal ~= nil or cur ~= nil then
+				rows[#rows + 1] = { weapon = short, key = "damage", label = "damage", kind = "number", normal = normal, value = cur == nil and normal or cur }
+			end
+		end
+	end
+	return rows
+end
+
+function T.rowChanged(r)
+	if r.value == nil then
+		return false
+	end
+	if r.normal == nil or type(r.value) ~= "number" then
+		return r.value ~= r.normal
+	end
+	return numberText(r.value) ~= numberText(r.normal)
+end
+
+local function copyTable(t)
+	local out = {}
+	for k, v in pairs(t) do
+		out[k] = type(v) == "table" and copyTable(v) or v
+	end
+	return out
+end
+
+-- The tweak table of the rows: tw0 (the table before; fields without a row stay as they are) with the changed values of the rows; a row with its
+-- normal value is left out
+function T.rowsTable(rows, tw0)
+	local out = copyTable(type(tw0) == "table" and tw0 or {})
+	for old in pairs(T.ALIAS) do
+		out[old] = nil
+	end
+	if type(out.weapondefs) ~= "table" then
+		out.weapondefs = {}
+	end
+	for _, r in ipairs(rows) do
+		local v = nil
+		if T.rowChanged(r) then
+			v = r.value
+		end
+		if not r.weapon then
+			out[r.key] = v
+		else
+			local wt = out.weapondefs[r.weapon]
+			if type(wt) ~= "table" then
+				wt = {}
+				out.weapondefs[r.weapon] = wt
+			end
+			if r.key == "damage" then
+				if type(wt.damage) ~= "table" then
+					wt.damage = {}
+				end
+				wt.damage.default = v
+			else
+				wt[r.key] = v
+			end
+		end
+	end
+	for name, wt in pairs(out.weapondefs) do
+		if type(wt) == "table" then
+			if type(wt.damage) == "table" and next(wt.damage) == nil then
+				wt.damage = nil
+			end
+			if next(wt) == nil then
+				out.weapondefs[name] = nil
+			end
+		end
+	end
+	if next(out.weapondefs) == nil then
+		out.weapondefs = nil
+	end
+	return out
+end
+
+-- The normal values of the fields a tweak changes, as a tweak table: applied to a unit it takes the tweak back (armorTypes = Game.armorTypes)
+function T.normalOf(base, tw, ud, weaponDefs, armorTypes)
+	local out = {}
+	local function weaponTable(wname)
+		out.weapondefs = out.weapondefs or {}
+		out.weapondefs[wname] = out.weapondefs[wname] or {}
+		return out.weapondefs[wname]
+	end
+	T.walk(base, tw, ud, weaponDefs, {
+		unit = function(key, _, field)
+			local n = field.get(ud)
+			if field.kind == "boolean" then
+				out[key] = n and true or false
+			else
+				out[key] = type(n) == "number" and n or 0
+			end
+			if key == "sightdistance" and type(ud.airLosRadius) == "number" then
+				out.airsightdistance = ud.airLosRadius -- (a changed sight alone also changed the sight into the air)
+			end
+		end,
+		weapon = function(idx, wname, key, _, field)
+			local wd = weaponDefs[ud.weapons[idx[1]].weaponDef]
+			local n = wd and field.get(wd)
+			if type(n) == "number" then
+				weaponTable(wname)[key] = n
+			end
+		end,
+		damage = function(idx, wname)
+			local wd = weaponDefs[ud.weapons[idx[1]].weaponDef]
+			local d = {}
+			for index, name in pairs(armorTypes or {}) do
+				if type(index) == "number" and type(name) == "string" and wd and type(wd.damages) == "table" and type(wd.damages[index]) == "number" then
+					d[name:lower()] = wd.damages[index]
+				end
+			end
+			if next(d) ~= nil then
+				weaponTable(wname).damage = d
+			end
+		end,
+		ignored = function() end,
+		error = function() end,
+	})
+	return out
 end
 
 T.EXAMPLE = T.pretty({ armpw = { health = 2000, speed = 120, metalcost = 10, sightdistance = 900,

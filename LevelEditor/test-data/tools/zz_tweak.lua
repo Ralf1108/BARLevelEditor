@@ -3,7 +3,8 @@ function widget:GetInfo() return { name = "zz tweak", desc = "test only: the Twe
 -- program code are refused), arms an entry and places it with a click, compares the values of the tweaked unit with a normal one (health, range, damage,
 -- cost, sight, speed), moves it and undoes that, copies it (Ctrl+C / Ctrl+V), renames the entry, saves the level, clears the map and loads it again, loads the
 -- test level tweak_test (its entries come into the library) and deletes an entry. The clipboard: the button "Copy an example" and the Paste button (the text
--- goes through the clipboard of Windows), a right click on a unit tile of the tab Units with "Copy as tweakunits" and "Copy as tweakdefs". When the clipboard
+-- goes through the clipboard of Windows), a right click on a unit tile of the tab Units with "Copy as tweakunits" and "Copy as tweakdefs", "Modify tweakunits"
+-- (the window of the values: type a value, Copy, Create clone), a right click on an entry with "Edit" (Save changes the placed units, a value set back). When the clipboard
 -- holds the text MARK at the start (put there from outside: Set-Clipboard before the run), the Paste button must take it; otherwise that check is skipped.
 -- A picture of the tab. Logs "[zzar]" lines (OK / WRONG), ends with quitforce.
 local function log(...)
@@ -66,6 +67,22 @@ local function rightClickTile(i)
 	return uGrid:list()[i].name
 end
 local tileName
+local function winRow(key, weapon)
+	for i, r in ipairs(tw.win and tw.win.rows or {}) do
+		if r.key == key and r.weapon == weapon then return i, r end
+	end
+end
+local function typeValue(row, text)
+	click(rect("twval", "row", row))
+	for _ = 1, 16 do W():KeyPress(8, {}, false) end
+	for c in text:gmatch(".") do W():TextInput(c) end
+	W():KeyPress(13, {}, false)
+end
+local function rightClick(r)
+	if not r then log("no button WRONG") return end
+	W():MousePress((r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2, 3)
+	W():MouseRelease((r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2, 3)
+end
 local steps = {}
 steps[40] = function()
 	Spring.SetCameraTarget(4000, Spring.GetGroundHeight(4000, 4000), 4000, 0)
@@ -209,10 +226,10 @@ steps[590] = function()
 end
 steps[600] = function()
 	tileName = rightClickTile(1)
-	log("a right click on a unit tile opens the menu:", tostring(tileName), ok(rect("twcopy", "value", "units") ~= nil and rect("twcopy", "value", "defs") ~= nil))
-	click(rect("twcopy", "value", "units"))
+	log("a right click on a unit tile opens the menu:", tostring(tileName), ok(rect("twmenu", "value", "units") ~= nil and rect("twmenu", "value", "defs") ~= nil))
+	click(rect("twmenu", "value", "units"))
 	local c = clip()
-	log("Copy as tweakunits:", (c:gsub("%s+", " ")):sub(1, 160), ok(rect("twcopy") == nil and c:find(tileName .. " = {", 1, true) ~= nil and c:find("health = ", 1, true) ~= nil))
+	log("Copy as tweakunits:", (c:gsub("%s+", " ")):sub(1, 160), ok(rect("twmenu") == nil and c:find(tileName .. " = {", 1, true) ~= nil and c:find("health = ", 1, true) ~= nil))
 	local n0 = #tw.list
 	local made = tw.paste()
 	local e = tw.list[1]
@@ -221,16 +238,77 @@ steps[600] = function()
 end
 steps[615] = function()
 	rightClickTile(1)
-	click(rect("twcopy", "value", "defs"))
+	click(rect("twmenu", "value", "defs"))
 	local c = clip()
 	log("Copy as tweakdefs:", (c:gsub("%s+", " ")):sub(1, 160), ok(c:find('local u = UnitDefs["' .. tileName .. '"]', 1, true) ~= nil and c:find("\nu.health = ", 1, true) ~= nil))
 	local n0 = #tw.list
 	log("the Tweaks tab refuses that text as program code:", ok(tw.paste() == 0 and #tw.list == n0 and tostring(tw.notice and tw.notice.text):find("tweakdefs", 1, true) ~= nil))
 	rightClickTile(1)
 	W():MousePress(5, 5, 3)
-	log("another click closes the menu:", ok(rect("twcopy") == nil))
+	log("another click closes the menu:", ok(rect("twmenu") == nil))
 end
-steps[650] = function()
+steps[625] = function()
+	rightClickTile(1)
+	click(rect("twmenu", "value", "modify"))
+	local hi, hr = winRow("health")
+	log("Modify tweakunits opens the window with the values:", tw.win and #tw.win.rows, ok(tw.win ~= nil and tw.win.base == tileName and hr ~= nil and hr.value == UnitDefNames[tileName].health and rect("twclone") ~= nil and rect("twsave") == nil))
+	if not hi then return end
+	click(rect("twclone"))
+	log("without a change no clone is made:", tostring(tw.notice and tw.notice.text), ok(tw.win ~= nil))
+	typeValue(hi, "5000")
+	log("a typed value is taken:", hr.value, ok(hr.value == 5000 and rect("twreset", "row", hi) ~= nil))
+	click(rect("twwcopy"))
+	local c = clip():gsub("%s+", " ")
+	log("Copy of the window gives only the changed value:", c, ok(c == "{ " .. tileName .. " = { health = 5000 }, } " or c:find("health = 5000", 1, true) ~= nil and c:find("metalcost", 1, true) == nil))
+end
+steps[629] = function()
+	Spring.SendCommands("screenshot png") -- the window of the values
+end
+steps[634] = function()
+	local n0 = #tw.list
+	click(rect("twclone"))
+	log("Create clone makes the entry and shows the Tweaks tab:", tostring(tw.notice and tw.notice.text),
+		ok(tw.win == nil and #tw.list == n0 + 1 and tw.list[1].base == tileName and tw.list[1].tw.health == 5000 and rect("twpaste") ~= nil))
+	rightClick(rect("twarm", "id", "armpw_boss1"))
+	log("a right click on an entry opens its menu:", ok(rect("twmenu", "value", "edit") ~= nil))
+	click(rect("twmenu", "value", "edit"))
+	local hi, hr = winRow("health")
+	local _, rr = winRow("range", "emg")
+	log("Edit opens the window with the values of the entry:", hr and hr.value, rr and rr.value, ok(tw.win ~= nil and tw.win.id == "armpw_boss1" and hr and hr.value == 2000 and rr and rr.value == 500 and rect("twsave") ~= nil))
+	if not hi then return end
+	typeValue(hi, "3000")
+	click(rect("twsave"))
+	local e = tw.known.armpw_boss1
+	log("Save changes the entry:", ok(tw.win == nil and e.tw.health == 3000 and e.tw.weapondefs.emg.range == 500))
+end
+steps[660] = function()
+	local t, n = units("armpw")
+	log("the placed units of the entry have the new health:", t[1] and maxHealth(t[1]), t[2] and maxHealth(t[2]), "normal", n[1] and maxHealth(n[1]),
+		ok(#t == 2 and maxHealth(t[1]) == 3000 and maxHealth(t[2]) == 3000 and n[1] and maxHealth(n[1]) ~= 3000 and near(Spring.GetUnitWeaponState(t[1], 1, "range"), 500)))
+	rightClick(rect("twarm", "id", "armpw_boss1"))
+	click(rect("twmenu", "value", "edit"))
+	local hi = winRow("health")
+	click(rect("twreset", "row", hi))
+	local n0 = #tw.list
+	click(rect("twclone"))
+	log("Create new clone from an entry makes another entry:", tw.list[1] and tw.list[1].name, ok(#tw.list == n0 + 1 and tw.list[1].id ~= "armpw_boss1" and tw.list[1].tw.health == nil and tw.known.armpw_boss1.tw.health == 3000))
+	rightClick(rect("twarm", "id", "armpw_boss1"))
+	click(rect("twmenu", "value", "edit"))
+	click(rect("twreset", "row", (winRow("health"))))
+	click(rect("twsave"))
+end
+steps[690] = function()
+	local t = units("armpw")
+	log("a value set back to normal and saved: the placed units have the normal health again, the range stays:", t[1] and maxHealth(t[1]), t[1] and Spring.GetUnitWeaponState(t[1], 1, "range"),
+		ok(#t == 2 and near(maxHealth(t[1]), UnitDefNames.armpw.health) and near(Spring.GetUnitWeaponState(t[1], 1, "range"), 500)))
+	click(rect("mode", "value", "units"))
+	rightClickTile(1)
+	click(rect("twmenu", "value", "modify"))
+	local opened = tw.win ~= nil
+	W():KeyPress(27, {}, false)
+	log("Esc closes the window:", ok(opened and tw.win == nil))
+end
+steps[720] = function()
 	log("END")
 	Spring.SendCommands("quitforce")
 end

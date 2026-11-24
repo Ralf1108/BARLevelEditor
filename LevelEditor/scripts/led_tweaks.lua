@@ -9,7 +9,10 @@
 --   tw.placeSuffix() (the end of a "led|place" message while a tweaked unit is armed), tw.hint(), tw.lua(used) (section tweaks of the level file),
 --   tw.load(list) (the section of a loaded level), tw.paste(text) (the action of the button; text = nil reads the clipboard), tw.drawLabels(),
 --   tw.copyExample() (the example into the clipboard), tw.unitText(name, "units" | "defs") and tw.copyUnit(name, kind) (the values of a unit as text),
---   tw.openMenu(name, mx, my) / tw.menuRects() / tw.drawMenu() / tw.menuPress(mx, my, button) (the menu of a right click on a unit tile);
+--   tw.openUnitMenu(name, mx, my) / tw.openEntryMenu(id, mx, my) / tw.menuRects() / tw.drawMenu() / tw.menuPress(mx, my, button) (the menu of a right
+--   click on a unit tile or on an entry), tw.rightPress(rect, mx, my) (a right click in the tab),
+--   tw.openEditor(base, entry) / tw.closeEditor() / tw.winRects() / tw.drawWindow() / tw.winPress(mx, my, button) / tw.winWheel(up) (the window of the
+--   values, tw.win; it takes every click while it is open); host.showTweaks() opens the Tweaks tab;
 --   fields tw.edit, tw.armed
 return function(host)
 	local Shared = host.Shared
@@ -105,6 +108,23 @@ return function(host)
 		return id
 	end
 
+	-- A new entry (not in the list yet): the table of one unit, what T.check says about it, a name (nil: the name of the unit and "(tweaked)")
+	function tw.newEntry(base, data, check, name)
+		local ud = UnitDefNames[base]
+		local human = cleanName(ud.translatedHumanName or ud.humanName or base)
+		local e = { id = newId(base), name = (name and name ~= "") and name or ((human ~= "" and human or base) .. " (tweaked)"), base = base,
+			text = T.serialize({ [base] = data }), tw = data, info = check }
+		tw.known[e.id] = e
+		return e
+	end
+
+	-- the same, put on top of the list
+	function tw.addEntry(base, data, check, name)
+		local e = tw.newEntry(base, data, check, name)
+		table.insert(tw.list, 1, e)
+		return e
+	end
+
 	-- A tweakunits text (nil: the clipboard) becomes entries of the library, one per unit; returns the number of new entries
 	function tw.paste(text)
 		text = text or (Spring.GetClipboard and Spring.GetClipboard()) or ""
@@ -122,10 +142,7 @@ return function(host)
 			elseif #check.applied == 0 then
 				problems[#problems + 1] = base .. ": nothing in it can be changed in a running game"
 			else
-				local human = cleanName(ud.translatedHumanName or ud.humanName or base)
-				made[#made + 1] = { id = newId(base), name = (human ~= "" and human or base) .. " (tweaked)", base = base, text = T.serialize({ [base] = data[base] }),
-					tw = data[base], info = check }
-				tw.known[made[#made].id] = made[#made]
+				made[#made + 1] = tw.newEntry(base, data[base], check)
 				ignored = ignored + #check.ignored
 			end
 		end
@@ -185,9 +202,34 @@ return function(host)
 		return copy(text, name .. " is in the clipboard as a tweakunits text: change the values, then Paste it in the Tweaks tab.")
 	end
 
-	-- The menu of a right click on a unit tile of the Place menu: Copy as tweakunits / Copy as tweakdefs
-	function tw.openMenu(name, mx, my)
-		tw.menu = { name = name, x = mx, y = my }
+	-- ---------------------------------------------------------------- the menu of a right click
+	-- tw.menu = { x, y, items = { { value, label, tip, run } ... } }: a unit tile of the tab Units or an entry of the list
+	function tw.openUnitMenu(name, mx, my)
+		tw.menu = { x = mx, y = my, items = {
+			{ value = "modify", label = "Modify tweakunits", run = function() tw.openEditor(name) end,
+				tip = "Opens a window with the values of " .. name .. ": change them,\nthen copy the tweakunits text or create a tweaked unit from it." },
+			{ value = "units", label = "Copy as tweakunits", run = function() tw.copyUnit(name, "units") end,
+				tip = "The values of " .. name .. " as a tweakunits text into the clipboard.\nChange them in a text editor, then Paste in the Tweaks tab." },
+			{ value = "defs", label = "Copy as tweakdefs", run = function() tw.copyUnit(name, "defs") end,
+				tip = "The values of " .. name .. " as tweakdefs program code into the clipboard\n(for BAR's game option tweakdefs; the Tweaks tab takes only tweakunits)." },
+		} }
+	end
+
+	function tw.openEntryMenu(id, mx, my)
+		local e = byId(id)
+		if not e then
+			return
+		end
+		tw.menu = { x = mx, y = my, items = {
+			{ value = "edit", label = "Edit", run = function() tw.openEditor(e.base, e) end,
+				tip = "Opens the window with the values of '" .. e.name .. "':\nSave changes this entry and its placed units, Create new clone makes another entry." },
+			{ value = "units", label = "Copy as tweakunits", run = function()
+				copy(T.pretty({ [e.base] = e.tw }) .. "\n", "'" .. e.name .. "' is in the clipboard as a tweakunits text.")
+			end, tip = "The tweakunits text of this entry into the clipboard." },
+			{ value = "defs", label = "Copy as tweakdefs", run = function()
+				copy(T.defsText(e.base, e.tw), "'" .. e.name .. "' is in the clipboard as tweakdefs code (for BAR's game option).")
+			end, tip = "The changed values of this entry as tweakdefs program code into the clipboard\n(for BAR's game option tweakdefs)." },
+		} }
 	end
 
 	function tw.menuRects()
@@ -199,13 +241,12 @@ return function(host)
 		local w = 300 * S
 		local vsx = Spring.GetViewGeometry()
 		local x1 = math.max(0, math.min(mn.x, vsx - w))
-		local top = math.max(2 * hb + 4 * S, mn.y)
-		return {
-			{ x1 = x1, x2 = x1 + w, y0 = top - hb, y1 = top, kind = "twcopy", value = "units", label = "Copy as tweakunits", fs = 22 * S,
-				tip = "The values of " .. mn.name .. " as a tweakunits text into the clipboard.\nChange them in a text editor, then Paste in the Tweaks tab." },
-			{ x1 = x1, x2 = x1 + w, y0 = top - 2 * hb, y1 = top - hb, kind = "twcopy", value = "defs", label = "Copy as tweakdefs", fs = 22 * S,
-				tip = "The values of " .. mn.name .. " as tweakdefs program code into the clipboard\n(for BAR's game option tweakdefs; the Tweaks tab takes only tweakunits)." },
-		}
+		local top = math.max(#mn.items * hb + 4 * S, mn.y)
+		local rects = {}
+		for i, it in ipairs(mn.items) do
+			rects[i] = { x1 = x1, x2 = x1 + w, y0 = top - i * hb, y1 = top - (i - 1) * hb, kind = "twmenu", value = it.value, label = it.label, fs = 22 * S, tip = it.tip, run = it.run }
+		end
+		return rects
 	end
 
 	function tw.drawMenu()
@@ -222,19 +263,288 @@ return function(host)
 		Shared.drawTip(rects, mx, my)
 	end
 
-	-- A click while the menu is open: closes it; a left click on a line copies. Returns true when the click was used
+	-- A click while the menu is open: closes it; a left click on a line runs it. Returns true when the click was used
 	function tw.menuPress(mx, my, button)
 		local rects = tw.menuRects()
 		if not rects then
 			return false
 		end
-		local name = tw.menu.name
 		tw.menu = nil
 		if button == 1 then
 			for _, r in ipairs(rects) do
 				if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
-					tw.copyUnit(name, r.value)
+					r.run()
 				end
+			end
+		end
+		return true
+	end
+
+	-- A right click in the tab: the menu of the entry under the pointer
+	function tw.rightPress(rect, mx, my)
+		for _, r in ipairs((tw.layout(rect))) do
+			if r.kind == "twarm" and mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				tw.finish(true)
+				tw.confirm = nil
+				tw.openEntryMenu(r.id, mx, my)
+			end
+		end
+		return true
+	end
+
+	-- ---------------------------------------------------------------- the window of the values (Modify tweakunits / Edit)
+	-- tw.win = { base, id (the entry that is edited, nil = from a unit), name, tw0 (the table of the entry), rows (T.rows), lines (heads and rows), scroll }
+	local WROWS = 12
+
+	function tw.openEditor(base, entry)
+		local ud = UnitDefNames[base]
+		if not ud then
+			note("The unit " .. tostring(base) .. " does not exist in this game.")
+			return
+		end
+		tw.finish(true)
+		tw.menu, tw.confirm = nil, nil
+		local human = cleanName(ud.translatedHumanName or ud.humanName or base)
+		local w = { base = base, id = entry and entry.id, name = entry and entry.name or (human ~= "" and human or base), tw0 = entry and entry.tw or {},
+			rows = T.rows(base, ud, WeaponDefs, entry and entry.tw or {}), lines = { { head = "Unit" } }, lineOf = {}, scroll = 0 }
+		local weapon
+		for i, r in ipairs(w.rows) do
+			if r.weapon ~= weapon then
+				weapon = r.weapon
+				w.lines[#w.lines + 1] = { head = "Weapon " .. tostring(weapon) }
+			end
+			w.lines[#w.lines + 1] = { row = i }
+			w.lineOf[i] = #w.lines
+		end
+		function w:maxScroll()
+			return math.max(0, #self.lines - WROWS)
+		end
+		tw.win = w
+	end
+
+	function tw.closeEditor()
+		tw.finish(false)
+		tw.win = nil
+	end
+
+	local function winChanged()
+		local n = 0
+		for _, r in ipairs(tw.win.rows) do
+			if T.rowChanged(r) then
+				n = n + 1
+			end
+		end
+		return n
+	end
+
+	local function valueText(v)
+		if type(v) == "number" then
+			return T.numberText(v)
+		elseif v == nil then
+			return "?"
+		end
+		return v and "yes" or "no"
+	end
+
+	-- Buttons, labels and bars of the window; returns rects, labels, bars, frame
+	local function winLayout()
+		local w = tw.win
+		local S, m = host.S(), Shared.m
+		local vsx, vsy = Spring.GetViewGeometry()
+		local W, rowH, gap = 1020 * S, m.HB + 4 * S, 6 * S
+		local H = 2 * m.PAD + 40 * S + 30 * S + WROWS * rowH + 10 * S + m.HB
+		local x1 = math.floor((vsx - W) / 2)
+		local top = math.floor((vsy + H) / 2)
+		local frame = { x1 = x1, x2 = x1 + W, y0 = top - H, y1 = top }
+		local rects, lab, bars = {}, {}, {}
+		local ix1, ix2 = x1 + m.PAD + 6 * S, x1 + W - m.PAD - 6 * S
+		local y = top - m.PAD
+		lab[#lab + 1] = { text = (w.id and ("Edit '" .. w.name .. "'") or ("Modify " .. w.name)) .. "  (" .. w.base .. ")", x = ix1, y = y - 30 * S, size = 27 * S, color = { 1, 0.85, 0.3 } }
+		y = y - 40 * S
+		local n = winChanged()
+		if tw.notice and os.clock() < tw.notice.untilT then
+			lab[#lab + 1] = { text = tw.fit(tw.notice.text, 19 * S, ix2 - ix1), x = ix1, y = y - 20 * S, size = 19 * S, color = tw.notice.color }
+		else
+			lab[#lab + 1] = { text = n .. " value" .. (n == 1 and "" or "s") .. " changed. Click a value and type; Enter accepts, Tab goes to the next one.", x = ix1, y = y - 20 * S, size = 19 * S,
+				color = { 0.75, 0.75, 0.75 } }
+		end
+		y = y - 30 * S
+		w.listRect = { x1 = ix1, x2 = ix2, top = y, y0 = y - WROWS * rowH }
+		bars[#bars + 1] = { x1 = ix1, y0 = y - WROWS * rowH, x2 = ix2, y1 = y, color = { 0, 0, 0, 0.35 } }
+		local first = math.floor(w.scroll + 0.5)
+		local vw = 210 * S
+		local rx2 = ix2 - 34 * S - gap -- (room for the scrollbar)
+		local vx2 = rx2 - m.HB - gap
+		for i = 1, WROWS do
+			local ln = w.lines[first + i]
+			if not ln then
+				break
+			end
+			local ry1 = y - (i - 1) * rowH - 2 * S
+			local ry0 = ry1 - m.HB
+			local ty = ry0 + (m.HB - 21 * S) / 2
+			if ln.head then
+				lab[#lab + 1] = { text = ln.head, x = ix1 + 8 * S, y = ty, size = 23 * S, color = { 0.5, 0.8, 1 } }
+			else
+				local r = w.rows[ln.row]
+				local changed = T.rowChanged(r)
+				local editing = tw.edit and tw.edit.row == ln.row
+				lab[#lab + 1] = { text = r.label .. "  (" .. r.key .. ")", x = ix1 + 28 * S, y = ty, size = 21 * S, color = changed and { 1, 0.85, 0.3 } or { 1, 1, 1 } }
+				lab[#lab + 1] = { text = "normal " .. valueText(r.normal), x = vx2 - vw - 200 * S, y = ty, size = 19 * S, color = { 0.65, 0.65, 0.65 } }
+				if r.kind == "boolean" then
+					rects[#rects + 1] = { x1 = vx2 - vw, x2 = vx2, y0 = ry0, y1 = ry1, kind = "twbool", row = ln.row, label = valueText(r.value), fs = 22 * S,
+						tint = changed and { 0.6, 0.48, 0.08 } or nil, tip = "Click switches between yes and no." }
+				else
+					rects[#rects + 1] = { x1 = vx2 - vw, x2 = vx2, y0 = ry0, y1 = ry1, kind = "twval", row = ln.row, fs = 22 * S, active = editing or nil,
+						label = editing and (tw.edit.buf .. "_") or valueText(r.value), tint = (changed and not editing) and { 0.6, 0.48, 0.08 } or nil,
+						tip = "Click, type the new value: Enter accepts, Tab accepts and goes to the next value, Esc undoes." }
+				end
+				if changed then
+					rects[#rects + 1] = { x1 = vx2 + gap, x2 = rx2, y0 = ry0, y1 = ry1, kind = "twreset", row = ln.row, label = "x", fs = 22 * S, tip = "Back to the normal value." }
+				end
+			end
+		end
+		y = y - WROWS * rowH - 10 * S
+		local buttons = w.id and {
+			{ "twsave", "Save", "Changes this entry: its placed units get the new values at once." },
+			{ "twclone", "Create new clone", "Makes another entry with these values; this entry stays as it is." },
+		} or {
+			{ "twclone", "Create clone", "Makes a tweaked unit with these values and shows it in the Tweaks tab." },
+		}
+		buttons[#buttons + 1] = { "twwcopy", "Copy", "The tweakunits text of the changed values into the clipboard\n(nothing changed: all values of the unit)." }
+		buttons[#buttons + 1] = { "twresetall", "Reset all", "All values back to the normal ones." }
+		buttons[#buttons + 1] = { "twclose", "Close", "Closes the window without saving (also Esc)." }
+		local bw = (ix2 - ix1 - (#buttons - 1) * gap) / #buttons
+		for i, b in ipairs(buttons) do
+			local bx = ix1 + (i - 1) * (bw + gap)
+			rects[#rects + 1] = { x1 = bx, x2 = bx + bw, y0 = y - m.HB, y1 = y, kind = b[1], label = b[2], fs = 22 * S, tip = b[3],
+				tint = (b[1] == "twsave" or (b[1] == "twclone" and not w.id)) and { 0.15, 0.6, 0.2 } or nil }
+		end
+		return rects, lab, bars, frame
+	end
+
+	function tw.winRects()
+		return tw.win and (winLayout()) or nil
+	end
+
+	function tw.drawWindow()
+		if not tw.win then
+			return
+		end
+		local S = host.S()
+		local rects, lab, bars, f = winLayout()
+		gl.Color(0.8, 0.65, 0.2, 1)
+		gl.Rect(f.x1 - 3 * S, f.y0 - 3 * S, f.x2 + 3 * S, f.y1 + 3 * S)
+		gl.Color(0.06, 0.06, 0.09, 1)
+		gl.Rect(f.x1, f.y0, f.x2, f.y1)
+		for _, b in ipairs(bars) do
+			gl.Color(b.color[1], b.color[2], b.color[3], b.color[4])
+			gl.Rect(b.x1, b.y0, b.x2, b.y1)
+		end
+		Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+		for _, l in ipairs(lab) do
+			gl.Color(l.color[1], l.color[2], l.color[3], 1)
+			gl.Text(l.text, l.x, l.y, l.size, "o")
+		end
+		gl.Color(1, 1, 1, 1)
+		Shared.scrollbarDraw(tw.win, tw.win.listRect)
+		local mx, my = Spring.GetMouseState()
+		Shared.drawTip(rects, mx, my)
+	end
+
+	function tw.winWheel(up)
+		local w = tw.win
+		w.scroll = math.max(0, math.min(w:maxScroll(), math.floor(w.scroll + 0.5) + (up and -2 or 2)))
+	end
+
+	-- the entry of a value starts (the line comes into view)
+	function tw.editRowAt(i)
+		local w = tw.win
+		local r = w.rows[i]
+		if not r or r.kind ~= "number" then
+			return
+		end
+		local line = w.lineOf[i]
+		local first = math.floor(w.scroll + 0.5)
+		if line <= first then
+			w.scroll = line - 1
+		elseif line > first + WROWS then
+			w.scroll = line - WROWS
+		end
+		tw.edit = { row = i, buf = r.value ~= nil and T.numberText(r.value) or "" }
+		widgetHandler:OwnText()
+	end
+
+	-- the table of the window, or nil with a note when it would change nothing
+	local function winTable()
+		local w = tw.win
+		local t = T.rowsTable(w.rows, w.tw0)
+		local check = T.check(w.base, t, UnitDefNames[w.base], WeaponDefs)
+		if #check.applied == 0 then
+			note("Change a value first: a tweaked unit needs at least one changed value.")
+			return nil
+		end
+		return t, check
+	end
+
+	function tw.winPress(mx, my, button)
+		local w = tw.win
+		local rects = winLayout()
+		if button ~= 1 then
+			return true
+		end
+		if Shared.scrollbarPress(w, w.listRect, mx, my) then
+			return true
+		end
+		local hit
+		for _, r in ipairs(rects) do
+			if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+				hit = r
+			end
+		end
+		tw.finish(true)
+		local k = hit and hit.kind
+		if k == "twval" then
+			tw.editRowAt(hit.row)
+		elseif k == "twbool" then
+			w.rows[hit.row].value = not w.rows[hit.row].value
+		elseif k == "twreset" then
+			w.rows[hit.row].value = w.rows[hit.row].normal
+		elseif k == "twresetall" then
+			for _, r in ipairs(w.rows) do
+				r.value = r.normal
+			end
+		elseif k == "twclose" then
+			tw.closeEditor()
+		elseif k == "twwcopy" then
+			local t = T.rowsTable(w.rows, w.tw0)
+			if next(t) == nil then
+				copy(tw.unitText(w.base, "units"), "Nothing is changed: all values of " .. w.base .. " are in the clipboard as a tweakunits text.")
+			else
+				copy(T.pretty({ [w.base] = t }) .. "\n", "The tweakunits text of the changed values is in the clipboard.")
+			end
+		elseif k == "twclone" then
+			local t, check = winTable()
+			if t then
+				local e = tw.addEntry(w.base, t, check, w.id and cleanName(w.name:sub(1, NAME_MAX - 5) .. " copy") or nil)
+				saveLibrary()
+				tw.lg.scroll = 0
+				tw.win = nil
+				host.showTweaks()
+				note("'" .. e.name .. "' created: click it and place it on the map.", { 0.5, 1, 0.5 })
+			end
+		elseif k == "twsave" then
+			local e = byId(w.id)
+			local t, check = winTable()
+			if t and e then
+				e.tw, e.text, e.info = t, T.serialize({ [e.base] = t }), check
+				saveLibrary()
+				send(e) -- the gadget gives the placed units of this entry the new values
+				tw.win = nil
+				host.showTweaks()
+				note("'" .. e.name .. "' saved: its placed units have the new values.", { 0.5, 1, 0.5 })
+			elseif t then
+				note("The entry is not in the list any more: use Create new clone.")
 			end
 		end
 		return true
@@ -316,6 +626,7 @@ return function(host)
 		end
 		return text .. "..."
 	end
+	tw.fit = fit
 
 	local function lines(list, limit)
 		local out = {}
@@ -370,7 +681,7 @@ return function(host)
 			rects[#rects + 1] = { x1 = x1, x2 = nx2, y0 = ry0, y1 = ry1, kind = "twarm", id = e.id, fs = 23 * S, active = (armed == e or editing) or nil,
 				icon = known and ("#" .. UnitDefNames[e.base].id) or nil,
 				label = fit(editing and (tw.edit.buf .. "_") or e.name, 23 * S, nx2 - x1 - m.HB - 16 * S),
-				tip = known and (e.name .. "  (" .. e.base .. ")\n" .. lines(inf.applied, 14) .. "\nClick, then place it on the map.") or ("The unit " .. e.base .. " does not exist in this game.") }
+				tip = known and (e.name .. "  (" .. e.base .. ")\n" .. lines(inf.applied, 14) .. "\nClick, then place it on the map. Right click: edit the values, copy the text.") or ("The unit " .. e.base .. " does not exist in this game.") }
 			if #inf.ignored > 0 or not known then
 				rects[#rects + 1] = { x1 = nx2 + gap, x2 = nx2 + gap + ww, y0 = ry0, y1 = ry1, kind = "twwarn", label = "!", fs = 28 * S, tint = YELLOW,
 					tip = known and ("Ignored, cannot be changed in a running game:\n" .. lines(inf.ignored, 16)) or ("The unit " .. e.base .. " does not exist in this game.") }
@@ -415,7 +726,7 @@ return function(host)
 		Shared.drawTip(rects, mx, my)
 	end
 
-	-- Ends the entry of a name (accept = false: the name from before stays)
+	-- Ends the entry of a name or of a value of the window (accept = false: what was there before stays)
 	function tw.finish(accept)
 		local ed = tw.edit
 		if not ed then
@@ -423,6 +734,14 @@ return function(host)
 		end
 		tw.edit = nil
 		widgetHandler:DisownText()
+		if ed.row then
+			local r = tw.win and tw.win.rows[ed.row]
+			local v = tonumber(ed.buf)
+			if accept and r and v then
+				r.value = v
+			end
+			return
+		end
 		local e = byId(ed.id)
 		local name = cleanName(ed.buf)
 		if accept and e and name ~= "" and name ~= e.name then
@@ -439,6 +758,15 @@ return function(host)
 			tw.finish(true)
 		elseif key == 27 then
 			tw.finish(false)
+		elseif key == 9 and tw.edit.row then -- Tab: the next value
+			local i = tw.edit.row
+			tw.finish(true)
+			for j = i + 1, #tw.win.rows do
+				if tw.win.rows[j].kind == "number" then
+					tw.editRowAt(j)
+					break
+				end
+			end
 		elseif key == 8 then
 			tw.edit.buf = tw.edit.buf:sub(1, -2)
 		end
@@ -446,6 +774,12 @@ return function(host)
 	end
 
 	function tw.text(ch)
+		if tw.edit.row then
+			if ch and #ch == 1 and ch:match("^[%d%.%-]$") and #tw.edit.buf < 14 then
+				tw.edit.buf = tw.edit.buf .. ch
+			end
+			return true
+		end
 		if ch and #ch == 1 and ch:match("^[%w _%-%.%(%)]$") and #tw.edit.buf < NAME_MAX then
 			tw.edit.buf = tw.edit.buf .. ch
 		end

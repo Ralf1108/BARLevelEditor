@@ -58,10 +58,10 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 - `defs[id] = { name, base, tw }`; `unitTweak[unitID] = id`.
 - `GG.Tweaks.apply(unitID, id)`: sets the public unit rules parameters `ledtweak` (the id) and `ledtweakname`, then the values (`applyValues`: only for a unit of the base type).
   - A unit whose definition is not known yet keeps the id and gets the values when the definition arrives.
-- `GG.Tweaks.define(id, name, base, text)`: id of letters, digits and `_`; the base unit must exist; the text must hold an entry for it. A definition that is known again only renews the name of its units.
+- `GG.Tweaks.define(id, name, base, text)`: id of letters, digits and `_`; the base unit must exist; the text must hold an entry for it. A definition that is known again with the same table only renews the name of its units.
 - **Editor:** the message `tweak|def|<id>|<name b64>|<base>|<table b64>` (`G.handleMessage`: only in the editor game or with cheats).
 - **Scenario:** `GamePreload` reads the game options `ledtweaks` (`id,base,name b64,table b64;...`) and `ledtweakunits` (`id:x,z,x,z|id:...`), both base64url; at frames 5, 30 and 90 a unit of the base type within 10 of the place becomes the tweaked unit (each entry once, one unit).
-- Values of a unit are never taken back: a definition does not change for its id (a paste makes a new id).
+- A definition that is known with another table (the entry was edited, 4.2): its units get the normal values of the old fields back (`T.normalOf`), then the new values. Editor only: in a scenario no message is taken.
 
 ## 4. The tab (`led_tweaks.lua`)
 
@@ -72,19 +72,43 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 - **A row:** the name with the picture of the base unit (`twarm`: arms it; tooltip = the changes), a yellow `!` when fields are ignored (`twwarn`, tooltip = the list), **Rename** (`twname`: type, Enter accepts, Esc undoes; letters, digits, space, `_ - . ( )`, at most 40), **Delete** (`twdel`, second click confirms).
   - Deleting only removes the entry from the library; placed units keep their values, and the level still saves their definition (`tw.known`).
 - **Arming:** `host.armUnit(base)` (the normal unit stamp: painting, rows, rectangles, rotation, W) and `tw.armed = id`; `tw.placeSuffix()` gives `|0|0|<id>` for the `led|place` messages while the tab is open and the stamp is the base unit (otherwise an empty text).
-- **Ids:** `<base>_<five random characters>`; fixed for the life of the entry, a level refers to it.
+- **Ids:** `<base>_<five random characters>`; fixed for the life of the entry (also when it is edited), a level refers to it.
 - **Library:** `LevelEditor/_tweaks.lua` (the levels folder; files with `_` are internal): `{ id, name, base, b64 }` per entry, `b64` = the table of the unit in base64url.
 - **Names on the map:** `tw.drawLabels()` (from `widget:DrawScreen`) writes the name above every tweaked unit in view (looked up once a second, at most 60).
 - Test hooks: `widget:DebugTweaks()` returns `tw`; `widget:DebugLayout()` also returns the rectangles of the tab and of the open menu of a unit tile.
 
 ### 4.1 Copying the values of a unit (right click on a unit tile)
 
-- A right click on a tile of the tab **Units** opens a menu at the mouse pointer (`panelPress` -> `tw.openMenu(name, mx, my)`; `tw.menuRects`, `tw.drawMenu` after the menu of the alliance colors, `tw.menuPress` first in `widget:MousePress`: every click closes it).
+- A right click on a tile of the tab **Units** opens a menu at the mouse pointer (`panelPress` -> `tw.openUnitMenu(name, mx, my)`; `tw.menuRects` (kind `twmenu`), `tw.drawMenu` after the menu of the alliance colors, `tw.menuPress` first in `widget:MousePress`: every click closes it).
+- A right click on an entry of the tab **Tweaks** (`tw.rightPress` -> `tw.openEntryMenu(id, mx, my)`): **Edit**, **Copy as tweakunits**, **Copy as tweakdefs** (the table of the entry).
+- **Modify tweakunits** (value `modify`) and **Edit** (value `edit`) open the window of the values (4.2).
 - **Copy as tweakunits** (`twcopy`, value `units`): `tw.unitText(name, "units")` = `T.pretty({ [name] = T.unitTable(...) })`, one field per line.
   - `T.unitTable(base, ud, weaponDefs)`: the fields of 2.1 with the values of `UnitDefs` / `WeaponDefs` (zero and false left out; `accuracy`, `sprayangle`, `impulsefactor` have no getter and are left out), the unit's own weapons (`<base>_<name>`, no shields) with `damage = { default = n }`.
   - Pasted again unchanged it gives an entry with nothing ignored.
 - **Copy as tweakdefs** (value `defs`): `T.defsText(base, table)`: the same values as program code (`local u = UnitDefs["armpw"]`, `u.health = 370`, `u.weapondefs.emg.range = 180`), for BAR's game option; the paste of the tab refuses it as program code.
-- The tabs Recent and Tweaks have no such menu.
+- The tab Recent has no such menu.
+
+### 4.2 The window of the values (`tw.win`)
+
+- `tw.openEditor(base, entry)`: a window in the middle of the screen; `entry` = nil from a unit tile ("Modify <unit>"), an entry of the list for "Edit '<name>'".
+- **Rows** (`T.rows(base, ud, weaponDefs, tw)`): under the head "Unit" every field of `T.UNIT_ORDER`, then per own weapon (no shield) a head "Weapon <name>" with the fields of `T.WEAPON_ORDER` and `damage` (the default damage).
+  - A row: label and key, "normal <value>", the value box (`twval`; yes / no button `twbool` for `stealth`, `sonarstealth`), an `x` (`twreset`) when the value is changed (yellow).
+  - A weapon field the game does not tell (`accuracy`, `sprayangle`, `impulsefactor`) is a row only when the entry sets it.
+  - 12 lines are visible; mouse wheel or scrollbar.
+- **Typing:** a click on a box starts the entry (`tw.edit = { row, buf }`, `tw.editRowAt`): digits, `.` and `-`; Enter accepts, Tab accepts and goes to the next value, Esc undoes, a click elsewhere accepts.
+- **The table** (`T.rowsTable(rows, tw0)`): the table of the entry (`tw0`; its fields without a row stay: ignored fields, damage per armor class) with the changed rows; a row with its normal value is left out (`T.rowChanged` compares the texts of the numbers).
+- **Buttons:**
+
+| Button | From a unit | From an entry |
+|---|---|---|
+| **Create clone** / **Create new clone** (`twclone`) | new entry "<unit> (tweaked)" on top of the list | new entry "<name> copy"; the edited entry stays |
+| **Save** (`twsave`) | | the entry gets the table (same id), `tweak\|def` is sent again |
+| **Copy** (`twwcopy`) | the changed values as a `tweakunits` text; nothing changed: all values | the same |
+| **Reset all** (`twresetall`), **Close** (`twclose`, also Esc) | | |
+
+- Create and Save close the window and open the Tweaks tab (`host.showTweaks()`); both refuse a table in which nothing can be applied ("Change a value first").
+- **Save and the placed units:** the gadget (`define`) sees the known id with another table: every unit of the id first gets the normal values of the old fields (`T.normalOf`: unit fields, weapon fields, the damage of every armor class) and then the new values. Health is set to full.
+- The window takes every click while it is open (`widget:MousePress`; `inPanel` is true, the wheel scrolls it); it closes when the menu is closed or folded.
 
 ## 5. Placing, editing, the level file
 
@@ -104,9 +128,9 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 
 ## 7. Tests
 
-- `mock_tweaks.lua` (84 checks, no game): reading (plain, base64, padding, errors, program code), writing, applied / ignored / errors, the help text names every field, the values of a unit as text (`unitTable`, `pretty`, `defsText`, the example), the gadget with a fake engine (message, each engine call, a waiting unit, the scenario options).
+- `mock_tweaks.lua` (128 checks, no game): reading (plain, base64, padding, errors, program code), writing, applied / ignored / errors, the help text names every field, the values of a unit as text (`unitTable`, `pretty`, `defsText`, the example), the rows of the window (`rows`, `rowsTable`, `normalOf`), the gadget with a fake engine (message, each engine call, a waiting unit, an edited definition, the scenario options).
 - `ps_test.ps1`, group "scenario_builder.ps1: tweaked units": the bundle of the level `test-data\levels\tweak_test.lua` has the two game options and the two files.
-- `arena_test.ps1 -Widget zz_tweak.lua` (regression set, 40 checks): paste, refusals, arming, placing with a click, the values in the engine against a normal unit, move and undo, copy and paste, rename, save / clear / load, the test level, delete, Copy an example and the Paste button through the clipboard of Windows, the right click menu (both lines, pasted again, closed by a click).
+- `arena_test.ps1 -Widget zz_tweak.lua` (regression set, 53 checks): paste, refusals, arming, placing with a click, the values in the engine against a normal unit, move and undo, copy and paste, rename, save / clear / load, the test level, delete, Copy an example and the Paste button through the clipboard of Windows, the right click menu (both copy lines, pasted again, closed by a click), the window of the values (Modify: type a value, Copy, Create clone; Edit: Save changes the placed units, a value set back, Create new clone, Esc).
   - With `Set-Clipboard '{ armllt = { health = 4321 } }'` before the run it also checks that the Paste button takes a text put into the clipboard from outside (otherwise that check is skipped).
 - `pve_test.ps1 -Tweaks -Quick -Widget zz_tweak_scn.lua` (regression set): the scenario game with the two game options; of two Pawns only the one at the place is tweaked.
 

@@ -150,11 +150,15 @@ A tweaked unit is a normal unit with changed values, for example a Pawn with 200
 |---|---|
 | Add | copy a `tweakunits` text (Ctrl+C in an editor or a browser), **P** > Tweaks > **Paste tweakunits** |
 | See an example | **Copy an example** puts a tweaked Pawn into the clipboard: paste it into a text editor, change it, copy it, **Paste tweakunits** |
-| Start from a unit | tab **Units**, right click on a unit > **Copy as tweakunits**: its values are in the clipboard as text |
+| Make one without a text | tab **Units**, right click on a unit > **Modify tweakunits**: a window lists all values; click a value, type, Enter; then **Create clone** |
+| Change one later | tab **Tweaks**, right click on an entry > **Edit**: the same window; **Save** changes the entry and its placed units at once, **Create new clone** makes another entry |
+| Get the text | **Copy** in the window (only the changed values), or right click > **Copy as tweakunits** |
 | Place | click the entry, left click on the map; right click ends. Painting, rows and rectangles work as for units |
 | See the changes | hover the entry: old and new values |
 | Rename | **Rename**, type, Enter (the name is for the list and the label on the map) |
 | Delete | **Delete**, click twice (placed units keep their values) |
+
+![The window of the values](../docs/level-editor-tweak-window.jpg)
 
 - The text is plain Lua, `{ armpw = { health = 2000, weapondefs = { emg = { range = 500 } } } }`, or the same in base64. Every unit in it becomes one entry.
 - A text with an error is refused with the reason. A `tweakdefs` text (program code) is not supported.

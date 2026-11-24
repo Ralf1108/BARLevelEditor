@@ -698,6 +698,9 @@ local function inPanel(mx, my)
 	if not menuOpen then
 		return false
 	end
+	if tw and tw.win then
+		return true -- the window of the values of a tweaked unit is open: no click goes to the map
+	end
 	if rst and rst.winAt(mx, my) then
 		return true -- the list of the restricted units, too
 	end
@@ -1063,7 +1066,8 @@ local function drawMenu()
 	drawMenuBody()
 	rst.drawWindow() -- the list of the restricted units (button R), left of the menu
 	tm.drawMenu() -- the menu of the alliance colors on top of everything (it can open over the panel: the Alliance cell of the page T)
-	tw.drawMenu() -- the menu of a right click on a unit tile (Copy as tweakunits / tweakdefs)
+	tw.drawWindow() -- the window of the values of a tweaked unit (Modify tweakunits / Edit)
+	tw.drawMenu() -- the menu of a right click on a unit tile or on an entry of the Tweaks tab
 	local mx, my = Spring.GetMouseState()
 	Shared.drawTip((headerRects()), mx, my)
 end
@@ -1184,7 +1188,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect())), (menuMode == "tw" and tw.layout(contentRect()) or {}), (tw.menuRects() or {})
+	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect())), (menuMode == "tw" and tw.layout(contentRect()) or {}), (tw.menuRects() or {}), (tw.winRects() or {})
 end
 
 function widget:DebugTweaks() -- test hook: the Tweaks tab (tweaked units)
@@ -1722,6 +1726,9 @@ tw = VFS.Include("luaui/Include/led_tweaks.lua", nil, VFS.ZIP_FIRST)({
 	menuMode = function() return menuMode end,
 	armedUnit = function() return armedUnit end,
 	unitName = function() return unitName end,
+	showTweaks = function()
+		applyHeader({ kind = "mode", value = "tw" })
+	end,
 	armUnit = function(name)
 		disarmBase()
 		area:disarm()
@@ -1928,11 +1935,15 @@ local function panelPress(mx, my, button)
 	end
 	if button == 3 and not collapsed and menuMode == "units"
 		and not (scenarioOpen or td.open or ctf.open or rtf.open or ar.open or sv.open or gen.open or optionsOpen) then
-		local ui = uGrid:at(contentRect(), mx, my) -- right click on a unit tile: the menu Copy as tweakunits / Copy as tweakdefs
+		local ui = uGrid:at(contentRect(), mx, my) -- right click on a unit tile: the menu Modify tweakunits / Copy as tweakunits / Copy as tweakdefs
 		if ui then
-			tw.openMenu(uGrid:list()[ui].name, mx, my)
+			tw.openUnitMenu(uGrid:list()[ui].name, mx, my)
 			return true
 		end
+	end
+	if button == 3 and not collapsed and menuMode == "tw"
+		and not (scenarioOpen or td.open or ctf.open or rtf.open or ar.open or sv.open or gen.open or optionsOpen) then
+		return tw.rightPress(contentRect(), mx, my) -- right click on an entry: the menu Edit / Copy
 	end
 	if button == 1 then
 		local hrects = (headerRects())
@@ -2102,7 +2113,13 @@ function widget:MousePress(mx, my, button)
 		return true -- the menu of the alliance colors: every click closes it, a click on a color chooses it
 	end
 	if tw.menuPress(mx, my, button) then
-		return true -- the menu of a unit tile: every click closes it, a click on a line copies
+		return true -- the menu of a unit tile or of an entry: every click closes it, a click on a line runs it
+	end
+	if tw.win then
+		if menuOpen and not collapsed then
+			return tw.winPress(mx, my, button) -- the window of the values takes every click while it is open
+		end
+		tw.closeEditor()
 	end
 	if gen.edit and not inPanel(mx, my) then
 		gen.finish(true)
@@ -2626,6 +2643,10 @@ function widget:MouseWheel(up, value)
 		return false
 	end
 	local mx, my = Spring.GetMouseState()
+	if tw.win then
+		tw.winWheel(up)
+		return true
+	end
 	if rst.winAt(mx, my) then
 		rst.winWheel(up)
 		return true
@@ -3208,6 +3229,10 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 	if tw.edit then
 		return tw.key(key)
+	end
+	if tw.win and key == 27 then
+		tw.closeEditor() -- Esc closes the window of the values
+		return true
 	end
 	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt() or ar.deleteAt()) then
 		return true
