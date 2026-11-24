@@ -66,7 +66,8 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 ## 4. The tab (`led_tweaks.lua`)
 
 - Sub-tab **Tweaks** of the Place menu (`menuMode == "tw"`, fifth tab; two header rows like Recent; width 680 x S).
-- **Paste tweakunits from the clipboard** (`twpaste`, `tw.paste(text)`; `Spring.GetClipboard`): every unit of the table becomes an entry (newest on top); the note says how many were added and how many fields are ignored.
+- **Paste tweakunits** (`twpaste`, `tw.paste(text)`; `Spring.GetClipboard`): every unit of the table becomes an entry (newest on top); the note says how many were added and how many fields are ignored.
+- **Copy an example** (`twexample`, `tw.copyExample()`): `T.EXAMPLE` (a tweaked Pawn, several lines) goes into the clipboard (`Spring.SetClipboard`).
 - **Yellow `!` at the top** (`twhelp`): its tooltip is `T.HELP` (what works, what does not, good to know).
 - **A row:** the name with the picture of the base unit (`twarm`: arms it; tooltip = the changes), a yellow `!` when fields are ignored (`twwarn`, tooltip = the list), **Rename** (`twname`: type, Enter accepts, Esc undoes; letters, digits, space, `_ - . ( )`, at most 40), **Delete** (`twdel`, second click confirms).
   - Deleting only removes the entry from the library; placed units keep their values, and the level still saves their definition (`tw.known`).
@@ -74,7 +75,16 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 - **Ids:** `<base>_<five random characters>`; fixed for the life of the entry, a level refers to it.
 - **Library:** `LevelEditor/_tweaks.lua` (the levels folder; files with `_` are internal): `{ id, name, base, b64 }` per entry, `b64` = the table of the unit in base64url.
 - **Names on the map:** `tw.drawLabels()` (from `widget:DrawScreen`) writes the name above every tweaked unit in view (looked up once a second, at most 60).
-- Test hooks: `widget:DebugTweaks()` returns `tw`; `widget:DebugLayout()` also returns the rectangles of the tab.
+- Test hooks: `widget:DebugTweaks()` returns `tw`; `widget:DebugLayout()` also returns the rectangles of the tab and of the open menu of a unit tile.
+
+### 4.1 Copying the values of a unit (right click on a unit tile)
+
+- A right click on a tile of the tab **Units** opens a menu at the mouse pointer (`panelPress` -> `tw.openMenu(name, mx, my)`; `tw.menuRects`, `tw.drawMenu` after the menu of the alliance colors, `tw.menuPress` first in `widget:MousePress`: every click closes it).
+- **Copy as tweakunits** (`twcopy`, value `units`): `tw.unitText(name, "units")` = `T.pretty({ [name] = T.unitTable(...) })`, one field per line.
+  - `T.unitTable(base, ud, weaponDefs)`: the fields of 2.1 with the values of `UnitDefs` / `WeaponDefs` (zero and false left out; `accuracy`, `sprayangle`, `impulsefactor` have no getter and are left out), the unit's own weapons (`<base>_<name>`, no shields) with `damage = { default = n }`.
+  - Pasted again unchanged it gives an entry with nothing ignored.
+- **Copy as tweakdefs** (value `defs`): `T.defsText(base, table)`: the same values as program code (`local u = UnitDefs["armpw"]`, `u.health = 370`, `u.weapondefs.emg.range = 180`), for BAR's game option; the paste of the tab refuses it as program code.
+- The tabs Recent and Tweaks have no such menu.
 
 ## 5. Placing, editing, the level file
 
@@ -94,9 +104,10 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 
 ## 7. Tests
 
-- `mock_tweaks.lua` (75 checks, no game): reading (plain, base64, padding, errors, program code), writing, applied / ignored / errors, the help text names every field, the gadget with a fake engine (message, each engine call, a waiting unit, the scenario options).
+- `mock_tweaks.lua` (84 checks, no game): reading (plain, base64, padding, errors, program code), writing, applied / ignored / errors, the help text names every field, the values of a unit as text (`unitTable`, `pretty`, `defsText`, the example), the gadget with a fake engine (message, each engine call, a waiting unit, the scenario options).
 - `ps_test.ps1`, group "scenario_builder.ps1: tweaked units": the bundle of the level `test-data\levels\tweak_test.lua` has the two game options and the two files.
-- `arena_test.ps1 -Widget zz_tweak.lua` (regression set, 32 checks): paste, refusals, arming, placing with a click, the values in the engine against a normal unit, move and undo, copy and paste, rename, save / clear / load, the test level, delete.
+- `arena_test.ps1 -Widget zz_tweak.lua` (regression set, 40 checks): paste, refusals, arming, placing with a click, the values in the engine against a normal unit, move and undo, copy and paste, rename, save / clear / load, the test level, delete, Copy an example and the Paste button through the clipboard of Windows, the right click menu (both lines, pasted again, closed by a click).
+  - With `Set-Clipboard '{ armllt = { health = 4321 } }'` before the run it also checks that the Paste button takes a text put into the clipboard from outside (otherwise that check is skipped).
 - `pve_test.ps1 -Tweaks -Quick -Widget zz_tweak_scn.lua` (regression set): the scenario game with the two game options; of two Pawns only the one at the place is tweaked.
 
 ## Tried and rejected

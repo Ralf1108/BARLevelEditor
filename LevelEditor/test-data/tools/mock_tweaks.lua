@@ -59,6 +59,31 @@ for key in pairs(T.WEAPON) do
 end
 ok("what works and what is ignored")
 
+-- ---------------------------------------------------------------- the values of a unit as text
+local ut = T.unitTable("armpw", pawn, WeaponDefs)
+check(ut.health == 370 and ut.speed == 87 and ut.metalcost == 54 and ut.sightdistance == 430 and ut.radardistance == nil, "unitTable holds the values of the unit, without the empty ones")
+check(ut.weapondefs and ut.weapondefs.emg and ut.weapondefs.emg.range == 180 and ut.weapondefs.emg.reloadtime == 0.3 and ut.weapondefs.emg.damage.default == 9,
+	"unitTable holds the weapon with range, reload time and damage")
+check(ut.weapondefs.shield == nil, "a shield is left out")
+local pt = T.pretty({ armpw = ut })
+local pb = T.parse(pt)
+check(pb and T.serialize(pb) == T.serialize({ armpw = ut }), "pretty gives a text that reads back the same")
+check(pt:find("\n\t\thealth = 370,\n", 1, true) ~= nil and pt:find("damage = { default = 9 }", 1, true) ~= nil, "pretty writes one field per line: " .. pt)
+local same = T.check("armpw", pb.armpw, pawn, WeaponDefs)
+check(#same.errors == 0 and #same.ignored == 0 and #same.applied > 0, "the copied text of a unit has nothing that is ignored")
+local dt = T.defsText("armpw", ut)
+local dn, de = T.parse(dt)
+check(dn == nil and de:find("tweakdefs", 1, true), "the tweakdefs text is refused by the paste as program code: " .. tostring(de))
+local fakeDefs = { armpw = { weapondefs = { emg = { damage = {} } } } }
+local chunk = loadstring(dt)
+setfenv(chunk, { UnitDefs = fakeDefs })
+chunk()
+check(fakeDefs.armpw.health == 370 and fakeDefs.armpw.weapondefs.emg.range == 180 and fakeDefs.armpw.weapondefs.emg.damage.default == 9, "the tweakdefs text runs and sets the values")
+local ex = T.parse(T.EXAMPLE)
+local exc = ex and T.check("armpw", ex.armpw, pawn, WeaponDefs)
+check(ex and ex.armpw.health == 2000 and #exc.errors == 0 and #exc.ignored == 0, "the example is a correct tweakunits text for the Pawn")
+ok("the values of a unit as text")
+
 -- ---------------------------------------------------------------- the gadget with a fake engine
 local calls, params, units, options, frame = {}, {}, {}, {}, 0
 local function note(name)

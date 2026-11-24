@@ -14,7 +14,7 @@ local sections = {
 		{ "Search field", "At the top of Place: one search over Recent, Units, Features and Blueprints at once (words of the description or the code). The tabs show the number of matches. Enter = done, Esc or X = clear." },
 		{ "Blueprint tile", "Drag = sort, x = delete (click twice), double click on the name = rename, Create = save the selection." },
 		{ "Recent", "Recently chosen blueprints and recently placed units and features." },
-		{ "Tweaks", "Units with changed values. Copy a tweakunits text (plain Lua or base64), press Paste: every unit in it becomes an entry. Click an entry and place it. The yellow ! says what a running game can change." },
+		{ "Tweaks", "Units with changed values. Copy a tweakunits text (plain Lua or base64), press Paste: every unit in it becomes an entry. Click an entry and place it. The yellow ! says what a running game can change. Copy an example shows the text; a right click on a unit in the tab Units copies its values as such a text." },
 		{ "O", "Grid size, unit limit (written into the level for the scenario), columns and rows." },
 		{ "S", "The saved levels as a list with a scrollbar. Save as new: type a name (suggested: level_001, ...) and press the button. Save on a row overwrites that level at once. Load asks for a second click. Sort: A-Z or Recent (last used first)." },
 		{ "I", "Scenario info: title, author, summary, briefing, win condition, grace period, ID. Click a field and type; written with the level when you save it. Human or AI, alliances and start resources are on the page T." },

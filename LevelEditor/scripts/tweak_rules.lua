@@ -12,6 +12,9 @@
 --        visitor.error(path, why)                         a value of the wrong type
 --   T.check(base, tw, ud, weaponDefs)   { applied = { text ... }, ignored = { text ... }, errors = { text ... } } for the display
 --   T.HELP                        the text of the yellow "!" button: what works and what does not
+--   T.unitTable(base, ud, weaponDefs)   the tweak table of a unit with the values it has now (the fields a running game can change)
+--   T.pretty(t)                   a table as Lua text over several lines (made to be edited); T.defsText(base, t) the same values as tweakdefs program code
+--   T.EXAMPLE                     the example of the button "Copy an example": a tweaked Pawn
 local T = {}
 
 -- ---------------------------------------------------------------- base64url
@@ -153,13 +156,20 @@ local function numberText(v)
 end
 T.numberText = numberText
 
+-- a key as it stands in a table constructor: name or ["text"] or [number]
+function T.keyText(k)
+	if type(k) == "string" and k:match("^[%a_][%w_]*$") then
+		return k
+	end
+	return "[" .. (type(k) == "string" and string.format("%q", k) or tostring(k)) .. "]"
+end
+
 function T.serialize(v)
 	local tv = type(v)
 	if tv == "table" then
 		local parts = {}
 		for _, k in ipairs(sortedKeys(v)) do
-			local key = (type(k) == "string" and k:match("^[%a_][%w_]*$")) and k or ("[" .. (type(k) == "string" and string.format("%q", k) or tostring(k)) .. "]")
-			parts[#parts + 1] = key .. " = " .. T.serialize(v[k])
+			parts[#parts + 1] = T.keyText(k) .. " = " .. T.serialize(v[k])
 		end
 		return "{ " .. table.concat(parts, ", ") .. (#parts > 0 and " }" or "}")
 	elseif tv == "string" then
@@ -357,5 +367,87 @@ function T.check(base, tw, ud, weaponDefs)
 	})
 	return out
 end
+
+-- ---------------------------------------------------------------- the values of a unit as text (copy as tweakunits / tweakdefs, the example)
+-- The tweak table of a unit with the values it has now: the fields a running game can change (zero and false are left out), its own weapons
+function T.unitTable(base, ud, weaponDefs)
+	local out = {}
+	for key, field in pairs(T.UNIT) do
+		local v = field.get(ud)
+		if (type(v) == "number" and v ~= 0) or v == true then
+			out[key] = v
+		end
+	end
+	local prefix = tostring(base):lower() .. "_"
+	for _, w in ipairs(ud.weapons or {}) do
+		local wd = weaponDefs[w.weaponDef]
+		local name = wd and tostring(wd.name):lower()
+		if name and name:sub(1, #prefix) == prefix and #name > #prefix and not wd.isShield then
+			local wt = {}
+			for key, field in pairs(T.WEAPON) do
+				local v = field.get(wd)
+				if type(v) == "number" and v ~= 0 then
+					wt[key] = v
+				end
+			end
+			if type(wd.damages) == "table" and type(wd.damages[0]) == "number" then
+				wt.damage = { default = wd.damages[0] }
+			end
+			out.weapondefs = out.weapondefs or {}
+			out.weapondefs[name:sub(#prefix + 1)] = wt
+		end
+	end
+	return out
+end
+
+-- A table as Lua text over several lines, one field per line (plain values first, then the tables); a small table without tables inside stays on one line
+function T.pretty(v, indent)
+	indent = indent or ""
+	if type(v) ~= "table" then
+		return T.serialize(v)
+	end
+	local keys = sortedKeys(v)
+	local flat = #keys <= 2
+	for _, k in ipairs(keys) do
+		flat = flat and type(v[k]) ~= "table"
+	end
+	if flat then
+		return T.serialize(v)
+	end
+	local parts = { "{\n" }
+	for pass = 1, 2 do
+		for _, k in ipairs(keys) do
+			if (type(v[k]) == "table") == (pass == 2) then
+				parts[#parts + 1] = indent .. "\t" .. T.keyText(k) .. " = " .. T.pretty(v[k], indent .. "\t") .. ",\n"
+			end
+		end
+	end
+	parts[#parts + 1] = indent .. "}"
+	return table.concat(parts)
+end
+
+-- The same values as tweakdefs program code (for BAR's game option tweakdefs; the Tweaks tab itself takes only tweakunits)
+function T.defsText(base, t)
+	local out = { "-- tweakdefs: " .. base .. "\n", "local u = UnitDefs[" .. string.format("%q", base) .. "]\n" }
+	local function put(path, tbl)
+		local keys = sortedKeys(tbl)
+		for pass = 1, 2 do
+			for _, k in ipairs(keys) do
+				local v = tbl[k]
+				local access = (type(k) == "string" and k:match("^[%a_][%w_]*$")) and ("." .. k) or T.keyText(k)
+				if type(v) == "table" and pass == 2 then
+					put(path .. access, v)
+				elseif type(v) ~= "table" and pass == 1 then
+					out[#out + 1] = path .. access .. " = " .. T.serialize(v) .. "\n"
+				end
+			end
+		end
+	end
+	put("u", t)
+	return table.concat(out)
+end
+
+T.EXAMPLE = T.pretty({ armpw = { health = 2000, speed = 120, metalcost = 10, sightdistance = 900,
+	weapondefs = { emg = { range = 500, reloadtime = 0.2, damage = { default = 50 } } } } }) .. "\n"
 
 return T

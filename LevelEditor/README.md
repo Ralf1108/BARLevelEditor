@@ -148,7 +148,9 @@ A tweaked unit is a normal unit with changed values, for example a Pawn with 200
 
 | Action | How |
 |---|---|
-| Add | copy a `tweakunits` text (Ctrl+C in an editor or a browser), **P** > Tweaks > **Paste tweakunits from the clipboard** |
+| Add | copy a `tweakunits` text (Ctrl+C in an editor or a browser), **P** > Tweaks > **Paste tweakunits** |
+| See an example | **Copy an example** puts a tweaked Pawn into the clipboard: paste it into a text editor, change it, copy it, **Paste tweakunits** |
+| Start from a unit | tab **Units**, right click on a unit > **Copy as tweakunits**: its values are in the clipboard as text |
 | Place | click the entry, left click on the map; right click ends. Painting, rows and rectangles work as for units |
 | See the changes | hover the entry: old and new values |
 | Rename | **Rename**, type, Enter (the name is for the list and the label on the map) |
@@ -156,6 +158,7 @@ A tweaked unit is a normal unit with changed values, for example a Pawn with 200
 
 - The text is plain Lua, `{ armpw = { health = 2000, weapondefs = { emg = { range = 500 } } } }`, or the same in base64. Every unit in it becomes one entry.
 - A text with an error is refused with the reason. A `tweakdefs` text (program code) is not supported.
+- **Copy as tweakdefs** (the same right click) gives the values as `tweakdefs` code for BAR's game option of a lobby; the Tweaks tab does not take it.
 - **The yellow `!`** at the top lists what a running game can change: health, speed, costs, build power, sight and radar, income, and for weapons range, reload time, damage, area of effect and more.
   - It cannot change the model, the size, the movement type, the kind of weapon or the build options. Such fields are ignored; a yellow `!` at the entry lists them.
 - The level saves its tweaked units, and a scenario built from it has them too.

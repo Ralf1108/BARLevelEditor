@@ -7,7 +7,9 @@
 --   host.menuMode() (the open sub-tab), host.armedUnit(), host.unitName()
 --   Methods: tw.layout(rect), tw.height(), tw.draw(rect), tw.press(rect, mx, my), tw.wheel(up), tw.finish(accept), tw.key(key), tw.text(utf8char),
 --   tw.placeSuffix() (the end of a "led|place" message while a tweaked unit is armed), tw.hint(), tw.lua(used) (section tweaks of the level file),
---   tw.load(list) (the section of a loaded level), tw.paste(text) (the action of the button; text = nil reads the clipboard), tw.drawLabels();
+--   tw.load(list) (the section of a loaded level), tw.paste(text) (the action of the button; text = nil reads the clipboard), tw.drawLabels(),
+--   tw.copyExample() (the example into the clipboard), tw.unitText(name, "units" | "defs") and tw.copyUnit(name, kind) (the values of a unit as text),
+--   tw.openMenu(name, mx, my) / tw.menuRects() / tw.drawMenu() / tw.menuPress(mx, my, button) (the menu of a right click on a unit tile);
 --   fields tw.edit, tw.armed
 return function(host)
 	local Shared = host.Shared
@@ -144,6 +146,100 @@ return function(host)
 		return #made
 	end
 
+	-- A text into the clipboard, with a note
+	local function copy(text, what)
+		if not Spring.SetClipboard then
+			note("This game version cannot write the clipboard.")
+			return false
+		end
+		Spring.SetClipboard(text)
+		note(what, { 0.5, 1, 0.5 })
+		return true
+	end
+
+	function tw.copyExample()
+		return copy(T.EXAMPLE, "The example (a tweaked Pawn) is in the clipboard: paste it into a text editor, change it, copy it, then Paste here.")
+	end
+
+	-- The values a unit has now as text: kind "units" = a tweakunits table, "defs" = tweakdefs program code; nil for an unknown unit
+	function tw.unitText(name, kind)
+		local ud = UnitDefNames[name]
+		if not ud then
+			return nil
+		end
+		local t = T.unitTable(name, ud, WeaponDefs)
+		if kind == "defs" then
+			return T.defsText(name, t)
+		end
+		return T.pretty({ [name] = t }) .. "\n"
+	end
+
+	function tw.copyUnit(name, kind)
+		local text = tw.unitText(name, kind)
+		if not text then
+			return false
+		end
+		if kind == "defs" then
+			return copy(text, name .. " is in the clipboard as tweakdefs code (for BAR's game option; the Tweaks tab takes tweakunits).")
+		end
+		return copy(text, name .. " is in the clipboard as a tweakunits text: change the values, then Paste it in the Tweaks tab.")
+	end
+
+	-- The menu of a right click on a unit tile of the Place menu: Copy as tweakunits / Copy as tweakdefs
+	function tw.openMenu(name, mx, my)
+		tw.menu = { name = name, x = mx, y = my }
+	end
+
+	function tw.menuRects()
+		local mn = tw.menu
+		if not mn then
+			return nil
+		end
+		local S, hb = host.S(), Shared.m.HB
+		local w = 300 * S
+		local vsx = Spring.GetViewGeometry()
+		local x1 = math.max(0, math.min(mn.x, vsx - w))
+		local top = math.max(2 * hb + 4 * S, mn.y)
+		return {
+			{ x1 = x1, x2 = x1 + w, y0 = top - hb, y1 = top, kind = "twcopy", value = "units", label = "Copy as tweakunits", fs = 22 * S,
+				tip = "The values of " .. mn.name .. " as a tweakunits text into the clipboard.\nChange them in a text editor, then Paste in the Tweaks tab." },
+			{ x1 = x1, x2 = x1 + w, y0 = top - 2 * hb, y1 = top - hb, kind = "twcopy", value = "defs", label = "Copy as tweakdefs", fs = 22 * S,
+				tip = "The values of " .. mn.name .. " as tweakdefs program code into the clipboard\n(for BAR's game option tweakdefs; the Tweaks tab takes only tweakunits)." },
+		}
+	end
+
+	function tw.drawMenu()
+		local rects = tw.menuRects()
+		if not rects then
+			return
+		end
+		local S = host.S()
+		gl.Color(0, 0, 0, 1)
+		gl.Rect(rects[1].x1 - 2 * S, rects[#rects].y0 - 2 * S, rects[1].x2 + 2 * S, rects[1].y1 + 2 * S)
+		Shared.drawButtons(rects, 22 * S, Shared.m.HB)
+		gl.Color(1, 1, 1, 1)
+		local mx, my = Spring.GetMouseState()
+		Shared.drawTip(rects, mx, my)
+	end
+
+	-- A click while the menu is open: closes it; a left click on a line copies. Returns true when the click was used
+	function tw.menuPress(mx, my, button)
+		local rects = tw.menuRects()
+		if not rects then
+			return false
+		end
+		local name = tw.menu.name
+		tw.menu = nil
+		if button == 1 then
+			for _, r in ipairs(rects) do
+				if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+					tw.copyUnit(name, r.value)
+				end
+			end
+		end
+		return true
+	end
+
 	-- the tweaked unit that is armed right now (the Tweaks tab is open and its base unit is the stamp), or nil
 	local function armedEntry()
 		local e = tw.armed and tw.known[tw.armed]
@@ -239,7 +335,10 @@ return function(host)
 		local x1, x2 = rect.x1 + m.PAD, rect.x2 - m.PAD
 		local y = rect.top - m.PAD
 		local gap = 6 * S
-		rects[#rects + 1] = { x1 = x1, x2 = x2 - m.HB - gap, y0 = y - m.HB, y1 = y, kind = "twpaste", label = "Paste tweakunits from the clipboard", fs = 22 * S, tint = { 0.15, 0.6, 0.2 },
+		local ew = 210 * S
+		rects[#rects + 1] = { x1 = x2 - m.HB - gap - ew, x2 = x2 - m.HB - gap, y0 = y - m.HB, y1 = y, kind = "twexample", label = "Copy an example", fs = 22 * S,
+			tip = "Puts an example into the clipboard: a tweaked Pawn as a tweakunits text.\nPaste it into a text editor to see how it looks, change it, copy it and click Paste.\nA right click on a unit in the tab Units copies the values of that unit." }
+		rects[#rects + 1] = { x1 = x1, x2 = x2 - m.HB - 2 * gap - ew, y0 = y - m.HB, y1 = y, kind = "twpaste", label = "Paste tweakunits", fs = 22 * S, tint = { 0.15, 0.6, 0.2 },
 			tip = "Copy a tweakunits text first (Ctrl+C in an editor or a browser), then click here.\nPlain Lua ( { armpw = { health = 2000 } } ) or the same in base64.\nEvery unit in it becomes an entry of the list." }
 		rects[#rects + 1] = { x1 = x2 - m.HB, x2 = x2, y0 = y - m.HB, y1 = y, kind = "twhelp", label = "!", fs = 30 * S, tint = YELLOW, tip = T.HELP }
 		y = y - m.HB - 4 * S
@@ -377,6 +476,8 @@ return function(host)
 		end
 		if k == "twpaste" then
 			tw.paste()
+		elseif k == "twexample" then
+			tw.copyExample()
 		elseif k == "twarm" then
 			local e = byId(hit.id)
 			if e and UnitDefNames[e.base] then

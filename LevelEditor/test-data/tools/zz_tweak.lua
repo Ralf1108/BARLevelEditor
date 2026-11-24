@@ -2,7 +2,10 @@ function widget:GetInfo() return { name = "zz tweak", desc = "test only: the Twe
 -- Test widget of arena_test.ps1 -Widget zz_tweak.lua: opens the Tweaks tab of the Place menu, pastes a tweakunits text (plain and in base64; a broken text and
 -- program code are refused), arms an entry and places it with a click, compares the values of the tweaked unit with a normal one (health, range, damage,
 -- cost, sight, speed), moves it and undoes that, copies it (Ctrl+C / Ctrl+V), renames the entry, saves the level, clears the map and loads it again, loads the
--- test level tweak_test (its entries come into the library) and deletes an entry. A picture of the tab. Logs "[zzar]" lines (OK / WRONG), ends with quitforce.
+-- test level tweak_test (its entries come into the library) and deletes an entry. The clipboard: the button "Copy an example" and the Paste button (the text
+-- goes through the clipboard of Windows), a right click on a unit tile of the tab Units with "Copy as tweakunits" and "Copy as tweakdefs". When the clipboard
+-- holds the text MARK at the start (put there from outside: Set-Clipboard before the run), the Paste button must take it; otherwise that check is skipped.
+-- A picture of the tab. Logs "[zzar]" lines (OK / WRONG), ends with quitforce.
 local function log(...)
 	local t = {}
 	for i, v in ipairs({ ... }) do t[i] = tostring(v) end
@@ -51,13 +54,33 @@ local function near(a, b) return a and b and math.abs(a - b) < 0.01 * math.max(1
 
 local TEXT = "{ armpw = { health = 2000, speed = 174, metalcost = 10, sightdistance = 900, footprintx = 4, weapondefs = { emg = { range = 500, damage = { default = 50 } } } } }"
 local B64 = "eyBhcm1sbHQgPSB7IGhlYWx0aCA9IDUwMDAsIHNpZ2h0ZGlzdGFuY2UgPSA5MDAgfSB9" -- { armllt = { health = 5000, sightdistance = 900 } }
+local MARK = "{ armllt = { health = 4321 } }"
 local tw, pawnId, firstId
+local function clip() return (Spring.GetClipboard and Spring.GetClipboard() or ""):gsub("\r", "") end
+local function rightClickTile(i)
+	local _, uGrid = W():DebugRestrictions()
+	local _, content = W():DebugLayout()
+	local ix, iy = uGrid:geom(content, i)
+	W():MousePress(ix + 12, iy + 12, 3)
+	W():MouseRelease(ix + 12, iy + 12, 3)
+	return uGrid:list()[i].name
+end
+local tileName
 local steps = {}
 steps[40] = function()
 	Spring.SetCameraTarget(4000, Spring.GetGroundHeight(4000, 4000), 4000, 0)
 	tw = W():DebugTweaks()
 	click(rect("mode", "value", "tw"))
 	log("the tab Tweaks is open:", ok(rect("twpaste") ~= nil and rect("twhelp") ~= nil and rect("twhelp").tip:find("DOES NOT WORK", 1, true) ~= nil))
+	if clip():gsub("%s+$", "") == MARK then
+		local before = #tw.list
+		click(rect("twpaste"))
+		log("a text put into the clipboard of Windows from outside is pasted by the button:", tostring(tw.notice and tw.notice.text),
+			ok(#tw.list == before + 1 and tw.list[1].base == "armllt" and tw.list[1].tw.health == 4321))
+		if #tw.list == before + 1 then table.remove(tw.list, 1) end
+	else
+		log("the clipboard was not set from outside: that check is skipped")
+	end
 	local n0 = #tw.list
 	log("a broken text is refused:", ok(tw.paste("{ armpw = { health = } }") == 0 and #tw.list == n0), tostring(tw.notice and tw.notice.text))
 	log("program code is refused:", ok(tw.paste("UnitDefs.armpw.health = 5") == 0 and #tw.list == n0), tostring(tw.notice and tw.notice.text))
@@ -175,7 +198,39 @@ steps[580] = function()
 	log("the second click deletes the entry:", ok(#tw.list == n0 - 1))
 	log("the placed tower keeps its values:", ok(lt[1] and maxHealth(lt[1]) == 5000))
 end
-steps[620] = function()
+steps[590] = function()
+	click(rect("twexample"))
+	local c = clip()
+	log("Copy an example writes the clipboard:", ok(c:find("armpw = {", 1, true) ~= nil and c:find("health = 2000", 1, true) ~= nil and c:find("\n", 1, true) ~= nil))
+	local n0 = #tw.list
+	click(rect("twpaste"))
+	log("the Paste button reads it from the clipboard:", tostring(tw.notice and tw.notice.text), ok(#tw.list == n0 + 1 and tw.list[1].base == "armpw" and tw.list[1].tw.health == 2000 and #tw.list[1].info.ignored == 0))
+	click(rect("mode", "value", "units"))
+end
+steps[600] = function()
+	tileName = rightClickTile(1)
+	log("a right click on a unit tile opens the menu:", tostring(tileName), ok(rect("twcopy", "value", "units") ~= nil and rect("twcopy", "value", "defs") ~= nil))
+	click(rect("twcopy", "value", "units"))
+	local c = clip()
+	log("Copy as tweakunits:", (c:gsub("%s+", " ")):sub(1, 160), ok(rect("twcopy") == nil and c:find(tileName .. " = {", 1, true) ~= nil and c:find("health = ", 1, true) ~= nil))
+	local n0 = #tw.list
+	local made = tw.paste()
+	local e = tw.list[1]
+	log("that text is pasted again without anything ignored:", tostring(tw.notice and tw.notice.text),
+		ok(made == 1 and #tw.list == n0 + 1 and e.base == tileName and #e.info.ignored == 0 and e.tw.health == UnitDefNames[tileName].health))
+end
+steps[615] = function()
+	rightClickTile(1)
+	click(rect("twcopy", "value", "defs"))
+	local c = clip()
+	log("Copy as tweakdefs:", (c:gsub("%s+", " ")):sub(1, 160), ok(c:find('local u = UnitDefs["' .. tileName .. '"]', 1, true) ~= nil and c:find("\nu.health = ", 1, true) ~= nil))
+	local n0 = #tw.list
+	log("the Tweaks tab refuses that text as program code:", ok(tw.paste() == 0 and #tw.list == n0 and tostring(tw.notice and tw.notice.text):find("tweakdefs", 1, true) ~= nil))
+	rightClickTile(1)
+	W():MousePress(5, 5, 3)
+	log("another click closes the menu:", ok(rect("twcopy") == nil))
+end
+steps[650] = function()
 	log("END")
 	Spring.SendCommands("quitforce")
 end

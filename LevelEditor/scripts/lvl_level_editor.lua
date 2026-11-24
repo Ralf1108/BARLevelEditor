@@ -1063,6 +1063,7 @@ local function drawMenu()
 	drawMenuBody()
 	rst.drawWindow() -- the list of the restricted units (button R), left of the menu
 	tm.drawMenu() -- the menu of the alliance colors on top of everything (it can open over the panel: the Alliance cell of the page T)
+	tw.drawMenu() -- the menu of a right click on a unit tile (Copy as tweakunits / tweakdefs)
 	local mx, my = Spring.GetMouseState()
 	Shared.drawTip((headerRects()), mx, my)
 end
@@ -1183,7 +1184,7 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect())), (menuMode == "tw" and tw.layout(contentRect()) or {})
+	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect())), (menuMode == "tw" and tw.layout(contentRect()) or {}), (tw.menuRects() or {})
 end
 
 function widget:DebugTweaks() -- test hook: the Tweaks tab (tweaked units)
@@ -1925,6 +1926,14 @@ local function panelPress(mx, my, button)
 		end
 		return true
 	end
+	if button == 3 and not collapsed and menuMode == "units"
+		and not (scenarioOpen or td.open or ctf.open or rtf.open or ar.open or sv.open or gen.open or optionsOpen) then
+		local ui = uGrid:at(contentRect(), mx, my) -- right click on a unit tile: the menu Copy as tweakunits / Copy as tweakdefs
+		if ui then
+			tw.openMenu(uGrid:list()[ui].name, mx, my)
+			return true
+		end
+	end
 	if button == 1 then
 		local hrects = (headerRects())
 		for i = #hrects, 1, -1 do -- the last one lies on top (the X in a filter button)
@@ -2091,6 +2100,9 @@ function widget:MousePress(mx, my, button)
 	rescale()
 	if tm.menuPress(mx, my, button) then
 		return true -- the menu of the alliance colors: every click closes it, a click on a color chooses it
+	end
+	if tw.menuPress(mx, my, button) then
+		return true -- the menu of a unit tile: every click closes it, a click on a line copies
 	end
 	if gen.edit and not inPanel(mx, my) then
 		gen.finish(true)

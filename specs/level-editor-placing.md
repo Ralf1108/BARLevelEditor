@@ -18,6 +18,7 @@ What puts things onto the map: the Place menu with its preview, placing with the
   - Preview: circle (green / red).
   - Shift + drag places a row, Shift+Alt a rectangle (at most 2000, feature size from `FeatureDefs.radius` plus spacing).
 - **Tweaks tab:** units with changed values from a `tweakunits` text: [tweaks.md](tweaks.md). It arms the normal unit stamp, so everything of section 7 applies.
+- **Right click on a unit tile** (tab Units): the menu **Copy as tweakunits** / **Copy as tweakdefs** puts the values of the unit into the clipboard as text ([tweaks.md](tweaks.md), 4.1).
 - **Recent tab:** on top the recently chosen blueprints (up to 6 rows), below the recently placed units (symbols), at the bottom the recently placed features (two rows of picture tiles with their own scrolling; noted when a feature is placed, also by a row or rectangle).
   - File `LuaUI/Config/LevelEditorRecent.lua` (up to 24 names each).
   - A click arms the blueprint, unit or feature.
