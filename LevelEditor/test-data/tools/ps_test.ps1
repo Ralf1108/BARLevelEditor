@@ -104,6 +104,25 @@ try {
     New-Item -ItemType Directory -Force (Join-Path $bare 'games'), (Join-Path $bare 'engine\recoil_1.0\') | Out-Null
     $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $ren -Data $bare -DryRun 2>&1 | Out-String
     Check ($out -match 'not installed') 'a missing pointer says to run install_editor.bat'
+
+    Group 'scenario_builder.ps1: tweaked units'
+    $bundle = Join-Path $work 'tweak_bundle'
+    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo 'LevelEditor\scenario\scenario_builder.ps1') -Level tweak_test -LevelDir (Join-Path $repo 'LevelEditor\test-data\levels') -BundleDir $bundle 2>&1
+    $scn = Join-Path $bundle 'scenario.txt'
+    Check (Test-Path $scn) 'the bundle of the level tweak_test is built'
+    if (Test-Path $scn) {
+        $stext = Get-Content $scn -Raw
+        function From-Base64Url([string]$s) { $s = $s.Replace('-', '+').Replace('_', '/'); $s += '=' * ((4 - $s.Length % 4) % 4); return [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($s)) }
+        $mu = [regex]::Match($stext, 'ledtweakunits=([\w\-]+);')
+        $md = [regex]::Match($stext, 'ledtweaks=([\w\-]+);')
+        Check ($mu.Success -and (From-Base64Url $mu.Groups[1].Value) -eq 'armllt_tower:5000,6400|armpw_boss1:5200,5900,5200,6000') 'ledtweakunits names the three tweaked units by id and place, not the normal ones'
+        $defs = if ($md.Success) { (From-Base64Url $md.Groups[1].Value) -split ';' } else { @() }
+        Check ($defs.Count -eq 2 -and $defs[1] -like 'armpw_boss1,armpw,*') 'ledtweaks holds the two definitions (id, base unit, name, table)'
+        $parts = if ($defs.Count -eq 2) { $defs[1] -split ',' } else { @('', '', '', '') }
+        Check ((From-Base64Url $parts[2]) -eq 'Boss Pawn' -and (From-Base64Url $parts[3]) -like '*health = 2000*') 'name and table of a definition decode again'
+        Check (Test-Path (Join-Path $bundle 'unit_tweaks.lua')) 'the gadget unit_tweaks.lua is part of the bundle'
+        Check (Test-Path (Join-Path $bundle 'tweak_rules.lua')) 'tweak_rules.lua is part of the bundle'
+    }
 } finally {
     Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
 }

@@ -8,6 +8,7 @@ All levels are on the flat map "Full Metal Plate 1.7" (no mountains, no water): 
 | --- | --- | --- |
 | `levels/ctf_test.lua` | Capture the Flag | Armada (west) and Cortex (east) with a commander and three fast units each, three neutral flags in the middle, one collection point per team, 3 flags win |
 | `levels/rtf_test.lua` | Reclaim the Fame | the same bases with four construction bots each, seven crystals in the middle (4 small, 2 medium, 1 large), 2000 points win |
+| `levels/tweak_test.lua` | tweaked units | two Boss Pawns and a Watch Tower (section `tweaks`) next to a normal Pawn and a normal Sentry |
 | `levels/td_test.lua` | Tower Defense | Armada's commander and three LLT in the east, two small waves walk from the west to the goal |
 | `levels/scav_test.lua` | none | twelve Scavenger and Raptor units in the team of the human (see the end of this page) |
 
@@ -99,6 +100,7 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
   - XL, XR and XC give every unit its own ground target in the shape, bombers form up first and anti-air units stay out.
 - `mock_gadgets.lua` loads `scripts\led_gadgets.lua` and `shared\bar_rules.lua` with a fake feature list and checks the wreck reclaim of Renegade and Evolution (`G.reclaimFeatures`: the budget per second, the room, a unit at full health still takes energy, a small wreck is used up), `G.split`, `G.fields`, `G.allianceName`, `decode64`, `headingToFacing` and `techLevel`.
 - `mock_td_waves.lua` loads the gadget `scripts/td_waves.lua` with a fake engine and plays small Tower Defense games: the payload of the editor, the waves and their spawn queue, the route over the waypoints, a kill and its payment, an enemy that gets through, won and lost, a stuck unit, Stop, and the build rule (towers, economy, radar with fog, factories, the humans of the alliance).
+- `mock_tweaks.lua` loads `scripts/tweak_rules.lua` and the gadget `scripts/unit_tweaks.lua` (the tweaked units) with a fake engine: a `tweakunits` text plain and in base64, the refusals (syntax error, program code, unknown unit), what is applied and what is ignored, every engine call of the gadget, the game options of a scenario.
 - `mock_powerups.lua` loads `scripts/powerups.lua` (the power-ups of Evolution and Renegade) with a fake player: who may use one, the energy, Repair (20 % of the health, nothing at full health), Sprint (1.5 times the speed, back at the end), the cooldowns, the Radar Pulse, the rules for the unsynced part, the loss.
 - `mock_editor_common.lua` loads `shared\editor_common.lua` with dummies for the game and checks the rows and rectangles dragged with Shift / Shift+Alt (`dragStamp`, `unitFootprint`: the key states cannot be given in a test game) and the undo history of the points of a page (`newPointHistory`).
 
@@ -176,6 +178,8 @@ Every test widget (`tools/zz_*.lua`) with what it checks and the command that st
 | `zz_arena_fight.lua` | `arena_test.ps1 -Widget` | two armies of the Arena after Start: the targets of their weapons, the units left, the queue of one unit |
 | `zz_arena_shots.lua` | `arena_test.ps1 -Shots` | the two pictures of the Arena (three armies) |
 | `zz_copy.lua` | `arena_test.ps1 -Widget` | copy and paste (Ctrl+C / Ctrl+V through the KeyPress of the editor, the pointer moved with `Spring.WarpMouse`), a second paste on the same spot (W on: replaced, not doubled), save, clear and load of a level (`led_place.lua`, `led_level.lua`) |
+| `zz_tweak.lua` | `arena_test.ps1 -Widget` | the Tweaks tab: paste (plain, base64, refusals), arm and place with a click, the values of the tweaked unit in the engine against a normal one, move and undo, copy and paste, rename, save / clear / load, the test level `tweak_test`, delete (OK / WRONG; regression set) |
+| `zz_tweak_scn.lua` | `pve_test.ps1 -Tweaks -Quick -Widget` | a tweaked unit in a scenario game (game options `ledtweaks` / `ledtweakunits`): of two Pawns only the one at the place is tweaked (OK / WRONG; regression set) |
 | `zz_features.lua` | `arena_test.ps1 -Widget` | moving a feature (`led\|movefeatures`, what Alt + drag sends), undo and redo |
 | `zz_expunits.lua` | `arena_test.ps1 -Widget ... -ModOptions 'lanexpunits=0;'` | the Experimental Units left out by the game option of LAN Play: none of the 8 units, none in the build lists |
 | `zz_expdemo.lua` | `arena_test.ps1 -Widget ... -ModOptions 'lanexpdemo=1;'` | the test start of `start_experimental.bat`: the Volcano, the extractor, the three vehicles and the vehicle plant placed; all three haul (at least 100 delivered; every load and delivery logged, where each vehicle is at the end), a picture after 100 seconds |

@@ -17,6 +17,7 @@ What puts things onto the map: the Place menu with its preview, placing with the
   - Clicking arms the feature: left click places (`led|feature|name|x|z|rot`, rotation = facing), right click ends, Del deletes the one at the mouse pointer.
   - Preview: circle (green / red).
   - Shift + drag places a row, Shift+Alt a rectangle (at most 2000, feature size from `FeatureDefs.radius` plus spacing).
+- **Tweaks tab:** units with changed values from a `tweakunits` text: [tweaks.md](tweaks.md). It arms the normal unit stamp, so everything of section 7 applies.
 - **Recent tab:** on top the recently chosen blueprints (up to 6 rows), below the recently placed units (symbols), at the bottom the recently placed features (two rows of picture tiles with their own scrolling; noted when a feature is placed, also by a row or rectangle).
   - File `LuaUI/Config/LevelEditorRecent.lua` (up to 24 names each).
   - A click arms the blueprint, unit or feature.
@@ -89,3 +90,4 @@ What puts things onto the map: the Place menu with its preview, placing with the
 - Placing runs through a load queue (50 units per update) and the gadget.
   - Sorting (`_order.txt`), deleting into the trash (never for good) and renaming (copy under the new name, original into the trash): [Shared code](shared-code.md).
   - A saved blueprint contains only the units you selected.
+  - A blueprint does not carry the tweak of a [tweaked unit](tweaks.md): it is placed as the normal unit.

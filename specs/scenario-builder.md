@@ -45,6 +45,8 @@ A start script for the official game:
 - The faction picker is switched off (`disablefactionpicker`); the side of a team follows its units.
 - Unit lines carry the flag `indestructible` (read by `UNIT_RX`; without it flagged units would be skipped) and, for fixed buildings, the game option `fixedunits` ([Tower Defense](tower-defense.md), Indestructible pieces).
 
+- Tweaked units ([tweaks.md](tweaks.md)): unit lines with `tweak = '<id>'` and the section `tweaks` of the level become the game options `ledtweaks` (the definitions) and `ledtweakunits` (id and place of the units), read by the gadget `unit_tweaks.lua`.
+
 ## 4. Grace period
 
 Field `grace` (minutes, also fractional; input `m:ss`, `2,5` or `3`). With `grace > 0` the script writes per alliance `StartRectLeft/Top/Right/Bottom`, the game option `norushtimer = grace` (dot as decimal separator) and `startpostype=2`.

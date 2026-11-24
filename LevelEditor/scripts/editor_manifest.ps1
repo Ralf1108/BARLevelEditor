@@ -33,6 +33,7 @@ $EditorGameFiles = @(
     @('scripts', 'led_restrictions.lua', 'luaui/Include/led_restrictions.lua'),
     @('scripts', 'led_place.lua', 'luaui/Include/led_place.lua'),
     @('scripts', 'led_level.lua', 'luaui/Include/led_level.lua'),
+    @('scripts', 'led_tweaks.lua', 'luaui/Include/led_tweaks.lua'),
     @('scripts', 'help_texts.lua', 'luaui/Include/led_help_texts.lua'))
 
 # The folders where the sources of the extra game of the scenarios are looked for (Write-ScenarioGame)

@@ -6,6 +6,7 @@
 #   -Layout ally | separate           the AI in the ally team of the human, or in an ally team of its own
 #   -Enemy 1                          a third team (NullAI, own ally team) that the Scavengers / Raptors can attack
 #   -Brood                            game option tweakdefs9 = lan_lobby\raptor_brood_defs.lua (the Raptor Brood Chamber, as the LAN lobby sets it; with -Widget zz_brood.lua)
+#   -Tweaks                           the game options ledtweaks / ledtweakunits of a scenario with a tweaked unit (a Pawn at 5200, 5900 with health 2000; with -Widget zz_tweak_scn.lua)
 #   -Widget zz_pve.lua                the test widget (a file in tools)
 #   -EvoTest                          with -Evo: game option lanevotest=1 (evo|test|1 gives all abilities; with -Widget zz_cloak.lua: does Cloak work?)
 #   -Ren                              a Renegade game (game option lanrenegade=1, the human and a NullAI in its own ally team; with -Widget zz_ren.lua)
@@ -21,7 +22,7 @@
 #   -Evo [-EvoStage n]                an Evolution game instead (game option lanevolution=1, every player starts on level n): the human and a NullAI in its own
 #                                     ally team, a larger window (with -Widget zz_evoshot.lua: a picture of the panels in <Work>\data\screenshots)
 param([int]$WaitSec = 420, [string]$Work = (Join-Path $env:TEMP 'pve_test'), [string]$Data = '', [string]$Map = 'Full Metal Plate 1.7',
-      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [string]$Widget = 'zz_pve.lua', [switch]$Evo, [switch]$Ren, [switch]$Quick, [switch]$Live, [switch]$RenTest, [switch]$RenTakeover, [switch]$RenPowerups, [int]$RenBots = 0, [int]$RenGoal = 0, [string]$RenMode = '', [int]$EvoStage = 1, [switch]$EvoTest, [switch]$EvoChoose, [switch]$EvoTeam, [int]$Bots = 1, [string]$Shot = '', [switch]$Debug, [int]$WildHp = 0, [switch]$NoRegen, [switch]$Long, [switch]$Gods, [int]$Gift = 1, [int]$Mult = 1)
+      [string]$Ai = 'Raptors', [int]$Hold = 1, [string]$Layout = 'ally', [int]$Enemy = 0, [switch]$Brood, [switch]$Tweaks, [string]$Widget = 'zz_pve.lua', [switch]$Evo, [switch]$Ren, [switch]$Quick, [switch]$Live, [switch]$RenTest, [switch]$RenTakeover, [switch]$RenPowerups, [int]$RenBots = 0, [int]$RenGoal = 0, [string]$RenMode = '', [int]$EvoStage = 1, [switch]$EvoTest, [switch]$EvoChoose, [switch]$EvoTeam, [int]$Bots = 1, [string]$Shot = '', [switch]$Debug, [int]$WildHp = 0, [switch]$NoRegen, [switch]$Long, [switch]$Gods, [int]$Gift = 1, [int]$Mult = 1)
 $tools = $PSScriptRoot
 $repo = Split-Path (Split-Path (Split-Path $tools -Parent) -Parent) -Parent
 . (Join-Path $repo 'shared\bar_common.ps1'); . (Join-Path $repo 'LevelEditor\scripts\editor_manifest.ps1'); . (Join-Path $tools 'test_common.ps1')
@@ -55,6 +56,9 @@ for ($k = 2; $k -lt 2 + $extra; $k++) {
 }
 # the game option tweakdefs: the Lua text in base64url without padding (the game's string.base64Decode reads it; = would end the value in the start script)
 $tweak = if ($Brood) { ' tweakdefs9=' + ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $repo 'LevelEditor\lan_lobby\raptor_brood_defs.lua'))).TrimEnd('=').Replace('+', '-').Replace('/', '_')) + ';' } else { '' }
+# a tweaked unit as the scenario builder writes it: the definitions "id,base,name b64,table b64" and the units "id:x,z"
+function ConvertTo-Base64Url([string]$text) { return [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($text)).Replace('+', '-').Replace('/', '_').TrimEnd('=') }
+if ($Tweaks) { $tweak += ' ledtweaks=' + (ConvertTo-Base64Url ('armpw_boss1,armpw,' + (ConvertTo-Base64Url 'Boss Pawn') + ',' + (ConvertTo-Base64Url '{ armpw = { health = 2000, weapondefs = { emg = { range = 500 } } } }'))) + '; ledtweakunits=' + (ConvertTo-Base64Url 'armpw_boss1:5200,5900') + ';' }
 $script = @"
 [game]
 {

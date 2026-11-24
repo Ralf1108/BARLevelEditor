@@ -14,6 +14,7 @@ $set = @(
     @{ Group = 'editor'; Name = 'zz_keep'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_keep.lua' } }
     @{ Group = 'editor'; Name = 'zz_teams'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_teams.lua' } }
     @{ Group = 'editor'; Name = 'zz_copy'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_copy.lua' } }
+    @{ Group = 'editor'; Name = 'zz_tweak'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_tweak.lua' } }
     @{ Group = 'editor'; Name = 'zz_features'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_features.lua' } }
     @{ Group = 'editor'; Name = 'zz_cycle'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_cycle.lua' } }
     @{ Group = 'editor'; Name = 'zz_save'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_save.lua' } }
@@ -24,6 +25,7 @@ $set = @(
     @{ Group = 'editor'; Name = 'zz_camreset'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_camreset.lua' } }
     @{ Group = 'modes'; Name = 'zz_modes'; Tool = 'arena_test.ps1'; Args = @{ Widget = 'zz_modes.lua' } }
     @{ Group = 'modes'; Name = 'zz_pve'; Tool = 'pve_test.ps1'; Args = @{} }
+    @{ Group = 'modes'; Name = 'zz_tweak_scn'; Tool = 'pve_test.ps1'; Args = @{ Tweaks = $true; Quick = $true; Widget = 'zz_tweak_scn.lua' } }
     @{ Group = 'modes'; Name = 'zz_brood'; Tool = 'pve_test.ps1'; Args = @{ Brood = $true; Widget = 'zz_brood.lua' } }
     @{ Group = 'renegade'; Name = 'zz_ren98'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; RenMode = 'race'; Quick = $true; Widget = 'zz_ren98.lua' } }
     @{ Group = 'renegade'; Name = 'zz_ren11'; Tool = 'pve_test.ps1'; Args = @{ Ren = $true; RenTest = $true; Widget = 'zz_ren11.lua' } }

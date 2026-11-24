@@ -21,9 +21,9 @@ Related specifications:
 - **Parts:** the widget `lvl_level_editor.lua` (controls, menu, saving and loading);
   - the gadget `unit_level_editor.lua` (places, deletes, blows up, build mode, orders for units of other teams);
   - the shared code `editor_common.lua` and `bar_rules.lua`;
-  - the pages and games `td_waves.lua` + `led_td.lua`, `ctf_game.lua` + `led_ctf.lua`, `rtf_game.lua` + `led_rtf.lua`, `led_arena.lua`, `led_teams.lua`, `led_save.lua` (the Save page), `led_gen.lua` (the Generate page), `led_scenario.lua` (the Scenario info page), `led_export.lua` (the export buttons of the settings page), `led_place.lua` (placing: room, blueprints, copy / paste), `led_level.lua` (saving and loading the level file), `unit_restrictions.lua` + `led_restrictions.lua`, `unit_indestructible.lua` (the buildings marked with FX), `led_gadgets.lua` (what the gadgets share).
+  - the pages and games `td_waves.lua` + `led_td.lua`, `ctf_game.lua` + `led_ctf.lua`, `rtf_game.lua` + `led_rtf.lua`, `led_arena.lua`, `led_teams.lua`, `led_save.lua` (the Save page), `led_gen.lua` (the Generate page), `led_scenario.lua` (the Scenario info page), `led_export.lua` (the export buttons of the settings page), `led_place.lua` (placing: room, blueprints, copy / paste), `led_level.lua` (saving and loading the level file), `led_tweaks.lua` + `unit_tweaks.lua` + `tweak_rules.lua` ([tweaked units](tweaks.md)), `unit_restrictions.lua` + `led_restrictions.lua`, `unit_indestructible.lua` (the buildings marked with FX), `led_gadgets.lua` (what the gadgets share).
   - Texts of the help board: `help_texts.lua`.
-- **Lua limit:** a function has at most 200 local variables, `lvl_level_editor.lua` has 146 at top level (2026-11-08, after placing and the level file moved to `led_place.lua` and `led_level.lua`) (count the names declared by `^local` lines).
+- **Lua limit:** a function has at most 200 local variables, `lvl_level_editor.lua` has 149 at top level (2026-11-24) (count the names declared by `^local` lines).
   - New things go into a page module or into an existing table.
   - A load error shows as `Failed to load: lvl_level_editor.lua` in `infolog.txt`.
   - `lua_check.py` finds the limits without the game (also at most 60 upvalues per function: the Generate state lives in one table `gen`).
@@ -86,7 +86,8 @@ Related specifications:
   - The offset is stored as a fraction of the screen size (`widget:GetConfigData` / `SetConfigData`).
 - **Scaling:** factor = `ui_scale` (BAR setting) times screen height / 2160 (designed for 4K; Full HD is half as big), limited to 0.3 to 3.
 - **Title row** "Level Editor" at the top left (`titleH()`, 44·S, not shown when collapsed). The two main menus Place and Generate are the buttons P and G of the button column (`kind = "top"`).
-- **Place:** row 2 is the search row (section 6), row 3 the sub-tabs **Recent | Units | Features | Blueprints** (`kind = "mode"`, font 22·S) with the number of matches while a query is active, below them the rows of the chosen tab (faction, group and tech for Units; the feature kinds for Features; the button **Create** for Blueprints).
+- **Place:** row 2 is the search row (section 6), row 3 the sub-tabs **Recent | Units | Features | Blueprints | Tweaks** (`kind = "mode"`, font 22·S) with the number of matches while a query is active, below them the rows of the chosen tab (faction, group and tech for Units; the feature kinds for Features; the button **Create** for Blueprints).
+  - Tweaks is the tab of the [tweaked units](tweaks.md) (`led_tweaks.lua`); the search does not look into it.
   - A click on a faction, group, tech or feature-kind button ends the search.
   - At the start the Place menu is open on the Units tab.
 - **Generate:** a page of its own with the sub-tabs Units | Maze (section 8).
@@ -197,7 +198,7 @@ The Place / Generate menus are `kind = "top"` rectangles; `headerRowCount` knows
 
 - Ctrl+S writes `levels\<name>.lua`: all units (position, height, team, neutral, rotation, `indestructible = true` and the `arena` flag where set) **and all features** (wrecks, trees, rocks; resurrectable wrecks with `resurrectas`).
   - The file states which game options (e.g. extra pack) must be on in the main game.
-- **Sections:** besides the units the file has the scenario info block ([Scenario builder](scenario-builder.md)), `unitlimit`, `mapsize`, and the sections `teams` ([Teams](teams.md)), `towerdefense`, `capture`, `reclaim`, `arena` and `restrictions`, written when the page has been used or the list is not empty.
+- **Sections:** besides the units the file has the scenario info block ([Scenario builder](scenario-builder.md)), `unitlimit`, `mapsize`, and the sections `teams` ([Teams](teams.md)), `towerdefense`, `capture`, `reclaim`, `arena` and `restrictions`, written when the page has been used or the list is not empty, and `tweaks` (the definitions of the [tweaked units](tweaks.md) on the map; their unit lines end with `tweak = '<id>'`).
   - When loading only the known fields of each section are taken over (`knownFields`: the keys of the defaults, plus `spawn` / `goal`); a missing field gets its default, everything else is dropped and not saved again.
 - **Loading** a level (page S) clears the map (except the builder rows) and sets the level up again (features are replaced if the file contains any).
   - `/led_clear` only clears units.
@@ -233,6 +234,7 @@ The Place / Generate menus are `kind = "top"` rectangles; `headerRowCount` knows
 | `scripts\unit_level_editor.lua` | gadget |
 | `scripts\td_waves.lua`, `ctf_game.lua`, `rtf_game.lua` | gadgets of the game modes |
 | `scripts\unit_restrictions.lua`, `unit_indestructible.lua` | gadgets of the restrictions and the indestructible buildings (also in scenario packages) |
+| `scripts\led_tweaks.lua`, `unit_tweaks.lua`, `tweak_rules.lua` | the Tweaks tab, its gadget and what they share ([tweaked units](tweaks.md); gadget and rules also in scenario packages) |
 | `scripts\led_td.lua`, `led_ctf.lua`, `led_rtf.lua`, `led_arena.lua`, `led_teams.lua`, `led_save.lua`, `led_gen.lua`, `led_scenario.lua`, `led_export.lua`, `led_restrictions.lua` | pages of the widget (packed as `luaui/Include/<name>`) |
 | `scripts\led_gadgets.lua` | what the gadgets share (`luaui/Include/led_gadgets.lua` in both extra games): `EDITOR_MODE`, `Rules` (bar_rules), `sayer`, `split`, `fields`, `allyOf` and the alliance functions, `builtDef` (also `CMD.INSERT`), `teamMessenger` (a message only to a human team, at most once per unit type every 5 s), `handleMessage` (the messages `<tag>\|<command>\|<payload>` of the widget, only with cheats or in the editor), `option` (a base64url game option of a scenario), `wonBy(alliance)` (the state text "won by alliance 1" / "won by group 3"), `reclaimFeatures` (the wreck reclaim of Renegade and Evolution: metal heals the unit, energy goes to the team, with a budget per call), `healAdd` / `healDraw` (the heal effect), `drawScreenPost(stateName, drawMiniMap)`, `drawScoreLine(prefix, title, color, y, extra)` and `stopper(get, clear, publish, say)` (what `ctf_game` and `rtf_game` draw and stop alike), `gameMode` (what `td_waves`, `ctf_game` and `rtf_game` do alike: the messages start / stop of the editor, the game option of a finished scenario read in `GamePreload` and started at frame `START_FRAME` = 30, the empty state parameter, the command ids its `AllowCommand` is registered for; `mode.install(gadget)` sets `RecvLuaMsg`, `Initialize` and `GamePreload`), `blowUp` (the units of an alliance blow up, some may stay), `publishScores` / `scoreLine` (the score board of Capture the Flag and Reclaim the Fame: game rules parameters `<p>State`, `<p>Target`, `<p>Teams`, `<p>Score<alliance>`, `<p>Out`, and its line on the screen in the unsynced part) |
 | `scripts\evo_game.lua`, `evo_gift.lua` | gadget and game widget of Evolution, only in the extra game of the scenarios ([Evolution](evolution.md)) |
@@ -245,9 +247,9 @@ The Place / Generate menus are `kind = "top"` rectangles; `headerRowCount` knows
 | `scripts\install_editor.ps1`, `editor_manifest.ps1`, `ensure_installed.ps1`, `check_links.ps1`, `uninstall_editor.ps1` and the `.bat` files | setup ([Setup](level-editor-setup.md)) |
 | `scenario\` | scenario builder and template ([Scenario builder](scenario-builder.md)) |
 | `lan_lobby\` | LAN Play: `lan_lobby.lua`, `install_lan_play.ps1` ([LAN Play](lan-play.md)) |
-| `levels\`, `blueprints\` | saved levels; blueprints, `_order.txt`, `_index.txt`, `_trash\` |
+| `levels\`, `blueprints\` | saved levels and `_tweaks.lua` (the library of the tweaked units); blueprints, `_order.txt`, `_index.txt`, `_trash\` |
 | `game-modes\`, `sandbox\` | user manuals of the game modes and the Arena |
-| `test-data\` | test levels (`ctf_test`, `rtf_test`, `td_test`, `scav_test`; flat map Full Metal Plate 1.7), the LAN Play test tools, `TESTING.md` (what got in the way); not for playing |
+| `test-data\` | test levels (`ctf_test`, `rtf_test`, `td_test`, `scav_test`, `tweak_test`; flat map Full Metal Plate 1.7), the LAN Play test tools, `TESTING.md` (what got in the way); not for playing |
 | `%LOCALAPPDATA%\BAR-Level-Editor\` | `Last Map.txt`, `Online Maps Cache.json`, `Scav Units.txt` |
 | `data\games\LevelEditorScenarios_<version>.sdz`, `LevelEditorScenarios.txt`, `data\LevelEditorScenarios` | the extra game of the scenarios, the file with its name, the junction to `scenario\scenarios` |
 

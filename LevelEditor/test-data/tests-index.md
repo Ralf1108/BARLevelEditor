@@ -2,7 +2,7 @@
 
 Made by `generators/make_test_index.py` from the first lines of every widget: change the widget, not this file. How to run them: [README](README.md), pitfalls: [TESTING](TESTING.md).
 
-158 widgets (33 set, 1 test, 84 check, 11 pictures, 29 probe). The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
+160 widgets (35 set, 1 test, 84 check, 11 pictures, 29 probe). The name of the log lines is in the widget (`[zz...]`); the game starts with the command in the last column.
 
 | Kind | Meaning |
 |---|---|
@@ -166,6 +166,8 @@ Made by `generators/make_test_index.py` from the first lines of every widget: ch
 | `zz_split_shot.lua` | pictures | the picture of the split attack for the README | `arena_test.ps1 -Widget zz_split_shot.lua` |
 | `zz_teams.lua` | set | plays through the teams page T and the alliances | `arena_test.ps1 -Widget zz_teams.lua` |
 | `zz_tech.lua` | probe | tech level and metal cost of every armed unit, lines [zztech] | `pve_test.ps1 -Ren -Widget zz_tech.lua` |
+| `zz_tweak.lua` | set | the Tweaks tab (tweaked units): paste, place, values, undo, copy, rename, save and load | `arena_test.ps1 -Widget zz_tweak.lua` |
+| `zz_tweak_scn.lua` | set | a tweaked unit in a scenario game (game options ledtweaks / ledtweakunits) | `pve_test.ps1 -Tweaks -Quick -Widget zz_tweak_scn.lua` |
 | `zz_unitdump.lua` | probe | every mobile Armada, Cortex and Legion unit with its numbers | `pve_test.ps1 -Widget zz_unitdump.lua` |
 | `zz_unitinfo.lua` | probe | facts of some unit definitions (movement, building flags) | `pve_test.ps1 -Widget zz_unitinfo.lua (without -Quick` |
 | `zz_volcano.lua` | set | the model of the Volcano and its lava | `arena_test.ps1 -Widget zz_volcano.lua` |

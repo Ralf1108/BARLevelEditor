@@ -441,6 +441,14 @@ local function publishArena(state)
 	Spring.SetGameRulesParam("led_arenastate_n", arenaN)
 end
 
+-- A tweaked unit (page Tweaks of the widget): the gadget unit_tweaks.lua sets its values and the unit rules parameter "ledtweak" (the id; the widget
+-- writes it into the level file); it survives undo, redo, moving and rotating through the snapshot
+local function setTweak(id, tweak)
+	if tweak and tweak ~= "" and GG.Tweaks then
+		GG.Tweaks.apply(id, tweak)
+	end
+end
+
 local function clearIndestructible(id)
 	indestructible[id] = nil
 	Spring.SetUnitRulesParam(id, "indestructible", nil)
@@ -456,6 +464,7 @@ local function snapshot(id)
 		name = UnitDefs[defID].name, team = Spring.GetUnitTeam(id), x = x, y = y, z = z,
 		heading = Spring.GetUnitHeading(id), neutral = Spring.GetUnitNeutral(id), indestructible = indestructible[id],
 		arena = Spring.GetUnitRulesParam(id, "arena") == 1,
+		tweak = Spring.GetUnitRulesParam(id, "ledtweak"),
 	}
 end
 
@@ -560,6 +569,9 @@ local function respawn(snap)
 	end
 	if id and snap.arena then
 		setArena(id)
+	end
+	if id then
+		setTweak(id, snap.tweak)
 	end
 	return id
 end
@@ -812,6 +824,7 @@ local function transformUnits(ids, mode, dx, dz)
 			if r.arena then
 				setArena(id)
 			end
+			setTweak(id, r.tweak)
 			replaceId(r.old, id) -- earlier steps should hit the new unit
 			record({ k = "swap", id = id, name = r.name, before = r, after = snapshot(id) })
 			made[#made + 1] = id
@@ -822,7 +835,7 @@ local function transformUnits(ids, mode, dx, dz)
 end
 
 -- rec = true: note in the history (blueprint, paste); otherwise (loading a level) not
-local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fixed, arena)
+local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fixed, arena, tweak)
 	if not rec then
 		suppress = suppress + 1
 	end
@@ -838,6 +851,9 @@ local function loadUnit(name, team, x, z, heading, neutral, playerID, y, rec, fi
 	end
 	if id and arena then
 		setArena(id)
+	end
+	if id then
+		setTweak(id, tweak)
 	end
 	return id
 end
@@ -994,6 +1010,9 @@ LED.place = function(parts, playerID)
 	if id and parts[10] == "1" then
 		setArena(id)
 	end
+	if id then
+		setTweak(id, parts[11]) -- led|place|...|neutral|indestructible|arena|<tweak id>
+	end
 end
 
 LED.delete = function(parts, playerID)
@@ -1109,7 +1128,7 @@ LED.clear = function(parts, playerID)
 end
 
 LED.load = function(parts, playerID)
-	loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1", parts[12] == "1")
+	loadUnit(parts[3], tonumber(parts[4]), tonumber(parts[5]), tonumber(parts[6]), tonumber(parts[7]), parts[8] == "1", playerID, tonumber(parts[9]), parts[10] == "1", parts[11] == "1", parts[12] == "1", parts[13])
 end
 
 LED.deleteids = function(parts, playerID)

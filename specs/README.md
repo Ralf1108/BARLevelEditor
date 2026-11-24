@@ -21,6 +21,7 @@ Rules for writing and maintaining them are in `CLAUDE.md`. Sections are numbered
 | [level-editor.md](level-editor.md) | the editor core: structure, keys, menus, strip and button column, editing, undo, levels, gadget, files |
 | [level-editor-placing.md](level-editor-placing.md) | the editor: the Place menu and its preview, placing, Generate, maze, delete tools, blueprints |
 | [level-editor-setup.md](level-editor-setup.md) | setup and removal, the extra game, the start menu (keys 0–8), game start |
+| [tweaks.md](tweaks.md) | tweaked units (tab Tweaks): a `tweakunits` text applied to single placed units, in the editor and in a scenario |
 | [teams.md](teams.md) | ten teams, alliances, human / AI, start resources (button T) |
 | [restrictions.md](restrictions.md) | what the player may not build, the R window |
 | [tower-defense.md](tower-defense.md), [capture-the-flag.md](capture-the-flag.md), [reclaim-the-fame.md](reclaim-the-fame.md) | the three game modes of a level |

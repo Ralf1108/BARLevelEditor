@@ -34,7 +34,9 @@ $SHARED = Join-Path (Split-Path (Split-Path $HERE -Parent) -Parent) 'shared'
 $utf8 = New-Object Text.UTF8Encoding($false)
 # Block in the level file: scenario = [==[ json ]==],  (the Level Editor copies it back unchanged when saving)
 $BLOCK_RX = [regex]::new("\n\tscenario = \[==\[(.*?)\]==\],[ \t\r]*(?=\n)", 'Singleline')
-$UNIT_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*team\s*=\s*(\d+))?\s*(?:,\s*neutral\s*=\s*(true|false))?\s*(?:,\s*gaia\s*=\s*(true))?\s*(?:,\s*indestructible\s*=\s*(true))?\s*\}")
+$UNIT_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*team\s*=\s*(\d+))?\s*(?:,\s*neutral\s*=\s*(true|false))?\s*(?:,\s*gaia\s*=\s*(true))?\s*(?:,\s*indestructible\s*=\s*(true))?\s*(?:,\s*tweak\s*=\s*'(\w+)')?\s*\}")
+# a tweaked unit of the section tweaks of the level file (id, name, base unit, its tweakunits table in base64url)
+$TWEAK_RX = [regex]::new('\{\s*id\s*=\s*"(\w+)"\s*,\s*name\s*=\s*"([^"]*)"\s*,\s*base\s*=\s*"(\w+)"\s*,\s*b64\s*=\s*"([\w\-]*)"\s*\}')
 $FEATURE_RX = [regex]::new("\{\s*name\s*=\s*'([^']+)'\s*,\s*x\s*=\s*(-?\d+)\s*,\s*y\s*=\s*(-?\d+)\s*,\s*z\s*=\s*(-?\d+)\s*,\s*rot\s*=\s*(-?\d+)\s*(?:,\s*resurrectas\s*=\s*'([^']+)')?\s*\}")
 $COLORS = @('0 0.51 0.78', '0.9 0.1 0.29', '0.96 0.51 0.19', '1 0.88 0.1', '0.27 0.6 0.31', '0.57 0.12 0.71', '0.27 0.94 0.94', '0.94 0.2 0.9')
 $SIDES = @{ arm = 'Armada'; cor = 'Cortex'; leg = 'Legion' }
@@ -346,7 +348,7 @@ function Read-LevelFile([string]$path) {
     $txt = $BLOCK_RX.Replace([IO.File]::ReadAllText($path, $utf8), '')
     $m = [regex]::Match($txt, 'map\s*=\s*"([^"]+)"')
     if (-not $m.Success) { throw 'The level file contains no map (map = "...").' }
-    $level = @{ map = $m.Groups[1].Value; mods = [ordered]@{}; units = @(); features = @(); mapX = 0; mapZ = 0; unitLimit = 32000 }
+    $level = @{ map = $m.Groups[1].Value; mods = [ordered]@{}; units = @(); features = @(); tweaks = @(); mapX = 0; mapZ = 0; unitLimit = 32000 }
     $ms = [regex]::Match($txt, 'mapsize\s*=\s*\{\s*(\d+)\s*,\s*(\d+)\s*\}')
     if ($ms.Success) { $level.mapX = [int]$ms.Groups[1].Value; $level.mapZ = [int]$ms.Groups[2].Value }
     $ul = [regex]::Match($txt, 'unitlimit\s*=\s*(\d+)')
@@ -360,12 +362,17 @@ function Read-LevelFile([string]$path) {
     $u0 = if ($mu.Success) { $mu.Index } else { -1 }
     $f0 = if ($mf.Success) { $mf.Index } else { -1 }
     if ($u0 -lt 0) { throw 'The level file contains no unitloadout list.' }
+    # the tweaked units of the level (section tweaks, written before the unit list)
+    $mt = [regex]::Match($txt, '(?m)^\ttweaks\s*=\s*\{')
+    if ($mt.Success -and $mt.Index -lt $u0) {
+        $level.tweaks = @($TWEAK_RX.Matches($txt.Substring($mt.Index, $u0 - $mt.Index)) | ForEach-Object { @{ id = $_.Groups[1].Value; name = $_.Groups[2].Value; base = $_.Groups[3].Value; b64 = $_.Groups[4].Value } })
+    }
     if ($f0 -gt $u0) { $ubody = $txt.Substring($u0, $f0 - $u0); $fbody = $txt.Substring($f0) } else { $ubody = $txt.Substring($u0); $fbody = '' }
     $units = New-Object Collections.ArrayList
     foreach ($m in $UNIT_RX.Matches($ubody)) {
         $g = $m.Groups
         [void]$units.Add(@{ name = $g[1].Value; x = [int]$g[2].Value; y = [int]$g[3].Value; z = [int]$g[4].Value; rot = [int]$g[5].Value
-                            team = $(if ($g[6].Success) { [int]$g[6].Value } else { 0 }); neutral = ($g[7].Value -eq 'true'); gaia = ($g[8].Value -eq 'true'); fixed = ($g[9].Value -eq 'true') })
+                            team = $(if ($g[6].Success) { [int]$g[6].Value } else { 0 }); neutral = ($g[7].Value -eq 'true'); gaia = ($g[8].Value -eq 'true'); fixed = ($g[9].Value -eq 'true'); tweak = $g[10].Value })
     }
     $features = New-Object Collections.ArrayList
     foreach ($m in $FEATURE_RX.Matches($fbody)) {
@@ -706,6 +713,18 @@ function Build-Scenario([string]$levelName, [bool]$auto) {
     if ($fixed.Count -gt 0) {
         $groups = $fixed | Group-Object { $_.name } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
         $mods['fixedunits'] = ConvertTo-Base64Url ($groups -join '|')
+    }
+    # tweaked units (tab Tweaks of the editor): gadget unit_tweaks.lua, the definitions "id,base,name b64,table b64;..." and the units "id:x,z,x,z|id:..."
+    $tweakIds = @{}
+    foreach ($tk in $level.tweaks) { $tweakIds[$tk.id] = $tk.base }
+    $tweaked = @($level.units | Where-Object { $_.tweak -and $tweakIds[$_.tweak] -eq $_.name })
+    if ($tweaked.Count -gt 0) {
+        $used = @{}
+        foreach ($u in $tweaked) { $used[$u.tweak] = $true }
+        $defs = $level.tweaks | Where-Object { $used[$_.id] } | ForEach-Object { '{0},{1},{2},{3}' -f $_.id, $_.base, (ConvertTo-Base64Url $_.name), $_.b64 }
+        $groups = $tweaked | Group-Object { $_.tweak } | ForEach-Object { $_.Name + ':' + (($_.Group | ForEach-Object { '{0},{1}' -f $_.x, $_.z }) -join ',') }
+        $mods['ledtweaks'] = ConvertTo-Base64Url (@($defs) -join ';')
+        $mods['ledtweakunits'] = ConvertTo-Base64Url (@($groups) -join '|')
     }
     if ($rst) {
         # settings for the gadget unit_restrictions.lua (the names of the units)

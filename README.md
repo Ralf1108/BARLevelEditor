@@ -49,6 +49,7 @@ You need Windows and Beyond All Reason, started once through its launcher.
 - Paint, rows, rectangles; copy, cut, paste, move, rotate, mirror; undo and redo for everything
 - Generate random armies, turrets, air or ships, or a maze of walls
 - Blueprints: save a selection and place the layout again anywhere
+- Tweaked units: paste a `tweakunits` text and place units with changed health, speed or weapons
 - Ten teams plus neutral, with alliances, human or AI per team and start resources
 
 **Play it**

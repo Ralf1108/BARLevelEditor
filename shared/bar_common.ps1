@@ -213,6 +213,7 @@ $ScenarioGameFiles = @(
     @('renegade_game.lua', 'luarules/gadgets/renegade_game.lua'),
     @('unit_restrictions.lua', 'luarules/gadgets/unit_restrictions.lua'),
     @('unit_indestructible.lua', 'luarules/gadgets/unit_indestructible.lua'),
+    @('unit_tweaks.lua', 'luarules/gadgets/unit_tweaks.lua'),   # tweaked units: single units with the changed values of a tweakunits table
     @('lan_latejoin.lua', 'luarules/gadgets/lan_latejoin.lua'),   # LAN Play: a player who joins a running game is moved into a team
     @('lan_pve_hold.lua', 'luarules/gadgets/lan_pve_hold.lua'),   # LAN Play: drops the orders of a Scavengers / Raptors AI of the room
     @('pve_supply_drops_stub.lua', 'luarules/gadgets/pve_supply_drops.lua'),   # replaces the lootbox gadget of the game (it let enemies capture the flags)
@@ -225,6 +226,7 @@ $ScenarioGameFiles = @(
     @('bar_rules.lua', 'luaui/Include/bar_rules.lua'),
     @('editor_common.lua', 'luaui/Include/editor_common.lua'),   # Renegade: the unit menu of the debug mode is the one of the Level Editor (also in the extra game "Level Editor", see Get-EditorGameEntries)
     @('area_attack.lua', 'luaui/Include/area_attack.lua'),   # loaded by editor_common.lua
+    @('tweak_rules.lua', 'luaui/Include/tweak_rules.lua'),   # tweaked units: reading a tweakunits table, the fields a running game can change (gadget and editor page)
     @('led_gadgets.lua', 'luaui/Include/led_gadgets.lua'),   # what the gadgets share (editor mode, messages, game options)
     @('renegade_data.lua', 'luaui/Include/renegade_data.lua'),   # Renegade: the weapon tables (made from the tables in game-modes by renegade_weapons.py)
     @('evo_ui.lua', 'luaui/Include/evo_ui.lua'),   # Evolution: the unsynced part of the gadget evo_game.lua (panels, camera, score lines)

@@ -50,6 +50,7 @@ local moveDrag = nil -- { x, z }: start point while the selection is moved with 
 local pendingNew = false -- an edit (rotate, mirror, move) is under way, the new IDs are expected
 local lastNewN = nil
 local sv -- Save page (button S): LevelEditor/scripts/led_save.lua, created below (the list of the saved levels, Save as new, Save, Load)
+local tw -- Tweaks tab of the Place menu (tweaked units): LevelEditor/scripts/led_tweaks.lua, created below
 local helpOpen = false -- Help board on the screen
 
 -- Texts of the help board and of /led_help (data only, own file)
@@ -247,7 +248,7 @@ local lv = VFS.Include("luaui/Include/led_level.lua", nil, VFS.ZIP_FIRST)({
 	say = function(text) say(text) end,
 	editAllowed = function() return editAllowed() end,
 	cfg = function() return cfg end,
-	pages = function() return { si = si, td = td, ctf = ctf, rtf = rtf, ar = ar, tm = tm, rst = rst, sv = sv } end,
+	pages = function() return { si = si, td = td, ctf = ctf, rtf = rtf, ar = ar, tm = tm, rst = rst, sv = sv, tw = tw } end,
 	setCurrentLevel = function(name) currentLevel = name end,
 })
 
@@ -494,7 +495,7 @@ local function headerRowCount() -- Rows of the header
 		return 2 + (uGrid:filterRowCount() - 1)
 	elseif menuMode == "features" then
 		return 2 + (fGrid:filterRowCount() - 1)
-	elseif menuMode == "fav" then
+	elseif menuMode == "fav" or menuMode == "tw" then
 		return 2
 	end
 	return 2 + 1 -- blueprints: Create
@@ -531,6 +532,8 @@ local function basePanelRectRaw()
 		cw, ch = optionsUI:width(), optionsUI:height()
 	elseif menuMode == "units" or menuMode == "features" or menuMode == "fav" then
 		cw, ch = uGrid:size()
+	elseif menuMode == "tw" then
+		cw, ch = math.floor(680 * S), tw.height() -- a little wider: room for the names and the buttons of a row
 	else
 		cw, ch = bpGrid:size()
 	end
@@ -648,6 +651,7 @@ local function headerRectsRaw()
 			{ "units", "Units" .. count(uGrid), "Units: all units of the game (faction, group, tech)" },
 			{ "features", "Features" .. count(fGrid), "Features: place trees, rocks and wrecks" },
 			{ "bp", "Blueprints" .. count(bpGrid), "Blueprints: place saved groups of units" },
+			{ "tw", "Tweaks", "Tweaks: units with changed values (health, speed, weapons ...),\nmade from a tweakunits text" },
 		}
 		local sw = (x2 - m.PAD - (x1 + m.PAD) - 3 * (#subs - 1)) / #subs
 		for i, it in ipairs(subs) do
@@ -1020,6 +1024,15 @@ local function drawMenuBody()
 		end
 		return
 	end
+	if menuMode == "tw" then
+		tw.draw(rect)
+		gl.Color(1, 1, 1, 1)
+		gl.Text(tw.hint(), (x1 + x2) / 2, y1 + 8 * S, 24 * S, "co")
+		if armedUnit then
+			gl.Text("Shift = row, Shift+Alt = rectangle, Shift+Mouse wheel = spacing (" .. spacing .. ")", (x1 + x2) / 2, y1 + 8 * S + 30 * S, 20 * S, "co")
+		end
+		return
+	end
 	if menuMode == "fav" then
 		fav:draw(rect, mx, my, inPanel(mx, my))
 		gl.Color(1, 1, 1, 1)
@@ -1170,7 +1183,11 @@ end
 -- For tests without the game: position of the buttons and the content area
 function widget:DebugLayout()
 	rescale()
-	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect()))
+	return (headerRects()), contentRect(), teamRects(), (sv.open and sv.layout(contentRect()) or {}), (scenarioPage ~= "teams" and si.layout(contentRect()) or {}), (gen.layout(contentRect())), (td.layout(contentRect())), (ctf.layout(contentRect())), (rtf.layout(contentRect())), (menuMode == "tw" and tw.layout(contentRect()) or {})
+end
+
+function widget:DebugTweaks() -- test hook: the Tweaks tab (tweaked units)
+	return tw
 end
 
 -- Button of the column left of the team strip (V, O, I, ?) under the mouse pointer
@@ -1261,6 +1278,7 @@ local function applyHeader0(r)
 		local tdWas = td.open or ctf.open or rtf.open or ar.open or sv.open
 		ar.finish(true)
 		sv.finish(true)
+		tw.finish(true)
 		td.open, ctf.open, rtf.open, ar.open, sv.open = false, false, false, false, false
 		local pageWas = scenarioOpen or optionsOpen
 		siFinish(true)
@@ -1276,6 +1294,7 @@ local function applyHeader0(r)
 	local tdWas, ctfWas, rtfWas, arWas, svWas = td.open, ctf.open, rtf.open, ar.open, sv.open
 	ctf.finish(true)
 	sv.finish(true)
+	tw.finish(true)
 	rtf.finish(true)
 	ar.finish(true)
 	if r.kind ~= "create" then
@@ -1384,6 +1403,7 @@ local function applyHeader0(r)
 	elseif r.kind == "mode" then
 		if menuMode ~= r.value then
 			bpGrid:resetEdit()
+			tw.finish(true)
 			menuMode = r.value
 			bpGrid:setArmed(false)
 			armedUnit = false
@@ -1692,6 +1712,24 @@ ar = VFS.Include("luaui/Include/led_arena.lua", nil, VFS.ZIP_FIRST)({
 	end,
 })
 
+-- Tweaks tab (LevelEditor/scripts/led_tweaks.lua): tweaked units from a tweakunits text, their library, placing them
+tw = VFS.Include("luaui/Include/led_tweaks.lua", nil, VFS.ZIP_FIRST)({
+	Shared = Shared,
+	S = function() return S end,
+	say = function(text) say(text) end,
+	outDir = OUTDIR,
+	menuMode = function() return menuMode end,
+	armedUnit = function() return armedUnit end,
+	unitName = function() return unitName end,
+	armUnit = function(name)
+		disarmBase()
+		area:disarm()
+		unitName = name
+		armedUnit = true
+	end,
+	disarm = function() disarmBase() end,
+})
+
 -- Save page (LevelEditor/scripts/led_save.lua): the saved levels, Save as new, Save and Load
 sv = VFS.Include("luaui/Include/led_save.lua", nil, VFS.ZIP_FIRST)({
 	Shared = Shared,
@@ -1831,7 +1869,7 @@ local function paintPlace(kind, x, z)
 	if isF then
 		led(string.format("led|feature|%s|%d|%d|%d", name, x, z, (facing * 16384 + 32768) % 65536 - 32768))
 	else
-		led(string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, x, z, facing, neutralOn and 1 or 0))
+		led(string.format("led|place|%s|%d|%d|%d|%d|%d", name, team, x, z, facing, neutralOn and 1 or 0) .. tw.placeSuffix())
 	end
 	pl.notePlaced(name, x, z, face, isF)
 	if isF then
@@ -1972,6 +2010,12 @@ local function panelPress(mx, my, button)
 				bpGrid.scroll, uGrid.scroll = 0, 0
 			end
 			return true
+		end
+		if menuMode == "tw" then
+			uGrid:setFocus(false)
+			fGrid:setFocus(false)
+			searchFocus(false)
+			return tw.press(rect, mx, my)
 		end
 		local sbGrid = (menuMode == "units" and uGrid) or (menuMode == "features" and fGrid) or (menuMode == "bp" and bpGrid) or nil
 		if sbGrid and Shared.scrollbarPress(sbGrid, rect, mx, my) then
@@ -2495,7 +2539,7 @@ function widget:MouseRelease(mx, my, button)
 			local n = 0
 			for _, p in ipairs(list) do
 				if pl.makeRoom(unitName, p.x, p.z, facing) then
-					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, p.x, p.z, facing, neutralOn and 1 or 0)
+					placeQueue[#placeQueue + 1] = string.format("led|place|%s|%d|%d|%d|%d|%d", unitName, team, p.x, p.z, facing, neutralOn and 1 or 0) .. tw.placeSuffix()
 					pl.notePlaced(unitName, p.x, p.z, facing)
 					n = n + 1
 				end
@@ -2534,6 +2578,9 @@ function widget:TextInput(utf8char)
 	end
 	if sv.edit then
 		return sv.text(utf8char)
+	end
+	if tw.edit then
+		return tw.text(utf8char)
 	end
 	if tm.edit then
 		return tm.text(utf8char)
@@ -2595,7 +2642,9 @@ function widget:MouseWheel(up, value)
 	if optionsOpen then
 		return true
 	end
-	if menuMode == "units" then
+	if menuMode == "tw" then
+		tw.wheel(up)
+	elseif menuMode == "units" then
 		uGrid:wheel(contentRect(), up)
 	elseif menuMode == "features" then
 		fGrid:wheel(contentRect(), up)
@@ -3145,6 +3194,9 @@ function widget:KeyPress(key, mods, isRepeat)
 	if sv.edit then
 		return sv.key(key)
 	end
+	if tw.edit then
+		return tw.key(key)
+	end
 	if key == 127 and (td.deleteWaypoint() or ctf.deleteAt() or ar.deleteAt()) then
 		return true
 	end
@@ -3443,6 +3495,7 @@ function widget:DrawScreen()
 	baseCache.drawing = true
 	local vsx, vsy = Spring.GetViewGeometry()
 	td.hud(vsx, vsy)
+	tw.drawLabels() -- the names of the tweaked units above them
 	gl.Color(1, 1, 1, 1)
 	gl.Text(
 		string.format("Level Editor  |  %s  |  Team %d  |  Grid %d  |  %s", unitName, team, grid, FACING_NAME[facing]),

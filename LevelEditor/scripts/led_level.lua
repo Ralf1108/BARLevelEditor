@@ -2,7 +2,7 @@
 -- features through a queue, a few per update) and clearing the map. Loaded by lvl_level_editor.lua (VFS.Include("luaui/Include/led_level.lua")) as a function
 -- that gets the host (the services of the widget) and returns the functions; a file of its own because the widget is close to the limit of 200 local variables.
 --   host.Shared, host.OUTDIR (folder of the levels), host.say(text), host.editAllowed(), host.cfg() (settings: the unit limit), host.pages() (the pages:
---   si, td, ctf, rtf, ar, tm, rst, sv; created after this module), host.setCurrentLevel(name) (the level loaded or saved last)
+--   si, td, ctf, rtf, ar, tm, rst, sv, tw; created after this module), host.setCurrentLevel(name) (the level loaded or saved last)
 -- Returns lv: lv.save(name, quiet) (count of the units or nil), lv.load(_, _, args) (the action /led_load), lv.clear() (the action /led_clear), lv.parse(text),
 -- lv.loading() (units or features still waiting), lv.loadStep(n) (sends the next n), lv.stopLoading()
 return function(host)
@@ -42,6 +42,7 @@ return function(host)
 		local gaia = Spring.GetGaiaTeamID()
 		local lines, count = {}, 0
 		local scavOrRaptor = false -- a Scavenger or Raptor unit: the level needs the game option forceallunits
+		local tweaksUsed = {} -- id -> true: the tweaked units on the map (section tweaks)
 		for _, id in ipairs(Spring.GetAllUnits()) do
 			local t = Spring.GetUnitTeam(id)
 			-- not part of the level: the builders of Ctrl+D (ledbuilder) and the units of a running game (led_nosave: waves, flags, collection points)
@@ -49,13 +50,19 @@ return function(host)
 				local x, y, z = Spring.GetUnitPosition(id)
 				local ud = UnitDefs[Spring.GetUnitDefID(id)]
 				scavOrRaptor = scavOrRaptor or ud.name:sub(-5) == "_scav" or ud.name:sub(1, 7) == "raptor_"
+				local tweak = Spring.GetUnitRulesParam(id, "ledtweak")
+				tweak = (type(tweak) == "string" and tweak:match("^[%w_]+$")) and tweak or nil
+				if tweak then
+					tweaksUsed[tweak] = true
+				end
 				-- Gaia units additionally carry gaia = true (the Gaia number depends on the team count)
 				lines[#lines + 1] = string.format(
-					"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s%s%s },",
+					"\t\t{ name = '%s', x = %d, y = %d, z = %d, rot = %d, team = %d, neutral = %s%s%s%s%s },",
 					ud.name, x, y, z, Spring.GetUnitHeading(id), t, tostring(Spring.GetUnitNeutral(id)),
 					t == gaia and ", gaia = true" or "",
 					Spring.GetUnitRulesParam(id, "indestructible") == 1 and ", indestructible = true" or "",
-					Spring.GetUnitRulesParam(id, "arena") == 1 and ", arena = true" or ""
+					Spring.GetUnitRulesParam(id, "arena") == 1 and ", arena = true" or "",
+					tweak and (", tweak = '" .. tweak .. "'") or ""
 				)
 				count = count + 1
 			end
@@ -77,6 +84,7 @@ return function(host)
 		table.sort(flines)
 		local P = host.pages()
 		local si, td, ctf, rtf, ar, tm, rst = P.si, P.td, P.ctf, P.rtf, P.ar, P.tm, P.rst
+		local tweaks = P.tw.lua(tweaksUsed) -- nil when the level has no tweaked unit
 		local block = si.dirty and si.data and encodeBlock(si.data) or nil
 		if not block then
 			local old = io.open(host.OUTDIR .. name .. ".lua", "r")
@@ -141,6 +149,9 @@ return function(host)
 		end
 		if not rst.empty() then
 			w("\trestrictions = " .. rst.lua() .. ",\n")
+		end
+		if tweaks then
+			w("\ttweaks = " .. tweaks .. ",\n")
 		end
 		w("\t-- to be enabled in the main game (game options), otherwise some units are missing:\n")
 		w("\trequiredmodoptions = { " .. table.concat(needed, ", ") .. " },\n\tunitloadout = {\n")
@@ -235,6 +246,7 @@ return function(host)
 		ar.fix()
 		tm.load(data.teams)
 		rst.load(data.restrictions)
+		P.tw.load(data.tweaks) -- the definitions of the tweaked units go to the gadget before the units
 		td.scroll = 0
 		host.cfg().v.unitLimit = tonumber(data.unitlimit) or 32000 -- the unit limit belongs to the level (used by the scenario builder); not written into the settings
 		host.cfg():sync()
@@ -282,7 +294,8 @@ return function(host)
 				Spring.SendLuaRulesMsg(string.format("led|load|%s|%d|%d|%d|%d|%s|%d%s",
 					tostring(u.name), u.gaia and Spring.GetGaiaTeamID() or tonumber(u.team) or 0, tonumber(u.x) or 0, tonumber(u.z) or 0, tonumber(u.rot) or 0,
 					(u.neutral == true or u.neutral == "true") and "1" or "0", tonumber(u.y) or -1,
-					(u.indestructible == true or u.arena == true) and string.format("|0|%d|%d", u.indestructible == true and 1 or 0, u.arena == true and 1 or 0) or ""))
+					(u.indestructible == true or u.arena == true or u.tweak) and string.format("|0|%d|%d|%s", u.indestructible == true and 1 or 0, u.arena == true and 1 or 0,
+						(type(u.tweak) == "string" and u.tweak:match("^[%w_]+$")) and u.tweak or "") or ""))
 			end
 			if #loadQueue == 0 then
 				host.say("Loading done.")

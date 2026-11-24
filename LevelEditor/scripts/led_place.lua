@@ -176,7 +176,7 @@ return function(host)
 				local y = Spring.GetGroundHeight(x, z) + (tonumber(u.h) or 0)
 				host.queue(string.format("led|load|%s|%d|%d|%d|%d|%s|%d|1%s", tostring(u.name), teamOverride or host.team(),
 					math.floor(x + 0.5), math.floor(z + 0.5), math.floor(rot + 0.5), host.neutralOn() and "1" or "0", math.floor(y + 0.5),
-					u.indestructible == true and "|1" or ""))
+					(u.indestructible == true or u.tweak) and string.format("|%d|0|%s", u.indestructible == true and 1 or 0, u.tweak or "") or ""))
 				n = n + 1
 			end
 		end
@@ -235,6 +235,7 @@ return function(host)
 				team = Spring.GetUnitTeam(u.id),
 				neutral = Spring.GetUnitNeutral(u.id),
 				indestructible = Spring.GetUnitRulesParam(u.id, "indestructible") == 1,
+				tweak = Spring.GetUnitRulesParam(u.id, "ledtweak"), -- a tweaked unit stays one (the clipboard; a blueprint file does not carry it)
 			}
 		end
 		host.say(string.format("%d units copied. Paste at the cursor with Ctrl+V.", #clipboard))

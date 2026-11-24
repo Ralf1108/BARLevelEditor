@@ -92,7 +92,7 @@ In the editor everything is free and built instantly, and no cheat command is ne
 
 ## Placing (button P)
 
-Tabs: **Recent**, **Units**, **Features**, **Blueprints**.
+Tabs: **Recent**, **Units**, **Features**, **Blueprints**, **Tweaks**.
 
 - **Units:** choose faction (Armada, Cortex, Legion, Scavengers, Raptors), group and tech (T1 to T3), click a picture, left click on the map. Right click ends. **[** and **]** rotate.
   - Hovering shows a 3D view and the values: cost, **Eco time** (how long your income needs to pay for it), health, damage per second, range, sight, speed, radar.
@@ -141,6 +141,28 @@ Good to know:
 
 - A tile shows a preview, the name, the number of units and the total cost.
 - Blueprints are files in the folder `blueprints`.
+
+## Tweaked units (tab Tweaks)
+
+A tweaked unit is a normal unit with changed values, for example a Pawn with 2000 health and a longer range. You make it from a `tweakunits` text.
+
+| Action | How |
+|---|---|
+| Add | copy a `tweakunits` text (Ctrl+C in an editor or a browser), **P** > Tweaks > **Paste tweakunits from the clipboard** |
+| Place | click the entry, left click on the map; right click ends. Painting, rows and rectangles work as for units |
+| See the changes | hover the entry: old and new values |
+| Rename | **Rename**, type, Enter (the name is for the list and the label on the map) |
+| Delete | **Delete**, click twice (placed units keep their values) |
+
+- The text is plain Lua, `{ armpw = { health = 2000, weapondefs = { emg = { range = 500 } } } }`, or the same in base64. Every unit in it becomes one entry.
+- A text with an error is refused with the reason. A `tweakdefs` text (program code) is not supported.
+- **The yellow `!`** at the top lists what a running game can change: health, speed, costs, build power, sight and radar, income, and for weapons range, reload time, damage, area of effect and more.
+  - It cannot change the model, the size, the movement type, the kind of weapon or the build options. Such fields are ignored; a yellow `!` at the entry lists them.
+- The level saves its tweaked units, and a scenario built from it has them too.
+- Only placed units are tweaked: a unit built later by a factory is the normal one. The info of the game still shows the normal name.
+- The library is the file `levels\_tweaks.lua`.
+
+![Place menu, Tweaks tab](../docs/level-editor-tweaks.jpg)
 
 ## Generate (button G)
 
