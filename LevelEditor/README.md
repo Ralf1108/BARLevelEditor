@@ -156,7 +156,7 @@ A tweaked unit is a normal unit with changed values, for example a Pawn with 200
 | Text for BAR's lobby | check the box before the entries, **Copy checked as text** (to read) or **Copy checked as base64** (to paste into the game option `tweakunits`) |
 | Place | click the entry, left click on the map; right click ends. Painting, rows and rectangles work as for units |
 | See the changes | hover the entry: old and new values |
-| Rename | **Rename**, type, Enter (the name is for the list and the label on the map) |
+| Rename | **Rename**: a window in the middle shows the whole name; type, Enter or **OK** (Esc or **Cancel** keeps the old name). The name is for the list and the label on the map |
 | Delete | **Delete**, click twice (placed units keep their values) |
 
 ![The window of the values](../docs/level-editor-tweak-window.jpg)

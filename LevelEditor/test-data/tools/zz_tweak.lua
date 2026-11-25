@@ -59,7 +59,14 @@ local TEXT = "{ armpw = { health = 2000, speed = 174, metalcost = 10, sightdista
 local B64 = "eyBhcm1sbHQgPSB7IGhlYWx0aCA9IDUwMDAsIHNpZ2h0ZGlzdGFuY2UgPSA5MDAgfSB9" -- { armllt = { health = 5000, sightdistance = 900 } }
 local MARK = "{ armllt = { health = 4321 } }"
 local tw, pawnId, firstId
-local function clip() return (Spring.GetClipboard and Spring.GetClipboard() or ""):gsub("\r", "") end
+local function clip() -- (read again when empty: another program of Windows, e.g. the clipboard history, can hold the clipboard for a moment)
+	local c = ""
+	for _ = 1, 200 do
+		c = Spring.GetClipboard and Spring.GetClipboard() or ""
+		if c ~= "" then break end
+	end
+	return (c:gsub("\r", ""))
+end
 local function rightClickTile(i)
 	local _, uGrid = W():DebugRestrictions()
 	local _, content = W():DebugLayout()
@@ -170,17 +177,39 @@ steps[300] = function()
 	log("after copy and paste: tweaked", #t, ok(#t == 2 and maxHealth(t[1]) == 2000 and maxHealth(t[2]) == 2000))
 	-- rename the entry: the button, Backspace for the old name, the new one, Enter
 	click(rect("twname", "id", pawnId))
+	local box = rect("twrenbox")
+	log("Rename opens a window with the whole name:", box and box.label, ok(box ~= nil and box.label == tw.list[2].name .. "_" and rect("twrenok") ~= nil))
 	for _ = 1, 45 do W():KeyPress(8, {}, false) end
 	for c in ("Boss Pawn!"):gmatch(".") do W():TextInput(c) end
 	W():KeyPress(13, {}, false)
-	log("renamed:", tw.list[2].name, ok(tw.list[2].name == "Boss Pawn"))
+	log("renamed:", tw.list[2].name, ok(tw.list[2].name == "Boss Pawn" and rect("twrenbox") == nil))
+	click(rect("twname", "id", pawnId))
+	W():TextInput("x")
+	click(rect("twrencancel"))
+	log("Cancel keeps the old name:", tw.list[2].name, ok(tw.list[2].name == "Boss Pawn" and tw.edit == nil))
+	click(rect("twname", "id", pawnId))
+	W():TextInput("2")
+	click(rect("twrenok"))
+	log("OK takes the new name:", tw.list[2].name, ok(tw.list[2].name == "Boss Pawn2" and tw.edit == nil))
+	click(rect("twname", "id", pawnId))
+	for _ = 1, 2 do W():KeyPress(8, {}, false) end
+	W():TextInput("n")
+	W():MousePress(5, 5, 1)
+	log("a click outside accepts:", tw.list[2].name, ok(tw.list[2].name == "Boss Pawn" and tw.edit == nil))
 	local r = rect("twarm", "id", pawnId)
 	Spring.WarpMouse((r.x1 + r.x2) / 2, (r.y0 + r.y1) / 2)
+end
+steps[326] = function()
+	click(rect("twname", "id", pawnId)) -- the rename window stays open for the picture
 end
 steps[330] = function()
 	Spring.SendCommands("screenshot png")
 	local t = units("armpw")
 	log("the placed units carry the new name:", tostring(t[1] and Spring.GetUnitRulesParam(t[1], "ledtweakname")), ok(t[1] and Spring.GetUnitRulesParam(t[1], "ledtweakname") == "Boss Pawn"))
+end
+steps[336] = function()
+	W():KeyPress(27, {}, false)
+	log("the rename window was drawn and Esc closes it:", ok(tw.edit == nil and tw.list[2].name == "Boss Pawn"))
 end
 steps[350] = function()
 	local _, saveLevel = W():DebugTeams()

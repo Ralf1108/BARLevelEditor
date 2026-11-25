@@ -13,7 +13,8 @@
 --   tw.openUnitMenu(name, mx, my) / tw.openEntryMenu(id, mx, my) / tw.menuRects() / tw.drawMenu() / tw.menuPress(mx, my, button) (the menu of a right
 --   click on a unit tile or on an entry), tw.rightPress(rect, mx, my) (a right click in the tab),
 --   tw.openEditor(base, entry) / tw.closeEditor() / tw.winRects() / tw.drawWindow() / tw.winPress(mx, my, button) / tw.winWheel(up) (the window of the
---   values, tw.win; it takes every click while it is open); host.showTweaks() opens the Tweaks tab;
+--   values, tw.win; it takes every click while it is open), tw.renamePress(mx, my, button) (the rename window: open while tw.edit.id is set, drawn by
+--   tw.drawWindow, its rects in tw.winRects); host.showTweaks() opens the Tweaks tab;
 --   fields tw.edit, tw.armed
 return function(host)
 	local Shared = host.Shared
@@ -473,16 +474,79 @@ return function(host)
 		return rects, lab, bars, frame
 	end
 
+	-- The rename window (the name of an entry is typed in the middle of the screen: in the list a long name is cut); rects, labels, bars, frame
+	local function renameLayout()
+		local ed = tw.edit
+		local e = byId(ed.id)
+		local S, m = host.S(), Shared.m
+		local vsx, vsy = Spring.GetViewGeometry()
+		local W = 820 * S
+		local H = 2 * m.PAD + 40 * S + 34 * S + m.HB + 12 * S + m.HB
+		local x1 = math.floor((vsx - W) / 2)
+		local top = math.floor((vsy + H) / 2)
+		local ix1, ix2 = x1 + m.PAD + 6 * S, x1 + W - m.PAD - 6 * S
+		local y = top - m.PAD
+		local lab = { { text = "Rename '" .. (e and e.name or ed.id) .. "'", x = ix1, y = y - 30 * S, size = 27 * S, color = { 1, 0.85, 0.3 } } }
+		y = y - 40 * S
+		lab[2] = { text = "Enter accepts, Esc cancels. The unit itself stays " .. (e and e.base or "") .. ".",
+			x = ix1, y = y - 22 * S, size = 19 * S, color = { 0.75, 0.75, 0.75 } }
+		y = y - 34 * S
+		local rects = { { x1 = ix1, x2 = ix2, y0 = y - m.HB, y1 = y, kind = "twrenbox", label = ed.buf .. "_", fs = 24 * S, active = true,
+			tip = "Type the new name (letters, digits, space, - _ . ( ); at most " .. NAME_MAX .. " characters)." } }
+		y = y - m.HB - 12 * S
+		local bw = (ix2 - ix1 - 6 * S) / 2
+		rects[2] = { x1 = ix1, x2 = ix1 + bw, y0 = y - m.HB, y1 = y, kind = "twrenok", label = "OK", fs = 22 * S, tint = { 0.15, 0.6, 0.2 }, tip = "Takes the new name (also Enter)." }
+		rects[3] = { x1 = ix2 - bw, x2 = ix2, y0 = y - m.HB, y1 = y, kind = "twrencancel", label = "Cancel", fs = 22 * S, tip = "Keeps the old name (also Esc)." }
+		return rects, lab, {}, { x1 = x1, x2 = x1 + W, y0 = top - H, y1 = top }
+	end
+
+	local function renaming()
+		return tw.edit ~= nil and tw.edit.id ~= nil
+	end
+
+	-- A click while the rename window is open: OK, Cancel, a click outside accepts; returns true when the window was open (it takes the click)
+	function tw.renamePress(mx, my, button)
+		if not renaming() then
+			return false
+		end
+		local rects, _, _, f = renameLayout()
+		local inside = mx >= f.x1 and mx <= f.x2 and my >= f.y0 and my <= f.y1
+		if not inside then
+			tw.finish(true)
+			return true
+		end
+		if button == 1 then
+			for _, r in ipairs(rects) do
+				if mx >= r.x1 and mx <= r.x2 and my >= r.y0 and my <= r.y1 then
+					if r.kind == "twrenok" then
+						tw.finish(true)
+					elseif r.kind == "twrencancel" then
+						tw.finish(false)
+					end
+				end
+			end
+		end
+		return true
+	end
+
 	function tw.winRects()
-		return tw.win and (winLayout()) or nil
+		if tw.win then
+			return (winLayout())
+		end
+		return renaming() and (renameLayout()) or nil
 	end
 
 	function tw.drawWindow()
-		if not tw.win then
+		if not tw.win and not renaming() then
 			return
 		end
 		local S = host.S()
-		local rects, lab, bars, f = winLayout()
+		local rects, lab, bars, f
+		if tw.win then
+			rects, lab, bars, f = winLayout()
+		else
+			rects, lab, bars, f = renameLayout()
+		end
 		gl.Color(0.8, 0.65, 0.2, 1)
 		gl.Rect(f.x1 - 3 * S, f.y0 - 3 * S, f.x2 + 3 * S, f.y1 + 3 * S)
 		gl.Color(0.06, 0.06, 0.09, 1)
@@ -497,7 +561,9 @@ return function(host)
 			gl.Text(l.text, l.x, l.y, l.size, "o")
 		end
 		gl.Color(1, 1, 1, 1)
-		Shared.scrollbarDraw(tw.win, tw.win.listRect)
+		if tw.win then
+			Shared.scrollbarDraw(tw.win, tw.win.listRect)
+		end
 		local mx, my = Spring.GetMouseState()
 		Shared.drawTip(rects, mx, my)
 	end
@@ -745,14 +811,14 @@ return function(host)
 					"The box does not decide what the level keeps: every entry of the list is saved with the level." }
 			rects[#rects + 1] = { x1 = ax1, x2 = nx2, y0 = ry0, y1 = ry1, kind = "twarm", id = e.id, fs = 23 * S, active = (armed == e or editing) or nil,
 				icon = known and ("#" .. UnitDefNames[e.base].id) or nil,
-				label = fit(editing and (tw.edit.buf .. "_") or e.name, 23 * S, nx2 - ax1 - m.HB - 16 * S),
+				label = fit(e.name, 23 * S, nx2 - ax1 - m.HB - 16 * S),
 				tip = known and (e.name .. "  (" .. e.base .. ")\n" .. lines(inf.applied, 14) .. "\nClick, then place it on the map. Right click: edit the values, copy the text.") or ("The unit " .. e.base .. " does not exist in this game.") }
 			if #inf.ignored > 0 or not known then
 				rects[#rects + 1] = { x1 = nx2 + gap, x2 = nx2 + gap + ww, y0 = ry0, y1 = ry1, kind = "twwarn", label = "!", fs = 28 * S, tint = YELLOW,
 					tip = known and ("Ignored, cannot be changed in a running game:\n" .. lines(inf.ignored, 16)) or ("The unit " .. e.base .. " does not exist in this game.") }
 			end
 			rects[#rects + 1] = { x1 = bx2 - 2 * bw - gap, x2 = bx2 - bw - gap, y0 = ry0, y1 = ry1, kind = "twname", id = e.id, fs = 21 * S, label = "Rename", active = editing or nil,
-				tip = "Give the entry another name: click, type, Enter accepts, Esc undoes.\nThe name is for the list; the unit itself stays " .. e.base .. "." }
+				tip = "Give the entry another name: a window opens, type, Enter accepts, Esc undoes.\nThe name is for the list; the unit itself stays " .. e.base .. "." }
 			rects[#rects + 1] = { x1 = bx2 - bw, x2 = bx2, y0 = ry0, y1 = ry1, kind = "twdel", id = e.id, fs = 21 * S, label = tw.confirm == e.id and "Sure?" or "Delete",
 				active = tw.confirm == e.id or nil, tip = "Removes the entry from the list (second click confirms).\nUnits already placed keep their values." }
 		end

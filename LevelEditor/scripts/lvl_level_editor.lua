@@ -2115,6 +2115,9 @@ function widget:MousePress(mx, my, button)
 	if tw.menuPress(mx, my, button) then
 		return true -- the menu of a unit tile or of an entry: every click closes it, a click on a line runs it
 	end
+	if tw.renamePress(mx, my, button) then
+		return true -- the rename window of a tweaked unit: OK, Cancel, a click outside accepts
+	end
 	if tw.win then
 		if menuOpen and not collapsed then
 			return tw.winPress(mx, my, button) -- the window of the values takes every click while it is open
