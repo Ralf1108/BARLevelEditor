@@ -153,6 +153,7 @@ A tweaked unit is a normal unit with changed values, for example a Pawn with 200
 | Make one without a text | tab **Units**, right click on a unit > **Modify tweakunits**: a window lists all values; click a value, type, Enter; then **Create clone** |
 | Change one later | tab **Tweaks**, right click on an entry > **Edit**: the same window; **Save** changes the entry and its placed units at once, **Create new clone** makes another entry |
 | Get the text | **Copy** in the window (only the changed values), or right click > **Copy as tweakunits** |
+| Text for BAR's lobby | check the box before the entries, **Copy checked as text** (to read) or **Copy checked as base64** (to paste into the game option `tweakunits`) |
 | Place | click the entry, left click on the map; right click ends. Painting, rows and rectangles work as for units |
 | See the changes | hover the entry: old and new values |
 | Rename | **Rename**, type, Enter (the name is for the list and the label on the map) |
@@ -165,7 +166,12 @@ A tweaked unit is a normal unit with changed values, for example a Pawn with 200
 - **Copy as tweakdefs** (the same right click) gives the values as `tweakdefs` code for BAR's game option of a lobby; the Tweaks tab does not take it.
 - **The yellow `!`** at the top lists what a running game can change: health, speed, costs, build power, sight and radar, income, and for weapons range, reload time, damage, area of effect and more.
   - It cannot change the model, the size, the movement type, the kind of weapon or the build options. Such fields are ignored; a yellow `!` at the entry lists them.
-- The level saves its tweaked units, and a scenario built from it has them too.
+- **The box before an entry** only chooses what **Copy checked** copies; it is remembered.
+  - A `tweakunits` text holds one entry per unit type: two checked entries of the same unit (two Pawn clones) are refused with a message; uncheck one.
+  - Nothing checked: a message says so.
+- **The text in BAR's lobby** changes every unit of that type for all players (not only placed ones), in any online or LAN game with that game option.
+- **In the editor and in a scenario** several entries of the same unit with other values are allowed: each placed unit keeps the values of its entry.
+- The level saves every entry of the list (also entries without placed units), and a scenario built from it has them too.
 - Only placed units are tweaked: a unit built later by a factory is the normal one. The info of the game still shows the normal name.
 - The library is the file `levels\_tweaks.lua`.
 

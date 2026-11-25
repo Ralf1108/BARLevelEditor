@@ -14,7 +14,7 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 |---|---|
 | `scripts\tweak_rules.lua` | pure Lua, shared by the page and the gadget (`luaui/Include/tweak_rules.lua` in both extra games): reading and writing a table, base64url, the fields a running game can change, `T.walk`, `T.check`, the help text `T.HELP` |
 | `scripts\unit_tweaks.lua` | gadget in both extra games: the definitions, `GG.Tweaks.apply(unitID, id)`, the values, the game options of a scenario |
-| `scripts\led_tweaks.lua` | the tab of the widget (`tw`): library, paste, list, rename, delete, arming, the section of the level file, the names above the units |
+| `scripts\led_tweaks.lua` | the tab of the widget (`tw`): library, paste, list, rename, delete, arming, the boxes and Copy checked, the section of the level file, the names above the units |
 | `scripts\unit_level_editor.lua` | carries the tweak of a unit through placing, loading, undo, redo, moving, rotating (`setTweak`, field `tweak` of the snapshot) |
 | `scripts\led_level.lua`, `led_place.lua` | the level file (unit field `tweak`, section `tweaks`), copy and paste |
 | `scenario\scenario_builder.ps1` | the game options `ledtweaks` and `ledtweakunits` |
@@ -73,6 +73,7 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
   - Deleting only removes the entry from the library; placed units keep their values, and the level still saves their definition (`tw.known`).
 - **Arming:** `host.armUnit(base)` (the normal unit stamp: painting, rows, rectangles, rotation, W) and `tw.armed = id`; `tw.placeSuffix()` gives `|0|0|<id>` for the `led|place` messages while the tab is open and the stamp is the base unit (otherwise an empty text).
 - **Ids:** `<base>_<five random characters>`; fixed for the life of the entry (also when it is edited), a level refers to it.
+- **Checked** (`pick = true` in the library file, `e.pick`): only for Copy checked (4.3); a level and a scenario take every entry.
 - **Library:** `LevelEditor/_tweaks.lua` (the levels folder; files with `_` are internal): `{ id, name, base, b64 }` per entry, `b64` = the table of the unit in base64url.
 - **Names on the map:** `tw.drawLabels()` (from `widget:DrawScreen`) writes the name above every tweaked unit in view (looked up once a second, at most 60).
 - Test hooks: `widget:DebugTweaks()` returns `tw`; `widget:DebugLayout()` also returns the rectangles of the tab and of the open menu of a unit tile.
@@ -87,6 +88,16 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
   - Pasted again unchanged it gives an entry with nothing ignored.
 - **Copy as tweakdefs** (value `defs`): `T.defsText(base, table)`: the same values as program code (`local u = UnitDefs["armpw"]`, `u.health = 370`, `u.weapondefs.emg.range = 180`), for BAR's game option; the paste of the tab refuses it as program code.
 - The tab Recent has no such menu.
+
+### 4.3 Copy checked (a text for BAR's lobby)
+
+- A box (`twpick`, a tick when checked) before every entry; a click switches it and saves the library.
+- Below the list: **Copy checked as text** (`twcopytext`) and **Copy checked as base64** (`twcopyb64`): `tw.copyChecked(kind)` -> `tw.checkedText(kind)`.
+  - The table `{ [base] = e.tw }` of the checked entries in list order; text = `T.pretty` (one field per line), base64 = `T.encode64(T.serialize(t))` (base64url, as read by the paste and by BAR's game option `tweakunits`).
+  - Two checked entries with the same base unit: nothing is copied, the note names both ("A tweakunits text holds one entry per unit type").
+  - Nothing checked: nothing is copied, the note "Check an entry first".
+- Every copy (`copy(text, what)`) reads the clipboard back; when Windows held it and the text did not arrive it writes once more, then says "The clipboard of Windows is busy: click again."
+- The rule of one entry per unit type holds only for the copied text: the editor and a scenario allow several entries of one unit (the values go to each placed unit).
 
 ### 4.2 The window of the values (`tw.win`)
 
@@ -115,9 +126,9 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 - `led|place|name|team|x|z|facing|neutral|indestructible|arena|<tweak id>` and `led|load|...|rec|indestructible|arena|<tweak id>`: the editor gadget calls `setTweak` after creating the unit.
 - The snapshot of a unit holds `tweak` (from the rules parameter): undo, redo, moving, rotating and mirroring give the new unit the tweak again.
 - Copy and paste keep the tweak (the clipboard). A **blueprint** file does not carry it: its units are placed as normal units.
-- **Level file:** a tweaked unit line ends with `, tweak = '<id>'`; the section `tweaks = { { id = "...", name = "...", base = "...", b64 = "..." }, ... }` (before `requiredmodoptions`) holds the definitions of the ids on the map.
+- **Level file:** a tweaked unit line ends with `, tweak = '<id>'`; the section `tweaks = { { id = "...", name = "...", base = "...", b64 = "..." }, ... }` (before `requiredmodoptions`) holds every entry of the list (also entries without placed units, so that loading the level brings them back) and the definitions of the ids on the map (`tw.lua(used)`).
   - Loading: `tw.load(data.tweaks)` sends the definitions before the units and adds entries the library does not have.
-- **Scenario builder:** `UNIT_RX` reads `tweak`, `TWEAK_RX` the section; units whose tweak has a definition for their type go into `ledtweakunits`, the used definitions into `ledtweaks`. The extra game of the scenarios holds `unit_tweaks.lua` and `tweak_rules.lua`.
+- **Scenario builder:** `UNIT_RX` reads `tweak`, `TWEAK_RX` the section; units whose tweak has a definition for their type go into `ledtweakunits`, the used definitions into `ledtweaks` (an entry without placed units has no effect in the game, so it is left out of the game options). The extra game of the scenarios holds `unit_tweaks.lua` and `tweak_rules.lua`.
 
 ## 6. Limits
 
@@ -130,7 +141,7 @@ Related: [Level Editor](level-editor.md), [placing](level-editor-placing.md), [S
 
 - `mock_tweaks.lua` (128 checks, no game): reading (plain, base64, padding, errors, program code), writing, applied / ignored / errors, the help text names every field, the values of a unit as text (`unitTable`, `pretty`, `defsText`, the example), the rows of the window (`rows`, `rowsTable`, `normalOf`), the gadget with a fake engine (message, each engine call, a waiting unit, an edited definition, the scenario options).
 - `ps_test.ps1`, group "scenario_builder.ps1: tweaked units": the bundle of the level `test-data\levels\tweak_test.lua` has the two game options and the two files.
-- `arena_test.ps1 -Widget zz_tweak.lua` (regression set, 53 checks): paste, refusals, arming, placing with a click, the values in the engine against a normal unit, move and undo, copy and paste, rename, save / clear / load, the test level, delete, Copy an example and the Paste button through the clipboard of Windows, the right click menu (both copy lines, pasted again, closed by a click), the window of the values (Modify: type a value, Copy, Create clone; Edit: Save changes the placed units, a value set back, Create new clone, Esc).
+- `arena_test.ps1 -Widget zz_tweak.lua` (regression set, 62 checks): paste, refusals, arming, placing with a click, the values in the engine against a normal unit, move and undo, copy and paste, rename, save / clear / load, the test level, delete, Copy an example and the Paste button through the clipboard of Windows, the right click menu (both copy lines, pasted again, closed by a click), the window of the values (Modify: type a value, Copy, Create clone; Edit: Save changes the placed units, a value set back, Create new clone, Esc), Copy checked (nothing checked, as text, as base64 and pasted again, two entries of one unit refused, unchecked, kept in the library), every entry in the section of the level.
   - With `Set-Clipboard '{ armllt = { health = 4321 } }'` before the run it also checks that the Paste button takes a text put into the clipboard from outside (otherwise that check is skipped).
 - `pve_test.ps1 -Tweaks -Quick -Widget zz_tweak_scn.lua` (regression set): the scenario game with the two game options; of two Pawns only the one at the place is tweaked.
 

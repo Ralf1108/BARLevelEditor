@@ -1,6 +1,7 @@
 -- Tweaks tab of the Place menu of the Level Editor: tweaked units ("clones"). A tweakunits text (plain Lua or base64) is pasted from the clipboard, checked
 -- and kept in a library; a click on an entry arms the base unit, and every unit placed then gets the changed values (gadget unit_tweaks.lua). Entries can be
--- renamed and deleted. The library is the file LevelEditor/_tweaks.lua; a level file carries the entries its units use (section tweaks).
+-- renamed and deleted. The library is the file LevelEditor/_tweaks.lua; a level file carries every entry of the list and those its units use (section tweaks).
+-- The box before an entry checks it for "Copy checked" (one tweakunits text for BAR's lobby, plain or base64; one entry per unit type).
 -- Loaded by lvl_level_editor.lua (VFS.Include("luaui/Include/led_tweaks.lua")) as a function that gets the host (the services of the widget) and returns
 -- the page; a file of its own because the widget is close to the limit of 200 local variables.
 --   host.Shared, host.S() (UI scale), host.say(text), host.outDir ("LevelEditor/"), host.armUnit(name) (arms the unit stamp), host.disarm() (ends it),
@@ -8,7 +9,7 @@
 --   Methods: tw.layout(rect), tw.height(), tw.draw(rect), tw.press(rect, mx, my), tw.wheel(up), tw.finish(accept), tw.key(key), tw.text(utf8char),
 --   tw.placeSuffix() (the end of a "led|place" message while a tweaked unit is armed), tw.hint(), tw.lua(used) (section tweaks of the level file),
 --   tw.load(list) (the section of a loaded level), tw.paste(text) (the action of the button; text = nil reads the clipboard), tw.drawLabels(),
---   tw.copyExample() (the example into the clipboard), tw.unitText(name, "units" | "defs") and tw.copyUnit(name, kind) (the values of a unit as text),
+--   tw.copyExample() (the example into the clipboard), tw.checkedText(kind) / tw.copyChecked(kind) (the checked entries, kind "text" | "b64"), tw.unitText(name, "units" | "defs") and tw.copyUnit(name, kind) (the values of a unit as text),
 --   tw.openUnitMenu(name, mx, my) / tw.openEntryMenu(id, mx, my) / tw.menuRects() / tw.drawMenu() / tw.menuPress(mx, my, button) (the menu of a right
 --   click on a unit tile or on an entry), tw.rightPress(rect, mx, my) (a right click in the tab),
 --   tw.openEditor(base, entry) / tw.closeEditor() / tw.winRects() / tw.drawWindow() / tw.winPress(mx, my, button) / tw.winWheel(up) (the window of the
@@ -30,9 +31,10 @@ return function(host)
 	end
 
 	local function saveLibrary()
-		local out = { "-- Level Editor, tab Tweaks: the library of the tweaked units (id, name in the list, base unit, the tweakunits table of the unit in base64url)\nreturn {\n" }
+		local out = { "-- Level Editor, tab Tweaks: the library of the tweaked units (id, name in the list, base unit, the tweakunits table of the unit in base64url,\n" ..
+			"-- pick = true: checked for Copy checked)\nreturn {\n" }
 		for _, e in ipairs(tw.list) do
-			out[#out + 1] = string.format("\t{ id = %q, name = %q, base = %q, b64 = %q },\n", e.id, e.name, e.base, T.encode64(e.text))
+			out[#out + 1] = string.format("\t{ id = %q, name = %q, base = %q, b64 = %q%s },\n", e.id, e.name, e.base, T.encode64(e.text), e.pick and ", pick = true" or "")
 		end
 		out[#out + 1] = "}\n"
 		Shared.writeFile(FILE, table.concat(out))
@@ -49,7 +51,12 @@ return function(host)
 			return nil
 		end
 		local name = cleanName(raw.name)
-		return { id = raw.id, name = name ~= "" and name or raw.id, base = raw.base, text = T.serialize({ [raw.base] = data[raw.base] }), tw = data[raw.base] }
+		return { id = raw.id, name = name ~= "" and name or raw.id, base = raw.base, text = T.serialize({ [raw.base] = data[raw.base] }), tw = data[raw.base],
+			pick = raw.pick == true or nil }
+	end
+
+	function tw.libraryText() -- test hook: the library file as it is on disk
+		return Shared.fileText(FILE)
 	end
 
 	local function loadLibrary()
@@ -169,7 +176,18 @@ return function(host)
 			note("This game version cannot write the clipboard.")
 			return false
 		end
+		-- (Windows can hold the clipboard for a moment, e.g. its clipboard history: then the text did not arrive; try once more)
+		local function arrived()
+			return not Spring.GetClipboard or ((Spring.GetClipboard() or ""):gsub("\r", "")) == (text:gsub("\r", ""))
+		end
 		Spring.SetClipboard(text)
+		if not arrived() then
+			Spring.SetClipboard(text)
+			if not arrived() then
+				note("The clipboard of Windows is busy: click again.")
+				return false
+			end
+		end
 		note(what, { 0.5, 1, 0.5 })
 		return true
 	end
@@ -200,6 +218,38 @@ return function(host)
 			return copy(text, name .. " is in the clipboard as tweakdefs code (for BAR's game option; the Tweaks tab takes tweakunits).")
 		end
 		return copy(text, name .. " is in the clipboard as a tweakunits text: change the values, then Paste it in the Tweaks tab.")
+	end
+
+	-- The checked entries as one tweakunits text (kind "text": plain, one field per line; "b64": base64url for BAR's lobby option tweakunits).
+	-- Returns the text and the number of entries, or nil and the reason (nothing checked; two entries change the same unit type).
+	function tw.checkedText(kind)
+		local t, first, n = {}, {}, 0
+		for _, e in ipairs(tw.list) do
+			if e.pick then
+				if first[e.base] then
+					return nil, "Not copied: '" .. first[e.base].name .. "' and '" .. e.name .. "' both change " .. e.base ..
+						". A tweakunits text holds one entry per unit type: uncheck one."
+				end
+				first[e.base], t[e.base], n = e, e.tw, n + 1
+			end
+		end
+		if n == 0 then
+			return nil, "Check an entry first (the box before its name): the checked entries are copied."
+		end
+		if kind == "b64" then
+			return T.encode64(T.serialize(t)), n
+		end
+		return T.pretty(t) .. "\n", n
+	end
+
+	function tw.copyChecked(kind)
+		local text, n = tw.checkedText(kind)
+		if not text then
+			note(n)
+			return false
+		end
+		local what = n .. " tweaked unit" .. (n == 1 and " is" or "s are") .. " in the clipboard"
+		return copy(text, kind == "b64" and (what .. " as base64: paste it into the game option tweakunits of BAR's lobby.") or (what .. " as a tweakunits text."))
 	end
 
 	-- ---------------------------------------------------------------- the menu of a right click
@@ -569,12 +619,22 @@ return function(host)
 		return e and ("Left click places '" .. e.name .. "', right click ends, [ and ] rotate") or "Paste a tweakunits text, then click an entry and place it on the map"
 	end
 
-	-- Section tweaks of the level file: the definitions of the given ids (used = id -> true); nil when there is none
+	-- Section tweaks of the level file: every entry of the list and the definitions of the given ids (used = id -> true, the units on the map); nil when there is none
 	function tw.lua(used)
-		local ids = {}
+		local ids, seen = {}, {}
+		for _, e in ipairs(tw.list) do
+			tw.known[e.id] = tw.known[e.id] or e
+		end
 		for id in pairs(used) do
 			tw.known[id] = tw.known[id] or byId(id) -- (after a reload of the widget the library still knows it)
-			if tw.known[id] then
+		end
+		for _, e in ipairs(tw.list) do
+			seen[e.id] = true
+			ids[#ids + 1] = e.id
+		end
+		for id in pairs(used) do
+			if tw.known[id] and not seen[id] then
+				seen[id] = true
 				ids[#ids + 1] = id
 			end
 		end
@@ -678,9 +738,14 @@ return function(host)
 			local editing = tw.edit and tw.edit.id == e.id
 			local nx2 = bx2 - 2 * (bw + gap) - (ww + gap)
 			local known = UnitDefNames[e.base] ~= nil
-			rects[#rects + 1] = { x1 = x1, x2 = nx2, y0 = ry0, y1 = ry1, kind = "twarm", id = e.id, fs = 23 * S, active = (armed == e or editing) or nil,
+			local ax1 = x1 + m.HB + gap
+			rects[#rects + 1] = { x1 = x1, x2 = x1 + m.HB, y0 = ry0, y1 = ry1, kind = "twpick", id = e.id, label = "", fs = 22 * S, tick = e.pick or nil,
+				tint = e.pick and { 0.1, 0.6, 0.15 } or { 0.38, 0.38, 0.4 },
+				tip = "Checked: this entry goes into Copy checked (a tweakunits text for BAR's lobby).\nOne entry per unit type: two checked entries of the same unit cannot be copied together.\n" ..
+					"The box does not decide what the level keeps: every entry of the list is saved with the level." }
+			rects[#rects + 1] = { x1 = ax1, x2 = nx2, y0 = ry0, y1 = ry1, kind = "twarm", id = e.id, fs = 23 * S, active = (armed == e or editing) or nil,
 				icon = known and ("#" .. UnitDefNames[e.base].id) or nil,
-				label = fit(editing and (tw.edit.buf .. "_") or e.name, 23 * S, nx2 - x1 - m.HB - 16 * S),
+				label = fit(editing and (tw.edit.buf .. "_") or e.name, 23 * S, nx2 - ax1 - m.HB - 16 * S),
 				tip = known and (e.name .. "  (" .. e.base .. ")\n" .. lines(inf.applied, 14) .. "\nClick, then place it on the map. Right click: edit the values, copy the text.") or ("The unit " .. e.base .. " does not exist in this game.") }
 			if #inf.ignored > 0 or not known then
 				rects[#rects + 1] = { x1 = nx2 + gap, x2 = nx2 + gap + ww, y0 = ry0, y1 = ry1, kind = "twwarn", label = "!", fs = 28 * S, tint = YELLOW,
@@ -699,6 +764,12 @@ return function(host)
 		lab[#lab + 1] = { text = #tw.list > ROWS and string.format("%d-%d of %d (mouse wheel or scrollbar)", first + 1, last, #tw.list) or string.format("%d tweaked units", #tw.list),
 			x = x1, y = y - 20 * S, size = 19 * S, color = { 0.75, 0.75, 0.75 } }
 		y = y - 28 * S
+		local cw = (x2 - x1 - gap) / 2
+		rects[#rects + 1] = { x1 = x1, x2 = x1 + cw, y0 = y - m.HB, y1 = y, kind = "twcopytext", label = "Copy checked as text", fs = 22 * S,
+			tip = "The checked entries as one tweakunits text into the clipboard (readable, one value per line).\nOne entry per unit type." }
+		rects[#rects + 1] = { x1 = x2 - cw, x2 = x2, y0 = y - m.HB, y1 = y, kind = "twcopyb64", label = "Copy checked as base64", fs = 22 * S,
+			tip = "The checked entries as one tweakunits text in base64 into the clipboard:\npaste it into the game option tweakunits of BAR's lobby (every unit of that type changes).\nOne entry per unit type." }
+		y = y - m.HB - 6 * S
 		return rects, lab, bars, rect.top - y + m.PAD
 	end
 
@@ -812,6 +883,16 @@ return function(host)
 			tw.paste()
 		elseif k == "twexample" then
 			tw.copyExample()
+		elseif k == "twcopytext" then
+			tw.copyChecked("text")
+		elseif k == "twcopyb64" then
+			tw.copyChecked("b64")
+		elseif k == "twpick" then
+			local e = byId(hit.id)
+			if e then
+				e.pick = (not e.pick) or nil
+				saveLibrary()
+			end
 		elseif k == "twarm" then
 			local e = byId(hit.id)
 			if e and UnitDefNames[e.base] then

@@ -49,7 +49,10 @@ You need Windows and Beyond All Reason, started once through its launcher.
 - Paint, rows, rectangles; copy, cut, paste, move, rotate, mirror; undo and redo for everything
 - Generate random armies, turrets, air or ships, or a maze of walls
 - Blueprints: save a selection and place the layout again anywhere
-- Tweaked units: paste a `tweakunits` text and place units with changed health, speed or weapons
+- Tweaked units ("clones"): units with changed health, speed or weapons ([how](LevelEditor/README.md#tweaked-units-tab-tweaks))
+  - Make one in a window: right click on a unit > **Modify tweakunits**, change the values, **Create clone**
+  - Several clones of one unit with other values and own names can stand in the same level and scenario
+  - **Make a `tweakunits` text for BAR's lobby:** check the clones you want, **Copy checked as base64**, paste it into the game option `tweakunits` of an online or LAN game
 - Ten teams plus neutral, with alliances, human or AI per team and start resources
 
 **Play it**

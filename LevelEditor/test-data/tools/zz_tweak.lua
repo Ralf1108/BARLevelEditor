@@ -4,7 +4,9 @@ function widget:GetInfo() return { name = "zz tweak", desc = "test only: the Twe
 -- cost, sight, speed), moves it and undoes that, copies it (Ctrl+C / Ctrl+V), renames the entry, saves the level, clears the map and loads it again, loads the
 -- test level tweak_test (its entries come into the library) and deletes an entry. The clipboard: the button "Copy an example" and the Paste button (the text
 -- goes through the clipboard of Windows), a right click on a unit tile of the tab Units with "Copy as tweakunits" and "Copy as tweakdefs", "Modify tweakunits"
--- (the window of the values: type a value, Copy, Create clone), a right click on an entry with "Edit" (Save changes the placed units, a value set back). When the clipboard
+-- (the window of the values: type a value, Copy, Create clone), a right click on an entry with "Edit" (Save changes the placed units, a value set back),
+-- the boxes of the entries with "Copy checked as text / as base64" (nothing checked, two entries of one unit type refused, kept in the library), every entry
+-- of the list in the section tweaks of a level. When the clipboard
 -- holds the text MARK at the start (put there from outside: Set-Clipboard before the run), the Paste button must take it; otherwise that check is skipped.
 -- A picture of the tab. Logs "[zzar]" lines (OK / WRONG), ends with quitforce.
 local function log(...)
@@ -308,7 +310,57 @@ steps[690] = function()
 	W():KeyPress(27, {}, false)
 	log("Esc closes the window:", ok(opened and tw.win == nil))
 end
+-- the box before an entry (visible: the list scrolls to it)
+local function pickBox(e)
+	for i, x in ipairs(tw.list) do
+		if x == e then tw.lg.scroll = math.max(0, math.min(tw.lg:maxScroll(), i - 1)) end
+	end
+	return rect("twpick", "id", e.id)
+end
+steps[700] = function()
+	click(rect("mode", "value", "tw"))
+	for _, e in ipairs(tw.list) do e.pick = nil end
+	Spring.SetClipboard("before")
+	click(rect("twcopytext"))
+	log("Copy checked with nothing checked:", tostring(tw.notice and tw.notice.text), ok(clip() == "before" and tostring(tw.notice and tw.notice.text):find("Check an entry", 1, true) ~= nil))
+	local boss, other, second
+	for _, e in ipairs(tw.list) do
+		if e.id == "armpw_boss1" then boss = e
+		elseif e.base ~= "armpw" and not other then other = e
+		elseif e.base == "armpw" and not second then second = e end
+	end
+	if not (boss and other and second) then log("entries for the boxes missing WRONG") return end
+	click(pickBox(boss))
+	click(pickBox(other))
+	log("a click on the box checks the entry:", ok(boss.pick == true and other.pick == true and pickBox(boss).tick == true))
+	click(rect("twcopytext"))
+	local c = clip()
+	log("Copy checked as text:", (c:gsub("%s+", " ")):sub(1, 160), ok(c:find("armpw = {", 1, true) ~= nil and c:find(other.base .. " = {", 1, true) ~= nil and c:find("range = 500", 1, true) ~= nil))
+	local plain = c
+	click(rect("twcopyb64"))
+	c = clip()
+	log("Copy checked as base64:", c:sub(1, 60), ok(c:match("^[%w_%-]+$") ~= nil and #c > 20))
+	local n0 = #tw.list
+	log("the base64 text is pasted again as two entries:", ok(tw.paste(c) == 2 and #tw.list == n0 + 2 and tw.list[1].pick == nil))
+	click(pickBox(second))
+	Spring.SetClipboard("before")
+	click(rect("twcopytext"))
+	log("two checked entries of one unit type are refused:", tostring(tw.notice and tw.notice.text), ok(clip() == "before" and tostring(tw.notice and tw.notice.text):find("both change armpw", 1, true) ~= nil))
+	click(pickBox(second))
+	log("a second click unchecks:", ok(second.pick == nil))
+	local lib = tw.libraryText() or "" -- (read by the widget: the test widget cannot open the file)
+	local _, picks = lib:gsub(", pick = true }", "")
+	log("the boxes are kept in the library:", picks, ok(picks == 2))
+	local section = tw.lua({}) or ""
+	local all = true
+	for _, e in ipairs(tw.list) do all = all and section:find('"' .. e.id .. '"', 1, true) ~= nil end
+	log("the level keeps every entry of the list, also unplaced ones:", #tw.list, ok(all and plain ~= ""))
+	tw.lg.scroll = 0
+end
 steps[720] = function()
+	Spring.SendCommands("screenshot png") -- (a step of its own: the tab drawn with its boxes)
+end
+steps[750] = function()
 	log("END")
 	Spring.SendCommands("quitforce")
 end
